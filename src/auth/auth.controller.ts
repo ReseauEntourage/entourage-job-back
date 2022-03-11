@@ -1,0 +1,108 @@
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  NotFoundException,
+  Post,
+  Redirect,
+  Request,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { Throttle } from '@nestjs/throttler';
+import { UsersService } from '../users/users.service';
+import { User } from '../users/models/user.model';
+import { Public } from './public.decorator';
+import { LocalAuthGuard } from './local-auth.guard';
+
+@Throttle(10, 60)
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
+
+  @Public()
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  async login(@Request() req) {
+    return this.authService.login(req.user);
+  }
+
+  @Redirect(`${process.env.FRONT_URL}`, 301)
+  @Post('logout')
+  async logout() {
+    return;
+  }
+
+  @Public()
+  @Post('forgot')
+  async forgot(@Request() req) {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new BadRequestException();
+    }
+
+    const user = await this.usersService.findOneByMail(email);
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    const loggedInUser = await this.authService.login(user, '1d');
+
+    const token = loggedInUser.token;
+    const { hash, salt } = this.authService.encryptPassword(token);
+
+    const updatedUser: User = await this.usersService.update(user.id, {
+      hashReset: hash,
+      saltReset: salt,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    if (updatedUser) {
+      //TODO
+      /*     const {
+        password,
+        salt: unusedSalt,
+        revision,
+        hashReset,
+        saltReset,
+        ...restProps
+      } = updatedUser.toJSON();
+
+      // Envoi du mail
+      await addToWorkQueue({
+        type: JOBS.JOB_TYPES.SEND_MAIL,
+        toEmail: user.email,
+        templateId: MAILJET_TEMPLATES.PASSWORD_RESET,
+        variables: {
+          ..._.omitBy(restProps, _.isNil),
+          token,
+        },
+      });*/
+
+      return;
+    }
+  }
+
+  @Throttle(100, 60)
+  @Get('current')
+  async getCurrent(@Request() req) {
+    const { user } = req;
+    const updatedUser = await this.usersService.update(user.id, {
+      lastConnection: Date.now(),
+    });
+    if (!updatedUser) {
+      throw new UnauthorizedException();
+    }
+
+    return updatedUser;
+  }
+}
