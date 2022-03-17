@@ -21,7 +21,7 @@ export class SelfGuard implements CanActivate {
     return (
       user.id === request[selfIdKey] ||
       user.email === request[selfIdKey] ||
-      user.role === UserRoles.Admin
+      user.role === UserRoles.ADMIN
     );
   }
 }

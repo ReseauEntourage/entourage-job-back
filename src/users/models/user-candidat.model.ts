@@ -1,7 +1,9 @@
 import {
   AllowNull,
+  BeforeBulkCreate,
   BeforeCreate,
   BeforeUpdate,
+  BeforeValidate,
   BelongsTo,
   Column,
   DataType,
@@ -60,7 +62,7 @@ export class UserCandidat extends Model {
   @Column
   note: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   url: string;
 
@@ -86,6 +88,7 @@ export class UserCandidat extends Model {
   cvs: CV[];*/
 
   @BeforeCreate
+  @BeforeUpdate
   static async generateUrl(userCandidat: UserCandidat) {
     const user = await User.findByPk(userCandidat.candidatId, {
       attributes: ['id', 'firstName'],

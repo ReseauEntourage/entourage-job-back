@@ -19,12 +19,12 @@ export class LinkedUserGuard implements CanActivate {
     const user = request.user;
 
     return (
-      (user.role === UserRoles.Candidat &&
+      (user.role === UserRoles.CANDIDAT &&
         user.id === request[linkedUserIdKey]) ||
-      (user.role === UserRoles.Coach &&
+      (user.role === UserRoles.COACH &&
         (user.candidatId === request[linkedUserIdKey] ||
           user.id === request[linkedUserIdKey])) ||
-      user.role === UserRoles.Admin
+      user.role === UserRoles.ADMIN
     );
   }
 }

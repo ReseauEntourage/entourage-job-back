@@ -1,14 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { randomBytes, pbkdf2Sync } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../users/models/user.model';
-import { UserAttribute } from '../users/models/user.attributes';
+import { UserAttribute } from '../users/models/user.attribute';
 
-function getPartialUserForPayload(
-  user: User,
-): Pick<User, UserAttribute | 'candidat' | 'coach'> {
+export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
+
+export function getPartialUserForPayload(user: User): PayloadUser {
   return {
     id: user.id,
     email: user.email,
@@ -41,7 +41,45 @@ export class AuthService {
     return null;
   }
 
-  encryptPassword(password) {
+  async login(user: User, expiresIn: string | number = '30d') {
+    const payloadUser = getPartialUserForPayload(user);
+
+    const { id, ...restPayloadUser } = payloadUser;
+
+    const payload = {
+      sub: id,
+      ...restPayloadUser,
+    };
+    return {
+      user: payloadUser,
+      token: this.jwtService.sign(payload, {
+        secret: `${process.env.JWT_SECRET}`,
+        expiresIn: expiresIn,
+      }),
+    };
+  }
+
+  async generateResetToken(user: User) {
+    const { token } = await this.login(user, '1d');
+
+    const { hash, salt } = this.encryptPassword(token);
+
+    const updatedUser = await this.usersService.update(user.id, {
+      hashReset: hash,
+      saltReset: salt,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return {
+      updatedUser,
+      token,
+    };
+  }
+
+  encryptPassword(password: string) {
     const salt = randomBytes(16).toString('hex');
     const hash = pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString(
       'hex',
@@ -53,7 +91,7 @@ export class AuthService {
     };
   }
 
-  validatePassword(password, hash, salt) {
+  validatePassword(password: string, hash: string, salt: string) {
     const passwordHash = pbkdf2Sync(
       password,
       salt,
@@ -65,31 +103,14 @@ export class AuthService {
     return passwordHash === hash;
   }
 
-  async login(user: User, expiresIn: string | number = '30d') {
-    const payloadUser = getPartialUserForPayload(user);
-
-    const { id, ...restPayloadUser } = payloadUser;
-
-    const payload = {
-      sub: id,
-      ...restPayloadUser,
-    };
-    return {
-      user: {
-        ...payloadUser,
-      },
-      token: this.jwtService.sign(payload, { expiresIn: expiresIn }),
-    };
-  }
-
-  /*
-  isTokenValid(token) {
+  isTokenValid(token: string) {
     try {
-      jwt.verify(token, process.env.JWT_SECRET);
+      this.jwtService.verify(token, {
+        secret: `${process.env.JWT_SECRET}`,
+      });
       return true;
     } catch (err) {
-      console.log('Token invalid : ', err);
       return false;
     }
-  }*/
+  }
 }

@@ -1,18 +1,18 @@
-import { UserCandidatAttributes } from './user-candidat.attributes';
+import { UserCandidatAttribute } from './user-candidat.attribute';
 import { User } from './user.model';
-import { UserAttributes } from './user.attributes';
+import { UserAttribute } from './user.attribute';
 import { UserCandidat } from './user-candidat.model';
 
-export const INCLUDE_USER_CANDIDAT = [
+export const UserCandidatInclude = [
   {
     model: UserCandidat,
     as: 'candidat',
-    attributes: [...UserCandidatAttributes],
+    attributes: [...UserCandidatAttribute],
     include: [
       {
         model: User,
         as: 'coach',
-        attributes: [...UserAttributes],
+        attributes: [...UserAttribute],
         paranoid: false,
       },
     ],
@@ -20,12 +20,12 @@ export const INCLUDE_USER_CANDIDAT = [
   {
     model: UserCandidat,
     as: 'coach',
-    attributes: [...UserCandidatAttributes],
+    attributes: [...UserCandidatAttribute],
     include: [
       {
         model: User,
         as: 'candidat',
-        attributes: [...UserAttributes],
+        attributes: [...UserAttribute],
         paranoid: false,
       },
     ],

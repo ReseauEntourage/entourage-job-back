@@ -6,6 +6,7 @@ import { LocalStrategy } from './local.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { MailsModule } from '../mails/mails.module';
 
 @Module({
   controllers: [AuthController],
@@ -16,6 +17,7 @@ import { UsersModule } from '../users/users.module';
       secret: `${process.env.JWT_SECRET}`,
       signOptions: { expiresIn: '30d' },
     }),
+    MailsModule,
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   exports: [AuthService],

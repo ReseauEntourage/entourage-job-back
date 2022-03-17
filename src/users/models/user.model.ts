@@ -20,36 +20,36 @@ import { v4 as uuid } from 'uuid';
 import { UserCandidat } from './user-candidat.model';
 
 export const UserRoles = {
-  Candidat: 'Candidat',
-  Coach: 'Coach',
-  Admin: 'Admin',
+  CANDIDAT: 'Candidat',
+  COACH: 'Coach',
+  ADMIN: 'Admin',
 } as const;
 export type UserRole = typeof UserRoles[keyof typeof UserRoles];
 
-const AdminRoles = {
-  Candidats: 'Candidats',
-  Entreprises: 'Entreprises',
+export const AdminRoles = {
+  CANDIDATS: 'Candidats',
+  ENTREPRISES: 'Entreprises',
 } as const;
 
-type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
+export type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
 
-const AdminZones = {
+export const AdminZones = {
   PARIS: 'PARIS',
   LYON: 'LYON',
   LILLE: 'LILLE',
   HZ: 'HORS ZONE',
 } as const;
 
-type AdminZone = typeof AdminZones[keyof typeof AdminZones];
+export type AdminZone = typeof AdminZones[keyof typeof AdminZones];
 
 const Genders = {
-  Male: 0,
-  Female: 1,
+  MALE: 0,
+  FEMALE: 1,
 } as const;
 
 type Gender = typeof Genders[keyof typeof Genders];
 
-// TODO : paranoid, papertrail
+//TODO : paranoid, papertrail
 
 @Table({ tableName: 'Users' })
 export class User extends Model {
@@ -75,7 +75,7 @@ export class User extends Model {
   email: string;
 
   @AllowNull(false)
-  @Default(UserRoles.Candidat)
+  @Default(UserRoles.CANDIDAT)
   @Column
   role: UserRole;
 
@@ -92,7 +92,7 @@ export class User extends Model {
   salt: string;
 
   @AllowNull(false)
-  @Default(Genders.Male)
+  @Default(Genders.MALE)
   @Column
   gender: Gender;
 
@@ -154,7 +154,7 @@ export class User extends Model {
 
   @AfterCreate
   static async createAssociations(user: User) {
-    if (user.role === UserRoles.Candidat) {
+    if (user.role === UserRoles.CANDIDAT) {
       await UserCandidat.create(
         {
           candidatId: user.id,
@@ -175,8 +175,8 @@ export class User extends Model {
     if (nextData && previousData) {
       if (nextData.role && nextData.role !== previousData.role) {
         if (
-          previousData.role === UserRoles.Candidat &&
-          nextData.role !== UserRoles.Candidat
+          previousData.role === UserRoles.CANDIDAT &&
+          nextData.role !== UserRoles.CANDIDAT
         ) {
           try {
             UserCandidat.destroy({
@@ -185,13 +185,13 @@ export class User extends Model {
               },
             });
           } catch (e) {
-            console.log('Candidat inexistant');
+            console.log('CANDIDAT inexistant');
           }
         } else if (
-          previousData.role !== UserRoles.Candidat &&
-          nextData.role === UserRoles.Candidat
+          previousData.role !== UserRoles.CANDIDAT &&
+          nextData.role === UserRoles.CANDIDAT
         ) {
-          if (previousData.role === UserRoles.Coach) {
+          if (previousData.role === UserRoles.COACH) {
             try {
               // TODO
               /!* await UserCandidat.update(
@@ -228,7 +228,7 @@ export class User extends Model {
       }
       if (
         nextData.firstName !== previousData.firstName &&
-        nextData.role === UserRoles.Candidat
+        nextData.role === UserRoles.CANDIDAT
       ) {
         try {
           // TODO
@@ -257,7 +257,7 @@ export class User extends Model {
       },
       {
         where: {
-          [destroyedUser.role === UserRoles.Coach ? 'coachId' : 'candidatId']:
+          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
             destroyedUser.id,
         },
       },

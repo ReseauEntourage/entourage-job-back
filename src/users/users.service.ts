@@ -3,18 +3,18 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './models/user.model';
 import { InjectModel } from '@nestjs/sequelize';
-import { UserAttributes } from './models/user.attributes';
-import { INCLUDE_USER_CANDIDAT } from './models/user.includes';
+import { UserAttribute } from './models/user.attribute';
+import { UserCandidatInclude } from './models/user.include';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User)
-    private userModel: typeof User,
+    private userModel: User,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  async create(createUserDto: Partial<User>) {
+    return User.create(createUserDto, { hooks: true });
   }
 
   findAll() {
@@ -23,16 +23,22 @@ export class UsersService {
 
   async findOne(id: string) {
     return User.findByPk(id, {
-      attributes: [...UserAttributes],
-      include: INCLUDE_USER_CANDIDAT,
+      attributes: [...UserAttribute],
+      include: UserCandidatInclude,
     });
   }
 
   async findOneByMail(email: string) {
     return User.findOne({
       where: { email: email.toLowerCase() },
-      attributes: [...UserAttributes, 'salt', 'password'],
-      include: INCLUDE_USER_CANDIDAT,
+      attributes: [...UserAttribute, 'salt', 'password'],
+      include: UserCandidatInclude,
+    });
+  }
+
+  async findOneComplete(id: string) {
+    return User.findByPk(id, {
+      include: UserCandidatInclude,
     });
   }
 
@@ -46,9 +52,7 @@ export class UsersService {
       return null;
     }
 
-    const user: User = await this.findOne(id);
-
-    return user.toJSON();
+    return this.findOne(id);
   }
 
   remove(id: number) {
