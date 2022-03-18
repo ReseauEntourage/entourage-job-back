@@ -11,13 +11,13 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { Throttle } from '@nestjs/throttler';
-import { UsersService } from '../users/users.service';
-import { User } from '../users/models/user.model';
-import { Public } from './public.decorator';
-import { LocalAuthGuard } from './local-auth.guard';
-import { MailsService } from '../mails/mails.service';
+import { MailsService } from 'src/mails/mails.service';
+import { UsersService } from 'src/users/users.service';
+import { RequestWithUser } from 'src/utils/types/utils';
+import { AuthService } from './auth.service';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { Public } from './guards/public.decorator';
 
 @Throttle(10, 60)
 @Controller('auth')
@@ -25,13 +25,13 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
-    private readonly mailsService: MailsService,
+    private readonly mailsService: MailsService
   ) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req) {
+  async login(@Request() req: RequestWithUser) {
     return this.authService.login(req.user);
   }
 
@@ -43,7 +43,7 @@ export class AuthController {
 
   @Public()
   @Post('forgot')
-  async forgot(@Body('email') email) {
+  async forgot(@Body('email') email: string) {
     if (!email) {
       throw new BadRequestException();
     }
@@ -55,7 +55,7 @@ export class AuthController {
     }
 
     const { updatedUser, token } = await this.authService.generateResetToken(
-      user,
+      user
     );
 
     const {
@@ -74,7 +74,10 @@ export class AuthController {
 
   @Public()
   @Get('/reset/:userId/:token')
-  async checkReset(@Param('userId') userId, @Param('token') token) {
+  async checkReset(
+    @Param('userId') userId: string,
+    @Param('token') token: string
+  ) {
     const user = await this.usersService.findOneComplete(userId);
 
     if (!user) {
@@ -84,7 +87,7 @@ export class AuthController {
     const validPassword = this.authService.validatePassword(
       token,
       user.hashReset,
-      user.saltReset,
+      user.saltReset
     );
 
     const validToken = this.authService.isTokenValid(token);
@@ -98,10 +101,10 @@ export class AuthController {
   @Public()
   @Post('/reset/:userId/:token')
   async resetPassword(
-    @Param('userId') userId,
-    @Param('token') token,
-    @Body('newPassword') newPassword,
-    @Body('confirmPassword') confirmPassword,
+    @Param('userId') userId: string,
+    @Param('token') token: string,
+    @Body('newPassword') newPassword: string,
+    @Body('confirmPassword') confirmPassword: string
   ) {
     const user = await this.usersService.findOneComplete(userId);
     if (!user) {
@@ -115,7 +118,7 @@ export class AuthController {
         this.authService.validatePassword(
           token,
           user.hashReset,
-          user.saltReset,
+          user.saltReset
         ) &&
         this.authService.isTokenValid(token)
       )
@@ -145,7 +148,7 @@ export class AuthController {
 
   @Throttle(100, 60)
   @Get('current')
-  async getCurrent(@Request() req) {
+  async getCurrent(@Request() req: RequestWithUser) {
     const { user } = req;
     const updatedUser = await this.usersService.update(user.id, {
       lastConnection: new Date(),

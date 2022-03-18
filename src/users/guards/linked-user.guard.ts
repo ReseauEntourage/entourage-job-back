@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { UserRoles } from 'src/users/models/user.model';
 import { LINKED_USER_KEY } from './linked-user.decorator';
-import { UserRoles } from '../models/user.model';
 
 @Injectable()
 export class LinkedUserGuard implements CanActivate {
@@ -10,7 +10,7 @@ export class LinkedUserGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const linkedUserIdKey = this.reflector.get<string>(
       LINKED_USER_KEY,
-      context.getHandler(),
+      context.getHandler()
     );
     if (!linkedUserIdKey) {
       return false;

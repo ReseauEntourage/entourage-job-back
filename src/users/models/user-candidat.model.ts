@@ -1,31 +1,29 @@
 import {
   AllowNull,
-  BeforeBulkCreate,
   BeforeCreate,
   BeforeUpdate,
-  BeforeValidate,
   BelongsTo,
   Column,
   DataType,
   Default,
   ForeignKey,
-  HasMany,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
 import { User } from './user.model';
-
-// lie un coach un utilisateur à son nouveau coach et délie un coach à son ancien user
-function clearCoachBindings(coachId: string) {
-  return UserCandidat.update(
-    { coachId: null },
-    {
-      where: { coachId },
-    },
-  );
-}
+/*
+  // lie un coach un utilisateur à son nouveau coach et délie un coach à son ancien user
+  function clearCoachBindings(coachId: string) {
+    return UserCandidat.update(
+      { coachId: null },
+      {
+        where: { coachId },
+      },
+    );
+  }
+*/
 
 @Table({ tableName: 'User_Candidats' })
 export class UserCandidat extends Model {
@@ -95,7 +93,7 @@ export class UserCandidat extends Model {
     });
     userCandidat.url = `${user.firstName.toLowerCase()}-${user.id.substring(
       0,
-      8,
+      8
     )}`;
   }
 

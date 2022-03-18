@@ -1,4 +1,3 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { User } from '../models/user.model';
+import { User } from 'src/users/models/user.model';
 
 export class CreateUserDto extends User {}

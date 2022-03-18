@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { MailsService } from './mails.service';
-import { QueuesModule } from '../queues/producers/queues.module';
+import { QueuesModule } from 'src/queues/producers/queues.module';
 import { MailjetService } from './mailjet.service';
+import { MailsService } from './mails.service';
 
 @Module({
   imports: [QueuesModule],

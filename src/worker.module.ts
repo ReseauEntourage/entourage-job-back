@@ -1,13 +1,12 @@
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 
+import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { ConfigModule } from '@nestjs/config';
-import { BullModule } from '@nestjs/bull';
-import { MailsModule } from './mails/mails.module';
+import { ConsumersModule } from 'src/queues/consumers/consumers.module';
+import { Queues } from 'src/queues/queues.type';
 import { getBullOptions, getSequelizeOptions } from './app.module';
-import { Queues } from './queues/queues.type';
-import { ConsumersModule } from './queues/consumers/consumers.module';
 
 @Module({
   imports: [

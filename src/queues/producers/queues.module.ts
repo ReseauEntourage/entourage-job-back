@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
-import { getBullWorkQueueOptions, Queues } from '../queues.type';
+import { Module } from '@nestjs/common';
+import { getBullWorkQueueOptions } from 'src/queues/queues.type';
 
 @Module({
   imports: [BullModule.registerQueue(getBullWorkQueueOptions())],

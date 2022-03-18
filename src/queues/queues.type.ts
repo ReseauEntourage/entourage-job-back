@@ -1,5 +1,5 @@
-import { MailjetTemplate } from '../mails/mails.service';
-import { BullModuleOptions, BullQueueEventOptions } from '@nestjs/bull';
+import { BullModuleOptions } from '@nestjs/bull';
+import { MailjetTemplate } from 'src/mails/mails.service';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',

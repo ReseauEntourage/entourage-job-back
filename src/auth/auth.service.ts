@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-
 import { randomBytes, pbkdf2Sync } from 'crypto';
-import { UsersService } from '../users/users.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '../users/models/user.model';
-import { UserAttribute } from '../users/models/user.attribute';
+import { UserAttribute } from 'src/users/models/user.attribute';
+import { User } from 'src/users/models/user.model';
+import { UsersService } from 'src/users/users.service';
 
 export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
 
@@ -30,7 +29,7 @@ export function getPartialUserForPayload(user: User): PayloadUser {
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
+    private jwtService: JwtService
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -82,7 +81,7 @@ export class AuthService {
   encryptPassword(password: string) {
     const salt = randomBytes(16).toString('hex');
     const hash = pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString(
-      'hex',
+      'hex'
     );
 
     return {
@@ -97,7 +96,7 @@ export class AuthService {
       salt,
       10000,
       512,
-      'sha512',
+      'sha512'
     ).toString('hex');
 
     return passwordHash === hash;

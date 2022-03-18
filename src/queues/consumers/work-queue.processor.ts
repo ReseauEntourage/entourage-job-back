@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import {
   Processor,
   Process,
@@ -8,8 +9,8 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
-import { Jobs, Queues, SendMailJob } from '../queues.type';
-import { MailjetService } from '../../mails/mailjet.service';
+import { MailjetService } from 'src/mails/mailjet.service';
+import { Jobs, Queues, SendMailJob } from 'src/queues/queues.type';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
@@ -20,14 +21,14 @@ export class WorkQueueProcessor {
   onActive(job: Job) {
     const timeInQueue = job.processedOn - job.timestamp;
     console.log(
-      `Job ${job.id} of type ${job.name} has started after waiting for ${timeInQueue} ms`,
+      `Job ${job.id} of type ${job.name} has started after waiting for ${timeInQueue} ms`
     );
   }
 
   @OnQueueCompleted()
-  onCompleted(job: Job, result: any) {
+  onCompleted(job: Job, result: string) {
     console.log(
-      `Job ${job.id} of type ${job.name} completed with result : "${result}"`,
+      `Job ${job.id} of type ${job.name} completed with result : "${result}"`
     );
   }
 
@@ -35,7 +36,7 @@ export class WorkQueueProcessor {
   onFailed(job: Job, err: Error) {
     // TODO send error to socket to stop loading if preview or PDF
     console.error(
-      `Job ${job.id} of type ${job.name} failed with error : "${err}"`,
+      `Job ${job.id} of type ${job.name} failed with error : "${err}"`
     );
     console.error(job.data);
   }
@@ -53,7 +54,7 @@ export class WorkQueueProcessor {
   @Process()
   async process(job: Job<unknown>) {
     return `No process method for this job ${job.id} with data ${JSON.stringify(
-      job.data,
+      job.data
     )}`;
   }
 

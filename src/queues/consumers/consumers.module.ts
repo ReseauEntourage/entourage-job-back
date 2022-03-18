@@ -1,12 +1,12 @@
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 
-import { BullModule } from '@nestjs/bull';
-import { getBullWorkQueueOptions } from '../queues.type';
 import { MailsModule } from 'src/mails/mails.module';
+import { getBullWorkQueueOptions } from 'src/queues/queues.type';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
-  imports: [MailsModule, BullModule.registerQueue(getBullWorkQueueOptions())],
+  imports: [BullModule.registerQueue(getBullWorkQueueOptions()), MailsModule],
   providers: [WorkQueueProcessor],
   exports: [WorkQueueProcessor],
 })

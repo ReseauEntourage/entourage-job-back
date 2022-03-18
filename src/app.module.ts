@@ -1,24 +1,20 @@
+import { BullModule, BullModuleOptions } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 
-import { SequelizeModule } from '@nestjs/sequelize';
-
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './auth/jwt-auth.gard';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { BullModule, BullModuleOptions } from '@nestjs/bull';
-import { MailsModule } from './mails/mails.module';
+import { SequelizeModule } from '@nestjs/sequelize';
 import { SequelizeModuleOptions } from '@nestjs/sequelize/dist/interfaces/sequelize-options.interface';
-import { Queues } from './queues/queues.type';
-import { QueuesModule } from './queues/producers/queues.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AuthModule } from 'src/auth/auth.module';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.gard';
+import { UsersModule } from 'src/users/users.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
-const getParsedURI = (uri) => new URL(uri);
+const getParsedURI = (uri: string) => new URL(uri);
 
-export function getBullOptions(uri): BullModuleOptions {
+export function getBullOptions(uri: string): BullModuleOptions {
   const { port, hostname, password } = getParsedURI(uri);
   return {
     redis: {
@@ -33,7 +29,7 @@ export function getBullOptions(uri): BullModuleOptions {
   };
 }
 
-export function getSequelizeOptions(uri): SequelizeModuleOptions {
+export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   const { hostname, port, username, password, pathname } = getParsedURI(uri);
 
   return {

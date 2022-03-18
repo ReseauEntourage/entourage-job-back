@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
-import { Jobs, Queues } from '../queues/queues.type';
+import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
-import { User } from '../users/models/user.model';
 import * as _ from 'lodash';
+import { Jobs, Queues } from 'src/queues/queues.type';
+import { User } from 'src/users/models/user.model';
 
 export const MailjetTemplates = {
   ACCOUNT_CREATED: 3267718,

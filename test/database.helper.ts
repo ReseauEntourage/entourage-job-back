@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { User } from '../src/users/models/user.model';
-import { UserCandidat } from '../src/users/models/user-candidat.model';
-import { Attributes, DestroyOptions } from 'sequelize/types/model';
+import { DestroyOptions } from 'sequelize/types/model';
+import { UserCandidat } from 'src/users/models/user-candidat.model';
+import { User } from 'src/users/models/user.model';
 
 @Injectable()
 export class DatabaseHelper {
@@ -10,7 +10,7 @@ export class DatabaseHelper {
     @InjectModel(User)
     private userModel: User,
     @InjectModel(UserCandidat)
-    private userCandidatModel: UserCandidat,
+    private userCandidatModel: UserCandidat
   ) {}
 
   /**
@@ -36,15 +36,19 @@ export class DatabaseHelper {
    *
    * @param {function} factory an entity factory
    * @param {number} n the number of entities to create
+   * @param props
+   * @param args
    * @returns
    */
-  async createEntities(factory, n, props = {}, ...args) {
+  async createEntities<
+    F extends (props: Parameters<F>, ...args: Parameters<F>) => ReturnType<F>
+  >(factory: F, n: number, props: Parameters<F>, ...args: Parameters<F>) {
     return Promise.all(
       Array(n)
         .fill(0)
         .map(() => {
           return factory(props, ...args);
-        }),
+        })
     ).catch((e) => {
       return console.error(e);
     });

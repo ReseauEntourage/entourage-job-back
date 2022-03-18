@@ -1,7 +1,7 @@
-import { User } from '../../src/users/models/user.model';
-import { UserCandidat } from '../../src/users/models/user-candidat.model';
 import { InjectModel } from '@nestjs/sequelize';
-import { AuthService } from '../../src/auth/auth.service';
+import { AuthService } from 'src/auth/auth.service';
+import { UserCandidat } from 'src/users/models/user-candidat.model';
+import { User } from 'src/users/models/user.model';
 import { UserFactory } from './user.factory';
 
 export class UserHelper {
@@ -11,7 +11,7 @@ export class UserHelper {
     @InjectModel(UserCandidat)
     private userCandidatModel: UserCandidat,
     private authService: AuthService,
-    private userFactory: UserFactory,
+    private userFactory: UserFactory
   ) {}
 
   /**
@@ -24,12 +24,12 @@ export class UserHelper {
   async createLoggedInUser(
     props: Partial<User> = {},
     userCandidatProps: Partial<UserCandidat> = {},
-    insertInDB = true,
+    insertInDB = true
   ) {
     const user = await this.userFactory.create(
       props,
       userCandidatProps,
-      insertInDB,
+      insertInDB
     );
 
     const { token } = await this.authService.login(user);

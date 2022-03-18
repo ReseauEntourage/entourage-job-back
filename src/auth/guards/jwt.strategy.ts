@@ -1,8 +1,11 @@
-import { Strategy } from 'passport-jwt';
-import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy } from 'passport-jwt';
+import { PayloadUser } from 'src/auth/auth.service';
 
-const getTokenFromHeaders = (req) => {
+const getTokenFromHeaders = (
+  req: Request & { headers: Request['headers'] & { authorization: string } }
+) => {
   const {
     headers: { authorization },
   } = req;
@@ -23,7 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: { sub: string } & PayloadUser) {
     const { sub, ...restPayload } = payload;
     return { id: sub, ...restPayload };
   }

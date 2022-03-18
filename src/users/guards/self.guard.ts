@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { UserRoles } from 'src/users/models/user.model';
 import { SELF_KEY } from './self.decorator';
-import { UserRoles } from '../models/user.model';
 
 @Injectable()
 export class SelfGuard implements CanActivate {
@@ -10,7 +10,7 @@ export class SelfGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const selfIdKey = this.reflector.get<string>(
       SELF_KEY,
-      context.getHandler(),
+      context.getHandler()
     );
     if (!selfIdKey) {
       return false;

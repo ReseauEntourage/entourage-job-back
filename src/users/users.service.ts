@@ -1,16 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './models/user.model';
 import { InjectModel } from '@nestjs/sequelize';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UserAttribute } from './models/user.attribute';
 import { UserCandidatInclude } from './models/user.include';
+import { User } from './models/user.model';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User)
-    private userModel: User,
+    private userModel: User
   ) {}
 
   async create(createUserDto: Partial<User>) {

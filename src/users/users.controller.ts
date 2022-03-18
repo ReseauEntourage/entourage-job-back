@@ -8,12 +8,12 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './guards/roles.decorator';
+import { RolesGuard } from './guards/roles.guard';
 import { UserRoles } from './models/user.model';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {

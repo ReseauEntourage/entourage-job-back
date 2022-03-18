@@ -1,10 +1,11 @@
+// eslint-disable-next-line import/no-unresolved
+import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
-import { AuthService } from '../../src/auth/auth.service';
 import { InjectModel } from '@nestjs/sequelize';
-import { AdminZones, User, UserRoles } from '../../src/users/models/user.model';
-import { UserCandidat } from '../../src/users/models/user-candidat.model';
-import { faker } from '@faker-js/faker';
-import { UsersService } from '../../src/users/users.service';
+import { AuthService } from 'src/auth/auth.service';
+import { UserCandidat } from 'src/users/models/user-candidat.model';
+import { AdminZones, User, UserRoles } from 'src/users/models/user.model';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class UserFactory {
@@ -14,7 +15,7 @@ export class UserFactory {
     @InjectModel(UserCandidat)
     private userCandidatModel: UserCandidat,
     private authService: AuthService,
-    private usersService: UsersService,
+    private usersService: UsersService
   ) {}
 
   /**
@@ -25,7 +26,7 @@ export class UserFactory {
    */
   generateData(props: Partial<User>): Partial<User> {
     const { salt, hash } = this.authService.encryptPassword(
-      props.password ? props.password : faker.internet.password(),
+      props.password ? props.password : faker.internet.password()
     );
 
     return {
@@ -60,7 +61,7 @@ export class UserFactory {
   async create(
     props: Partial<User> = {},
     userCandidatProps: Partial<UserCandidat> = {},
-    insertInDB = true,
+    insertInDB = true
   ) {
     const userData = await this.generateData(props);
 
@@ -73,7 +74,7 @@ export class UserFactory {
             candidatId: userData.id,
           },
           individualHooks: true,
-        },
+        }
       );
       return this.usersService.findOneByMail(userData.email);
     }

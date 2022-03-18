@@ -159,7 +159,7 @@ export class User extends Model {
         {
           candidatId: user.id,
         },
-        { hooks: true },
+        { hooks: true }
       );
       // TODO
       /*await models.Share.create({
@@ -260,7 +260,7 @@ export class User extends Model {
           [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
             destroyedUser.id,
         },
-      },
+      }
     );
   }
 }

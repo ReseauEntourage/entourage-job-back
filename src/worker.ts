@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core';
-import { QueuesModule } from './queues/producers/queues.module';
 import { WorkerModule } from './worker.module';
 
 async function bootstrap() {

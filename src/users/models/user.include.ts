@@ -1,7 +1,7 @@
 import { UserCandidatAttribute } from './user-candidat.attribute';
-import { User } from './user.model';
-import { UserAttribute } from './user.attribute';
 import { UserCandidat } from './user-candidat.model';
+import { UserAttribute } from './user.attribute';
+import { User } from './user.model';
 
 export const UserCandidatInclude = [
   {
