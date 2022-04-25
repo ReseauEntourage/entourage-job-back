@@ -1,14 +1,14 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { CustomTestingModule } from 'test/custom-testing.module';
-import { DatabaseHelper } from 'test/database.helper';
-import { UserFactory } from 'test/users/user.factory';
-import { UserHelper } from 'test/users/user.helper';
 import { AuthController } from 'src/auth/auth.controller';
 import { getPartialUserForPayload, PayloadUser } from 'src/auth/auth.service';
 import { User, UserRoles } from 'src/users/models/user.model';
 import { APIResponse } from 'src/utils/types/utils';
+import { CustomTestingModule } from 'test/custom-testing.module';
+import { DatabaseHelper } from 'test/database.helper';
+import { UserFactory } from 'test/users/user.factory';
+import { UserHelper } from 'test/users/user.helper';
 import { AuthHelper } from './auth.helper';
 
 describe('Auth', () => {

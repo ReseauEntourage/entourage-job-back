@@ -79,6 +79,10 @@ module.exports = {
             pattern: 'src/**',
             group: 'parent',
           },
+          {
+            pattern: 'test/**',
+            group: 'parent',
+          },
         ],
       },
     ],
@@ -87,29 +91,6 @@ module.exports = {
     'arrow-body-style': 0,
     'no-console': [1, { allow: ['warn', 'error'] }],
     'no-multiple-empty-lines': [2, { max: 1 }], // prettier like
-    /*
-    'no-restricted-imports': [
-      'error',
-      {
-        patterns: [
-          'src/!*!/!*',
-          '!src/auth/!*',
-          'src/auth/!*!/!*',
-          '!src/mails/!*',
-          'src/mails/!*!/!*',
-          '!src/queues/!*',
-          'src/queues/!*!/!*',
-          '!src/users/!*',
-          'src/users/!*!/!*',
-          'test/!*!/!*',
-          '!test/users/!*',
-          'test/users/!*!/!*',
-          '!test/auth/!*',
-          'test/auth/!*!/!*',
-        ],
-      },
-    ],
-*/
     // max-len is enought
     'object-curly-newline': 0,
     // disable due to TypeScript params. More infos here: https://kendaleiv.com/typescript-constructor-assignment-public-and-private-keywords

@@ -6,9 +6,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { SequelizeModuleOptions } from '@nestjs/sequelize/dist/interfaces/sequelize-options.interface';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AuthModule } from 'src/auth/auth.module';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.gard';
-import { UsersModule } from 'src/users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.gard';
+import { UsersModule } from './users/users.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
