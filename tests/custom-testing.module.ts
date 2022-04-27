@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 
 import { AppModule } from 'src/app.module';
-import { AuthHelper } from 'test/auth/auth.helper';
-import { DatabaseHelper } from 'test/database.helper';
-import { UserFactory } from 'test/users/user.factory';
-import { UserHelper } from 'test/users/user.helper';
+import { AuthHelper } from './auth/auth.helper';
+import { DatabaseHelper } from './database.helper';
+import { UserFactory } from './users/user.factory';
+import { UserHelper } from './users/user.helper';
 
 @Module({
   imports: [AppModule],

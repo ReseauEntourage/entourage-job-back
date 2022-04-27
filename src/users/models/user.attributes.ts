@@ -1,4 +1,4 @@
-export const UserAttribute = [
+export const UserAttributes = [
   'id',
   'firstName',
   'lastName',
@@ -13,7 +13,7 @@ export const UserAttribute = [
   'deletedAt',
 ] as const;
 
-export type UserAttribute = typeof UserAttribute[number];
+export type UserAttribute = typeof UserAttributes[number];
 
 export const PublicUserAttributes = [
   'id',

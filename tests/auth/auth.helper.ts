@@ -10,21 +10,8 @@ export class AuthHelper {
     private authService: AuthService
   ) {}
 
-  /**
-   * Get the reset link, updated user and associated token
-   *
-   * @param {Object} user data
-   * @param {string} user.id
-   * @returns {Object} with three keys:
-   * - updatedUser
-   * - token
-   * - link
-   */
-  async getResetLinkAndUser(user: User) {
+  async getResetToken(user: User) {
     const { token } = await this.authService.generateResetToken(user);
-    return {
-      token,
-      link: `reset/${user.id}/${token}`,
-    };
+    return token;
   }
 }

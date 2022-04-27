@@ -73,7 +73,7 @@ export class AuthController {
   }
 
   @Public()
-  @Get('/reset/:userId/:token')
+  @Get('reset/:userId/:token')
   async checkReset(
     @Param('userId') userId: string,
     @Param('token') token: string
@@ -99,7 +99,7 @@ export class AuthController {
   }
 
   @Public()
-  @Post('/reset/:userId/:token')
+  @Post('reset/:userId/:token')
   async resetPassword(
     @Param('userId') userId: string,
     @Param('token') token: string,

@@ -11,19 +11,13 @@ import { UsersService } from 'src/users/users.service';
 export class UserFactory {
   constructor(
     @InjectModel(User)
-    private userModel: User,
+    private userModel: typeof User,
     @InjectModel(UserCandidat)
-    private userCandidatModel: UserCandidat,
+    private userCandidatModel: typeof UserCandidat,
     private authService: AuthService,
     private usersService: UsersService
   ) {}
 
-  /**
-   * Generate an oject which contains the data necessary
-   * to build a user.
-   * @param {Object} props Properties to use to create User
-   * @return An object to build the user from.
-   */
   generateData(props: Partial<User>): Partial<User> {
     const { salt, hash } = this.authService.encryptPassword(
       props.password ? props.password : faker.internet.password()
@@ -41,33 +35,25 @@ export class UserFactory {
       salt,
       phone: props.phone || faker.phone.phoneNumber(),
       address: props.address || faker.address.streetAddress(),
-      lastConnection: props.lastConnection || faker.date.past(),
+      lastConnection: props.lastConnection || new Date(),
       zone: props.zone || AdminZones.PARIS,
       hashReset: props.hashReset || faker.datatype.uuid(),
       saltReset: props.saltReset || faker.datatype.uuid(),
       coach: null,
       candidat: null,
-    } as User;
+    };
   }
 
-  /**
-   * Create a User in DB.
-   * @param {Object} props Properties to use to create User
-   * @param {Object} userCandidatProps Properties to use to create UserCandidat association
-   * @param {boolean} insertInDB @default true
-   * @return {Promise<User>} a user model,
-   * @optional if no DB insertion @returns generated user data
-   */
   async create(
     props: Partial<User> = {},
     userCandidatProps: Partial<UserCandidat> = {},
     insertInDB = true
-  ) {
+  ): Promise<User> {
     const userData = await this.generateData(props);
 
     if (insertInDB) {
       await this.usersService.create(userData);
-      await UserCandidat.update(
+      await this.userCandidatModel.update(
         { ...userCandidatProps },
         {
           where: {
@@ -76,8 +62,10 @@ export class UserFactory {
           individualHooks: true,
         }
       );
-      return this.usersService.findOneByMail(userData.email);
+      const createdUser = await this.usersService.findOne(userData.id);
+      return createdUser.toJSON();
     }
-    return User.build(userData);
+    const builtUser = await this.userModel.build(userData);
+    return builtUser.toJSON();
   }
 }

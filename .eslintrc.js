@@ -57,7 +57,7 @@ module.exports = {
     // See options: https://github.com/benmosher/eslint-plugin-import/blob/master/docs/rules/no-extraneous-dependencies.md#options
     'import/no-extraneous-dependencies': [
       'error',
-      { devDependencies: ['test/**/*', '**/*.spec.ts'] },
+      { devDependencies: ['tests/**/*', '**/*.spec.ts'] },
     ],
     // 'sort-imports': 2,
     'import/order': [
@@ -80,7 +80,7 @@ module.exports = {
             group: 'parent',
           },
           {
-            pattern: 'test/**',
+            pattern: 'tests/**',
             group: 'parent',
           },
         ],

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserAttribute } from './models/user.attribute';
+import { UserAttributes } from './models/user.attributes';
 import { UserCandidatInclude } from './models/user.include';
 import { User } from './models/user.model';
 
@@ -9,11 +9,11 @@ import { User } from './models/user.model';
 export class UsersService {
   constructor(
     @InjectModel(User)
-    private userModel: User
+    private userModel: typeof User
   ) {}
 
   async create(createUserDto: Partial<User>) {
-    return User.create(createUserDto, { hooks: true });
+    return this.userModel.create(createUserDto, { hooks: true });
   }
 
   findAll() {
@@ -21,28 +21,28 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    return User.findByPk(id, {
-      attributes: [...UserAttribute],
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
       include: UserCandidatInclude,
     });
   }
 
   async findOneByMail(email: string) {
-    return User.findOne({
+    return this.userModel.findOne({
       where: { email: email.toLowerCase() },
-      attributes: [...UserAttribute, 'salt', 'password'],
+      attributes: [...UserAttributes, 'salt', 'password'],
       include: UserCandidatInclude,
     });
   }
 
   async findOneComplete(id: string) {
-    return User.findByPk(id, {
+    return this.userModel.findByPk(id, {
       include: UserCandidatInclude,
     });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    const [updateCount] = await User.update(updateUserDto, {
+    const [updateCount] = await this.userModel.update(updateUserDto, {
       where: { id },
       individualHooks: true,
     });

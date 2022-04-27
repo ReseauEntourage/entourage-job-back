@@ -8,15 +8,11 @@ import { User } from 'src/users/models/user.model';
 export class DatabaseHelper {
   constructor(
     @InjectModel(User)
-    private userModel: User,
+    private userModel: typeof User,
     @InjectModel(UserCandidat)
-    private userCandidatModel: UserCandidat
+    private userCandidatModel: typeof UserCandidat
   ) {}
 
-  /**
-   * Drops all the tables content
-   *
-   */
   async resetTestDB() {
     const destroyOptions: DestroyOptions = {
       where: {},
@@ -24,22 +20,13 @@ export class DatabaseHelper {
       cascade: true,
     };
     try {
-      await UserCandidat.destroy(destroyOptions);
-      await User.destroy(destroyOptions);
+      await this.userCandidatModel.destroy(destroyOptions);
+      await this.userModel.destroy(destroyOptions);
     } catch (err) {
       console.error(err);
     }
   }
 
-  /**
-   * Create many entities using a factory
-   *
-   * @param {function} factory an entity factory
-   * @param {number} n the number of entities to create
-   * @param props
-   * @param args
-   * @returns
-   */
   async createEntities<
     F extends (props: Parameters<F>, ...args: Parameters<F>) => ReturnType<F>
   >(factory: F, n: number, props: Parameters<F>, ...args: Parameters<F>) {
