@@ -1,9 +1,7 @@
 import { randomBytes, pbkdf2Sync } from 'crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserAttribute } from 'src/users/models/user.attributes';
-import { User } from 'src/users/models/user.model';
-import { UsersService } from 'src/users/users.service';
+import { User, UserAttribute, UsersService } from 'src/users';
 
 export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
 

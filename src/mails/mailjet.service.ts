@@ -4,7 +4,7 @@ import { Queue } from 'bull';
 import _ from 'lodash';
 import { Email, connect } from 'node-mailjet';
 import { MailjetTemplate, MailjetTemplates } from 'src/mails/mails.service';
-import { Queues } from 'src/queues/queues.type';
+import { Queues } from 'src/queues';
 import SendParams = Email.SendParams;
 
 interface CustomMailParams {

@@ -4,8 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { ConsumersModule } from 'src/queues/consumers/consumers.module';
-import { Queues } from 'src/queues/queues.type';
+import { ConsumersModule, Queues } from 'src/queues';
 import { getBullOptions, getSequelizeOptions } from './app.module';
 
 @Module({

@@ -10,7 +10,7 @@ import {
 } from '@nestjs/bull';
 import { Job } from 'bull';
 import { MailjetService } from 'src/mails/mailjet.service';
-import { Jobs, Queues, SendMailJob } from 'src/queues/queues.type';
+import { Jobs, Queues, SendMailJob } from 'src/queues';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
