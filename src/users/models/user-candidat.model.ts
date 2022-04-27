@@ -12,6 +12,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+
 import { User } from './user.model';
 /*
   // lie un coach un utilisateur à son nouveau coach et délie un coach à son ancien user

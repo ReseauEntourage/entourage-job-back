@@ -14,10 +14,9 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { MailsService } from 'src/mails/mails.service';
 import { UsersService } from 'src/users/users.service';
-import { RequestWithUser } from 'src/utils/types/utils';
+import { RequestWithUser } from 'src/utils/types';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import { Public } from './guards/public.decorator';
+import { LocalAuthGuard, Public } from './guards';
 
 @Throttle(10, 60)
 @Controller('auth')

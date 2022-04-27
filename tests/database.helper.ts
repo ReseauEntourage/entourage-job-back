@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { UserCandidat } from 'src/users/models/user-candidat.model';
-import { User } from 'src/users/models/user.model';
+import { UserCandidat, User } from 'src/users';
 
 @Injectable()
 export class DatabaseHelper {

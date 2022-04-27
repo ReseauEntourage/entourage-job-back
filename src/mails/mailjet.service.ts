@@ -1,10 +1,7 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
 import _ from 'lodash';
 import { Email, connect } from 'node-mailjet';
 import { MailjetTemplate, MailjetTemplates } from 'src/mails/mails.service';
-import { Queues } from 'src/queues/queues.type';
 import SendParams = Email.SendParams;
 
 interface CustomMailParams {
@@ -23,7 +20,7 @@ interface CustomMailParams {
 export class MailjetService {
   private send: Email.PostResource;
 
-  constructor(@InjectQueue(Queues.WORK) private workQueue: Queue) {
+  constructor() {
     const mailjet = connect(
       `${process.env.MAILJET_PUB}`,
       `${process.env.MAILJET_SEC}`
