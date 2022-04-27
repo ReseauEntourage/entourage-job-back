@@ -65,7 +65,7 @@ export class AuthController {
       hashReset,
       saltReset,
       ...restProps
-    } = updatedUser.toJSON();
+    } = updatedUser;
 
     await this.mailsService.sendPasswordResetLinkMail(restProps, token);
 

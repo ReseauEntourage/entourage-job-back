@@ -51,7 +51,9 @@ export class UsersService {
       return null;
     }
 
-    return this.findOne(id);
+    const updatedUser = await this.findOne(id);
+
+    return updatedUser.toJSON();
   }
 
   remove(id: number) {
