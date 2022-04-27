@@ -1,3 +1,3 @@
-import { User } from 'src/users';
+import { User } from '../models';
 
 export class CreateUserDto extends User {}

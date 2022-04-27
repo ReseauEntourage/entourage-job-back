@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
 import { getPartialUserForPayload, PayloadUser } from 'src/auth/auth.service';
-import { Queues } from 'src/queues';
+import { Queues } from 'src/queues/queues.type';
 import { User, UserRoles } from 'src/users';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';

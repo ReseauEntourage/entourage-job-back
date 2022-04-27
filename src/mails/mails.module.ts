@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { QueuesModule } from 'src/queues';
+import { QueuesModule } from 'src/queues/producers';
 import { MailjetService } from './mailjet.service';
 import { MailsService } from './mails.service';
 
