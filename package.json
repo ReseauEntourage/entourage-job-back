@@ -21,7 +21,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./tests/jest-e2e.json"
+    "test:e2e": "jest --config ./tests/jest-e2e.json",
+    "db-create": "npx sequelize db:create",
+    "db-migrate": "npx sequelize db:migrate"
   },
   "dependencies": {
     "@nestjs/bull": "^0.5.3",
@@ -36,7 +38,9 @@
     "@nestjs/throttler": "^2.0.0",
     "bull": "^4.7.0",
     "check-password-strength": "^2.0.7",
+    "dotenv": "^16.0.1",
     "lodash": "^4.17.21",
+    "moment": "^2.29.4",
     "node-mailjet": "^3.3.7",
     "passport": "^0.5.2",
     "passport-jwt": "^4.0.0",
@@ -51,6 +55,7 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@babel/register": "^7.18.9",
     "@faker-js/faker": "^6.0.0",
     "@nestjs/cli": "^8.0.0",
     "@nestjs/schematics": "^8.0.0",

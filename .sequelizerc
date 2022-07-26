@@ -1,0 +1,15 @@
+const dev = process.env.NODE_ENV !== 'production';
+
+if (dev) {
+  require("@babel/register");
+}
+
+const path = require('path');
+
+const backendPath = __dirname + (dev ? '/src/db' : '/dist/db')
+
+module.exports = {
+  'config': path.resolve(backendPath + '/config', 'config.ts'),
+  'models-path': path.resolve(backendPath, 'models'),
+  'migrations-path': path.resolve(backendPath, 'migrations')
+}
