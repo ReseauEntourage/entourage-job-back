@@ -3,8 +3,9 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { AuthService } from 'src/auth/auth.service';
-import { UserCandidat, AdminZones, User, UserRoles } from 'src/users';
+import { UserCandidat, User, UserRoles } from 'src/users';
 import { UsersService } from 'src/users/users.service';
+import { AdminZones } from 'src/utils/types';
 
 @Injectable()
 export class UserFactory {

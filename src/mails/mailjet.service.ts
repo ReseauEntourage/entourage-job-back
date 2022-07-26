@@ -9,6 +9,7 @@ interface CustomMailParams {
     | string
     | string[]
     | { to: string | string[]; cc: string | string[]; bcc: string | string[] };
+  replyTo?: string;
   subject?: string;
   text?: string;
   html?: string;
@@ -31,6 +32,7 @@ export class MailjetService {
 
   createMail({
     toEmail,
+    replyTo,
     subject,
     text,
     html,
@@ -102,6 +104,11 @@ export class MailjetService {
         Name: `${process.env.MAILJET_FROM_NAME}`,
       },
       Subject: subject,
+      Headers: replyTo
+        ? {
+            'Reply-To': replyTo,
+          }
+        : undefined,
       ...recipients,
       ...content,
     };

@@ -6,7 +6,7 @@ export { UserCandidatAttributes } from './user-candidat.attributes';
 
 export type { UserCandidatAttribute } from './user-candidat.attributes';
 
-export { User, UserRoles, AdminZones, AdminRoles } from './user.model';
+export { User, UserRoles, AdminRoles } from './user.model';
 export { UserCandidat } from './user-candidat.model';
 
-export type { UserRole, AdminRole, AdminZone } from './user.model';
+export type { UserRole, AdminRole } from './user.model';

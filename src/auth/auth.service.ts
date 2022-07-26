@@ -56,26 +56,6 @@ export class AuthService {
     };
   }
 
-  async generateResetToken(user: User) {
-    const { token } = await this.login(user, '1d');
-
-    const { hash, salt } = this.encryptPassword(token);
-
-    const updatedUser = await this.usersService.update(user.id, {
-      hashReset: hash,
-      saltReset: salt,
-    });
-
-    if (!updatedUser) {
-      throw new NotFoundException();
-    }
-
-    return {
-      updatedUser,
-      token,
-    };
-  }
-
   encryptPassword(password: string) {
     const salt = randomBytes(16).toString('hex');
     const hash = pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString(
@@ -100,14 +80,61 @@ export class AuthService {
     return passwordHash === hash;
   }
 
-  isTokenValid(token: string) {
+  decodeJWT(token: string) {
     try {
-      this.jwtService.verify(token, {
+      return this.jwtService.verify(token, {
         secret: `${process.env.JWT_SECRET}`,
       });
-      return true;
     } catch (err) {
       return false;
     }
+  }
+
+  isValidResetToken(hashReset: string, saltReset: string, token: string) {
+    if (hashReset && saltReset) {
+      const { password } = this.decodeJWT(token);
+
+      if (password) {
+        return this.validatePassword(password, hashReset, saltReset);
+      }
+    }
+    return false;
+  }
+
+  generateRandomPasswordInJWT(expiration: string | number = '1d') {
+    const randomToken = randomBytes(128).toString('hex');
+    const { salt, hash } = this.encryptPassword(randomToken);
+
+    return {
+      salt,
+      hash,
+      jwtToken: this.jwtService.sign(
+        {
+          password: randomToken,
+        },
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: expiration || '1d',
+        }
+      ),
+    };
+  }
+
+  async generateResetToken(user: User) {
+    const { hash, salt, jwtToken } = this.generateRandomPasswordInJWT('1d');
+
+    const updatedUser = await this.usersService.update(user.id, {
+      hashReset: hash,
+      saltReset: salt,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return {
+      updatedUser,
+      token: jwtToken,
+    };
   }
 }

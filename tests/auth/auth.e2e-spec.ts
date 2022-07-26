@@ -233,8 +233,8 @@ describe('Auth', () => {
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidat.id}/${token}`)
             .send({
-              newPassword: 'newPassword',
-              confirmPassword: 'newPassword',
+              newPassword: 'newPassword123!',
+              confirmPassword: 'newPassword123!',
             });
         expect(response.status).toBe(201);
         expect(response.body).toMatchObject({
@@ -248,8 +248,20 @@ describe('Auth', () => {
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidat.id}/${token}`)
             .send({
+              newPassword: 'newPassword123!',
+              confirmPassword: 'Password123!',
+            });
+
+        expect(response.status).toBe(400);
+      });
+      it("Should return 400, if password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
+        const token = await authHelper.getResetToken(candidat);
+        const response: APIResponse<AuthController['resetPassword']> =
+          await request(app.getHttpServer())
+            .post(`${route}/reset/${candidat.id}/${token}`)
+            .send({
               newPassword: 'newPassword',
-              confirmPassword: 'Password',
+              confirmPassword: 'newPassword',
             });
 
         expect(response.status).toBe(400);
@@ -269,8 +281,8 @@ describe('Auth', () => {
           await request(app.getHttpServer())
             .post(`${route}/reset/${unknownUser.id}/${token}`)
             .send({
-              newPassword: 'newPassword',
-              confirmPassword: 'newPassword',
+              newPassword: 'newPassword123!',
+              confirmPassword: 'newPassword123!',
             });
         expect(response.status).toBe(401);
       });
@@ -280,8 +292,8 @@ describe('Auth', () => {
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidat.id}/${invalidToken}`)
             .send({
-              newPassword: 'newPassword',
-              confirmPassword: 'newPassword',
+              newPassword: 'newPassword123!',
+              confirmPassword: 'newPassword123!',
             });
         expect(response.status).toBe(401);
       });

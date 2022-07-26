@@ -54,7 +54,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
     ThrottlerModule.forRoot({
       ttl: 60,
-      limit: 10,
+      limit: 100,
     }),
     BullModule.forRoot(getBullOptions(process.env.REDIS_TLS_URL)),
     AuthModule,

@@ -4,6 +4,7 @@ import { Queue } from 'bull';
 import * as _ from 'lodash';
 import { Jobs, Queues } from 'src/queues';
 import { User } from 'src/users';
+import { getAdminMailsFromZone } from 'src/utils/misc';
 
 export const MailjetTemplates = {
   ACCOUNT_CREATED: 3267718,
@@ -29,9 +30,15 @@ export type MailjetTemplate =
 export class MailsService {
   constructor(@InjectQueue(Queues.WORK) private workQueue: Queue) {}
 
-  async sendPasswordResetLinkMail(user: Partial<User>, token: string) {
+  async sendPasswordResetLinkMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
+    token: string
+  ) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
+
     return this.workQueue.add(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      replyTo: candidatesAdminMail,
       templateId: MailjetTemplates.PASSWORD_RESET,
       variables: {
         ..._.omitBy(user, _.isNil),

@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { passwordStrength } from 'check-password-strength';
 import { MailsService } from 'src/mails/mails.service';
 import { UsersService } from 'src/users/users.service';
 import { RequestWithUser } from 'src/utils/types';
@@ -21,6 +22,8 @@ import { LocalAuthGuard, Public } from './guards';
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
+  // Controller calls only his service ?
+  // Or only the controller call other services ?
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
@@ -57,16 +60,18 @@ export class AuthController {
       user
     );
 
-    const {
-      password,
-      salt: unusedSalt,
-      revision,
-      hashReset,
-      saltReset,
-      ...restProps
-    } = updatedUser;
+    const { id, firstName, role, zone } = updatedUser;
 
-    await this.mailsService.sendPasswordResetLinkMail(restProps, token);
+    await this.mailsService.sendPasswordResetLinkMail(
+      {
+        id,
+        firstName,
+        role,
+        zone,
+        email,
+      },
+      token
+    );
 
     return;
   }
@@ -83,15 +88,14 @@ export class AuthController {
       throw new UnauthorizedException();
     }
 
-    const validPassword = this.authService.validatePassword(
-      token,
-      user.hashReset,
-      user.saltReset
+    const { hashReset, saltReset } = user;
+
+    const isValidResetToken = this.authService.isValidResetToken(
+      hashReset,
+      saltReset,
+      token
     );
-
-    const validToken = this.authService.isTokenValid(token);
-
-    if (!validPassword || !validToken) {
+    if (!isValidResetToken) {
       throw new UnauthorizedException();
     }
     return;
@@ -110,19 +114,20 @@ export class AuthController {
       throw new UnauthorizedException();
     }
 
-    if (
-      !(
-        user.hashReset &&
-        user.saltReset &&
-        this.authService.validatePassword(
-          token,
-          user.hashReset,
-          user.saltReset
-        ) &&
-        this.authService.isTokenValid(token)
-      )
-    ) {
+    const { hashReset, saltReset } = user;
+
+    const isValidResetToken = this.authService.isValidResetToken(
+      hashReset,
+      saltReset,
+      token
+    );
+
+    if (!isValidResetToken) {
       throw new UnauthorizedException();
+    }
+
+    if (passwordStrength(newPassword).id < 2) {
+      throw new BadRequestException();
     }
 
     if (newPassword !== confirmPassword) {

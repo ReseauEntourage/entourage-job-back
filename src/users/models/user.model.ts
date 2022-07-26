@@ -18,6 +18,7 @@ import {
 
 import { v4 as uuid } from 'uuid';
 import { UserCandidat } from './user-candidat.model';
+import { AdminZone } from 'src/utils/types/Departments';
 
 export const UserRoles = {
   CANDIDAT: 'Candidat',
@@ -32,15 +33,6 @@ export const AdminRoles = {
 } as const;
 
 export type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
-
-export const AdminZones = {
-  PARIS: 'PARIS',
-  LYON: 'LYON',
-  LILLE: 'LILLE',
-  HZ: 'HORS ZONE',
-} as const;
-
-export type AdminZone = typeof AdminZones[keyof typeof AdminZones];
 
 const Genders = {
   MALE: 0,
