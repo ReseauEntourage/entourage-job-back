@@ -10,12 +10,16 @@ import {
 } from '@nestjs/bull';
 import { Job } from 'bull';
 import { MailjetService } from 'src/mails';
-import { Jobs, Queues, SendMailJob } from 'src/queues';
+import { Jobs, Queues, SendMailJob, SendReminderCVJob } from 'src/queues';
+import { UsersService } from 'src/users';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {
-  constructor(private mailjetService: MailjetService) {}
+  constructor(
+    private mailjetService: MailjetService,
+    private usersService: UsersService
+  ) {}
 
   @OnQueueActive()
   onActive(job: Job) {
@@ -65,5 +69,32 @@ export class WorkQueueProcessor {
     return `Mail sent to '${JSON.stringify(data.toEmail)}' with template '${
       data.templateId
     }'`;
+  }
+
+  @Process(Jobs.REMINDER_CV_10)
+  async processSendReminderCV10(job: Job<SendReminderCVJob>) {
+    const { data } = job;
+    const sentToReminderCV10 = await this.usersService.sendReminderAboutCV(
+      data.candidatId
+    );
+    return sentToReminderCV10
+      ? `Reminder about CV after 10 days sent to '${
+          data.candidatId
+        }' (${JSON.stringify(sentToReminderCV10)})`
+      : `No reminder after 10 about CV sent to '${data.candidatId}'`;
+  }
+
+  @Process(Jobs.REMINDER_CV_20)
+  async processSendReminderCV20(job: Job<SendReminderCVJob>) {
+    const { data } = job;
+    const sentToReminderCV20 = await this.usersService.sendReminderAboutCV(
+      data.candidatId,
+      true
+    );
+    return sentToReminderCV20
+      ? `Reminder about CV after 20 days sent to '${
+          data.candidatId
+        }' (${JSON.stringify(sentToReminderCV20)})`
+      : `No reminder after 20 day about CV sent to '${data.candidatId}'`;
   }
 }

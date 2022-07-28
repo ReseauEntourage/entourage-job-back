@@ -77,7 +77,7 @@ export class MailsService {
     });
   }
 
-  async sendMailsAfterMatching(
+  async sendCvPreparationMail(
     candidate: User,
     toEmail: CustomMailParams['toEmail']
   ) {
@@ -98,34 +98,6 @@ export class MailsService {
           (process.env.CV_START_DELAY
             ? parseFloat(process.env.CV_START_DELAY)
             : 2) *
-          3600000 *
-          24,
-      }
-    );
-    await this.workQueue.add(
-      Jobs.REMINDER_CV_10,
-      {
-        candidatId: candidate.id,
-      },
-      {
-        delay:
-          (process.env.CV_10_REMINDER_DELAY
-            ? parseFloat(process.env.CV_10_REMINDER_DELAY)
-            : 10) *
-          3600000 *
-          24,
-      }
-    );
-    await this.workQueue.add(
-      Jobs.REMINDER_CV_20,
-      {
-        candidatId: candidate.id,
-      },
-      {
-        delay:
-          (process.env.CV_20_REMINDER_DELAY
-            ? parseFloat(process.env.CV_20_REMINDER_DELAY)
-            : 20) *
           3600000 *
           24,
       }

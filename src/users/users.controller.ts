@@ -1,7 +1,10 @@
-import { Controller, Get, Body, Patch, Param, Delete } from '@nestjs/common';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UsersService } from './users.service';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { MailsService } from '../mails';
+import { Roles } from './guards/roles.decorator';
+import { RolesGuard } from './guards/roles.guard';
+import { MemberFilterParams, UserRole, UserRoles } from './models/user.model';
 import { UserCandidatsService } from './user-candidats.service';
+import { UsersService } from './users.service';
 
 // TODO change to /users
 @Controller('user')
@@ -11,23 +14,27 @@ export class UsersController {
     private readonly userCandidatsService: UserCandidatsService
   ) {}
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @Get('members')
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  async findMembers(
+    @Param()
+    params: {
+      limit: number;
+      offset: number;
+      query: string;
+      role: UserRole | 'All';
+    } & MemberFilterParams
+  ) {
+    const order = [['firstName', 'ASC']];
+    const { limit, offset, role, query: search, ...restParams } = params;
+    await this.usersService.findAllMembers({
+      limit,
+      order,
+      offset,
+      search,
+      role,
+      ...restParams,
+    });
   }
 }

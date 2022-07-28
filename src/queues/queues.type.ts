@@ -26,10 +26,14 @@ export const Jobs = {
 export type Job = typeof Jobs[keyof typeof Jobs];
 
 export interface SendMailJob {
-  type: Job;
   toEmail: string;
   templateId: MailjetTemplate;
   variables: object;
+}
+
+export interface SendReminderCVJob {
+  candidatId: string;
+  is20Days: boolean;
 }
 
 export const Queues = {

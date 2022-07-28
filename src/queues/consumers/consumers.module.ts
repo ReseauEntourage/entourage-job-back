@@ -3,10 +3,15 @@ import { Module } from '@nestjs/common';
 
 import { MailsModule } from 'src/mails/mails.module';
 import { getBullWorkQueueOptions } from 'src/queues';
+import { UsersModule } from 'src/users';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
-  imports: [BullModule.registerQueue(getBullWorkQueueOptions()), MailsModule],
+  imports: [
+    BullModule.registerQueue(getBullWorkQueueOptions()),
+    UsersModule,
+    MailsModule,
+  ],
   providers: [WorkQueueProcessor],
   exports: [WorkQueueProcessor],
 })

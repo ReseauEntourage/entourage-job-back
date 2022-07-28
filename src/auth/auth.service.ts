@@ -1,11 +1,9 @@
 import { randomBytes, pbkdf2Sync } from 'crypto';
-import {
-  forwardRef,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Queue } from 'bull';
+import { Jobs, Queues } from '../queues';
 import { CustomMailParams, MailsService } from 'src/mails';
 import {
   CreateUserDto,
@@ -43,9 +41,10 @@ export class AuthService {
   constructor(
     private mailsService: MailsService,
     private jwtService: JwtService,
-    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
-    private userCandidatsService: UserCandidatsService
+    private userCandidatsService: UserCandidatsService,
+    @InjectQueue(Queues.WORK)
+    private workQueue: Queue
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -195,9 +194,38 @@ export class AuthService {
     if (coach) {
       toEmail.cc = coach.email;
     }
-    await this.mailsService.sendMailsAfterMatching(
+    await this.mailsService.sendCvPreparationMail(
       finalCandidate.toJSON(),
       toEmail
+    );
+
+    await this.workQueue.add(
+      Jobs.REMINDER_CV_10,
+      {
+        candidatId: candidateId,
+      },
+      {
+        delay:
+          (process.env.CV_10_REMINDER_DELAY
+            ? parseFloat(process.env.CV_10_REMINDER_DELAY)
+            : 10) *
+          3600000 *
+          24,
+      }
+    );
+    await this.workQueue.add(
+      Jobs.REMINDER_CV_20,
+      {
+        candidatId: candidateId,
+      },
+      {
+        delay:
+          (process.env.CV_20_REMINDER_DELAY
+            ? parseFloat(process.env.CV_20_REMINDER_DELAY)
+            : 20) *
+          3600000 *
+          24,
+      }
     );
   }
 

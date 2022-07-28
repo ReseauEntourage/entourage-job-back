@@ -35,6 +35,7 @@ describe('Auth', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    app.useLogger(['log', 'debug', 'warn', 'verbose', 'error']);
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
