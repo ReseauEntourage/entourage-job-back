@@ -5,18 +5,17 @@ import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtStrategy } from './guards/jwt.strategy';
-import { LocalStrategy } from './guards/local.strategy';
+import { JwtStrategy, LocalStrategy } from './guards';
 
 @Module({
   controllers: [AuthController],
   imports: [
-    UsersModule,
     PassportModule,
     JwtModule.register({
       secret: `${process.env.JWT_SECRET}`,
       signOptions: { expiresIn: '30d' },
     }),
+    UsersModule,
     MailsModule,
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],

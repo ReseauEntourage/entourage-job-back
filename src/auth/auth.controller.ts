@@ -1,6 +1,8 @@
+import { randomBytes } from 'crypto';
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   NotFoundException,
@@ -13,22 +15,90 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
-import { MailsService } from 'src/mails/mails.service';
-import { UsersService } from 'src/users/users.service';
+import { CreateUserDto, Roles, RolesGuard, UserRoles } from '../users';
+import { isValidPhone } from 'src/utils/misc';
 import { RequestWithUser } from 'src/utils/types';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard, Public } from './guards';
 
+function generateFakePassword() {
+  return randomBytes(16).toString('hex');
+}
+
+const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
+
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
-  // Controller calls only his service ?
-  // Or only the controller call other services ?
-  constructor(
-    private readonly authService: AuthService,
-    private readonly usersService: UsersService,
-    private readonly mailsService: MailsService
-  ) {}
+  constructor(private readonly authService: AuthService) {}
+
+  @Post()
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    if (createUserDto.phone && !isValidPhone(createUserDto.phone)) {
+      throw new BadRequestException();
+    }
+
+    const userRandomPassword = generateFakePassword();
+    const { hash, salt } = this.authService.encryptPassword(userRandomPassword);
+
+    const {
+      hash: hashReset,
+      salt: saltReset,
+      jwtToken,
+    } = this.authService.generateRandomPasswordInJWT('30d');
+
+    const userToCreate = {
+      ...createUserDto,
+      password: hash,
+      salt,
+      hashReset,
+      saltReset,
+    } as CreateUserDto;
+
+    try {
+      const createdUser = await this.authService.createUser(userToCreate);
+      const { id, firstName, role, zone, email } = createdUser.toJSON();
+
+      await this.authService.sendNewAccountMail(
+        {
+          id,
+          firstName,
+          role,
+          zone,
+          email,
+        },
+        jwtToken
+      );
+
+      if (userToCreate.userToCoach) {
+        let candidatId: string;
+        let coachId: string;
+
+        if (createdUser.role === UserRoles.COACH) {
+          candidatId = userToCreate.userToCoach;
+          coachId = createdUser.id;
+        }
+        if (createdUser.role === UserRoles.CANDIDAT) {
+          candidatId = createdUser.id;
+          coachId = userToCreate.userToCoach;
+        }
+
+        await this.authService.updateUserCandidatByCandidateId(candidatId, {
+          candidatId,
+          coachId,
+        });
+        await this.authService.sendMailsAfterMatching(candidatId);
+      }
+
+      return createdUser;
+    } catch (err) {
+      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+        throw new ConflictException();
+      }
+    }
+  }
 
   @Public()
   @UseGuards(LocalAuthGuard)
@@ -50,7 +120,7 @@ export class AuthController {
       throw new BadRequestException();
     }
 
-    const user = await this.usersService.findOneByMail(email);
+    const user = await this.authService.findOneUserByMail(email);
 
     if (!user) {
       throw new NotFoundException();
@@ -62,7 +132,7 @@ export class AuthController {
 
     const { id, firstName, role, zone } = updatedUser;
 
-    await this.mailsService.sendPasswordResetLinkMail(
+    await this.authService.sendPasswordResetLinkMail(
       {
         id,
         firstName,
@@ -82,7 +152,7 @@ export class AuthController {
     @Param('userId') userId: string,
     @Param('token') token: string
   ) {
-    const user = await this.usersService.findOneComplete(userId);
+    const user = await this.authService.findOneUserComplete(userId);
 
     if (!user) {
       throw new UnauthorizedException();
@@ -109,7 +179,7 @@ export class AuthController {
     @Body('newPassword') newPassword: string,
     @Body('confirmPassword') confirmPassword: string
   ) {
-    const user = await this.usersService.findOneComplete(userId);
+    const user = await this.authService.findOneUserComplete(userId);
     if (!user) {
       throw new UnauthorizedException();
     }
@@ -136,7 +206,7 @@ export class AuthController {
 
     const { hash, salt } = this.authService.encryptPassword(newPassword);
 
-    const userUpdated = await this.usersService.update(user.id, {
+    const userUpdated = await this.authService.updateUser(user.id, {
       password: hash,
       salt,
       hashReset: null,
@@ -154,7 +224,7 @@ export class AuthController {
   @Get('current')
   async getCurrent(@Request() req: RequestWithUser) {
     const { user } = req;
-    const updatedUser = await this.usersService.update(user.id, {
+    const updatedUser = await this.authService.updateUser(user.id, {
       lastConnection: new Date(),
     });
     if (!updatedUser) {

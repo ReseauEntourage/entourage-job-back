@@ -8,9 +8,19 @@ export const Jobs = {
   CACHE_CV: 'cache_cv',
   CACHE_ALL_CVS: 'cache_all_cvs',
   SEND_MAIL: 'send_mail',
+  SEND_SMS: 'send_sms',
   INSERT_AIRTABLE: 'insert_airtable',
   UPDATE_AIRTABLE: 'update_airtable',
+  CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY:
+    'create_or_update_salesforce_opportunity',
   REMINDER_OFFER: 'reminder_offer',
+  REMINDER_CV_10: 'reminder_cv_10',
+  REMINDER_CV_20: 'reminder_cv_20',
+  REMINDER_VIDEO: 'reminder_video',
+  REMINDER_INTERVIEW_TRAINING: 'reminder_interview_training',
+  REMINDER_ACTIONS: 'reminder_actions',
+  REMINDER_EXTERNAL_OFFERS: 'reminder_external_offers',
+  NO_RESPONSE_OFFER: 'no_response_offer',
 } as const;
 
 export type Job = typeof Jobs[keyof typeof Jobs];

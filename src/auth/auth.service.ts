@@ -1,7 +1,22 @@
 import { randomBytes, pbkdf2Sync } from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User, UserAttribute, UsersService } from 'src/users';
+import { CustomMailParams, MailsService } from 'src/mails';
+import {
+  CreateUserDto,
+  getRelatedUser,
+  UpdateUserCandidatDto,
+  UpdateUserDto,
+  User,
+  UserAttribute,
+  UsersService,
+} from 'src/users';
+import { UserCandidatsService } from 'src/users/user-candidats.service';
 
 export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
 
@@ -26,8 +41,11 @@ export function getPartialUserForPayload(user: User): PayloadUser {
 @Injectable()
 export class AuthService {
   constructor(
+    private mailsService: MailsService,
+    private jwtService: JwtService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
-    private jwtService: JwtService
+    private userCandidatsService: UserCandidatsService
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -136,5 +154,60 @@ export class AuthService {
       updatedUser,
       token: jwtToken,
     };
+  }
+
+  async createUser(createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  async findOneUserComplete(id: string) {
+    return this.usersService.findOneComplete(id);
+  }
+
+  async findOneUserByMail(email: string) {
+    return this.usersService.findOneByMail(email);
+  }
+
+  async sendNewAccountMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
+    token: string
+  ) {
+    return this.mailsService.sendNewAccountMail(user, token);
+  }
+
+  async sendPasswordResetLinkMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
+    token: string
+  ) {
+    return this.mailsService.sendPasswordResetLinkMail(user, token);
+  }
+
+  async sendMailsAfterMatching(candidateId: string) {
+    const finalCandidate = await this.usersService.findOne(candidateId);
+
+    const toEmail: CustomMailParams['toEmail'] = { to: finalCandidate.email };
+
+    const coach = getRelatedUser(finalCandidate);
+    if (coach) {
+      toEmail.cc = coach.email;
+    }
+    await this.mailsService.sendMailsAfterMatching(
+      finalCandidate.toJSON(),
+      toEmail
+    );
+  }
+
+  async updateUserCandidatByCandidateId(
+    candidateId: string,
+    updateUserCandidatDto: UpdateUserCandidatDto
+  ) {
+    return this.userCandidatsService.updateByCandidateId(
+      candidateId,
+      updateUserCandidatDto
+    );
   }
 }

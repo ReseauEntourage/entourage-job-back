@@ -14,17 +14,6 @@ import {
 } from 'sequelize-typescript';
 
 import { User } from './user.model';
-/*
-  // lie un coach un utilisateur à son nouveau coach et délie un coach à son ancien user
-  function clearCoachBindings(coachId: string) {
-    return UserCandidat.update(
-      { coachId: null },
-      {
-        where: { coachId },
-      },
-    );
-  }
-*/
 
 @Table({ tableName: 'User_Candidats' })
 export class UserCandidat extends Model {
@@ -80,6 +69,7 @@ export class UserCandidat extends Model {
   @BelongsTo(() => User, 'coachId')
   coach: User;
 
+  // TODO add CVs
   /*@HasMany(() => CV, {
       /!*sourceKey: 'candidatId',*!/
       foreignKey: 'UserId',
@@ -98,17 +88,21 @@ export class UserCandidat extends Model {
     )}`;
   }
 
-  /*@BeforeUpdate
-  static async beforeUpdate(userCandidat: UserCandidat) {
-    const nextData = userCandidat.dataValues;
-    const previousData = userCandidat._previousDataValues;
+  @BeforeUpdate
+  static async clearCoachBindings(nextUserCandidat: UserCandidat) {
+    const previousUserCandidatValues = nextUserCandidat.previous();
     if (
-      nextData &&
-      previousData &&
-      nextData.coachId &&
-      nextData.coachId !== previousData.coachId
+      nextUserCandidat &&
+      previousUserCandidatValues &&
+      nextUserCandidat.coachId &&
+      previousUserCandidatValues.coachId
     ) {
-      await clearCoachBindings(nextData.coachId);
+      await UserCandidat.update(
+        { coachId: null },
+        {
+          where: { coachId: nextUserCandidat.coachId },
+        }
+      );
     }
-  }*/
+  }
 }
