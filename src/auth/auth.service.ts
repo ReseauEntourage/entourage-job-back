@@ -3,8 +3,8 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Queue } from 'bull';
-import { Jobs, Queues } from '../queues';
 import { CustomMailParams, MailsService } from 'src/mails';
+import { Jobs, Queues } from 'src/queues';
 import {
   CreateUserDto,
   getRelatedUser,
@@ -13,8 +13,8 @@ import {
   User,
   UserAttribute,
   UsersService,
+  UserCandidatsService,
 } from 'src/users';
-import { UserCandidatsService } from 'src/users/user-candidats.service';
 
 export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
 

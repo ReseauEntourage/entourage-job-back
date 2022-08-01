@@ -6,9 +6,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { SequelizeModuleOptions } from '@nestjs/sequelize/dist/interfaces/sequelize-options.interface';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { AuthModule } from './auth/auth.module';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.gard';
-import { UsersModule } from './users/users.module';
+import { JwtAuthGuard, AuthModule } from './auth';
+import { BusinessLinesModule } from './businessLines';
+import { CVsModule } from './cvs';
+import { MailsModule } from './mails';
+import { UsersModule } from './users';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -59,6 +61,9 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     BullModule.forRoot(getBullOptions(process.env.REDIS_TLS_URL)),
     AuthModule,
     UsersModule,
+    CVsModule,
+    BusinessLinesModule,
+    MailsModule,
   ],
   providers: [
     {
@@ -70,6 +75,12 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       useClass: ThrottlerGuard,
     },
   ],
-  exports: [AuthModule, UsersModule],
+  exports: [
+    AuthModule,
+    UsersModule,
+    CVsModule,
+    BusinessLinesModule,
+    MailsModule,
+  ],
 })
 export class AppModule {}

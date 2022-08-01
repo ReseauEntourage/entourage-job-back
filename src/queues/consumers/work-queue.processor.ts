@@ -9,16 +9,16 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
+import { CVsService } from 'src/cvs';
 import { MailjetService } from 'src/mails';
 import { Jobs, Queues, SendMailJob, SendReminderCVJob } from 'src/queues';
-import { UsersService } from 'src/users';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
-    private usersService: UsersService
+    private cvsService: CVsService
   ) {}
 
   @OnQueueActive()
@@ -74,7 +74,7 @@ export class WorkQueueProcessor {
   @Process(Jobs.REMINDER_CV_10)
   async processSendReminderCV10(job: Job<SendReminderCVJob>) {
     const { data } = job;
-    const sentToReminderCV10 = await this.usersService.sendReminderAboutCV(
+    const sentToReminderCV10 = await this.cvsService.sendReminderAboutCV(
       data.candidatId
     );
     return sentToReminderCV10
@@ -87,7 +87,7 @@ export class WorkQueueProcessor {
   @Process(Jobs.REMINDER_CV_20)
   async processSendReminderCV20(job: Job<SendReminderCVJob>) {
     const { data } = job;
-    const sentToReminderCV20 = await this.usersService.sendReminderAboutCV(
+    const sentToReminderCV20 = await this.cvsService.sendReminderAboutCV(
       data.candidatId,
       true
     );

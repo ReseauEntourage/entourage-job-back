@@ -5,6 +5,7 @@ import {
   BeforeCreate,
   BeforeUpdate,
   Column,
+  DataType,
   Default,
   HasOne,
   IsEmail,
@@ -16,217 +17,10 @@ import {
   Unique,
 } from 'sequelize-typescript';
 
-import { v4 as uuid } from 'uuid';
-import { CvStatuses } from 'src/cvs';
-import { AdminZone, AdminZones } from 'src/utils/types';
+import { AdminZone } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
-
-export const UserRoles = {
-  CANDIDAT: 'Candidat',
-  COACH: 'Coach',
-  ADMIN: 'Admin',
-} as const;
-export type UserRole = typeof UserRoles[keyof typeof UserRoles];
-
-export const AdminRoles = {
-  CANDIDATS: 'Candidats',
-  ENTREPRISES: 'Entreprises',
-} as const;
-
-export type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
-
-const Genders = {
-  MALE: 0,
-  FEMALE: 1,
-} as const;
-
-type Gender = typeof Genders[keyof typeof Genders];
-
-const BusinessLineFilters = [
-  {
-    label: 'Logistique et approvisionnement',
-    value: 'la',
-    prefix: ['la', "l'"],
-  },
-  {
-    label: 'Assistanat et administratif',
-    value: 'aa',
-    prefix: ["l'", "l'"],
-  },
-  {
-    label: 'Bâtiment',
-    value: 'bat',
-    prefix: 'le',
-  },
-  {
-    label: 'Restauration et hôtellerie',
-    value: 'rh',
-    prefix: ['la', "l'"],
-  },
-  {
-    label: 'Commerce et distribution',
-    value: 'cd',
-    prefix: ['le', 'la'],
-  },
-  {
-    label: 'Aide et service à la personne',
-    value: 'asp',
-    prefix: ["l'", 'le'],
-  },
-  {
-    label: 'Propreté',
-    value: 'pr',
-    prefix: 'la',
-  },
-  {
-    label: 'Maintenance et industrie',
-    value: 'mi',
-    prefix: ['la', "l'"],
-  },
-  {
-    label: 'Artisanat',
-    value: 'art',
-    prefix: "l'",
-  },
-  {
-    label: 'Transport',
-    value: 'tra',
-    prefix: 'le',
-  },
-  {
-    label: 'Informatique et digital',
-    value: 'id',
-    prefix: ["l'", 'le'],
-  },
-  {
-    label: 'Sécurité',
-    value: 'sec',
-    prefix: 'la',
-  },
-  {
-    label: 'Communication et marketing',
-    value: 'cm',
-    prefix: ['la', 'le'],
-  },
-  {
-    label: 'Culture et art',
-    value: 'ca',
-    prefix: ['la', "l'"],
-  },
-  {
-    label: 'Agriculture et espaces verts',
-    value: 'aev',
-    prefix: ["l'", 'les'],
-  },
-  {
-    label: 'Social et associatif',
-    value: 'sa',
-    prefix: ['le', 'la'],
-  },
-  {
-    label: 'Direction financière, juridique et ressources humaines',
-    value: 'fjr',
-    prefix: ['la', 'les'],
-  },
-] as const;
-
-export type BusinessLineFilter = typeof BusinessLineFilters[number];
-
-export const MemberFilters = [
-  {
-    key: 'zone',
-    constants: AdminZones,
-    title: 'Zone',
-  },
-  {
-    key: 'businessLines',
-    constants: BusinessLineFilters,
-    title: 'Métiers',
-  },
-  {
-    key: 'associatedUser',
-    constants: [
-      { label: 'Binôme en cours', value: true },
-      { label: 'Sans binôme', value: false },
-    ],
-    title: 'Membre associé',
-  },
-  {
-    key: 'hidden',
-    constants: [
-      { label: 'CV masqués', value: true },
-      { label: 'CV visibles', value: false },
-    ],
-    title: 'CV masqué',
-  },
-  {
-    key: 'employed',
-    constants: [
-      { label: 'En emploi', value: true },
-      { label: "Recherche d'emploi", value: false },
-    ],
-    title: 'En emploi',
-  },
-  {
-    key: 'cvStatus',
-    constants: [
-      CvStatuses.Published,
-      CvStatuses.Pending,
-      CvStatuses.Progress,
-      CvStatuses.New,
-    ],
-    title: 'Statut du CV',
-  },
-] as const;
-
-export type MemberFilter = typeof MemberFilters[number];
-
-export type MemberFilterKey = MemberFilter['key'];
-type MemberFilterConstant = MemberFilter['constants'];
-
-export type MemberFilterParams = Record<MemberFilterKey, MemberFilterConstant>;
-
-function generateUrl(user: User) {
-  return `${user.firstName.toLowerCase()}-${user.id.substring(0, 8)}`;
-}
-
-function capitalizeNameAndTrim(name: string) {
-  if (!name) {
-    // we need to keep its value if its '', null or undefined
-    return name;
-  }
-
-  let capitalizedName = name
-    .toString()
-    .toLowerCase()
-    .split(' ')
-    .map((s) => {
-      return s.charAt(0).toUpperCase() + s.substring(1);
-    })
-    .join(' ');
-
-  capitalizedName = capitalizedName
-    .split('-')
-    .map((s) => {
-      return s.charAt(0).toUpperCase() + s.substring(1);
-    })
-    .join('-');
-
-  return capitalizedName.trim().replace(/\s\s+/g, ' ');
-}
-
-export function getRelatedUser(member: User) {
-  if (member) {
-    if (member.candidat && member.candidat.coach) {
-      return member.candidat.coach;
-    }
-    if (member.coach && member.coach.candidat) {
-      return member.coach.candidat;
-    }
-  }
-
-  return null;
-}
+import { AdminRole, Gender, Genders, UserRole, UserRoles } from './user.types';
+import { capitalizeNameAndTrim, generateUrl } from './user.utils';
 
 //TODO : paranoid, papertrail
 
@@ -234,6 +28,7 @@ export function getRelatedUser(member: User) {
 export class User extends Model {
   @IsUUID(4)
   @PrimaryKey
+  @Default(DataType.UUIDV4)
   @Column
   id: string;
 
@@ -316,11 +111,6 @@ export class User extends Model {
   // si coach regarder coach
   @HasOne(() => UserCandidat, 'coachId')
   coach: UserCandidat;
-
-  @BeforeCreate
-  static generateId(user: User) {
-    user.id = uuid();
-  }
 
   @BeforeCreate
   @BeforeUpdate

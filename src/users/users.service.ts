@@ -1,162 +1,37 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
-import { col, Op, where } from 'sequelize';
-import { CustomMailParams, MailjetService, MailsService } from 'src/mails';
-import { Jobs, Queues } from 'src/queues';
-import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
+import { Op, WhereOptions } from 'sequelize';
+import { FindOptions, Order } from 'sequelize/types/model';
+import { BusinessLine } from '../businessLines';
+import { getFiltersObjectsFromQueryParams } from '../utils/misc';
+import { AdminZone, FilterParams } from '../utils/types';
+import { CV, CVStatuses } from 'src/cvs';
 import { UpdateUserDto } from './dto';
-import { UserCandidat, UserCandidatAttributes, UserAttributes } from './models';
-import { UserCandidatInclude } from './models/user.include';
 import {
-  BusinessLineFilter,
-  getRelatedUser,
-  MemberFilter,
-  MemberFilterParams,
-  MemberFilters,
+  UserAttributes,
   User,
   UserRole,
   UserRoles,
-} from './models/user.model';
+  UserCandidat,
+  UserCandidatAttributes,
+  MemberFilters,
+  MemberFilterKey,
+} from './models';
+import { UserCandidatInclude } from './models/user.include';
 
-/*
-function getMemberOptions(filtersObj) {
-  const whereOptions = {};
-
-  if (filtersObj) {
-    const keys = Object.keys(filtersObj);
-
-    if (keys.length > 0) {
-      const totalFilters = keys.reduce((acc, curr) => {
-        return acc + filtersObj[curr].length;
-      }, 0);
-
-      if (totalFilters > 0) {
-        for (let i = 0; i < keys.length; i += 1) {
-          if (filtersObj[keys[i]].length > 0) {
-            if (
-              keys[i] === MemberFilters[3].key ||
-              keys[i] === MemberFilters[4].key
-            ) {
-              whereOptions[keys[i]] = {
-                [Op.or]: filtersObj[keys[i]].map(
-                  (currentFilter: MemberFilter) => {
-                    return currentFilter.value;
-                  }
-                ),
-              };
-            } else if (keys[i] === MemberFilters[2].key) {
-              // These options don't work
-              whereOptions[keys[i]] = {
-                coach: filtersObj[keys[i]].map(
-                  (currentFilter: MemberFilter) => {
-                    return where(
-                      col(`coach.candidatId`),
-                      currentFilter.value ? Op.is : Op.not,
-                      null
-                    );
-                  }
-                ),
-                candidat: filtersObj[keys[i]].map(
-                  (currentFilter: MemberFilter) => {
-                    return where(
-                      col(`candidat.coachId`),
-                      currentFilter.value ? Op.is : Op.not,
-                      null
-                    );
-                  }
-                ),
-              };
-            } else {
-              whereOptions[keys[i]] = {
-                [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                  return currentFilter.value;
-                }),
-              };
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return whereOptions;
-}
-
-function filterMembersByCVStatus(members, status) {
-  let filteredList = members;
-
-  if (members && status) {
-    filteredList = members.filter((member) => {
-      return status.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          return currentFilter.value === member.candidat.cvs[0].status;
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
-function filterMembersByBusinessLines(
-  members: Array<User>,
-  businessLines: Array<BusinessLineFilter>
-) {
-  let filteredList = members;
-
-  if (members && businessLines && businessLines.length > 0) {
-    filteredList = members.filter((member: User) => {
-      return businessLines.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          const cvBusinessLines = member.candidat.cvs[0].businessLines;
-          return (
-            cvBusinessLines &&
-            cvBusinessLines.length > 0 &&
-            cvBusinessLines
-              .map(({ name }: { name: BusinessLineFilter['name'] }) => {
-                return name;
-              })
-              .includes(currentFilter.value)
-          );
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
-function filterMembersByAssociatedUser(members, associatedUsers) {
-  let filteredList = members;
-
-  if (members && associatedUsers && associatedUsers.length > 0) {
-    filteredList = members.filter((member) => {
-      return associatedUsers.some((currentFilter) => {
-        const candidate = getCandidateFromCoachOrCandidate(member);
-        const relatedUser = getRelatedUser(member);
-        if (!candidate) {
-          return !currentFilter.value;
-        }
-        return !!relatedUser === currentFilter.value;
-      });
-    });
-  }
-
-  return filteredList;
-}
-*/
+import {
+  filterMembersByAssociatedUser,
+  filterMembersByBusinessLines,
+  filterMembersByCVStatus,
+  getMemberOptions,
+  userSearchQuery,
+} from './models/user.utils';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User)
-    private userModel: typeof User,
-    private mailsService: MailsService,
-    private mailjetService: MailjetService
+    private userModel: typeof User
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -168,13 +43,13 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      order: string[][];
+      order: Order;
       role: UserRole | 'All';
-    } & MemberFilterParams
+    } & FilterParams<MemberFilterKey>
   ) {
     const { limit, offset, role, search, order, ...restParams } = params;
 
-    /*const filtersObj = getFiltersObjectsFromQueryParams(
+    const filtersObj = getFiltersObjectsFromQueryParams<MemberFilterKey>(
       restParams,
       MemberFilters
     );
@@ -185,12 +60,12 @@ export class UsersService {
     // The associatedUser options don't work that's why we take it out of the filters
     const filterOptions = getMemberOptions(restFilters);
 
-    const options = {
+    const options: FindOptions = {
       order,
       where: {
         role: { [Op.not]: UserRoles.ADMIN },
       },
-      attributes: UserAttributes,
+      attributes: [...UserAttributes],
       include: UserCandidatInclude,
     };
 
@@ -222,7 +97,7 @@ export class UsersService {
       };
     }
 
-    const userCandidatOptions = {};
+    const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
       (role === UserRoles.CANDIDAT || role === 'All') &&
       (filterOptions.hidden || filterOptions.employed)
@@ -243,14 +118,14 @@ export class UsersService {
     }
 
     // TODO filter associated users in query
-    /!*
+    /*
       if (filterOptions.associatedUser) {
         userCandidatOptions.where = {
           ...(userCandidatOptions.where || {}),
           ...filterOptions.associatedUser.candidat,
         };
       }
-    *!/
+    */
 
     // recuperer la derniere version de cv
     options.include = [
@@ -276,7 +151,7 @@ export class UsersService {
           {
             model: User,
             as: 'coach',
-            attributes: UserAttributes,
+            attributes: [...UserAttributes],
           },
         ],
         order: [['cvs.version', 'DESC']],
@@ -289,13 +164,13 @@ export class UsersService {
           {
             model: User,
             as: 'candidat',
-            attributes: UserAttributes,
+            attributes: [...UserAttributes],
           },
         ],
       },
     ];
 
-    const members = await User.findAll(options);
+    const members = await this.userModel.findAll(options);
 
     const filteredMembersByAssociatedUser = filterMembersByAssociatedUser(
       members,
@@ -305,7 +180,7 @@ export class UsersService {
     const membersWithLastCV = filteredMembersByAssociatedUser.map((member) => {
       const user = member.toJSON();
       if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
-        const sortedCvs = user.candidat.cvs.sort((cv1, cv2) => {
+        const sortedCvs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
           return cv2.version - cv1.version;
         });
         return {
@@ -334,21 +209,78 @@ export class UsersService {
 
     if (hasFilterOptions && (offset || limit)) {
       if (offset && limit) {
-        const intOffset = parseInt(offset, 10);
-        const intLimit = parseInt(limit, 10);
-        return finalFilteredMembers.slice(intOffset, intOffset + intLimit);
+        return finalFilteredMembers.slice(offset, limit + limit);
       }
       if (offset) {
-        const intOffset = parseInt(offset, 10);
-        return finalFilteredMembers.slice(intOffset);
+        return finalFilteredMembers.slice(offset);
       }
       if (limit) {
-        const intLimit = parseInt(limit, 10);
-
-        return finalFilteredMembers.slice(0, intLimit);
+        return finalFilteredMembers.slice(0, limit);
       }
     }
-    return finalFilteredMembers;*/
+    return finalFilteredMembers;
+  }
+
+  async countSubmittedCVMembers(zone: AdminZone) {
+    const whereOptions: WhereOptions<CV> = zone
+      ? ({ zone } as WhereOptions<CV>)
+      : {};
+
+    const options: FindOptions = {
+      where: {
+        ...whereOptions,
+        role: UserRoles.CANDIDAT,
+      },
+      attributes: [...UserAttributes],
+      include: UserCandidatInclude,
+    };
+
+    // recuperer la derniere version de cv
+    options.include = [
+      {
+        model: UserCandidat,
+        as: 'candidat',
+        attributes: ['coachId', ...UserCandidatAttributes],
+        include: [
+          {
+            model: CV,
+            as: 'cvs',
+            attributes: ['version', 'status', 'urlImg'],
+          },
+          {
+            model: User,
+            as: 'coach',
+            attributes: [...UserAttributes],
+          },
+        ],
+        order: [['cvs.version', 'DESC']],
+      },
+    ];
+
+    const members = await this.userModel.findAll(options);
+
+    const membersWithLastCV = members.map((member) => {
+      const user = member.toJSON();
+      if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
+        const sortedCvs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
+          return cv2.version - cv1.version;
+        });
+        return {
+          ...user,
+          candidat: {
+            ...user.candidat,
+            cvs: [sortedCvs[0]],
+          },
+        };
+      }
+      return user;
+    });
+
+    return {
+      pendingCVs: filterMembersByCVStatus(membersWithLastCV, [
+        CVStatuses.Pending,
+      ]).length,
+    };
   }
 
   async findOne(id: string) {
@@ -386,136 +318,4 @@ export class UsersService {
 
     return updatedUser.toJSON();
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
-
-  // TODO call MailjetService through MailsService
-
-
-  async sendReminderAboutCV(candidateId: string, is20Days = false) {
-    // TODO when CV
-    /*const firstOfMarch2022 = '2022-03-01';
-    const user = await this.findOne(candidateId);
-    if (
-      moment(user.createdAt).isAfter(moment(firstOfMarch2022, 'YYYY-MM-DD'))
-    ) {
-      const cvs = await getAllUserCVsVersions(candidateId);
-      if (cvs && cvs.length > 0) {
-        const hasSubmittedAtLeastOnce = cvs.some(
-          ({ status }: { status: CvStatus }) => {
-            return status === CvStatuses.Pending;
-          }
-        );
-
-        if (!hasSubmittedAtLeastOnce) {
-          const toEmail: CustomMailParams['toEmail'] = {
-            to: user.email,
-          };
-          const coach = getRelatedUser(user);
-          if (coach) {
-            toEmail.cc = coach.email;
-          }
-          const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
-
-          await this.mailjetService.sendMail({
-            toEmail,
-            templateId: is20Days
-              ? MailjetTemplates.CV_REMINDER_20
-              : MailjetTemplates.CV_REMINDER_10,
-            replyTo: candidatesAdminMail,
-            variables: {
-              ..._.omitBy(user.toJSON(), _.isNil),
-            },
-          });
-          return toEmail;
-        }
-      }
-    }
-    return false;
-  }*/
-
-  /*
-  async sendReminderIfNotEmployed(
-    candidateId: string,
-    templateId: MailjetTemplate
-  ) {
-    const user = await this.findOne(candidateId);
-    if (!user.candidat.employed) {
-      const toEmail: CustomMailParams['toEmail'] = {
-        to: user.email,
-      };
-      const coach = getRelatedUser(user);
-      if (coach) {
-        toEmail.cc = coach.email;
-      }
-      const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
-
-      await this.mailjetService.sendMail({
-        toEmail,
-        templateId: templateId,
-        replyTo: candidatesAdminMail,
-        variables: {
-          ..._.omitBy(user.toJSON(), _.isNil),
-        },
-      });
-      return toEmail;
-    }
-    return false;
-  }
-
-  async sendReminderAboutInterviewTraining(candidateId: string) {
-    return this.sendReminderIfNotEmployed(
-      candidateId,
-      MailjetTemplates.INTERVIEW_TRAINING_REMINDER
-    );
-  }
-
-  async sendReminderAboutVideo(candidateId: string) {
-    return this.sendReminderIfNotEmployed(
-      candidateId,
-      MailjetTemplates.VIDEO_REMINDER
-    );
-  }
-
-  async sendReminderAboutActions(candidateId: string) {
-    return this.sendReminderIfNotEmployed(
-      candidateId,
-      MailjetTemplates.ACTIONS_REMINDER
-    );
-  }
-
-  async sendReminderAboutExternalOffers(candidateId: string) {
-    const user = await getUser(candidateId);
-    if (!user.candidat.employed) {
-      const toEmail: CustomMailParams['toEmail'] = {
-        to: user.email,
-      };
-
-      let opportunitiesCreatedByCandidateOrCoach =
-        await getExternalOpportunitiesCreatedByUserCount(candidateId);
-
-      const coach = getRelatedUser(user);
-      if (coach) {
-        toEmail.cc = coach.email;
-        opportunitiesCreatedByCandidateOrCoach +=
-          await getExternalOpportunitiesCreatedByUserCount(coach.id);
-      }
-      const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
-
-      if (opportunitiesCreatedByCandidateOrCoach === 0) {
-        await this.mailjetService.sendMail({
-          toEmail,
-          templateId: MailjetTemplates.EXTERNAL_OFFERS_REMINDER,
-          replyTo: candidatesAdminMail,
-          variables: {
-            ..._.omitBy(user.toJSON(), _.isNil),
-          },
-        });
-        return toEmail;
-      }
-    }
-    return false;
-  }*/
 }

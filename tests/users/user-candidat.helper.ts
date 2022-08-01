@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { AuthService } from 'src/auth';
 import { User, UserCandidat } from 'src/users';
 import { UserFactory } from './user.factory';
@@ -7,7 +8,9 @@ import { UserFactory } from './user.factory';
 export class UserCandidatHelper {
   constructor(
     private authService: AuthService,
-    private userFactory: UserFactory
+    private userFactory: UserFactory,
+    @InjectModel(UserCandidat)
+    private userCandidatModel: typeof UserCandidat
   ) {}
 
   async associateCoachAndCandidat(
@@ -22,7 +25,7 @@ export class UserCandidatHelper {
       ? { user: candidat }
       : await this.authService.login(candidat);
 
-    await UserCandidat.update(
+    await this.userCandidatModel.update(
       {
         candidatId: candidatCredentials.user.id,
         coachId: coachCredentials.user.id,
@@ -35,7 +38,7 @@ export class UserCandidatHelper {
   }
 
   async getCandidatUrl(id: string) {
-    const userCandidat = await UserCandidat.findOne({
+    const userCandidat = await this.userCandidatModel.findOne({
       where: { candidatId: id },
       attributes: ['url'],
     });

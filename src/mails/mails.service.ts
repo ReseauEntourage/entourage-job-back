@@ -41,7 +41,10 @@ export type MailjetTemplate =
 
 @Injectable()
 export class MailsService {
-  constructor(@InjectQueue(Queues.WORK) private workQueue: Queue) {}
+  constructor(
+    @InjectQueue(Queues.WORK)
+    private workQueue: Queue
+  ) {}
 
   async sendPasswordResetLinkMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,

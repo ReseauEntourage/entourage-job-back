@@ -7,12 +7,14 @@ import {
   DataType,
   Default,
   ForeignKey,
+  HasMany,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
 
+import { CV } from 'src/cvs';
 import { User } from './user.model';
 
 @Table({ tableName: 'User_Candidats' })
@@ -69,12 +71,11 @@ export class UserCandidat extends Model {
   @BelongsTo(() => User, 'coachId')
   coach: User;
 
-  // TODO add CVs
-  /*@HasMany(() => CV, {
-      /!*sourceKey: 'candidatId',*!/
-      foreignKey: 'UserId',
-    })
-  cvs: CV[];*/
+  @HasMany(() => CV, {
+    sourceKey: 'candidatId',
+    foreignKey: 'UserId',
+  })
+  cvs: CV[];
 
   @BeforeCreate
   @BeforeUpdate

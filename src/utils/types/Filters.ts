@@ -1,11 +1,20 @@
-import { AnyCantFix } from './utils';
+import { AnyToFix } from './utils';
 
-export type FilterConstant = { label: string; value: AnyCantFix };
+export type Filters<T> = Filter<T>[];
 
-export type Filter = {
-  key: string;
+export interface Filter<K> {
+  key: K;
+  constants: FilterConstant<AnyToFix>[];
   title: string;
-  constants: Array<FilterConstant>;
-};
+}
 
-export type FilterParams = Record<string, Array<FilterConstant>>;
+export interface FilterConstant<T> {
+  value: T;
+  label: string;
+}
+
+export type FilterObject<K extends string> = Partial<
+  Record<K, FilterConstant<AnyToFix>[]>
+>;
+
+export type FilterParams<K extends string> = Partial<Record<K, string[]>>;

@@ -1,3 +1,5 @@
-export { CvStatuses } from './cv.model';
+export { CVStatuses, CVStatusFilters } from './cv.types';
+export type { CVStatusValue, CVStatusKey } from './cv.types';
 
-export type { CvStatus } from './cv.model';
+export { CV } from './cv.model';
+export { CVBusinessLine } from './cv-businessLine.model';
