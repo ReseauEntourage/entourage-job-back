@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // eslint-disable-next-line import/no-unresolved
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
@@ -6,6 +7,7 @@ import * as _ from 'lodash';
 import { Model } from 'sequelize';
 import { BusinessLine } from 'src/businessLines';
 import { CV, CVStatuses, CVStatusKey } from 'src/cvs';
+import { Location } from 'src/locations';
 
 const getCvStatusValues = (cvStatus: typeof CVStatuses) => {
   return Object.keys(cvStatus).map((status) => {
@@ -13,7 +15,7 @@ const getCvStatusValues = (cvStatus: typeof CVStatuses) => {
   });
 };
 
-type ComponentKeys = 'businessLine';
+type ComponentKeys = 'businessLine' | 'location';
 
 type PluralComponentKeys = `${ComponentKeys}s`;
 
@@ -31,6 +33,8 @@ export class CVFactory {
   constructor(
     @InjectModel(CV)
     private cvModel: typeof CV,
+    @InjectModel(Location)
+    private locationModel: typeof Location,
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine
   ) {}
@@ -68,9 +72,15 @@ export class CVFactory {
       const cvDB: CV = await this.cvModel.create(cvFull);
 
       _.forEach(Object.keys(components), async (componentKey) => {
-        const injectedModel =
-          this[`${componentKey.slice(0, -1)}Model` as InjectedModels];
+        const injectedModelName = `${componentKey.slice(
+          0,
+          -1
+        )}Model` as InjectedModels;
 
+        // TODO how to
+        const injectedModel = this[injectedModelName];
+
+        // @ts-ignore
         if (Object.keys(injectedModel.getAttributes()).includes('CVId')) {
           // TODO after skills
           /*
@@ -107,15 +117,21 @@ export class CVFactory {
           const instances = await Promise.all(
             components[componentKey as ComponentKey].map((component) => {
               if (_.isString(component)) {
+                // @ts-ignore
                 return injectedModel.create({
                   name: component,
                 });
               } else {
+                // @ts-ignore
                 return injectedModel.create(component as Partial<Model>);
               }
             })
           );
-          await cvDB.$add(componentKey, instances);
+          try {
+            await cvDB.$add(componentKey, instances);
+          } catch (err) {
+            console.error(err);
+          }
         }
       });
       // TODO after CV_SEARCH

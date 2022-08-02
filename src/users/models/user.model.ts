@@ -5,8 +5,10 @@ import {
   BeforeCreate,
   BeforeUpdate,
   Column,
+  CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   HasOne,
   IsEmail,
   IsUUID,
@@ -15,6 +17,7 @@ import {
   PrimaryKey,
   Table,
   Unique,
+  UpdatedAt,
 } from 'sequelize-typescript';
 
 import { AdminZone } from 'src/utils/types';
@@ -94,6 +97,15 @@ export class User extends Model {
   @AllowNull(true)
   @Column
   zone: AdminZone;
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
 
   /*
   @BelongsToMany(() => Opportunity, () => OpportunityUser)

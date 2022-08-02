@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
 import { BusinessLine } from '../businessLines';
 import { getFiltersObjectsFromQueryParams } from '../utils/misc';
@@ -16,16 +16,15 @@ import {
   UserCandidatAttributes,
   MemberFilters,
   MemberFilterKey,
-} from './models';
-import { UserCandidatInclude } from './models/user.include';
-
-import {
+  PublicUserAttributes,
   filterMembersByAssociatedUser,
   filterMembersByBusinessLines,
   filterMembersByCVStatus,
   getMemberOptions,
   userSearchQuery,
-} from './models/user.utils';
+  getPublishedCVQuery,
+} from './models';
+import { UserCandidatInclude } from './models/user.include';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +35,27 @@ export class UsersService {
 
   async create(createUserDto: Partial<User>) {
     return this.userModel.create(createUserDto, { hooks: true });
+  }
+
+  async findOne(id: string) {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: UserCandidatInclude,
+    });
+  }
+
+  async findOneByMail(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...UserAttributes, 'salt', 'password'],
+      include: UserCandidatInclude,
+    });
+  }
+
+  async findOneComplete(id: string) {
+    return this.userModel.findByPk(id, {
+      include: UserCandidatInclude,
+    });
   }
 
   async findAllMembers(
@@ -60,7 +80,7 @@ export class UsersService {
     // The associatedUser options don't work that's why we take it out of the filters
     const filterOptions = getMemberOptions(restFilters);
 
-    const options: FindOptions = {
+    const options: FindOptions<User> = {
       order,
       where: {
         role: { [Op.not]: UserRoles.ADMIN },
@@ -226,7 +246,7 @@ export class UsersService {
       ? ({ zone } as WhereOptions<CV>)
       : {};
 
-    const options: FindOptions = {
+    const options: FindOptions<User> = {
       where: {
         ...whereOptions,
         role: UserRoles.CANDIDAT,
@@ -283,25 +303,42 @@ export class UsersService {
     };
   }
 
-  async findOne(id: string) {
-    return this.userModel.findByPk(id, {
+  async findAllUsers(search: string, role: UserRole) {
+    const options: FindOptions<User> = {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
-    });
+      where: {
+        [Op.or]: userSearchQuery(search),
+      },
+    };
+    if (role) {
+      options.where = { ...options.where, role };
+    }
+    return this.userModel.findAll(options);
   }
 
-  async findOneByMail(email: string) {
-    return this.userModel.findOne({
-      where: { email: email.toLowerCase() },
-      attributes: [...UserAttributes, 'salt', 'password'],
-      include: UserCandidatInclude,
-    });
-  }
-
-  async findOneComplete(id: string) {
-    return this.userModel.findByPk(id, {
-      include: UserCandidatInclude,
-    });
+  async findAllCandidates(search: string) {
+    const publishedCVs: CV[] = await this.userModel.sequelize.query(
+      getPublishedCVQuery({ [Op.or]: [false] }),
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const options = {
+      attributes: [...PublicUserAttributes],
+      where: {
+        [Op.and]: [
+          {
+            id: publishedCVs.map((publishedCV) => {
+              return publishedCV.UserId;
+            }),
+          },
+          {
+            [Op.or]: userSearchQuery(search),
+          },
+        ],
+      },
+    };
+    return User.findAll(options);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
@@ -317,5 +354,9 @@ export class UsersService {
     const updatedUser = await this.findOne(id);
 
     return updatedUser.toJSON();
+  }
+
+  async remove(id: number) {
+    return `This action removes a #${id} user`;
   }
 }

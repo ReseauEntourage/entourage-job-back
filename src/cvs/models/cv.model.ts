@@ -1,23 +1,28 @@
 import {
+  AfterDestroy,
   AllowNull,
-  BeforeCreate,
   BelongsTo,
   BelongsToMany,
   Column,
+  CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   ForeignKey,
   HasMany,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
+  UpdatedAt,
 } from 'sequelize-typescript';
-import { v4 as uuid } from 'uuid';
 import { BusinessLine } from 'src/businessLines';
+import { Location } from 'src/locations';
 import { UserCandidat } from 'src/users';
 import { CVBusinessLine } from './cv-businessLine.model';
+import { CVLocation } from './cv-location.model';
 import { CVStatusValue, CVStatuses } from './cv.types';
+import { paranoidDeleteCascade } from 'src/utils/misc';
 
 @Table({ tableName: 'CVs' })
 export class CV extends Model {
@@ -57,7 +62,7 @@ export class CV extends Model {
   catchphrase: string;
 
   @AllowNull(false)
-  /*@Default(CVStatuses.New.value)*/
+  @Default(CVStatuses.New.value)
   @Column
   status: CVStatusValue;
 
@@ -70,6 +75,15 @@ export class CV extends Model {
   @AllowNull(true)
   @Column
   lastModifiedBy: string;
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
 
   @BelongsTo(() => UserCandidat, {
     foreignKey: 'UserId',
@@ -91,6 +105,19 @@ export class CV extends Model {
   })
   cvBusinessLines: CVBusinessLine[];
 
+  @BelongsToMany(() => Location, () => CVLocation, 'CVId', 'LocationId')
+  locations: Location[];
+
+  @HasMany(() => CVLocation, {
+    onDelete: 'CASCADE',
+    foreignKey: 'CVId',
+  })
+  cvLocations: CVLocation[];
+
+  @AfterDestroy
+  static async deleteRelations(destroyedCV: CV) {
+    /* await paranoidDeleteCascade(destroyedCV);*/
+  }
   /*
 // TODO check if useful
 CV.belongsToMany(models.Ambition, {
@@ -149,15 +176,6 @@ CV.belongsToMany(models.Skill, {
 
 CV.hasMany(models.CV_Skill, {
   as: 'cvSkills',
-  onDelete: 'CASCADE',
-});
-
-CV.belongsToMany(models.Location, {
-  through: 'CV_Locations',
-  as: 'locations',
-});
-CV.hasMany(models.CV_Locations, {
-  as: 'cvLocations',
   onDelete: 'CASCADE',
 });
 

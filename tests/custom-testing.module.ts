@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
 
 import { AppModule } from 'src/app.module';
-import { AuthHelper } from './auth/auth.helper';
-import { CVFactory } from './cvs/cv.factory';
-import { CVHelper } from './cvs/cv.helper';
+import { AuthHelper } from './auth';
+import { CVFactory, CVHelper } from './cvs';
 import { DatabaseHelper } from './database.helper';
+import { UserHelper, UserFactory } from './users';
 import { UserCandidatHelper } from './users/user-candidat.helper';
-import { UserFactory } from './users/user.factory';
-import { UserHelper } from './users/user.helper';
 
 @Module({
   imports: [AppModule],

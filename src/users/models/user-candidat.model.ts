@@ -4,14 +4,17 @@ import {
   BeforeUpdate,
   BelongsTo,
   Column,
+  CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   ForeignKey,
   HasMany,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
+  UpdatedAt,
 } from 'sequelize-typescript';
 
 import { CV } from 'src/cvs';
@@ -60,6 +63,12 @@ export class UserCandidat extends Model {
   @AllowNull(true)
   @Column
   lastModifiedBy: string;
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
 
   @BelongsTo(() => User, {
     foreignKey: 'candidatId',

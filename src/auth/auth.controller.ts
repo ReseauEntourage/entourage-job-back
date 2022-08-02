@@ -9,17 +9,15 @@ import {
   Param,
   Post,
   Redirect,
-  Request,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
-import { CreateUserDto, Roles, RolesGuard, UserRoles } from '../users';
+import { CreateUserDto, Roles, RolesGuard, User, UserRoles } from '../users';
 import { isValidPhone } from 'src/utils/misc';
-import { RequestWithUser } from 'src/utils/types';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard, Public } from './guards';
+import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 function generateFakePassword() {
   return randomBytes(16).toString('hex');
@@ -32,9 +30,9 @@ const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
+  @Post()
   async createUser(@Body() createUserDto: CreateUserDto) {
     if (createUserDto.phone && !isValidPhone(createUserDto.phone)) {
       throw new BadRequestException();
@@ -103,8 +101,8 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: RequestWithUser) {
-    return this.authService.login(req.user);
+  async login(@UserPayload() user: User) {
+    return this.authService.login(user);
   }
 
   @Redirect(`${process.env.FRONT_URL}`, 302)
@@ -222,9 +220,8 @@ export class AuthController {
 
   @Throttle(100, 60)
   @Get('current')
-  async getCurrent(@Request() req: RequestWithUser) {
-    const { user } = req;
-    const updatedUser = await this.authService.updateUser(user.id, {
+  async getCurrent(@UserPayload('id') id: string) {
+    const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
     });
     if (!updatedUser) {

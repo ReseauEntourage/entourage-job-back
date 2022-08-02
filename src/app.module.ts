@@ -9,6 +9,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { JwtAuthGuard, AuthModule } from './auth';
 import { BusinessLinesModule } from './businessLines';
 import { CVsModule } from './cvs';
+import { LocationsModule } from './locations';
 import { MailsModule } from './mails';
 import { UsersModule } from './users';
 
@@ -63,6 +64,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     UsersModule,
     CVsModule,
     BusinessLinesModule,
+    LocationsModule,
     MailsModule,
   ],
   providers: [
@@ -80,6 +82,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     UsersModule,
     CVsModule,
     BusinessLinesModule,
+    LocationsModule,
     MailsModule,
   ],
 })

@@ -10,6 +10,8 @@ export const UserAttributes = [
   'zone',
   'gender',
   'lastConnection',
+  'createdAt',
+  'updatedAt',
   'deletedAt',
 ] as const;
 

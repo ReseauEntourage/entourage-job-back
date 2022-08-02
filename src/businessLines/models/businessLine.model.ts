@@ -1,17 +1,19 @@
 import {
   AllowNull,
-  BeforeCreate,
   BelongsToMany,
   Column,
+  CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
+  UpdatedAt,
 } from 'sequelize-typescript';
-import { v4 as uuid } from 'uuid';
 import { CV, CVBusinessLine } from 'src/cvs';
+import { BusinessLineValue } from './businessLine.types';
 
 @Table({ tableName: 'BusinessLines' })
 export class BusinessLine extends Model {
@@ -23,12 +25,18 @@ export class BusinessLine extends Model {
 
   @AllowNull(false)
   @Column
-  name: string;
+  name: BusinessLineValue;
 
   @AllowNull(false)
   @Default(-1)
   @Column
   order: number;
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
 
   @BelongsToMany(() => CV, () => CVBusinessLine, 'BusinessLineId', 'CVId')
   CVs: CV[];

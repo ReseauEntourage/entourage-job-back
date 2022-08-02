@@ -1,6 +1,6 @@
 import { FilterConstant } from '../../utils/types';
 
-type BusinessLine =
+export type BusinessLineValue =
   | 'la'
   | 'aa'
   | 'bat'
@@ -19,7 +19,7 @@ type BusinessLine =
   | 'sa'
   | 'fjr';
 
-export const BusinessLineFilters: (FilterConstant<BusinessLine> & {
+export const BusinessLineFilters: (FilterConstant<BusinessLineValue> & {
   prefix: string[] | string;
 })[] = [
   {
@@ -100,7 +100,7 @@ export const BusinessLineFilters: (FilterConstant<BusinessLine> & {
   {
     label: 'Social et associatif',
     value: 'sa',
-    prefix: ['le', 'la'],
+    prefix: ['le', "l'"],
   },
   {
     label: 'Direction financière, juridique et ressources humaines',
@@ -108,5 +108,3 @@ export const BusinessLineFilters: (FilterConstant<BusinessLine> & {
     prefix: ['la', 'les'],
   },
 ];
-
-export type BusinessLineFilter = typeof BusinessLineFilters[number];

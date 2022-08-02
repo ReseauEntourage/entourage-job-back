@@ -12,4 +12,4 @@ export { UserCandidat } from './user-candidat.model';
 export { UserCandidatAttributes } from './user-candidat.attributes';
 export type { UserCandidatAttribute } from './user-candidat.attributes';
 
-export { getRelatedUser } from './user.utils';
+export * from './user.utils';

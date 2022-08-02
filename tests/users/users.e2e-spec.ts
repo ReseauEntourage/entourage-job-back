@@ -10,13 +10,14 @@ import { User, UserRoles } from 'src/users';
 import { AdminZones } from 'src/utils/types';
 import { AuthHelper } from 'tests/auth/auth.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
-import { CVHelper } from 'tests/cvs';
+import { CVFactory, CVHelper } from 'tests/cvs';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UserHelper } from 'tests/users/user.helper';
 import { UserCandidatHelper } from './user-candidat.helper';
 
-const fakeId = '9bc0065e-b889-4f05-97v8-73i45f49976a';
+const fakeId = uuid();
+
 let loggedInAdmin: { user: User; token: string };
 let loggedInCoach: { user: User; token: string };
 let loggedInCandidat: { user: User; token: string };
@@ -32,6 +33,7 @@ describe('Users', () => {
   let userHelper: UserHelper;
   let userCandidatHelper: UserCandidatHelper;
   let cvHelper: CVHelper;
+  let cvFactory: CVFactory;
 
   const route = '/user';
   const userCreationRoute = '/auth';
@@ -56,6 +58,7 @@ describe('Users', () => {
       moduleFixture.get<UserCandidatHelper>(UserCandidatHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     cvHelper = moduleFixture.get<CVHelper>(CVHelper);
+    cvFactory = moduleFixture.get<CVFactory>(CVFactory);
 
     const adminPassword = 'Admin123!';
     const admin = await userFactory.create({
@@ -224,7 +227,7 @@ describe('Users', () => {
           .send(candidat);
         expect(response.status).toBe(401);
       });
-      it('Should return 401 when the user is not an administrator.', async () => {
+      it('Should return 403 when the user is not an administrator.', async () => {
         const candidat = await userFactory.create(
           {
             role: UserRoles.CANDIDAT,
@@ -253,7 +256,6 @@ describe('Users', () => {
         expect(response.status).toBe(409);
       });
     });
-    /*
     describe('R - Read 1 User', () => {
       describe('/ - Get a user by ID or EMAIL', () => {
         it('Should return 401 when the user is not logged in.', async () => {
@@ -276,11 +278,11 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body.email).toEqual(loggedInCoach.user.email);
         });
-        it('Should return 401 when logged-in coach get a candidat', async () => {
+        it('Should return 403 when logged-in coach get a candidat', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/${otherLoggedInCandidat.user.email}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
-          expect(response.status).toBe(401);
+          expect(response.status).toBe(403);
         });
         it('Should return 200 and get a user by email.', async () => {
           const response = await request(app.getHttpServer())
@@ -304,9 +306,8 @@ describe('Users', () => {
           expect(response.status).toBe(404);
         });
       });
-
       describe('Candidat - get user associated to a candidate or coach', () => {
-        it('Should return 401 if user is not  a logged in user', async () => {
+        it('Should return 401 if user is not a logged in user', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/candidat`)
             .send({
@@ -323,6 +324,8 @@ describe('Users', () => {
             });
 
           expect(response.status).toBe(200);
+          expect(response.body.coach.id).toBe(loggedInCoach.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
         });
         it('Should return 200 and users, coach searching for himself', async () => {
           const response = await request(app.getHttpServer())
@@ -333,8 +336,10 @@ describe('Users', () => {
             });
 
           expect(response.status).toBe(200);
+          expect(response.body.coach.id).toBe(loggedInCoach.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
         });
-        it('Should return 401 if a not admin user search fro others than himself.', async () => {
+        it('Should return 403 if a not admin user search for others than himself.', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/candidat`)
             .set('authorization', `Token ${loggedInCoach.token}`)
@@ -342,7 +347,7 @@ describe('Users', () => {
               coachId: loggedInCandidat.user.id,
             });
 
-          expect(response.status).toBe(401);
+          expect(response.status).toBe(403);
         });
         it('Should return 200 and users, admin searching for any users', async () => {
           const response = await request(app.getHttpServer())
@@ -355,6 +360,7 @@ describe('Users', () => {
         });
       });
     });
+
     describe('R - Many Users', () => {
       describe('Search - search a user where query string in email, first name or last name', () => {
         it('Should return 200 and part of candidates if user is logged in as admin', async () => {
@@ -365,7 +371,7 @@ describe('Users', () => {
 
           await cvFactory.create({
             UserId: candidat.id,
-            status: CvStatuses.Published.value,
+            status: CVStatuses.Published.value,
           });
 
           const privateCandidateInfo = [
@@ -396,14 +402,14 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual(privateCandidateInfo);
         });
-        it('Should return 401 if user is not logged in as admin', async () => {
+        it('Should return 403 if user is not logged in as admin', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/search?query=e&role=${UserRoles.CANDIDAT}`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send({
               ...loggedInCandidat.user,
             });
-          expect(response.status).toBe(401);
+          expect(response.status).toBe(403);
         });
       });
       describe('Search - search a public candidate where query string in email, first name or last name', () => {
@@ -415,7 +421,7 @@ describe('Users', () => {
 
           await cvFactory.create({
             UserId: candidat.id,
-            status: CvStatuses.Published.value,
+            status: CVStatuses.Published.value,
           });
 
           const publicCandidateInfo = [
@@ -435,267 +441,268 @@ describe('Users', () => {
           expect(response.body).toStrictEqual(publicCandidateInfo);
         });
       });
-      */
 
-    describe('Members - get paginated and sorted users', () => {
-      it('Should return 403 if user is not a logged in admin', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/members`)
-          .set('authorization', `Token ${loggedInCandidat.token}`);
-        expect(response.status).toBe(403);
+      describe('Members - get paginated and sorted users', () => {
+        it('Should return 403 if user is not a logged in admin', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/members`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200 and a page of the 2th candidats', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/members?limit=2&role=${UserRoles.CANDIDAT}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+        });
+        it('Should return 200 and a page of 3 COACH', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/members?limit=10&role=${UserRoles.COACH}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 and the 4th and 5th candidats users', async () => {
+          await request(app.getHttpServer())
+            .get(`${route}/members?limit=2&offset=2&role=${UserRoles.CANDIDAT}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+        });
       });
-      it('Should return 200 and a page of the 2th candidats', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/members?limit=2&role=${UserRoles.CANDIDAT}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(2);
+      describe('Members - Count all pending members', () => {
+        it('Should return 403 if user is not a logged in admin', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/members/count`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200 and count of members with pending CVs', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/members/count`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pendingCVs).toBe(1);
+        });
       });
-      it('Should return 200 and a page of 3 COACH', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/members?limit=10&role=${UserRoles.COACH}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-      });
-      it('Should return 200 and the 4th and 5th candidats users', async () => {
-        await request(app.getHttpServer())
-          .get(`${route}/members?limit=2&offset=2&role=${UserRoles.CANDIDAT}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-      });
-    });
-    describe('Members - Count all pending members', () => {
-      it('Should return 403 if user is not a logged in admin', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/members/count`)
-          .set('authorization', `Token ${loggedInCandidat.token}`);
-        expect(response.status).toBe(403);
-      });
-      it('Should return 200 and count of members with pending CVs', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/members/count`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.pendingCVs).toBe(1);
-      });
-    });
-    describe('Read all members as admin with filters', () => {
-      it('should return 200, and all the candidates that matches the zone filter', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=2&role=${UserRoles.CANDIDAT}&zone[]=LYON`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(2);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              zone: 'LYON',
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the coaches that matches the zone filter', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/members?limit=50&role=${UserRoles.COACH}&zone[]=LYON`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(2);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              zone: 'LYON',
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the candidates that matches the hidden filter', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&hidden[]=true`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                hidden: true,
+      describe('Read all members as admin with filters', () => {
+        it('should return 200, and all the candidates that matches the zone filter', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=2&role=${UserRoles.CANDIDAT}&zone[]=LYON`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                zone: 'LYON',
               }),
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the candidates that matches the employed filter', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&employed[]=true`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(2);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                employed: true,
+            ])
+          );
+        });
+        it('should return 200, and all the coaches that matches the zone filter', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.COACH}&zone[]=LYON`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                zone: 'LYON',
               }),
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the candidates that matches the cvStatus filters', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&cvStatus[]=Published`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(4);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                cvs: expect.arrayContaining([
-                  expect.objectContaining({ status: 'Published' }),
-                ]),
+            ])
+          );
+        });
+        it('should return 200, and all the candidates that matches the hidden filter', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&hidden[]=true`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(1);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  hidden: true,
+                }),
               }),
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the candidates that matches the business lines filters', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&businessLines[]=id`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(2);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                cvs: expect.arrayContaining([
-                  expect.objectContaining({
-                    businessLines: expect.arrayContaining([
-                      expect.objectContaining({ name: 'id' }),
-                    ]),
-                  }),
-                ]),
+            ])
+          );
+        });
+        it('should return 200, and all the candidates that matches the employed filter', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&employed[]=true`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  employed: true,
+                }),
               }),
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the candidates that matches the associatedUser filters', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&associatedUser[]=false`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(6);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
+            ])
+          );
+        });
+        it('should return 200, and all the candidates that matches the cvStatus filters', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&cvStatus[]=Published`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(4);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  cvs: expect.arrayContaining([
+                    expect.objectContaining({ status: 'Published' }),
+                  ]),
+                }),
+              }),
+            ])
+          );
+        });
+        it('should return 200, and all the candidates that matches the business lines filters', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&businessLines[]=id`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  cvs: expect.arrayContaining([
+                    expect.objectContaining({
+                      businessLines: expect.arrayContaining([
+                        expect.objectContaining({ name: 'id' }),
+                      ]),
+                    }),
+                  ]),
+                }),
+              }),
+            ])
+          );
+        });
+        it('should return 200, and all the candidates that matches the associatedUser filters', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&associatedUser[]=false`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(6);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  coach: null,
+                }),
+              }),
+            ])
+          );
+        });
+        it('should return 200, and all the coaches that matches the associatedUser filters', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.COACH}&associatedUser[]=false`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(1);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
                 coach: null,
               }),
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the coaches that matches the associatedUser filters', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.COACH}&associatedUser[]=false`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              coach: null,
-            }),
-          ])
-        );
-      });
-      it('should return 200, and all the candidates that matches the multiple filters (AND between different filters, OR inside each filters)', async () => {
-        const response = await request(app.getHttpServer())
-          .get(
-            `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&zone[]=LYON&associatedUser[]=true&employed[]=false&hidden[]=false&businessLines[]=id`
-          )
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              zone: 'LYON',
-            }),
-          ])
-        );
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                hidden: false,
+            ])
+          );
+        });
+        it('should return 200, and all the candidates that matches the multiple filters (AND between different filters, OR inside each filters)', async () => {
+          const response = await request(app.getHttpServer())
+            .get(
+              `${route}/members?limit=50&role=${UserRoles.CANDIDAT}&zone[]=LYON&associatedUser[]=true&employed[]=false&hidden[]=false&businessLines[]=id`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(1);
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                zone: 'LYON',
               }),
-            }),
-          ])
-        );
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                employed: false,
+            ])
+          );
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  hidden: false,
+                }),
               }),
-            }),
-          ])
-        );
+            ])
+          );
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  employed: false,
+                }),
+              }),
+            ])
+          );
 
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                cvs: expect.arrayContaining([
-                  expect.objectContaining({ status: 'Published' }),
-                ]),
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  cvs: expect.arrayContaining([
+                    expect.objectContaining({ status: 'Published' }),
+                  ]),
+                }),
               }),
-            }),
-          ])
-        );
-        expect(response.body).not.toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                coach: null,
+            ])
+          );
+          expect(response.body).not.toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  coach: null,
+                }),
               }),
-            }),
-          ])
-        );
-        expect(response.body).not.toEqual(
-          expect.not.arrayContaining([
-            expect.objectContaining({
-              candidat: expect.objectContaining({
-                cvs: expect.arrayContaining([
-                  expect.objectContaining({
-                    businessLines: expect.arrayContaining([
-                      expect.objectContaining({ name: 'id' }),
-                    ]),
-                  }),
-                ]),
+            ])
+          );
+          expect(response.body).not.toEqual(
+            expect.not.arrayContaining([
+              expect.objectContaining({
+                candidat: expect.objectContaining({
+                  cvs: expect.arrayContaining([
+                    expect.objectContaining({
+                      businessLines: expect.arrayContaining([
+                        expect.objectContaining({ name: 'id' }),
+                      ]),
+                    }),
+                  ]),
+                }),
               }),
-            }),
-          ])
-        );
+            ])
+          );
+        });
       });
     });
     /*
- });
  describe('U - Update 1 User', () => {
    describe('Update user - /:id', () => {
      it('Should return 401 if user is not logged in', async () => {

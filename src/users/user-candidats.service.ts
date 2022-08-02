@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { WhereOptions } from 'sequelize';
 import { UpdateUserCandidatDto } from './dto';
-import { UserAttributes, UserCandidat } from './models';
+import {
+  User,
+  UserAttributes,
+  UserCandidat,
+  UserCandidatAttributes,
+} from './models';
 import { UserInclude } from './models/user-candidat.include';
 
 @Injectable()
@@ -17,15 +23,37 @@ export class UserCandidatsService {
     });
   }
 
-  findAll() {
-    return `This action returns all users`;
-  }
-
   async findOneByCandidateId(candidateId: string) {
     return this.userCandidatModel.findOne({
       where: { candidatId: candidateId },
       attributes: [...UserAttributes],
       include: UserInclude,
+    });
+  }
+
+  async findOneByCandidateOrCoachId(candidateId?: string, coachId?: string) {
+    const findWhere: WhereOptions<UserCandidat> = {};
+    if (candidateId) {
+      findWhere.candidatId = candidateId;
+    }
+    if (coachId) {
+      findWhere.coachId = coachId;
+    }
+    return this.userCandidatModel.findOne({
+      where: findWhere,
+      attributes: [...UserCandidatAttributes],
+      include: [
+        {
+          model: User,
+          as: 'coach',
+          attributes: [...UserAttributes],
+        },
+        {
+          model: User,
+          as: 'candidat',
+          attributes: [...UserAttributes],
+        },
+      ],
     });
   }
 
@@ -48,9 +76,5 @@ export class UserCandidatsService {
     const updatedUserCandidat = await this.findOneByCandidateId(candidateId);
 
     return updatedUserCandidat.toJSON();
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
   }
 }

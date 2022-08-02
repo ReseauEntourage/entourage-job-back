@@ -1,5 +1,7 @@
 import { col, Op, where, WhereOptions } from 'sequelize';
-import { BusinessLine } from 'src/businessLines';
+import { BusinessLineValue } from 'src/businessLines';
+import { CVStatuses } from 'src/cvs';
+import { Department } from 'src/locations';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
 import { User } from './user.model';
@@ -167,10 +169,10 @@ export function filterMembersByBusinessLines(
             cvBusinessLines &&
             cvBusinessLines.length > 0 &&
             cvBusinessLines
-              .map(({ name }: { name: BusinessLine['name'] }) => {
+              .map(({ name }: { name: BusinessLineValue }) => {
                 return name;
               })
-              .includes(currentFilter.value as string)
+              .includes(currentFilter.value)
           );
         }
         return false;
@@ -209,4 +211,100 @@ export function userSearchQuery(query = '') {
     searchInColumnWhereOption('User.firstName', query),
     searchInColumnWhereOption('User.lastName', query),
   ];
+}
+
+export function getPublishedCVQuery(
+  employed?: { [Op.or]: boolean[] },
+  locations?: { [Op.or]: Department[] },
+  businessLines?: { [Op.or]: BusinessLineValue[] }
+) {
+  const hasLocations = locations && locations[Op.or];
+  const hasBusinessLines = businessLines && businessLines[Op.or];
+  return `
+    /* CV par recherche */
+
+    with groupCVs as (
+      select
+        /* pour chaque user, dernier CV publiés */
+        "UserId", MAX(version) as version, "employed"
+      from
+        "User_Candidats",
+        "CVs"
+        ${
+          hasLocations
+            ? `
+              ,
+              "CV_Locations",
+              "Locations"
+            `
+            : ''
+        }
+        ${
+          hasBusinessLines
+            ? `
+              ,
+              "CV_BusinessLines",
+              "BusinessLines"
+            `
+            : ''
+        }
+      where
+        "CVs".status = '${CVStatuses.Published.value}'
+        and "CVs"."deletedAt" IS NULL
+        and "User_Candidats"."candidatId" = "CVs"."UserId"
+        and "User_Candidats".hidden = false
+        ${
+          employed && employed[Op.or]
+            ? `and (${employed[Op.or]
+                .map((value, index) => {
+                  return `${
+                    index > 0 ? 'or ' : ''
+                  }"User_Candidats".employed = ${value}`;
+                })
+                .join(' ')})`
+            : ''
+        }
+        ${
+          hasLocations
+            ? `and "CV_Locations"."CVId" = "CVs".id and "CV_Locations"."LocationId" = "Locations".id`
+            : ''
+        }
+        ${
+          hasBusinessLines
+            ? `and "CV_BusinessLines"."CVId" = "CVs".id and "CV_BusinessLines"."BusinessLineId" = "BusinessLines".id`
+            : ''
+        }
+        ${
+          hasLocations
+            ? `and (${locations[Op.or]
+                .map((value, index) => {
+                  return `${
+                    index > 0 ? 'or ' : ''
+                  }"Locations".name = '${value}'`;
+                })
+                .join(' ')})`
+            : ''
+        }
+        ${
+          hasBusinessLines
+            ? `and (${businessLines[Op.or]
+                .map((value, index) => {
+                  return `${
+                    index > 0 ? 'or ' : ''
+                  }"BusinessLines".name = '${value}'`;
+                })
+                .join(' ')})`
+            : ''
+        }
+      group by
+        "UserId", "employed")
+
+    select
+      cvs.id, cvs."UserId", groupCVs."employed"
+    from
+      "CVs" cvs
+    inner join groupCVs on
+      cvs."UserId" = groupCVs."UserId"
+      and cvs.version = groupCVs.version
+    `;
 }

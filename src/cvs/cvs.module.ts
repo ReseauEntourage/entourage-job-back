@@ -3,11 +3,11 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { MailsModule } from 'src/mails';
 import { UsersModule } from 'src/users';
 import { CVsService } from './cvs.service';
-import { CVBusinessLine, CV } from './models';
+import { CVBusinessLine, CV, CVLocation } from './models';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([CV, CVBusinessLine]),
+    SequelizeModule.forFeature([CV, CVBusinessLine, CVLocation]),
     // TODO fix forward ref
     forwardRef(() => UsersModule),
     MailsModule,
