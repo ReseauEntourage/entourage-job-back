@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MailsModule } from 'src/mails/mails.module';
-import { QueuesModule } from 'src/queues/producers';
 import { UsersModule } from 'src/users';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -16,7 +15,6 @@ import { JwtStrategy, LocalStrategy } from './guards';
       signOptions: { expiresIn: '30d' },
     }),
     MailsModule,
-    QueuesModule,
     UsersModule,
   ],
   controllers: [AuthController],

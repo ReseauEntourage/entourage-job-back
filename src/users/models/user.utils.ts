@@ -49,7 +49,7 @@ export function getRelatedUser(member: User) {
   return null;
 }
 
-export function getCandidateFromCoachOrCandidate(member: User) {
+export function getUserCandidateFromCoachOrCandidate(member: User) {
   if (member) {
     if (member.role === UserRoles.CANDIDAT) {
       return member.candidat;
@@ -57,6 +57,23 @@ export function getCandidateFromCoachOrCandidate(member: User) {
 
     if (member.role === UserRoles.COACH) {
       return member.coach;
+    }
+  }
+  return null;
+}
+
+export function getCandidateIdFromCoachOrCandidate(member: User) {
+  if (member) {
+    if (member.role === UserRoles.CANDIDAT) {
+      return member.id;
+    }
+
+    if (
+      member.role === UserRoles.COACH &&
+      member.coach &&
+      member.coach.candidat
+    ) {
+      return member.coach.candidat.id;
     }
   }
   return null;
@@ -192,7 +209,7 @@ export function filterMembersByAssociatedUser(
   if (members && associatedUsers && associatedUsers.length > 0) {
     filteredList = members.filter((member) => {
       return associatedUsers.some((currentFilter) => {
-        const candidate = getCandidateFromCoachOrCandidate(member);
+        const candidate = getUserCandidateFromCoachOrCandidate(member);
         const relatedUser = getRelatedUser(member);
         if (!candidate) {
           return !currentFilter.value;

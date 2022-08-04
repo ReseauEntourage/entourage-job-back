@@ -1,30 +1,32 @@
 import * as _ from 'lodash';
-import { MemberFilterKey } from 'src/users/models';
 import {
   FilterConstant,
-  Filter,
   Filters,
   AnyToFix,
   FilterObject,
 } from 'src/utils/types';
 
-export function getFiltersObjectsFromQueryParams<T extends string>(
-  params: Partial<Record<T, AnyToFix>>,
-  filtersConst: Filters<T>
+function findConstant<K, T>(filters: Filters<K, T>, key: K) {
+  return filters.find(({ key: filterKey }) => {
+    return filterKey === key;
+  });
+}
+
+export function getFiltersObjectsFromQueryParams<K extends string, T>(
+  params: Partial<Record<K, AnyToFix>>,
+  filtersConst: Filters<K, T>
 ) {
-  let filters = {} as FilterObject<T>;
+  let filters = {} as FilterObject<K, T>;
 
   if (filtersConst) {
     _.forEach(Object.keys(params), (paramKey) => {
-      const filter = filtersConst.find((filterData: Filter<T>) => {
-        return filterData.key === paramKey;
-      });
+      const filter = findConstant<K, T>(filtersConst, paramKey as K);
       if (filter) {
-        const valueArray = params[paramKey as T];
+        const valueArray = params[paramKey as K];
         if (valueArray.length > 0) {
           filters = {
             ...filters,
-            [paramKey as MemberFilterKey]: _.map(valueArray, (val) => {
+            [paramKey]: _.map(valueArray, (val) => {
               // Fix to use find function
               const constants = filter.constants.map(
                 (item: FilterConstant<T>) => item

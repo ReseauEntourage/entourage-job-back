@@ -36,25 +36,21 @@ export class CVsService {
       moment(user.createdAt).isAfter(moment(firstOfMarch2022, 'YYYY-MM-DD'))
     ) {
       const cvs = await this.getAllUserCVsVersions(candidateId);
-      if (cvs && cvs.length > 0) {
-        const hasSubmittedAtLeastOnce = cvs.some(
-          ({ status }: { status: CVStatusValue }) => {
-            return status === CVStatuses.Pending.value;
-          }
-        );
+      const hasSubmittedAtLeastOnce = cvs?.some(({ status }) => {
+        return status === CVStatuses.Pending.value;
+      });
 
-        if (!hasSubmittedAtLeastOnce) {
-          const toEmail: CustomMailParams['toEmail'] = {
-            to: user.email,
-          };
-          const coach = getRelatedUser(user);
-          if (coach) {
-            toEmail.cc = coach.email;
-          }
-
-          await this.sendCvReminderMail(user.toJSON(), is20Days, toEmail);
-          return toEmail;
+      if (!hasSubmittedAtLeastOnce) {
+        const toEmail: CustomMailParams['toEmail'] = {
+          to: user.email,
+        };
+        const coach = getRelatedUser(user);
+        if (coach) {
+          toEmail.cc = coach.email;
         }
+
+        await this.sendCvReminderMail(user.toJSON(), is20Days, toEmail);
+        return toEmail;
       }
     }
     return false;

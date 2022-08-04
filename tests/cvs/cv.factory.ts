@@ -64,12 +64,8 @@ export class CVFactory {
   ): Promise<CV> {
     const cvData = this.generateCv(props);
 
-    const cvFull = {
-      ...cvData,
-    };
-
     if (insertInDB) {
-      const cvDB: CV = await this.cvModel.create(cvFull);
+      const createdCV: CV = await this.cvModel.create(cvData);
 
       _.forEach(Object.keys(components), async (componentKey) => {
         const injectedModelName = `${componentKey.slice(
@@ -128,7 +124,7 @@ export class CVFactory {
             })
           );
           try {
-            await cvDB.$add(componentKey, instances);
+            await createdCV.$add(componentKey, instances);
           } catch (err) {
             console.error(err);
           }
@@ -142,9 +138,15 @@ export class CVFactory {
           searchString: JSON.stringify({ ...cvFull, ...props }),
         });
       */
-      return cvDB.toJSON();
-    }
 
-    return this.cvModel.build(cvFull);
+      return createdCV.toJSON();
+    }
+    // TODO when CVServices
+    /* const dbCV = await this.cvServices.findOne(cvData.id);
+    if (dbCV) {
+      return dbCV.toJSON();
+    }*/
+    const builtCV = await this.cvModel.build(cvData);
+    return builtCV.toJSON();
   }
 }

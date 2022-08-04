@@ -1,11 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 import { InjectModel } from '@nestjs/sequelize';
+import { Queue } from 'bull';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
-import { BusinessLine } from '../businessLines';
-import { getFiltersObjectsFromQueryParams } from '../utils/misc';
-import { AdminZone, FilterParams } from '../utils/types';
+import { BusinessLine } from 'src/businessLines';
 import { CV, CVStatuses } from 'src/cvs';
+import { CustomMailParams, MailsService } from 'src/mails';
+import { Jobs, Queues } from 'src/queues';
+import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
+import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
   UserAttributes,
@@ -23,6 +28,8 @@ import {
   getMemberOptions,
   userSearchQuery,
   getPublishedCVQuery,
+  getRelatedUser,
+  MemberConstantType,
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 
@@ -30,7 +37,11 @@ import { UserCandidatInclude } from './models/user.include';
 export class UsersService {
   constructor(
     @InjectModel(User)
-    private userModel: typeof User
+    private userModel: typeof User,
+    @InjectQueue(Queues.WORK)
+    private workQueue: Queue,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private mailsService: MailsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -69,10 +80,10 @@ export class UsersService {
   ) {
     const { limit, offset, role, search, order, ...restParams } = params;
 
-    const filtersObj = getFiltersObjectsFromQueryParams<MemberFilterKey>(
-      restParams,
-      MemberFilters
-    );
+    const filtersObj = getFiltersObjectsFromQueryParams<
+      MemberFilterKey,
+      MemberConstantType
+    >(restParams, MemberFilters);
 
     const { businessLines, cvStatus, associatedUser, ...restFilters } =
       filtersObj;
@@ -358,5 +369,63 @@ export class UsersService {
 
   async remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async sendMailsAfterMatching(candidateId: string) {
+    const finalCandidate = await this.findOne(candidateId);
+
+    const toEmail: CustomMailParams['toEmail'] = { to: finalCandidate.email };
+
+    const coach = getRelatedUser(finalCandidate);
+    if (coach) {
+      toEmail.cc = coach.email;
+    }
+    await this.mailsService.sendCvPreparationMail(
+      finalCandidate.toJSON(),
+      toEmail
+    );
+
+    await this.workQueue.add(
+      Jobs.REMINDER_CV_10,
+      {
+        candidatId: candidateId,
+      },
+      {
+        delay:
+          (process.env.CV_10_REMINDER_DELAY
+            ? parseFloat(process.env.CV_10_REMINDER_DELAY)
+            : 10) *
+          3600000 *
+          24,
+      }
+    );
+    await this.workQueue.add(
+      Jobs.REMINDER_CV_20,
+      {
+        candidatId: candidateId,
+      },
+      {
+        delay:
+          (process.env.CV_20_REMINDER_DELAY
+            ? parseFloat(process.env.CV_20_REMINDER_DELAY)
+            : 20) *
+          3600000 *
+          24,
+      }
+    );
+  }
+
+  async uncacheUserCV(url: string) {
+    await this.cacheManager.del(RedisKeys.CV_PREFIX + url);
+  }
+
+  async cacheUserCV(candidateId: string) {
+    await this.workQueue.add(Jobs.CACHE_CV, {
+      candidatId: candidateId,
+    });
+  }
+
+  async cacheAllCVs() {
+    await this.workQueue.add(Jobs.CACHE_ALL_CVS);
   }
 }

@@ -5,7 +5,12 @@ export { User } from './user.model';
 
 export { UserRoles, AdminRoles, Genders, MemberFilters } from './user.types';
 export type { MemberFilterKey } from './user.types';
-export type { UserRole, AdminRole, Gender } from './user.types';
+export type {
+  UserRole,
+  AdminRole,
+  Gender,
+  MemberConstantType,
+} from './user.types';
 
 export { UserCandidat } from './user-candidat.model';
 

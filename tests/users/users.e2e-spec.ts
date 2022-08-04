@@ -1,20 +1,18 @@
 import { getQueueToken } from '@nestjs/bull';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Op } from 'sequelize';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CVStatuses } from 'src/cvs';
 import { Queues } from 'src/queues';
 import { User, UserRoles } from 'src/users';
 import { AdminZones } from 'src/utils/types';
-import { AuthHelper } from 'tests/auth/auth.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { CVFactory, CVHelper } from 'tests/cvs';
 import { DatabaseHelper } from 'tests/database.helper';
-import { UserFactory } from 'tests/users/user.factory';
-import { UserHelper } from 'tests/users/user.helper';
 import { UserCandidatHelper } from './user-candidat.helper';
+import { UserFactory } from './user.factory';
+import { UserHelper } from './user.helper';
 
 const fakeId = uuid();
 
@@ -28,7 +26,6 @@ describe('Users', () => {
   let app: INestApplication;
 
   let databaseHelper: DatabaseHelper;
-  let authHelper: AuthHelper;
   let userFactory: UserFactory;
   let userHelper: UserHelper;
   let userCandidatHelper: UserCandidatHelper;
@@ -36,7 +33,7 @@ describe('Users', () => {
   let cvFactory: CVFactory;
 
   const route = '/user';
-  const userCreationRoute = '/auth';
+  const authRoute = '/auth';
   const cvRoute = '/cv';
 
   const queueMock = { add: jest.fn() };
@@ -163,6 +160,7 @@ describe('Users', () => {
   });
 
   afterAll(async () => {
+    await databaseHelper.resetTestDB();
     await app.close();
   });
 
@@ -184,7 +182,7 @@ describe('Users', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${userCreationRoute}`)
+          .post(`${authRoute}/createUser`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(candidat);
         expect(response.status).toBe(201);
@@ -198,7 +196,7 @@ describe('Users', () => {
         /* delete candidat.password;
         delete candidat.hash;*/
         const response = await request(app.getHttpServer())
-          .post(`${userCreationRoute}`)
+          .post(`${authRoute}/createUser`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(candidat);
         expect(response.status).toBe(201);
@@ -209,12 +207,12 @@ describe('Users', () => {
           phone: '1234',
         };
         const response = await request(app.getHttpServer())
-          .post(`${userCreationRoute}`)
+          .post(`${authRoute}/createUser`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(wrongData);
         expect(response.status).toBe(400);
       });
-      it('Should return 401 when the user is not logged-in.', async () => {
+      it('Should return 401 when the user is not logged in.', async () => {
         const candidat = await userFactory.create(
           {
             role: UserRoles.CANDIDAT,
@@ -223,7 +221,7 @@ describe('Users', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${userCreationRoute}`)
+          .post(`${authRoute}/createUser`)
           .send(candidat);
         expect(response.status).toBe(401);
       });
@@ -236,7 +234,7 @@ describe('Users', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${userCreationRoute}`)
+          .post(`${authRoute}/createUser`)
           .set('authorization', `Token ${loggedInCandidat.token}`)
           .send(candidat);
         expect(response.status).toBe(403);
@@ -250,7 +248,7 @@ describe('Users', () => {
           true
         );
         const response = await request(app.getHttpServer())
-          .post(`${userCreationRoute}`)
+          .post(`${authRoute}/createUser`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(candidat);
         expect(response.status).toBe(409);
@@ -264,21 +262,21 @@ describe('Users', () => {
           );
           expect(response.status).toBe(401);
         });
-        it('Should return 200 when logged-in candidat get himself', async () => {
+        it('Should return 200 when logged in candidat get himself', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/${loggedInCandidat.user.email}`)
             .set('authorization', `Token ${loggedInCandidat.token}`);
           expect(response.status).toBe(200);
           expect(response.body.email).toEqual(loggedInCandidat.user.email);
         });
-        it('Should return 200 when logged-in coach get himself', async () => {
+        it('Should return 200 when logged in coach get himself', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/${loggedInCoach.user.email}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.email).toEqual(loggedInCoach.user.email);
         });
-        it('Should return 403 when logged-in coach get a candidat', async () => {
+        it('Should return 403 when logged in coach get a candidat', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/${otherLoggedInCandidat.user.email}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
@@ -349,18 +347,30 @@ describe('Users', () => {
 
           expect(response.status).toBe(403);
         });
+        it('Should return 200 and users, admin searching for coach', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/candidat`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .query({
+              coachId: loggedInCoach.user.id,
+            });
+          expect(response.status).toBe(200);
+          expect(response.body.coach.id).toBe(loggedInCoach.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
+        });
         it('Should return 200 and users, admin searching for any users', async () => {
           const response = await request(app.getHttpServer())
             .get(`${route}/candidat`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({
-              candidatId: loggedInCoach.user.id,
+            .query({
+              candidatId: loggedInCandidat.user.id,
             });
           expect(response.status).toBe(200);
+          expect(response.body.coach.id).toBe(loggedInCoach.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
         });
       });
     });
-
     describe('R - Many Users', () => {
       describe('Search - search a user where query string in email, first name or last name', () => {
         it('Should return 200 and part of candidates if user is logged in as admin', async () => {
@@ -384,6 +394,7 @@ describe('Users', () => {
               address: candidat.address,
               deletedAt: candidat.deletedAt,
               createdAt: candidat.createdAt?.toISOString(),
+              updatedAt: candidat.updatedAt?.toISOString(),
               email: candidat.email,
               gender: candidat.gender,
               lastConnection: candidat.lastConnection?.toISOString(),
@@ -393,7 +404,9 @@ describe('Users', () => {
           ];
 
           const response = await request(app.getHttpServer())
-            .get(`${route}/search?query=${candidat.firstName}`)
+            .get(
+              `${route}/search?query=${candidat.firstName}&role=${UserRoles.CANDIDAT}`
+            )
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
               ...loggedInAdmin.user,
@@ -702,251 +715,257 @@ describe('Users', () => {
         });
       });
     });
-    /*
- describe('U - Update 1 User', () => {
-   describe('Update user - /:id', () => {
-     it('Should return 401 if user is not logged in', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${otherLoggedInCandidat.user.id}`)
-         .send({
-           phone: updates.phone,
-           firstName: updates.firstName,
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 401 if user do not have the rights to update targeted user', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${otherLoggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           phone: updates.phone,
-           firstName: updates.firstName,
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 200 and updated user when a candiate update himself', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           phone: updates.phone,
-           address: updates.address,
-         });
-       expect(response.status).toBe(200);
-       expect(response.body.phone).toEqual(updates.phone);
-     });
-     it('Should return 401 when a candiate update himself with invalid phone', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           phone: '1234',
-           address: updates.address,
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 200 and updated user when coach update himself', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${loggedInCoach.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`)
-         .send({
-           phone: updates.phone,
-         });
-       expect(response.status).toBe(200);
-       expect(response.body.phone).toEqual(updates.phone);
-     });
-     it('Should return 401 when coach update himself with invalid phone', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${loggedInCoach.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`)
-         .send({
-           phone: '1234',
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 401 when a not admin user updates his first name', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           firstName: updates.firstName,
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 401 when a not admin user updates his last name', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${loggedInCoach.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`)
-         .send({
-           lastName: updates.lastName,
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 200 and updated user when an admin update a user', async () => {
-       const updates = await userFactory.create({}, {}, false);
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${otherLoggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInAdmin.token}`)
-         .send({
-           phone: updates.phone,
-         });
-       expect(response.status).toBe(200);
-       expect(response.body.phone).toEqual(updates.phone);
-     });
-     it('Should return 401 when an admin update a user with invalid phone', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${otherLoggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInAdmin.token}`)
-         .send({
-           phone: '1234',
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 200 and updated user when an admin update a user role', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/${otherLoggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInAdmin.token}`)
-         .send({
-           role: UserRoles.COACH,
-         });
-       expect(response.status).toBe(200);
-       expect(response.body.role).toEqual(UserRoles.COACH);
-     });
-   });
-   describe('Update password - /change-pwd', () => {
-     it('Should return 401 if old password is invalid', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/change-pwd`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           email: loggedInCandidat.user.email,
-           oldPassword: 'falsePassword123!',
-           newPassword: 'Candidat123?',
-         });
-       expect(response.status).toBe(401);
-     });
-     it("Should return 400 if new password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/change-pwd`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           email: loggedInCandidat.user.email,
-           oldPassword: 'Candidat123!',
-           newPassword: 'candidat123?',
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 200 and updated user', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/change-pwd`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           email: loggedInCandidat.user.email,
-           oldPassword: 'Candidat123!',
-           newPassword: 'Candidat123?',
-         });
-       expect(response.status).toBe(200);
-     });
-   });
-   describe('/candidat/:id', () => {
-     it('Should return 200, if candidat updates himself', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/candidat/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCandidat.token}`)
-         .send({
-           hidden: false,
-           note: 'updated note by candidat',
-         });
-       expect(response.status).toBe(200);
-     });
-     it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
-       const response = await request(app.getHttpServer())
-         .get(`${route}/candidat/checkUpdate`)
-         .set('authorization', `Token ${loggedInCoach.token}`);
-       expect(response.status).toBe(200);
-       expect(response.body.noteHasBeenModified).toBe(true);
-     });
-     it('Should return 200 and noteHasBeenModified be false, if coach reads note', async () => {
-       const setHasReadNoteRequest = await request(app.getHttpServer())
-         .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`);
-       expect(setHasReadNoteRequest.status).toBe(200);
+    describe('U - Update 1 User', () => {
+      describe('Update user - /:id', () => {
+        it('Should return 401 if user is not logged in', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${otherLoggedInCandidat.user.id}`)
+            .send({
+              phone: updates.phone,
+              firstName: updates.firstName,
+            });
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403 if user do not have the rights to update targeted user', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${otherLoggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              phone: updates.phone,
+              firstName: updates.firstName,
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200 and updated user when a candidate update himself', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              phone: updates.phone,
+              address: updates.address,
+            });
+          expect(response.status).toBe(200);
+          expect(response.body.phone).toEqual(updates.phone);
+          expect(response.body.address).toEqual(updates.address);
+        });
+        it('Should return 400 when a candidate update himself with invalid phone', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              phone: '1234',
+              address: updates.address,
+            });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 200 and updated user when coach update himself', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              phone: updates.phone,
+            });
+          expect(response.status).toBe(200);
+          expect(response.body.phone).toEqual(updates.phone);
+        });
+        it('Should return 400 when coach update himself with invalid phone', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              phone: '1234',
+            });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when a not admin user updates his first name', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              firstName: updates.firstName,
+            });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when a not admin user updates his last name', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              lastName: updates.lastName,
+            });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 200 and updated user when an admin update a user', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${otherLoggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              phone: updates.phone,
+            });
+          expect(response.status).toBe(200);
+          expect(response.body.phone).toEqual(updates.phone);
+        });
+        it('Should return 400 when an admin update a user with invalid phone', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${otherLoggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              phone: '1234',
+            });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 200 and updated user when an admin update a user role', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/${otherLoggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              role: UserRoles.COACH,
+            });
+          expect(response.status).toBe(200);
+          expect(response.body.role).toEqual(UserRoles.COACH);
+        });
+      });
+      describe('Update password - /changeUserPwd', () => {
+        it('Should return 401 if not connected', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${authRoute}/changeUserPwd`)
+            .send({
+              oldPassword: 'Candidat123?',
+              newPassword: 'Candidat123?',
+            });
+          expect(response.status).toBe(401);
+        });
+        it('Should return 401 if old password is invalid', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${authRoute}/changeUserPwd`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              oldPassword: 'falsePassword123!',
+              newPassword: 'Candidat123?',
+            });
+          expect(response.status).toBe(401);
+        });
+        it("Should return 400 if new password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${authRoute}/changeUserPwd`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              oldPassword: 'Candidat123!',
+              newPassword: 'candidat123?',
+            });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 200 and updated user', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${authRoute}/changeUserPwd`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              email: loggedInCandidat.user.email,
+              oldPassword: 'Candidat123!',
+              newPassword: 'Candidat123?',
+            });
+          expect(response.status).toBe(200);
+        });
+      });
+      describe('/candidat/:id', () => {
+        it('Should return 200, if candidat updates himself', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`)
+            .send({
+              hidden: false,
+              note: 'updated note by candidat',
+            });
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/candidat/checkUpdate`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.noteHasBeenModified).toBe(true);
+        });
+        it('Should return 200 and noteHasBeenModified be false, if coach reads note', async () => {
+          const setHasReadNoteRequest = await request(app.getHttpServer())
+            .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(setHasReadNoteRequest.status).toBe(200);
 
-       const response = await request(app.getHttpServer())
-         .get(`${route}/candidat/checkUpdate`)
-         .set('authorization', `Token ${loggedInCoach.token}`);
-       expect(response.status).toBe(200);
-       expect(response.body.noteHasBeenModified).toBe(false);
-     });
-     it('Should return 200 and updated user_candidat, if coach updates candidate associated to him', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/candidat/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`)
-         .send({
-           employed: false,
-           note: 'updated note by coach',
-         });
-       expect(response.status).toBe(200);
-     });
-     it('Should return 200 and noteHasBeenModified, if candidat checks if note has been updated', async () => {
-       const response = await request(app.getHttpServer())
-         .get(`${route}/candidat/checkUpdate`)
-         .set('authorization', `Token ${loggedInCandidat.token}`);
-       expect(response.status).toBe(200);
-       expect(response.body.noteHasBeenModified).toBe(true);
-     });
-     it('Should return 200 and noteHasBeenModified be false, if candidat reads note', async () => {
-       const setHasReadNoteRequest = await request(app.getHttpServer())
-         .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCandidat.token}`);
-       expect(setHasReadNoteRequest.status).toBe(200);
+          const response = await request(app.getHttpServer())
+            .get(`${route}/candidat/checkUpdate`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.noteHasBeenModified).toBe(false);
+        });
+        it('Should return 200 and updated userCandidat, if coach updates candidate associated to him', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              employed: false,
+              note: 'updated note by coach',
+            });
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 and noteHasBeenModified, if candidat checks if note has been updated', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/candidat/checkUpdate`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.noteHasBeenModified).toBe(true);
+        });
+        it('Should return 200 and noteHasBeenModified be false, if candidat reads note', async () => {
+          const setHasReadNoteRequest = await request(app.getHttpServer())
+            .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(setHasReadNoteRequest.status).toBe(200);
 
-       const response = await request(app.getHttpServer())
-         .get(`${route}/candidat/checkUpdate`)
-         .set('authorization', `Token ${loggedInCandidat.token}`);
-       expect(response.status).toBe(200);
-       expect(response.body.noteHasBeenModified).toBe(false);
-     });
-     it('Should return 200 and updated user_candidat, if logged in admin', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/candidat/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`)
-         .send({
-           employed: false,
-           note: 'updated note by coach',
-         });
-       expect(response.status).toBe(200);
-     });
-     it("Should return 401, if candidat doesn't updates himself", async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/candidat/${loggedInCandidat.user.id}`)
-         .set('authorization', `Token ${otherLoggedInCandidat.token}`)
-         .send({
-           employed: false,
-           note: 'updated note by other',
-         });
-       expect(response.status).toBe(401);
-     });
-     it('Should return 401, if coach updates candidate not associated to him', async () => {
-       const response = await request(app.getHttpServer())
-         .put(`${route}/candidat/${otherLoggedInCandidat.user.id}`)
-         .set('authorization', `Token ${loggedInCoach.token}`)
-         .send({
-           employed: false,
-           note: 'updated note by not associated coach',
-         });
-       expect(response.status).toBe(401);
-     });
-   });
- });
- */
+          const response = await request(app.getHttpServer())
+            .get(`${route}/candidat/checkUpdate`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.noteHasBeenModified).toBe(false);
+        });
+        it('Should return 200 and updated userCandidat, if logged in admin', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              employed: false,
+              note: 'updated note by coach',
+            });
+          expect(response.status).toBe(200);
+        });
+        it("Should return 403, if candidat doesn't updates himself", async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${otherLoggedInCandidat.token}`)
+            .send({
+              employed: false,
+              note: 'updated note by other',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach updates candidate not associated to him', async () => {
+          const response = await request(app.getHttpServer())
+            .put(`${route}/candidat/${otherLoggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              employed: false,
+              note: 'updated note by not associated coach',
+            });
+          expect(response.status).toBe(403);
+        });
+      });
+    });
     // TODO put in unit tests
     /* describe('D - Delete 1 User', () => {
       it('Should return 401 if not logged in admin', async () => {
@@ -1140,6 +1159,7 @@ describe('Users', () => {
           .set('authorization', `Token ${loggedInAdmin.token}`);
         expect(response.status).toBe(204);
       });
+    });
     });*/
   });
 });

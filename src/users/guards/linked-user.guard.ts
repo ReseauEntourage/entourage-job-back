@@ -1,6 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRoles } from '../models';
+import * as _ from 'lodash';
+import { getCandidateIdFromCoachOrCandidate, UserRoles } from '../models';
 import { LINKED_USER_KEY } from './linked-user.decorator';
 
 @Injectable()
@@ -18,12 +19,11 @@ export class LinkedUserGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
+    const requestId = _.get(request, linkedUserIdKey);
+    const candidateId = getCandidateIdFromCoachOrCandidate(user);
     return (
-      (user.role === UserRoles.CANDIDAT &&
-        user.id === request[linkedUserIdKey]) ||
-      (user.role === UserRoles.COACH &&
-        (user.candidatId === request[linkedUserIdKey] ||
-          user.id === request[linkedUserIdKey])) ||
+      candidateId === requestId ||
+      user.id === requestId ||
       user.role === UserRoles.ADMIN
     );
   }

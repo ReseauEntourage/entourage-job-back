@@ -49,6 +49,14 @@ const EmployedFilters: FilterConstant<boolean>[] = [
   { label: "Recherche d'emploi", value: false },
 ];
 
+export type MemberConstantType =
+  | typeof AdminZoneFilters[number]['value']
+  | typeof BusinessLineFilters[number]['value']
+  | typeof AssociatedUserFilters[number]['value']
+  | typeof HiddenFilters[number]['value']
+  | typeof EmployedFilters[number]['value']
+  | typeof CVStatusFilters[number]['value'];
+
 export const MemberFilters: Filters<MemberFilterKey> = [
   {
     key: 'zone',

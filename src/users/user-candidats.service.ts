@@ -26,7 +26,7 @@ export class UserCandidatsService {
   async findOneByCandidateId(candidateId: string) {
     return this.userCandidatModel.findOne({
       where: { candidatId: candidateId },
-      attributes: [...UserAttributes],
+      attributes: [...UserCandidatAttributes],
       include: UserInclude,
     });
   }
@@ -42,18 +42,7 @@ export class UserCandidatsService {
     return this.userCandidatModel.findOne({
       where: findWhere,
       attributes: [...UserCandidatAttributes],
-      include: [
-        {
-          model: User,
-          as: 'coach',
-          attributes: [...UserAttributes],
-        },
-        {
-          model: User,
-          as: 'candidat',
-          attributes: [...UserAttributes],
-        },
-      ],
+      include: UserInclude,
     });
   }
 
@@ -76,5 +65,19 @@ export class UserCandidatsService {
     const updatedUserCandidat = await this.findOneByCandidateId(candidateId);
 
     return updatedUserCandidat.toJSON();
+  }
+
+  async checkNoteHasBeenModified(candidateId: string, userId: string) {
+    const userCandidat = await this.userCandidatModel.findOne({
+      where: { candidatId: candidateId },
+      attributes: ['lastModifiedBy'],
+    });
+
+    return {
+      noteHasBeenModified: userCandidat
+        ? !!userCandidat.lastModifiedBy &&
+          userCandidat.lastModifiedBy !== userId
+        : false,
+    };
   }
 }

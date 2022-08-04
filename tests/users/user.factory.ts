@@ -3,7 +3,7 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
-import { AuthService } from 'src/auth/auth.service';
+import { AuthService, encryptPassword } from 'src/auth/auth.service';
 import { UserCandidat, User, UserRoles } from 'src/users';
 import { UsersService } from 'src/users/users.service';
 import { AdminZones } from 'src/utils/types';
@@ -20,14 +20,14 @@ export class UserFactory {
   ) {}
 
   generateData(props: Partial<User>): Partial<User> {
-    const { salt, hash } = this.authService.encryptPassword(
+    const { salt, hash } = encryptPassword(
       props.password ? props.password : faker.internet.password()
     );
 
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
     return {
-      id: faker.datatype.uuid(),
+      id: props.id || faker.datatype.uuid(),
       email: props.email || faker.internet.email().toLowerCase(),
       firstName: props.firstName || faker.name.firstName(),
       lastName: props.lastName || faker.name.lastName(),
@@ -42,8 +42,8 @@ export class UserFactory {
       zone: props.zone || AdminZones.PARIS,
       hashReset: props.hashReset || faker.datatype.uuid(),
       saltReset: props.saltReset || faker.datatype.uuid(),
-      coach: null,
-      candidat: null,
+      coach: props.coach,
+      candidat: props.candidat,
     };
   }
 
@@ -65,8 +65,10 @@ export class UserFactory {
           individualHooks: true,
         }
       );
-      const createdUser = await this.usersService.findOne(userData.id);
-      return createdUser.toJSON();
+    }
+    const dbUser = await this.usersService.findOne(userData.id);
+    if (dbUser) {
+      return dbUser.toJSON();
     }
     const builtUser = await this.userModel.build(userData);
     return builtUser.toJSON();

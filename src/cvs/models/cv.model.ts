@@ -19,10 +19,10 @@ import {
 import { BusinessLine } from 'src/businessLines';
 import { Location } from 'src/locations';
 import { UserCandidat } from 'src/users';
+import { paranoidDeleteCascade } from 'src/utils/misc';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVLocation } from './cv-location.model';
 import { CVStatusValue, CVStatuses } from './cv.types';
-import { paranoidDeleteCascade } from 'src/utils/misc';
 
 @Table({ tableName: 'CVs' })
 export class CV extends Model {
