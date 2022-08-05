@@ -5,18 +5,17 @@ import {
   CreatedAt,
   DataType,
   Default,
-  DeletedAt,
   IsUUID,
-  Model,
   PrimaryKey,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { Department } from '../locations.types';
 import { CV, CVLocation } from 'src/cvs';
-import { Department } from './location.types';
+import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Locations' })
-export class Location extends Model {
+export class Location extends WrapperModel {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

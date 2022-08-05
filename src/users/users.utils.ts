@@ -4,8 +4,8 @@ import { CVStatuses } from 'src/cvs';
 import { Department } from 'src/locations';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
-import { User } from './user.model';
-import { MemberFilterKey, MemberFilters, UserRoles } from './user.types';
+import { User } from './models/user.model';
+import { MemberFilterKey, MemberFilters, UserRoles } from './users.types';
 
 export function generateUrl(user: User) {
   return `${user.firstName.toLowerCase()}-${user.id.substring(0, 8)}`;
@@ -324,4 +324,14 @@ export function getPublishedCVQuery(
       cvs."UserId" = groupCVs."UserId"
       and cvs.version = groupCVs.version
     `;
+}
+
+export function generateImageNamesToDelete(prefix: string) {
+  const imageNames = Object.keys(CVStatuses).map((status) => {
+    return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];
+  });
+
+  return imageNames.reduce((acc, curr) => {
+    return [...acc, ...curr];
+  }, []);
 }

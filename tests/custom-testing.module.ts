@@ -2,10 +2,16 @@ import { Module } from '@nestjs/common';
 
 import { AppModule } from 'src/app.module';
 import { AuthHelper } from './auth';
-import { CVFactory, CVHelper } from './cvs';
+import { BusinessLineHelper } from './businessLines';
+import {
+  CVBusinessLineHelper,
+  CVFactory,
+  CVHelper,
+  CVLocationHelper,
+} from './cvs';
 import { DatabaseHelper } from './database.helper';
-import { UserHelper, UserFactory } from './users';
-import { UserCandidatHelper } from './users/user-candidat.helper';
+import { LocationHelper } from './locations';
+import { UserHelper, UserFactory, UserCandidatHelper } from './users';
 
 @Module({
   imports: [AppModule],
@@ -15,6 +21,10 @@ import { UserCandidatHelper } from './users/user-candidat.helper';
     UserHelper,
     CVHelper,
     CVFactory,
+    CVBusinessLineHelper,
+    CVLocationHelper,
+    LocationHelper,
+    BusinessLineHelper,
     UserCandidatHelper,
     UserFactory,
   ],

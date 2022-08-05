@@ -2,12 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WhereOptions } from 'sequelize';
 import { UpdateUserCandidatDto } from './dto';
-import {
-  User,
-  UserAttributes,
-  UserCandidat,
-  UserCandidatAttributes,
-} from './models';
+import { UserCandidat, UserCandidatAttributes } from './models';
 import { UserInclude } from './models/user-candidat.include';
 
 @Injectable()

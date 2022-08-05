@@ -1,12 +1,13 @@
 import { InjectQueue } from '@nestjs/bull';
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
-import { Cache } from 'cache-manager';
+import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Queue } from 'bull';
+import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
+import { S3Service } from 'src/aws';
 import { BusinessLine } from 'src/businessLines';
-import { CV, CVStatuses } from 'src/cvs';
+import { CV, CVsService, CVStatuses } from 'src/cvs';
 import { CustomMailParams, MailsService } from 'src/mails';
 import { Jobs, Queues } from 'src/queues';
 import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
@@ -15,13 +16,21 @@ import { UpdateUserDto } from './dto';
 import {
   UserAttributes,
   User,
-  UserRole,
-  UserRoles,
   UserCandidat,
   UserCandidatAttributes,
+  PublicUserAttributes,
+} from './models';
+import { UserCandidatInclude } from './models/user.include';
+
+import {
+  UserRole,
+  UserRoles,
   MemberFilters,
   MemberFilterKey,
-  PublicUserAttributes,
+  MemberConstantType,
+} from './users.types';
+
+import {
   filterMembersByAssociatedUser,
   filterMembersByBusinessLines,
   filterMembersByCVStatus,
@@ -29,9 +38,8 @@ import {
   userSearchQuery,
   getPublishedCVQuery,
   getRelatedUser,
-  MemberConstantType,
-} from './models';
-import { UserCandidatInclude } from './models/user.include';
+  generateImageNamesToDelete,
+} from './users.utils';
 
 @Injectable()
 export class UsersService {
@@ -41,7 +49,11 @@ export class UsersService {
     @InjectQueue(Queues.WORK)
     private workQueue: Queue,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    // todo fix forwardRef
+    @Inject(forwardRef(() => CVsService))
+    private cvsService: CVsService /* @Inject(forwardRef(() => S3Service))
+    private s3Service: S3Service*/
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -367,8 +379,25 @@ export class UsersService {
     return updatedUser.toJSON();
   }
 
-  async remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    return this.userModel.destroy({
+      where: { id },
+      individualHooks: true,
+    });
+  }
+
+  async removeCandidateCVs(id: string) {
+    return this.cvsService.removeByCandidateId(id);
+  }
+
+  async removeFiles(id: string, firstName: string, lastName: string) {
+    /* await this.s3Service.deleteFiles(
+      generateImageNamesToDelete(`${process.env.AWSS3_IMAGE_DIRECTORY}${id}`)
+    );
+    const pdfFileName = `${firstName}_${lastName}_${id.substring(0, 8)}.pdf`;
+    await this.s3Service.deleteFiles(
+      `${process.env.AWSS3_FILE_DIRECTORY}${pdfFileName}`
+    );*/
   }
 
   async sendMailsAfterMatching(candidateId: string) {

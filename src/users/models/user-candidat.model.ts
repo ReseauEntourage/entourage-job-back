@@ -7,7 +7,6 @@ import {
   CreatedAt,
   DataType,
   Default,
-  DeletedAt,
   ForeignKey,
   HasMany,
   IsUUID,

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -11,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Order } from 'sequelize/types/model';
-import { validate as uuidValidate } from 'uuid';
+import { validate as uuidValidate, v4 as uuid } from 'uuid';
 import validator from 'validator';
 // TODO Fix
 // eslint-disable-next-line no-restricted-imports
@@ -33,10 +34,11 @@ import {
   Self,
   SelfGuard,
 } from './guards';
-import { MemberFilterKey, User, UserRole, UserRoles } from './models';
+import { User } from './models';
 
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
+import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
 // TODO change to /users
 @Controller('user')
@@ -262,5 +264,124 @@ export class UsersController {
     }
 
     return updatedUserCandidat;
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Delete(':id')
+  async remove(@Param('id', new ParseUUIDPipe()) userId: string) {
+    const user = await this.usersService.findOne(userId);
+
+    if (!user) {
+      return new NotFoundException();
+    }
+
+    await this.usersService.removeFiles(user.id, user.firstName, user.lastName);
+
+    await this.usersService.update(user.id, {
+      firstName: 'Utilisateur',
+      lastName: 'supprimé',
+      email: `${Date.now()}@${uuid()}.deleted`,
+      phone: null,
+      address: null,
+    });
+
+    if (user.role === UserRoles.CANDIDAT) {
+      // TODO check cache manager
+      await this.usersService.uncacheUserCV(user.candidat.url);
+      await this.userCandidatsService.updateByCandidateId(user.id, {
+        note: null,
+        url: `deleted-${user.id.substring(0, 8)}`,
+      });
+    }
+
+    /*
+    // TODO when opportunities
+    const userOpportunitiesQuery = {
+      where: {
+        UserId: id,
+      },
+    };
+
+    const userOpportunities = await Opportunity_User.findAll(
+      userOpportunitiesQuery
+    );
+
+    await Opportunity_User.update(
+      {
+        note: null,
+      },
+      userOpportunitiesQuery
+    );
+    */
+
+    /*
+    // TODO move to CVsService ?
+     await CV.update(
+        {
+          intro: null,
+          story: null,
+          transport: null,
+          availability: null,
+          urlImg: null,
+          catchphrase: null,
+        },
+        {
+          where: {
+            UserId: id,
+          },
+        }
+      );
+      */
+
+    /*
+    // TODO when revisions work
+    const revisionsQuery = {
+      where: {
+        [Op.or]: [
+          { documentId: id },
+          {
+            documentId: userOpportunities.map((userOpp) => {
+              return userOpp.id;
+            }),
+          },
+        ],
+      },
+    };
+
+    const revisions = await Revision.findAll(revisionsQuery);
+
+    // Have to use raw query because Revision_Change is not declared as a model
+    await sequelize.query(
+      `
+      UPDATE "RevisionChanges"
+      SET "document" = '{}'::jsonb, "diff" = '[{}]'::jsonb
+      WHERE "revisionId" IN (${revisions.map((revision) => {
+        return `'${revision.id}'`;
+      })});
+    `,
+      {
+        type: QueryTypes.UPDATE,
+      }
+    );
+
+    await Revision.update(
+      {
+        document: {},
+      },
+      revisionsQuery
+    );
+    */
+
+    let cvsDeleted = 0;
+    if (user.role === UserRoles.CANDIDAT) {
+      cvsDeleted = await this.usersService.removeCandidateCVs(user.id);
+      await this.usersService.cacheAllCVs();
+    }
+
+    // Todo change to userDeleted
+    const usersDeleted = await this.usersService.remove(user.id);
+
+    return { usersDeleted, cvsDeleted };
   }
 }

@@ -11,7 +11,14 @@ import {
 import { Job } from 'bull';
 import { CVsService } from 'src/cvs';
 import { MailjetService } from 'src/mails';
-import { Jobs, Queues, SendMailJob, SendReminderCVJob } from 'src/queues';
+import {
+  CacheAllCVsJob,
+  CacheCVJob,
+  Jobs,
+  Queues,
+  SendMailJob,
+  SendReminderCVJob,
+} from 'src/queues';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
@@ -96,5 +103,21 @@ export class WorkQueueProcessor {
           data.candidatId
         }' (${JSON.stringify(sentToReminderCV20)})`
       : `No reminder after 20 day about CV sent to '${data.candidatId}'`;
+  }
+
+  @Process(Jobs.CACHE_CV)
+  async processCacheCV(job: Job<CacheCVJob>) {
+    const { data } = job;
+    const cv = await this.cvsService.cacheCV(data.url, data.candidatId);
+    return cv
+      ? `CV cached for User ${cv.UserId} and CV ${cv.id}${
+          data.url ? ` and URL ${data.url}` : ''
+        }`
+      : `CV not cached`;
+  }
+  @Process(Jobs.CACHE_ALL_CVS)
+  async processCacheAllCVs(job: Job<CacheAllCVsJob>) {
+    const cvs = await this.cvsService.cacheAllCVs(undefined, true);
+    return cvs && cvs.length > 0 ? `All published CVs cached` : `No CVs cached`;
   }
 }

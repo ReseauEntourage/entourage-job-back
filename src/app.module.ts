@@ -12,7 +12,6 @@ import { JwtAuthGuard, AuthModule } from './auth';
 import { BusinessLinesModule } from './businessLines';
 import { CVsModule } from './cvs';
 import { LocationsModule } from './locations';
-import { MailsModule } from './mails';
 import { UsersModule } from './users';
 
 const ENV = `${process.env.NODE_ENV}`;
@@ -70,7 +69,6 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     CVsModule,
     BusinessLinesModule,
     LocationsModule,
-    MailsModule,
   ],
   providers: [
     {
@@ -88,7 +86,6 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     CVsModule,
     BusinessLinesModule,
     LocationsModule,
-    MailsModule,
   ],
 })
 export class AppModule {}

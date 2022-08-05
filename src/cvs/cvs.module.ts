@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { MailsModule } from 'src/mails';
 import { UsersModule } from 'src/users';
+import { CVsController } from './cvs.controller';
 import { CVsService } from './cvs.service';
 import { CVBusinessLine, CV, CVLocation } from './models';
 
@@ -13,6 +14,7 @@ import { CVBusinessLine, CV, CVLocation } from './models';
     MailsModule,
   ],
   providers: [CVsService],
+  controllers: [CVsController],
   exports: [CVsService, SequelizeModule],
 })
 export class CVsModule {}

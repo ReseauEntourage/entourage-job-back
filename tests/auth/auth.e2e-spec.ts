@@ -1,5 +1,9 @@
 import { getQueueToken } from '@nestjs/bull';
-import { INestApplication } from '@nestjs/common';
+import {
+  CACHE_MANAGER,
+  CACHE_MODULE_OPTIONS,
+  INestApplication,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
@@ -24,6 +28,7 @@ describe('Auth', () => {
   const route = '/auth';
 
   const queueMock = { add: jest.fn() };
+  const cacheMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,6 +36,8 @@ describe('Auth', () => {
     })
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(queueMock)
+      .overrideProvider(CACHE_MANAGER)
+      .useValue(cacheMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

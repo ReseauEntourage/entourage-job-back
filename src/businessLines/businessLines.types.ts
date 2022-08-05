@@ -1,4 +1,4 @@
-import { FilterConstant } from '../../utils/types';
+import { FilterConstant } from '../utils/types';
 
 export type BusinessLineValue =
   | 'la'

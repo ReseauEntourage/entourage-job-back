@@ -55,7 +55,7 @@ export class UserFactory {
     const userData = await this.generateData(props);
 
     if (insertInDB) {
-      await this.usersService.create(userData);
+      await this.userModel.create(userData);
       await this.userCandidatModel.update(
         { ...userCandidatProps },
         {

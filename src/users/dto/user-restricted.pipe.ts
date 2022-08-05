@@ -10,7 +10,7 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { UserRoles } from 'src/users/models';
+import { UserRoles } from 'src/users';
 import { AnyCantFix, RequestWithUser } from 'src/utils/types';
 
 @Injectable({ scope: Scope.REQUEST })

@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
+import { BusinessLine } from 'src/businessLines';
+import { CV, CVBusinessLine, CVLocation } from 'src/cvs';
+import { Location } from 'src/locations';
 import { UserCandidat, User } from 'src/users';
 
 @Injectable()
@@ -9,7 +12,17 @@ export class DatabaseHelper {
     @InjectModel(User)
     private userModel: typeof User,
     @InjectModel(UserCandidat)
-    private userCandidatModel: typeof UserCandidat
+    private userCandidatModel: typeof UserCandidat,
+    @InjectModel(CV)
+    private cvModel: typeof CV,
+    @InjectModel(Location)
+    private locationModel: typeof Location,
+    @InjectModel(CVLocation)
+    private cvLocationModel: typeof CVLocation,
+    @InjectModel(BusinessLine)
+    private businessLineModel: typeof BusinessLine,
+    @InjectModel(CVBusinessLine)
+    private cvBusinessLineModel: typeof CVBusinessLine
   ) {}
 
   async resetTestDB() {
@@ -19,6 +32,11 @@ export class DatabaseHelper {
       cascade: true,
     };
     try {
+      await this.cvLocationModel.destroy(destroyOptions);
+      await this.cvBusinessLineModel.destroy(destroyOptions);
+      await this.locationModel.destroy(destroyOptions);
+      await this.businessLineModel.destroy(destroyOptions);
+      await this.cvModel.destroy(destroyOptions);
       await this.userCandidatModel.destroy(destroyOptions);
       await this.userModel.destroy(destroyOptions);
     } catch (err) {

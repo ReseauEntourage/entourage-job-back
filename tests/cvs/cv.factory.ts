@@ -4,10 +4,10 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
-import { Model } from 'sequelize';
 import { BusinessLine } from 'src/businessLines';
-import { CV, CVStatuses, CVStatusKey } from 'src/cvs';
+import { CV, CVsService, CVStatuses, CVStatusKey } from 'src/cvs';
 import { Location } from 'src/locations';
+import { WrapperModel } from 'src/utils/types';
 
 const getCvStatusValues = (cvStatus: typeof CVStatuses) => {
   return Object.keys(cvStatus).map((status) => {
@@ -36,7 +36,8 @@ export class CVFactory {
     @InjectModel(Location)
     private locationModel: typeof Location,
     @InjectModel(BusinessLine)
-    private businessLineModel: typeof BusinessLine
+    private businessLineModel: typeof BusinessLine,
+    private cvsService: CVsService
   ) {}
 
   generateCv(props: Partial<CV> = {}): Partial<CV> {
@@ -73,10 +74,8 @@ export class CVFactory {
           -1
         )}Model` as InjectedModels;
 
-        // TODO how to
-        const injectedModel = this[injectedModelName];
+        const injectedModel = this[injectedModelName] as typeof WrapperModel;
 
-        // @ts-ignore
         if (Object.keys(injectedModel.getAttributes()).includes('CVId')) {
           // TODO after skills
           /*
@@ -112,14 +111,18 @@ export class CVFactory {
         } else {
           const instances = await Promise.all(
             components[componentKey as ComponentKey].map((component) => {
-              if (_.isString(component)) {
-                // @ts-ignore
-                return injectedModel.create({
-                  name: component,
-                });
-              } else {
-                // @ts-ignore
-                return injectedModel.create(component as Partial<Model>);
+              try {
+                if (_.isString(component)) {
+                  return injectedModel.create({
+                    name: component,
+                  });
+                } else {
+                  return injectedModel.create(
+                    component as Partial<WrapperModel>
+                  );
+                }
+              } catch (err) {
+                console.error(err);
               }
             })
           );
@@ -141,11 +144,10 @@ export class CVFactory {
 
       return createdCV.toJSON();
     }
-    // TODO when CVServices
-    /* const dbCV = await this.cvServices.findOne(cvData.id);
+    const dbCV = await this.cvsService.findOne(cvData.id);
     if (dbCV) {
       return dbCV.toJSON();
-    }*/
+    }
     const builtCV = await this.cvModel.build(cvData);
     return builtCV.toJSON();
   }

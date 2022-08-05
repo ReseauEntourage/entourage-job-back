@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as _ from 'lodash';
-import { UserRoles } from '../models';
+import { UserRoles } from '../users.types';
 import { SELF_KEY } from './self.decorator';
 
 @Injectable()

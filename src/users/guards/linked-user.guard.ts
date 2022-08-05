@@ -1,7 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as _ from 'lodash';
-import { getCandidateIdFromCoachOrCandidate, UserRoles } from '../models';
+import { UserRoles } from '../users.types';
+import { getCandidateIdFromCoachOrCandidate } from '../users.utils';
 import { LINKED_USER_KEY } from './linked-user.decorator';
 
 @Injectable()

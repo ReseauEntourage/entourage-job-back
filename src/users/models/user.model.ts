@@ -20,10 +20,16 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 
+import {
+  AdminRole,
+  Gender,
+  Genders,
+  UserRole,
+  UserRoles,
+} from '../users.types';
+import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
 import { AdminZone } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
-import { AdminRole, Gender, Genders, UserRole, UserRoles } from './user.types';
-import { capitalizeNameAndTrim, generateUrl } from './user.utils';
 
 //TODO : paranoid, papertrail
 

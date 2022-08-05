@@ -16,13 +16,15 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { CVStatusValue, CVStatuses } from '../cvs.types';
 import { BusinessLine } from 'src/businessLines';
 import { Location } from 'src/locations';
 import { UserCandidat } from 'src/users';
-import { paranoidDeleteCascade } from 'src/utils/misc';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVLocation } from './cv-location.model';
-import { CVStatusValue, CVStatuses } from './cv.types';
+import * as _ from 'lodash';
+
+const CVAssociations = ['cvBusinessLines', 'cvLocations'] as const;
 
 @Table({ tableName: 'CVs' })
 export class CV extends Model {
@@ -100,7 +102,7 @@ export class CV extends Model {
   businessLines: BusinessLine[];
 
   @HasMany(() => CVBusinessLine, {
-    onDelete: 'CASCADE',
+    /* onDelete: 'CASCADE',*/
     foreignKey: 'CVId',
   })
   cvBusinessLines: CVBusinessLine[];
@@ -109,15 +111,27 @@ export class CV extends Model {
   locations: Location[];
 
   @HasMany(() => CVLocation, {
-    onDelete: 'CASCADE',
+    /* onDelete: 'CASCADE', */
     foreignKey: 'CVId',
   })
   cvLocations: CVLocation[];
 
   @AfterDestroy
   static async deleteRelations(destroyedCV: CV) {
-    /* await paranoidDeleteCascade(destroyedCV);*/
+    const results = await Promise.all(
+      CVAssociations.map(async (cvAssociation) => {
+        const associationInstances = await destroyedCV.$get(cvAssociation);
+        return Promise.all(
+          associationInstances.map(async (assocationInstance) => {
+            return assocationInstance.destroy();
+          })
+        );
+      })
+    );
+    const flattenResults = _.flatten(results);
+    console.log(flattenResults);
   }
+
   /*
 // TODO check if useful
 CV.belongsToMany(models.Ambition, {

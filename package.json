@@ -16,6 +16,7 @@
     "worker:start:dev": "nest start --config nest-cli.worker.json --watch",
     "worker:start:debug": "nest start --config nest-cli.worker.json --debug --watch",
     "worker:start:prod": "node dist/worker",
+    "ts-check": "tsc --noEmit",
     "lint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -26,6 +27,9 @@
     "db-migrate": "npx sequelize db:migrate"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudfront": "^3.142.0",
+    "@aws-sdk/client-s3": "^3.142.0",
+    "@aws-sdk/s3-request-presigner": "^3.142.0",
     "@nestjs/bull": "^0.5.3",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^1.2.0",

@@ -1,10 +1,7 @@
 import { randomBytes, pbkdf2Sync } from 'crypto';
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Queue } from 'bull';
 import { MailsService } from 'src/mails';
-import { Queues } from 'src/queues';
 import {
   CreateUserDto,
   UpdateUserCandidatDto,

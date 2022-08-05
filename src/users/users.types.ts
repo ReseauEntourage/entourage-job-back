@@ -2,7 +2,7 @@ import { BusinessLineFilters } from 'src/businessLines';
 
 // TODO fix
 // eslint-disable-next-line no-restricted-imports
-import { CVStatusFilters } from 'src/cvs/models/cv.types';
+import { CVStatusFilters } from 'src/cvs/cvs.types';
 import { AdminZoneFilters, FilterConstant, Filters } from 'src/utils/types';
 
 export const UserRoles = {

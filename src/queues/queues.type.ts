@@ -36,6 +36,13 @@ export interface SendReminderCVJob {
   is20Days: boolean;
 }
 
+export interface CacheCVJob {
+  candidatId: string;
+  url: string;
+}
+
+export interface CacheAllCVsJob {}
+
 export const Queues = {
   WORK: 'work',
 } as const;
