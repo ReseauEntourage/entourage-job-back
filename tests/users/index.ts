@@ -1,3 +1,4 @@
 export { UserFactory } from './user.factory';
-export { UserHelper } from './user.helper';
-export { UserCandidatHelper } from './user-candidat.helper';
+export { UsersHelper } from './users.helper';
+export { UserCandidatsHelper } from './user-candidats.helper';
+export { UsersTestingModule } from './users-testing.module';

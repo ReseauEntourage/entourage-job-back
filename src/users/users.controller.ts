@@ -276,9 +276,11 @@ export class UsersController {
       return new NotFoundException();
     }
 
-    await this.usersService.removeFiles(user.id, user.firstName, user.lastName);
+    const { firstName, lastName, candidat } = user.toJSON();
 
-    await this.usersService.update(user.id, {
+    await this.usersService.removeFiles(userId, firstName, lastName);
+
+    await this.usersService.update(userId, {
       firstName: 'Utilisateur',
       lastName: 'supprimé',
       email: `${Date.now()}@${uuid()}.deleted`,
@@ -288,10 +290,10 @@ export class UsersController {
 
     if (user.role === UserRoles.CANDIDAT) {
       // TODO check cache manager
-      await this.usersService.uncacheUserCV(user.candidat.url);
-      await this.userCandidatsService.updateByCandidateId(user.id, {
+      await this.usersService.uncacheUserCV(candidat.url);
+      await this.userCandidatsService.updateByCandidateId(userId, {
         note: null,
-        url: `deleted-${user.id.substring(0, 8)}`,
+        url: `deleted-${userId.substring(0, 8)}`,
       });
     }
 
@@ -314,25 +316,6 @@ export class UsersController {
       userOpportunitiesQuery
     );
     */
-
-    /*
-    // TODO move to CVsService ?
-     await CV.update(
-        {
-          intro: null,
-          story: null,
-          transport: null,
-          availability: null,
-          urlImg: null,
-          catchphrase: null,
-        },
-        {
-          where: {
-            UserId: id,
-          },
-        }
-      );
-      */
 
     /*
     // TODO when revisions work
@@ -372,15 +355,13 @@ export class UsersController {
       revisionsQuery
     );
     */
+    // TODO MOVE TO CV SERVICE ?
 
-    let cvsDeleted = 0;
-    if (user.role === UserRoles.CANDIDAT) {
-      cvsDeleted = await this.usersService.removeCandidateCVs(user.id);
-      await this.usersService.cacheAllCVs();
-    }
+    const cvsDeleted = await this.usersService.removeCandidateCVs(userId);
+    await this.usersService.cacheAllCVs();
 
     // Todo change to userDeleted
-    const usersDeleted = await this.usersService.remove(user.id);
+    const usersDeleted = await this.usersService.remove(userId);
 
     return { usersDeleted, cvsDeleted };
   }

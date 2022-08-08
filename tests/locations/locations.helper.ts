@@ -4,7 +4,7 @@ import { Op } from 'sequelize';
 import { Location } from 'src/locations';
 
 @Injectable()
-export class LocationHelper {
+export class LocationsHelper {
   constructor(
     @InjectModel(Location)
     private locationModel: typeof Location
@@ -16,11 +16,9 @@ export class LocationHelper {
     }
     return this.locationModel.count({
       where: {
-        [Op.or]: [
-          names.map((name) => {
-            return { name };
-          }),
-        ],
+        name: {
+          [Op.or]: names,
+        },
       },
     });
   }

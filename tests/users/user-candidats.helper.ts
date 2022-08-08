@@ -5,12 +5,11 @@ import { User, UserCandidat } from 'src/users';
 import { UserFactory } from './user.factory';
 
 @Injectable()
-export class UserCandidatHelper {
+export class UserCandidatsHelper {
   constructor(
-    private authService: AuthService,
-    private userFactory: UserFactory,
     @InjectModel(UserCandidat)
-    private userCandidatModel: typeof UserCandidat
+    private userCandidatModel: typeof UserCandidat,
+    private authService: AuthService
   ) {}
 
   async associateCoachAndCandidat(
@@ -35,14 +34,5 @@ export class UserCandidatHelper {
         individualHooks: true,
       }
     );
-  }
-
-  async getCandidatUrl(id: string) {
-    const userCandidat = await this.userCandidatModel.findOne({
-      where: { candidatId: id },
-      attributes: ['url'],
-    });
-    const { url } = userCandidat.toJSON();
-    return url;
   }
 }

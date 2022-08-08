@@ -3,7 +3,7 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
-import { AuthService, encryptPassword } from 'src/auth/auth.service';
+import { encryptPassword } from 'src/auth/auth.service';
 import { UserCandidat, User, UserRoles } from 'src/users';
 import { UsersService } from 'src/users/users.service';
 import { AdminZones } from 'src/utils/types';
@@ -15,11 +15,10 @@ export class UserFactory {
     private userModel: typeof User,
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
-    private authService: AuthService,
     private usersService: UsersService
   ) {}
 
-  generateData(props: Partial<User>): Partial<User> {
+  generateUser(props: Partial<User>): Partial<User> {
     const { salt, hash } = encryptPassword(
       props.password ? props.password : faker.internet.password()
     );
@@ -52,10 +51,10 @@ export class UserFactory {
     userCandidatProps: Partial<UserCandidat> = {},
     insertInDB = true
   ): Promise<User> {
-    const userData = await this.generateData(props);
+    const userData = await this.generateUser(props);
 
     if (insertInDB) {
-      await this.userModel.create(userData);
+      await this.userModel.create(userData, { hooks: true });
       await this.userCandidatModel.update(
         { ...userCandidatProps },
         {

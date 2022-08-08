@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { Location } from 'src/locations';
-import { CVLocation } from '../../src/cvs';
+import { CVLocation } from 'src/cvs';
 
 @Injectable()
-export class CVLocationHelper {
+export class CVLocationsHelper {
   constructor(
     @InjectModel(CVLocation)
     private cvLocationModel: typeof CVLocation

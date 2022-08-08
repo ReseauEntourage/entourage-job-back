@@ -5,10 +5,12 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
-import { S3Service } from 'src/aws';
+//TODO fix
+// eslint-disable-next-line no-restricted-imports
+import { S3Service } from 'src/aws/s3.service';
 import { BusinessLine } from 'src/businessLines';
 import { CV, CVsService, CVStatuses } from 'src/cvs';
-import { CustomMailParams, MailsService } from 'src/mails';
+import { MailsService } from 'src/mails';
 import { Jobs, Queues } from 'src/queues';
 import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
@@ -37,7 +39,6 @@ import {
   getMemberOptions,
   userSearchQuery,
   getPublishedCVQuery,
-  getRelatedUser,
   generateImageNamesToDelete,
 } from './users.utils';
 
@@ -49,11 +50,13 @@ export class UsersService {
     @InjectQueue(Queues.WORK)
     private workQueue: Queue,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    // TODO fix forwardRef
+    @Inject(forwardRef(() => MailsService))
     private mailsService: MailsService,
-    // todo fix forwardRef
+    private s3Service: S3Service,
+    // TODO fix forwardRef
     @Inject(forwardRef(() => CVsService))
-    private cvsService: CVsService /* @Inject(forwardRef(() => S3Service))
-    private s3Service: S3Service*/
+    private cvsService: CVsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -223,14 +226,14 @@ export class UsersService {
     const membersWithLastCV = filteredMembersByAssociatedUser.map((member) => {
       const user = member.toJSON();
       if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
-        const sortedCvs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
+        const sortedCVs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
           return cv2.version - cv1.version;
         });
         return {
           ...user,
           candidat: {
             ...user.candidat,
-            cvs: [sortedCvs[0]],
+            cvs: [sortedCVs[0]],
           },
         };
       }
@@ -305,14 +308,14 @@ export class UsersService {
     const membersWithLastCV = members.map((member) => {
       const user = member.toJSON();
       if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
-        const sortedCvs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
+        const sortedCVs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
           return cv2.version - cv1.version;
         });
         return {
           ...user,
           candidat: {
             ...user.candidat,
-            cvs: [sortedCvs[0]],
+            cvs: [sortedCVs[0]],
           },
         };
       }
@@ -387,32 +390,31 @@ export class UsersService {
   }
 
   async removeCandidateCVs(id: string) {
+    await this.cvsService.updateByCandidateId(id, {
+      intro: null,
+      story: null,
+      transport: null,
+      availability: null,
+      urlImg: null,
+      catchphrase: null,
+    });
     return this.cvsService.removeByCandidateId(id);
   }
 
   async removeFiles(id: string, firstName: string, lastName: string) {
-    /* await this.s3Service.deleteFiles(
+    await this.s3Service.deleteFiles(
       generateImageNamesToDelete(`${process.env.AWSS3_IMAGE_DIRECTORY}${id}`)
     );
     const pdfFileName = `${firstName}_${lastName}_${id.substring(0, 8)}.pdf`;
     await this.s3Service.deleteFiles(
       `${process.env.AWSS3_FILE_DIRECTORY}${pdfFileName}`
-    );*/
+    );
   }
 
   async sendMailsAfterMatching(candidateId: string) {
-    const finalCandidate = await this.findOne(candidateId);
+    const candidate = await this.findOne(candidateId);
 
-    const toEmail: CustomMailParams['toEmail'] = { to: finalCandidate.email };
-
-    const coach = getRelatedUser(finalCandidate);
-    if (coach) {
-      toEmail.cc = coach.email;
-    }
-    await this.mailsService.sendCvPreparationMail(
-      finalCandidate.toJSON(),
-      toEmail
-    );
+    await this.mailsService.sendCVPreparationMail(candidate.toJSON());
 
     await this.workQueue.add(
       Jobs.REMINDER_CV_10,

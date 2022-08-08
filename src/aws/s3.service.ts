@@ -82,7 +82,7 @@ export class S3Service {
       ResponseContentType: 'application/pdf',
     });
 
-    return await s3GetSignedUrl(this.s3, getObjectCommand, {
+    return s3GetSignedUrl(this.s3, getObjectCommand, {
       expiresIn: 60,
     });
   }

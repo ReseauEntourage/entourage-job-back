@@ -29,9 +29,9 @@ export function getPartialUserForPayload(user: User): PayloadUser {
     candidat: user.candidat,
     coach: user.coach,
     lastConnection: user.lastConnection,
-    createdAt: user.createdAt,
+    /*  createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    deletedAt: user.createdAt,
+    deletedAt: user.createdAt,*/
   };
 }
 

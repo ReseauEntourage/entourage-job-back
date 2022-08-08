@@ -22,7 +22,6 @@ import { Location } from 'src/locations';
 import { UserCandidat } from 'src/users';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVLocation } from './cv-location.model';
-import * as _ from 'lodash';
 
 const CVAssociations = ['cvBusinessLines', 'cvLocations'] as const;
 
@@ -102,7 +101,7 @@ export class CV extends Model {
   businessLines: BusinessLine[];
 
   @HasMany(() => CVBusinessLine, {
-    /* onDelete: 'CASCADE',*/
+    onDelete: 'CASCADE',
     foreignKey: 'CVId',
   })
   cvBusinessLines: CVBusinessLine[];
@@ -111,14 +110,14 @@ export class CV extends Model {
   locations: Location[];
 
   @HasMany(() => CVLocation, {
-    /* onDelete: 'CASCADE', */
+    onDelete: 'CASCADE',
     foreignKey: 'CVId',
   })
   cvLocations: CVLocation[];
 
   @AfterDestroy
   static async deleteRelations(destroyedCV: CV) {
-    const results = await Promise.all(
+    await Promise.all(
       CVAssociations.map(async (cvAssociation) => {
         const associationInstances = await destroyedCV.$get(cvAssociation);
         return Promise.all(
@@ -128,8 +127,6 @@ export class CV extends Model {
         );
       })
     );
-    const flattenResults = _.flatten(results);
-    console.log(flattenResults);
   }
 
   /*

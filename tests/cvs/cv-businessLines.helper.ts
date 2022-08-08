@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { CVBusinessLine } from 'src/cvs';
 
 @Injectable()
-export class CVBusinessLineHelper {
+export class CVBusinessLinesHelper {
   constructor(
     @InjectModel(CVBusinessLine)
     private cvBusinessLineModel: typeof CVBusinessLine

@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { CloudfrontService } from './cloudfront.service';
+import { CloudFrontService } from './cloud-front.service';
 import { S3Service } from './s3.service';
 
 @Module({
-  providers: [S3Service, CloudfrontService],
-  exports: [S3Service, CloudfrontService],
+  providers: [CloudFrontService, S3Service],
+  exports: [CloudFrontService, S3Service],
 })
 export class AWSModule {}

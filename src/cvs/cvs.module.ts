@@ -9,9 +9,10 @@ import { CVBusinessLine, CV, CVLocation } from './models';
 @Module({
   imports: [
     SequelizeModule.forFeature([CV, CVBusinessLine, CVLocation]),
-    // TODO fix forward ref
+    // TODO fix forwardRef
     forwardRef(() => UsersModule),
-    MailsModule,
+    // TODO fix forwardRef
+    forwardRef(() => MailsModule),
   ],
   providers: [CVsService],
   controllers: [CVsController],

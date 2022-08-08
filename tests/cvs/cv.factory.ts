@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // eslint-disable-next-line import/no-unresolved
 import faker from '@faker-js/faker';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import { BusinessLine } from 'src/businessLines';
@@ -9,7 +9,7 @@ import { CV, CVsService, CVStatuses, CVStatusKey } from 'src/cvs';
 import { Location } from 'src/locations';
 import { WrapperModel } from 'src/utils/types';
 
-const getCvStatusValues = (cvStatus: typeof CVStatuses) => {
+const getCVStatusValues = (cvStatus: typeof CVStatuses) => {
   return Object.keys(cvStatus).map((status) => {
     return cvStatus[status as CVStatusKey].value;
   });
@@ -40,7 +40,7 @@ export class CVFactory {
     private cvsService: CVsService
   ) {}
 
-  generateCv(props: Partial<CV> = {}): Partial<CV> {
+  generateCV(props: Partial<CV> = {}): Partial<CV> {
     const fakeData = {
       id: faker.datatype.uuid(),
       urlImg: `images/${props.UserId}.Progress.jpg`,
@@ -49,7 +49,7 @@ export class CVFactory {
       availability: faker.lorem.sentence(),
       transport: faker.lorem.sentence(),
       catchphrase: faker.lorem.sentence(),
-      status: getCvStatusValues(CVStatuses)[0],
+      status: getCVStatusValues(CVStatuses)[0],
     };
 
     return {
@@ -63,22 +63,23 @@ export class CVFactory {
     components: Partial<Components> = {},
     insertInDB = true
   ): Promise<CV> {
-    const cvData = this.generateCv(props);
+    const cvData = this.generateCV(props);
 
     if (insertInDB) {
-      const createdCV: CV = await this.cvModel.create(cvData);
+      const createdCV = await this.cvModel.create(cvData, { hooks: true });
 
-      _.forEach(Object.keys(components), async (componentKey) => {
-        const injectedModelName = `${componentKey.slice(
-          0,
-          -1
-        )}Model` as InjectedModels;
+      await Promise.all(
+        Object.keys(components).map(async (componentKey) => {
+          const injectedModelName = `${componentKey.slice(
+            0,
+            -1
+          )}Model` as InjectedModels;
 
-        const injectedModel = this[injectedModelName] as typeof WrapperModel;
+          const injectedModel = this[injectedModelName] as typeof WrapperModel;
 
-        if (Object.keys(injectedModel.getAttributes()).includes('CVId')) {
-          // TODO after skills
-          /*
+          if (Object.keys(injectedModel.getAttributes()).includes('CVId')) {
+            // TODO after skills
+            /*
             await Promise.all(
             components[componentKey as ComponentKey].map(async (component) => {
               const instance = await this[
@@ -108,31 +109,30 @@ export class CVFactory {
               }
             })
           );*/
-        } else {
-          const instances = await Promise.all(
-            components[componentKey as ComponentKey].map((component) => {
-              try {
-                if (_.isString(component)) {
-                  return injectedModel.create({
-                    name: component,
-                  });
-                } else {
-                  return injectedModel.create(
-                    component as Partial<WrapperModel>
-                  );
+          } else {
+            const instances = await Promise.all(
+              components[componentKey as ComponentKey].map(
+                async (component) => {
+                  if (_.isString(component)) {
+                    return injectedModel.create(
+                      {
+                        name: component,
+                      },
+                      { hooks: true }
+                    );
+                  } else {
+                    return injectedModel.create(
+                      component as Partial<WrapperModel>,
+                      { hooks: true }
+                    );
+                  }
                 }
-              } catch (err) {
-                console.error(err);
-              }
-            })
-          );
-          try {
+              )
+            );
             await createdCV.$add(componentKey, instances);
-          } catch (err) {
-            console.error(err);
           }
-        }
-      });
+        })
+      );
       // TODO after CV_SEARCH
       /*
         await models.CV_Search.create({
@@ -141,8 +141,6 @@ export class CVFactory {
           searchString: JSON.stringify({ ...cvFull, ...props }),
         });
       */
-
-      return createdCV.toJSON();
     }
     const dbCV = await this.cvsService.findOne(cvData.id);
     if (dbCV) {

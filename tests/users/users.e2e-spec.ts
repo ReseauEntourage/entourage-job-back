@@ -4,24 +4,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/aws';
-import { BusinessLine } from 'src/businessLines';
 import { CVStatuses } from 'src/cvs';
 import { Queues } from 'src/queues';
 import { User, UserRoles } from 'src/users';
 import { AdminZones } from 'src/utils/types';
-import { BusinessLineHelper } from 'tests/businessLines';
+import { BusinessLinesHelper } from 'tests/businessLines';
 import { CustomTestingModule } from 'tests/custom-testing.module';
-import {
-  CVBusinessLineHelper,
-  CVFactory,
-  CVHelper,
-  CVLocationHelper,
-} from 'tests/cvs';
+import { CVBusinessLinesHelper, CVFactory, CVLocationsHelper } from 'tests/cvs';
 import { DatabaseHelper } from 'tests/database.helper';
-import { LocationHelper } from 'tests/locations';
-import { UserCandidatHelper } from './user-candidat.helper';
+import { LocationsHelper } from 'tests/locations';
+import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
-import { UserHelper } from './user.helper';
+import { UsersHelper } from './users.helper';
 
 const fakeId = uuid();
 
@@ -36,14 +30,13 @@ describe('Users', () => {
 
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
-  let userHelper: UserHelper;
-  let userCandidatHelper: UserCandidatHelper;
-  let cvHelper: CVHelper;
+  let userHelper: UsersHelper;
+  let userCandidatHelper: UserCandidatsHelper;
   let cvFactory: CVFactory;
-  let cvBusinessLineHelper: CVBusinessLineHelper;
-  let cvLocationHelper: CVLocationHelper;
-  let businessLineHelper: BusinessLineHelper;
-  let locationHelper: LocationHelper;
+  let cvBusinessLineHelper: CVBusinessLinesHelper;
+  let cvLocationHelper: CVLocationsHelper;
+  let businessLineHelper: BusinessLinesHelper;
+  let locationHelper: LocationsHelper;
 
   const route = '/user';
   const authRoute = '/auth';
@@ -72,23 +65,22 @@ describe('Users', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-
-    databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
-    userHelper = moduleFixture.get<UserHelper>(UserHelper);
-    userCandidatHelper =
-      moduleFixture.get<UserCandidatHelper>(UserCandidatHelper);
-    userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    cvHelper = moduleFixture.get<CVHelper>(CVHelper);
-    cvFactory = moduleFixture.get<CVFactory>(CVFactory);
-    cvBusinessLineHelper =
-      moduleFixture.get<CVBusinessLineHelper>(CVBusinessLineHelper);
-    cvLocationHelper = moduleFixture.get<CVLocationHelper>(CVLocationHelper);
-    businessLineHelper =
-      moduleFixture.get<BusinessLineHelper>(BusinessLineHelper);
-    locationHelper = moduleFixture.get<LocationHelper>(LocationHelper);
-
     // TODO remove
     await databaseHelper.resetTestDB();
+
+    databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
+    userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    userCandidatHelper =
+      moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
+    userFactory = moduleFixture.get<UserFactory>(UserFactory);
+    cvFactory = moduleFixture.get<CVFactory>(CVFactory);
+    cvBusinessLineHelper = moduleFixture.get<CVBusinessLinesHelper>(
+      CVBusinessLinesHelper
+    );
+    cvLocationHelper = moduleFixture.get<CVLocationsHelper>(CVLocationsHelper);
+    businessLineHelper =
+      moduleFixture.get<BusinessLinesHelper>(BusinessLinesHelper);
+    locationHelper = moduleFixture.get<LocationsHelper>(LocationsHelper);
 
     const adminPassword = 'Admin123!';
     const admin = await userFactory.create({
@@ -161,7 +153,7 @@ describe('Users', () => {
       zone: AdminZones.LYON,
     });
 
-    await cvHelper.createCvWithAssociations(
+    await cvFactory.create(
       {
         UserId: loggedInCandidat.user.id,
         status: CVStatuses.Published.value,
@@ -171,7 +163,7 @@ describe('Users', () => {
       }
     );
 
-    await cvHelper.createCvWithAssociations(
+    await cvFactory.create(
       {
         UserId: otherLoggedInCandidat.user.id,
         status: CVStatuses.Pending.value,
@@ -181,7 +173,7 @@ describe('Users', () => {
       }
     );
 
-    await cvHelper.createCvWithAssociations(
+    await cvFactory.create(
       {
         UserId: thirdCandidat.user.id,
         status: CVStatuses.Published.value,
@@ -206,28 +198,12 @@ describe('Users', () => {
 
   describe('CRUD User', () => {
     describe('C - Create 1 User', () => {
-      it('Should return 200 and a created user (create user with password).', async () => {
-        const candidat = await userFactory.create(
-          {
-            role: UserRoles.CANDIDAT,
-          },
-          {},
-          false
-        );
-        const response = await request(app.getHttpServer())
-          .post(`${authRoute}/createUser`)
-          .set('authorization', `Token ${loggedInAdmin.token}`)
-          .send(candidat);
-        expect(response.status).toBe(201);
-      });
       it('Should return 200 and a created user (create user without password).', async () => {
         const candidat = await userFactory.create(
           { role: UserRoles.CANDIDAT },
           {},
           false
         );
-        /* delete candidat.password;
-        delete candidat.hash;*/
         const response = await request(app.getHttpServer())
           .post(`${authRoute}/createUser`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
@@ -1003,7 +979,7 @@ describe('Users', () => {
     describe('D - Delete 1 User', () => {
       it('Should return 403 if not logged in admin', async () => {
         const response = await request(app.getHttpServer())
-          .delete(`${route}/${otherLoggedInCandidat.user.id}`)
+          .delete(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInCoach.token}`);
         expect(response.status).toBe(403);
       });
@@ -1011,10 +987,10 @@ describe('Users', () => {
         const uniqIdToFind = uuid();
         const uniqId2ToFind = uuid();
 
-        const { id: cvId } = await cvFactory.create(
+        const cv = await cvFactory.create(
           {
-            UserId: otherLoggedInCandidat.user.id,
-            urlImg: `images/${otherLoggedInCandidat.user.id}.Published.jpg`,
+            UserId: loggedInCandidat.user.id,
+            urlImg: `images/${loggedInCandidat.user.id}.Published.jpg`,
             intro: null,
             story: 'test',
             availability: 'En semaine',
@@ -1033,10 +1009,6 @@ describe('Users', () => {
               { prefix: 'dans', name: uniqIdToFind, order: 0 },
               { prefix: 'dans', name: uniqId2ToFind, order: 1 },
             ],*/
-            /*businessLines: [
-              { name: uniqIdToFind, order: 0 } as BusinessLine,
-              { name: uniqId2ToFind, order: 1 } as BusinessLine,
-            ], */
             businessLines: [uniqIdToFind, uniqId2ToFind],
             locations: [uniqIdToFind],
             /*
@@ -1060,7 +1032,7 @@ describe('Users', () => {
         );
 
         const response = await request(app.getHttpServer())
-          .delete(`${route}/${otherLoggedInCandidat.user.id}`)
+          .delete(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInAdmin.token}`);
 
         expect(response.status).toBe(200);
@@ -1069,7 +1041,7 @@ describe('Users', () => {
           uniqIdToFind
         );
         const cvLocationsCount = await cvLocationHelper.countCVLocationsByCVId(
-          cvId
+          cv.id
         );
         expect(locationsCount).toBe(1);
         expect(cvLocationsCount).toBe(0);
@@ -1080,7 +1052,7 @@ describe('Users', () => {
             uniqId2ToFind,
           ]);
         const cvBusinessLinesCount =
-          await cvBusinessLineHelper.countCVBusinessLinesByCVId(cvId);
+          await cvBusinessLineHelper.countCVBusinessLinesByCVId(cv.id);
         expect(businessLinesCount).toBe(2);
         expect(cvBusinessLinesCount).toBe(0);
 
@@ -1181,13 +1153,13 @@ describe('Users', () => {
       });
       it('Should return 404 if try to get user after deletion', async () => {
         const response = await request(app.getHttpServer())
-          .get(`${route}/${otherLoggedInCandidat.user.id}`)
+          .get(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInAdmin.token}`);
         expect(response.status).toBe(404);
       });
       it("Should return 404 if try to get user's CV after deletion", async () => {
         const response = await request(app.getHttpServer())
-          .get(`${cvRoute}?userId=${otherLoggedInCandidat.user.id}`)
+          .get(`${cvRoute}?userId=${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInAdmin.token}`);
         expect(response.status).toBe(404);
       });

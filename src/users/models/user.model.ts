@@ -196,10 +196,13 @@ export class User extends Model {
         }
 
         try {
-          await UserCandidat.create({
-            candidatId: nextUser.id,
-            url: generateUrl(nextUser),
-          });
+          await UserCandidat.create(
+            {
+              candidatId: nextUser.id,
+              url: generateUrl(nextUser),
+            },
+            { hooks: true }
+          );
           // TODO
           /*await models.Share.findOrCreate({
               where: {

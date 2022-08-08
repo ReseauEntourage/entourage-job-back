@@ -1,4 +1,4 @@
 export { CVFactory } from './cv.factory';
-export { CVHelper } from './cv.helper';
-export { CVLocationHelper } from './cv-location.helper';
-export { CVBusinessLineHelper } from './cv-businessLine.helper';
+export { CVLocationsHelper } from './cv-locations.helper';
+export { CVBusinessLinesHelper } from './cv-businessLines.helper';
+export { CVsTestingModule } from './cvs-testing.module';

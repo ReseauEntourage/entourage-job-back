@@ -30,11 +30,11 @@ export function queryConditionCV(
     `;
 }
 
-export function cleanCV(model: CV) {
+export function cleanCV(model: CV): Partial<CV> {
   if (!model) {
     return null;
   }
-  const tmpCV = model.toJSON();
+  const tmpCV = model.toJSON() as Partial<CV>;
   /*if (tmpCV.skills) {
     tmpCV.skills = tmpCV.skills.map((o) => {
       return o.name;
@@ -60,7 +60,8 @@ export function cleanCV(model: CV) {
       return { name, order, prefix };
     });
   }*/
-  if (tmpCV.businessLines) {
+  // TODO FIX CLEANING
+  /* if (tmpCV.businessLines) {
     tmpCV.businessLines = tmpCV.businessLines.map(
       ({ name, order }: BusinessLine) => {
         return { name, order };
@@ -71,7 +72,7 @@ export function cleanCV(model: CV) {
     tmpCV.locations = tmpCV.locations.map(({ name }: Location) => {
       return name;
     });
-  }
+  }*/
   /*if (tmpCV.experiences) {
     tmpCV.experiences = tmpCV.experiences.map((e) => {
       if (e.skills) {

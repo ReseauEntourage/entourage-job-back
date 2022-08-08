@@ -4,3 +4,4 @@ export { CVsService } from './cvs.service';
 export { CVStatuses, CVStatusFilters } from './cvs.types';
 export type { CVStatusValue, CVStatusKey } from './cvs.types';
 export * from './models';
+export * from './dto';

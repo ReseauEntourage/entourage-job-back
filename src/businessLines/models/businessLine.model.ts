@@ -6,7 +6,6 @@ import {
   DataType,
   Default,
   IsUUID,
-  Model,
   PrimaryKey,
   Table,
   UpdatedAt,

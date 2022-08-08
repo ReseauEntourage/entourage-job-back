@@ -2,14 +2,15 @@ import {
   CloudFrontClient,
   CreateInvalidationCommand,
 } from '@aws-sdk/client-cloudfront';
+
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class CloudfrontService {
-  private cloudfront: CloudFrontClient;
+export class CloudFrontService {
+  private cloudFront: CloudFrontClient;
 
   constructor() {
-    this.cloudfront = new CloudFrontClient({
+    this.cloudFront = new CloudFrontClient({
       region: 'eu-west-3',
       credentials: {
         accessKeyId: process.env.AWSS3_ID,
@@ -32,7 +33,7 @@ export class CloudfrontService {
       },
     });
 
-    const { Invalidation: Id } = await this.cloudfront.send(
+    const { Invalidation: Id } = await this.cloudFront.send(
       invalidateObjectCommand
     );
 

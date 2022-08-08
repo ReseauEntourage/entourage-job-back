@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
 import { Jobs, Queues } from 'src/queues';
-import { User } from 'src/users';
+import { getRelatedUser, User } from 'src/users';
 import { getAdminMailsFromZone } from 'src/utils/misc';
 import { CustomMailParams } from './mailjet.service';
 
@@ -80,10 +80,13 @@ export class MailsService {
     });
   }
 
-  async sendCvPreparationMail(
-    candidate: User,
-    toEmail: CustomMailParams['toEmail']
-  ) {
+  async sendCVPreparationMail(candidate: User) {
+    const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
+
+    const coach = getRelatedUser(candidate);
+    if (coach) {
+      toEmail.cc = coach.email;
+    }
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
     await this.workQueue.add(
@@ -104,6 +107,74 @@ export class MailsService {
           3600000 *
           24,
       }
+    );
+  }
+
+  async sendCVReminderMail(
+    candidate: User,
+    is20Days = false,
+    toEmail: CustomMailParams['toEmail']
+  ) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+
+    await this.workQueue.add(Jobs.SEND_MAIL, {
+      toEmail,
+      templateId: is20Days
+        ? MailjetTemplates.CV_REMINDER_20
+        : MailjetTemplates.CV_REMINDER_10,
+      replyTo: candidatesAdminMail,
+      variables: {
+        ..._.omitBy(candidate, _.isNil),
+      },
+    });
+  }
+
+  // TODO send mails through MailsService
+  async sendReminderIfNotEmployed(
+    candidate: User,
+    templateId: MailjetTemplate
+  ) {
+    if (!candidate.candidat.employed) {
+      const toEmail: CustomMailParams['toEmail'] = {
+        to: candidate.email,
+      };
+      const coach = getRelatedUser(candidate);
+      if (coach) {
+        toEmail.cc = coach.email;
+      }
+      const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+
+      await this.workQueue.add(Jobs.SEND_MAIL, {
+        toEmail,
+        templateId: templateId,
+        replyTo: candidatesAdminMail,
+        variables: {
+          ..._.omitBy(candidate, _.isNil),
+        },
+      });
+      return toEmail;
+    }
+    return false;
+  }
+
+  async sendInterviewTrainingReminderMail(candidate: User) {
+    return this.sendReminderIfNotEmployed(
+      candidate,
+      MailjetTemplates.INTERVIEW_TRAINING_REMINDER
+    );
+  }
+
+  async sendVideoReminderMail(candidate: User) {
+    return this.sendReminderIfNotEmployed(
+      candidate,
+      MailjetTemplates.VIDEO_REMINDER
+    );
+  }
+
+  async sendActionsReminderMails(candidate: User) {
+    return this.sendReminderIfNotEmployed(
+      candidate,
+      MailjetTemplates.ACTIONS_REMINDER
     );
   }
 }
