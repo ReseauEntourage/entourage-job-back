@@ -1,4 +1,4 @@
-import { Department } from 'src/locations';
+import { Department } from 'src/locations/locations.types';
 import { AdminZone } from 'src/utils/types';
 import { getZoneFromDepartment, getZoneSuffix } from './getZoneFromDepartment';
 

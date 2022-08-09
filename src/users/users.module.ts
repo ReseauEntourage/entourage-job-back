@@ -1,10 +1,7 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
 // TODO fix imports
-// eslint-disable-next-line no-restricted-imports
-import { AWSModule } from 'src/aws/aws.module';
-import { CVsModule } from 'src/cvs';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
 import { UserCandidat, User } from './models';
@@ -16,11 +13,7 @@ import { UsersService } from './users.service';
   imports: [
     SequelizeModule.forFeature([User, UserCandidat]),
     QueuesModule,
-    // TODO fix forwardRef
-    forwardRef(() => MailsModule),
-    // TODO fix forwardRef
-    forwardRef(() => CVsModule),
-    AWSModule,
+    MailsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService, UserCandidatsService],

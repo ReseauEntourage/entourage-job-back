@@ -11,7 +11,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { Department } from '../locations.types';
-import { CV, CVLocation } from 'src/cvs';
+import { CV, CVLocation } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Locations' })

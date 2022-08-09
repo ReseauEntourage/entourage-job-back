@@ -9,8 +9,8 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
-import { CVsService } from 'src/cvs';
-import { MailjetService } from 'src/mails';
+import { CVsService } from 'src/cvs/cvs.service';
+import { MailjetService } from 'src/mails/mailjet.service';
 import {
   CacheAllCVsJob,
   CacheCVJob,
@@ -18,7 +18,7 @@ import {
   Queues,
   SendMailJob,
   SendReminderCVJob,
-} from 'src/queues';
+} from 'src/queues/queues.types';
 
 // TODO PUSHER
 @Processor(Queues.WORK)

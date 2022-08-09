@@ -1,7 +1,5 @@
-import { BusinessLineFilters } from 'src/businessLines';
+import { BusinessLineFilters } from 'src/businessLines/businessLines.types';
 
-// TODO fix
-// eslint-disable-next-line no-restricted-imports
 import { CVStatusFilters } from 'src/cvs/cvs.types';
 import { AdminZoneFilters, FilterConstant, Filters } from 'src/utils/types';
 

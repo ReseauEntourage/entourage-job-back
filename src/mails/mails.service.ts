@@ -2,8 +2,9 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
-import { Jobs, Queues } from 'src/queues';
-import { getRelatedUser, User } from 'src/users';
+import { Jobs, Queues } from 'src/queues/queues.types';
+import { User } from 'src/users/models';
+import { getRelatedUser } from 'src/users/users.utils';
 import { getAdminMailsFromZone } from 'src/utils/misc';
 import { CustomMailParams } from './mailjet.service';
 

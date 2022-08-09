@@ -1,10 +1,10 @@
 import { col, Op, where, WhereOptions } from 'sequelize';
-import { BusinessLineValue } from 'src/businessLines';
-import { CVStatuses } from 'src/cvs';
-import { Department } from 'src/locations';
+import { BusinessLineValue } from 'src/businessLines/businessLines.types';
+import { CVStatuses } from 'src/cvs/cvs.types';
+import { Department } from 'src/locations/locations.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
-import { User } from './models/user.model';
+import { User } from './models';
 import { MemberFilterKey, MemberFilters, UserRoles } from './users.types';
 
 export function generateUrl(user: User) {

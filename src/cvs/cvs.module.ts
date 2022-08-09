@@ -1,7 +1,8 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { MailsModule } from 'src/mails';
-import { UsersModule } from 'src/users';
+import { MailsModule } from 'src/mails/mails.module';
+import { QueuesModule } from 'src/queues/producers';
+import { UsersModule } from 'src/users/users.module';
 import { CVsController } from './cvs.controller';
 import { CVsService } from './cvs.service';
 import { CVBusinessLine, CV, CVLocation } from './models';
@@ -9,10 +10,9 @@ import { CVBusinessLine, CV, CVLocation } from './models';
 @Module({
   imports: [
     SequelizeModule.forFeature([CV, CVBusinessLine, CVLocation]),
-    // TODO fix forwardRef
-    forwardRef(() => UsersModule),
-    // TODO fix forwardRef
-    forwardRef(() => MailsModule),
+    QueuesModule,
+    UsersModule,
+    MailsModule,
   ],
   providers: [CVsService],
   controllers: [CVsController],

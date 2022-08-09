@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { BusinessLine } from 'src/businessLines';
+import { BusinessLine } from 'src/businessLines/models';
 
 @Injectable()
 export class BusinessLinesHelper {

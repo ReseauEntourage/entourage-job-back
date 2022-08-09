@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { BusinessLine } from 'src/businessLines';
-import { CV, CVBusinessLine, CVLocation } from 'src/cvs';
-import { Location } from 'src/locations';
-import { UserCandidat, User } from 'src/users';
+import { BusinessLine } from 'src/businessLines/models';
+import { CV, CVBusinessLine, CVLocation } from 'src/cvs/models';
+import { Location } from 'src/locations/models';
+import { UserCandidat, User } from 'src/users/models';
 
 @Injectable()
 export class DatabaseHelper {

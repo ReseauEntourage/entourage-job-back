@@ -1,19 +1,20 @@
-import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import moment from 'moment/moment';
 import { Op, QueryTypes } from 'sequelize';
-import { BusinessLine, BusinessLineValue } from 'src/businessLines';
-import { Department, Location } from 'src/locations';
-import { CustomMailParams } from 'src/mails';
+import { UserCandidatsService } from 'src/users/user-candidats.service';
+import { UsersService } from 'src/users/users.service';
+import { BusinessLineValue } from 'src/businessLines/businessLines.types';
+import { BusinessLine } from 'src/businessLines/models';
+import { Department } from 'src/locations/locations.types';
+import { Location } from 'src/locations/models';
+import { CustomMailParams } from 'src/mails/mailjet.service';
 import { MailsService } from 'src/mails/mails.service';
-import {
-  getPublishedCVQuery,
-  getRelatedUser,
-  UserCandidatsService,
-  UsersService,
-} from 'src/users';
-
+import { Jobs, Queues } from 'src/queues/queues.types';
+import { getPublishedCVQuery, getRelatedUser } from 'src/users/users.utils';
 import { AnyToFix, RedisKeys } from 'src/utils/types';
 import { CVStatuses } from './cvs.types';
 import { cleanCV, queryConditionCV } from './cvs.utils';
@@ -32,14 +33,10 @@ export class CVsService {
     @InjectModel(CV)
     private cvModel: typeof CV,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    // TODO fix forwardRef
-    @Inject(forwardRef(() => UsersService))
+    @InjectQueue(Queues.WORK)
+    private workQueue: Queue,
     private usersService: UsersService,
-    // TODO fix forwardRef
-    @Inject(forwardRef(() => UserCandidatsService))
     private userCandidatsService: UserCandidatsService,
-    // TODO fix forwardRef
-    @Inject(forwardRef(() => MailsService))
     private mailsService: MailsService
   ) {}
 
@@ -329,5 +326,19 @@ export class CVsService {
     }
 
     return cleanedCVList;
+  }
+
+  async uncacheCV(url: string) {
+    await this.cacheManager.del(RedisKeys.CV_PREFIX + url);
+  }
+
+  async sendCacheCV(candidateId: string) {
+    await this.workQueue.add(Jobs.CACHE_CV, {
+      candidatId: candidateId,
+    });
+  }
+
+  async sendCacheAllCVs() {
+    await this.workQueue.add(Jobs.CACHE_ALL_CVS);
   }
 }

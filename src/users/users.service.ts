@@ -1,17 +1,14 @@
 import { InjectQueue } from '@nestjs/bull';
-import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
-//TODO fix
-// eslint-disable-next-line no-restricted-imports
-import { S3Service } from 'src/aws/s3.service';
-import { BusinessLine } from 'src/businessLines';
-import { CV, CVsService, CVStatuses } from 'src/cvs';
-import { MailsService } from 'src/mails';
-import { Jobs, Queues } from 'src/queues';
+import { BusinessLine } from 'src/businessLines/models';
+import { CV } from 'src/cvs/models';
+import { MailsService } from 'src/mails/mails.service';
+import { Jobs, Queues } from 'src/queues/queues.types';
 import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -39,8 +36,8 @@ import {
   getMemberOptions,
   userSearchQuery,
   getPublishedCVQuery,
-  generateImageNamesToDelete,
 } from './users.utils';
+import { CVStatuses } from '../cvs/cvs.types';
 
 @Injectable()
 export class UsersService {
@@ -50,13 +47,7 @@ export class UsersService {
     @InjectQueue(Queues.WORK)
     private workQueue: Queue,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    // TODO fix forwardRef
-    @Inject(forwardRef(() => MailsService))
-    private mailsService: MailsService,
-    private s3Service: S3Service,
-    // TODO fix forwardRef
-    @Inject(forwardRef(() => CVsService))
-    private cvsService: CVsService
+    private mailsService: MailsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -389,28 +380,6 @@ export class UsersService {
     });
   }
 
-  async removeCandidateCVs(id: string) {
-    await this.cvsService.updateByCandidateId(id, {
-      intro: null,
-      story: null,
-      transport: null,
-      availability: null,
-      urlImg: null,
-      catchphrase: null,
-    });
-    return this.cvsService.removeByCandidateId(id);
-  }
-
-  async removeFiles(id: string, firstName: string, lastName: string) {
-    await this.s3Service.deleteFiles(
-      generateImageNamesToDelete(`${process.env.AWSS3_IMAGE_DIRECTORY}${id}`)
-    );
-    const pdfFileName = `${firstName}_${lastName}_${id.substring(0, 8)}.pdf`;
-    await this.s3Service.deleteFiles(
-      `${process.env.AWSS3_FILE_DIRECTORY}${pdfFileName}`
-    );
-  }
-
   async sendMailsAfterMatching(candidateId: string) {
     const candidate = await this.findOne(candidateId);
 
@@ -446,16 +415,19 @@ export class UsersService {
     );
   }
 
-  async uncacheUserCV(url: string) {
+  // TODO fix duplicate
+  async uncacheCandidateCV(url: string) {
     await this.cacheManager.del(RedisKeys.CV_PREFIX + url);
   }
 
-  async cacheUserCV(candidateId: string) {
+  // TODO fix duplicate
+  async cacheCandidateCV(candidateId: string) {
     await this.workQueue.add(Jobs.CACHE_CV, {
       candidatId: candidateId,
     });
   }
 
+  // TODO fix duplicate
   async cacheAllCVs() {
     await this.workQueue.add(Jobs.CACHE_ALL_CVS);
   }

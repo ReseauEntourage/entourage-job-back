@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { BusinessLinesModule } from 'src/businessLines';
-import { CVsModule } from 'src/cvs';
-import { LocationsModule } from 'src/locations';
+import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
+import { CVsModule } from 'src/cvs/cvs.module';
+import { LocationsModule } from 'src/locations/locations.module';
 import { CVBusinessLinesHelper } from './cv-businessLines.helper';
 import { CVLocationsHelper } from './cv-locations.helper';
 import { CVFactory } from './cv.factory';

@@ -3,16 +3,19 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { S3Service } from 'src/aws';
-import { CVStatuses } from 'src/cvs';
-import { Queues } from 'src/queues';
-import { User, UserRoles } from 'src/users';
+import { S3Service } from 'src/aws/s3.service';
+import { CVStatuses } from 'src/cvs/cvs.types';
+import { Queues } from 'src/queues/queues.types';
+import { User } from 'src/users/models';
+import { UserRoles } from 'src/users/users.types';
 import { AdminZones } from 'src/utils/types';
-import { BusinessLinesHelper } from 'tests/businessLines';
+import { BusinessLinesHelper } from 'tests/businessLines/businessLines.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
-import { CVBusinessLinesHelper, CVFactory, CVLocationsHelper } from 'tests/cvs';
+import { CVBusinessLinesHelper } from 'tests/cvs/cv-businessLines.helper';
+import { CVLocationsHelper } from 'tests/cvs/cv-locations.helper';
+import { CVFactory } from 'tests/cvs/cv.factory';
 import { DatabaseHelper } from 'tests/database.helper';
-import { LocationsHelper } from 'tests/locations';
+import { LocationsHelper } from 'tests/locations/locations.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
@@ -39,7 +42,6 @@ describe('Users', () => {
   let locationHelper: LocationsHelper;
 
   const route = '/user';
-  const authRoute = '/auth';
   const cvRoute = '/cv';
 
   const queueMock = { add: jest.fn() };
@@ -65,8 +67,6 @@ describe('Users', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    // TODO remove
-    await databaseHelper.resetTestDB();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
@@ -81,6 +81,9 @@ describe('Users', () => {
     businessLineHelper =
       moduleFixture.get<BusinessLinesHelper>(BusinessLinesHelper);
     locationHelper = moduleFixture.get<LocationsHelper>(LocationsHelper);
+
+    // TODO remove
+    await databaseHelper.resetTestDB();
 
     const adminPassword = 'Admin123!';
     const admin = await userFactory.create({
@@ -205,7 +208,7 @@ describe('Users', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${authRoute}/createUser`)
+          .post(`${route}`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(candidat);
         expect(response.status).toBe(201);
@@ -216,7 +219,7 @@ describe('Users', () => {
           phone: '1234',
         };
         const response = await request(app.getHttpServer())
-          .post(`${authRoute}/createUser`)
+          .post(`${route}`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(wrongData);
         expect(response.status).toBe(400);
@@ -230,7 +233,7 @@ describe('Users', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${authRoute}/createUser`)
+          .post(`${route}`)
           .send(candidat);
         expect(response.status).toBe(401);
       });
@@ -243,7 +246,7 @@ describe('Users', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${authRoute}/createUser`)
+          .post(`${route}`)
           .set('authorization', `Token ${loggedInCandidat.token}`)
           .send(candidat);
         expect(response.status).toBe(403);
@@ -257,7 +260,7 @@ describe('Users', () => {
           true
         );
         const response = await request(app.getHttpServer())
-          .post(`${authRoute}/createUser`)
+          .post(`${route}`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send(candidat);
         expect(response.status).toBe(409);
@@ -401,9 +404,6 @@ describe('Users', () => {
               role: candidat.role,
               adminRole: candidat.adminRole,
               address: candidat.address,
-              deletedAt: candidat.deletedAt,
-              createdAt: candidat.createdAt?.toISOString(),
-              updatedAt: candidat.updatedAt?.toISOString(),
               email: candidat.email,
               gender: candidat.gender,
               lastConnection: candidat.lastConnection?.toISOString(),
@@ -842,10 +842,10 @@ describe('Users', () => {
           expect(response.body.role).toEqual(UserRoles.COACH);
         });
       });
-      describe('Update password - /changeUserPwd', () => {
+      describe('Update password - /change-pwd', () => {
         it('Should return 401 if not connected', async () => {
           const response = await request(app.getHttpServer())
-            .put(`${authRoute}/changeUserPwd`)
+            .put(`${route}/change-pwd`)
             .send({
               oldPassword: 'Candidat123?',
               newPassword: 'Candidat123?',
@@ -854,7 +854,7 @@ describe('Users', () => {
         });
         it('Should return 401 if old password is invalid', async () => {
           const response = await request(app.getHttpServer())
-            .put(`${authRoute}/changeUserPwd`)
+            .put(`${route}/change-pwd`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send({
               oldPassword: 'falsePassword123!',
@@ -864,7 +864,7 @@ describe('Users', () => {
         });
         it("Should return 400 if new password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
           const response = await request(app.getHttpServer())
-            .put(`${authRoute}/changeUserPwd`)
+            .put(`${route}/change-pwd`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send({
               oldPassword: 'Candidat123!',
@@ -874,7 +874,7 @@ describe('Users', () => {
         });
         it('Should return 200 and updated user', async () => {
           const response = await request(app.getHttpServer())
-            .put(`${authRoute}/changeUserPwd`)
+            .put(`${route}/change-pwd`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send({
               email: loggedInCandidat.user.email,

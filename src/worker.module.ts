@@ -4,8 +4,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { Queues } from 'src/queues';
 import { ConsumersModule } from 'src/queues/consumers';
+import { Queues } from 'src/queues/queues.types';
 import { getRedisOptions, getSequelizeOptions } from './app.module';
 
 @Module({

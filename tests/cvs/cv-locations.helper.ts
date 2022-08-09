@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { CVLocation } from 'src/cvs';
+import { CVLocation } from 'src/cvs/models';
 
 @Injectable()
 export class CVLocationsHelper {

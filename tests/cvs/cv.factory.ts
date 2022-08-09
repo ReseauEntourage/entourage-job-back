@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // eslint-disable-next-line import/no-unresolved
 import faker from '@faker-js/faker';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
-import { BusinessLine } from 'src/businessLines';
-import { CV, CVsService, CVStatuses, CVStatusKey } from 'src/cvs';
-import { Location } from 'src/locations';
+import { BusinessLine } from 'src/businessLines/models';
+import { CVsService } from 'src/cvs/cvs.service';
+import { CVStatuses, CVStatusKey } from 'src/cvs/cvs.types';
+import { CV } from 'src/cvs/models';
+import { Location } from 'src/locations/models';
 import { WrapperModel } from 'src/utils/types';
 
 const getCVStatusValues = (cvStatus: typeof CVStatuses) => {

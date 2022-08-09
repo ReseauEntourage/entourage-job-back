@@ -17,9 +17,9 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { CVStatusValue, CVStatuses } from '../cvs.types';
-import { BusinessLine } from 'src/businessLines';
-import { Location } from 'src/locations';
-import { UserCandidat } from 'src/users';
+import { BusinessLine } from 'src/businessLines/models';
+import { Location } from 'src/locations/models';
+import { UserCandidat } from 'src/users/models';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVLocation } from './cv-location.model';
 

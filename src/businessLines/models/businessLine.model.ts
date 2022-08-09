@@ -11,7 +11,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { BusinessLineValue } from '../businessLines.types';
-import { CV, CVBusinessLine } from 'src/cvs';
+import { CV, CVBusinessLine } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'BusinessLines' })

@@ -1,6 +1,6 @@
-import { User, UserCandidat } from 'src/users';
-import { BusinessLine } from 'src/businessLines';
-import { Location } from 'src/locations';
+import { User, UserCandidat } from 'src/users/models';
+import { BusinessLine } from 'src/businessLines/models';
+import { Location } from 'src/locations/models';
 
 export const UserAllInclude = {
   model: UserCandidat,

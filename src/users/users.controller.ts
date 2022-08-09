@@ -2,23 +2,20 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
   NotFoundException,
   Param,
   ParseUUIDPipe,
   Put,
   Query,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Order } from 'sequelize/types/model';
-import { validate as uuidValidate, v4 as uuid } from 'uuid';
+import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
-// TODO Fix
-// eslint-disable-next-line no-restricted-imports
-import { Public } from 'src/auth/guards/public.decorator';
-// eslint-disable-next-line no-restricted-imports
-import { UserPayload } from 'src/auth/guards/user-payload.decorator';
+
+import { Public, UserPayload } from 'src/auth/guards';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import {
@@ -39,6 +36,8 @@ import { User } from './models';
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
+import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
+import { passwordStrength } from 'check-password-strength';
 
 // TODO change to /users
 @Controller('user')
@@ -175,14 +174,52 @@ export class UsersController {
     }
 
     if (updatedUserCandidat.hidden) {
-      await this.usersService.uncacheUserCV(updatedUserCandidat.url);
+      await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
     } else {
-      await this.usersService.cacheUserCV(updatedUserCandidat.candidatId);
+      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidatId);
     }
 
     await this.usersService.cacheAllCVs();
 
     return updatedUserCandidat;
+  }
+
+  // TODO change to changePwd
+  @Put('change-pwd')
+  async changePassword(
+    @UserPayload('email') email: string,
+    @Body('oldPassword') oldPassword: string,
+    @Body('newPassword') newPassword: string
+  ) {
+    const user = await this.usersService.findOneByMail(email);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const { salt: oldSalt, password } = user;
+
+    const validated = validatePassword(oldPassword, password, oldSalt);
+
+    if (!validated) {
+      throw new UnauthorizedException();
+    }
+
+    if (passwordStrength(newPassword).id < 2) {
+      throw new BadRequestException();
+    }
+
+    const { hash, salt } = encryptPassword(newPassword);
+
+    const updatedUser = await this.usersService.update(user.id, {
+      password: hash,
+      salt,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return updatedUser;
   }
 
   @Self('params.id')
@@ -264,105 +301,5 @@ export class UsersController {
     }
 
     return updatedUserCandidat;
-  }
-
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
-  @Delete(':id')
-  async remove(@Param('id', new ParseUUIDPipe()) userId: string) {
-    const user = await this.usersService.findOne(userId);
-
-    if (!user) {
-      return new NotFoundException();
-    }
-
-    const { firstName, lastName, candidat } = user.toJSON();
-
-    await this.usersService.removeFiles(userId, firstName, lastName);
-
-    await this.usersService.update(userId, {
-      firstName: 'Utilisateur',
-      lastName: 'supprimé',
-      email: `${Date.now()}@${uuid()}.deleted`,
-      phone: null,
-      address: null,
-    });
-
-    if (user.role === UserRoles.CANDIDAT) {
-      // TODO check cache manager
-      await this.usersService.uncacheUserCV(candidat.url);
-      await this.userCandidatsService.updateByCandidateId(userId, {
-        note: null,
-        url: `deleted-${userId.substring(0, 8)}`,
-      });
-    }
-
-    /*
-    // TODO when opportunities
-    const userOpportunitiesQuery = {
-      where: {
-        UserId: id,
-      },
-    };
-
-    const userOpportunities = await Opportunity_User.findAll(
-      userOpportunitiesQuery
-    );
-
-    await Opportunity_User.update(
-      {
-        note: null,
-      },
-      userOpportunitiesQuery
-    );
-    */
-
-    /*
-    // TODO when revisions work
-    const revisionsQuery = {
-      where: {
-        [Op.or]: [
-          { documentId: id },
-          {
-            documentId: userOpportunities.map((userOpp) => {
-              return userOpp.id;
-            }),
-          },
-        ],
-      },
-    };
-
-    const revisions = await Revision.findAll(revisionsQuery);
-
-    // Have to use raw query because Revision_Change is not declared as a model
-    await sequelize.query(
-      `
-      UPDATE "RevisionChanges"
-      SET "document" = '{}'::jsonb, "diff" = '[{}]'::jsonb
-      WHERE "revisionId" IN (${revisions.map((revision) => {
-        return `'${revision.id}'`;
-      })});
-    `,
-      {
-        type: QueryTypes.UPDATE,
-      }
-    );
-
-    await Revision.update(
-      {
-        document: {},
-      },
-      revisionsQuery
-    );
-    */
-    // TODO MOVE TO CV SERVICE ?
-
-    const cvsDeleted = await this.usersService.removeCandidateCVs(userId);
-    await this.usersService.cacheAllCVs();
-
-    // Todo change to userDeleted
-    const usersDeleted = await this.usersService.remove(userId);
-
-    return { usersDeleted, cvsDeleted };
   }
 }

@@ -16,7 +16,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 
-import { CV } from 'src/cvs';
+import { CV } from 'src/cvs/models';
 import { User } from './user.model';
 
 @Table({ tableName: 'User_Candidats' })

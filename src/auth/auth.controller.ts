@@ -1,110 +1,27 @@
-import { randomBytes } from 'crypto';
 import {
   BadRequestException,
   Body,
-  ConflictException,
   Controller,
   Get,
   NotFoundException,
   Param,
   ParseUUIDPipe,
   Post,
-  Put,
   Redirect,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
-import { CreateUserDto, Roles, RolesGuard, User, UserRoles } from '../users';
-import { isValidPhone } from 'src/utils/misc';
-import { AuthService, encryptPassword, validatePassword } from './auth.service';
+import { User } from 'src/users/models';
+import { AuthService } from './auth.service';
+import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
-
-function generateFakePassword() {
-  return randomBytes(16).toString('hex');
-}
-
-const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
 
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
-  @Post('createUser')
-  async createUser(@Body() createUserDto: CreateUserDto) {
-    if (createUserDto.phone && !isValidPhone(createUserDto.phone)) {
-      throw new BadRequestException();
-    }
-
-    const userRandomPassword = generateFakePassword();
-    const { hash, salt } = encryptPassword(userRandomPassword);
-
-    const {
-      hash: hashReset,
-      salt: saltReset,
-      jwtToken,
-    } = this.authService.generateRandomPasswordInJWT('30d');
-
-    const userToCreate = {
-      ...createUserDto,
-      password: hash,
-      salt,
-      hashReset,
-      saltReset,
-    } as CreateUserDto;
-
-    let createdUser: User;
-    try {
-      createdUser = await this.authService.createUser(userToCreate);
-    } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
-        throw new ConflictException();
-      }
-    }
-    const { id, firstName, role, zone, email } = createdUser.toJSON();
-
-    await this.authService.sendNewAccountMail(
-      {
-        id,
-        firstName,
-        role,
-        zone,
-        email,
-      },
-      jwtToken
-    );
-
-    if (userToCreate.userToCoach) {
-      let candidatId: string;
-      let coachId: string;
-
-      if (createdUser.role === UserRoles.COACH) {
-        candidatId = userToCreate.userToCoach;
-        coachId = createdUser.id;
-      }
-      if (createdUser.role === UserRoles.CANDIDAT) {
-        candidatId = createdUser.id;
-        coachId = userToCreate.userToCoach;
-      }
-
-      const updatedUserCandidat =
-        await this.authService.updateUserCandidatByCandidateId(candidatId, {
-          candidatId,
-          coachId,
-        });
-
-      if (!updatedUserCandidat) {
-        throw new NotFoundException();
-      }
-      await this.authService.sendMailsAfterMatching(candidatId);
-    }
-
-    return createdUser;
-  }
 
   @Public()
   @UseGuards(LocalAuthGuard)
@@ -217,43 +134,6 @@ export class AuthController {
       salt,
       hashReset: null,
       saltReset: null,
-    });
-
-    if (!updatedUser) {
-      throw new NotFoundException();
-    }
-
-    return updatedUser;
-  }
-
-  @Put('changeUserPwd')
-  async changePassword(
-    @UserPayload('email') email: string,
-    @Body('oldPassword') oldPassword: string,
-    @Body('newPassword') newPassword: string
-  ) {
-    const user = await this.authService.findOneUserByMail(email);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-
-    const { salt: oldSalt, password } = user;
-
-    const validated = validatePassword(oldPassword, password, oldSalt);
-
-    if (!validated) {
-      throw new UnauthorizedException();
-    }
-
-    if (passwordStrength(newPassword).id < 2) {
-      throw new BadRequestException();
-    }
-
-    const { hash, salt } = encryptPassword(newPassword);
-
-    const updatedUser = await this.authService.updateUser(user.id, {
-      password: hash,
-      salt,
     });
 
     if (!updatedUser) {

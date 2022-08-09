@@ -8,11 +8,14 @@ import { SequelizeModuleOptions } from '@nestjs/sequelize/dist/interfaces/sequel
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import type { ClientOpts } from 'redis';
-import { JwtAuthGuard, AuthModule } from './auth';
-import { BusinessLinesModule } from './businessLines';
-import { CVsModule } from './cvs';
-import { LocationsModule } from './locations';
-import { UsersModule } from './users';
+import { AuthModule } from 'src/auth/auth.module';
+import { JwtAuthGuard } from 'src/auth/guards';
+import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
+import { CVsModule } from 'src/cvs/cvs.module';
+import { LocationsModule } from 'src/locations/locations.module';
+import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
+import { UsersModule } from 'src/users/users.module';
+import { UsersCreationModule } from './users-creation/users-creation.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -69,6 +72,8 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     CVsModule,
     BusinessLinesModule,
     LocationsModule,
+    UsersDeletionModule,
+    UsersCreationModule,
   ],
   providers: [
     {

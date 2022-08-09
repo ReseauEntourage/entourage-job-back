@@ -6,14 +6,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { LinkedUserGuard, LinkedUser } from 'src/users/guards';
 import { CVsService } from './cvs.service';
-
-// TODO fix
-// eslint-disable-next-line no-restricted-imports
-import { LinkedUserGuard } from 'src/users/guards/linked-user.guard';
-// TODO fix
-// eslint-disable-next-line no-restricted-imports
-import { LinkedUser } from 'src/users/guards/linked-user.decorator';
 
 // TODO change to /cvs
 @Controller('cv')

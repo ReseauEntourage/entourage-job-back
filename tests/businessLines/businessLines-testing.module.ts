@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
+import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
 import { BusinessLinesHelper } from './businessLines.helper';
-import { BusinessLinesModule } from 'src/businessLines';
 
 @Module({
   imports: [BusinessLinesModule],

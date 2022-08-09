@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { AuthService } from 'src/auth';
-import { User, UserCandidat } from 'src/users';
-import { UserFactory } from './user.factory';
+import { AuthService } from 'src/auth/auth.service';
+import { User, UserCandidat } from 'src/users/models';
 
 @Injectable()
 export class UserCandidatsHelper {

@@ -1,5 +1,5 @@
-import { BusinessLine } from 'src/businessLines';
-import { Location } from 'src/locations';
+import { BusinessLine } from 'src/businessLines/models';
+import { Location } from 'src/locations/models';
 import { CVStatuses } from './cvs.types';
 import { CV } from './models';
 

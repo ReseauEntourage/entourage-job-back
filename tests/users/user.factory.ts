@@ -3,9 +3,10 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
-import { encryptPassword } from 'src/auth/auth.service';
-import { UserCandidat, User, UserRoles } from 'src/users';
+import { encryptPassword } from 'src/auth/auth.utils';
+import { UserCandidat, User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 import { AdminZones } from 'src/utils/types';
 
 @Injectable()

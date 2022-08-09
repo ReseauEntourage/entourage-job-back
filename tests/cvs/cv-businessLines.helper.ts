@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { CVBusinessLine } from 'src/cvs';
+import { CVBusinessLine } from 'src/cvs/models';
 
 @Injectable()
 export class CVBusinessLinesHelper {
