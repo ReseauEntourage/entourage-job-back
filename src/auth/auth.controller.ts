@@ -5,36 +5,29 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseUUIDPipe,
   Post,
   Redirect,
-  Request,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
-import { MailsService } from 'src/mails/mails.service';
-import { UsersService } from 'src/users/users.service';
-import { RequestWithUser } from 'src/utils/types';
+import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard, Public } from './guards';
+import { encryptPassword } from './auth.utils';
+import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
-  // Controller calls only his service ?
-  // Or only the controller call other services ?
-  constructor(
-    private readonly authService: AuthService,
-    private readonly usersService: UsersService,
-    private readonly mailsService: MailsService
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req: RequestWithUser) {
-    return this.authService.login(req.user);
+  async login(@UserPayload() user: User) {
+    return this.authService.login(user);
   }
 
   @Redirect(`${process.env.FRONT_URL}`, 302)
@@ -50,7 +43,7 @@ export class AuthController {
       throw new BadRequestException();
     }
 
-    const user = await this.usersService.findOneByMail(email);
+    const user = await this.authService.findOneUserByMail(email);
 
     if (!user) {
       throw new NotFoundException();
@@ -62,7 +55,7 @@ export class AuthController {
 
     const { id, firstName, role, zone } = updatedUser;
 
-    await this.mailsService.sendPasswordResetLinkMail(
+    await this.authService.sendPasswordResetLinkMail(
       {
         id,
         firstName,
@@ -79,10 +72,10 @@ export class AuthController {
   @Public()
   @Get('reset/:userId/:token')
   async checkReset(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Param('token') token: string
   ) {
-    const user = await this.usersService.findOneComplete(userId);
+    const user = await this.authService.findOneUserComplete(userId);
 
     if (!user) {
       throw new UnauthorizedException();
@@ -104,12 +97,12 @@ export class AuthController {
   @Public()
   @Post('reset/:userId/:token')
   async resetPassword(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Param('token') token: string,
     @Body('newPassword') newPassword: string,
     @Body('confirmPassword') confirmPassword: string
   ) {
-    const user = await this.usersService.findOneComplete(userId);
+    const user = await this.authService.findOneUserComplete(userId);
     if (!user) {
       throw new UnauthorizedException();
     }
@@ -134,31 +127,30 @@ export class AuthController {
       throw new BadRequestException();
     }
 
-    const { hash, salt } = this.authService.encryptPassword(newPassword);
+    const { hash, salt } = encryptPassword(newPassword);
 
-    const userUpdated = await this.usersService.update(user.id, {
+    const updatedUser = await this.authService.updateUser(user.id, {
       password: hash,
       salt,
       hashReset: null,
       saltReset: null,
     });
 
-    if (!userUpdated) {
-      throw new UnauthorizedException();
+    if (!updatedUser) {
+      throw new NotFoundException();
     }
 
-    return userUpdated;
+    return updatedUser;
   }
 
   @Throttle(100, 60)
   @Get('current')
-  async getCurrent(@Request() req: RequestWithUser) {
-    const { user } = req;
-    const updatedUser = await this.usersService.update(user.id, {
+  async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+    const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
     });
     if (!updatedUser) {
-      throw new UnauthorizedException();
+      throw new NotFoundException();
     }
 
     return updatedUser;

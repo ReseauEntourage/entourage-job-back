@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { UserCandidat, User } from 'src/users';
+import { UserCandidat, User } from 'src/users/models';
 import { UserFactory } from './user.factory';
 
 @Injectable()
-export class UserHelper {
+export class UsersHelper {
   constructor(
     private authService: AuthService,
     private userFactory: UserFactory
@@ -25,7 +25,7 @@ export class UserHelper {
 
     return {
       user,
-      token,
+      token: token,
     };
   }
 }

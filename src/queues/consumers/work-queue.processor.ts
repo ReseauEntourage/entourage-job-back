@@ -9,13 +9,24 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
-import { MailjetService } from 'src/mails';
-import { Jobs, Queues, SendMailJob } from 'src/queues';
+import { CVsService } from 'src/cvs/cvs.service';
+import { MailjetService } from 'src/mails/mailjet.service';
+import {
+  CacheAllCVsJob,
+  CacheCVJob,
+  Jobs,
+  Queues,
+  SendMailJob,
+  SendReminderCVJob,
+} from 'src/queues/queues.types';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {
-  constructor(private mailjetService: MailjetService) {}
+  constructor(
+    private mailjetService: MailjetService,
+    private cvsService: CVsService
+  ) {}
 
   @OnQueueActive()
   onActive(job: Job) {
@@ -65,5 +76,48 @@ export class WorkQueueProcessor {
     return `Mail sent to '${JSON.stringify(data.toEmail)}' with template '${
       data.templateId
     }'`;
+  }
+
+  @Process(Jobs.REMINDER_CV_10)
+  async processSendReminderCV10(job: Job<SendReminderCVJob>) {
+    const { data } = job;
+    const sentToReminderCV10 = await this.cvsService.sendReminderAboutCV(
+      data.candidatId
+    );
+    return sentToReminderCV10
+      ? `Reminder about CV after 10 days sent to '${
+          data.candidatId
+        }' (${JSON.stringify(sentToReminderCV10)})`
+      : `No reminder after 10 about CV sent to '${data.candidatId}'`;
+  }
+
+  @Process(Jobs.REMINDER_CV_20)
+  async processSendReminderCV20(job: Job<SendReminderCVJob>) {
+    const { data } = job;
+    const sentToReminderCV20 = await this.cvsService.sendReminderAboutCV(
+      data.candidatId,
+      true
+    );
+    return sentToReminderCV20
+      ? `Reminder about CV after 20 days sent to '${
+          data.candidatId
+        }' (${JSON.stringify(sentToReminderCV20)})`
+      : `No reminder after 20 day about CV sent to '${data.candidatId}'`;
+  }
+
+  @Process(Jobs.CACHE_CV)
+  async processCacheCV(job: Job<CacheCVJob>) {
+    const { data } = job;
+    const cv = await this.cvsService.cacheCV(data.url, data.candidatId);
+    return cv
+      ? `CV cached for User ${cv.UserId} and CV ${cv.id}${
+          data.url ? ` and URL ${data.url}` : ''
+        }`
+      : `CV not cached`;
+  }
+  @Process(Jobs.CACHE_ALL_CVS)
+  async processCacheAllCVs(job: Job<CacheAllCVsJob>) {
+    const cvs = await this.cvsService.cacheAllCVs(undefined, true);
+    return cvs && cvs.length > 0 ? `All published CVs cached` : `No CVs cached`;
   }
 }

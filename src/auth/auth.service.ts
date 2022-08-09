@@ -1,44 +1,37 @@
 import { randomBytes, pbkdf2Sync } from 'crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User, UserAttribute, UsersService } from 'src/users';
-
-export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
-
-export function getPartialUserForPayload(user: User): PayloadUser {
-  return {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    gender: user.gender,
-    phone: user.phone,
-    address: user.address,
-    zone: user.zone,
-    role: user.role,
-    adminRole: user.adminRole,
-    candidat: user.candidat,
-    coach: user.coach,
-    lastConnection: user.lastConnection,
-  };
-}
+import { MailsService } from 'src/mails/mails.service';
+import { UpdateUserDto } from 'src/users/dto';
+import { User, UserAttribute } from 'src/users/models';
+import { UsersService } from 'src/users/users.service';
+import {
+  encryptPassword,
+  getPartialUserForPayload,
+  validatePassword,
+} from './auth.utils';
+import { LoggedUser } from './auth.types';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService
+    private mailsService: MailsService,
+    private jwtService: JwtService,
+    private usersService: UsersService
   ) {}
 
   async validateUser(email: string, password: string) {
     const user = await this.usersService.findOneByMail(email);
-    if (user && this.validatePassword(password, user.password, user.salt)) {
+    if (user && validatePassword(password, user.password, user.salt)) {
       return user;
     }
     return null;
   }
 
-  async login(user: User, expiresIn: string | number = '30d') {
+  async login(
+    user: User,
+    expiration: string | number = '30d'
+  ): Promise<LoggedUser> {
     const payloadUser = getPartialUserForPayload(user);
 
     const { id, ...restPayloadUser } = payloadUser;
@@ -51,33 +44,9 @@ export class AuthService {
       user: payloadUser,
       token: this.jwtService.sign(payload, {
         secret: `${process.env.JWT_SECRET}`,
-        expiresIn: expiresIn,
+        expiresIn: expiration,
       }),
     };
-  }
-
-  encryptPassword(password: string) {
-    const salt = randomBytes(16).toString('hex');
-    const hash = pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString(
-      'hex'
-    );
-
-    return {
-      salt,
-      hash,
-    };
-  }
-
-  validatePassword(password: string, hash: string, salt: string) {
-    const passwordHash = pbkdf2Sync(
-      password,
-      salt,
-      10000,
-      512,
-      'sha512'
-    ).toString('hex');
-
-    return passwordHash === hash;
   }
 
   decodeJWT(token: string) {
@@ -95,7 +64,7 @@ export class AuthService {
       const { password } = this.decodeJWT(token);
 
       if (password) {
-        return this.validatePassword(password, hashReset, saltReset);
+        return validatePassword(password, hashReset, saltReset);
       }
     }
     return false;
@@ -103,7 +72,7 @@ export class AuthService {
 
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
     const randomToken = randomBytes(128).toString('hex');
-    const { salt, hash } = this.encryptPassword(randomToken);
+    const { salt, hash } = encryptPassword(randomToken);
 
     return {
       salt,
@@ -136,5 +105,24 @@ export class AuthService {
       updatedUser,
       token: jwtToken,
     };
+  }
+
+  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    return this.usersService.update(id, updateUserDto);
+  }
+
+  async findOneUserComplete(id: string) {
+    return this.usersService.findOneComplete(id);
+  }
+
+  async findOneUserByMail(email: string) {
+    return this.usersService.findOneByMail(email);
+  }
+
+  async sendPasswordResetLinkMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
+    token: string
+  ) {
+    return this.mailsService.sendPasswordResetLinkMail(user, token);
   }
 }

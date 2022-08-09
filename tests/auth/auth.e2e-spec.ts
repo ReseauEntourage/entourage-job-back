@@ -1,16 +1,18 @@
 import { getQueueToken } from '@nestjs/bull';
-import { INestApplication } from '@nestjs/common';
+import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
-import { getPartialUserForPayload, PayloadUser } from 'src/auth/auth.service';
-import { Queues } from 'src/queues';
-import { User, UserRoles } from 'src/users';
+import { PayloadUser } from 'src/auth/auth.types';
+import { getPartialUserForPayload } from 'src/auth/auth.utils';
+import { Queues } from 'src/queues/queues.types';
+import { User } from 'src/users/models';
+import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UserFactory } from 'tests/users/user.factory';
-import { UserHelper } from 'tests/users/user.helper';
+import { UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
 
 describe('Auth', () => {
@@ -19,11 +21,12 @@ describe('Auth', () => {
   let databaseHelper: DatabaseHelper;
   let authHelper: AuthHelper;
   let userFactory: UserFactory;
-  let userHelper: UserHelper;
+  let userHelper: UsersHelper;
 
   const route = '/auth';
 
   const queueMock = { add: jest.fn() };
+  const cacheMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,6 +34,8 @@ describe('Auth', () => {
     })
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(queueMock)
+      .overrideProvider(CACHE_MANAGER)
+      .useValue(cacheMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -38,7 +43,7 @@ describe('Auth', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
-    userHelper = moduleFixture.get<UserHelper>(UserHelper);
+    userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
   });
 
@@ -76,7 +81,7 @@ describe('Auth', () => {
           password: 'candidat',
         });
       expect(response.status).toBe(201);
-      expect(response.body.user).toMatchObject({
+      expect(response.body.user).toStrictEqual({
         ...candidatResponse,
         lastConnection: response.body.user.lastConnection,
       });
@@ -220,11 +225,13 @@ describe('Auth', () => {
     });
     describe('Reset password', () => {
       let candidat: User;
+      let candidatResponse: PayloadUser;
       beforeEach(async () => {
         candidat = await userFactory.create({
           role: UserRoles.CANDIDAT,
           password: 'candidat',
         });
+        candidatResponse = getPartialUserForPayload(candidat);
       });
 
       it('Should return 200 and updated user, if valid link', async () => {
@@ -237,8 +244,8 @@ describe('Auth', () => {
               confirmPassword: 'newPassword123!',
             });
         expect(response.status).toBe(201);
-        expect(response.body).toMatchObject({
-          ...candidat,
+        expect(response.body).toStrictEqual({
+          ...candidatResponse,
           lastConnection: response.body.lastConnection,
         });
       });
@@ -305,6 +312,7 @@ describe('Auth', () => {
         role: UserRoles.CANDIDAT,
         password: 'loggedInCandidat',
       });
+      const candidatResponse = getPartialUserForPayload(loggedInCandidat.user);
 
       const response: APIResponse<AuthController['getCurrent']> = await request(
         app.getHttpServer()
@@ -312,8 +320,8 @@ describe('Auth', () => {
         .get(`${route}/current`)
         .set('authorization', `Token ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
-      expect(response.body).toMatchObject({
-        ...loggedInCandidat.user,
+      expect(response.body).toStrictEqual({
+        ...candidatResponse,
         lastConnection: response.body.lastConnection,
       });
     });

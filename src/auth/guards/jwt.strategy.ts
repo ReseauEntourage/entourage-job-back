@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
-import { PayloadUser } from 'src/auth/auth.service';
+import { PayloadUser } from 'src/auth/auth.types';
 
 const getTokenFromHeaders = (
   req: Request & { headers: Request['headers'] & { authorization: string } }

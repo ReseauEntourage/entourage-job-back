@@ -1,8 +1,9 @@
-import { AdminZone, Department } from 'src/utils/types';
-import { getZone, getZoneSuffix } from './getZone';
+import { Department } from 'src/locations/locations.types';
+import { AdminZone } from 'src/utils/types';
+import { getZoneFromDepartment, getZoneSuffix } from './getZoneFromDepartment';
 
-export function getAdminMailsFromDepartment(dep: Department['name']) {
-  const zone = getZone(dep);
+export function getAdminMailsFromDepartment(dep: Department) {
+  const zone = getZoneFromDepartment(dep);
   return {
     candidatesAdminMail: process.env[`ADMIN_CANDIDATES_${zone}`],
     companiesAdminMail: process.env[`ADMIN_COMPANIES_${zone}`],

@@ -1,13 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { User, UsersService } from 'src/users';
+import { User } from 'src/users/models';
 
 @Injectable()
 export class AuthHelper {
-  constructor(
-    private usersService: UsersService,
-    private authService: AuthService
-  ) {}
+  constructor(private authService: AuthService) {}
 
   async getResetToken(user: User) {
     const { token } = await this.authService.generateResetToken(user);

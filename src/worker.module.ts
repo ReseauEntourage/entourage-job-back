@@ -4,9 +4,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-import { Queues } from 'src/queues';
 import { ConsumersModule } from 'src/queues/consumers';
-import { getBullOptions, getSequelizeOptions } from './app.module';
+import { Queues } from 'src/queues/queues.types';
+import { getRedisOptions, getSequelizeOptions } from './app.module';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { getBullOptions, getSequelizeOptions } from './app.module';
       isGlobal: true,
     }),
     SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
-    BullModule.forRoot(getBullOptions(process.env.REDIS_TLS_URL)),
+    BullModule.forRoot({ redis: getRedisOptions(process.env.REDIS_TLS_URL) }),
     BullModule.registerQueue({
       name: Queues.WORK,
       defaultJobOptions: {

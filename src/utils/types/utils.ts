@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { HttpStatus } from '@nestjs/common';
-import { User } from 'src/users';
+import { Model } from 'sequelize-typescript';
+import { User } from 'src/users/models';
 
 export type AnyToFix = any;
 export type AnyCantFix = any;
@@ -11,3 +12,5 @@ export type APIResponse<T extends (...args: Parameters<T>) => ReturnType<T>> = {
   body: Awaited<ReturnType<T>>;
   status: HttpStatus;
 };
+
+export class WrapperModel extends Model {}

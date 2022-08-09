@@ -5,6 +5,7 @@ export const UserCandidatAttributes = [
   'url',
   'contract',
   'endOfContract',
+  'lastModifiedBy',
 ] as const;
 
 export type UserCandidatAttribute = typeof UserCandidatAttributes[number];

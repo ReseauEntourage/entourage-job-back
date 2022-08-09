@@ -1,14 +1,22 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { UserCandidat } from './models/user-candidat.model';
-import { User } from './models/user.model';
+
+// TODO fix imports
+import { MailsModule } from 'src/mails/mails.module';
+import { QueuesModule } from 'src/queues/producers';
+import { UserCandidat, User } from './models';
+import { UserCandidatsService } from './user-candidats.service';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
+  imports: [
+    SequelizeModule.forFeature([User, UserCandidat]),
+    QueuesModule,
+    MailsModule,
+  ],
   controllers: [UsersController],
-  providers: [UsersService],
-  imports: [SequelizeModule.forFeature([User, UserCandidat])],
-  exports: [UsersService, SequelizeModule],
+  providers: [UsersService, UserCandidatsService],
+  exports: [UsersService, UserCandidatsService, SequelizeModule],
 })
 export class UsersModule {}

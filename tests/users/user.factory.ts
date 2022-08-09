@@ -2,9 +2,11 @@
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { AuthService } from 'src/auth/auth.service';
-import { UserCandidat, User, UserRoles } from 'src/users';
+import phone from 'phone';
+import { encryptPassword } from 'src/auth/auth.utils';
+import { UserCandidat, User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 import { AdminZones } from 'src/utils/types';
 
 @Injectable()
@@ -14,33 +16,34 @@ export class UserFactory {
     private userModel: typeof User,
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
-    private authService: AuthService,
     private usersService: UsersService
   ) {}
 
-  generateData(props: Partial<User>): Partial<User> {
-    const { salt, hash } = this.authService.encryptPassword(
+  generateUser(props: Partial<User>): Partial<User> {
+    const { salt, hash } = encryptPassword(
       props.password ? props.password : faker.internet.password()
     );
 
+    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+
     return {
-      id: faker.datatype.uuid(),
+      id: props.id || faker.datatype.uuid(),
       email: props.email || faker.internet.email().toLowerCase(),
       firstName: props.firstName || faker.name.firstName(),
       lastName: props.lastName || faker.name.lastName(),
       role: props.role || UserRoles.CANDIDAT,
-      adminRole: props.adminRole || null,
       password: hash,
       gender: props.gender || faker.random.arrayElement([0, 1]),
       salt,
-      phone: props.phone || faker.phone.phoneNumber(),
+      phone:
+        props.phone || phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       address: props.address || faker.address.streetAddress(),
       lastConnection: props.lastConnection || new Date(),
       zone: props.zone || AdminZones.PARIS,
       hashReset: props.hashReset || faker.datatype.uuid(),
       saltReset: props.saltReset || faker.datatype.uuid(),
-      coach: null,
-      candidat: null,
+      coach: props.coach,
+      candidat: props.candidat,
     };
   }
 
@@ -49,10 +52,10 @@ export class UserFactory {
     userCandidatProps: Partial<UserCandidat> = {},
     insertInDB = true
   ): Promise<User> {
-    const userData = await this.generateData(props);
+    const userData = await this.generateUser(props);
 
     if (insertInDB) {
-      await this.usersService.create(userData);
+      await this.userModel.create(userData, { hooks: true });
       await this.userCandidatModel.update(
         { ...userCandidatProps },
         {
@@ -62,8 +65,10 @@ export class UserFactory {
           individualHooks: true,
         }
       );
-      const createdUser = await this.usersService.findOne(userData.id);
-      return createdUser.toJSON();
+    }
+    const dbUser = await this.usersService.findOne(userData.id);
+    if (dbUser) {
+      return dbUser.toJSON();
     }
     const builtUser = await this.userModel.build(userData);
     return builtUser.toJSON();

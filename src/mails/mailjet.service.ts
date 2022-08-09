@@ -4,11 +4,15 @@ import { Email, connect } from 'node-mailjet';
 import { MailjetTemplate, MailjetTemplates } from 'src/mails/mails.service';
 import SendParams = Email.SendParams;
 
-interface CustomMailParams {
+export interface CustomMailParams {
   toEmail:
     | string
     | string[]
-    | { to: string | string[]; cc: string | string[]; bcc: string | string[] };
+    | {
+        to: string | string[];
+        cc?: string | string[];
+        bcc?: string | string[];
+      };
   replyTo?: string;
   subject?: string;
   text?: string;

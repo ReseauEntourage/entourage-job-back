@@ -59,30 +59,6 @@ module.exports = {
       'error',
       { devDependencies: ['tests/**/*', '**/*.spec.ts'] },
     ],
-    'no-restricted-imports': [
-      'error',
-      {
-        patterns: [
-          'src/*/*',
-          '!src/auth/*',
-          'src/auth/*/*',
-          '!src/mails/*',
-          'src/mails/*/*',
-          '!src/queues/*',
-          'src/queues/*/*',
-          '!src/users/*',
-          'src/users/*/*',
-          '!src/utils/*',
-          'src/utils/*/*',
-
-          'tests/*/*',
-          '!tests/users/*',
-          'tests/users/*/*',
-          '!tests/auth/*',
-          'tests/auth/*/*',
-        ],
-      },
-    ],
     // 'sort-imports': 2,
     'import/order': [
       1,

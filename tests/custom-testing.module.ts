@@ -1,14 +1,22 @@
 import { Module } from '@nestjs/common';
 
 import { AppModule } from 'src/app.module';
-import { AuthHelper } from './auth/auth.helper';
+import { AuthTestingModule } from './auth/auth-testing.module';
+import { BusinessLinesTestingModule } from './businessLines/businessLines-testing.module';
+import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
-import { UserFactory } from './users/user.factory';
-import { UserHelper } from './users/user.helper';
+import { LocationsTestingModule } from './locations/locations-testing.module';
+import { UsersTestingModule } from './users/users-testing.module';
 
 @Module({
-  imports: [AppModule],
-  providers: [DatabaseHelper, AuthHelper, UserHelper, UserFactory],
-  exports: [AppModule, DatabaseHelper, AuthHelper, UserHelper, UserFactory],
+  imports: [
+    AppModule,
+    AuthTestingModule,
+    BusinessLinesTestingModule,
+    CVsTestingModule,
+    LocationsTestingModule,
+    UsersTestingModule,
+  ],
+  providers: [DatabaseHelper],
 })
 export class CustomTestingModule {}
