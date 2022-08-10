@@ -12,7 +12,6 @@ import { Job } from 'bull';
 import { CVsService } from 'src/cvs/cvs.service';
 import { MailjetService } from 'src/mails/mailjet.service';
 import {
-  CacheAllCVsJob,
   CacheCVJob,
   Jobs,
   Queues,
@@ -116,7 +115,7 @@ export class WorkQueueProcessor {
       : `CV not cached`;
   }
   @Process(Jobs.CACHE_ALL_CVS)
-  async processCacheAllCVs(job: Job<CacheAllCVsJob>) {
+  async processCacheAllCVs() {
     const cvs = await this.cvsService.cacheAllCVs(undefined, true);
     return cvs && cvs.length > 0 ? `All published CVs cached` : `No CVs cached`;
   }

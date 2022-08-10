@@ -41,8 +41,6 @@ export interface CacheCVJob {
   url: string;
 }
 
-export interface CacheAllCVsJob {}
-
 export const Queues = {
   WORK: 'work',
 } as const;

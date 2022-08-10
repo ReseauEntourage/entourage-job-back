@@ -27,7 +27,11 @@ import {
   UserRole,
   UserRoles,
 } from '../users.types';
-import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
+import {
+  capitalizeNameAndTrim,
+  generateUrl,
+  getCandidateIdFromCoachOrCandidate,
+} from '../users.utils';
 import { AdminZone } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
@@ -158,60 +162,52 @@ export class User extends Model {
 
   @BeforeUpdate
   static async manageRoleChange(nextUser: User) {
-    const previousUserValues = nextUser.previous();
+    const previousUserValues: Partial<User> = nextUser.previous();
     if (nextUser && previousUserValues && previousUserValues.role) {
       if (
         previousUserValues.role === UserRoles.CANDIDAT &&
         nextUser.role !== UserRoles.CANDIDAT
       ) {
-        try {
-          await UserCandidat.destroy({
-            where: {
-              candidatId: nextUser.id,
-            },
-          });
-        } catch (e) {
-          console.log('Candidat inexistant');
-        }
+        await UserCandidat.destroy({
+          where: {
+            candidatId: nextUser.id,
+          },
+        });
       } else if (
         previousUserValues.role !== UserRoles.CANDIDAT &&
         nextUser.role === UserRoles.CANDIDAT
       ) {
         if (previousUserValues.role === UserRoles.COACH) {
-          try {
-            await UserCandidat.update(
-              {
-                coachId: null,
+          await UserCandidat.update(
+            {
+              coachId: null,
+            },
+            {
+              // TODO check if works
+              where: {
+                candidatId: getCandidateIdFromCoachOrCandidate(
+                  previousUserValues as User
+                ),
               },
-              {
-                // TODO check if works
-                where: {
-                  candidatId: nextUser.previous('coach').candidat.id,
-                },
-              }
-            );
-          } catch (e) {
-            console.log('Pas de candidat associé');
-          }
+            }
+          );
         }
 
-        try {
-          await UserCandidat.create(
-            {
-              candidatId: nextUser.id,
-              url: generateUrl(nextUser),
+        await UserCandidat.create(
+          {
+            candidatId: nextUser.id,
+            url: generateUrl(nextUser),
+          },
+          { hooks: true }
+        );
+        // TODO
+        /*
+          await models.Share.findOrCreate({
+            where: {
+              CandidatId: nextUser.id,
             },
-            { hooks: true }
-          );
-          // TODO
-          /*await models.Share.findOrCreate({
-              where: {
-                CandidatId: nextUser.id,
-              },
-            });*/
-        } catch (e) {
-          console.log(e);
-        }
+          });
+         */
       }
     }
   }
@@ -225,20 +221,16 @@ export class User extends Model {
       previousUserValues.firstName &&
       nextUser.role === UserRoles.CANDIDAT
     ) {
-      try {
-        await UserCandidat.update(
-          {
-            url: generateUrl(nextUser),
+      await UserCandidat.update(
+        {
+          url: generateUrl(nextUser),
+        },
+        {
+          where: {
+            candidatId: nextUser.id,
           },
-          {
-            where: {
-              candidatId: nextUser.id,
-            },
-          }
-        );
-      } catch (e) {
-        console.log(e);
-      }
+        }
+      );
     }
   }
 

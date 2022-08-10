@@ -14,3 +14,7 @@ export type APIResponse<T extends (...args: Parameters<T>) => ReturnType<T>> = {
 };
 
 export class WrapperModel extends Model {}
+
+export abstract class Factory<T> {
+  create: (...args: AnyCantFix[]) => Promise<T>;
+}

@@ -5,6 +5,7 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
+import { CVStatuses } from '../cvs/cvs.types';
 import { BusinessLine } from 'src/businessLines/models';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
@@ -37,7 +38,6 @@ import {
   userSearchQuery,
   getPublishedCVQuery,
 } from './users.utils';
-import { CVStatuses } from '../cvs/cvs.types';
 
 @Injectable()
 export class UsersService {
@@ -83,7 +83,7 @@ export class UsersService {
       order: Order;
       role: UserRole | 'All';
     } & FilterParams<MemberFilterKey>
-  ) {
+  ): Promise<User[]> {
     const { limit, offset, role, search, order, ...restParams } = params;
 
     const filtersObj = getFiltersObjectsFromQueryParams<
@@ -359,16 +359,16 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const [updateCount] = await this.userModel.update(updateUserDto, {
+    await this.userModel.update(updateUserDto, {
       where: { id },
       individualHooks: true,
     });
 
-    if (updateCount === 0) {
+    const updatedUser = await this.findOne(id);
+
+    if (!updatedUser) {
       return null;
     }
-
-    const updatedUser = await this.findOne(id);
 
     return updatedUser.toJSON();
   }

@@ -48,16 +48,17 @@ describe('Auth', () => {
   });
 
   afterAll(async () => {
+    await databaseHelper.resetTestDB();
     await app.close();
+  });
+
+  beforeEach(async () => {
+    await databaseHelper.resetTestDB();
   });
 
   const invalidToken =
     // eslint-disable-next-line max-len
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
-
-  beforeEach(async () => {
-    await databaseHelper.resetTestDB();
-  });
 
   describe('Login - login/', () => {
     let candidat: User;
@@ -65,7 +66,7 @@ describe('Auth', () => {
     beforeEach(async () => {
       candidat = await userFactory.create({
         role: UserRoles.CANDIDAT,
-        password: 'candidat',
+        password: 'Candidat123!',
       });
 
       candidatResponse = getPartialUserForPayload(candidat);
@@ -78,7 +79,7 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidat.email,
-          password: 'candidat',
+          password: 'Candidat123!',
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
@@ -166,7 +167,6 @@ describe('Auth', () => {
     it('Should return 201 and send email, if valid user email provided', async () => {
       const candidat = await userFactory.create({
         role: UserRoles.CANDIDAT,
-        password: 'candidat',
       });
 
       const response: APIResponse<AuthController['forgot']> = await request(
@@ -185,7 +185,6 @@ describe('Auth', () => {
       beforeEach(async () => {
         candidat = await userFactory.create({
           role: UserRoles.CANDIDAT,
-          password: 'candidat',
         });
       });
 
@@ -201,7 +200,6 @@ describe('Auth', () => {
         const unknownUser: User = await userFactory.create(
           {
             role: UserRoles.CANDIDAT,
-            password: 'unknownUser',
           },
           {},
           false
@@ -229,7 +227,6 @@ describe('Auth', () => {
       beforeEach(async () => {
         candidat = await userFactory.create({
           role: UserRoles.CANDIDAT,
-          password: 'candidat',
         });
         candidatResponse = getPartialUserForPayload(candidat);
       });
@@ -277,7 +274,6 @@ describe('Auth', () => {
         const unknownUser: User = await userFactory.create(
           {
             role: UserRoles.CANDIDAT,
-            password: 'unknownUser',
           },
           {},
           false

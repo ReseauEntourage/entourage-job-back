@@ -1,16 +1,16 @@
-import { randomBytes, pbkdf2Sync } from 'crypto';
+import { randomBytes } from 'crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
 import { UpdateUserDto } from 'src/users/dto';
-import { User, UserAttribute } from 'src/users/models';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { LoggedUser } from './auth.types';
 import {
   encryptPassword,
   getPartialUserForPayload,
   validatePassword,
 } from './auth.utils';
-import { LoggedUser } from './auth.types';
 
 @Injectable()
 export class AuthService {

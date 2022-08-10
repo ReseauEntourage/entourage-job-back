@@ -22,7 +22,7 @@ export class UsersDeletionController {
     const user = await this.usersDeletionService.findOneUser(userId);
 
     if (!user) {
-      return new NotFoundException();
+      throw new NotFoundException();
     }
 
     const { firstName, lastName, candidat } = user.toJSON();

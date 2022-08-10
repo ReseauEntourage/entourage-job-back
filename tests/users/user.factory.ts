@@ -7,10 +7,10 @@ import { encryptPassword } from 'src/auth/auth.utils';
 import { UserCandidat, User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
-import { AdminZones } from 'src/utils/types';
+import { AdminZones, Factory } from 'src/utils/types';
 
 @Injectable()
-export class UserFactory {
+export class UserFactory implements Factory<User> {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
@@ -52,7 +52,7 @@ export class UserFactory {
     userCandidatProps: Partial<UserCandidat> = {},
     insertInDB = true
   ): Promise<User> {
-    const userData = await this.generateUser(props);
+    const userData = this.generateUser(props);
 
     if (insertInDB) {
       await this.userModel.create(userData, { hooks: true });

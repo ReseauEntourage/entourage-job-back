@@ -5,10 +5,11 @@ import { LocationsModule } from 'src/locations/locations.module';
 import { CVBusinessLinesHelper } from './cv-businessLines.helper';
 import { CVLocationsHelper } from './cv-locations.helper';
 import { CVFactory } from './cv.factory';
+import { CVsHelper } from './cvs.helper';
 
 @Module({
   imports: [CVsModule, LocationsModule, BusinessLinesModule],
-  providers: [CVBusinessLinesHelper, CVLocationsHelper, CVFactory],
+  providers: [CVBusinessLinesHelper, CVLocationsHelper, CVFactory, CVsHelper],
   exports: [CVBusinessLinesHelper, CVLocationsHelper, CVFactory],
 })
 export class CVsTestingModule {}

@@ -44,21 +44,17 @@ export class UserCandidatsService {
   async updateByCandidateId(
     candidateId: string,
     updateUserCandidatDto: UpdateUserCandidatDto
-  ) {
-    const [updateCount] = await this.userCandidatModel.update(
-      updateUserCandidatDto,
-      {
-        where: { candidatId: candidateId },
-        individualHooks: true,
-      }
-    );
-
-    if (updateCount === 0) {
-      return null;
-    }
+  ): Promise<UserCandidat> {
+    await this.userCandidatModel.update(updateUserCandidatDto, {
+      where: { candidatId: candidateId },
+      individualHooks: true,
+    });
 
     const updatedUserCandidat = await this.findOneByCandidateId(candidateId);
 
+    if (!updatedUserCandidat) {
+      return null;
+    }
     return updatedUserCandidat.toJSON();
   }
 

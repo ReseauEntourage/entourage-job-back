@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
+import { Factory } from '../src/utils/types';
 import { BusinessLine } from 'src/businessLines/models';
 import { CV, CVBusinessLine, CVLocation } from 'src/cvs/models';
 import { Location } from 'src/locations/models';
 import { UserCandidat, User } from 'src/users/models';
+import { CVFactory } from './cvs/cv.factory';
+import { UserFactory } from './users/user.factory';
 
 @Injectable()
 export class DatabaseHelper {
@@ -22,7 +25,9 @@ export class DatabaseHelper {
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine,
     @InjectModel(CVBusinessLine)
-    private cvBusinessLineModel: typeof CVBusinessLine
+    private cvBusinessLineModel: typeof CVBusinessLine,
+    private userFactory: UserFactory,
+    private cvFactory: CVFactory
   ) {}
 
   async resetTestDB() {
@@ -45,16 +50,14 @@ export class DatabaseHelper {
   }
 
   async createEntities<
-    F extends (props: Parameters<F>, ...args: Parameters<F>) => ReturnType<F>
-  >(factory: F, n: number, props: Parameters<F>, ...args: Parameters<F>) {
-    return Promise.all(
-      Array(n)
-        .fill(0)
-        .map(() => {
-          return factory(props, ...args);
-        })
-    ).catch((e) => {
-      return console.error(e);
-    });
+    F extends Factory<Awaited<ReturnType<F['create']>>>,
+    A extends Parameters<F['create']>
+  >(factory: F, n: number, ...args: A) {
+    const promises: Promise<Awaited<ReturnType<F['create']>>>[] = [];
+    for (let i = 0; i < n; i += 1) {
+      promises.push(factory.create(...args));
+    }
+
+    return Promise.all(promises);
   }
 }

@@ -11,10 +11,12 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { passwordStrength } from 'check-password-strength';
 import { Order } from 'sequelize/types/model';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 
+import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
@@ -36,8 +38,6 @@ import { User } from './models';
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
-import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
-import { passwordStrength } from 'check-password-strength';
 
 // TODO change to /users
 @Controller('user')
@@ -82,7 +82,7 @@ export class UsersController {
   // TODO divide service
   @Public()
   @Get('search/candidates')
-  async searchCandidates(@Query('query') search: string) {
+  async findCandidates(@Query('query') search: string) {
     return this.usersService.findAllCandidates(search);
   }
 
@@ -90,7 +90,7 @@ export class UsersController {
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
   @Get('search')
-  async searchUsers(
+  async findUsers(
     @Query('query') search: string,
     @Query('role') role: UserRole
   ) {
@@ -150,10 +150,11 @@ export class UsersController {
     @Param('id', new ParseUUIDPipe()) candidateId: string,
     @Body() updateUserCandidatDto: UpdateUserCandidatDto
   ) {
-    const prevUserCandidat =
-      await this.userCandidatsService.findOneByCandidateId(candidateId);
+    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
+      candidateId
+    );
 
-    if (!prevUserCandidat) {
+    if (!userCandidat) {
       throw new NotFoundException();
     }
 
@@ -163,11 +164,7 @@ export class UsersController {
         lastModifiedBy: userId,
       });
 
-    if (!updatedUserCandidat) {
-      throw new NotFoundException();
-    }
-
-    if (updatedUserCandidat.coachId !== prevUserCandidat.coachId) {
+    if (updatedUserCandidat.coachId !== userCandidat.coachId) {
       await this.usersService.sendMailsAfterMatching(
         updatedUserCandidat.candidatId
       );
@@ -274,6 +271,7 @@ export class UsersController {
   }
 
   @LinkedUser('params.id')
+  @UseGuards(LinkedUserGuard)
   @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
   @UseGuards(RolesGuard)
   @Put('candidat/read/:id')

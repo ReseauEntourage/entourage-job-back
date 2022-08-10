@@ -9,7 +9,7 @@ import { CVsService } from 'src/cvs/cvs.service';
 import { CVStatuses, CVStatusKey } from 'src/cvs/cvs.types';
 import { CV } from 'src/cvs/models';
 import { Location } from 'src/locations/models';
-import { WrapperModel } from 'src/utils/types';
+import { Factory, WrapperModel } from 'src/utils/types';
 
 const getCVStatusValues = (cvStatus: typeof CVStatuses) => {
   return Object.keys(cvStatus).map((status) => {
@@ -31,7 +31,7 @@ type ComponentKey = keyof Components;
 type InjectedModels = `${ComponentKeys}Model`;
 
 @Injectable()
-export class CVFactory {
+export class CVFactory implements Factory<CV> {
   constructor(
     @InjectModel(CV)
     private cvModel: typeof CV,

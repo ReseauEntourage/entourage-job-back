@@ -5,8 +5,6 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import moment from 'moment/moment';
 import { Op, QueryTypes } from 'sequelize';
-import { UserCandidatsService } from 'src/users/user-candidats.service';
-import { UsersService } from 'src/users/users.service';
 import { BusinessLineValue } from 'src/businessLines/businessLines.types';
 import { BusinessLine } from 'src/businessLines/models';
 import { Department } from 'src/locations/locations.types';
@@ -14,6 +12,8 @@ import { Location } from 'src/locations/models';
 import { CustomMailParams } from 'src/mails/mailjet.service';
 import { MailsService } from 'src/mails/mails.service';
 import { Jobs, Queues } from 'src/queues/queues.types';
+import { UserCandidatsService } from 'src/users/user-candidats.service';
+import { UsersService } from 'src/users/users.service';
 import { getPublishedCVQuery, getRelatedUser } from 'src/users/users.utils';
 import { AnyToFix, RedisKeys } from 'src/utils/types';
 import { CVStatuses } from './cvs.types';
@@ -88,16 +88,16 @@ export class CVsService {
   }
 
   async updateByCandidateId(candidateId: string, updateCVDto: UpdateCVDto) {
-    const [updateCount] = await this.cvModel.update(updateCVDto, {
+    await this.cvModel.update(updateCVDto, {
       where: { UserId: candidateId },
       individualHooks: true,
     });
 
-    if (updateCount === 0) {
+    const updatedCVs = await this.findAllByCandidateId(candidateId);
+
+    if (!updatedCVs) {
       return null;
     }
-
-    const updatedCVs = await this.findAllByCandidateId(candidateId);
 
     return updatedCVs.map(cleanCV);
   }
