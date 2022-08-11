@@ -6,6 +6,7 @@ import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
 import { User } from './models';
 import { MemberFilterKey, MemberFilters, UserRoles } from './users.types';
+import { PayloadUser } from '../auth/auth.types';
 
 export function generateUrl(user: User) {
   return `${user.firstName.toLowerCase()}-${user.id.substring(0, 8)}`;
@@ -62,7 +63,7 @@ export function getUserCandidateFromCoachOrCandidate(member: User) {
   return null;
 }
 
-export function getCandidateIdFromCoachOrCandidate(member: User) {
+export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
   if (member) {
     if (member.role === UserRoles.CANDIDAT) {
       return member.id;

@@ -142,12 +142,34 @@ export class UsersController {
     return user;
   }
 
+  @Self('params.id')
+  @UseGuards(SelfGuard)
+  @Put(':id')
+  async updateUser(
+    @UserPayload('role') role: UserRole,
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    // Do not instantiante UserRestrictedPipe so that Request can be injected
+    @Body(UserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
+  ) {
+    if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {
+      throw new BadRequestException();
+    }
+
+    const updatedUser = await this.usersService.update(userId, updateUserDto);
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return updatedUser;
+  }
+
   @LinkedUser('params.id')
   @UseGuards(LinkedUserGuard)
-  @Put('candidat/:id')
+  @Put('candidat/:candidateId')
   async updateUserCandidat(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('id', new ParseUUIDPipe()) candidateId: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Body() updateUserCandidatDto: UpdateUserCandidatDto
   ) {
     const userCandidat = await this.userCandidatsService.findOneByCandidateId(
@@ -219,28 +241,6 @@ export class UsersController {
     return updatedUser;
   }
 
-  @Self('params.id')
-  @UseGuards(SelfGuard)
-  @Put(':id')
-  async updateUser(
-    @UserPayload('role') role: UserRole,
-    @Param('id', new ParseUUIDPipe()) userId: string,
-    // Do not instantiante UserRestrictedPipe so that Request can be injected
-    @Body(UserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
-  ) {
-    if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {
-      throw new BadRequestException();
-    }
-
-    const updatedUser = await this.usersService.update(userId, updateUserDto);
-
-    if (!updatedUser) {
-      throw new NotFoundException();
-    }
-
-    return updatedUser;
-  }
-
   @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
   @UseGuards(RolesGuard)
   @Get('candidat/checkUpdate')
@@ -274,9 +274,9 @@ export class UsersController {
   @UseGuards(LinkedUserGuard)
   @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
   @UseGuards(RolesGuard)
-  @Put('candidat/read/:id')
+  @Put('candidat/read/:candidateId')
   async setNoteHasBeenRead(
-    @Param('id', new ParseUUIDPipe()) candidateId: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {
     const userCandidat = await this.userCandidatsService.findOneByCandidateId(

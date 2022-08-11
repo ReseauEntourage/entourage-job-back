@@ -28,11 +28,11 @@ export function queryConditionCV(
     `;
 }
 
-export function cleanCV(model: CV): Partial<CV> {
+export function cleanCV(model: CV): CV {
   if (!model) {
     return null;
   }
-  const tmpCV = model.toJSON() as Partial<CV>;
+  const tmpCV = model.toJSON() as CV;
   /*if (tmpCV.skills) {
     tmpCV.skills = tmpCV.skills.map((o) => {
       return o.name;
@@ -85,4 +85,16 @@ export function cleanCV(model: CV): Partial<CV> {
     });
   }*/
   return tmpCV;
+}
+
+export function getPDFPaths(userId, queryFileName) {
+  const fileName = queryFileName
+    ? `${queryFileName}_${userId.substring(0, 8)}`
+    : userId;
+
+  return [
+    `${userId}-page1.pdf`,
+    `${userId}-page2.pdf`,
+    `${fileName.replace("'", '')}.pdf`,
+  ];
 }

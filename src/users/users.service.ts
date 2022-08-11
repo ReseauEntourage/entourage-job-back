@@ -258,6 +258,44 @@ export class UsersService {
     return finalFilteredMembers;
   }
 
+  async findAllUsers(search: string, role: UserRole) {
+    const options: FindOptions<User> = {
+      attributes: [...UserAttributes],
+      where: {
+        [Op.or]: userSearchQuery(search),
+      },
+    };
+    if (role) {
+      options.where = { ...options.where, role };
+    }
+    return this.userModel.findAll(options);
+  }
+
+  async findAllCandidates(search: string) {
+    const publishedCVs: CV[] = await this.userModel.sequelize.query(
+      getPublishedCVQuery({ [Op.or]: [false] }),
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const options = {
+      attributes: [...PublicUserAttributes],
+      where: {
+        [Op.and]: [
+          {
+            id: publishedCVs.map((publishedCV) => {
+              return publishedCV.UserId;
+            }),
+          },
+          {
+            [Op.or]: userSearchQuery(search),
+          },
+        ],
+      },
+    };
+    return User.findAll(options);
+  }
+
   async countSubmittedCVMembers(zone: AdminZone) {
     const whereOptions: WhereOptions<CV> = zone
       ? ({ zone } as WhereOptions<CV>)
@@ -318,44 +356,6 @@ export class UsersService {
         CVStatuses.Pending,
       ]).length,
     };
-  }
-
-  async findAllUsers(search: string, role: UserRole) {
-    const options: FindOptions<User> = {
-      attributes: [...UserAttributes],
-      where: {
-        [Op.or]: userSearchQuery(search),
-      },
-    };
-    if (role) {
-      options.where = { ...options.where, role };
-    }
-    return this.userModel.findAll(options);
-  }
-
-  async findAllCandidates(search: string) {
-    const publishedCVs: CV[] = await this.userModel.sequelize.query(
-      getPublishedCVQuery({ [Op.or]: [false] }),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
-    const options = {
-      attributes: [...PublicUserAttributes],
-      where: {
-        [Op.and]: [
-          {
-            id: publishedCVs.map((publishedCV) => {
-              return publishedCV.UserId;
-            }),
-          },
-          {
-            [Op.or]: userSearchQuery(search),
-          },
-        ],
-      },
-    };
-    return User.findAll(options);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {

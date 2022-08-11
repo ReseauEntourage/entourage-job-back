@@ -4,6 +4,8 @@ import { Cache } from 'cache-manager';
 import { Sequelize } from 'sequelize';
 import { RedisKeys } from 'src/utils/types';
 import { Share } from './models';
+import { UsersService } from '../users/users.service';
+import { UserRoles } from '../users/users.types';
 
 export type ShareType =
   | 'facebook'
@@ -19,10 +21,15 @@ export class SharesService {
   constructor(
     @InjectModel(Share)
     private shareModel: typeof Share,
+    private usersService: UsersService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
   async updateByCandidateId(candidateId: string, type: ShareType) {
+    const candidate = await this.usersService.findOne(candidateId);
+    if (!candidate || candidate.role !== UserRoles.CANDIDAT) {
+      return null;
+    }
     const candidatShares = await this.shareModel.findOne({
       where: { CandidatId: candidateId },
     });
@@ -31,15 +38,15 @@ export class SharesService {
         ...candidatShares,
         [type]: candidatShares[type] + 1,
       };
-      await candidatShares.update(updatedCandidatShares, {
+      return candidatShares.update(updatedCandidatShares, {
         where: { CandidatId: candidateId },
       });
-    } else {
-      await Share.create({
-        CandidatId: candidateId,
-        [type]: 1,
-      });
     }
+
+    return Share.create({
+      CandidatId: candidateId,
+      [type]: 1,
+    });
   }
 
   async countTotal() {

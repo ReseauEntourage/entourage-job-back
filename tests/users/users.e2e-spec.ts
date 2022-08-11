@@ -1295,7 +1295,7 @@ describe('Users', () => {
           expect(response.status).toBe(200);
         });
       });
-      describe('/candidat/:id - Update userCandidat', () => {
+      describe('/candidat/:candidateId - Update userCandidat', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidat: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -1531,7 +1531,7 @@ describe('Users', () => {
           expect(response.body.noteHasBeenModified).toBe(false);
         });
       });
-      describe('/candidat/read/:id - Set note to has been read', () => {
+      describe('/candidat/read/:candidateId - Set note to has been read', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidat: LoggedUser;
         let loggedInCoach: LoggedUser;

@@ -41,6 +41,14 @@ export class UserCandidatsService {
     });
   }
 
+  async findOneByUrl(url: string) {
+    return this.userCandidatModel.findOne({
+      where: {
+        url,
+      },
+    });
+  }
+
   async updateByCandidateId(
     candidateId: string,
     updateUserCandidatDto: UpdateUserCandidatDto

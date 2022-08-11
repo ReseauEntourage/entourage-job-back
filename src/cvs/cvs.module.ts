@@ -39,6 +39,7 @@ import {
     QueuesModule,
     UsersModule,
     MailsModule,
+    AWSModule,
   ],
   providers: [CVsService],
   controllers: [CVsController],
