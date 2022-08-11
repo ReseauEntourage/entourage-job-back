@@ -243,8 +243,7 @@ export class CVsService {
         }
       );
 
-      // TODO fix ttl
-      await this.cacheManager.set(redisKey, JSON.stringify(cv));
+      await this.cacheManager.set(redisKey, JSON.stringify(cv), 0);
 
       return cv;
     }
@@ -278,13 +277,13 @@ export class CVsService {
       attributes: ['id', 'catchphrase', 'urlImg', 'updatedAt'],
       include: [
         /* {
-          model: models.Ambition,
+          models: models.Ambition,
           as: 'ambitions',
           through: { attributes: [] },
           attributes: ['name', 'order', 'prefix'],
         },
         {
-          model: models.Skill,
+          models: models.Skill,
           as: 'skills',
           through: { attributes: [] },
           attributes: ['name'],
@@ -321,7 +320,8 @@ export class CVsService {
       // TODO add TTL
       await this.cacheManager.set(
         RedisKeys.CV_LIST,
-        JSON.stringify(cleanedCVList)
+        JSON.stringify(cleanedCVList),
+        0
       );
     }
 

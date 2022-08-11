@@ -1617,7 +1617,7 @@ describe('Users', () => {
     });
     // TODO put in unit tests
     describe('D - Delete 1 User', () => {
-      describe('/:id - Delete user and all associated entities', () => {
+      describe('/:id - Delete user and all associated models', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCoach: LoggedUser;
         let candidat: User;

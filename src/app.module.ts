@@ -3,8 +3,7 @@ import { CacheModule, Module } from '@nestjs/common';
 
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { SequelizeModuleOptions } from '@nestjs/sequelize/dist/interfaces/sequelize-options.interface';
+import { SequelizeModule, SequelizeModuleOptions } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import type { ClientOpts } from 'redis';
@@ -15,6 +14,12 @@ import { CVsModule } from 'src/cvs/cvs.module';
 import { LocationsModule } from 'src/locations/locations.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
+import { AmbitionsModule } from './ambitions/ambitions.module';
+import { ContractsModule } from './contracts/contracts.module';
+import { LanguagesModule } from './languages/languages.module';
+import { PassionsModule } from './passions/passions.module';
+import { SharesModule } from './shares/shares.module';
+import { SkillsModule } from './skills/skills.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 
 const ENV = `${process.env.NODE_ENV}`;
@@ -74,6 +79,12 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     LocationsModule,
     UsersDeletionModule,
     UsersCreationModule,
+    AmbitionsModule,
+    ContractsModule,
+    LanguagesModule,
+    PassionsModule,
+    SkillsModule,
+    SharesModule,
   ],
   providers: [
     {

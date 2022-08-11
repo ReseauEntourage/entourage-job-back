@@ -126,7 +126,6 @@ export class User extends Model {
   @HasOne(() => UserCandidat, {
     foreignKey: 'candidatId',
     hooks: true,
-    onDelete: 'CASCADE',
   })
   candidat: UserCandidat;
 

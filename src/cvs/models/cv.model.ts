@@ -10,6 +10,7 @@ import {
   DeletedAt,
   ForeignKey,
   HasMany,
+  HasOne,
   IsUUID,
   Model,
   PrimaryKey,
@@ -17,11 +18,24 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { CVStatusValue, CVStatuses } from '../cvs.types';
+import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
+import { Contract } from 'src/contracts/models';
+import { Language } from 'src/languages/models';
 import { Location } from 'src/locations/models';
+import { Passion } from 'src/passions/models';
+import { Skill } from 'src/skills/models';
 import { UserCandidat } from 'src/users/models';
+import { CVAmbition } from './cv-ambition.model';
 import { CVBusinessLine } from './cv-businessLine.model';
+import { CVContract } from './cv-contract.model';
+import { CVLanguage } from './cv-language.model';
 import { CVLocation } from './cv-location.model';
+import { CVPassion } from './cv-passion.model';
+import { CVSearch } from './cv-search.model';
+import { CVSkill } from './cv-skill.model';
+import { Experience } from './experience.model';
+import { Review } from './review.model';
 
 const CVAssociations = ['cvBusinessLines', 'cvLocations'] as const;
 
@@ -92,6 +106,9 @@ export class CV extends Model {
   })
   user: UserCandidat;
 
+  @HasOne(() => CVSearch, 'CVId')
+  cvSearch: CVSearch;
+
   @BelongsToMany(
     () => BusinessLine,
     () => CVBusinessLine,
@@ -101,7 +118,6 @@ export class CV extends Model {
   businessLines: BusinessLine[];
 
   @HasMany(() => CVBusinessLine, {
-    onDelete: 'CASCADE',
     foreignKey: 'CVId',
   })
   cvBusinessLines: CVBusinessLine[];
@@ -110,10 +126,59 @@ export class CV extends Model {
   locations: Location[];
 
   @HasMany(() => CVLocation, {
-    onDelete: 'CASCADE',
     foreignKey: 'CVId',
   })
   cvLocations: CVLocation[];
+
+  @BelongsToMany(() => Ambition, () => CVAmbition, 'CVId', 'AmbitionId')
+  ambitions: Ambition[];
+
+  @HasMany(() => CVAmbition, {
+    foreignKey: 'CVId',
+  })
+  cvAmbitions: CVAmbition[];
+
+  @BelongsToMany(() => Contract, () => CVContract, 'CVId', 'ContractId')
+  contracts: Contract[];
+
+  @HasMany(() => CVContract, {
+    foreignKey: 'CVId',
+  })
+  cvContracts: CVContract[];
+
+  @BelongsToMany(() => Language, () => CVLanguage, 'CVId', 'LanguageId')
+  languages: Language[];
+
+  @HasMany(() => CVLanguage, {
+    foreignKey: 'CVId',
+  })
+  cvLanguages: CVLanguage[];
+
+  @BelongsToMany(() => Passion, () => CVPassion, 'CVId', 'PassionId')
+  passions: Passion[];
+
+  @HasMany(() => CVPassion, {
+    foreignKey: 'CVId',
+  })
+  cvPassions: CVPassion[];
+
+  @BelongsToMany(() => Skill, () => CVSkill, 'CVId', 'SkillId')
+  skills: Skill[];
+
+  @HasMany(() => CVSkill, {
+    foreignKey: 'CVId',
+  })
+  cvSkills: CVSkill[];
+
+  @HasMany(() => Experience, {
+    foreignKey: 'CVId',
+  })
+  experiences: Experience[];
+
+  @HasMany(() => Review, {
+    foreignKey: 'CVId',
+  })
+  reviews: Review[];
 
   @AfterDestroy
   static async deleteRelations(destroyedCV: CV) {
@@ -128,85 +193,17 @@ export class CV extends Model {
       })
     );
   }
-
   /*
-// TODO check if useful
-CV.belongsToMany(models.Ambition, {
-  through: 'CV_Ambitions',
-  as: 'ambitions',
-});
 
-CV.hasMany(models.CV_Ambition, {
-  as: 'cvAmbitions',
-  onDelete: 'CASCADE',
-});
+    CV.hasMany(models.Experience, {
+      as: 'experiences',
+      onDelete: 'CASCADE',
+    });
 
-// TODO check if useful
-CV.belongsToMany(models.Contract, {
-  through: 'CV_Contracts',
-  as: 'contracts',
-});
+    CV.hasMany(models.Review, {
+      as: 'reviews',
+      onDelete: 'CASCADE',
+    });
 
-CV.hasMany(models.CV_Contract, {
-  as: 'cvContracts',
-  onDelete: 'CASCADE',
-});
-
-// TODO check if useful
-CV.belongsToMany(models.Language, {
-  through: 'CV_Language',
-  as: 'languages',
-});
-
-CV.hasMany(models.CV_Language, {
-  as: 'cvLanguages',
-  onDelete: 'CASCADE',
-});
-
-// TODO check if useful
-CV.belongsToMany(models.Passion, {
-  through: 'CV_Passions',
-  as: 'passions',
-});
-
-CV.hasMany(models.CV_Passion, {
-  as: 'cvPassions',
-  onDelete: 'CASCADE',
-});
-
-CV.belongsToMany(models.BusinessLine, {
-  through: 'CV_BusinessLines',
-  as: 'businessLines',
-});
-
-// TODO check if useful
-CV.belongsToMany(models.Skill, {
-  through: 'CV_Skills',
-  as: 'skills',
-});
-
-CV.hasMany(models.CV_Skill, {
-  as: 'cvSkills',
-  onDelete: 'CASCADE',
-});
-
-CV.hasMany(models.Experience, {
-  as: 'experiences',
-  onDelete: 'CASCADE',
-});
-
-CV.hasMany(models.Review, {
-  as: 'reviews',
-  onDelete: 'CASCADE',
-});
-
-CV.hasOne(models.CV_Search, {
-  as: 'cvSearch',
-  foreignKey: 'CVId',
-  sourceKey: 'id',
-  onDelete: 'CASCADE',
-});
-
-CV.afterDestroy(paranoidDeleteCascade(models));
 */
 }

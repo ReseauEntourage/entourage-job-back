@@ -54,31 +54,31 @@ export const UserNotHiddenInclude = {
 
 export const CVCompleteWithoutUserInclude = [
   /*  {
-    model: models.Contract,
+    models: models.Contract,
     as: 'contracts',
     through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Language,
+    models: models.Language,
     as: 'languages',
     through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Passion,
+    models: models.Passion,
     as: 'passions',
     through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Skill,
+    models: models.Skill,
     as: 'skills',
     through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Ambition,
+    models: models.Ambition,
     as: 'ambitions',
     through: { attributes: [] },
     attributes: ['id', 'name', 'prefix', 'order'],
@@ -96,12 +96,12 @@ export const CVCompleteWithoutUserInclude = [
     attributes: ['id', 'name'],
   },
   /*{
-    model: models.Experience,
+    models: models.Experience,
     as: 'experiences',
     attributes: ['id', 'description', 'order'],
     include: [
       {
-        model: models.Skill,
+        models: models.Skill,
         as: 'skills',
         through: { attributes: [] },
         attributes: ['id', 'name'],
@@ -110,7 +110,7 @@ export const CVCompleteWithoutUserInclude = [
     order: [['order', 'ASC']],
   },
   {
-    model: models.Review,
+    models: models.Review,
     as: 'reviews',
     attributes: ['id', 'text', 'status', 'name'],
   },*/
