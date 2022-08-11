@@ -72,4 +72,12 @@ export class UserCandidatsHelper {
       lastModifiedBy: userId,
     });
   }
+
+  async getCandidatUrl(candidateId: string) {
+    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
+      candidateId
+    );
+    const { url } = userCandidat;
+    return url;
+  }
 }

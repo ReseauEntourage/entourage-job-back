@@ -60,7 +60,7 @@ describe('Auth', () => {
     // eslint-disable-next-line max-len
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
 
-  describe('Login - login/', () => {
+  describe('/login - Login', () => {
     let candidat: User;
     let candidatResponse: PayloadUser;
     beforeEach(async () => {
@@ -131,7 +131,7 @@ describe('Auth', () => {
       expect(response.status).toBe(401);
     });
   });
-  describe('Logout - logout/', () => {
+  describe('/logout - Logout', () => {
     it(`Should logout the user`, async () => {
       const loggedInCandidat = await userHelper.createLoggedInUser({
         role: UserRoles.CANDIDAT,
@@ -147,7 +147,7 @@ describe('Auth', () => {
       expect(response.status).toBe(302);
     });
   });
-  describe('Forgot - forgot/', () => {
+  describe('/forgot - Forgot', () => {
     it('Should return 400; if no user email provided', async () => {
       const response: APIResponse<AuthController['forgot']> = await request(
         app.getHttpServer()
@@ -179,7 +179,7 @@ describe('Auth', () => {
       expect(response.status).toBe(201);
     });
   });
-  describe('Reset - reset/:userId/:token', () => {
+  describe('/reset/:userId/:token - Reset', () => {
     describe("Verify password's reset link", () => {
       let candidat: User;
       beforeEach(async () => {
@@ -302,7 +302,7 @@ describe('Auth', () => {
       });
     });
   });
-  describe('Current - /current', () => {
+  describe('/current - Current', () => {
     it('Should return a user with token if valid token provided', async () => {
       const loggedInCandidat = await userHelper.createLoggedInUser({
         role: UserRoles.CANDIDAT,
