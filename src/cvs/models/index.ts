@@ -7,6 +7,3 @@ export { CVPassion } from './cv-passion.model';
 export { CVSkill } from './cv-skill.model';
 export { CVLanguage } from './cv-language.model';
 export { CVSearch } from './cv-search.model';
-export { Experience } from './experience.model';
-export { ExperienceSkill } from './experience-skill.model';
-export { Review } from './review.model';

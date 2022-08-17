@@ -25,6 +25,16 @@ export class Ambition extends WrapperModel {
   @Column
   name: string;
 
+  @AllowNull(false)
+  @Default('dans')
+  @Column
+  prefix: string;
+
+  @AllowNull(false)
+  @Default(-1)
+  @Column
+  order: number;
+
   @BelongsToMany(() => CV, () => CVAmbition, 'AmbitionId', 'CVId')
   CVs: CV[];
 

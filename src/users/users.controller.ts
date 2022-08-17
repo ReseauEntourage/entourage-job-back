@@ -142,65 +142,33 @@ export class UsersController {
     return user;
   }
 
-  @Self('params.id')
-  @UseGuards(SelfGuard)
-  @Put(':id')
-  async updateUser(
+  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @Get('candidat/checkUpdate')
+  async checkNoteHasBeenModified(
     @UserPayload('role') role: UserRole,
-    @Param('id', new ParseUUIDPipe()) userId: string,
-    // Do not instantiante UserRestrictedPipe so that Request can be injected
-    @Body(UserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {
-    if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {
-      throw new BadRequestException();
-    }
+    const ids = {
+      candidateId: role === UserRoles.CANDIDAT ? userId : undefined,
+      coachId: role === UserRoles.COACH ? userId : undefined,
+    };
 
-    const updatedUser = await this.usersService.update(userId, updateUserDto);
-
-    if (!updatedUser) {
-      throw new NotFoundException();
-    }
-
-    return updatedUser;
-  }
-
-  @LinkedUser('params.id')
-  @UseGuards(LinkedUserGuard)
-  @Put('candidat/:candidateId')
-  async updateUserCandidat(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @Body() updateUserCandidatDto: UpdateUserCandidatDto
-  ) {
-    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
-      candidateId
-    );
+    const userCandidat =
+      await this.userCandidatsService.findOneByCandidateOrCoachId(
+        ids.candidateId,
+        ids.coachId
+      );
 
     if (!userCandidat) {
       throw new NotFoundException();
     }
 
-    const updatedUserCandidat =
-      await this.userCandidatsService.updateByCandidateId(candidateId, {
-        ...updateUserCandidatDto,
-        lastModifiedBy: userId,
-      });
+    const { lastModifiedBy } = userCandidat.toJSON();
 
-    if (updatedUserCandidat.coachId !== userCandidat.coachId) {
-      await this.usersService.sendMailsAfterMatching(
-        updatedUserCandidat.candidatId
-      );
-    }
-
-    if (updatedUserCandidat.hidden) {
-      await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
-    } else {
-      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidatId);
-    }
-
-    await this.usersService.cacheAllCVs();
-
-    return updatedUserCandidat;
+    return {
+      noteHasBeenModified: !!lastModifiedBy && lastModifiedBy !== userId,
+    };
   }
 
   // TODO change to changePwd
@@ -241,36 +209,46 @@ export class UsersController {
     return updatedUser;
   }
 
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
-  @UseGuards(RolesGuard)
-  @Get('candidat/checkUpdate')
-  async checkNoteHasBeenModified(
-    @UserPayload('role') role: UserRole,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Put('candidat/:candidateId')
+  async updateUserCandidat(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @Body() updateUserCandidatDto: UpdateUserCandidatDto
   ) {
-    const ids = {
-      candidateId: role === UserRoles.CANDIDAT ? userId : undefined,
-      coachId: role === UserRoles.COACH ? userId : undefined,
-    };
-
-    const userCandidat =
-      await this.userCandidatsService.findOneByCandidateOrCoachId(
-        ids.candidateId,
-        ids.coachId
-      );
+    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
+      candidateId
+    );
 
     if (!userCandidat) {
       throw new NotFoundException();
     }
 
-    const { lastModifiedBy } = userCandidat.toJSON();
+    const updatedUserCandidat =
+      await this.userCandidatsService.updateByCandidateId(candidateId, {
+        ...updateUserCandidatDto,
+        lastModifiedBy: userId,
+      });
 
-    return {
-      noteHasBeenModified: !!lastModifiedBy && lastModifiedBy !== userId,
-    };
+    if (updatedUserCandidat.coachId !== userCandidat.coachId) {
+      await this.usersService.sendMailsAfterMatching(
+        updatedUserCandidat.candidatId
+      );
+    }
+
+    if (updatedUserCandidat.hidden) {
+      await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
+    } else {
+      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidatId);
+    }
+
+    await this.usersService.cacheAllCVs();
+
+    return updatedUserCandidat;
   }
 
-  @LinkedUser('params.id')
+  @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
   @UseGuards(RolesGuard)
@@ -299,5 +277,27 @@ export class UsersController {
     }
 
     return updatedUserCandidat;
+  }
+
+  @Self('params.id')
+  @UseGuards(SelfGuard)
+  @Put(':id')
+  async updateUser(
+    @UserPayload('role') role: UserRole,
+    @Param('id', new ParseUUIDPipe()) userId: string,
+    // Do not instantiante UserRestrictedPipe so that Request can be injected
+    @Body(UserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
+  ) {
+    if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {
+      throw new BadRequestException();
+    }
+
+    const updatedUser = await this.usersService.update(userId, updateUserDto);
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return updatedUser;
   }
 }

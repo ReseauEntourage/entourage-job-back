@@ -1,23 +1,33 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 // eslint-disable-next-line import/no-unresolved
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
+import { v4 as uuid } from 'uuid';
+import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
+import { Contract } from 'src/contracts/models';
 import { CVsService } from 'src/cvs/cvs.service';
-import { CVStatuses, CVStatusKey } from 'src/cvs/cvs.types';
-import { CV } from 'src/cvs/models';
+import { CV, CVSearch } from 'src/cvs/models';
+import { Experience } from 'src/experiences/models';
+import { Language } from 'src/languages/models';
 import { Location } from 'src/locations/models';
+import { Passion } from 'src/passions/models';
+import { Review } from 'src/reviews/models';
+import { Skill } from 'src/skills/models';
+import { CVStatuses, CVStatusKey } from 'src/users/users.types';
 import { Factory, WrapperModel } from 'src/utils/types';
 
-const getCVStatusValues = (cvStatus: typeof CVStatuses) => {
-  return Object.keys(cvStatus).map((status) => {
-    return cvStatus[status as CVStatusKey].value;
-  });
-};
-
-type ComponentKeys = 'businessLine' | 'location';
+type ComponentKeys =
+  | 'businessLine'
+  | 'location'
+  | 'skill'
+  | 'contract'
+  | 'language'
+  | 'review'
+  | 'experience'
+  | 'ambition'
+  | 'passion';
 
 type PluralComponentKeys = `${ComponentKeys}s`;
 
@@ -35,10 +45,26 @@ export class CVFactory implements Factory<CV> {
   constructor(
     @InjectModel(CV)
     private cvModel: typeof CV,
-    @InjectModel(Location)
-    private locationModel: typeof Location,
+    @InjectModel(Skill)
+    private skillModel: typeof Skill,
+    @InjectModel(Language)
+    private languageModel: typeof Language,
+    @InjectModel(Contract)
+    private contractModel: typeof Contract,
+    @InjectModel(Ambition)
+    private ambitionModel: typeof Ambition,
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine,
+    @InjectModel(Passion)
+    private passionModel: typeof Passion,
+    @InjectModel(Location)
+    private locationModel: typeof Location,
+    @InjectModel(Experience)
+    private experienceModel: typeof Experience,
+    @InjectModel(Review)
+    private reviewModel: typeof Review,
+    @InjectModel(CVSearch)
+    private cvSearchModel: typeof CVSearch,
     private cvsService: CVsService
   ) {}
 
@@ -51,7 +77,7 @@ export class CVFactory implements Factory<CV> {
       availability: faker.lorem.sentence(),
       transport: faker.lorem.sentence(),
       catchphrase: faker.lorem.sentence(),
-      status: getCVStatusValues(CVStatuses)[0],
+      status: CVStatuses.New.value,
     };
 
     return {
@@ -80,37 +106,60 @@ export class CVFactory implements Factory<CV> {
           const injectedModel = this[injectedModelName] as typeof WrapperModel;
 
           if (Object.keys(injectedModel.getAttributes()).includes('CVId')) {
-            // TODO after skills
-            /*
             await Promise.all(
-            components[componentKey as ComponentKey].map(async (component) => {
-              const instance = await this[
-                `${componentKey.slice(0, -1)}Model`
-              ].create({
-                CVId: cvDB.id,
-                ...component,
-              });
+              components[componentKey as ComponentKey].map(
+                async (component) => {
+                  const instance = await injectedModel.create(
+                    {
+                      CVId: createdCV.id,
+                      ...(component as Partial<WrapperModel>),
+                    },
+                    { hooks: true }
+                  );
 
-              // TODO Make generic
-              const childrenComponentKey = 'skills';
-              const childrenModelName =
-                childrenComponentKey.charAt(0).toUpperCase() +
-                childrenComponentKey.substring(1);
-              if (
-                modelName === 'Experiences' &&
-                component[childrenComponentKey]
-              ) {
-                const childrenInstances = await Promise.all(
-                  component[childrenComponentKey].map((component) => {
-                    return this[`${componentKey.slice(0, -1)}Model`].create({
-                      name: component,
-                    });
-                  })
-                );
-                await instance[`add${childrenModelName}`](childrenInstances);
-              }
-            })
-          );*/
+                  // TODO Make generic
+                  const childrenComponentKey = 'skill' as ComponentKeys;
+                  const childrenPluralComponentKey = `skills`;
+                  /*  const childrenPluralComponentKey = 'skills';*/
+                  const childrenInjectedModelName = `${
+                    childrenComponentKey as ComponentKey
+                  }Model` as InjectedModels;
+
+                  const childrenInjectedModel = this[
+                    childrenInjectedModelName
+                  ] as typeof WrapperModel;
+
+                  if (
+                    injectedModel.name === 'Experience' &&
+                    (component as Experience)[childrenPluralComponentKey]
+                  ) {
+                    const childrenInstances = await Promise.all(
+                      (component as Experience)[childrenPluralComponentKey].map(
+                        (component) => {
+                          if (_.isString(component)) {
+                            return childrenInjectedModel.create(
+                              {
+                                name: component,
+                              },
+                              { hooks: true }
+                            );
+                          } else {
+                            return childrenInjectedModel.create(
+                              component as Partial<WrapperModel>,
+                              { hooks: true }
+                            );
+                          }
+                        }
+                      )
+                    );
+                    await instance.$add(
+                      childrenPluralComponentKey,
+                      childrenInstances
+                    );
+                  }
+                }
+              )
+            );
           } else {
             const instances = await Promise.all(
               components[componentKey as ComponentKey].map(
@@ -135,14 +184,8 @@ export class CVFactory implements Factory<CV> {
           }
         })
       );
-      // TODO after CV_SEARCH
-      /*
-        await models.CV_Search.create({
-          id: uuid(),
-          CVId: cvDB.id,
-          searchString: JSON.stringify({ ...cvFull, ...props }),
-        });
-      */
+
+      await this.cvsService.generateSearchStringFromCV(cvData.UserId);
     }
     const dbCV = await this.cvsService.findOne(cvData.id);
     if (dbCV) {

@@ -17,15 +17,17 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { CVStatusValue, CVStatuses } from '../cvs.types';
 import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
 import { Contract } from 'src/contracts/models';
+import { Experience } from 'src/experiences/models/experience.model';
 import { Language } from 'src/languages/models';
 import { Location } from 'src/locations/models';
 import { Passion } from 'src/passions/models';
+import { Review } from 'src/reviews/models/review.model';
 import { Skill } from 'src/skills/models';
 import { UserCandidat } from 'src/users/models';
+import { CVStatuses, CVStatusValue } from 'src/users/users.types';
 import { CVAmbition } from './cv-ambition.model';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVContract } from './cv-contract.model';
@@ -34,10 +36,19 @@ import { CVLocation } from './cv-location.model';
 import { CVPassion } from './cv-passion.model';
 import { CVSearch } from './cv-search.model';
 import { CVSkill } from './cv-skill.model';
-import { Experience } from './experience.model';
-import { Review } from './review.model';
 
-const CVAssociations = ['cvBusinessLines', 'cvLocations'] as const;
+const CVAssociations = [
+  'cvBusinessLines',
+  'cvLocations',
+  'cvAmbitions',
+  'cvContracts',
+  'cvLanguages',
+  'cvPassions',
+  'cvSkills',
+  'cvSearch',
+  'reviews',
+  'experiences',
+] as const;
 
 @Table({ tableName: 'CVs' })
 export class CV extends Model {
@@ -185,25 +196,16 @@ export class CV extends Model {
     await Promise.all(
       CVAssociations.map(async (cvAssociation) => {
         const associationInstances = await destroyedCV.$get(cvAssociation);
-        return Promise.all(
-          associationInstances.map(async (assocationInstance) => {
-            return assocationInstance.destroy();
-          })
-        );
+        if (Array.isArray(associationInstances)) {
+          return Promise.all(
+            associationInstances.map(async (assocationInstance) => {
+              return assocationInstance.destroy();
+            })
+          );
+        } else {
+          return associationInstances.destroy();
+        }
       })
     );
   }
-  /*
-
-    CV.hasMany(models.Experience, {
-      as: 'experiences',
-      onDelete: 'CASCADE',
-    });
-
-    CV.hasMany(models.Review, {
-      as: 'reviews',
-      onDelete: 'CASCADE',
-    });
-
-*/
 }

@@ -3,24 +3,43 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
+import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
+import { Ambition } from 'src/ambitions/models';
 import { LoggedUser } from 'src/auth/auth.types';
 import { S3Service } from 'src/aws/s3.service';
-import { CVStatuses } from 'src/cvs/cvs.types';
+import { BusinessLine } from 'src/businessLines/models';
+import { Experience } from 'src/experiences/models';
 import { Queues } from 'src/queues/queues.types';
+import { Review } from 'src/reviews/models';
+import { Skill } from 'src/skills/models';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
-import { UserRoles } from 'src/users/users.types';
+import { UserRoles, CVStatuses } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
+import { AmbitionsHelper } from 'tests/ambitions/ambitions.helper';
 import { BusinessLinesHelper } from 'tests/businessLines/businessLines.helper';
+import { ContractsHelper } from 'tests/contracts/contracts.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
+import { CVAmbitionsHelper } from 'tests/cvs/cv-ambitions.helper';
 import { CVBusinessLinesHelper } from 'tests/cvs/cv-businessLines.helper';
+import { CVContractsHelper } from 'tests/cvs/cv-contracts.helper';
+import { CVLanguagesHelper } from 'tests/cvs/cv-languages.helper';
 import { CVLocationsHelper } from 'tests/cvs/cv-locations.helper';
+import { CVPassionsHelper } from 'tests/cvs/cv-passions.helper';
+import { CVSearchesHelper } from 'tests/cvs/cv-searches.helper';
+import { CVSkillsHelper } from 'tests/cvs/cv-skills.helper';
 import { CVFactory } from 'tests/cvs/cv.factory';
 import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
+import { ExperiencesSkillsHelper } from 'tests/experiences/experiences-skills.helper';
+import { ExperiencesHelper } from 'tests/experiences/experiences.helper';
+import { LanguagesHelper } from 'tests/languages/languages.helper';
 import { LocationsHelper } from 'tests/locations/locations.helper';
+import { PassionsHelper } from 'tests/passions/passions.helper';
+import { ReviewsHelper } from 'tests/reviews/reviews.helper';
+import { SkillsHelper } from 'tests/skills/skills.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
@@ -30,55 +49,76 @@ describe('Users', () => {
 
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
-  let userHelper: UsersHelper;
-  let userCandidatHelper: UserCandidatsHelper;
-  let cvHelper: CVsHelper;
+  let usersHelper: UsersHelper;
+  let userCandidatsHelper: UserCandidatsHelper;
+  let cvsHelper: CVsHelper;
   let cvFactory: CVFactory;
-  let cvBusinessLineHelper: CVBusinessLinesHelper;
-  let cvLocationHelper: CVLocationsHelper;
-  let businessLineHelper: BusinessLinesHelper;
-  let locationHelper: LocationsHelper;
+  let cvBusinessLinesHelper: CVBusinessLinesHelper;
+  let cvLocationsHelper: CVLocationsHelper;
+  let cvPassionsHelper: CVPassionsHelper;
+  let cvAmbitionsHelper: CVAmbitionsHelper;
+  let cvContractsHelper: CVContractsHelper;
+  let cvLanguagesHelper: CVLanguagesHelper;
+  let cvSkillsHelper: CVSkillsHelper;
+  let cvSearchesHelper: CVSearchesHelper;
+  let experiencesHelper: ExperiencesHelper;
+  let businessLinesHelper: BusinessLinesHelper;
+  let locationsHelper: LocationsHelper;
+  let passionsHelper: PassionsHelper;
+  let ambitionsHelper: AmbitionsHelper;
+  let contractsHelper: ContractsHelper;
+  let languagesHelper: LanguagesHelper;
+  let skillsHelper: SkillsHelper;
+  let experiencesSkillsHelper: ExperiencesSkillsHelper;
+  let reviewsHelper: ReviewsHelper;
 
   const route = '/user';
-
-  const queueMock = { add: jest.fn() };
-  const cacheMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
-  const s3Mock = {
-    upload: jest.fn(),
-    deleteFiles: jest.fn(),
-    getHead: jest.fn(),
-    getSignedUrl: jest.fn(),
-  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
       .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(queueMock)
+      .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
-      .useValue(cacheMock)
+      .useValue(CacheMocks)
       .overrideProvider(S3Service)
-      .useValue(s3Mock)
+      .useValue(S3Mocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
-    userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
-    userCandidatHelper =
+    usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    cvHelper = moduleFixture.get<CVsHelper>(CVsHelper);
+    cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
     cvFactory = moduleFixture.get<CVFactory>(CVFactory);
-    cvBusinessLineHelper = moduleFixture.get<CVBusinessLinesHelper>(
+    cvBusinessLinesHelper = moduleFixture.get<CVBusinessLinesHelper>(
       CVBusinessLinesHelper
     );
-    cvLocationHelper = moduleFixture.get<CVLocationsHelper>(CVLocationsHelper);
-    businessLineHelper =
+    cvLocationsHelper = moduleFixture.get<CVLocationsHelper>(CVLocationsHelper);
+    cvPassionsHelper = moduleFixture.get<CVPassionsHelper>(CVPassionsHelper);
+    cvAmbitionsHelper = moduleFixture.get<CVAmbitionsHelper>(CVAmbitionsHelper);
+    cvContractsHelper = moduleFixture.get<CVContractsHelper>(CVContractsHelper);
+    cvLanguagesHelper = moduleFixture.get<CVLanguagesHelper>(CVLanguagesHelper);
+    cvSkillsHelper = moduleFixture.get<CVSkillsHelper>(CVSkillsHelper);
+    experiencesHelper = moduleFixture.get<ExperiencesHelper>(ExperiencesHelper);
+    cvSearchesHelper = moduleFixture.get<CVSearchesHelper>(CVSearchesHelper);
+    businessLinesHelper =
       moduleFixture.get<BusinessLinesHelper>(BusinessLinesHelper);
-    locationHelper = moduleFixture.get<LocationsHelper>(LocationsHelper);
+    locationsHelper = moduleFixture.get<LocationsHelper>(LocationsHelper);
+    passionsHelper = moduleFixture.get<PassionsHelper>(PassionsHelper);
+    ambitionsHelper = moduleFixture.get<AmbitionsHelper>(AmbitionsHelper);
+    contractsHelper = moduleFixture.get<ContractsHelper>(ContractsHelper);
+    languagesHelper = moduleFixture.get<LanguagesHelper>(LanguagesHelper);
+    skillsHelper = moduleFixture.get<SkillsHelper>(SkillsHelper);
+    experiencesSkillsHelper = moduleFixture.get<ExperiencesSkillsHelper>(
+      ExperiencesSkillsHelper
+    );
+    reviewsHelper = moduleFixture.get<ReviewsHelper>(ReviewsHelper);
   });
 
   afterAll(async () => {
@@ -96,10 +136,10 @@ describe('Users', () => {
       let loggedInCandidat: LoggedUser;
 
       beforeEach(async () => {
-        loggedInAdmin = await userHelper.createLoggedInUser({
+        loggedInAdmin = await usersHelper.createLoggedInUser({
           role: UserRoles.ADMIN,
         });
-        loggedInCandidat = await userHelper.createLoggedInUser({
+        loggedInCandidat = await usersHelper.createLoggedInUser({
           role: UserRoles.CANDIDAT,
         });
       });
@@ -180,13 +220,13 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
         });
@@ -258,13 +298,13 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
         });
@@ -309,7 +349,7 @@ describe('Users', () => {
         });
         it('Should return 200 and related coach if candidat searching for himself and is associated to coach', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -330,7 +370,7 @@ describe('Users', () => {
         });
         it('Should return 200 and related candidat if coach searching for himself and is associated to candidat', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -369,7 +409,7 @@ describe('Users', () => {
         });
         it('Should return 200 and related candidate, admin searching for coach', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -389,7 +429,7 @@ describe('Users', () => {
         });
         it('Should return 200 and related coach, admin searching for candidate', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -416,13 +456,13 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
         });
@@ -522,7 +562,7 @@ describe('Users', () => {
           expect(response.status).toBe(401);
         });
         it('Should return 403 if user is not a logged in admin', async () => {
-          const loggedInCandidat = await userHelper.createLoggedInUser({
+          const loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
 
@@ -536,7 +576,7 @@ describe('Users', () => {
           let loggedInAdmin: LoggedUser;
 
           beforeEach(async () => {
-            loggedInAdmin = await userHelper.createLoggedInUser({
+            loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
             });
             await userFactory.create({
@@ -638,7 +678,7 @@ describe('Users', () => {
         describe('Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
-            loggedInAdmin = await userHelper.createLoggedInUser({
+            loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
             });
           });
@@ -951,7 +991,7 @@ describe('Users', () => {
 
             await Promise.all(
               associatedUserCandidates.map(async (candidate, index) => {
-                return userCandidatHelper.associateCoachAndCandidat(
+                return userCandidatsHelper.associateCoachAndCandidat(
                   coaches[index],
                   candidate
                 );
@@ -994,7 +1034,7 @@ describe('Users', () => {
 
             await Promise.all(
               associatedUserCoaches.map(async (coach, index) => {
-                return userCandidatHelper.associateCoachAndCandidat(
+                return userCandidatsHelper.associateCoachAndCandidat(
                   coach,
                   candidates[index]
                 );
@@ -1017,7 +1057,7 @@ describe('Users', () => {
 
       describe('Members - Count all pending members', () => {
         it('Should return 403 if user is not a logged in admin', async () => {
-          const loggedInCandidat = await userHelper.createLoggedInUser({
+          const loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           const response: APIResponse<
@@ -1028,7 +1068,7 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 200 and count of members with pending CVs', async () => {
-          const loggedInAdmin = await userHelper.createLoggedInUser({
+          const loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
 
@@ -1082,13 +1122,13 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
         });
@@ -1105,7 +1145,7 @@ describe('Users', () => {
         });
         it("Should return 403 if user doesn't update himself, even if they are associated", async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -1220,7 +1260,7 @@ describe('Users', () => {
         });
         it('Should return 200 and updated user, and updated userCandidat when an admin update a user role', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -1235,7 +1275,7 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body.role).toEqual(UserRoles.COACH);
 
-          const userCandidat = await userCandidatHelper.findOneUserCandidat({
+          const userCandidat = await userCandidatsHelper.findOneUserCandidat({
             coachId: loggedInCandidat.user.id,
           });
 
@@ -1247,7 +1287,7 @@ describe('Users', () => {
         const password = 'Candidat123!';
 
         beforeEach(async () => {
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password,
           });
@@ -1301,13 +1341,13 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
         });
@@ -1348,7 +1388,7 @@ describe('Users', () => {
         });
         it('Should return 200 and updated userCandidat, if logged in admin', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -1368,7 +1408,7 @@ describe('Users', () => {
         });
         it('Should return 200 and updated userCandidat, if candidat updates himself', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -1388,7 +1428,7 @@ describe('Users', () => {
         });
         it('Should return 200 and updated userCandidat, if coach updates candidate associated to him', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
@@ -1413,7 +1453,7 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
           const candidat = await userFactory.create({
@@ -1422,13 +1462,17 @@ describe('Users', () => {
           const coach = await userFactory.create({
             role: UserRoles.COACH,
           });
-          await userCandidatHelper.associateCoachAndCandidat(coach, candidat);
-          loggedInCandidat = await userHelper.createLoggedInUser(
+          await userCandidatsHelper.associateCoachAndCandidat(coach, candidat);
+          loggedInCandidat = await usersHelper.createLoggedInUser(
             candidat,
             {},
             false
           );
-          loggedInCoach = await userHelper.createLoggedInUser(coach, {}, false);
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            coach,
+            {},
+            false
+          );
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
@@ -1448,7 +1492,7 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             loggedInCandidat.user.id
           );
@@ -1461,7 +1505,7 @@ describe('Users', () => {
           expect(response.body.noteHasBeenModified).toBe(true);
         });
         it('Should return 200 and noteHasBeenModified be false, if coach reads note', async () => {
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             null
           );
@@ -1475,7 +1519,7 @@ describe('Users', () => {
           expect(response.body.noteHasBeenModified).toBe(false);
         });
         it('Should return 200 and noteHasBeenModified be false, if coach is the last one to have updated note', async () => {
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             loggedInCoach.user.id
           );
@@ -1490,7 +1534,7 @@ describe('Users', () => {
         });
 
         it('Should return 200 and noteHasBeenModified, if candidat checks if note has been updated', async () => {
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             loggedInCoach.user.id
           );
@@ -1503,7 +1547,7 @@ describe('Users', () => {
           expect(response.body.noteHasBeenModified).toBe(true);
         });
         it('Should return 200 and noteHasBeenModified be false, if candidat reads note', async () => {
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             null
           );
@@ -1517,7 +1561,7 @@ describe('Users', () => {
           expect(response.body.noteHasBeenModified).toBe(false);
         });
         it('Should return 200 and noteHasBeenModified be false, if candidat is the last one to have updated note', async () => {
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             loggedInCandidat.user.id
           );
@@ -1537,13 +1581,13 @@ describe('Users', () => {
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await userHelper.createLoggedInUser({
+          loggedInCandidat = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
         });
@@ -1579,12 +1623,12 @@ describe('Users', () => {
         });
         it('Should return 200 and userCandidat, if coach sets the note has been read', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
             ));
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             loggedInCandidat.user.id
           );
@@ -1597,12 +1641,12 @@ describe('Users', () => {
         });
         it('Should return 200 and userCandidat, if candidat sets the note has been read', async () => {
           ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatHelper.associateCoachAndCandidat(
+            await userCandidatsHelper.associateCoachAndCandidat(
               loggedInCoach,
               loggedInCandidat,
               true
             ));
-          await userCandidatHelper.setLastModifiedBy(
+          await userCandidatsHelper.setLastModifiedBy(
             loggedInCandidat.user.id,
             loggedInCoach.user.id
           );
@@ -1624,19 +1668,23 @@ describe('Users', () => {
         const uniqIdToFind = uuid();
         const uniqId2ToFind = uuid();
         let cvId: string;
+        let experienceId: string;
 
         beforeEach(async () => {
-          loggedInAdmin = await userHelper.createLoggedInUser({
+          loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
           candidat = await userFactory.create({
             role: UserRoles.CANDIDAT,
           });
-          loggedInCoach = await userHelper.createLoggedInUser({
+          loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
 
-          ({ id: cvId } = await cvFactory.create(
+          ({
+            id: cvId,
+            experiences: [{ id: experienceId }],
+          } = await cvFactory.create(
             {
               UserId: candidat.id,
               urlImg: `images/${candidat.id}.Published.jpg`,
@@ -1648,34 +1696,33 @@ describe('Users', () => {
               status: 'Progress',
             },
             {
-              /*
-             // TODO put back when other associations on CV
-             contracts: [uniqIdToFind],
+              contracts: [uniqIdToFind],
               languages: [uniqIdToFind],
               passions: [uniqIdToFind],
               skills: [uniqIdToFind],
               ambitions: [
-                { prefix: 'dans', name: uniqIdToFind, order: 0 },
-                { prefix: 'dans', name: uniqId2ToFind, order: 1 },
-              ],*/
-              businessLines: [uniqIdToFind, uniqId2ToFind],
+                { prefix: 'dans', name: uniqIdToFind, order: 0 } as Ambition,
+                { prefix: 'dans', name: uniqId2ToFind, order: 1 } as Ambition,
+              ],
+              businessLines: [
+                { name: uniqIdToFind, order: 0 } as BusinessLine,
+                { name: uniqId2ToFind, order: 1 } as BusinessLine,
+              ],
               locations: [uniqIdToFind],
-              /*
-              // TODO put back when other associations on CV
               experiences: [
                 {
                   description: uniqIdToFind,
-                  skills: [uniqId2ToFind],
-                  order: '0',
-                },
+                  skills: [{ name: uniqId2ToFind } as Skill],
+                  order: 0,
+                } as Experience,
               ],
               reviews: [
                 {
                   text: uniqIdToFind,
                   status: uniqIdToFind,
                   name: uniqIdToFind,
-                },
-              ],*/
+                } as Review,
+              ],
             },
             true
           ));
@@ -1697,124 +1744,92 @@ describe('Users', () => {
           expect(response.body.usersDeleted).toBe(1);
           expect(response.body.cvsDeleted).toBe(1);
 
-          const locationsCount = await locationHelper.countLocationByName(
+          const locationsCount = await locationsHelper.countLocationByName(
             uniqIdToFind
           );
           const cvLocationsCount =
-            await cvLocationHelper.countCVLocationsByCVId(cvId);
+            await cvLocationsHelper.countCVLocationsByCVId(cvId);
           expect(locationsCount).toBe(1);
           expect(cvLocationsCount).toBe(0);
 
           const businessLinesCount =
-            await businessLineHelper.countBusinessLinesByName([
+            await businessLinesHelper.countBusinessLinesByName([
               uniqIdToFind,
               uniqId2ToFind,
             ]);
           const cvBusinessLinesCount =
-            await cvBusinessLineHelper.countCVBusinessLinesByCVId(cvId);
+            await cvBusinessLinesHelper.countCVBusinessLinesByCVId(cvId);
           expect(businessLinesCount).toBe(2);
           expect(cvBusinessLinesCount).toBe(0);
 
-          const user = await userHelper.findUser(candidat.id);
+          const user = await usersHelper.findUser(candidat.id);
           expect(user).toBeFalsy();
 
-          const cvs = await cvHelper.findCVsByCandidateId(candidat.id);
+          const cvs = await cvsHelper.findCVsByCandidateId(candidat.id);
           expect(cvs.length).toBeFalsy();
 
-          /*
-         // TODO when other associations of CV are created
-         const ambitionsCount = await Ambition.count({
-           where: {
-             [Op.or]: [{ name: uniqIdToFind }, { name: uniqId2ToFind }],
-           },
-         });
-         const cvAmbitionsCount = await CV_Ambition.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(ambitionsCount).toBe(2);
-         expect(cvAmbitionsCount).toBe(0);
+          const ambitionsCount = await ambitionsHelper.countAmbitionsByName([
+            uniqIdToFind,
+            uniqId2ToFind,
+          ]);
+          const cvAmbitionsCount =
+            await cvAmbitionsHelper.countCVAmbitionsByCVId(cvId);
+          expect(ambitionsCount).toBe(2);
+          expect(cvAmbitionsCount).toBe(0);
 
-         const contractsCount = await Contract.count({
-           where: {
-             name: uniqIdToFind,
-           },
-         });
-         const cvContractsCount = await CV_Contract.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(contractsCount).toBe(1);
-         expect(cvContractsCount).toBe(0);
+          const contractsCount = await contractsHelper.countContractsByName(
+            uniqIdToFind
+          );
+          const cvContractsCount =
+            await cvContractsHelper.countCVContractsByCVId(cvId);
+          expect(contractsCount).toBe(1);
+          expect(cvContractsCount).toBe(0);
 
-         const languagesCount = await Language.count({
-           where: {
-             name: uniqIdToFind,
-           },
-         });
-         const cvLanguagesCount = await CV_Language.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(languagesCount).toBe(1);
-         expect(cvLanguagesCount).toBe(0);
+          const languagesCount = await languagesHelper.countLanguagesByName(
+            uniqIdToFind
+          );
+          const cvLanguagesCount =
+            await cvLanguagesHelper.countCVLanguagesByCVId(cvId);
+          expect(languagesCount).toBe(1);
+          expect(cvLanguagesCount).toBe(0);
 
-         const passionsCount = await Passion.count({
-           where: {
-             name: uniqIdToFind,
-           },
-         });
-         const cvPassionsCount = await CV_Passion.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(passionsCount).toBe(1);
-         expect(cvPassionsCount).toBe(0);
+          const passionsCount = await passionsHelper.countPassionsByName(
+            uniqIdToFind
+          );
+          const cvPassionsCount = await cvPassionsHelper.countCVPassionsByCVId(
+            cvId
+          );
+          expect(passionsCount).toBe(1);
+          expect(cvPassionsCount).toBe(0);
 
-         const skillsCount = await Skill.count({
-           where: {
-             name: uniqIdToFind,
-           },
-         });
-         const cvSkillsCount = await CV_Skill.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(skillsCount).toBe(1);
-         expect(cvSkillsCount).toBe(0);
+          const skillsCount = await skillsHelper.countSkillsByName(
+            uniqIdToFind
+          );
+          const cvSkillsCount = await cvSkillsHelper.countCVSkillsByCVId(cvId);
+          expect(skillsCount).toBe(1);
+          expect(cvSkillsCount).toBe(0);
 
-         const cvExperiencesCount = await Experience.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         const expSkillsCount = await Skill.count({
-           where: {
-             name: uniqId2ToFind,
-           },
-         });
+          const expSkillsCount = await skillsHelper.countSkillsByName(
+            uniqId2ToFind
+          );
+          const cvExperiencesCount =
+            await experiencesHelper.countExperiencesByCVId(cvId);
+          const cvExpSkillsCount =
+            await experiencesSkillsHelper.countExperienceSkillsByExperienceId(
+              experienceId
+            );
 
-         expect(cvExperiencesCount).toBe(0);
-         expect(expSkillsCount).toBe(1);
+          expect(cvExperiencesCount).toBe(0);
+          expect(cvExpSkillsCount).toBe(0);
+          expect(expSkillsCount).toBe(1);
 
-         const searchesCount = await CV_Search.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(searchesCount).toBe(0);
+          const searchesCount = await cvSearchesHelper.countCVSearchesByCVId(
+            cvId
+          );
+          expect(searchesCount).toBe(0);
 
-         const reviewsCount = await Review.count({
-           where: {
-             CVId: cvId,
-           },
-         });
-         expect(reviewsCount).toBe(0);*/
+          const reviewsCount = await reviewsHelper.countReviewsByCVId(cvId);
+          expect(reviewsCount).toBe(0);
         });
       });
     });

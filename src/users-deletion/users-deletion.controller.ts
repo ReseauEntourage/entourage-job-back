@@ -83,7 +83,7 @@ export class UsersDeletionController {
 
     const revisions = await Revision.findAll(revisionsQuery);
 
-    // Have to use raw query because Revision_Change is not declared as a models
+    // Have to use raw query because Revision_Change is not declared as a model
     await sequelize.query(
       `
       UPDATE "RevisionChanges"

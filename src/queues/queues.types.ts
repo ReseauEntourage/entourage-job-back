@@ -32,13 +32,49 @@ export interface SendMailJob {
 }
 
 export interface SendReminderCVJob {
-  candidatId: string;
+  candidateId: string;
   is20Days: boolean;
 }
 
+export interface SendReminderVideoJob {
+  candidateId: string;
+}
+
+export interface SendReminderActionsJob {
+  candidateId: string;
+}
+
+export interface SendReminderExternalOffersJob {
+  candidateId: string;
+}
+
+export interface SendReminderInterviewTrainingJob {
+  candidateId: string;
+}
+
 export interface CacheCVJob {
-  candidatId: string;
+  candidateId: string;
   url: string;
+}
+
+export interface CacheAllCVJob {}
+
+export interface GenerateCVPDFJob {
+  candidateId: string;
+  token: string;
+  paths: string[];
+}
+
+export interface GenerateCVPreviewJob {
+  candidateId: string;
+  uploadedImg: string;
+  oldImg: string;
+}
+
+export interface GenerateCVSearchString {
+  candidateId: string;
+  token: string;
+  paths: string[];
 }
 
 export const Queues = {

@@ -11,6 +11,7 @@ import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { CacheMocks, QueueMocks } from 'tests/mocks.types';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
@@ -21,21 +22,18 @@ describe('Auth', () => {
   let databaseHelper: DatabaseHelper;
   let authHelper: AuthHelper;
   let userFactory: UserFactory;
-  let userHelper: UsersHelper;
+  let usersHelper: UsersHelper;
 
   const route = '/auth';
-
-  const queueMock = { add: jest.fn() };
-  const cacheMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
       .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(queueMock)
+      .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
-      .useValue(cacheMock)
+      .useValue(CacheMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -43,7 +41,7 @@ describe('Auth', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
-    userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
   });
 
@@ -133,7 +131,7 @@ describe('Auth', () => {
   });
   describe('/logout - Logout', () => {
     it(`Should logout the user`, async () => {
-      const loggedInCandidat = await userHelper.createLoggedInUser({
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDAT,
         password: 'loggedInCandidat',
       });
@@ -304,7 +302,7 @@ describe('Auth', () => {
   });
   describe('/current - Current', () => {
     it('Should return a user with token if valid token provided', async () => {
-      const loggedInCandidat = await userHelper.createLoggedInUser({
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDAT,
         password: 'loggedInCandidat',
       });

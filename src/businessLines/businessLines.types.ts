@@ -19,9 +19,7 @@ export type BusinessLineValue =
   | 'sa'
   | 'fjr';
 
-export const BusinessLineFilters: (FilterConstant<BusinessLineValue> & {
-  prefix: string[] | string;
-})[] = [
+export const BusinessLineFilters: FilterConstant<BusinessLineValue>[] = [
   {
     label: 'Logistique et approvisionnement',
     value: 'la',

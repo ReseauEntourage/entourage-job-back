@@ -7,20 +7,22 @@ import { SequelizeModule, SequelizeModuleOptions } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import type { ClientOpts } from 'redis';
+import { AmbitionsModule } from 'src/ambitions/ambitions.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
 import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
+import { ContractsModule } from 'src/contracts/contracts.module';
 import { CVsModule } from 'src/cvs/cvs.module';
+import { ExperiencesModule } from 'src/experiences/experiences.module';
+import { LanguagesModule } from 'src/languages/languages.module';
 import { LocationsModule } from 'src/locations/locations.module';
+import { PassionsModule } from 'src/passions/passions.module';
+import { ReviewsModule } from 'src/reviews/reviews.module';
+import { SharesModule } from 'src/shares/shares.module';
+import { SkillsModule } from 'src/skills/skills.module';
+import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
-import { AmbitionsModule } from './ambitions/ambitions.module';
-import { ContractsModule } from './contracts/contracts.module';
-import { LanguagesModule } from './languages/languages.module';
-import { PassionsModule } from './passions/passions.module';
-import { SharesModule } from './shares/shares.module';
-import { SkillsModule } from './skills/skills.module';
-import { UsersCreationModule } from './users-creation/users-creation.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -74,17 +76,20 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     }),
     AuthModule,
     UsersModule,
+    UsersDeletionModule,
+    UsersCreationModule,
+    // Put SharesModule before CVsModule
+    SharesModule,
     CVsModule,
     BusinessLinesModule,
     LocationsModule,
-    UsersDeletionModule,
-    UsersCreationModule,
     AmbitionsModule,
     ContractsModule,
     LanguagesModule,
     PassionsModule,
     SkillsModule,
-    SharesModule,
+    ExperiencesModule,
+    ReviewsModule,
   ],
   providers: [
     {
@@ -99,9 +104,20 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   exports: [
     AuthModule,
     UsersModule,
+    UsersDeletionModule,
+    UsersCreationModule,
+    // Put SharesModule before CVsModule
+    SharesModule,
     CVsModule,
     BusinessLinesModule,
     LocationsModule,
+    AmbitionsModule,
+    ContractsModule,
+    LanguagesModule,
+    PassionsModule,
+    SkillsModule,
+    ExperiencesModule,
+    ReviewsModule,
   ],
 })
 export class AppModule {}

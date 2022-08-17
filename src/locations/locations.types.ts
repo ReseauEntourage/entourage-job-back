@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import { AdminZone, AdminZones, FilterConstant } from 'src/utils/types';
 
 export const Departments = [
@@ -509,10 +510,50 @@ export const Departments = [
 ] as const;
 
 export type Department = typeof Departments[number]['name'];
+export type Region = typeof Departments[number]['region'];
 
-export const DepartmentFilters: (FilterConstant<Department> & {
+const RegionLabels: Partial<Record<Region, string>> = {
+  'Île-de-France': 'Paris et sa région',
+  'Auvergne-Rhône-Alpes': 'Lyon et sa région',
+  'Hauts-de-France': 'Lille et sa région',
+};
+
+/*
+interface Region extends FilterConstant<typeof Departments[number]['region']> {
+  value: typeof Departments[number]['region'];
+  label: RegionLabel | typeof Departments[number]['region'];
   zone: AdminZone;
-})[] = [
+  children: typeof Departments[number][];
+}
+*/
+
+export const RegionFilters: FilterConstant<Region, Department>[] = _.sortBy(
+  Object.values(
+    Departments.reduce((acc, curr) => {
+      if (acc[curr.region]) {
+        return {
+          ...acc,
+          [curr.region]: {
+            ...acc[curr.region],
+            children: [...acc[curr.region].children, curr.name],
+          },
+        };
+      }
+      return {
+        ...acc,
+        [curr.region]: {
+          value: curr.region,
+          label: RegionLabels[curr.region as Region] || curr.region,
+          zone: curr.zone,
+          children: [curr.name],
+        },
+      };
+    }, {} as Record<Region, FilterConstant<Region>>)
+  ),
+  'label'
+);
+
+export const DepartmentFilters: FilterConstant<Department>[] = [
   ...Departments.map(({ name, zone }) => {
     return {
       value: name,

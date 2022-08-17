@@ -27,7 +27,7 @@ export class S3Service {
     data: PutObjectRequest['Body'],
     contentType: PutObjectRequest['ContentType'],
     outputPath: string,
-    isPrivate: boolean
+    isPrivate = false
   ) {
     const key = `${
       contentType.includes('image/')
@@ -71,7 +71,7 @@ export class S3Service {
       Key: key,
     });
 
-    return await this.s3.send(headObjectCommand);
+    return this.s3.send(headObjectCommand);
   }
 
   async getSignedUrl(key: string) {

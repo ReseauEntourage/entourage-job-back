@@ -32,6 +32,7 @@ import {
   generateUrl,
   getCandidateIdFromCoachOrCandidate,
 } from '../users.utils';
+import { Share } from 'src/shares/models';
 import { AdminZone } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
@@ -152,10 +153,9 @@ export class User extends Model {
         },
         { hooks: true }
       );
-      // TODO
-      /*await models.Share.create({
+      await Share.create({
         CandidatId: user.id,
-      });*/
+      });
     }
   }
 
@@ -182,7 +182,6 @@ export class User extends Model {
               coachId: null,
             },
             {
-              // TODO check if works
               where: {
                 candidatId: getCandidateIdFromCoachOrCandidate(
                   previousUserValues as User
@@ -199,14 +198,11 @@ export class User extends Model {
           },
           { hooks: true }
         );
-        // TODO
-        /*
-          await models.Share.findOrCreate({
-            where: {
-              CandidatId: nextUser.id,
-            },
-          });
-         */
+        await Share.findOrCreate({
+          where: {
+            CandidatId: nextUser.id,
+          },
+        });
       }
     }
   }

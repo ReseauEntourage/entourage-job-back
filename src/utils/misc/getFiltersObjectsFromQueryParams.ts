@@ -27,13 +27,11 @@ export function getFiltersObjectsFromQueryParams<K extends string, T>(
           filters = {
             ...filters,
             [paramKey]: _.map(valueArray, (val) => {
-              // Fix to use find function
-              const constants = filter.constants.map(
-                (item: FilterConstant<T>) => item
+              return filter.constants.find(
+                (constantValue: FilterConstant<T>) => {
+                  return constantValue.value.toString() === val;
+                }
               );
-              return constants.find((constantValue: FilterConstant<T>) => {
-                return constantValue.value.toString() === val;
-              });
             }),
           };
         }

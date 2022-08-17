@@ -1,12 +1,16 @@
-import { col, Op, where, WhereOptions } from 'sequelize';
+import { col, Op, where } from 'sequelize';
+import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/businessLines/businessLines.types';
-import { CVStatuses } from 'src/cvs/cvs.types';
-import { Department } from 'src/locations/locations.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
 import { User } from './models';
-import { MemberFilterKey, MemberFilters, UserRoles } from './users.types';
-import { PayloadUser } from '../auth/auth.types';
+import {
+  MemberFilterKey,
+  MemberFilters,
+  MemberOptions,
+  UserRoles,
+  CVStatuses,
+} from './users.types';
 
 export function generateUrl(user: User) {
   return `${user.firstName.toLowerCase()}-${user.id.substring(0, 8)}`;
@@ -80,12 +84,10 @@ export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
   return null;
 }
 
-type MemberOptions = Partial<Record<MemberFilterKey, WhereOptions<User>>>;
-
 export function getMemberOptions(
   filtersObj: FilterObject<MemberFilterKey>
 ): MemberOptions {
-  let whereOptions: MemberOptions = {};
+  let whereOptions = {} as MemberOptions;
 
   if (filtersObj) {
     const keys: MemberFilterKey[] = Object.keys(
@@ -229,102 +231,6 @@ export function userSearchQuery(query = '') {
     searchInColumnWhereOption('User.firstName', query),
     searchInColumnWhereOption('User.lastName', query),
   ];
-}
-
-export function getPublishedCVQuery(
-  employed?: { [Op.or]: boolean[] },
-  locations?: { [Op.or]: Department[] },
-  businessLines?: { [Op.or]: BusinessLineValue[] }
-) {
-  const hasLocations = locations && locations[Op.or];
-  const hasBusinessLines = businessLines && businessLines[Op.or];
-  return `
-    /* CV par recherche */
-
-    with groupCVs as (
-      select
-        /* pour chaque user, dernier CV publiés */
-        "UserId", MAX(version) as version, "employed"
-      from
-        "User_Candidats",
-        "CVs"
-        ${
-          hasLocations
-            ? `
-              ,
-              "CV_Locations",
-              "Locations"
-            `
-            : ''
-        }
-        ${
-          hasBusinessLines
-            ? `
-              ,
-              "CV_BusinessLines",
-              "BusinessLines"
-            `
-            : ''
-        }
-      where
-        "CVs".status = '${CVStatuses.Published.value}'
-        and "CVs"."deletedAt" IS NULL
-        and "User_Candidats"."candidatId" = "CVs"."UserId"
-        and "User_Candidats".hidden = false
-        ${
-          employed && employed[Op.or]
-            ? `and (${employed[Op.or]
-                .map((value, index) => {
-                  return `${
-                    index > 0 ? 'or ' : ''
-                  }"User_Candidats".employed = ${value}`;
-                })
-                .join(' ')})`
-            : ''
-        }
-        ${
-          hasLocations
-            ? `and "CV_Locations"."CVId" = "CVs".id and "CV_Locations"."LocationId" = "Locations".id`
-            : ''
-        }
-        ${
-          hasBusinessLines
-            ? `and "CV_BusinessLines"."CVId" = "CVs".id and "CV_BusinessLines"."BusinessLineId" = "BusinessLines".id`
-            : ''
-        }
-        ${
-          hasLocations
-            ? `and (${locations[Op.or]
-                .map((value, index) => {
-                  return `${
-                    index > 0 ? 'or ' : ''
-                  }"Locations".name = '${value}'`;
-                })
-                .join(' ')})`
-            : ''
-        }
-        ${
-          hasBusinessLines
-            ? `and (${businessLines[Op.or]
-                .map((value, index) => {
-                  return `${
-                    index > 0 ? 'or ' : ''
-                  }"BusinessLines".name = '${value}'`;
-                })
-                .join(' ')})`
-            : ''
-        }
-      group by
-        "UserId", "employed")
-
-    select
-      cvs.id, cvs."UserId", groupCVs."employed"
-    from
-      "CVs" cvs
-    inner join groupCVs on
-      cvs."UserId" = groupCVs."UserId"
-      and cvs.version = groupCVs.version
-    `;
 }
 
 export function generateImageNamesToDelete(prefix: string) {

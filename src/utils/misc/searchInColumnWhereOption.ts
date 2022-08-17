@@ -1,6 +1,6 @@
 import { col, fn, Op, where } from 'sequelize';
 
-function escapeQuery(query: string) {
+export function escapeQuery(query: string) {
   return query
     ? query
         .trim()
@@ -12,7 +12,7 @@ function escapeQuery(query: string) {
     : '';
 }
 
-function escapeColumnRaw(column: string) {
+export function escapeColumnRaw(column: string) {
   return `replace(lower(unaccent(${column})), '-', ' ')`;
 }
 

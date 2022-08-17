@@ -12,9 +12,9 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { CV } from 'src/cvs/models/cv.model';
+import { ExperienceSkill } from 'src/experiences/models/experience-skill.model';
 import { Skill } from 'src/skills/models';
-import { CV } from './cv.model';
-import { ExperienceSkill } from './experience-skill.model';
 
 @Table({ tableName: 'Reviews' })
 export class Review extends Model {

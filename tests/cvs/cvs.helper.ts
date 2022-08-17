@@ -1,7 +1,8 @@
+import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { CVsService } from 'src/cvs/cvs.service';
 import { CV } from 'src/cvs/models';
-import path from 'path';
 
 @Injectable()
 export class CVsHelper {
@@ -11,7 +12,13 @@ export class CVsHelper {
   ) {}
 
   getTestImagePath() {
-    return path.join(process.cwd(), '/tests/testData/imageTest.jpg');
+    return path.join(process.cwd(), '/tests/test-data/image-test.jpg');
+  }
+
+  getTestHtmlPagePath() {
+    return (
+      'file://' + path.join(process.cwd(), '/tests/test-data/page-test.html')
+    );
   }
 
   async findCVsByCandidateId(candidateId: string) {

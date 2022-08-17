@@ -3,10 +3,18 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
+import {
+  CacheMocks,
+  CloudFrontMocks,
+  QueueMocks,
+  S3Mocks,
+} from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { CVStatuses } from 'src/cvs/cvs.types';
+import { CloudFrontService } from 'src/aws/cloud-front.service';
+import { S3Service } from 'src/aws/s3.service';
+import { CVsService } from 'src/cvs/cvs.service';
 import { Queues } from 'src/queues/queues.types';
-import { UserRoles } from 'src/users/users.types';
+import { UserRoles, CVStatuses } from 'src/users/users.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
@@ -27,35 +35,36 @@ describe('CVs', () => {
 
   let databaseHelper: DatabaseHelper;
   let cvFactory: CVFactory;
-  let cvHelper: CVsHelper;
+  let cvsHelper: CVsHelper;
   let userFactory: UserFactory;
-  let userHelper: UsersHelper;
-  let userCandidatHelper: UserCandidatsHelper;
+  let usersHelper: UsersHelper;
+  let userCandidatsHelper: UserCandidatsHelper;
 
   const route = '/cv';
-
-  const queueMock = { add: jest.fn() };
-  const cacheMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
       .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(queueMock)
+      .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
-      .useValue(cacheMock)
+      .useValue(CacheMocks)
+      .overrideProvider(S3Service)
+      .useValue(S3Mocks)
+      .overrideProvider(CloudFrontService)
+      .useValue(CloudFrontMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
-    userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    userCandidatHelper =
+    userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
-    cvHelper = moduleFixture.get<CVsHelper>(CVsHelper);
+    cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
     cvFactory = moduleFixture.get<CVFactory>(CVFactory);
 
     await databaseHelper.resetTestDB();
@@ -93,26 +102,30 @@ describe('CVs', () => {
     otherCoach.password = 'otherCoach';
     otherCandidat.password = 'otherCandidat';
 
-    await userCandidatHelper.associateCoachAndCandidat(coach, candidat);
-    await userCandidatHelper.associateCoachAndCandidat(
+    await userCandidatsHelper.associateCoachAndCandidat(coach, candidat);
+    await userCandidatsHelper.associateCoachAndCandidat(
       otherCoach,
       otherCandidat
     );
-    loggedInAdmin = await userHelper.createLoggedInUser(admin, {}, false);
-    loggedInCoach = await userHelper.createLoggedInUser(coach, {}, false);
-    loggedInCandidat = await userHelper.createLoggedInUser(candidat, {}, false);
+    loggedInAdmin = await usersHelper.createLoggedInUser(admin, {}, false);
+    loggedInCoach = await usersHelper.createLoggedInUser(coach, {}, false);
+    loggedInCandidat = await usersHelper.createLoggedInUser(
+      candidat,
+      {},
+      false
+    );
 
-    loggedInOtherCoach = await userHelper.createLoggedInUser(
+    loggedInOtherCoach = await usersHelper.createLoggedInUser(
       otherCoach,
       {},
       false
     );
-    loggedInOtherCandidat = await userHelper.createLoggedInUser(
+    loggedInOtherCandidat = await usersHelper.createLoggedInUser(
       otherCandidat,
       {},
       false
     );
-    path = cvHelper.getTestImagePath();
+    path = cvsHelper.getTestImagePath();
   });
 
   afterAll(async () => {
@@ -129,7 +142,7 @@ describe('CVs', () => {
 
   describe('CRUD CV', () => {
     describe('C - Create 1 CV', () => {
-      it('Should return 200 and CV with cv status set as progress if logged in user', async () => {
+      it('Should return 201 and CV with cv status set as progress if logged in user', async () => {
         const cv = await cvFactory.create(
           {
             UserId: loggedInCandidat.user.id,
@@ -140,15 +153,15 @@ describe('CVs', () => {
         const cvResponse = {
           ...cv,
           status: CVStatuses.Progress.value,
+          version: 2,
         };
-        delete cvResponse.status;
         const response = await request(app.getHttpServer())
-          .post(`${route}/`)
+          .post(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInCandidat.token}`)
           .set('Content-Type', 'multipart/form-data')
           .field('cv', JSON.stringify(cv))
           .attach('profileImage', path);
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
         expect(response.body).toMatchObject(cvResponse);
       });
 
@@ -183,14 +196,14 @@ describe('CVs', () => {
         );
         cv.status = undefined;
         const response = await request(app.getHttpServer())
-          .post(`${route}/`)
+          .post(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInCoach.token}`)
           .field('cv', JSON.stringify(cv))
           .attach('profileImage', path);
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
         expect(response.body.status).toMatch(CVStatuses.Progress.value);
       });
-      it("Should return 200 and CV with cv status set as pending if CV submitted, if logged in user is coach of cv's owner", async () => {
+      it("Should return 201 and CV with cv status set as pending if CV submitted, if logged in user is coach of cv's owner", async () => {
         const cv = await cvFactory.create(
           {
             UserId: loggedInCandidat.user.id,
@@ -201,11 +214,11 @@ describe('CVs', () => {
         );
         cv.status = CVStatuses.Pending.value;
         const response = await request(app.getHttpServer())
-          .post(`${route}/`)
+          .post(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInCoach.token}`)
           .field('cv', JSON.stringify(cv))
           .attach('profileImage', path);
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
         expect(response.body.status).toMatch(CVStatuses.Pending.value);
       });
 
@@ -230,7 +243,7 @@ describe('CVs', () => {
         expect(response.body.cvHasBeenModified).toBe(false);
       });
 
-      it('Should return 200 and CV with cv status set as published, if logged in admin', async () => {
+      it('Should return 201 and CV with cv status set as published, if logged in admin', async () => {
         const cv = await cvFactory.create(
           {
             UserId: loggedInCandidat.user.id,
@@ -243,15 +256,16 @@ describe('CVs', () => {
         const cvResponse = {
           ...cv,
           status: CVStatuses.Published.value,
+          version: 5,
         };
         const response = await request(app.getHttpServer())
-          .post(`${route}/`)
+          .post(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send({ cv });
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
         expect(response.body).toMatchObject(cvResponse);
       });
-      it('Should return 200 and CV with cv status set as draft, if logged in admin', async () => {
+      it('Should return 201 and CV with cv status set as draft, if logged in admin', async () => {
         const cv = await cvFactory.create(
           {
             UserId: loggedInCandidat.user.id,
@@ -261,12 +275,16 @@ describe('CVs', () => {
           {},
           false
         );
+        const cvResponse = {
+          ...cv,
+          version: 6,
+        };
         const response = await request(app.getHttpServer())
-          .post(`${route}/`)
+          .post(`${route}/${loggedInCandidat.user.id}`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send({ cv });
-        expect(response.status).toBe(200);
-        expect(response.body).toMatchObject(cv);
+        expect(response.status).toBe(201);
+        expect(response.body).toMatchObject(cvResponse);
       });
 
       it('Should return 401 if not logged in user', async () => {
@@ -276,7 +294,7 @@ describe('CVs', () => {
           false
         );
         const response = await request(app.getHttpServer())
-          .post(`${route}/`)
+          .post(`${route}/${loggedInCandidat.user.id}`)
           .send({ cv });
         expect(response.status).toBe(401);
       });
@@ -305,7 +323,7 @@ describe('CVs', () => {
           expect(response.body.UserId).toBe(loggedInCandidat.user.id);
         });
         it("Should return 200 if valid user id provided and logged in as candidate and candidate doesn't have a CV", async () => {
-          const candidatNoCv = await userHelper.createLoggedInUser({
+          const candidatNoCv = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
           });
@@ -325,17 +343,17 @@ describe('CVs', () => {
             password: 'coachNoCv',
           });
 
-          await userCandidatHelper.associateCoachAndCandidat(
+          await userCandidatsHelper.associateCoachAndCandidat(
             coachNoCv,
             candidatNoCv
           );
 
-          const loggedCandidatNoCv = await userHelper.createLoggedInUser(
+          const loggedCandidatNoCv = await usersHelper.createLoggedInUser(
             candidatNoCv,
             {},
             false
           );
-          const loggedCoachNoCv = await userHelper.createLoggedInUser(
+          const loggedCoachNoCv = await usersHelper.createLoggedInUser(
             coachNoCv,
             {},
             false
@@ -348,7 +366,7 @@ describe('CVs', () => {
           expect(response.body).toStrictEqual({});
         });
         it("Should return 200 if valid user id provided and logged in as admin and candidate doesn't have a CV", async () => {
-          const candidatNoCv = await userHelper.createLoggedInUser({
+          const candidatNoCv = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
           });
@@ -418,7 +436,7 @@ describe('CVs', () => {
       });
       describe("Get a CV by candidat's url - /", () => {
         it("Should return 200 if valid candidat's url provided", async () => {
-          const candidatUrl = await userCandidatHelper.getCandidatUrl(
+          const candidatUrl = await userCandidatsHelper.getCandidatUrl(
             loggedInCandidat.user.id
           );
           const response = await request(app.getHttpServer()).get(
@@ -428,11 +446,11 @@ describe('CVs', () => {
           expect(response.body.cv.UserId).toBe(loggedInCandidat.user.id);
         });
         it('Should return 200 if valid url provided and candidat has hidden CV', async () => {
-          const candidatNoCv = await userHelper.createLoggedInUser({
+          const candidatNoCv = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
           });
-          const candidatNoCvUrl = await userCandidatHelper.getCandidatUrl(
+          const candidatNoCvUrl = await userCandidatsHelper.getCandidatUrl(
             candidatNoCv.user.id
           );
           const response = await request(app.getHttpServer()).get(
@@ -447,6 +465,91 @@ describe('CVs', () => {
             `${route}/fakeuser-1234553`
           );
           expect(response.status).toBe(404);
+        });
+      });
+      describe('Get a CV in PDF - /pdf/:candidateId', () => {
+        beforeEach(() => {
+          jest
+            .spyOn(CVsService.prototype, 'getPDFPageUrl')
+            .mockImplementationOnce(() => cvsHelper.getTestHtmlPagePath());
+        });
+
+        it('Should return 401 if not logged in', async () => {
+          const response = await request(app.getHttpServer()).get(
+            `${route}/pdf/${loggedInCandidat.user.id}`
+          );
+          expect(response.status).toBe(401);
+        });
+
+        it('Should return 403 if logged as another candidate', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 403 if logged as another coach', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInOtherCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 200 and PDF url if logged as candidate and PDF already exists', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pdfUrl).toMatch('url');
+        });
+
+        it('Should return 200 and PDF url if logged as coach and PDF already exists', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pdfUrl).toMatch('url');
+        });
+
+        it('Should return 200 and PDF url if logged as admin and PDF already exists', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pdfUrl).toMatch('url');
+        });
+
+        it("Should return 200 and PDF url if logged as candidate and PDF doesn't exist", async () => {
+          jest
+            .spyOn(CVsService.prototype, 'findPDF')
+            .mockImplementationOnce(async () => null);
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pdfUrl).toMatch('url');
+        });
+
+        it("Should return 200 and PDF url if logged as coach and PDF doesn't exist", async () => {
+          jest
+            .spyOn(CVsService.prototype, 'findPDF')
+            .mockImplementationOnce(async () => null);
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pdfUrl).toMatch('url');
+        });
+
+        it("Should return 200 and PDF url if logged as admin and PDF doesn't exist", async () => {
+          jest
+            .spyOn(CVsService.prototype, 'findPDF')
+            .mockImplementationOnce(async () => null);
+          const response = await request(app.getHttpServer())
+            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.pdfUrl).toMatch('url');
         });
       });
     });
@@ -882,7 +985,6 @@ describe('CVs', () => {
         expect(totalSharesResponse.status).toBe(200);
         expect(totalSharesResponse.body.total).toBe(oldTotalShares + 1);
       });
-
       it('Should return 404 if wrong candidate id', async () => {
         const response = await request(app.getHttpServer())
           .post(`${route}/count`)
@@ -892,7 +994,6 @@ describe('CVs', () => {
           });
         expect(response.status).toBe(404);
       });
-
       it('Should return 404 if coach id', async () => {
         const response = await request(app.getHttpServer())
           .post(`${route}/count`)
@@ -901,32 +1002,6 @@ describe('CVs', () => {
             type: 'other',
           });
         expect(response.status).toBe(404);
-      });
-    });
-    describe.skip('D - Delete 1 CV', () => {
-      it('Should return 200, if logged in admin', async () => {
-        const cv = await cvFactory.create({
-          UserId: loggedInCandidat.user.id,
-        });
-        const response = await request(app.getHttpServer())
-          .delete(`${route}/${cv.id}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-      });
-      it('Should return 401, if cv not found', async () => {
-        const response = await request(app.getHttpServer()).delete(
-          `${route}/3394b06e-b4eb-4a69-aba9-278ac1d9e1aa`
-        );
-        expect(response.status).toBe(401);
-      });
-      it('Should return 401, if not logged in admin', async () => {
-        const cv = await cvFactory.create({
-          UserId: loggedInCandidat.user.id,
-        });
-        const response = await request(app.getHttpServer()).delete(
-          `${route}/${cv.id}`
-        );
-        expect(response.status).toBe(401);
       });
     });
   });

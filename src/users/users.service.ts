@@ -5,7 +5,7 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
-import { CVStatuses } from '../cvs/cvs.types';
+import { getPublishedCVQuery } from '../cvs/cvs.utils';
 import { BusinessLine } from 'src/businessLines/models';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
@@ -21,8 +21,8 @@ import {
   PublicUserAttributes,
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
-
 import {
+  CVStatuses,
   UserRole,
   UserRoles,
   MemberFilters,
@@ -36,7 +36,6 @@ import {
   filterMembersByCVStatus,
   getMemberOptions,
   userSearchQuery,
-  getPublishedCVQuery,
 } from './users.utils';
 
 @Injectable()

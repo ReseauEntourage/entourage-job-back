@@ -12,8 +12,8 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { CV } from 'src/cvs/models/cv.model';
 import { Skill } from 'src/skills/models';
-import { CV } from './cv.model';
 import { ExperienceSkill } from './experience-skill.model';
 
 @Table({ tableName: 'Experiences' })
@@ -47,5 +47,5 @@ export class Experience extends Model {
   @HasMany(() => ExperienceSkill, {
     foreignKey: 'ExperienceId',
   })
-  cvSkills: ExperienceSkill[];
+  experienceSkills: ExperienceSkill[];
 }

@@ -21,7 +21,7 @@ export class UserFactory implements Factory<User> {
 
   generateUser(props: Partial<User>): Partial<User> {
     const { salt, hash } = encryptPassword(
-      props.password ? props.password : faker.internet.password()
+      props.password || faker.internet.password()
     );
 
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');

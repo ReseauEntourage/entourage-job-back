@@ -10,10 +10,9 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Skill } from 'src/skills/models';
-import { CV } from './cv.model';
 import { Experience } from './experience.model';
 
-@Table({ tableName: 'CV_Skills' })
+@Table({ tableName: 'Experience_Skills' })
 export class ExperienceSkill extends Model {
   @IsUUID(4)
   @PrimaryKey

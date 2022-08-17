@@ -1,7 +1,15 @@
-import { BusinessLineFilters } from 'src/businessLines/businessLines.types';
+import { Op } from 'sequelize';
+import {
+  BusinessLineFilters,
+  BusinessLineValue,
+} from 'src/businessLines/businessLines.types';
 
-import { CVStatusFilters } from 'src/cvs/cvs.types';
-import { AdminZoneFilters, FilterConstant, Filters } from 'src/utils/types';
+import {
+  AdminZone,
+  AdminZoneFilters,
+  FilterConstant,
+  Filters,
+} from 'src/utils/types';
 
 export const UserRoles = {
   CANDIDAT: 'Candidat',
@@ -24,13 +32,60 @@ export const Genders = {
 
 export type Gender = typeof Genders[keyof typeof Genders];
 
-export type MemberFilterKey =
-  | 'zone'
-  | 'businessLines'
-  | 'associatedUser'
-  | 'hidden'
-  | 'employed'
-  | 'cvStatus';
+export const CVStatuses = {
+  Published: {
+    label: 'Publié',
+    value: 'Published',
+    style: 'success',
+  },
+  Pending: {
+    label: 'En attente',
+    value: 'Pending',
+    style: 'danger',
+  },
+  Progress: {
+    label: 'En cours',
+    value: 'Progress',
+    style: 'muted',
+  },
+  New: {
+    label: 'Nouveau',
+    value: 'New',
+    style: 'muted',
+  },
+  Draft: {
+    label: 'Brouillon',
+    value: 'Draft',
+    style: 'warning',
+  },
+  Unknown: {
+    label: 'Inconnu',
+    value: 'Unknown',
+    style: '',
+  },
+} as const;
+
+export type CVStatusKey = keyof typeof CVStatuses;
+type CVStatus = typeof CVStatuses[CVStatusKey];
+export type CVStatusValue = CVStatus['value'];
+
+export const CVStatusFilters: FilterConstant<CVStatusValue>[] = [
+  CVStatuses.Published,
+  CVStatuses.Pending,
+  CVStatuses.Progress,
+  CVStatuses.New,
+];
+
+export interface MemberOptions {
+  zone: { [Op.or]: AdminZone[] };
+  businessLines: { [Op.or]: BusinessLineValue[] };
+  associatedUser: { [Op.or]: boolean[] };
+  hidden: { [Op.or]: boolean[] };
+  employed: { [Op.or]: boolean[] };
+  cvStatus: { [Op.or]: CVStatusValue[] };
+}
+
+export type MemberFilterKey = keyof MemberOptions;
 
 const AssociatedUserFilters: FilterConstant<boolean>[] = [
   { label: 'Binôme en cours', value: true },
@@ -42,7 +97,7 @@ const HiddenFilters: FilterConstant<boolean>[] = [
   { label: 'CV visibles', value: false },
 ];
 
-const EmployedFilters: FilterConstant<boolean>[] = [
+export const EmployedFilters: FilterConstant<boolean>[] = [
   { label: 'En emploi', value: true },
   { label: "Recherche d'emploi", value: false },
 ];

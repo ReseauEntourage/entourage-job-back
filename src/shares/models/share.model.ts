@@ -12,7 +12,6 @@ import {
 } from 'sequelize-typescript';
 import { UserCandidat } from 'src/users/models';
 
-// TODO change name to Searches
 @Table({ tableName: 'Shares' })
 export class Share extends Model {
   @IsUUID(4)

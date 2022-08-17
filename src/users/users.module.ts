@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 
-// TODO fix imports
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
 import { UserCandidat, User } from './models';

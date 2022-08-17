@@ -4,8 +4,8 @@ import { Cache } from 'cache-manager';
 import { Sequelize } from 'sequelize';
 import { RedisKeys } from 'src/utils/types';
 import { Share } from './models';
-import { UsersService } from '../users/users.service';
-import { UserRoles } from '../users/users.types';
+import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 
 export type ShareType =
   | 'facebook'
