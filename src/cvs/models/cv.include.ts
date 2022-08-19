@@ -1,8 +1,16 @@
+import { Includeable } from 'sequelize/types';
+import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
+import { Contract } from 'src/contracts/models';
+import { Experience } from 'src/experiences/models/experience.model';
+import { Language } from 'src/languages/models';
 import { Location } from 'src/locations/models';
+import { Passion } from 'src/passions/models';
+import { Review } from 'src/reviews/models/review.model';
+import { Skill } from 'src/skills/models';
 import { User, UserCandidat } from 'src/users/models';
 
-export const UserAllInclude = {
+export const UserAllInclude: Includeable = {
   model: UserCandidat,
   as: 'user',
   attributes: ['employed', 'hidden', 'url', 'endOfContract'],
@@ -47,86 +55,78 @@ export const UserAllPrivateInclude = {
   ],
 };
 
-export const UserNotHiddenInclude = {
+export const UserNotHiddenInclude: Includeable = {
   ...UserAllInclude,
   where: { hidden: false },
 };
 
-export const CVCompleteWithoutUserInclude = [
-  /*  {
-    model: models.Contract,
+export const CVCompleteWithoutUserInclude: Includeable[] = [
+  {
+    model: Contract,
     as: 'contracts',
-    through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Language,
+    model: Language,
     as: 'languages',
-    through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Passion,
+    model: Passion,
     as: 'passions',
-    through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Skill,
+    model: Skill,
     as: 'skills',
-    through: { attributes: [] },
     attributes: ['id', 'name'],
   },
   {
-    model: models.Ambition,
+    model: Ambition,
     as: 'ambitions',
-    through: { attributes: [] },
     attributes: ['id', 'name', 'prefix', 'order'],
-  },*/
+  },
   {
     model: BusinessLine,
     as: 'businessLines',
-    /* through: { attributes: [] },*/
     attributes: ['id', 'name', 'order'],
   },
   {
     model: Location,
     as: 'locations',
-    /* through: { attributes: [] },*/
     attributes: ['id', 'name'],
   },
-  /*{
-    model: models.Experience,
+  {
+    model: Experience,
     as: 'experiences',
     attributes: ['id', 'description', 'order'],
     include: [
       {
-        model: models.Skill,
+        model: Skill,
         as: 'skills',
-        through: { attributes: [] },
         attributes: ['id', 'name'],
       },
     ],
     order: [['order', 'ASC']],
   },
   {
-    model: models.Review,
+    model: Review,
     as: 'reviews',
     attributes: ['id', 'text', 'status', 'name'],
-  },*/
+  },
 ];
 
-export const CVCompleteWithNotHiddenUserInclude = [
+export const CVCompleteWithNotHiddenUserInclude: Includeable[] = [
   ...CVCompleteWithoutUserInclude,
   UserNotHiddenInclude,
 ];
 
-export const CVCompleteWithAllUserInclude = [
+export const CVCompleteWithAllUserInclude: Includeable[] = [
   ...CVCompleteWithoutUserInclude,
   UserAllInclude,
 ];
 
-export const CVCompleteWithAllUserPrivateInclude = [
+export const CVCompleteWithAllUserPrivateInclude: Includeable[] = [
   ...CVCompleteWithoutUserInclude,
   UserAllPrivateInclude,
 ];

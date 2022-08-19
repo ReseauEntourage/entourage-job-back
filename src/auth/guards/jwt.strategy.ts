@@ -1,20 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
-import { PayloadUser } from 'src/auth/auth.types';
-
-const getTokenFromHeaders = (
-  req: Request & { headers: Request['headers'] & { authorization: string } }
-) => {
-  const {
-    headers: { authorization },
-  } = req;
-
-  if (authorization && authorization.split(' ')[0] === 'Token') {
-    return authorization.split(' ')[1];
-  }
-  return null;
-};
+import { PayloadUser } from '../auth.types';
+import { getTokenFromHeaders } from '../auth.utils';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

@@ -6,11 +6,16 @@ export interface Filter<K, T extends AnyToFix = AnyToFix> {
   key: K;
   constants: FilterConstant<T>[];
   title: string;
+  priority?: FilterConstant<T>[];
 }
 
-export interface FilterConstant<T> {
+export interface FilterConstant<T, C extends AnyToFix = AnyToFix> {
   value: T;
   label: string;
+  prefix?: string | string[];
+  children?: FilterConstant<C>[];
+  zone?: string;
+  end?: boolean;
 }
 
 export type FilterObject<

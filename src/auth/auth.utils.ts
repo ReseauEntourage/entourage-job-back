@@ -1,6 +1,19 @@
 import { pbkdf2Sync, randomBytes } from 'crypto';
-import { User } from '../users/models';
+import { User } from 'src/users/models';
 import { PayloadUser } from './auth.types';
+
+export function getTokenFromHeaders(
+  req: Request & { headers: Request['headers'] & { authorization: string } }
+) {
+  const {
+    headers: { authorization },
+  } = req;
+
+  if (authorization && authorization.split(' ')[0] === 'Token') {
+    return authorization.split(' ')[1];
+  }
+  return null;
+}
 
 export function getPartialUserForPayload(user: User): PayloadUser {
   return {

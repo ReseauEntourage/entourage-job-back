@@ -5,7 +5,7 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
-import { CVStatuses } from '../cvs/cvs.types';
+import { getPublishedCVQuery } from '../cvs/cvs.utils';
 import { BusinessLine } from 'src/businessLines/models';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
@@ -21,8 +21,8 @@ import {
   PublicUserAttributes,
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
-
 import {
+  CVStatuses,
   UserRole,
   UserRoles,
   MemberFilters,
@@ -36,7 +36,6 @@ import {
   filterMembersByCVStatus,
   getMemberOptions,
   userSearchQuery,
-  getPublishedCVQuery,
 } from './users.utils';
 
 @Injectable()
@@ -258,6 +257,44 @@ export class UsersService {
     return finalFilteredMembers;
   }
 
+  async findAllUsers(search: string, role: UserRole) {
+    const options: FindOptions<User> = {
+      attributes: [...UserAttributes],
+      where: {
+        [Op.or]: userSearchQuery(search),
+      },
+    };
+    if (role) {
+      options.where = { ...options.where, role };
+    }
+    return this.userModel.findAll(options);
+  }
+
+  async findAllCandidates(search: string) {
+    const publishedCVs: CV[] = await this.userModel.sequelize.query(
+      getPublishedCVQuery({ [Op.or]: [false] }),
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const options = {
+      attributes: [...PublicUserAttributes],
+      where: {
+        [Op.and]: [
+          {
+            id: publishedCVs.map((publishedCV) => {
+              return publishedCV.UserId;
+            }),
+          },
+          {
+            [Op.or]: userSearchQuery(search),
+          },
+        ],
+      },
+    };
+    return User.findAll(options);
+  }
+
   async countSubmittedCVMembers(zone: AdminZone) {
     const whereOptions: WhereOptions<CV> = zone
       ? ({ zone } as WhereOptions<CV>)
@@ -318,44 +355,6 @@ export class UsersService {
         CVStatuses.Pending,
       ]).length,
     };
-  }
-
-  async findAllUsers(search: string, role: UserRole) {
-    const options: FindOptions<User> = {
-      attributes: [...UserAttributes],
-      where: {
-        [Op.or]: userSearchQuery(search),
-      },
-    };
-    if (role) {
-      options.where = { ...options.where, role };
-    }
-    return this.userModel.findAll(options);
-  }
-
-  async findAllCandidates(search: string) {
-    const publishedCVs: CV[] = await this.userModel.sequelize.query(
-      getPublishedCVQuery({ [Op.or]: [false] }),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
-    const options = {
-      attributes: [...PublicUserAttributes],
-      where: {
-        [Op.and]: [
-          {
-            id: publishedCVs.map((publishedCV) => {
-              return publishedCV.UserId;
-            }),
-          },
-          {
-            [Op.or]: userSearchQuery(search),
-          },
-        ],
-      },
-    };
-    return User.findAll(options);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {

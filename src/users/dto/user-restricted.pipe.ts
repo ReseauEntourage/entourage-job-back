@@ -11,13 +11,20 @@ import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { UserRoles } from 'src/users/users.types';
-import { AnyCantFix, RequestWithUser } from 'src/utils/types';
+import { RequestWithUser } from 'src/utils/types';
+import { UpdateUserRestrictedDto } from './update-user-restricted.dto';
 
 @Injectable({ scope: Scope.REQUEST })
-export class UserRestrictedPipe implements PipeTransform<AnyCantFix> {
+export class UserRestrictedPipe
+  implements
+    PipeTransform<UpdateUserRestrictedDto, Promise<UpdateUserRestrictedDto>>
+{
   constructor(@Inject(REQUEST) private request: RequestWithUser) {}
 
-  async transform(value: AnyCantFix, { metatype }: ArgumentMetadata) {
+  async transform(
+    value: UpdateUserRestrictedDto,
+    { metatype }: ArgumentMetadata
+  ): Promise<UpdateUserRestrictedDto> {
     if (!metatype || !UserRestrictedPipe.toValidate(metatype)) {
       return value;
     }

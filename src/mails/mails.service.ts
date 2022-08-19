@@ -2,6 +2,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
+import { CV } from 'src/cvs/models';
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { getRelatedUser } from 'src/users/users.utils';
@@ -111,6 +112,38 @@ export class MailsService {
     );
   }
 
+  async sendCVSubmittedMail(candidate: User) {
+    const coach = getRelatedUser(candidate);
+
+    const toEmail: CustomMailParams['toEmail'] = coach
+      ? { to: candidate.email, cc: coach.email }
+      : { to: candidate.email };
+
+    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+
+    await this.workQueue.add(Jobs.SEND_MAIL, {
+      toEmail,
+      templateId: MailjetTemplates.CV_SUBMITTED,
+      replyTo: candidatesAdminMail,
+      variables: {
+        ..._.omitBy(candidate, _.isNil),
+      },
+    });
+  }
+
+  async sendCVPublishedMail(coach: User, cv: Partial<CV>) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(coach.zone);
+
+    await this.workQueue.add(Jobs.SEND_MAIL, {
+      toEmail: candidatesAdminMail,
+      templateId: MailjetTemplates.CV_SUBMITTED,
+      variables: {
+        coach: _.omitBy(coach, _.isNil),
+        cv: _.omitBy(cv, _.isNil),
+      },
+    });
+  }
+
   async sendCVReminderMail(
     candidate: User,
     is20Days = false,
@@ -130,7 +163,6 @@ export class MailsService {
     });
   }
 
-  // TODO send mails through MailsService
   async sendReminderIfNotEmployed(
     candidate: User,
     templateId: MailjetTemplate
@@ -176,6 +208,13 @@ export class MailsService {
     return this.sendReminderIfNotEmployed(
       candidate,
       MailjetTemplates.ACTIONS_REMINDER
+    );
+  }
+
+  async sendExternalOffersReminderMails(candidate: User) {
+    return this.sendReminderIfNotEmployed(
+      candidate,
+      MailjetTemplates.EXTERNAL_OFFERS_REMINDER
     );
   }
 }

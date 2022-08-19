@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bull';
-import { Module } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -7,6 +7,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getRedisOptions, getSequelizeOptions } from './app.module';
+import { ClientOpts } from 'redis';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -30,6 +32,11 @@ import { getRedisOptions, getSequelizeOptions } from './app.module';
         removeOnFail: true,
         removeOnComplete: true,
       },
+    }),
+    CacheModule.register<ClientOpts>({
+      isGlobal: true,
+      store: redisStore,
+      ...getRedisOptions(process.env.REDIS_TLS_URL),
     }),
     ConsumersModule,
   ],

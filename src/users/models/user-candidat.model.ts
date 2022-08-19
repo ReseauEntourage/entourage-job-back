@@ -72,7 +72,6 @@ export class UserCandidat extends Model {
   @BelongsTo(() => User, {
     foreignKey: 'candidatId',
     hooks: true,
-    onDelete: 'CASCADE',
   })
   candidat: User;
 

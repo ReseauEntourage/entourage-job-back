@@ -11,6 +11,7 @@ import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { CacheMocks, QueueMocks } from 'tests/mocks.types';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
@@ -21,21 +22,18 @@ describe('Auth', () => {
   let databaseHelper: DatabaseHelper;
   let authHelper: AuthHelper;
   let userFactory: UserFactory;
-  let userHelper: UsersHelper;
+  let usersHelper: UsersHelper;
 
   const route = '/auth';
-
-  const queueMock = { add: jest.fn() };
-  const cacheMock = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
       .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(queueMock)
+      .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
-      .useValue(cacheMock)
+      .useValue(CacheMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -43,7 +41,7 @@ describe('Auth', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
-    userHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
   });
 
@@ -60,7 +58,7 @@ describe('Auth', () => {
     // eslint-disable-next-line max-len
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
 
-  describe('Login - login/', () => {
+  describe('/login - Login', () => {
     let candidat: User;
     let candidatResponse: PayloadUser;
     beforeEach(async () => {
@@ -131,9 +129,9 @@ describe('Auth', () => {
       expect(response.status).toBe(401);
     });
   });
-  describe('Logout - logout/', () => {
+  describe('/logout - Logout', () => {
     it(`Should logout the user`, async () => {
-      const loggedInCandidat = await userHelper.createLoggedInUser({
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDAT,
         password: 'loggedInCandidat',
       });
@@ -147,7 +145,7 @@ describe('Auth', () => {
       expect(response.status).toBe(302);
     });
   });
-  describe('Forgot - forgot/', () => {
+  describe('/forgot - Forgot', () => {
     it('Should return 400; if no user email provided', async () => {
       const response: APIResponse<AuthController['forgot']> = await request(
         app.getHttpServer()
@@ -179,7 +177,7 @@ describe('Auth', () => {
       expect(response.status).toBe(201);
     });
   });
-  describe('Reset - reset/:userId/:token', () => {
+  describe('/reset/:userId/:token - Reset', () => {
     describe("Verify password's reset link", () => {
       let candidat: User;
       beforeEach(async () => {
@@ -302,9 +300,9 @@ describe('Auth', () => {
       });
     });
   });
-  describe('Current - /current', () => {
+  describe('/current - Current', () => {
     it('Should return a user with token if valid token provided', async () => {
-      const loggedInCandidat = await userHelper.createLoggedInUser({
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDAT,
         password: 'loggedInCandidat',
       });

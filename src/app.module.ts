@@ -3,19 +3,26 @@ import { CacheModule, Module } from '@nestjs/common';
 
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { SequelizeModuleOptions } from '@nestjs/sequelize/dist/interfaces/sequelize-options.interface';
+import { SequelizeModule, SequelizeModuleOptions } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import type { ClientOpts } from 'redis';
+import { AmbitionsModule } from 'src/ambitions/ambitions.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
 import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
+import { ContractsModule } from 'src/contracts/contracts.module';
 import { CVsModule } from 'src/cvs/cvs.module';
+import { ExperiencesModule } from 'src/experiences/experiences.module';
+import { LanguagesModule } from 'src/languages/languages.module';
 import { LocationsModule } from 'src/locations/locations.module';
+import { PassionsModule } from 'src/passions/passions.module';
+import { ReviewsModule } from 'src/reviews/reviews.module';
+import { SharesModule } from 'src/shares/shares.module';
+import { SkillsModule } from 'src/skills/skills.module';
+import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
-import { UsersCreationModule } from './users-creation/users-creation.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -67,13 +74,22 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       store: redisStore,
       ...getRedisOptions(process.env.REDIS_TLS_URL),
     }),
+    SharesModule,
+    // Put SharesModule before CVsModule
+    CVsModule,
     AuthModule,
     UsersModule,
-    CVsModule,
-    BusinessLinesModule,
-    LocationsModule,
     UsersDeletionModule,
     UsersCreationModule,
+    BusinessLinesModule,
+    LocationsModule,
+    AmbitionsModule,
+    ContractsModule,
+    LanguagesModule,
+    PassionsModule,
+    SkillsModule,
+    ExperiencesModule,
+    ReviewsModule,
   ],
   providers: [
     {
@@ -86,11 +102,22 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     },
   ],
   exports: [
+    SharesModule,
+    // Put SharesModule before CVsModule
+    CVsModule,
     AuthModule,
     UsersModule,
-    CVsModule,
+    UsersDeletionModule,
+    UsersCreationModule,
     BusinessLinesModule,
     LocationsModule,
+    AmbitionsModule,
+    ContractsModule,
+    LanguagesModule,
+    PassionsModule,
+    SkillsModule,
+    ExperiencesModule,
+    ReviewsModule,
   ],
 })
 export class AppModule {}

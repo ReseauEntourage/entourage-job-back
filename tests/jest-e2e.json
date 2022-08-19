@@ -5,7 +5,8 @@
     "ts"
   ],
   "testEnvironment": "node",
-  "rootDir": ".",
+  "rootDir": "..",
+  "roots": ["<rootDir>/src", "<rootDir>/tests"],
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
@@ -14,8 +15,8 @@
     "node_modules"
   ],
   "moduleNameMapper": {
-    "src/(.*)": "<rootDir>/../src/$1",
-    "tests/(.*)": "<rootDir>/../tests/$1"
+    "^src/(.*)": "<rootDir>/src/$1",
+    "^tests/(.*)": "<rootDir>/tests/$1"
   },
   "testTimeout": 60000
 }

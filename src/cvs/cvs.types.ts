@@ -1,45 +1,51 @@
-import { FilterConstant } from 'src/utils/types';
+import * as _ from 'lodash';
+import { Op } from 'sequelize';
+import {
+  BusinessLineFilters,
+  BusinessLineValue,
+} from 'src/businessLines/businessLines.types';
+import {
+  Department,
+  DepartmentFilters,
+  RegionFilters,
+} from 'src/locations/locations.types';
+import { EmployedFilters } from 'src/users/users.types';
+import { AdminZones, Filters } from 'src/utils/types';
 
-export const CVStatuses = {
-  Published: {
-    label: 'Publié',
-    value: 'Published',
-    style: 'success',
-  },
-  Pending: {
-    label: 'En attente',
-    value: 'Pending',
-    style: 'danger',
-  },
-  Progress: {
-    label: 'En cours',
-    value: 'Progress',
-    style: 'muted',
-  },
-  New: {
-    label: 'Nouveau',
-    value: 'New',
-    style: 'muted',
-  },
-  Draft: {
-    label: 'Brouillon',
-    value: 'Draft',
-    style: 'warning',
-  },
-  Unknown: {
-    label: 'Inconnu',
-    value: 'Unknown',
-    style: '',
-  },
-} as const;
+export interface CVOptions {
+  employed: { [Op.or]: boolean[] };
+  locations: { [Op.or]: Department[] };
+  businessLines: { [Op.or]: BusinessLineValue[] };
+}
 
-export type CVStatusKey = keyof typeof CVStatuses;
-type CVStatus = typeof CVStatuses[CVStatusKey];
-export type CVStatusValue = CVStatus['value'];
+export type CVFilterKey = keyof CVOptions;
 
-export const CVStatusFilters: FilterConstant<CVStatusValue>[] = [
-  CVStatuses.Published,
-  CVStatuses.Pending,
-  CVStatuses.Progress,
-  CVStatuses.New,
+export type CVConstantType =
+  | typeof DepartmentFilters[number]['value']
+  | typeof BusinessLineFilters[number]['value']
+  | typeof EmployedFilters[number]['value'];
+
+export const CVFilters: Filters<CVFilterKey> = [
+  {
+    key: 'employed',
+    constants: EmployedFilters,
+    title: 'Masquer les candidats en emploi',
+  },
+  {
+    key: 'locations',
+    constants: RegionFilters,
+    priority: _.orderBy(
+      RegionFilters.filter((region) => {
+        return region.zone !== AdminZones.HZ;
+      }),
+      'label',
+      'desc'
+    ),
+    title: 'Où ?',
+  },
+  {
+    key: 'businessLines',
+    constants: BusinessLineFilters,
+    title: 'Métiers',
+  },
 ];
