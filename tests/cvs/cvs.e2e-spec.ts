@@ -959,7 +959,7 @@ describe('CVs', () => {
           `${route}/published`
         );
         expect(response.status).toBe(200);
-        expect(response.body.nbPublishedCVs).toBe(2);
+        expect(response.body.nbPublishedCVs).toBe(16);
       });
     });
     describe('U - Update share count', () => {

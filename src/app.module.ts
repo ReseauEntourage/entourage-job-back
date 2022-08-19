@@ -74,13 +74,13 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       store: redisStore,
       ...getRedisOptions(process.env.REDIS_TLS_URL),
     }),
+    SharesModule,
+    // Put SharesModule before CVsModule
+    CVsModule,
     AuthModule,
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
-    // Put SharesModule before CVsModule
-    SharesModule,
-    CVsModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -102,13 +102,13 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     },
   ],
   exports: [
+    SharesModule,
+    // Put SharesModule before CVsModule
+    CVsModule,
     AuthModule,
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
-    // Put SharesModule before CVsModule
-    SharesModule,
-    CVsModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,

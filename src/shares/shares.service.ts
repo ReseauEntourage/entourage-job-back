@@ -2,10 +2,10 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Sequelize } from 'sequelize';
-import { RedisKeys } from 'src/utils/types';
-import { Share } from './models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
+import { RedisKeys } from 'src/utils/types';
+import { Share } from './models';
 
 export type ShareType =
   | 'facebook'
@@ -35,12 +35,10 @@ export class SharesService {
     });
     if (candidatShares) {
       const updatedCandidatShares = {
-        ...candidatShares,
+        ...candidatShares.toJSON(),
         [type]: candidatShares[type] + 1,
       };
-      return candidatShares.update(updatedCandidatShares, {
-        where: { CandidatId: candidateId },
-      });
+      return candidatShares.update(updatedCandidatShares);
     }
 
     return Share.create({
@@ -56,25 +54,28 @@ export class SharesService {
     if (redisShares) {
       totalShares = redisShares;
     } else {
-      const shares: { [K in ShareType]: number }[] = await Share.findAll({
+      const shares: Share[] = await Share.findAll({
         attributes: [
           /*
-              [Sequelize.fn('sum', Sequelize.col('facebook')), 'facebook'],
-              [Sequelize.fn('sum', Sequelize.col('linkedin')), 'linkedin'],
-              [Sequelize.fn('sum', Sequelize.col('twitter')), 'twitter'],
-              [Sequelize.fn('sum', Sequelize.col('whatsapp')), 'whatsapp'],
-            */
+            [Sequelize.fn('sum', Sequelize.col('facebook')), 'facebook'],
+            [Sequelize.fn('sum', Sequelize.col('linkedin')), 'linkedin'],
+            [Sequelize.fn('sum', Sequelize.col('twitter')), 'twitter'],
+            [Sequelize.fn('sum', Sequelize.col('whatsapp')), 'whatsapp'],
+          */
           [Sequelize.fn('sum', Sequelize.col('other')), 'other'],
         ],
       });
-      const shareCounts = Object.values(shares[0]);
+
+      const shareCounts: { [K in ShareType]: string } = shares[0].toJSON();
+
+      const shareCountValues = Object.values(shareCounts);
       if (
-        shareCounts.every((shareCount) => {
+        shareCountValues.every((shareCount) => {
           return !!shareCount;
         })
       ) {
-        totalShares += Object.keys(shares[0]).reduce((previous, key) => {
-          return previous + shares[0][key as ShareType];
+        totalShares += Object.keys(shareCounts).reduce((previous, key) => {
+          return previous + parseInt(shareCounts[key as ShareType]);
         }, 0);
       }
 
