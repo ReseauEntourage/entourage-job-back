@@ -8,7 +8,8 @@ import { CV } from 'src/cvs/models';
 export class CVsHelper {
   constructor(
     @InjectModel(CV)
-    private cvModel: typeof CV
+    private cvModel: typeof CV,
+    private cvsService: CVsService
   ) {}
 
   getTestImagePath() {
@@ -22,10 +23,10 @@ export class CVsHelper {
   }
 
   async findCVsByCandidateId(candidateId: string) {
-    return this.cvModel.findAll({
-      where: {
-        UserId: candidateId,
-      },
-    });
+    return this.cvsService.findAllByCandidateId(candidateId);
+  }
+
+  async findCVByCandidateId(candidateId: string) {
+    return this.cvsService.findOneByCandidateId(candidateId);
   }
 }

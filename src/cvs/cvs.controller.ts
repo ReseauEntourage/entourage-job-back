@@ -35,6 +35,7 @@ import { CVFilterKey } from './cvs.types';
 import { getPDFPaths } from './cvs.utils';
 import { CreateCVDto } from './dto';
 import { ParseCVPipe } from './dto/parse-cv.pipe';
+import * as _ from 'lodash';
 
 // TODO change to /cvs
 @Controller('cv')
@@ -241,6 +242,34 @@ export class CVsController {
     };
   }
 
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @Put('read/:candidateId')
+  async setCVHasBeenRead(
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    const cv = await this.cvsService.findOneByCandidateId(candidateId);
+
+    if (!cv || _.isEmpty(cv)) {
+      throw new NotFoundException();
+    }
+
+    const { id, lastModifiedBy } = cv;
+
+    const updatedCV = await this.cvsService.update(id, {
+      lastModifiedBy: lastModifiedBy !== userId ? null : lastModifiedBy,
+    });
+
+    if (!updatedCV) {
+      throw new NotFoundException();
+    }
+
+    return updatedCV;
+  }
+
   @Public()
   @Get(':url')
   async findCVByUrl(@Param('url') url: string) {
@@ -256,33 +285,5 @@ export class CVsController {
       cv,
       exists,
     };
-  }
-
-  @LinkedUser('params.candidateId')
-  @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
-  @UseGuards(RolesGuard)
-  @Put('read/:candidateId')
-  async setCVHasBeenRead(
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
-  ) {
-    const cv = await this.cvsService.findOneByCandidateId(candidateId);
-
-    if (!cv) {
-      throw new NotFoundException();
-    }
-
-    const { id, lastModifiedBy } = cv;
-
-    const updatedCV = await this.cvsService.update(id, {
-      lastModifiedBy: lastModifiedBy !== userId ? null : lastModifiedBy,
-    });
-
-    if (!updatedCV) {
-      throw new NotFoundException();
-    }
-
-    return updatedCV;
   }
 }

@@ -9,6 +9,6 @@ import { SharesService } from './shares.service';
   imports: [SequelizeModule.forFeature([Share]), UsersModule],
   providers: [SharesService],
   controllers: [SharesController],
-  exports: [SequelizeModule],
+  exports: [SequelizeModule, SharesService],
 })
 export class SharesModule {}

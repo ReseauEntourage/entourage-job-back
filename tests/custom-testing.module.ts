@@ -14,6 +14,7 @@ import { PassionsTestingModule } from './passions/passions-testing.module';
 import { ReviewsTestingModule } from './reviews/reviews-testing.module';
 import { SkillsTestingModule } from './skills/skills-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
+import { SharesTestingModule } from './shares/shares-testing.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     SkillsTestingModule,
     UsersTestingModule,
     ReviewsTestingModule,
+    SharesTestingModule,
   ],
   providers: [DatabaseHelper],
 })
