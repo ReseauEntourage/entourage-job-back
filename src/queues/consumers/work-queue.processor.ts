@@ -25,14 +25,18 @@ import {
   SendReminderInterviewTrainingJob,
   SendReminderActionsJob,
   SendReminderExternalOffersJob,
+  PusherChannels,
+  PusherEvents,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
+import { PusherService } from './pusher.service';
 
 // TODO PUSHER
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
+    private pusherService: PusherService,
     private cvsService: CVsService
   ) {}
 
@@ -216,14 +220,13 @@ export class WorkQueueProcessor {
       data.paths
     );
 
-    // TODO Pusher
-    /* await pusher.trigger(
-       SOCKETS.CHANNEL_NAMES.CV_PDF,
-       SOCKETS.EVENTS.CV_PDF_DONE,
-       {
-         candidateId: data.candidateId,
-       }
-     );*/
+    await this.pusherService.sendEvent(
+      PusherChannels.CV_PDF,
+      PusherEvents.CV_PDF_DONE,
+      {
+        candidateId: data.candidateId,
+      }
+    );
 
     return `PDF generated for User ${data.candidateId} : ${data.paths[2]}`;
   }
@@ -238,17 +241,13 @@ export class WorkQueueProcessor {
       data.oldImg
     );
 
-    // TODO PUSHER
-    /*
-    await pusher.trigger(
-       SOCKETS.CHANNEL_NAMES.CV_PREVIEW,
-       SOCKETS.EVENTS.CV_PREVIEW_DONE,
-       {
-         candidateId: data.candidateId,
-       }
-     );
-
-     */
+    await this.pusherService.sendEvent(
+      PusherChannels.CV_PREVIEW,
+      PusherEvents.CV_PREVIEW_DONE,
+      {
+        candidateId: data.candidateId,
+      }
+    );
 
     return `Preview generated for User ${data.candidateId} : ${previewUrl}`;
   }

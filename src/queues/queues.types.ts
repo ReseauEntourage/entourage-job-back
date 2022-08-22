@@ -83,21 +83,16 @@ export const Queues = {
 
 export type Queue = typeof Queues[keyof typeof Queues];
 
-export function getBullWorkQueueOptions(): BullModuleOptions {
-  return {
-    name: Queues.WORK,
-    defaultJobOptions: {
-      attempts: `${process.env.JOBS_NB_ATTEMPS}`
-        ? parseInt(process.env.JOBS_NB_ATTEMPS)
-        : 10,
-      backoff: {
-        type: 'exponential',
-        delay: `${process.env.JOBS_BACKOFF_DELAY}`
-          ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
-          : 60000,
-      },
-      removeOnFail: true,
-      removeOnComplete: true,
-    },
-  };
-}
+export const PusherChannels = {
+  CV_PREVIEW: 'cv-preview-channel',
+  CV_PDF: 'cv-pdf-channel',
+} as const;
+
+export type PusherChannel = typeof PusherChannels[keyof typeof PusherChannels];
+
+export const PusherEvents = {
+  CV_PREVIEW_DONE: 'cv-preview-done',
+  CV_PDF_DONE: 'cv-pdf-done',
+} as const;
+
+export type PusherEvent = typeof PusherEvents[keyof typeof PusherEvents];
