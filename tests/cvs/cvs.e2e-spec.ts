@@ -2,7 +2,6 @@ import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { v4 as uuid } from 'uuid';
 import {
   CacheMocks,
   CloudFrontMocks,
@@ -12,9 +11,12 @@ import {
 import { LoggedUser } from 'src/auth/auth.types';
 import { CloudFrontService } from 'src/aws/cloud-front.service';
 import { S3Service } from 'src/aws/s3.service';
+import { CVsController } from 'src/cvs/cvs.controller';
 import { CVsService } from 'src/cvs/cvs.service';
 import { Queues } from 'src/queues/queues.types';
+import { User } from 'src/users/models';
 import { UserRoles, CVStatuses } from 'src/users/users.types';
+import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
@@ -24,13 +26,6 @@ import { CVFactory } from './cv.factory';
 import { CVsHelper } from './cvs.helper';
 
 describe('CVs', () => {
-  let loggedInAdmin: LoggedUser;
-  let loggedInCandidat: LoggedUser;
-  let loggedInCoach: LoggedUser;
-  let loggedInOtherCandidat: LoggedUser;
-  let loggedInOtherCoach: LoggedUser;
-  let path: string;
-
   let app: INestApplication;
 
   let databaseHelper: DatabaseHelper;
@@ -67,8 +62,7 @@ describe('CVs', () => {
     cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
     cvFactory = moduleFixture.get<CVFactory>(CVFactory);
 
-    await databaseHelper.resetTestDB();
-    const admin = await userFactory.create({
+    /* const admin = await userFactory.create({
       role: UserRoles.ADMIN,
       password: 'admin',
     });
@@ -125,7 +119,7 @@ describe('CVs', () => {
       {},
       false
     );
-    path = cvsHelper.getTestImagePath();
+    path = cvsHelper.getTestImagePath();*/
   });
 
   afterAll(async () => {
@@ -133,192 +127,207 @@ describe('CVs', () => {
     await app.close();
   });
 
-  // TODO PUT BACK
-  /*
   beforeEach(async () => {
     await databaseHelper.resetTestDB();
   });
-  */
 
   describe('CRUD CV', () => {
     describe('C - Create 1 CV', () => {
-      it('Should return 201 and CV with cv status set as progress if logged in user', async () => {
-        const cv = await cvFactory.create(
-          {
-            UserId: loggedInCandidat.user.id,
-          },
-          {},
-          false
-        );
-        const cvResponse = {
-          ...cv,
-          status: CVStatuses.Progress.value,
-          version: 2,
-        };
-        const response = await request(app.getHttpServer())
-          .post(`${route}/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInCandidat.token}`)
-          .set('Content-Type', 'multipart/form-data')
-          .field('cv', JSON.stringify(cv))
-          .attach('profileImage', path);
-        expect(response.status).toBe(201);
-        expect(response.body).toMatchObject(cvResponse);
-      });
+      describe('/:candidateId - Create CV for candidate', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidat: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let path: string;
 
-      it('Should return 200 and cvHasBeenModified, if coach checks if CV has been updated', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/checkUpdate`)
-          .set('authorization', `Token ${loggedInCoach.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.cvHasBeenModified).toBe(true);
-      });
-      it('Should return 200 and cvHasBeenModified be false, if coach reads CV', async () => {
-        const setHasReadCVRequest = await request(app.getHttpServer())
-          .put(`${route}/read/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInCoach.token}`);
-        expect(setHasReadCVRequest.status).toBe(200);
-
-        const response = await request(app.getHttpServer())
-          .get(`${route}/checkUpdate`)
-          .set('authorization', `Token ${loggedInCoach.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.cvHasBeenModified).toBe(false);
-      });
-
-      it("Should return 200 and CV with cv status set as progress, if logged in user is coach of cv's owner", async () => {
-        const cv = await cvFactory.create(
-          {
-            UserId: loggedInCandidat.user.id,
-            urlImg: null,
-          },
-          {},
-          false
-        );
-        cv.status = undefined;
-        const response = await request(app.getHttpServer())
-          .post(`${route}/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInCoach.token}`)
-          .field('cv', JSON.stringify(cv))
-          .attach('profileImage', path);
-        expect(response.status).toBe(201);
-        expect(response.body.status).toMatch(CVStatuses.Progress.value);
-      });
-      it("Should return 201 and CV with cv status set as pending if CV submitted, if logged in user is coach of cv's owner", async () => {
-        const cv = await cvFactory.create(
-          {
-            UserId: loggedInCandidat.user.id,
-            urlImg: null,
-          },
-          {},
-          false
-        );
-        cv.status = CVStatuses.Pending.value;
-        const response = await request(app.getHttpServer())
-          .post(`${route}/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInCoach.token}`)
-          .field('cv', JSON.stringify(cv))
-          .attach('profileImage', path);
-        expect(response.status).toBe(201);
-        expect(response.body.status).toMatch(CVStatuses.Pending.value);
-      });
-
-      it('Should return 200 and cvHasBeenModified, if candidat checks if CV has been updated', async () => {
-        const response = await request(app.getHttpServer())
-          .get(`${route}/checkUpdate`)
-          .set('authorization', `Token ${loggedInCandidat.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.cvHasBeenModified).toBe(true);
-      });
-
-      it('Should return 200 and cvHasBeenModified be false, if candidat reads CV', async () => {
-        const setHasReadCVRequest = await request(app.getHttpServer())
-          .put(`${route}/read/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInCandidat.token}`);
-        expect(setHasReadCVRequest.status).toBe(200);
-
-        const response = await request(app.getHttpServer())
-          .get(`${route}/checkUpdate`)
-          .set('authorization', `Token ${loggedInCandidat.token}`);
-        expect(response.status).toBe(200);
-        expect(response.body.cvHasBeenModified).toBe(false);
-      });
-
-      it('Should return 201 and CV with cv status set as published, if logged in admin', async () => {
-        const cv = await cvFactory.create(
-          {
-            UserId: loggedInCandidat.user.id,
-            urlImg: null,
-          },
-          {},
-          false
-        );
-        cv.status = undefined;
-        const cvResponse = {
-          ...cv,
-          status: CVStatuses.Published.value,
-          version: 5,
-        };
-        const response = await request(app.getHttpServer())
-          .post(`${route}/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`)
-          .send({ cv });
-        expect(response.status).toBe(201);
-        expect(response.body).toMatchObject(cvResponse);
-      });
-      it('Should return 201 and CV with cv status set as draft, if logged in admin', async () => {
-        const cv = await cvFactory.create(
-          {
-            UserId: loggedInCandidat.user.id,
-            status: CVStatuses.Draft.value,
-            urlImg: null,
-          },
-          {},
-          false
-        );
-        const cvResponse = {
-          ...cv,
-          version: 6,
-        };
-        const response = await request(app.getHttpServer())
-          .post(`${route}/${loggedInCandidat.user.id}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`)
-          .send({ cv });
-        expect(response.status).toBe(201);
-        expect(response.body).toMatchObject(cvResponse);
-      });
-
-      it('Should return 401 if not logged in user', async () => {
-        const cv = await cvFactory.create(
-          { UserId: loggedInCandidat.user.id },
-          {},
-          false
-        );
-        const response = await request(app.getHttpServer())
-          .post(`${route}/${loggedInCandidat.user.id}`)
-          .send({ cv });
-        expect(response.status).toBe(401);
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          loggedInCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          path = cvsHelper.getTestImagePath();
+        });
+        it('Should return 201 and CV with cv status set as progress if logged in user', async () => {
+          const cv = await cvFactory.create(
+            {
+              UserId: loggedInCandidat.user.id,
+            },
+            {},
+            false
+          );
+          const cvResponse = {
+            ...cv,
+            status: CVStatuses.Progress.value,
+          };
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('Content-Type', 'multipart/form-data')
+              .field('cv', JSON.stringify(cv))
+              .attach('profileImage', path);
+          expect(response.status).toBe(201);
+          expect(response.body).toMatchObject(cvResponse);
+        });
+        it("Should return 200 and CV with cv status set as progress, if logged in user is coach of CV's owner", async () => {
+          ({ loggedInCoach, loggedInCandidat } =
+            await userCandidatsHelper.associateCoachAndCandidat(
+              loggedInCoach,
+              loggedInCandidat,
+              true
+            ));
+          const cv = await cvFactory.create(
+            {
+              UserId: loggedInCandidat.user.id,
+              urlImg: null,
+            },
+            {},
+            false
+          );
+          cv.status = undefined;
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`)
+              .field('cv', JSON.stringify(cv))
+              .attach('profileImage', path);
+          expect(response.status).toBe(201);
+          expect(response.body.status).toMatch(CVStatuses.Progress.value);
+        });
+        it("Should return 201 and CV with cv status set as pending if CV submitted, if logged in user is coach of CV's owner", async () => {
+          ({ loggedInCoach, loggedInCandidat } =
+            await userCandidatsHelper.associateCoachAndCandidat(
+              loggedInCoach,
+              loggedInCandidat,
+              true
+            ));
+          const cv = await cvFactory.create(
+            {
+              UserId: loggedInCandidat.user.id,
+              urlImg: null,
+            },
+            {},
+            false
+          );
+          cv.status = CVStatuses.Pending.value;
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`)
+              .field('cv', JSON.stringify(cv))
+              .attach('profileImage', path);
+          expect(response.status).toBe(201);
+          expect(response.body.status).toMatch(CVStatuses.Pending.value);
+        });
+        it('Should return 201 and CV with cv status set as published, if logged in admin', async () => {
+          const cv = await cvFactory.create(
+            {
+              UserId: loggedInCandidat.user.id,
+              urlImg: null,
+            },
+            {},
+            false
+          );
+          cv.status = undefined;
+          const cvResponse = {
+            ...cv,
+            status: CVStatuses.Published.value,
+          };
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({ cv });
+          expect(response.status).toBe(201);
+          expect(response.body).toMatchObject(cvResponse);
+        });
+        it('Should return 201 and CV with cv status set as draft, if logged in admin', async () => {
+          const cv = await cvFactory.create(
+            {
+              UserId: loggedInCandidat.user.id,
+              status: CVStatuses.Draft.value,
+              urlImg: null,
+            },
+            {},
+            false
+          );
+          const cvResponse = {
+            ...cv,
+          };
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({ cv });
+          expect(response.status).toBe(201);
+          expect(response.body).toMatchObject(cvResponse);
+        });
+        it('Should return 401 if not logged in user', async () => {
+          const cv = await cvFactory.create(
+            { UserId: loggedInCandidat.user.id },
+            {},
+            false
+          );
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidat.user.id}`)
+              .send({ cv });
+          expect(response.status).toBe(401);
+        });
       });
     });
     describe('R - Read 1 CV', () => {
-      describe('Get a CV by user id - /?userId', () => {
+      describe('/?userId= - Get a CV by user id', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidat: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          loggedInCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: loggedInCandidat.user.id,
+          });
+        });
         it('Should return 200 if valid user id provided and logged in as candidate', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCandidat.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidat.user.id);
         });
         it('Should return 200 if valid user id provided and logged in as coach', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+          ({ loggedInCoach, loggedInCandidat } =
+            await userCandidatsHelper.associateCoachAndCandidat(
+              loggedInCoach,
+              loggedInCandidat,
+              true
+            ));
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidat.user.id);
         });
         it('Should return 200 if valid user id provided and logged in as admin', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidat.user.id);
         });
@@ -327,9 +336,10 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
           });
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${candidatNoCv.user.id}`)
-            .set('authorization', `Token ${candidatNoCv.token}`);
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${candidatNoCv.user.id}`)
+              .set('authorization', `Token ${candidatNoCv.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
@@ -359,9 +369,10 @@ describe('CVs', () => {
             false
           );
 
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${loggedCandidatNoCv.user.id}`)
-            .set('authorization', `Token ${loggedCoachNoCv.token}`);
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${loggedCandidatNoCv.user.id}`)
+              .set('authorization', `Token ${loggedCoachNoCv.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
@@ -370,80 +381,144 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
           });
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${candidatNoCv.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${candidatNoCv.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
         it('Should return 401 if invalid user id provided', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/?userId=123-fakeuserid`
-          );
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer()).get(
+              `${route}/?userId=123-fakeuserid`
+            );
           expect(response.status).toBe(401);
         });
         it('Should return 401 if valid user id provided and not logged in', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/?userId=${loggedInCandidat.user.id}`
-          );
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer()).get(
+              `${route}/?userId=${loggedInCandidat.user.id}`
+            );
           expect(response.status).toBe(401);
         });
         it('Should return 403 if valid user id provided and logged in as other candidate', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+          const loggedInOtherCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInOtherCandidat.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if valid user id provided and logged in as other coach', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/?userId=${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInOtherCoach.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 200 and last CV version if valid user id provided and logged in as candidate', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.lastCvVersion).toBe(6);
-        });
-        it('Should return 200 and last CV version if valid user id provided and logged in as coach', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.lastCvVersion).toBe(6);
-        });
-        it('Should return 200 and last CV version if valid user id provided and logged in as admin', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.lastCvVersion).toBe(6);
-        });
-        it('Should return 403 and last CV version if valid user id provided and logged in as other candidate', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInOtherCandidat.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403 and last CV version if valid user id provided and logged in as other coach', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInOtherCoach.token}`);
+          const response: APIResponse<CVsController['findCVByCandidateId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?userId=${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
-      describe("Get a CV by candidat's url - /", () => {
+      describe("/lastVersion/:candidateId - Get last version of candidate's CV", () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidat: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          loggedInCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: loggedInCandidat.user.id,
+            version: 3,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: loggedInCandidat.user.id,
+            version: 2,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: loggedInCandidat.user.id,
+            version: 1,
+          });
+        });
+        it('Should return 200 and last CV version if valid user id provided and logged in as candidate', async () => {
+          const response: APIResponse<CVsController['findLastCVVersion']> =
+            await request(app.getHttpServer())
+              .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.lastCvVersion).toBe(3);
+        });
+        it('Should return 200 and last CV version if valid user id provided and logged in as coach', async () => {
+          ({ loggedInCoach, loggedInCandidat } =
+            await userCandidatsHelper.associateCoachAndCandidat(
+              loggedInCoach,
+              loggedInCandidat,
+              true
+            ));
+          const response: APIResponse<CVsController['findLastCVVersion']> =
+            await request(app.getHttpServer())
+              .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.lastCvVersion).toBe(3);
+        });
+        it('Should return 200 and last CV version if valid user id provided and logged in as admin', async () => {
+          const response: APIResponse<CVsController['findLastCVVersion']> =
+            await request(app.getHttpServer())
+              .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.lastCvVersion).toBe(3);
+        });
+        it('Should return 403 and last CV version if valid user id provided and logged in as other candidate', async () => {
+          const loggedInOtherCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          const response: APIResponse<CVsController['findLastCVVersion']> =
+            await request(app.getHttpServer())
+              .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403 and last CV version if valid user id provided and logged in as other coach', async () => {
+          const response: APIResponse<CVsController['findLastCVVersion']> =
+            await request(app.getHttpServer())
+              .get(`${route}/lastVersion/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+      });
+      describe("/:url - Get a CV by candidat's url", () => {
+        let candidat: User;
+
+        beforeEach(async () => {
+          candidat = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: candidat.id,
+          });
+        });
         it("Should return 200 if valid candidat's url provided", async () => {
           const candidatUrl = await userCandidatsHelper.getCandidatUrl(
-            loggedInCandidat.user.id
+            candidat.id
           );
-          const response = await request(app.getHttpServer()).get(
-            `${route}/${candidatUrl}`
-          );
+          const response: APIResponse<CVsController['findCVByUrl']> =
+            await request(app.getHttpServer()).get(`${route}/${candidatUrl}`);
           expect(response.status).toBe(200);
-          expect(response.body.cv.UserId).toBe(loggedInCandidat.user.id);
+          expect(response.body.cv.UserId).toBe(candidat.id);
         });
         it('Should return 200 if valid url provided and candidat has hidden CV', async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({
@@ -453,68 +528,100 @@ describe('CVs', () => {
           const candidatNoCvUrl = await userCandidatsHelper.getCandidatUrl(
             candidatNoCv.user.id
           );
-          const response = await request(app.getHttpServer()).get(
-            `${route}/${candidatNoCvUrl}`
-          );
+          const response: APIResponse<CVsController['findCVByUrl']> =
+            await request(app.getHttpServer()).get(
+              `${route}/${candidatNoCvUrl}`
+            );
           expect(response.status).toBe(200);
           expect(response.body.cv).toBe(null);
           expect(response.body.exists).toBe(true);
         });
         it("Should return 404 if candidat's url is invalid", async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/fakeuser-1234553`
-          );
+          const response: APIResponse<CVsController['findCVByUrl']> =
+            await request(app.getHttpServer()).get(`${route}/fakeuser-1234553`);
           expect(response.status).toBe(404);
         });
       });
-      describe('Get a CV in PDF - /pdf/:candidateId', () => {
-        beforeEach(() => {
+      describe('/pdf/:candidateId - Get a CV in PDF', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidat: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          loggedInCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: loggedInCandidat.user.id,
+          });
           jest
             .spyOn(CVsService.prototype, 'getPDFPageUrl')
             .mockImplementationOnce(() => cvsHelper.getTestHtmlPagePath());
         });
 
         it('Should return 401 if not logged in', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/pdf/${loggedInCandidat.user.id}`
-          );
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer()).get(
+              `${route}/pdf/${loggedInCandidat.user.id}`
+            );
           expect(response.status).toBe(401);
         });
 
         it('Should return 403 if logged as another candidate', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+          const loggedInOtherCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInOtherCandidat.token}`);
           expect(response.status).toBe(403);
         });
 
         it('Should return 403 if logged as another coach', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInOtherCoach.token}`);
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
 
         it('Should return 200 and PDF url if logged as candidate and PDF already exists', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCandidat.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
 
         it('Should return 200 and PDF url if logged as coach and PDF already exists', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+          ({ loggedInCoach, loggedInCandidat } =
+            await userCandidatsHelper.associateCoachAndCandidat(
+              loggedInCoach,
+              loggedInCandidat,
+              true
+            ));
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
 
         it('Should return 200 and PDF url if logged as admin and PDF already exists', async () => {
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -523,20 +630,28 @@ describe('CVs', () => {
           jest
             .spyOn(CVsService.prototype, 'findPDF')
             .mockImplementationOnce(async () => null);
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCandidat.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
 
         it("Should return 200 and PDF url if logged as coach and PDF doesn't exist", async () => {
+          ({ loggedInCoach, loggedInCandidat } =
+            await userCandidatsHelper.associateCoachAndCandidat(
+              loggedInCoach,
+              loggedInCandidat,
+              true
+            ));
           jest
             .spyOn(CVsService.prototype, 'findPDF')
             .mockImplementationOnce(async () => null);
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -545,56 +660,151 @@ describe('CVs', () => {
           jest
             .spyOn(CVsService.prototype, 'findPDF')
             .mockImplementationOnce(async () => null);
-          const response = await request(app.getHttpServer())
-            .get(`${route}/pdf/${loggedInCandidat.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+          const response: APIResponse<CVsController['findCVInPDF']> =
+            await request(app.getHttpServer())
+              .get(`${route}/pdf/${loggedInCandidat.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
       });
     });
-    describe('R - Read List of CVs', () => {
-      describe('Get a list n random cv matching a search - /cards/random/?nb=&search=', () => {
-        it('Should return 200, and 2 cv', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?nb=2`
-          );
-          expect(response.status).toBe(200);
-          expect(response.body.cvs.length).toBe(2);
-        });
-        it("Should return 200, and 1 cv if user's first name or other property contains the query", async () => {
-          const newUser = await userFactory.create({
+    describe('R - Read list of CVs', () => {
+      describe('/cards/random/?nb=&search= - Get a list of n random CVs matching a search', () => {
+        it('Should return 200, and 2 CVs', async () => {
+          const newUser1 = await userFactory.create({
             firstName: 'xxxxKnownFirstNamexxxx',
             role: UserRoles.CANDIDAT,
           });
-          const newCV = await cvFactory.create({
+          await cvFactory.create({
             status: CVStatuses.Published.value,
-            UserId: newUser.id,
+            UserId: newUser1.id,
           });
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?nb=1&search=xxxxKnownFirstNamexxxx`
-          );
+
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser2.id,
+          });
+
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser3.id,
+          });
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?nb=2`
+            );
+          expect(response.status).toBe(200);
+          expect(response.body.cvs.length).toBe(2);
+        });
+        it("Should return 200, and 1 CV if user's first name or other property contains the query", async () => {
+          const newUser1 = await userFactory.create({
+            firstName: 'xxxxKnownFirstNamexxxx',
+            role: UserRoles.CANDIDAT,
+          });
+          const newCV1 = await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser1.id,
+          });
+
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser2.id,
+          });
+
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser3.id,
+          });
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?search=xxxxKnownFirstNamexxxx`
+            );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(1);
-          expect(response.body.cvs[0].id).toBe(newCV.id);
+          expect(response.body.cvs[0].id).toBe(newCV1.id);
         });
         it('Should return 200 and empty list, if no result found', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?nb=1&search=zzzzzzz`
-          );
+          const newUser1 = await userFactory.create({
+            firstName: 'xxxxKnownFirstNamexxxx',
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser1.id,
+          });
+
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser2.id,
+          });
+
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser3.id,
+          });
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?nb=1&search=zzzzzzz`
+            );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(0);
         });
-        it('Should return 200 and many cv, if no nb provided', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/`
-          );
+        it('Should return 200 and many CVs, if no nb provided', async () => {
+          const newUser1 = await userFactory.create({
+            firstName: 'xxxxKnownFirstNamexxxx',
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser1.id,
+          });
+
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser2.id,
+          });
+
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser3.id,
+          });
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(`${route}/cards/random`);
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(3);
         });
       });
-      describe('Get a list of cvs matching specific filters', () => {
-        it('Should return 200, and all the cvs that matches the location filters', async () => {
+      describe('/cards/random/?locations[]=&employed[]=&businessLine[]= - Get a list of CVs matching specific filters', () => {
+        it('Should return 200, and all the CVs that matches the location filters', async () => {
           const newUser1 = await userFactory.create({
             role: UserRoles.CANDIDAT,
           });
@@ -622,7 +832,7 @@ describe('CVs', () => {
           const newUser3 = await userFactory.create({
             role: UserRoles.CANDIDAT,
           });
-          const newCV3 = await cvFactory.create(
+          await cvFactory.create(
             {
               status: CVStatuses.Published.value,
               UserId: newUser3.id,
@@ -631,30 +841,18 @@ describe('CVs', () => {
               locations: ['Nord (59)'],
             }
           );
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?locations[]=Île-de-France&locations[]=Auvergne-Rhône-Alpes`
-          );
+          const expectedCVIds = [newCV1.id, newCV2.id];
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?locations[]=Île-de-France&locations[]=Auvergne-Rhône-Alpes`
+            );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(2);
-          expect(response.body.cvs).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV1.id,
-              }),
-              expect.objectContaining({
-                id: newCV2.id,
-              }),
-            ])
-          );
-          expect(response.body.cvs).not.toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV3.id,
-              }),
-            ])
+          expect(expectedCVIds).toEqual(
+            expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
-        it('Should return 200, and all the cvs that matches the employed filters', async () => {
+        it('Should return 200, and all the CVs that matches the employed filters', async () => {
           const newUser1 = await userFactory.create(
             {
               role: UserRoles.CANDIDAT,
@@ -687,34 +885,23 @@ describe('CVs', () => {
               employed: true,
             }
           );
-          const newCV3 = await cvFactory.create({
+          await cvFactory.create({
             status: CVStatuses.Published.value,
             UserId: newUser3.id,
           });
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?employed[]=false`
-          );
+          const expectedCVIds = [newCV1.id, newCV2.id];
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?employed[]=false`
+            );
           expect(response.status).toBe(200);
-          expect(response.body.cvs.length).toBe(8);
-          expect(response.body.cvs).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV1.id,
-              }),
-              expect.objectContaining({
-                id: newCV2.id,
-              }),
-            ])
-          );
-          expect(response.body.cvs).not.toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV3.id,
-              }),
-            ])
+          expect(response.body.cvs.length).toBe(2);
+          expect(expectedCVIds).toEqual(
+            expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
-        it('Should return 200, and all the cvs that matches the businessLine filters', async () => {
+        it('Should return 200, and all the CVs that matches the businessLine filters', async () => {
           const newUser1 = await userFactory.create({
             role: UserRoles.CANDIDAT,
           });
@@ -742,7 +929,7 @@ describe('CVs', () => {
           const newUser3 = await userFactory.create({
             role: UserRoles.CANDIDAT,
           });
-          const newCV3 = await cvFactory.create(
+          await cvFactory.create(
             {
               status: CVStatuses.Published.value,
               UserId: newUser3.id,
@@ -751,38 +938,22 @@ describe('CVs', () => {
               businessLines: ['sa'],
             }
           );
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?businessLines[]=bat&businessLines[]=id`
-          );
+          const expectedCVIds = [newCV1.id, newCV2.id];
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?businessLines[]=bat&businessLines[]=id`
+            );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(2);
-          expect(response.body.cvs).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV1.id,
-              }),
-              expect.objectContaining({
-                id: newCV2.id,
-              }),
-            ])
-          );
-          expect(response.body.cvs).not.toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV3.id,
-              }),
-            ])
+          expect(expectedCVIds).toEqual(
+            expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
-        it('Should return 200, and all the cvs that matches multiple filters (AND between different filters, OR inside each filters)', async () => {
-          const newUser1 = await userFactory.create(
-            {
-              role: UserRoles.CANDIDAT,
-            },
-            {
-              employed: false,
-            }
-          );
+        it("Should return 200, and CVs suggestions of same location if the businessLine filter doesn't match", async () => {
+          const newUser1 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
           const newCV1 = await cvFactory.create(
             {
               status: CVStatuses.Published.value,
@@ -793,92 +964,9 @@ describe('CVs', () => {
               locations: ['Paris (75)'],
             }
           );
-          const newUser2 = await userFactory.create(
-            {
-              role: UserRoles.CANDIDAT,
-            },
-            {
-              employed: false,
-            }
-          );
-          const newCV2 = await cvFactory.create(
-            {
-              status: CVStatuses.Published.value,
-              UserId: newUser2.id,
-            },
-            {
-              businessLines: ['bat'],
-              locations: ['Rhône (69)'],
-            }
-          );
-          const newUser3 = await userFactory.create(
-            {
-              role: UserRoles.CANDIDAT,
-            },
-            {
-              employed: true,
-            }
-          );
-          const newCV3 = await cvFactory.create(
-            {
-              status: CVStatuses.Published.value,
-              UserId: newUser3.id,
-            },
-            {
-              businessLines: ['sa'],
-              locations: ['Nord (59)'],
-            }
-          );
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?businessLines[]=sa&businessLines[]=id&employed[]=false&locations[]=Auvergne-Rhône-Alpes&locations[]=Hauts-de-France&locations[]=Île-de-France`
-          );
-          expect(response.status).toBe(200);
-          expect(response.body.cvs.length).toBe(1);
-          expect(response.body.cvs).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV1.id,
-              }),
-            ])
-          );
-          expect(response.body.cvs).not.toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV3.id,
-              }),
-              expect.objectContaining({
-                id: newCV2.id,
-              }),
-            ])
-          );
-        });
-        it("Should return 200, and cvs suggestions of same location if the businessLine filter doesn't match", async () => {
-          const newUser1 = await userFactory.create(
-            {
-              role: UserRoles.CANDIDAT,
-            },
-            {
-              employed: false,
-            }
-          );
-          const newCV1 = await cvFactory.create(
-            {
-              status: CVStatuses.Published.value,
-              UserId: newUser1.id,
-            },
-            {
-              businessLines: ['id'],
-              locations: ['Paris (75)'],
-            }
-          );
-          const newUser2 = await userFactory.create(
-            {
-              role: UserRoles.CANDIDAT,
-            },
-            {
-              employed: false,
-            }
-          );
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
           const newCV2 = await cvFactory.create(
             {
               status: CVStatuses.Published.value,
@@ -889,14 +977,9 @@ describe('CVs', () => {
               locations: ['Paris (75)'],
             }
           );
-          const newUser3 = await userFactory.create(
-            {
-              role: UserRoles.CANDIDAT,
-            },
-            {
-              employed: false,
-            }
-          );
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
           const newCV3 = await cvFactory.create(
             {
               status: CVStatuses.Published.value,
@@ -907,59 +990,161 @@ describe('CVs', () => {
               locations: ['Paris (75)'],
             }
           );
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?businessLines[]=tra&employed[]=false&locations[]=Île-de-France`
-          );
+
+          const expectedCVIds = [newCV1.id, newCV2.id, newCV3.id];
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?businessLines[]=tra&locations[]=Île-de-France`
+            );
           expect(response.status).toBe(200);
-          expect(response.body.cvs.length).toBe(5);
+          expect(response.body.cvs.length).toBe(3);
           expect(response.body.suggestions).toBe(true);
-          expect(response.body.cvs).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                id: newCV1.id,
-              }),
-              expect.objectContaining({
-                id: newCV2.id,
-              }),
-              expect.objectContaining({
-                id: newCV3.id,
-              }),
-            ])
+
+          expect(expectedCVIds).toEqual(
+            expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
 
         it('Should return 200 and empty list, if no result found', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/?locations[]=Bretagne`
+          const newUser1 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create(
+            {
+              status: CVStatuses.Published.value,
+              UserId: newUser1.id,
+            },
+            {
+              locations: ['Paris (75)'],
+            }
           );
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create(
+            {
+              status: CVStatuses.Published.value,
+              UserId: newUser2.id,
+            },
+            {
+              locations: ['Paris (75)'],
+            }
+          );
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create(
+            {
+              status: CVStatuses.Published.value,
+              UserId: newUser3.id,
+            },
+            {
+              locations: ['Paris (75)'],
+            }
+          );
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?locations[]=Bretagne`
+            );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(0);
         });
-        it('Should return 200 and many cv, if no nb provided', async () => {
-          const response = await request(app.getHttpServer()).get(
-            `${route}/cards/random/`
-          );
+        it('Should return 200 and many cv, if no filters provided', async () => {
+          const newUser1 = await userFactory.create({
+            firstName: 'xxxxKnownFirstNamexxxx',
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser1.id,
+          });
+
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser2.id,
+          });
+
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDAT,
+          });
+          await cvFactory.create({
+            status: CVStatuses.Published.value,
+            UserId: newUser3.id,
+          });
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(`${route}/cards/random`);
           expect(response.status).toBe(200);
-          expect(response.body.cvs.length).toBe(18);
+          expect(response.body.cvs.length).toBe(3);
         });
       });
     });
-    describe('R - Read number of shares', () => {
-      it('Should return 200 and the number of shares', async () => {
-        const response = await request(app.getHttpServer()).get(
-          `${route}/shares`
-        );
-        expect(response.status).toBe(200);
-        expect(response.body.total).toBe(184000);
+    /*
+    describe('R - Read counts', () => {
+      describe('/shares - Count number of shares', () => {
+        it('Should return 200 and the number of shares', async () => {
+          const response = await request(app.getHttpServer()).get(
+            `${route}/shares`
+          );
+          expect(response.status).toBe(200);
+          expect(response.body.total).toBe(184000);
+        });
+      });
+      describe('/published - Count number of published CVs', () => {
+        it('Should return 200 and the number of published CVs', async () => {
+          const response = await request(app.getHttpServer()).get(
+            `${route}/published`
+          );
+          expect(response.status).toBe(200);
+          expect(response.body.nbPublishedCVs).toBe(16);
+        });
       });
     });
-    describe('R - Count number of published CVs', () => {
-      it('Should return 200 and the number of published CVs', async () => {
-        const response = await request(app.getHttpServer()).get(
-          `${route}/published`
-        );
-        expect(response.status).toBe(200);
-        expect(response.body.nbPublishedCVs).toBe(16);
+    describe('R - Read if CV has been updated', () => {
+      describe('/checkUpdate - Check if CV has been updated by coach or admin', () => {
+        it('Should return 200 and cvHasBeenModified, if coach checks if CV has been updated', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/checkUpdate`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.cvHasBeenModified).toBe(true);
+        });
+        it('Should return 200 and cvHasBeenModified be false, if coach reads CV', async () => {
+          const setHasReadCVRequest = await request(app.getHttpServer())
+            .put(`${route}/read/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(setHasReadCVRequest.status).toBe(200);
+
+          const response = await request(app.getHttpServer())
+            .get(`${route}/checkUpdate`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.cvHasBeenModified).toBe(false);
+        });
+        it('Should return 200 and cvHasBeenModified, if candidat checks if CV has been updated', async () => {
+          const response = await request(app.getHttpServer())
+            .get(`${route}/checkUpdate`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.cvHasBeenModified).toBe(true);
+        });
+        it('Should return 200 and cvHasBeenModified be false, if candidat reads CV', async () => {
+          const setHasReadCVRequest = await request(app.getHttpServer())
+            .put(`${route}/read/${loggedInCandidat.user.id}`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(setHasReadCVRequest.status).toBe(200);
+
+          const response = await request(app.getHttpServer())
+            .get(`${route}/checkUpdate`)
+            .set('authorization', `Token ${loggedInCandidat.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.cvHasBeenModified).toBe(false);
+        });
       });
     });
     describe('U - Update share count', () => {
@@ -1004,5 +1189,6 @@ describe('CVs', () => {
         expect(response.status).toBe(404);
       });
     });
+    */
   });
 });

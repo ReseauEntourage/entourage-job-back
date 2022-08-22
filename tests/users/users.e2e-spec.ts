@@ -132,85 +132,87 @@ describe('Users', () => {
 
   describe('CRUD User', () => {
     describe('C - Create 1 User', () => {
-      let loggedInAdmin: LoggedUser;
-      let loggedInCandidat: LoggedUser;
+      describe('/ - Create user', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidat: LoggedUser;
 
-      beforeEach(async () => {
-        loggedInAdmin = await usersHelper.createLoggedInUser({
-          role: UserRoles.ADMIN,
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidat = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
         });
-        loggedInCandidat = await usersHelper.createLoggedInUser({
-          role: UserRoles.CANDIDAT,
-        });
-      });
 
-      it('Should return 200 and a created user', async () => {
-        const candidat = await userFactory.create(
-          { role: UserRoles.CANDIDAT },
-          {},
-          false
-        );
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(app.getHttpServer())
-            .post(`${route}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(candidat);
-        expect(response.status).toBe(201);
-      });
-      it('Should return 401 when user data has invalid phone', async () => {
-        const candidat = await userFactory.create({}, {}, false);
-        const wrongData = {
-          ...candidat,
-          phone: '1234',
-        };
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(app.getHttpServer())
-            .post(`${route}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(wrongData);
-        expect(response.status).toBe(400);
-      });
-      it('Should return 401 when the user is not logged in.', async () => {
-        const candidat = await userFactory.create(
-          {
-            role: UserRoles.CANDIDAT,
-          },
-          {},
-          false
-        );
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(app.getHttpServer()).post(`${route}`).send(candidat);
-        expect(response.status).toBe(401);
-      });
-      it('Should return 403 when the user is not an administrator.', async () => {
-        const candidat = await userFactory.create(
-          {
-            role: UserRoles.CANDIDAT,
-          },
-          {},
-          false
-        );
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(app.getHttpServer())
-            .post(`${route}`)
-            .set('authorization', `Token ${loggedInCandidat.token}`)
-            .send(candidat);
-        expect(response.status).toBe(403);
-      });
-      it('Should return 409 when the email already exist.', async () => {
-        const candidat = await userFactory.create(
-          {
-            role: UserRoles.CANDIDAT,
-          },
-          {},
-          true
-        );
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(app.getHttpServer())
-            .post(`${route}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(candidat);
-        expect(response.status).toBe(409);
+        it('Should return 200 and a created user', async () => {
+          const candidat = await userFactory.create(
+            { role: UserRoles.CANDIDAT },
+            {},
+            false
+          );
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(candidat);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 401 when user data has invalid phone', async () => {
+          const candidat = await userFactory.create({}, {}, false);
+          const wrongData = {
+            ...candidat,
+            phone: '1234',
+          };
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(wrongData);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 401 when the user is not logged in.', async () => {
+          const candidat = await userFactory.create(
+            {
+              role: UserRoles.CANDIDAT,
+            },
+            {},
+            false
+          );
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer()).post(`${route}`).send(candidat);
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403 when the user is not an administrator.', async () => {
+          const candidat = await userFactory.create(
+            {
+              role: UserRoles.CANDIDAT,
+            },
+            {},
+            false
+          );
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .send(candidat);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 409 when the email already exist.', async () => {
+          const candidat = await userFactory.create(
+            {
+              role: UserRoles.CANDIDAT,
+            },
+            {},
+            true
+          );
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(candidat);
+          expect(response.status).toBe(409);
+        });
       });
     });
     describe('R - Read 1 User', () => {
@@ -292,7 +294,7 @@ describe('Users', () => {
           expect(response.status).toBe(404);
         });
       });
-      describe('/candidat - Get user associated to a candidate or coach', () => {
+      describe('/candidat?coachId=&candidatId= - Get user associated to a candidate or coach', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidat: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -450,7 +452,7 @@ describe('Users', () => {
       });
     });
     describe('R - Many Users', () => {
-      describe('/search - Search a user where query string in email, first name or last name', () => {
+      describe('/search?query=&role= - Search a user where query string in email, first name or last name', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidat: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -509,7 +511,7 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
       });
-      describe('/search/candidates - Search a public candidate where query string in email, first name or last name', () => {
+      describe('/search/candidates?query= - Search a public candidate where query string in email, first name or last name', () => {
         let candidat: User;
 
         beforeEach(async () => {
@@ -572,7 +574,7 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCandidat.token}`);
           expect(response.status).toBe(403);
         });
-        describe('Get paginated and alphabetically sorted users', () => {
+        describe('/members?limit=&offset= - Get paginated and alphabetically sorted users', () => {
           let loggedInAdmin: LoggedUser;
 
           beforeEach(async () => {
@@ -675,7 +677,7 @@ describe('Users', () => {
             expect(response.body[1].firstName).toMatch('D');
           });
         });
-        describe('Read all members as admin with filters', () => {
+        describe('/members?zone[]=&employed[]=&hidden[]=&businessLines[]=&associatedUser[]=&cvStatus[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({

@@ -663,13 +663,12 @@ export class CVsService {
   }
 
   async generateSearchStringFromCV(candidateId: string) {
+    const limitLength = 4028;
+
     const cv = await this.findOneByCandidateId(candidateId);
-    const searchString = [
-      cv.ambitions
-        .map((ambition) => {
-          return ambition.name;
-        })
-        .join(' '),
+    let searchString = [
+      cv.user.candidat.firstName,
+      cv.user.candidat.lastName,
       cv.businessLines
         .map((businessLine) => {
           return findConstantFromValue(businessLine.name, BusinessLineFilters)
@@ -681,20 +680,16 @@ export class CVsService {
           return findConstantFromValue(contract.name, ContractFilters).label;
         })
         .join(' '),
-      cv.languages.join(' '),
+      cv.ambitions
+        .map((ambition) => {
+          return ambition.name;
+        })
+        .join(' '),
       cv.locations
         .map((location) => {
           return findConstantFromValue(location.name, DepartmentFilters).label;
         })
         .join(' '),
-      cv.passions.join(' '),
-      cv.skills.join(' '),
-      cv.transport,
-      cv.story,
-      cv.availability,
-      cv.catchphrase,
-      cv.user.candidat.firstName,
-      cv.user.candidat.lastName,
       cv.experiences
         .map((exp) => {
           return [exp.description, exp.skills.join(' ')].join(' ');
@@ -705,10 +700,21 @@ export class CVsService {
           return [reviews.text, reviews.status, reviews.name].join(' ');
         })
         .join(' '),
+      cv.skills.join(' '),
+      cv.languages.join(' '),
+      cv.availability,
+      cv.passions.join(' '),
+      cv.transport,
+      cv.story,
+      cv.catchphrase,
     ]
       .join(' ')
       .replace(/\s\s+/g, ' ')
       .trim();
+
+    if (searchString.length > limitLength) {
+      searchString = searchString.substring(0, limitLength);
+    }
 
     await this.cvSearchModel.create({
       CVId: cv.id,
