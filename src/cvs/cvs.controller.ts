@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import * as _ from 'lodash';
 import { AdminZone, FilterParams } from '../utils/types';
 import {
   PayloadUser,
@@ -35,7 +36,6 @@ import { CVFilterKey } from './cvs.types';
 import { getPDFPaths } from './cvs.utils';
 import { CreateCVDto } from './dto';
 import { ParseCVPipe } from './dto/parse-cv.pipe';
-import * as _ from 'lodash';
 
 // TODO change to /cvs
 @Controller('cv')

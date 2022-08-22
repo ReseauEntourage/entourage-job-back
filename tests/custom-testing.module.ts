@@ -10,11 +10,12 @@ import { DatabaseHelper } from './database.helper';
 import { ExperiencesTestingModule } from './experiences/experiences-testing.module';
 import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { LocationsTestingModule } from './locations/locations-testing.module';
+import { MailsTestingModule } from './mails/mails-testing.module';
 import { PassionsTestingModule } from './passions/passions-testing.module';
 import { ReviewsTestingModule } from './reviews/reviews-testing.module';
+import { SharesTestingModule } from './shares/shares-testing.module';
 import { SkillsTestingModule } from './skills/skills-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
-import { SharesTestingModule } from './shares/shares-testing.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { SharesTestingModule } from './shares/shares-testing.module';
     UsersTestingModule,
     ReviewsTestingModule,
     SharesTestingModule,
+    MailsTestingModule,
   ],
   providers: [DatabaseHelper],
 })

@@ -4,11 +4,11 @@ import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import * as redisStore from 'cache-manager-redis-store';
+import { ClientOpts } from 'redis';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getRedisOptions, getSequelizeOptions } from './app.module';
-import { ClientOpts } from 'redis';
-import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [

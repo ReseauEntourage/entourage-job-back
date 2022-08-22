@@ -173,7 +173,7 @@ export class UsersController {
 
   // TODO change to changePwd
   @Put('change-pwd')
-  async changePassword(
+  async updatePassword(
     @UserPayload('email') email: string,
     @Body('oldPassword') oldPassword: string,
     @Body('newPassword') newPassword: string
@@ -285,7 +285,7 @@ export class UsersController {
   async updateUser(
     @UserPayload('role') role: UserRole,
     @Param('id', new ParseUUIDPipe()) userId: string,
-    // Do not instantiante UserRestrictedPipe so that Request can be injected
+    // Do not instantiante ContactUsFormPipe so that Request can be injected
     @Body(UserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
   ) {
     if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {

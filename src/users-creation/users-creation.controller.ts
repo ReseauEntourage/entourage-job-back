@@ -22,6 +22,7 @@ function generateFakePassword() {
 
 const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
 
+// TODO change to users
 @Controller('user')
 export class UsersCreationController {
   constructor(private readonly usersCreationService: UsersCreationService) {}

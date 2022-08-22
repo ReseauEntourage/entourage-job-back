@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import { AdminZone, AdminZones, FilterConstant } from 'src/utils/types';
+import { AdminZones, FilterConstant } from 'src/utils/types';
 
 export const Departments = [
   {

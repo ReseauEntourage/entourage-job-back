@@ -10,9 +10,9 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { ContractValue } from '../contracts.types';
 import { CV, CVContract } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
-import { ContractValue } from '../contracts.types';
 
 @Table({ tableName: 'Contracts' })
 export class Contract extends WrapperModel {

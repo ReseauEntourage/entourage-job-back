@@ -26,3 +26,5 @@ export const CloudFrontMocks = {
     return 'id';
   }),
 } as const;
+
+export const MailchimpMocks = { sendContact: jest.fn() };

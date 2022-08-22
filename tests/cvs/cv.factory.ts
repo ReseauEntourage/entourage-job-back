@@ -3,7 +3,6 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
-import { v4 as uuid } from 'uuid';
 import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
 import { Contract } from 'src/contracts/models';
@@ -15,7 +14,7 @@ import { Location } from 'src/locations/models';
 import { Passion } from 'src/passions/models';
 import { Review } from 'src/reviews/models';
 import { Skill } from 'src/skills/models';
-import { CVStatuses, CVStatusKey } from 'src/users/users.types';
+import { CVStatuses } from 'src/users/users.types';
 import { Factory, WrapperModel } from 'src/utils/types';
 
 type ComponentKeys =

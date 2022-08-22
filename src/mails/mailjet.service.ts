@@ -1,25 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import _ from 'lodash';
 import { Email, connect } from 'node-mailjet';
-import { MailjetTemplate, MailjetTemplates } from 'src/mails/mails.service';
+import { CustomMailParams, MailjetTemplates } from './mails.types';
 import SendParams = Email.SendParams;
-
-export interface CustomMailParams {
-  toEmail:
-    | string
-    | string[]
-    | {
-        to: string | string[];
-        cc?: string | string[];
-        bcc?: string | string[];
-      };
-  replyTo?: string;
-  subject?: string;
-  text?: string;
-  html?: string;
-  variables?: object;
-  templateId: MailjetTemplate;
-}
 
 @Injectable()
 export class MailjetService {

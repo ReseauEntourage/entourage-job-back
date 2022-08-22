@@ -36,7 +36,7 @@ import { Share } from 'src/shares/models';
 import { AdminZone } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
-//TODO : paranoid, papertrail
+//TODO : papertrail
 
 @Table({ tableName: 'Users' })
 export class User extends Model {

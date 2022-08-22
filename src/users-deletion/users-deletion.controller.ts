@@ -11,6 +11,7 @@ import { Roles, RolesGuard } from 'src/users/guards';
 import { UserRoles } from 'src/users/users.types';
 import { UsersDeletionService } from './users-deletion.service';
 
+// TODO change to users
 @Controller('user')
 export class UsersDeletionController {
   constructor(private readonly usersDeletionService: UsersDeletionService) {}

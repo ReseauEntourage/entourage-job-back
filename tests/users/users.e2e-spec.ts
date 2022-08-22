@@ -1295,7 +1295,7 @@ describe('Users', () => {
           });
         });
         it('Should return 401 if not connected', async () => {
-          const response: APIResponse<UsersController['changePassword']> =
+          const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer()).put(`${route}/change-pwd`).send({
               oldPassword: password,
               newPassword: 'Candidat123?',
@@ -1303,7 +1303,7 @@ describe('Users', () => {
           expect(response.status).toBe(401);
         });
         it('Should return 401 if old password is invalid', async () => {
-          const response: APIResponse<UsersController['changePassword']> =
+          const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer())
               .put(`${route}/change-pwd`)
               .set('authorization', `Token ${loggedInCandidat.token}`)
@@ -1314,7 +1314,7 @@ describe('Users', () => {
           expect(response.status).toBe(401);
         });
         it("Should return 400 if new password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
-          const response: APIResponse<UsersController['changePassword']> =
+          const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer())
               .put(`${route}/change-pwd`)
               .set('authorization', `Token ${loggedInCandidat.token}`)
@@ -1325,7 +1325,7 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200 and updated user', async () => {
-          const response: APIResponse<UsersController['changePassword']> =
+          const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer())
               .put(`${route}/change-pwd`)
               .set('authorization', `Token ${loggedInCandidat.token}`)

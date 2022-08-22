@@ -1259,53 +1259,56 @@ describe('CVs', () => {
       });
     });
     describe('U - Update share count', () => {
-      let candidat: User;
-      beforeEach(async () => {
-        candidat = await userFactory.create({
-          role: UserRoles.CANDIDAT,
-        });
-        await cvFactory.create({
-          UserId: candidat.id,
-          status: CVStatuses.Published.value,
-        });
-      });
-      it('Should return 200 and increment total shares', async () => {
-        const oldTotalSharesCount = await sharesHelper.countTotalShares();
-        const oldCandidateSharesCount =
-          await sharesHelper.countTotalSharesByCandidateId(candidat.id);
-
-        const response: APIResponse<SharesController['updateShareCount']> =
-          await request(app.getHttpServer()).post(`${route}/count`).send({
-            candidatId: candidat.id,
-            type: 'other',
+      describe('/count - Increments the share count for specific user', () => {
+        let candidat: User;
+        beforeEach(async () => {
+          candidat = await userFactory.create({
+            role: UserRoles.CANDIDAT,
           });
-        expect(response.status).toBe(201);
-
-        const newTotalSharesCount = await sharesHelper.countTotalShares();
-        const newCandidateSharesCount =
-          await sharesHelper.countTotalSharesByCandidateId(candidat.id);
-
-        expect(newTotalSharesCount).toBe(oldTotalSharesCount + 1);
-        expect(newCandidateSharesCount).toBe(oldCandidateSharesCount + 1);
-      });
-      it('Should return 404 if wrong candidate id', async () => {
-        const response: APIResponse<SharesController['updateShareCount']> =
-          await request(app.getHttpServer()).post(`${route}/count`).send({
-            candidatId: uuid(),
-            type: 'other',
+          await cvFactory.create({
+            UserId: candidat.id,
+            status: CVStatuses.Published.value,
           });
-        expect(response.status).toBe(404);
-      });
-      it('Should return 404 if coach id', async () => {
-        const coach = await userFactory.create({
-          role: UserRoles.COACH,
         });
-        const response: APIResponse<SharesController['updateShareCount']> =
-          await request(app.getHttpServer()).post(`${route}/count`).send({
-            candidatId: coach.id,
-            type: 'other',
+
+        it('Should return 200 and increment total shares', async () => {
+          const oldTotalSharesCount = await sharesHelper.countTotalShares();
+          const oldCandidateSharesCount =
+            await sharesHelper.countTotalSharesByCandidateId(candidat.id);
+
+          const response: APIResponse<SharesController['updateShareCount']> =
+            await request(app.getHttpServer()).post(`${route}/count`).send({
+              candidatId: candidat.id,
+              type: 'other',
+            });
+          expect(response.status).toBe(201);
+
+          const newTotalSharesCount = await sharesHelper.countTotalShares();
+          const newCandidateSharesCount =
+            await sharesHelper.countTotalSharesByCandidateId(candidat.id);
+
+          expect(newTotalSharesCount).toBe(oldTotalSharesCount + 1);
+          expect(newCandidateSharesCount).toBe(oldCandidateSharesCount + 1);
+        });
+        it('Should return 404 if wrong candidate id', async () => {
+          const response: APIResponse<SharesController['updateShareCount']> =
+            await request(app.getHttpServer()).post(`${route}/count`).send({
+              candidatId: uuid(),
+              type: 'other',
+            });
+          expect(response.status).toBe(404);
+        });
+        it('Should return 404 if coach id', async () => {
+          const coach = await userFactory.create({
+            role: UserRoles.COACH,
           });
-        expect(response.status).toBe(404);
+          const response: APIResponse<SharesController['updateShareCount']> =
+            await request(app.getHttpServer()).post(`${route}/count`).send({
+              candidatId: coach.id,
+              type: 'other',
+            });
+          expect(response.status).toBe(404);
+        });
       });
     });
   });

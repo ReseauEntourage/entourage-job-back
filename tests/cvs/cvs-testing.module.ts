@@ -12,14 +12,14 @@ import { SkillsModule } from 'src/skills/skills.module';
 import { UsersModule } from 'src/users/users.module';
 import { CVAmbitionsHelper } from './cv-ambitions.helper';
 import { CVBusinessLinesHelper } from './cv-businessLines.helper';
+import { CVContractsHelper } from './cv-contracts.helper';
 import { CVLanguagesHelper } from './cv-languages.helper';
 import { CVLocationsHelper } from './cv-locations.helper';
 import { CVPassionsHelper } from './cv-passions.helper';
+import { CVSearchesHelper } from './cv-searches.helper';
+import { CVSkillsHelper } from './cv-skills.helper';
 import { CVFactory } from './cv.factory';
 import { CVsHelper } from './cvs.helper';
-import { CVSkillsHelper } from './cv-skills.helper';
-import { CVSearchesHelper } from './cv-searches.helper';
-import { CVContractsHelper } from './cv-contracts.helper';
 
 @Module({
   imports: [
