@@ -1,4 +1,4 @@
-export default {
+Mailslt {
   up: (queryInterface, Sequelize) => {
     return Promise.all([
       queryInterface.addColumn('Ambitions', 'prefix', {

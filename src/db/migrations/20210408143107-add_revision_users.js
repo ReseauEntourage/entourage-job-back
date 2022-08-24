@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.describeTable('Users').then((tableDefinition) => {
       if (!tableDefinition.revision) {

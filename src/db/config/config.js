@@ -1,6 +1,11 @@
-import { loadEnvironementVariables } from 'src/utils/misc';
+const path = require('path');
+const dotenv = require('dotenv');
 
-loadEnvironementVariables();
+const envPath =
+  process.env.NODE_ENV === 'dev-test' ? '../../../.env.test' : '../../../.env';
+const completePath = path.resolve(__dirname, envPath);
+
+dotenv.config({ path: completePath });
 
 module.exports = {
   development: {

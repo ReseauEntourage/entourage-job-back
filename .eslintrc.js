@@ -22,7 +22,7 @@ module.exports = {
     jest: true,
     es6: true,
   },
-  ignorePatterns: ['.eslintrc.js'],
+  ignorePatterns: ['.eslintrc.js', 'src/db'],
   rules: {
     // TypeScript Rules
     '@typescript-eslint/no-unused-vars': [1, { ignoreRestSiblings: true }],

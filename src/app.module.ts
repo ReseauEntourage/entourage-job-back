@@ -61,7 +61,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ENV === 'dev-test' ? '.env.dev-test' : '.env',
+      envFilePath: ENV === 'dev-test' ? '.env.test' : '.env',
     }),
     SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
     ThrottlerModule.forRoot({

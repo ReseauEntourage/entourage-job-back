@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.changeColumn('Opportunity_Users', 'status', {
       type: Sequelize.INTEGER,

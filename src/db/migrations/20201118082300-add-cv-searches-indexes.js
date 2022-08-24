@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface) => {
     return Promise.all([
       queryInterface.addIndex('CV_Searches', ['CVId', 'searchString']),

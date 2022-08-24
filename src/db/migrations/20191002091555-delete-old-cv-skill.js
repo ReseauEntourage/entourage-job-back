@@ -1,6 +1,6 @@
-import uuid from 'uuid/v4';
+const uuid = require('uuid');
 
-export default {
+module.exports = {
   up: (queryInterface) => {
     return queryInterface.dropTable('CV_Skills');
   },
@@ -11,7 +11,7 @@ export default {
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: () => {
-          return uuid();
+          return uuid.v4();
         },
       },
       CVid: {

@@ -31,7 +31,6 @@ import {
 import { AnyCantFix } from 'src/utils/types';
 import { PusherService } from './pusher.service';
 
-// TODO PUSHER
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {
   constructor(

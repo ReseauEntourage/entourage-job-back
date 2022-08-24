@@ -1,6 +1,6 @@
-import uuid from 'uuid/v4';
+const uuid = require('uuid');
 
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.createTable('Revisions', {
       id: {
@@ -8,7 +8,7 @@ export default {
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: () => {
-          return uuid();
+          return uuid.v4();
         },
       },
       model: {

@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.addColumn('CV_Locations', 'id', {
       type: Sequelize.UUID,

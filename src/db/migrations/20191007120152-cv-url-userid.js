@@ -1,6 +1,6 @@
-import uuid from 'uuid/v4';
+const uuid = require('uuid');
 
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.sequelize.transaction((t) => {
       return Promise.all([
@@ -10,7 +10,7 @@ export default {
           {
             allowNull: false,
             type: Sequelize.UUID,
-            defaultValue: uuid(),
+            defaultValue: uuid.v4(),
           },
           {
             transaction: t,

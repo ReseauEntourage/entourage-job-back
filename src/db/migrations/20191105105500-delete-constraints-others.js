@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface) => {
     return queryInterface.sequelize.transaction((t) => {
       return Promise.all([

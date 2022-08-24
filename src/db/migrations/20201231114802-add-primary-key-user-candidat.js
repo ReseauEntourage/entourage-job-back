@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface
       .removeConstraint('User_Candidats', 'User_Candidats_pkey')

@@ -1,6 +1,6 @@
-import moment from 'moment';
+const moment = require('moment');
 
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.createTable('CVs', {
       id: {

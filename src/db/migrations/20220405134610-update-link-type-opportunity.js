@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.changeColumn('Opportunities', 'link', {
       type: Sequelize.TEXT,

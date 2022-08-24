@@ -9,7 +9,7 @@ const tablesToModify = [
   'Opportunity_Users',
 ];
 
-export default {
+module.exports = {
   up: (queryInterface, Sequelize) => {
     return Promise.all(
       tablesToModify.map((tableName) => {
