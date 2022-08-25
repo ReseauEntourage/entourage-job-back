@@ -23,6 +23,7 @@ import { SkillsModule } from 'src/skills/skills.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
+import { RevisionsModule } from './revisions/revisions.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -74,6 +75,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       store: redisStore,
       ...getRedisOptions(process.env.REDIS_TLS_URL),
     }),
+    RevisionsModule,
     SharesModule,
     // Put SharesModule before CVsModule
     CVsModule,

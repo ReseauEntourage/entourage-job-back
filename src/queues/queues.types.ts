@@ -1,4 +1,3 @@
-import { BullModuleOptions } from '@nestjs/bull';
 import { MailjetTemplate } from 'src/mails/mails.types';
 
 export const Jobs = {

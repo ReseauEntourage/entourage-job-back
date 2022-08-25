@@ -58,6 +58,7 @@ export class CV extends Model {
   @Column
   id: string;
 
+  @IsUUID(4)
   @ForeignKey(() => UserCandidat)
   @AllowNull(false)
   @Column

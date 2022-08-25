@@ -20,11 +20,13 @@ export class CVBusinessLine extends Model {
   @Column
   id: string;
 
+  @IsUUID(4)
   @ForeignKey(() => CV)
   @AllowNull(false)
   @Column
   CVId: string;
 
+  @IsUUID(4)
   @ForeignKey(() => BusinessLine)
   @AllowNull(false)
   @Column

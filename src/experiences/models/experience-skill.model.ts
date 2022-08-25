@@ -20,11 +20,13 @@ export class ExperienceSkill extends Model {
   @Column
   id: string;
 
+  @IsUUID(4)
   @ForeignKey(() => Experience)
   @AllowNull(false)
   @Column
   ExperienceId: string;
 
+  @IsUUID(4)
   @ForeignKey(() => Skill)
   @AllowNull(false)
   @Column
