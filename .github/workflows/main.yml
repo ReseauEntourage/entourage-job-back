@@ -15,7 +15,9 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: linkedout
+          POSTGRES_USER: linkedout
+          POSTGRES_DB: linkedout
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -29,11 +31,6 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      AWSS3_BUCKET_NAME: ${{ secrets.AWSS3_BUCKET_NAME }}
-      AWSS3_ID: ${{ secrets.AWSS3_ID }}
-      AWSS3_SECRET: ${{ secrets.AWSS3_SECRET }}
-      AWSS3_FILE_DIRECTORY: ${{ secrets.AWSS3_FILE_DIRECTORY }}
-      AWSS3_IMAGE_DIRECTORY: ${{ secrets.AWSS3_IMAGE_DIRECTORY }}
 
     steps:
     - uses: actions/checkout@v2
@@ -43,4 +40,4 @@ jobs:
     - run: yarn install
     - run: yarn run db-create
     - run: yarn run db-migrate
-    - run: yarn test
+    - run: yarn run test:e2e
