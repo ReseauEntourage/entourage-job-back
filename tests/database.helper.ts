@@ -24,6 +24,7 @@ import { Review } from 'src/reviews/models';
 import { Share } from 'src/shares/models';
 import { Skill } from 'src/skills/models';
 import { UserCandidat, User } from 'src/users/models';
+import { Revision, RevisionChange } from '../src/revisions/models';
 
 @Injectable()
 export class DatabaseHelper {
@@ -71,39 +72,44 @@ export class DatabaseHelper {
     @InjectModel(CVSearch)
     private cvSearchModel: typeof CVSearch,
     @InjectModel(Share)
-    private shareModel: typeof Share
+    private shareModel: typeof Share,
+    @InjectModel(Revision)
+    private revisionModel: typeof Revision,
+    @InjectModel(RevisionChange)
+    private revisionChangeModel: typeof RevisionChange
   ) {}
 
   async resetTestDB() {
     const destroyOptions: DestroyOptions = {
-      where: {},
-      truncate: true,
       cascade: true,
+      force: true,
     };
     try {
-      await this.cvLocationModel.destroy(destroyOptions);
-      await this.cvBusinessLineModel.destroy(destroyOptions);
-      await this.cvSkillModel.destroy(destroyOptions);
-      await this.cvLanguageModel.destroy(destroyOptions);
-      await this.cvContractModel.destroy(destroyOptions);
-      await this.cvAmbitionModel.destroy(destroyOptions);
-      await this.cvPassionModel.destroy(destroyOptions);
-      await this.experienceSkillModel.destroy(destroyOptions);
-      await this.locationModel.destroy(destroyOptions);
-      await this.businessLineModel.destroy(destroyOptions);
-      await this.skillModel.destroy(destroyOptions);
-      await this.languageModel.destroy(destroyOptions);
-      await this.passionModel.destroy(destroyOptions);
-      await this.contractModel.destroy(destroyOptions);
-      await this.ambitionModel.destroy(destroyOptions);
-      await this.passionModel.destroy(destroyOptions);
-      await this.experienceModel.destroy(destroyOptions);
-      await this.cvSearchModel.destroy(destroyOptions);
-      await this.reviewModel.destroy(destroyOptions);
-      await this.shareModel.destroy(destroyOptions);
-      await this.cvModel.destroy(destroyOptions);
-      await this.userCandidatModel.destroy(destroyOptions);
-      await this.userModel.destroy(destroyOptions);
+      await this.revisionChangeModel.truncate(destroyOptions);
+      await this.revisionModel.truncate(destroyOptions);
+      await this.cvLocationModel.truncate(destroyOptions);
+      await this.cvBusinessLineModel.truncate(destroyOptions);
+      await this.cvSkillModel.truncate(destroyOptions);
+      await this.cvLanguageModel.truncate(destroyOptions);
+      await this.cvContractModel.truncate(destroyOptions);
+      await this.cvAmbitionModel.truncate(destroyOptions);
+      await this.cvPassionModel.truncate(destroyOptions);
+      await this.experienceSkillModel.truncate(destroyOptions);
+      await this.locationModel.truncate(destroyOptions);
+      await this.businessLineModel.truncate(destroyOptions);
+      await this.skillModel.truncate(destroyOptions);
+      await this.languageModel.truncate(destroyOptions);
+      await this.passionModel.truncate(destroyOptions);
+      await this.contractModel.truncate(destroyOptions);
+      await this.ambitionModel.truncate(destroyOptions);
+      await this.passionModel.truncate(destroyOptions);
+      await this.experienceModel.truncate(destroyOptions);
+      await this.cvSearchModel.truncate(destroyOptions);
+      await this.reviewModel.truncate(destroyOptions);
+      await this.shareModel.truncate(destroyOptions);
+      await this.cvModel.truncate(destroyOptions);
+      await this.userCandidatModel.truncate(destroyOptions);
+      await this.userModel.truncate(destroyOptions);
     } catch (err) {
       console.error(err);
     }

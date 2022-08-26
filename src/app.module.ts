@@ -104,6 +104,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     },
   ],
   exports: [
+    RevisionsModule,
     SharesModule,
     // Put SharesModule before CVsModule
     CVsModule,
