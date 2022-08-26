@@ -21,6 +21,7 @@ export class CVSearch extends Model {
   @Column
   id: string;
 
+  @IsUUID(4)
   @ForeignKey(() => CV)
   @AllowNull(false)
   @Column

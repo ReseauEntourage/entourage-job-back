@@ -6,20 +6,21 @@ import {
   Default,
   ForeignKey,
   IsUUID,
-  Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
 import { UserCandidat } from 'src/users/models';
+import { HistorizedModel } from 'src/utils/types';
 
 @Table({ tableName: 'Shares' })
-export class Share extends Model {
+export class Share extends HistorizedModel {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column
   id: string;
 
+  @IsUUID(4)
   @ForeignKey(() => UserCandidat)
   @AllowNull(false)
   @Column

@@ -304,7 +304,7 @@ export class UsersService {
       where: {
         ...whereOptions,
         role: UserRoles.CANDIDAT,
-      },
+      } as WhereOptions<User>,
       attributes: [...UserAttributes],
       include: UserCandidatInclude,
     };

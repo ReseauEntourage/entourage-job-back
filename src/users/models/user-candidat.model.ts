@@ -97,18 +97,18 @@ export class UserCandidat extends Model {
   }
 
   @BeforeUpdate
-  static async clearCoachBindings(nextUserCandidat: UserCandidat) {
-    const previousUserCandidatValues = nextUserCandidat.previous();
+  static async clearCoachBindings(userCandidatToUpdate: UserCandidat) {
+    const previousUserCandidatValues = userCandidatToUpdate.previous();
     if (
-      nextUserCandidat &&
+      userCandidatToUpdate &&
       previousUserCandidatValues &&
-      nextUserCandidat.coachId &&
+      userCandidatToUpdate.coachId &&
       previousUserCandidatValues.coachId
     ) {
       await UserCandidat.update(
         { coachId: null },
         {
-          where: { coachId: nextUserCandidat.coachId },
+          where: { coachId: userCandidatToUpdate.coachId },
         }
       );
     }

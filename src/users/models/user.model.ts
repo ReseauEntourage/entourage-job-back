@@ -13,7 +13,6 @@ import {
   IsEmail,
   IsUUID,
   Length,
-  Model,
   PrimaryKey,
   Table,
   Unique,
@@ -33,13 +32,13 @@ import {
   getCandidateIdFromCoachOrCandidate,
 } from '../users.utils';
 import { Share } from 'src/shares/models';
-import { AdminZone } from 'src/utils/types';
+import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
 //TODO : papertrail
 
 @Table({ tableName: 'Users' })
-export class User extends Model {
+export class User extends HistorizedModel {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -145,36 +144,36 @@ export class User extends Model {
   }
 
   @AfterCreate
-  static async createAssociations(user: User) {
-    if (user.role === UserRoles.CANDIDAT) {
+  static async createAssociations(createdUser: User) {
+    if (createdUser.role === UserRoles.CANDIDAT) {
       await UserCandidat.create(
         {
-          candidatId: user.id,
+          candidatId: createdUser.id,
         },
         { hooks: true }
       );
       await Share.create({
-        CandidatId: user.id,
+        CandidatId: createdUser.id,
       });
     }
   }
 
   @BeforeUpdate
-  static async manageRoleChange(nextUser: User) {
-    const previousUserValues: Partial<User> = nextUser.previous();
-    if (nextUser && previousUserValues && previousUserValues.role) {
+  static async manageRoleChange(userToUpdate: User) {
+    const previousUserValues: Partial<User> = userToUpdate.previous();
+    if (userToUpdate && previousUserValues && previousUserValues.role) {
       if (
         previousUserValues.role === UserRoles.CANDIDAT &&
-        nextUser.role !== UserRoles.CANDIDAT
+        userToUpdate.role !== UserRoles.CANDIDAT
       ) {
         await UserCandidat.destroy({
           where: {
-            candidatId: nextUser.id,
+            candidatId: userToUpdate.id,
           },
         });
       } else if (
         previousUserValues.role !== UserRoles.CANDIDAT &&
-        nextUser.role === UserRoles.CANDIDAT
+        userToUpdate.role === UserRoles.CANDIDAT
       ) {
         if (previousUserValues.role === UserRoles.COACH) {
           await UserCandidat.update(
@@ -193,14 +192,14 @@ export class User extends Model {
 
         await UserCandidat.create(
           {
-            candidatId: nextUser.id,
-            url: generateUrl(nextUser),
+            candidatId: userToUpdate.id,
+            url: generateUrl(userToUpdate),
           },
           { hooks: true }
         );
         await Share.findOrCreate({
           where: {
-            CandidatId: nextUser.id,
+            CandidatId: userToUpdate.id,
           },
         });
       }
@@ -208,21 +207,21 @@ export class User extends Model {
   }
 
   @BeforeUpdate
-  static async manageNameChange(nextUser: User) {
-    const previousUserValues = nextUser.previous();
+  static async manageNameChange(userToUpdate: User) {
+    const previousUserValues = userToUpdate.previous();
     if (
-      nextUser &&
+      userToUpdate &&
       previousUserValues &&
       previousUserValues.firstName &&
-      nextUser.role === UserRoles.CANDIDAT
+      userToUpdate.role === UserRoles.CANDIDAT
     ) {
       await UserCandidat.update(
         {
-          url: generateUrl(nextUser),
+          url: generateUrl(userToUpdate),
         },
         {
           where: {
-            candidatId: nextUser.id,
+            candidatId: userToUpdate.id,
           },
         }
       );
