@@ -533,7 +533,8 @@ export class CVsService {
     const browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox'],
-      executablePath: process.env.CHROME_PATH,
+      executablePath:
+        process.env.PUPPETEER_EXEC_PATH || process.env.CHROME_PATH,
     });
     const page = await browser.newPage();
 
