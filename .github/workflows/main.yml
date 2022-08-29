@@ -40,13 +40,7 @@ jobs:
         node-version: '14.x'
         args: yarn install
     - uses: mujo-code/puppeteer-headful@v2
-        env:
-          CI: true
-          NODE_ENV: test
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          REDIS_TLS_URL: ${{ secrets.REDIS_TLS_URL }}
-        with:
-          args:
-            - yarn run db-migrate
-            - yarn run test:e2e
+      with:
+        args:
+          - yarn run db-migrate
+          - yarn run test:e2e
