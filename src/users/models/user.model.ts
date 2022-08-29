@@ -35,8 +35,6 @@ import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
-//TODO : papertrail
-
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {
   @IsUUID(4)

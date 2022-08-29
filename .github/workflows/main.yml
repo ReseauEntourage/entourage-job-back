@@ -32,12 +32,22 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       REDIS_TLS_URL: ${{ secrets.REDIS_TLS_URL }}
+      CHROME_PATH: ${{ secrets.CHROME_PATH }}
 
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
       with:
-        node-version: '14.x'
-    - run: yarn install
-    - run: yarn run db-migrate
-    - run: yarn run test:e2e
+        node-version: '16.x'
+    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
+      with:
+        args:
+          yarn install
+    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
+      with:
+        args:
+          yarn run db-migrate
+    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
+      with:
+        args:
+          yarn run test:e2e

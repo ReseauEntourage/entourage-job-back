@@ -2,7 +2,7 @@
   "name": "linkedout-backend",
   "version": "0.0.1",
   "engines": {
-    "node": "14.x"
+    "node": "16.x"
   },
   "scripts": {
     "prebuild": "rimraf dist",
@@ -39,6 +39,7 @@
     "@nestjs/passport": "^8.2.1",
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/sequelize": "^8.0.0",
+    "@nestjs/swagger": "^6.1.0",
     "@nestjs/throttler": "^2.0.0",
     "bull": "^4.7.0",
     "cache-manager": "^4.1.0",

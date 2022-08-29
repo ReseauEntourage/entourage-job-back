@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { Factory } from '../src/utils/types';
 import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
 import { Contract } from 'src/contracts/models';
@@ -21,10 +20,11 @@ import { Language } from 'src/languages/models';
 import { Location } from 'src/locations/models';
 import { Passion } from 'src/passions/models';
 import { Review } from 'src/reviews/models';
+import { Revision, RevisionChange } from 'src/revisions/models';
 import { Share } from 'src/shares/models';
 import { Skill } from 'src/skills/models';
 import { UserCandidat, User } from 'src/users/models';
-import { Revision, RevisionChange } from '../src/revisions/models';
+import { Factory } from 'src/utils/types';
 
 @Injectable()
 export class DatabaseHelper {
