@@ -40,4 +40,4 @@ jobs:
         node-version: '16.x'
     - uses: mujo-code/puppeteer-headful@v2
       with:
-        args: yarn install && yarn run db-migrate && yarn run test:e2e
+        args: yarn && yarn run db-migrate && yarn run test:e2e
