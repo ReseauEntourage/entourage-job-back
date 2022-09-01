@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   AfterDestroy,
   AllowNull,
@@ -58,46 +59,56 @@ export class CV extends Model {
   @Column
   id: string;
 
+  @ApiProperty()
   @IsUUID(4)
   @ForeignKey(() => UserCandidat)
   @AllowNull(false)
   @Column
   UserId: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   urlImg: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   intro: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   story: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   availability: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   transport: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   catchphrase: string;
 
+  @ApiProperty()
   @AllowNull(false)
   @Default(CVStatuses.New.value)
   @Column
   status: CVStatusValue;
 
+  @ApiProperty()
   @AllowNull(false)
   @Default(1)
   @Column
   version: number;
 
+  @ApiProperty()
   @IsUUID(4)
   @AllowNull(true)
   @Column
@@ -121,6 +132,7 @@ export class CV extends Model {
   @HasOne(() => CVSearch, 'CVId')
   cvSearch: CVSearch;
 
+  @ApiProperty()
   @BelongsToMany(
     () => BusinessLine,
     () => CVBusinessLine,
@@ -134,6 +146,7 @@ export class CV extends Model {
   })
   cvBusinessLines: CVBusinessLine[];
 
+  @ApiProperty()
   @BelongsToMany(() => Location, () => CVLocation, 'CVId', 'LocationId')
   locations: Location[];
 
@@ -142,6 +155,7 @@ export class CV extends Model {
   })
   cvLocations: CVLocation[];
 
+  @ApiProperty()
   @BelongsToMany(() => Ambition, () => CVAmbition, 'CVId', 'AmbitionId')
   ambitions: Ambition[];
 
@@ -150,6 +164,7 @@ export class CV extends Model {
   })
   cvAmbitions: CVAmbition[];
 
+  @ApiProperty()
   @BelongsToMany(() => Contract, () => CVContract, 'CVId', 'ContractId')
   contracts: Contract[];
 
@@ -158,6 +173,7 @@ export class CV extends Model {
   })
   cvContracts: CVContract[];
 
+  @ApiProperty()
   @BelongsToMany(() => Language, () => CVLanguage, 'CVId', 'LanguageId')
   languages: Language[];
 
@@ -166,6 +182,7 @@ export class CV extends Model {
   })
   cvLanguages: CVLanguage[];
 
+  @ApiProperty()
   @BelongsToMany(() => Passion, () => CVPassion, 'CVId', 'PassionId')
   passions: Passion[];
 
@@ -174,6 +191,7 @@ export class CV extends Model {
   })
   cvPassions: CVPassion[];
 
+  @ApiProperty()
   @BelongsToMany(() => Skill, () => CVSkill, 'CVId', 'SkillId')
   skills: Skill[];
 
@@ -182,11 +200,13 @@ export class CV extends Model {
   })
   cvSkills: CVSkill[];
 
+  @ApiProperty()
   @HasMany(() => Experience, {
     foreignKey: 'CVId',
   })
   experiences: Experience[];
 
+  @ApiProperty()
   @HasMany(() => Review, {
     foreignKey: 'CVId',
   })

@@ -1,3 +1,3 @@
-release: npm run db-migrate
-web: npm run start
-mainWorker: npm run worker:start
+release: yarn run db-migrate
+web: yarn run start
+mainWorker: yarn run worker:start

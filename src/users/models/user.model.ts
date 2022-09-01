@@ -34,6 +34,7 @@ import {
 import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {
@@ -43,65 +44,79 @@ export class User extends HistorizedModel {
   @Column
   id: string;
 
+  @ApiProperty()
   @AllowNull(false)
   @Length({ min: 1, max: 40 })
   @Column
   firstName: string;
 
+  @ApiProperty()
   @Length({ min: 1, max: 40 })
   @AllowNull(false)
   @Column
   lastName: string;
 
+  @ApiProperty()
   @IsEmail
   @AllowNull(false)
   @Unique
   @Column
   email: string;
 
+  @ApiProperty()
   @AllowNull(false)
   @Default(UserRoles.CANDIDAT)
   @Column
   role: UserRole;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   adminRole: AdminRole;
 
+  @ApiProperty()
   @AllowNull(false)
   @Column
   password: string; // hash
 
+  @ApiProperty()
   @AllowNull(false)
   @Column
   salt: string;
 
+  @ApiProperty()
   @AllowNull(false)
   @Default(Genders.MALE)
   @Column
   gender: Gender;
 
+  @ApiProperty()
   @AllowNull(true)
   @Length({ min: 0, max: 30 })
   @Column
   phone: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   address: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   lastConnection: Date;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   hashReset: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   saltReset: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   zone: AdminZone;

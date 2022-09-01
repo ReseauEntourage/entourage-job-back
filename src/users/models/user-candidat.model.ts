@@ -18,6 +18,7 @@ import {
 
 import { CV } from 'src/cvs/models';
 import { User } from './user.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'User_Candidats' })
 export class UserCandidat extends Model {
@@ -32,32 +33,39 @@ export class UserCandidat extends Model {
   @Column({ allowNull: true })
   coachId: string;
 
+  @ApiProperty()
   @AllowNull(false)
   @Default(false)
   @Column
   employed: boolean;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   contract: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column(DataType.DATEONLY)
   endOfContract: Date;
 
+  @ApiProperty()
   @AllowNull(false)
   @Default(false)
   @Column
   hidden: boolean;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   note: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   url: string;
 
+  @ApiProperty()
   @IsUUID(4)
   @AllowNull(true)
   @Column
