@@ -24,6 +24,7 @@ import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
 import { RevisionsModule } from './revisions/revisions.module';
+import { OpportunitiesModule } from './opportunities/opportunities.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -92,6 +93,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
+    OpportunitiesModule,
   ],
   providers: [
     {

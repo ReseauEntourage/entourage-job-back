@@ -16,6 +16,10 @@ export interface FilterConstant<T, C extends AnyToFix = AnyToFix> {
   children?: FilterConstant<C>[];
   zone?: string;
   end?: boolean;
+  salesforceLabel?: string;
+  public?: string;
+  recommended?: string;
+  color?: string;
 }
 
 export type FilterObject<

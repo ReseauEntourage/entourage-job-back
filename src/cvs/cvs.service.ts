@@ -36,7 +36,7 @@ import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatuses, CVStatusValue } from 'src/users/users.types';
+import { CVStatuses, CVStatus } from 'src/users/users.types';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -1050,7 +1050,7 @@ export class CVsService {
   async uploadCVImage(
     file: Express.Multer.File,
     candidateId: string,
-    status: CVStatusValue
+    status: CVStatus
   ) {
     const { path } = file;
 

@@ -49,7 +49,7 @@ export const MailjetTemplates = {
 export type MailjetTemplate =
   typeof MailjetTemplates[keyof typeof MailjetTemplates];
 
-export type HeardAboutValue =
+export type HeardAbout =
   | 'contact'
   | 'search'
   | 'socialAdd'
@@ -57,7 +57,7 @@ export type HeardAboutValue =
   | 'press'
   | 'other';
 
-export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
+export const HeardAboutFilters: FilterConstant<HeardAbout>[] = [
   {
     label: 'Par un de mes contacts',
     value: 'contact',

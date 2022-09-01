@@ -10,7 +10,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { ContractValue } from '../contracts.types';
+import { Contract } from '../contracts.types';
 import { CV, CVContract } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
 
@@ -24,7 +24,7 @@ export class Contract extends WrapperModel {
 
   @AllowNull(false)
   @Column
-  name: ContractValue;
+  name: Contract;
 
   @BelongsToMany(() => CV, () => CVContract, 'ContractId', 'CVId')
   CVs: CV[];

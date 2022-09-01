@@ -1,5 +1,5 @@
 import { IsOptional, IsString } from 'class-validator';
-import { HeardAboutValue } from '../mails.types';
+import { HeardAbout } from '../mails.types';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ContactUsFormDto {
@@ -32,5 +32,5 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  heardAbout: HeardAboutValue;
+  heardAbout: HeardAbout;
 }

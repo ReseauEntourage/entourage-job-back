@@ -66,10 +66,9 @@ export const CVStatuses = {
 } as const;
 
 export type CVStatusKey = keyof typeof CVStatuses;
-type CVStatus = typeof CVStatuses[CVStatusKey];
-export type CVStatusValue = CVStatus['value'];
+export type CVStatus = typeof CVStatuses[CVStatusKey]['value'];
 
-export const CVStatusFilters: FilterConstant<CVStatusValue>[] = [
+export const CVStatusFilters: FilterConstant<CVStatus>[] = [
   CVStatuses.Published,
   CVStatuses.Pending,
   CVStatuses.Progress,
@@ -82,7 +81,7 @@ export interface MemberOptions {
   associatedUser: { [Op.or]: boolean[] };
   hidden: { [Op.or]: boolean[] };
   employed: { [Op.or]: boolean[] };
-  cvStatus: { [Op.or]: CVStatusValue[] };
+  cvStatus: { [Op.or]: CVStatus[] };
 }
 
 export type MemberFilterKey = keyof MemberOptions;

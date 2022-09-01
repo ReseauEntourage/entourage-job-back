@@ -45,8 +45,6 @@ export class Experience extends Model {
   @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
   skills: Skill[];
 
-  @HasMany(() => ExperienceSkill, {
-    foreignKey: 'ExperienceId',
-  })
+  @HasMany(() => ExperienceSkill, 'ExperienceId')
   experienceSkills: ExperienceSkill[];
 }

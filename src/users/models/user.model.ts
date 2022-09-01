@@ -4,6 +4,7 @@ import {
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -35,6 +36,7 @@ import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 import { ApiProperty } from '@nestjs/swagger';
+import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {
@@ -130,10 +132,13 @@ export class User extends HistorizedModel {
   @DeletedAt
   deletedAt: Date;
 
-  /*
-  @BelongsToMany(() => Opportunity, () => OpportunityUser)
-  opportunities: Opportunity[]
-  */
+  @BelongsToMany(
+    () => Opportunity,
+    () => OpportunityUser,
+    'UserId',
+    'OpportunityId'
+  )
+  opportunities: Opportunity[];
 
   // si candidat regarder candidat
   @HasOne(() => UserCandidat, {
