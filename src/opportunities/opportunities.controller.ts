@@ -1,7 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { OpportunitiesService } from './opportunities.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { OpportunitiesService } from './opportunities.service';
 
 @Controller('opportunities')
 export class OpportunitiesController {
@@ -23,7 +31,10 @@ export class OpportunitiesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOpportunityDto: UpdateOpportunityDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateOpportunityDto: UpdateOpportunityDto
+  ) {
     return this.opportunitiesService.update(+id, updateOpportunityDto);
   }
 

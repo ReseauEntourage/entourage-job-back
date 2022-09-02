@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   AllowNull,
   BeforeCreate,
@@ -18,7 +19,6 @@ import {
 
 import { CV } from 'src/cvs/models';
 import { User } from './user.model';
-import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'User_Candidats' })
 export class UserCandidat extends Model {

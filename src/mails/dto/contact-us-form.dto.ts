@@ -1,6 +1,6 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { HeardAbout } from '../mails.types';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class ContactUsFormDto {
   @ApiProperty()

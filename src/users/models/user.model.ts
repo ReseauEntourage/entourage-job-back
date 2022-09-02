@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   AfterCreate,
   AfterDestroy,
@@ -32,11 +33,10 @@ import {
   generateUrl,
   getCandidateIdFromCoachOrCandidate,
 } from '../users.utils';
+import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
-import { ApiProperty } from '@nestjs/swagger';
-import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {

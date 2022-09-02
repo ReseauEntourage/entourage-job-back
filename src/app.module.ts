@@ -23,8 +23,8 @@ import { SkillsModule } from 'src/skills/skills.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
-import { RevisionsModule } from './revisions/revisions.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
+import { RevisionsModule } from './revisions/revisions.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 

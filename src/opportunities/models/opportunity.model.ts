@@ -15,7 +15,7 @@ import {
 } from 'sequelize-typescript';
 import { ExternalOfferOrigin } from '../opportunities.types';
 import { BusinessLine } from 'src/businessLines/models';
-import { Contract } from 'src/contracts/contracts.types';
+import { ContractValue } from 'src/contracts/contracts.types';
 import { Department } from 'src/locations/locations.types';
 import { User } from 'src/users/models';
 import { OpportunityBusinessLine } from './opportunity-businessLine.model';
@@ -133,7 +133,7 @@ export class Opportunity extends Model {
   @ApiProperty()
   @AllowNull(true)
   @Column
-  contract: Contract;
+  contract: ContractValue;
 
   @ApiProperty()
   @AllowNull(true)

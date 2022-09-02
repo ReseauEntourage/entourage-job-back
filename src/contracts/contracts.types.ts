@@ -1,6 +1,6 @@
 import { FilterConstant } from 'src/utils/types';
 
-export type Contract =
+export type ContractValue =
   | 'cdi'
   | 'cdd'
   | 'cdd+6'
@@ -13,7 +13,7 @@ export type Contract =
   | 'pmsmp'
   | 'other';
 
-export const ContractFilters: FilterConstant<Contract>[] = [
+export const ContractFilters: FilterConstant<ContractValue>[] = [
   {
     label: 'CDI',
     value: 'cdi',
