@@ -88,6 +88,7 @@ export class OpportunityUser extends HistorizedModel {
       previousOpportunityUserValues.status &&
       updatedOpportunityUser.status !== OfferStatuses.contacted.value
     ) {
+      /*
       const [candidat, offer] = await Promise.all([
         User.findByPk(updatedOpportunityUser.UserId, {
           attributes: [...UserAttributes],
@@ -107,7 +108,7 @@ export class OpportunityUser extends HistorizedModel {
 
       const { candidatesAdminMail } = getAdminMailsFromZone(candidat.zone);
 
-      /* await addToWorkQueue({
+      await addToWorkQueue({
         type: JOBS.JOB_TYPES.SEND_MAIL,
         toEmail: candidatesAdminMail,
         templateId: MAILJET_TEMPLATES.STATUS_CHANGED,

@@ -18,9 +18,10 @@
     "test:ts-check": "tsc --noEmit",
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",
     "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --detectOpenHandles --forceExit",
-    "db-create": "sequelize db:create",
-    "db-migrate": "sequelize db:migrate",
-    "db-seed": "sequelize db:seed:all"
+    "db:create": "sequelize db:create",
+    "db:migrate": "sequelize db:migrate",
+    "db:seed": "sequelize db:seed:all",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.142.0",

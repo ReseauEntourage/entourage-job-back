@@ -850,11 +850,12 @@ export class CVsService {
     const candidate = await this.usersService.findOne(candidateId);
 
     if (!candidate.candidat.employed) {
+      // TODO when opportunity
+      /*
       const toEmail: CustomMailParams['toEmail'] = {
         to: candidate.email,
       };
 
-      /*  // TODO when opportunity
       let opportunitiesCreatedByCandidateOrCoach =
         await getExternalOpportunitiesCreatedByUserCount(candidateId);
 

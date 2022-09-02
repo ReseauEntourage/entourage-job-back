@@ -123,6 +123,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
+    OpportunitiesModule,
   ],
 })
 export class AppModule {}
