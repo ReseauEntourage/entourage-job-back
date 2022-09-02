@@ -22,7 +22,7 @@ export class CVsHelper {
     );
   }
 
-  async findCVsByCandidateId(candidateId: string) {
+  async findAllCVsByCandidateId(candidateId: string) {
     return this.cvModel.findAll({
       where: {
         UserId: candidateId,

@@ -27,7 +27,7 @@ export class OpportunitiesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.opportunitiesService.findOne(+id);
+    return this.opportunitiesService.findOne(id);
   }
 
   @Patch(':id')

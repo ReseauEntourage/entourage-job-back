@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { Opportunity } from './models';
+import { OpportunityCompleteInclude } from './models/opportunity.include';
 
 @Injectable()
 export class OpportunitiesService {
+  constructor(
+    @InjectModel(Opportunity) private opportunityModel: typeof Opportunity
+  ) {}
+
   create(createOpportunityDto: CreateOpportunityDto) {
     return 'This action adds a new opportunity';
   }
@@ -12,8 +19,10 @@ export class OpportunitiesService {
     return `This action returns all opportunities`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} opportunity`;
+  async findOne(id: string) {
+    return this.opportunityModel.findByPk(id, {
+      include: OpportunityCompleteInclude,
+    });
   }
 
   update(id: number, updateOpportunityDto: UpdateOpportunityDto) {

@@ -214,6 +214,6 @@ export class Opportunity extends Model {
   @BelongsToMany(() => User, () => OpportunityUser, 'OpportunityId', 'UserId')
   users: User[];
 
-  @HasMany(() => OpportunityUser, 'CVId')
+  @HasMany(() => OpportunityUser, 'OpportunityId')
   opportunityUsers: OpportunityUser[];
 }

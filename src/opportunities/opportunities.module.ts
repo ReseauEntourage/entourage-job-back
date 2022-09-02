@@ -18,5 +18,6 @@ import { OpportunitiesService } from './opportunities.service';
   ],
   controllers: [OpportunitiesController],
   providers: [OpportunitiesService],
+  exports: [SequelizeModule, OpportunitiesService],
 })
 export class OpportunitiesModule {}

@@ -42,7 +42,7 @@ export class OpportunityUser extends HistorizedModel {
 
   @ApiProperty()
   @AllowNull(false)
-  @Default(OfferStatuses.toProcess)
+  @Default(OfferStatuses.ToProcess.value)
   @Column
   status: OfferStatus;
 
@@ -86,7 +86,7 @@ export class OpportunityUser extends HistorizedModel {
       updatedOpportunityUser &&
       previousOpportunityUserValues &&
       previousOpportunityUserValues.status &&
-      updatedOpportunityUser.status !== OfferStatuses.contacted.value
+      updatedOpportunityUser.status !== OfferStatuses.Contacted.value
     ) {
       /*
       const [candidat, offer] = await Promise.all([

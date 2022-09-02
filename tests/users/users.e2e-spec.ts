@@ -1767,7 +1767,7 @@ describe('Users', () => {
           const user = await usersHelper.findUser(candidat.id);
           expect(user).toBeFalsy();
 
-          const cvs = await cvsHelper.findCVsByCandidateId(candidat.id);
+          const cvs = await cvsHelper.findAllCVsByCandidateId(candidat.id);
           expect(cvs.length).toBeFalsy();
 
           const ambitionsCount = await ambitionsHelper.countAmbitionsByName([
