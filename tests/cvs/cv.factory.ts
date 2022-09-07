@@ -76,7 +76,7 @@ export class CVFactory implements Factory<CV> {
       availability: faker.lorem.sentence(),
       transport: faker.lorem.sentence(),
       catchphrase: faker.lorem.sentence(),
-      status: CVStatuses.New.value,
+      status: CVStatuses.NEW.value,
       version: 1,
     };
 

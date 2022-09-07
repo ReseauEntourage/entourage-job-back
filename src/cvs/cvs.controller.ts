@@ -59,24 +59,24 @@ export class CVsController {
   ) {
     switch (role) {
       case UserRoles.CANDIDAT:
-        createCVDto.status = CVStatuses.Progress.value;
+        createCVDto.status = CVStatuses.PROGRESS.value;
         break;
       case UserRoles.COACH:
         if (
-          createCVDto.status !== CVStatuses.Progress.value &&
-          createCVDto.status !== CVStatuses.Pending.value
+          createCVDto.status !== CVStatuses.PROGRESS.value &&
+          createCVDto.status !== CVStatuses.PENDING.value
         ) {
-          createCVDto.status = CVStatuses.Progress.value;
+          createCVDto.status = CVStatuses.PROGRESS.value;
         }
         break;
       case UserRoles.ADMIN:
         // on laisse la permission à l'admin de choisir le statut à enregistrer
         if (!createCVDto.status) {
-          createCVDto.status = CVStatuses.Published.value;
+          createCVDto.status = CVStatuses.PUBLISHED.value;
         }
         break;
       default:
-        createCVDto.status = CVStatuses.Unknown.value;
+        createCVDto.status = CVStatuses.UNKNOWN.value;
         break;
     }
 
@@ -96,12 +96,12 @@ export class CVsController {
 
     const { status } = createdCV;
 
-    if (role === UserRoles.COACH && status === CVStatuses.Pending.value) {
+    if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
       await this.cvsService.sendMailsAfterSubmitting(user);
     }
 
     if (!autoSave) {
-      if (status === CVStatuses.Published.value) {
+      if (status === CVStatuses.PUBLISHED.value) {
         await this.cvsService.sendCacheCV(candidateId);
         await this.cvsService.sendCacheAllCVs();
         await this.cvsService.sendGenerateCVSearchString(candidateId);
@@ -112,7 +112,7 @@ export class CVsController {
 
         const hasPublishedAtLeastOnce =
           cvs?.filter(({ status }) => {
-            return status === CVStatuses.Published.value;
+            return status === CVStatuses.PUBLISHED.value;
           }).length > 1;
 
         if (!hasPublishedAtLeastOnce) {

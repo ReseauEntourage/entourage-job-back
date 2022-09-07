@@ -23,8 +23,11 @@ import { SkillsModule } from 'src/skills/skills.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
+import { AirtableModule } from './airtable/airtable.module';
+import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { RevisionsModule } from './revisions/revisions.module';
+import { SalesforceModule } from './salesforce/salesforce.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -94,7 +97,9 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
-    OpportunitiesModule,
+    ExternalDatabasesModule,
+    SalesforceModule,
+    AirtableModule,
   ],
   providers: [
     {
@@ -125,7 +130,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
-    OpportunitiesModule,
+    ExternalDatabasesModule,
   ],
 })
 export class AppModule {}

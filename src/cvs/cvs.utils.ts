@@ -17,11 +17,11 @@ export function queryConditionCV(
       inner join (
         select "UserId", MAX(version) as version
         from "CVs"
-        where "CVs".status = '${CVStatuses.Published.value}'
+        where "CVs".status = '${CVStatuses.PUBLISHED.value}'
         group by "UserId") groupCVs
       on cvs."UserId" = groupCVs."UserId"
       and cvs.version =  groupCVs.version
-      and cvs.status = '${CVStatuses.Published.value}'
+      and cvs.status = '${CVStatuses.PUBLISHED.value}'
       and cvs."deletedAt" IS NULL
       inner join (
         select distinct "candidatId"
@@ -177,7 +177,7 @@ export function getPublishedCVQuery(
             : ''
         }
       where
-        "CVs".status = '${CVStatuses.Published.value}'
+        "CVs".status = '${CVStatuses.PUBLISHED.value}'
         and "CVs"."deletedAt" IS NULL
         and "User_Candidats"."candidatId" = "CVs"."UserId"
         and "User_Candidats".hidden = false

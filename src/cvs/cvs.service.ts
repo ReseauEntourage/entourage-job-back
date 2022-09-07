@@ -803,7 +803,7 @@ export class CVsService {
     ) {
       const cvs = await this.findAllVersionsByCandidateId(candidateId);
       const hasSubmittedAtLeastOnce = cvs?.some(({ status }) => {
-        return status === CVStatuses.Pending.value;
+        return status === CVStatuses.PENDING.value;
       });
 
       if (!hasSubmittedAtLeastOnce) {

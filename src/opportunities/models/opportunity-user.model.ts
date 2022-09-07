@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import * as _ from 'lodash';
 import {
   AfterUpdate,
   AllowNull,
@@ -13,10 +12,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { OfferStatus, OfferStatuses } from '../opportunities.types';
-import { getMailjetVariablesForPrivateOrPublicOffer } from '../opportunities.utils';
-import { User, UserAttributes } from 'src/users/models';
-import { UserCandidatInclude } from 'src/users/models/user.include';
-import { getAdminMailsFromZone } from 'src/utils/misc';
+import { User } from 'src/users/models';
 import { HistorizedModel } from 'src/utils/types';
 import { Opportunity } from './opportunity.model';
 
@@ -42,7 +38,7 @@ export class OpportunityUser extends HistorizedModel {
 
   @ApiProperty()
   @AllowNull(false)
-  @Default(OfferStatuses.ToProcess.value)
+  @Default(OfferStatuses.TO_PROCESS.value)
   @Column
   status: OfferStatus;
 
@@ -86,7 +82,7 @@ export class OpportunityUser extends HistorizedModel {
       updatedOpportunityUser &&
       previousOpportunityUserValues &&
       previousOpportunityUserValues.status &&
-      updatedOpportunityUser.status !== OfferStatuses.Contacted.value
+      updatedOpportunityUser.status !== OfferStatuses.CONTACTED.value
     ) {
       /*
       const [candidat, offer] = await Promise.all([

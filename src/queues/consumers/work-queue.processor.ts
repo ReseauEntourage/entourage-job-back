@@ -9,6 +9,7 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
+import { AirtableService } from 'src/airtable/airtable.service';
 import { CVsService } from 'src/cvs/cvs.service';
 import { MailjetService } from 'src/mails/mailjet.service';
 import {
@@ -27,7 +28,11 @@ import {
   SendReminderExternalOffersJob,
   PusherChannels,
   PusherEvents,
+  CreateOrUpdateSalesforceOpportunity,
+  UpdateAirtable,
+  InsertAirtable,
 } from 'src/queues/queues.types';
+import { SalesforceService } from 'src/salesforce/salesforce.service';
 import { AnyCantFix } from 'src/utils/types';
 import { PusherService } from './pusher.service';
 
@@ -36,7 +41,9 @@ export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
     private pusherService: PusherService,
-    private cvsService: CVsService
+    private cvsService: CVsService,
+    private airtableService: AirtableService,
+    private salesforceService: SalesforceService
   ) {}
 
   @OnQueueActive()
@@ -258,5 +265,43 @@ export class WorkQueueProcessor {
     await this.cvsService.generateSearchStringFromCV(data.candidateId);
 
     return `CV search string created for User ${data.candidateId}`;
+  }
+
+  @Process(Jobs.INSERT_AIRTABLE)
+  async processInsertAirtable(job: Job<InsertAirtable>) {
+    const { data } = job;
+
+    await this.airtableService.insertOpportunityAirtable(
+      data.tableName,
+      data.opportunityId
+    );
+    return `Airtable : insertion in '${data.tableName}'`;
+  }
+
+  @Process(Jobs.UPDATE_AIRTABLE)
+  async processUpdateAirtable(job: Job<UpdateAirtable>) {
+    const { data } = job;
+
+    await this.airtableService.updateOpportunityAirtable(
+      data.tableName,
+      data.opportunityId
+    );
+    return `Airtable : update in '${data.tableName}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY)
+  async processCreateOrUpdateSalesforceOpportunity(
+    job: Job<CreateOrUpdateSalesforceOpportunity>
+  ) {
+    const { data } = job;
+
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceOpportunity(
+        data.opportunityId,
+        data.isSameOpportunity
+      );
+      return `Salesforce : created or updated offer '${data.opportunityId}'`;
+    }
+    return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
   }
 }

@@ -522,7 +522,7 @@ describe('Users', () => {
         it('Should return 200 and part of candidates if candidates have a published CV', async () => {
           await cvFactory.create({
             UserId: candidat.id,
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
           });
 
           const publicCandidateInfo = [
@@ -545,7 +545,7 @@ describe('Users', () => {
         it('Should return 200 and no candidates if candidates have not a published CV', async () => {
           await cvFactory.create({
             UserId: candidat.id,
-            status: CVStatuses.Progress.value,
+            status: CVStatuses.PROGRESS.value,
           });
 
           const response: APIResponse<UsersController['findCandidates']> =
@@ -860,7 +860,7 @@ describe('Users', () => {
               publishedCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
-                  status: CVStatuses.Published.value,
+                  status: CVStatuses.PUBLISHED.value,
                 });
               })
             );
@@ -868,7 +868,7 @@ describe('Users', () => {
               pendingCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
-                  status: CVStatuses.Pending.value,
+                  status: CVStatuses.PENDING.value,
                 });
               })
             );
@@ -876,7 +876,7 @@ describe('Users', () => {
               progressCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
-                  status: CVStatuses.Progress.value,
+                  status: CVStatuses.PROGRESS.value,
                 });
               })
             );
@@ -889,7 +889,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&cvStatus[]=${CVStatuses.Published.value}&cvStatus[]=${CVStatuses.Pending.value}`
+                  `${route}/members?role=${UserRoles.CANDIDAT}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1094,7 +1094,7 @@ describe('Users', () => {
             pendingCandidates.map(async ({ id }) => {
               return cvFactory.create({
                 UserId: id,
-                status: CVStatuses.Pending.value,
+                status: CVStatuses.PENDING.value,
               });
             })
           );
@@ -1102,7 +1102,7 @@ describe('Users', () => {
             progressCandidates.map(async ({ id }) => {
               return cvFactory.create({
                 UserId: id,
-                status: CVStatuses.Progress.value,
+                status: CVStatuses.PROGRESS.value,
               });
             })
           );

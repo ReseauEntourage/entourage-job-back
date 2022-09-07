@@ -1,45 +1,139 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
+  UnauthorizedException,
+  ParseUUIDPipe,
+  BadRequestException,
 } from '@nestjs/common';
+import { Public, UserPayload } from 'src/auth/guards';
+import { UserRole, UserRoles } from 'src/users/users.types';
+import { isValidPhone } from 'src/utils/misc';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
-import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
+import { OpportunityUsersService } from './opportunity-users.service';
 
 @Controller('opportunities')
 export class OpportunitiesController {
-  constructor(private readonly opportunitiesService: OpportunitiesService) {}
+  constructor(
+    private readonly opportunitiesService: OpportunitiesService,
+    private readonly opportunityUsersService: OpportunityUsersService
+  ) {}
 
+  @Public()
   @Post()
-  create(@Body() createOpportunityDto: CreateOpportunityDto) {
-    return this.opportunitiesService.create(createOpportunityDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.opportunitiesService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.opportunitiesService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateOpportunityDto: UpdateOpportunityDto
+  async create(
+    @UserPayload('role') role: UserRole,
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Body() createOpportunityDto: CreateOpportunityDto
   ) {
-    return this.opportunitiesService.update(+id, updateOpportunityDto);
+    const isLoggedAsAdmin = role === UserRoles.ADMIN;
+
+    const {
+      isAdmin,
+      locations,
+      shouldSendNotifications,
+      isCopy,
+      candidatesId,
+      ...restBody
+    } = createOpportunityDto;
+
+    if (isAdmin && !isLoggedAsAdmin) {
+      throw new UnauthorizedException();
+    }
+
+    if (
+      !isCopy &&
+      createOpportunityDto.recruiterPhone &&
+      !isValidPhone(createOpportunityDto.recruiterPhone)
+    ) {
+      throw new BadRequestException();
+    }
+
+    let createdOpportunities: Partial<Opportunity>[] | Partial<Opportunity>;
+
+    if (locations && Array.isArray(locations) && locations.length > 1) {
+      createdOpportunities = await Promise.all(
+        locations.map(async ({ department, address }) => {
+          const createdOpportunity = await this.opportunitiesService.create(
+            { ...restBody, department, address },
+            candidatesId,
+            isAdmin,
+            userId
+          );
+          await this.opportunitiesService.sendMailsAfterCreation(
+            createdOpportunity.toJSON(),
+            candidatesId,
+            isAdmin,
+            shouldSendNotifications
+          );
+
+          return createdOpportunity.toJSON();
+        })
+      );
+      // TODO add Salesforce and Airtable
+      await this.opportunitiesService.createExternalDBOpportunity(
+        createdOpportunities.map(({ id }) => {
+          return id;
+        })
+      );
+      return createdOpportunities;
+    }
+
+    let opportunityToCreate = restBody;
+    if (locations) {
+      const locationsToTransform = Array.isArray(locations)
+        ? locations[0]
+        : locations;
+      opportunityToCreate = {
+        ...opportunityToCreate,
+        ...locationsToTransform,
+      };
+    }
+
+    const createdOpportunity = await this.opportunitiesService.create(
+      opportunityToCreate,
+      candidatesId,
+      isAdmin,
+      userId
+    );
+    await this.opportunitiesService.sendMailsAfterCreation(
+      createdOpportunity.toJSON(),
+      candidatesId,
+      isAdmin,
+      shouldSendNotifications
+    );
+
+    await this.opportunitiesService.createExternalDBOpportunity(
+      createdOpportunity.id
+    );
+
+    return createdOpportunity.toJSON();
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.opportunitiesService.remove(+id);
-  }
+  /*
+    @Get()
+    findAll() {
+     return this.opportunitiesService.findAll();
+    }
+
+    @Get(':id')
+    findOne(@Param('id') id: string) {
+     return this.opportunitiesService.findOne(id);
+    }
+
+    @Patch(':id')
+    update(
+     @Param('id') id: string,
+     @Body() updateOpportunityDto: UpdateOpportunityDto
+    ) {
+     return this.opportunitiesService.update(+id, updateOpportunityDto);
+    }
+
+    @Delete(':id')
+    remove(@Param('id') id: string) {
+     return this.opportunitiesService.remove(+id);
+    }
+ */
 }

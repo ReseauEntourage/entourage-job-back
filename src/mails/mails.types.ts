@@ -84,8 +84,12 @@ export const HeardAboutFilters: FilterConstant<HeardAbout>[] = [
   },
 ];
 
+export const ContactStatuses = {
+  INDIVIDUAL: 'PARTICULIER',
+  COMPANY: 'ENTREPRISE',
+  STRUCTURE: 'STRUCTURE_INSERTION',
+  CANDIDATE: 'CANDIDAT_POTENTIEL',
+} as const;
+
 export type ContactStatus =
-  | 'PARTICULIER'
-  | 'ENTREPRISE'
-  | 'STRUCTURE_INSERTION'
-  | 'CANDIDAT_POTENTIEL';
+  typeof ContactStatuses[keyof typeof ContactStatuses];

@@ -9,6 +9,6 @@ import { MailsService } from './mails.service';
   imports: [QueuesModule],
   controllers: [MailsController],
   providers: [MailsService, MailjetService, MailchimpService],
-  exports: [MailsService, MailjetService],
+  exports: [MailsService, MailjetService, MailchimpService],
 })
 export class MailsModule {}

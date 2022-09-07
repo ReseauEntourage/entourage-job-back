@@ -98,7 +98,7 @@ export class CV extends Model {
 
   @ApiProperty()
   @AllowNull(false)
-  @Default(CVStatuses.New.value)
+  @Default(CVStatuses.NEW.value)
   @Column
   status: CVStatus;
 

@@ -1,3 +1,4 @@
+import { AirtableOffer } from 'src/airtable/airtable.types';
 import { MailjetTemplate } from 'src/mails/mails.types';
 
 export const Jobs = {
@@ -74,6 +75,21 @@ export interface GenerateCVSearchString {
   candidateId: string;
   token: string;
   paths: string[];
+}
+
+export interface InsertAirtable {
+  tableName: string;
+  opportunityId: string;
+}
+
+export interface UpdateAirtable {
+  tableName: string;
+  opportunityId: string;
+}
+
+export interface CreateOrUpdateSalesforceOpportunity {
+  opportunityId: string;
+  isSameOpportunity: boolean;
 }
 
 export const Queues = {

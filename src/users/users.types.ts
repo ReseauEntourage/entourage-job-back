@@ -33,32 +33,32 @@ export const Genders = {
 export type Gender = typeof Genders[keyof typeof Genders];
 
 export const CVStatuses = {
-  Published: {
+  PUBLISHED: {
     label: 'Publié',
     value: 'Published',
     style: 'success',
   },
-  Pending: {
+  PENDING: {
     label: 'En attente',
     value: 'Pending',
     style: 'danger',
   },
-  Progress: {
+  PROGRESS: {
     label: 'En cours',
     value: 'Progress',
     style: 'muted',
   },
-  New: {
+  NEW: {
     label: 'Nouveau',
     value: 'New',
     style: 'muted',
   },
-  Draft: {
+  DRAFT: {
     label: 'Brouillon',
     value: 'Draft',
     style: 'warning',
   },
-  Unknown: {
+  UNKNOWN: {
     label: 'Inconnu',
     value: 'Unknown',
     style: '',
@@ -69,10 +69,10 @@ export type CVStatusKey = keyof typeof CVStatuses;
 export type CVStatus = typeof CVStatuses[CVStatusKey]['value'];
 
 export const CVStatusFilters: FilterConstant<CVStatus>[] = [
-  CVStatuses.Published,
-  CVStatuses.Pending,
-  CVStatuses.Progress,
-  CVStatuses.New,
+  CVStatuses.PUBLISHED,
+  CVStatuses.PENDING,
+  CVStatuses.PROGRESS,
+  CVStatuses.NEW,
 ];
 
 export interface MemberOptions {

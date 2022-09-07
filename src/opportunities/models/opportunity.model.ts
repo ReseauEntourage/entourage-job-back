@@ -80,6 +80,11 @@ export class Opportunity extends Model {
   recruiterFirstName: string;
 
   @ApiProperty()
+  @AllowNull(false)
+  @Column
+  recruiterMail: string;
+
+  @ApiProperty()
   @AllowNull(true)
   @Column
   contactMail: string;

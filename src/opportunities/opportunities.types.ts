@@ -22,22 +22,22 @@ export const ExternalOfferOriginFilters: FilterConstant<ExternalOfferOrigin>[] =
   ];
 
 export const OfferStatuses = {
-  ToProcess: {
+  TO_PROCESS: {
     value: -1,
     label: 'Offre à traiter',
     public: 'Offre consultée',
     recommended: 'Offre recommandée',
     color: 'muted',
   },
-  Contacted: { value: 0, label: 'Contacté', color: 'muted' },
-  Interview: { value: 1, label: "Phase d'entretien", color: 'warning' },
-  Hired: { value: 2, label: 'Embauche', color: 'success' },
-  RefusalBeforeInterview: {
+  CONTACTED: { value: 0, label: 'Contacté', color: 'muted' },
+  INTERVIEW: { value: 1, label: "Phase d'entretien", color: 'warning' },
+  HIRED: { value: 2, label: 'Embauche', color: 'success' },
+  REFUSAL_BEFORE_INTERVIEW: {
     value: 3,
     label: 'Refus avant entretien',
     color: 'danger',
   },
-  RefusalAfterInterview: {
+  REFUSAL_AFTER_INTERVIEW: {
     value: 4,
     label: 'Refus après entretien',
     color: 'danger',
@@ -48,10 +48,10 @@ type OfferStatusKey = keyof typeof OfferStatuses;
 export type OfferStatus = typeof OfferStatuses[OfferStatusKey]['value'];
 
 export const OfferStatusFilters: FilterConstant<OfferStatus>[] = [
-  OfferStatuses.ToProcess,
-  OfferStatuses.Contacted,
-  OfferStatuses.Interview,
-  OfferStatuses.Hired,
-  OfferStatuses.RefusalBeforeInterview,
-  OfferStatuses.RefusalAfterInterview,
+  OfferStatuses.TO_PROCESS,
+  OfferStatuses.CONTACTED,
+  OfferStatuses.INTERVIEW,
+  OfferStatuses.HIRED,
+  OfferStatuses.REFUSAL_BEFORE_INTERVIEW,
+  OfferStatuses.REFUSAL_AFTER_INTERVIEW,
 ];
