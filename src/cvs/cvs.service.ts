@@ -846,34 +846,6 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate);
   }
 
-  async sendReminderAboutExternalOffers(candidateId: string) {
-    const candidate = await this.usersService.findOne(candidateId);
-
-    if (!candidate.candidat.employed) {
-      // TODO when opportunity
-      /*
-      const toEmail: CustomMailParams['toEmail'] = {
-        to: candidate.email,
-      };
-
-      let opportunitiesCreatedByCandidateOrCoach =
-        await getExternalOpportunitiesCreatedByUserCount(candidateId);
-
-      const coach = getRelatedUser(candidate);
-      if (coach) {
-        toEmail.cc = coach.email;
-        opportunitiesCreatedByCandidateOrCoach +=
-          await getExternalOpportunitiesCreatedByUserCount(coach.id);
-      }
-
-      if (opportunitiesCreatedByCandidateOrCoach === 0) {
-        await this.mailsService.sendExternalOffersReminderMails(candidate);
-        return toEmail;
-      }*/
-    }
-    return false;
-  }
-
   async dividedCompleteCVQuery(
     query: (include: AnyToFix) => Promise<CV>,
     privateUser = false

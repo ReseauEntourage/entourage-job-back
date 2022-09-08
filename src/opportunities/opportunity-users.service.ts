@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Opportunity, OpportunityUser } from './models';
 import { OpportunityCandidateInclude } from './models/opportunity.include';
+import { UpdateCVDto } from '../cvs/dto';
+import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 
 @Injectable()
 export class OpportunityUsersService {
@@ -16,7 +18,7 @@ export class OpportunityUsersService {
     });
   }
 
-  findOneByCandidateIdAndOpportunityId(
+  async findOneByCandidateIdAndOpportunityId(
     candidateId: string,
     opportunityId: string
   ) {
@@ -29,7 +31,15 @@ export class OpportunityUsersService {
     });
   }
 
-  findAllByCandidateIdsAndOpportunityId(
+  async findAllByCandidateId(candidateId: string) {
+    return this.opportunityUserModel.findAll({
+      where: {
+        UserId: candidateId,
+      },
+    });
+  }
+
+  async findAllByCandidateIdsAndOpportunityId(
     candidateIds: string[],
     opportunityId: string
   ) {
@@ -39,6 +49,17 @@ export class OpportunityUsersService {
         OpportunityId: opportunityId,
       },
       include: OpportunityCandidateInclude,
+    });
+  }
+
+  async updateByCandidateId(
+    candidateId: string,
+    updateOpportunityUserDto: UpdateOpportunityUserDto
+  ) {
+    return this.opportunityUserModel.update(updateOpportunityUserDto, {
+      where: {
+        UserId: candidateId,
+      },
     });
   }
 }

@@ -256,7 +256,9 @@ export class WorkQueueProcessor {
     const { data } = job;
 
     const sentToReminderExternalOffers =
-      await this.cvsService.sendReminderAboutExternalOffers(data.candidateId);
+      await this.opportunitiesService.sendReminderAboutExternalOffers(
+        data.candidateId
+      );
 
     return sentToReminderExternalOffers
       ? `Reminder about external offers sent to '${

@@ -13,8 +13,8 @@ export function getZoneSuffixFromDepartment(dept: Department) {
 }
 
 export function getZoneFromDepartment(dept: Department) {
-  const { zone } = Departments.find((deptObj) => {
+  const deptObj = Departments.find((deptObj) => {
     return deptObj.name === dept;
   });
-  return zone;
+  return deptObj ? deptObj.zone : AdminZones.HZ;
 }

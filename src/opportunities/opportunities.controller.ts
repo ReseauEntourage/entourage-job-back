@@ -4,6 +4,7 @@ import {
   Body,
   UnauthorizedException,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
@@ -13,6 +14,7 @@ import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { Roles, RolesGuard } from '../users/guards';
 
 // TODO change to /opportunitites
 @Controller('opportunity')
@@ -22,6 +24,7 @@ export class OpportunitiesController {
     private readonly opportunityUsersService: OpportunityUsersService
   ) {}
 
+  // TODO make public and private
   @Public()
   @Post()
   async create(

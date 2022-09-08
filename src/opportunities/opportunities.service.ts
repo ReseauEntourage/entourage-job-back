@@ -3,7 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
-import { ContactStatus, ContactStatuses } from '../mails/mails.types';
+import {
+  ContactStatus,
+  ContactStatuses,
+  CustomMailParams,
+} from '../mails/mails.types';
 import { BusinessLine } from 'src/businessLines/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { Department } from 'src/locations/locations.types';
@@ -19,6 +23,7 @@ import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { Opportunity, OpportunityUser } from './models';
 import { OpportunityCompleteInclude } from './models/opportunity.include';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { getRelatedUser } from '../users/users.utils';
 
 @Injectable()
 export class OpportunitiesService {
@@ -45,7 +50,7 @@ export class OpportunitiesService {
     isAdmin = false,
     createdById?: string
   ) {
-    const createdOpportunity = await Opportunity.create({
+    const createdOpportunity = await this.opportunityModel.create({
       ...createOpportunityDto,
       isValidated: !!isAdmin,
       createdBy: createdById,
@@ -127,6 +132,16 @@ export class OpportunitiesService {
 
   remove(id: number) {
     return `This action removes a #${id} opportunity`;
+  }
+
+  async countExternalOpportunitiesCreatedByUser(userId: string) {
+    const { count } = await this.opportunityModel.findAndCountAll({
+      where: {
+        createdBy: userId,
+        isExternal: true,
+      },
+    });
+    return count;
   }
 
   async sendRecruitorMailToMailchimp(
@@ -271,6 +286,23 @@ export class OpportunitiesService {
     );
 
     return this.mailsService.sendReminderOfferMail(opportunity);
+  }
+
+  async sendReminderAboutExternalOffers(candidateId: string) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    let opportunitiesCreatedByCandidateOrCoach =
+      await this.countExternalOpportunitiesCreatedByUser(candidateId);
+
+    const coach = getRelatedUser(candidate);
+    if (coach) {
+      opportunitiesCreatedByCandidateOrCoach +=
+        await this.countExternalOpportunitiesCreatedByUser(coach.id);
+    }
+
+    if (opportunitiesCreatedByCandidateOrCoach === 0) {
+      return this.mailsService.sendExternalOffersReminderMails(candidate);
+    }
   }
 
   async createExternalDBOpportunity(createdOpportunityId: string | string[]) {

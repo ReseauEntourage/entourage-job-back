@@ -2,7 +2,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { QueueMocks } from '../mocks.types';
+import { MailchimpMocks, QueueMocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OfferStatuses } from 'src/opportunities/opportunities.types';
@@ -16,6 +16,7 @@ import { UsersHelper } from 'tests/users/users.helper';
 import { OpportunitiesHelper } from './opportunities.helper';
 import { OpportunityUsersHelper } from './opportunity-users.helper';
 import { OpportunityFactory } from './opportunity.factory';
+import { MailchimpService } from 'src/mails/mailchimp.service';
 
 describe('Opportunities', () => {
   let app: INestApplication;
@@ -46,13 +47,14 @@ describe('Opportunities', () => {
   let candidatExternalOpportunity: Opportunity;
   let otherCandidatExternalOpportunity: Opportunity;
 
-  // TODO mock Mailchimp
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
+      .overrideProvider(MailchimpService)
+      .useValue(MailchimpMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -70,6 +72,9 @@ describe('Opportunities', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
+
+    // remove
+    await databaseHelper.resetTestDB();
 
     opportunities = [
       ...(await databaseHelper.createEntities(
@@ -419,7 +424,7 @@ describe('Opportunities', () => {
   describe('CRUD Opportunity', () => {
     describe('C - Opportunity', () => {
       describe('Anybody can create opportunities - /', () => {
-        it('Should return 200, if valid opportunity', async () => {
+        it('Should return 201, if valid opportunity', async () => {
           const opportunity = await opportunityFactory.create(
             { isPublic: true, isValidated: false },
             {},
@@ -428,17 +433,20 @@ describe('Opportunities', () => {
           const response = await request(app.getHttpServer())
             .post(`${route}`)
             .send(opportunity);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
               ...opportunity,
               createdAt: response.body.createdAt,
               updatedAt: response.body.updatedAt,
+              startOfContract: response.body.startOfContract,
+              endOfContract: response.body.endOfContract,
+              date: response.body.date,
             })
           );
           opportunityFactory.incrTotalOppsInDB();
         });
-        it('Should return 200, and createById if valid opportunity created by logged in admin or candidate', async () => {
+        it('Should return 201, and createById if valid opportunity created by logged in admin or candidate', async () => {
           const opportunity = await opportunityFactory.create(
             { isPublic: true, isValidated: false },
             {},
@@ -448,12 +456,15 @@ describe('Opportunities', () => {
             .post(`${route}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send(opportunity);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
               ...opportunity,
               createdAt: response.body.createdAt,
               updatedAt: response.body.updatedAt,
+              date: response.body.date,
+              startOfContract: response.body.startOfContract,
+              endOfContract: response.body.endOfContract,
               createdBy: loggedInAdmin.user.id,
             })
           );
@@ -470,8 +481,8 @@ describe('Opportunities', () => {
             .send({ ...opportunity, isAdmin: true });
           expect(response.status).toBe(401);
         });
-        it('Should return 200, if valid opportunity and multiple locations', async () => {
-          const { address, department, ...opportunity } =
+        it('Should return 201, if valid opportunity and multiple locations', async () => {
+          const { address, department, id, ...opportunity } =
             await opportunityFactory.create(
               { isPublic: true, isValidated: false },
               {},
@@ -489,7 +500,7 @@ describe('Opportunities', () => {
               ...opportunity,
               locations: [locations.paris, locations.lyon, locations.lille],
             });
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(201);
           expect(response.body.length).toBe(3);
           expect(response.body).toEqual(
             expect.arrayContaining([
@@ -499,6 +510,9 @@ describe('Opportunities', () => {
                 department: locations.paris.department,
                 createdAt: response.body[0].createdAt,
                 updatedAt: response.body[0].updatedAt,
+                startOfContract: response.body[0].startOfContract,
+                endOfContract: response.body[0].endOfContract,
+                date: response.body[0].date,
               }),
               expect.objectContaining({
                 ...opportunity,
@@ -506,6 +520,9 @@ describe('Opportunities', () => {
                 department: locations.lyon.department,
                 createdAt: response.body[1].createdAt,
                 updatedAt: response.body[1].updatedAt,
+                startOfContract: response.body[1].startOfContract,
+                endOfContract: response.body[1].endOfContract,
+                date: response.body[1].date,
               }),
               expect.objectContaining({
                 ...opportunity,
@@ -513,20 +530,15 @@ describe('Opportunities', () => {
                 department: locations.lille.department,
                 createdAt: response.body[2].createdAt,
                 updatedAt: response.body[2].updatedAt,
+                startOfContract: response.body[2].startOfContract,
+                endOfContract: response.body[2].endOfContract,
+                date: response.body[2].date,
               }),
             ])
           );
           opportunityFactory.incrTotalOppsInDB();
           opportunityFactory.incrTotalOppsInDB();
           opportunityFactory.incrTotalOppsInDB();
-        });
-        it('Should return 401, if invalid opportunity', async () => {
-          const opportunity = await opportunityFactory.create({}, {}, false);
-          delete opportunity.title;
-          const response = await request(app.getHttpServer())
-            .post(`${route}`)
-            .send(opportunity);
-          expect(response.status).toBe(401);
         });
       });
       describe('Logged in users can create external opportunities - /external', () => {
