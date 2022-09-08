@@ -28,6 +28,7 @@ import { ExternalDatabasesModule } from './external-databases/external-databases
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SalesforceModule } from './salesforce/salesforce.module';
+import { SMSModule } from './sms/sms.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -100,6 +101,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     ExternalDatabasesModule,
     SalesforceModule,
     AirtableModule,
+    SMSModule,
   ],
   providers: [
     {
@@ -130,7 +132,6 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
-    ExternalDatabasesModule,
   ],
 })
 export class AppModule {}

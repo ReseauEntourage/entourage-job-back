@@ -1,16 +1,20 @@
+import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Queue } from 'bull';
 import * as _ from 'lodash';
-import { Op } from 'sequelize';
-import { BusinessLine } from '../businessLines/models';
 import { ContactStatus, ContactStatuses } from '../mails/mails.types';
-import { getZoneFromDepartment } from '../utils/misc';
-import { AdminZone } from '../utils/types';
+import { BusinessLine } from 'src/businessLines/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { Department } from 'src/locations/locations.types';
 import { MailchimpService } from 'src/mails/mailchimp.service';
+import { MailsService } from 'src/mails/mails.service';
+import { Jobs, Queues } from 'src/queues/queues.types';
+import { SMSService } from 'src/sms/sms.service';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { CreateOpportunityDto } from './dto/create-opportunity.dto';
+import { getZoneFromDepartment } from 'src/utils/misc';
+import { AdminZone } from 'src/utils/types';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { Opportunity, OpportunityUser } from './models';
 import { OpportunityCompleteInclude } from './models/opportunity.include';
@@ -25,10 +29,14 @@ export class OpportunitiesService {
     private opportunityUserModel: typeof Opportunity,
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine,
+    @InjectQueue(Queues.WORK)
+    private workQueue: Queue,
     private mailchimpService: MailchimpService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
-    private externalDatabasesService: ExternalDatabasesService
+    private externalDatabasesService: ExternalDatabasesService,
+    private mailsService: MailsService,
+    private smsService: SMSService
   ) {}
 
   async create(
@@ -99,9 +107,18 @@ export class OpportunitiesService {
       return null;
     }
 
-    return this.opportunityModel.findOne({
+    const opportunity = await this.opportunityModel.findOne({
       where: { isValidated: true, isArchived: false, id },
     });
+
+    if (!opportunity) {
+      return null;
+    }
+
+    return {
+      ...opportunity.toJSON(),
+      opportunityUser: opportunityUser.toJSON(),
+    };
   }
 
   update(id: number, updateOpportunityDto: UpdateOpportunityDto) {
@@ -157,14 +174,15 @@ export class OpportunitiesService {
           opportunity.id
         );
 
-      /* if (!isAdmin) {
-        await sendOnCreatedOfferMessages(candidates, opportunity);
+      if (!isAdmin) {
+        await this.mailsService.sendOnCreatedOfferMail(opportunity);
       } else {
-        await sendOnValidatedOfferMessages(opportunity);
+        await this.sendOnValidatedOfferMail(opportunity);
+
         if (shouldSendNotifications) {
-          await sendCandidateOfferMessages(candidates, opportunity);
+          await this.sendCandidateOfferMessages(candidates, opportunity);
         }
-      }*/
+      }
     }
 
     await this.sendRecruitorMailToMailchimp(
@@ -172,6 +190,87 @@ export class OpportunitiesService {
       getZoneFromDepartment(opportunity.department),
       ContactStatuses.COMPANY
     );
+  }
+
+  async sendOnValidatedOfferMail(opportunity: Opportunity) {
+    await this.mailsService.sendOnValidatedOfferMail(opportunity);
+
+    await this.workQueue.add(
+      Jobs.NO_RESPONSE_OFFER,
+      {
+        opportunityId: opportunity.id,
+      },
+      {
+        delay:
+          (process.env.OFFER_NO_RESPONSE_DELAY
+            ? parseFloat(process.env.OFFER_NO_RESPONSE_DELAY)
+            : 15) *
+          3600000 *
+          24,
+      }
+    );
+  }
+
+  async sendCandidateOfferMessages(
+    opportunityUsers: OpportunityUser[],
+    opportunity: Opportunity
+  ) {
+    return Promise.all(
+      opportunityUsers.map(async (opportunityUser) => {
+        await this.mailsService.sendCandidateOfferMail(
+          opportunityUser,
+          opportunity
+        );
+
+        const candidatPhone = opportunityUser?.user?.phone;
+
+        await this.smsService.sendCandidateOfferSMS(
+          candidatPhone,
+          opportunity.id
+        );
+
+        if (!opportunity.isPublic) {
+          await this.workQueue.add(
+            Jobs.REMINDER_OFFER,
+            {
+              opportunityId: opportunity.id,
+              candidateId: opportunityUser.user.id,
+            },
+            {
+              delay:
+                (process.env.OFFER_REMINDER_DELAY
+                  ? parseFloat(process.env.OFFER_REMINDER_DELAY)
+                  : 5) *
+                3600000 *
+                24,
+            }
+          );
+        }
+      })
+    );
+  }
+
+  async sendNoResponseOffer(opportunityId: string) {
+    const opportunity = await this.findOne(opportunityId);
+    return this.mailsService.sendNoResponseOfferMail(opportunity);
+  }
+
+  async sendReminderAboutOffer(opportunityId: string, candidateId: string) {
+    const opportunity = await this.findOneAsCandidate(
+      opportunityId,
+      candidateId
+    );
+
+    const candidate: User = opportunity.opportunityUser.user;
+
+    const candidatPhone = candidate?.phone;
+
+    await this.smsService.sendReminderAboutOfferSMS(
+      candidatPhone,
+      opportunity.id
+    );
+
+    return this.mailsService.sendReminderOfferMail(opportunity);
   }
 
   async createExternalDBOpportunity(createdOpportunityId: string | string[]) {

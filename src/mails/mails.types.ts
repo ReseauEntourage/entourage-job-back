@@ -46,8 +46,9 @@ export const MailjetTemplates = {
   OFFER_REFUSED: 3905291,
 } as const;
 
-export type MailjetTemplate =
-  typeof MailjetTemplates[keyof typeof MailjetTemplates];
+export type MailjetTemplateKey = keyof typeof MailjetTemplates;
+
+export type MailjetTemplate = typeof MailjetTemplates[MailjetTemplateKey];
 
 export type HeardAbout =
   | 'contact'

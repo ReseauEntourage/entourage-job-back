@@ -42,7 +42,7 @@ export function findOfferStatus(
 
 export function getMailjetVariablesForPrivateOrPublicOffer(
   opportunity: Opportunity,
-  status: OfferStatus,
+  status?: OfferStatus,
   getCandidates = true
 ): object {
   const commonMailjetVariables = _.omitBy(
@@ -51,7 +51,7 @@ export function getMailjetVariablesForPrivateOrPublicOffer(
       zone: getZoneFromDepartment(opportunity.department),
       contract: findConstantFromValue(opportunity.contract, ContractFilters)
         .label,
-      status: findOfferStatus(status).label,
+      status: status ? findOfferStatus(status).label : '',
       businessLines: opportunity.businessLines
         ?.map(({ name }) => {
           return findConstantFromValue(name, BusinessLineFilters).label;

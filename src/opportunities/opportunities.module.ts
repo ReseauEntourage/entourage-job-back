@@ -3,6 +3,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { QueuesModule } from 'src/queues/producers';
+import { SMSModule } from 'src/sms/sms.module';
 import { UsersModule } from 'src/users/users.module';
 import {
   Opportunity,
@@ -12,6 +14,7 @@ import {
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
+
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -22,7 +25,9 @@ import { OpportunityUsersService } from './opportunity-users.service';
     UsersModule,
     BusinessLinesModule,
     MailsModule,
+    SMSModule,
     ExternalDatabasesModule,
+    QueuesModule,
   ],
   controllers: [OpportunitiesController],
   providers: [OpportunitiesService, OpportunityUsersService],

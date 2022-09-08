@@ -4,6 +4,8 @@ import { Email, connect } from 'node-mailjet';
 import { CustomMailParams, MailjetTemplates } from './mails.types';
 import SendParams = Email.SendParams;
 
+const useCampaigns = process.env.MAILJET_CAMPAIGNS_ACTIVATED === 'true';
+
 @Injectable()
 export class MailjetService {
   private send: Email.PostResource;
@@ -69,12 +71,11 @@ export class MailjetService {
             ...variables,
           },
           TemplateID: templateId,
-          CustomCampaign:
-            `${process.env.MAILJET_CAMPAIGNS_ACTIVATED}` === 'true'
-              ? _.findKey(MailjetTemplates, (id) => {
-                  return id === templateId;
-                })
-              : undefined,
+          CustomCampaign: useCampaigns
+            ? _.findKey(MailjetTemplates, (id) => {
+                return id === templateId;
+              })
+            : undefined,
           TemplateLanguage: true,
           TemplateErrorReporting: {
             Email: `${process.env.MAILJET_SUPPORT_EMAIL}`,

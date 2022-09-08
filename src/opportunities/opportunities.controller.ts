@@ -3,9 +3,9 @@ import {
   Post,
   Body,
   UnauthorizedException,
-  ParseUUIDPipe,
   BadRequestException,
 } from '@nestjs/common';
+import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
@@ -14,7 +14,8 @@ import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
 
-@Controller('opportunities')
+// TODO change to /opportunitites
+@Controller('opportunity')
 export class OpportunitiesController {
   constructor(
     private readonly opportunitiesService: OpportunitiesService,
@@ -25,9 +26,12 @@ export class OpportunitiesController {
   @Post()
   async create(
     @UserPayload('role') role: UserRole,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Body() createOpportunityDto: CreateOpportunityDto
+    @Body() createOpportunityDto: CreateOpportunityDto,
+    @UserPayload('id') userId?: string
   ) {
+    if (userId && !uuidValidate(userId)) {
+      throw new BadRequestException();
+    }
     const isLoggedAsAdmin = role === UserRoles.ADMIN;
 
     const {
@@ -72,7 +76,7 @@ export class OpportunitiesController {
           return createdOpportunity.toJSON();
         })
       );
-      // TODO add Salesforce and Airtable
+
       await this.opportunitiesService.createExternalDBOpportunity(
         createdOpportunities.map(({ id }) => {
           return id;

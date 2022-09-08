@@ -20,7 +20,7 @@ import { OpportunityFactory } from './opportunity.factory';
 describe('Opportunities', () => {
   let app: INestApplication;
 
-  const route = '/api/v1/opportunity';
+  const route = '/opportunity';
   const nbOpportunity = 10;
   const nbPrivateOpportunity = 6;
   const nbPublicOpportunitiesToAssociate = 5;
@@ -46,6 +46,7 @@ describe('Opportunities', () => {
   let candidatExternalOpportunity: Opportunity;
   let otherCandidatExternalOpportunity: Opportunity;
 
+  // TODO mock Mailchimp
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
@@ -241,7 +242,7 @@ describe('Opportunities', () => {
       opportunity1ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: false,
         recommended: false,
       }
@@ -260,7 +261,7 @@ describe('Opportunities', () => {
       opportunity2ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Contacted.value,
+        status: OfferStatuses.CONTACTED.value,
         archived: false,
         recommended: false,
       }
@@ -278,7 +279,7 @@ describe('Opportunities', () => {
       opportunity3ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: false,
         recommended: false,
       }
@@ -297,7 +298,7 @@ describe('Opportunities', () => {
       opportunity4ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: true,
         recommended: false,
       }
@@ -316,7 +317,7 @@ describe('Opportunities', () => {
       opportunity5ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: false,
         recommended: true,
       }
@@ -335,7 +336,7 @@ describe('Opportunities', () => {
       opportunity6ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: false,
         recommended: false,
       }
@@ -354,7 +355,7 @@ describe('Opportunities', () => {
       opportunity7ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: false,
         recommended: false,
       }
@@ -373,7 +374,7 @@ describe('Opportunities', () => {
       opportunity8ForFilters.id,
       loggedInCandidat.user.id,
       {
-        status: OfferStatuses.Interview.value,
+        status: OfferStatuses.INTERVIEW.value,
         archived: false,
         recommended: false,
       }
@@ -425,7 +426,7 @@ describe('Opportunities', () => {
             false
           );
           const response = await request(app.getHttpServer())
-            .post(`${route}/`)
+            .post(`${route}`)
             .send(opportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -444,7 +445,7 @@ describe('Opportunities', () => {
             false
           );
           const response = await request(app.getHttpServer())
-            .post(`${route}/`)
+            .post(`${route}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send(opportunity);
           expect(response.status).toBe(200);
@@ -465,7 +466,7 @@ describe('Opportunities', () => {
             false
           );
           const response = await request(app.getHttpServer())
-            .post(`${route}/`)
+            .post(`${route}`)
             .send({ ...opportunity, isAdmin: true });
           expect(response.status).toBe(401);
         });
@@ -483,7 +484,7 @@ describe('Opportunities', () => {
             lille: { address: 'Rue de Lille', department: 'Lille dept' },
           };
           const response = await request(app.getHttpServer())
-            .post(`${route}/`)
+            .post(`${route}`)
             .send({
               ...opportunity,
               locations: [locations.paris, locations.lyon, locations.lille],
@@ -523,7 +524,7 @@ describe('Opportunities', () => {
           const opportunity = await opportunityFactory.create({}, {}, false);
           delete opportunity.title;
           const response = await request(app.getHttpServer())
-            .post(`${route}/`)
+            .post(`${route}`)
             .send(opportunity);
           expect(response.status).toBe(401);
         });
@@ -1556,7 +1557,7 @@ describe('Opportunities', () => {
             title: 'updated title',
           };
           const response = await request(app.getHttpServer())
-            .put(`${route}/`)
+            .put(`${route}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send(update);
           expect(response.status).toBe(200);
@@ -1621,7 +1622,7 @@ describe('Opportunities', () => {
             candidatesId: [otherCandidat.user.id],
           };
           const response = await request(app.getHttpServer())
-            .put(`${route}/`)
+            .put(`${route}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send(update);
           expect(response.status).toBe(200);
@@ -1638,7 +1639,7 @@ describe('Opportunities', () => {
             title: 'updated title',
           };
           const response = await request(app.getHttpServer())
-            .put(`${route}/`)
+            .put(`${route}`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send(update);
           expect(response.status).toBe(401);
