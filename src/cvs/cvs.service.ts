@@ -869,12 +869,12 @@ export class CVsService {
     }, {} as Partial<CV>);
   }
 
-  async cacheCV(url: string, candidatId?: string) {
+  async cacheCV(url: string, candidateId?: string) {
     let urlToUse = url;
 
-    if (!urlToUse && candidatId) {
+    if (!urlToUse && candidateId) {
       ({ url: urlToUse } = await this.userCandidatsService.findOneByCandidateId(
-        candidatId
+        candidateId
       ));
     }
 

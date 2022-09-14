@@ -1,6 +1,5 @@
-import { AirtableOffer } from 'src/airtable/airtable.types';
 import { CustomMailParams, MailjetTemplate } from 'src/mails/mails.types';
-import { CustomSMSParams } from '../sms/sms.types';
+import { CustomSMSParams } from 'src/sms/sms.types';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',

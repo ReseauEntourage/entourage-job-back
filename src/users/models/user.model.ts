@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail as IsEmailClassValidator, IsString } from 'class-validator';
 import {
   AfterCreate,
   AfterDestroy,
@@ -20,7 +21,6 @@ import {
   Unique,
   UpdatedAt,
 } from 'sequelize-typescript';
-
 import {
   AdminRole,
   Gender,
@@ -60,6 +60,7 @@ export class User extends HistorizedModel {
 
   @ApiProperty()
   @IsEmail
+  @IsEmailClassValidator()
   @AllowNull(false)
   @Unique
   @Column
@@ -93,12 +94,14 @@ export class User extends HistorizedModel {
   gender: Gender;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Length({ min: 0, max: 30 })
   @Column
   phone: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Column
   address: string;

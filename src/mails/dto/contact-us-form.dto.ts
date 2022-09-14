@@ -14,7 +14,7 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  phone: string;
+  phone?: string;
 
   @ApiProperty()
   @IsString()
@@ -23,7 +23,7 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  structure: string;
+  structure?: string;
 
   @ApiProperty()
   @IsString()
@@ -32,5 +32,5 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  heardAbout: HeardAbout;
+  heardAbout?: HeardAbout;
 }

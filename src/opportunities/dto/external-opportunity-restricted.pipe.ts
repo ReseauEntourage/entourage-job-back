@@ -30,14 +30,9 @@ export class ExternalOpportunityRestrictedPipe
   constructor(@Inject(REQUEST) private request: RequestWithUser) {}
 
   async transform(
-    value:
-      | CreateExternalOpportunityRestrictedDto
-      | UpdateExternalOpportunityRestrictedDto,
+    value: CreateExternalOpportunityRestrictedDto,
     { metatype }: ArgumentMetadata
-  ): Promise<
-    | CreateExternalOpportunityRestrictedDto
-    | UpdateExternalOpportunityRestrictedDto
-  > {
+  ): Promise<CreateExternalOpportunityRestrictedDto> {
     if (!metatype || !ExternalOpportunityRestrictedPipe.toValidate(metatype)) {
       return value;
     }

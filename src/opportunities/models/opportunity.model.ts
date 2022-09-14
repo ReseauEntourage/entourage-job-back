@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import {
   AllowNull,
   BelongsToMany,
   Column,
@@ -30,171 +37,237 @@ export class Opportunity extends Model {
   id: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(false)
   @Column
   title: string;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  @AllowNull(false)
   @Default(true)
   @Column
   isPublic: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  @AllowNull(false)
   @Default(false)
   @Column
   isValidated: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  @AllowNull(false)
   @Default(false)
   @Column
   isArchived: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  @AllowNull(false)
   @Default(false)
   @Column
   isExternal: boolean;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   link: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   externalOrigin: ExternalOfferOrigin;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   company: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   recruiterName: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   recruiterFirstName: string;
 
   @ApiProperty()
-  @AllowNull(false)
+  @IsString()
+  @IsOptional()
+  @AllowNull(true)
   @Column
   recruiterMail: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   contactMail: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   recruiterPosition: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   recruiterPhone: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(false)
   @Default(new Date())
   @Column
   date: Date;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   address: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   description: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   companyDescription: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   skills: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   prerequisites: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(false)
   @Column
   department: Department;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   contract: ContractValue;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   startOfContract: Date;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   endOfContract: Date;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
   @AllowNull(false)
   @Default(false)
   @Column
   isPartTime: boolean;
 
   @ApiProperty()
+  @IsNumber()
+  @IsOptional()
   @AllowNull(false)
   @Default(1)
   @Column
   numberOfPositions: number;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
   @AllowNull(false)
   @Default(false)
   @Column
   beContacted: boolean;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   message: string;
 
   @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
   @AllowNull(false)
   @Default(false)
   @Column
   driversLicense: boolean;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   workingHours: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   salary: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   otherInfo: string;
 
-  @ApiProperty()
   @IsUUID(4)
   @AllowNull(true)
   @Column
@@ -207,6 +280,8 @@ export class Opportunity extends Model {
   updatedAt: Date;
 
   @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @BelongsToMany(
     () => BusinessLine,
     () => OpportunityBusinessLine,
@@ -215,7 +290,6 @@ export class Opportunity extends Model {
   )
   businessLines: BusinessLine[];
 
-  @ApiProperty()
   @BelongsToMany(() => User, () => OpportunityUser, 'OpportunityId', 'UserId')
   users: User[];
 

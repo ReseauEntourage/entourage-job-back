@@ -1,19 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { PartialType, PickType } from '@nestjs/swagger';
+import { UpdateUserDto } from './update-user.dto';
 
-export class UpdateUserRestrictedDto {
-  @ApiProperty()
-  @IsOptional()
-  @IsString()
-  email: string;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsString()
-  phone: string;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsString()
-  address: string;
-}
+export class UpdateUserRestrictedDto extends PartialType(
+  PickType(UpdateUserDto, ['email', 'phone', 'address'] as const)
+) {}

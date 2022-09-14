@@ -33,6 +33,7 @@ export function queryConditionCV(
     `;
 }
 
+// TODO remove completely
 export function cleanCV(model: CV): CV {
   if (!model) {
     return null;

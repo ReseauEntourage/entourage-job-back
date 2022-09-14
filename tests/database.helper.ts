@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
+import {
+  Opportunity,
+  OpportunityBusinessLine,
+  OpportunityUser,
+} from '../src/opportunities/models';
 import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
 import { Contract } from 'src/contracts/models';
@@ -25,11 +30,6 @@ import { Share } from 'src/shares/models';
 import { Skill } from 'src/skills/models';
 import { UserCandidat, User } from 'src/users/models';
 import { Factory } from 'src/utils/types';
-import {
-  Opportunity,
-  OpportunityBusinessLine,
-  OpportunityUser,
-} from '../src/opportunities/models';
 
 @Injectable()
 export class DatabaseHelper {

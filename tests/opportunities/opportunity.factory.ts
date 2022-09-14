@@ -6,6 +6,7 @@ import * as _ from 'lodash';
 import moment from 'moment';
 import phone from 'phone';
 import { BusinessLine } from 'src/businessLines/models';
+import { ContractFilters } from 'src/contracts/contracts.types';
 import { Departments } from 'src/locations/locations.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
@@ -50,8 +51,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
     // TODO random boolean
-    const data = {
-      id: faker.datatype.uuid(),
+    const fakeData = {
       title: faker.lorem.words(2),
       isPublic: true,
       isExternal: false,
@@ -59,7 +59,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       isArchived: false,
       company: faker.company.companyName(2),
       companyDescription: faker.lorem.paragraphs(3),
-      contactMail: null as string,
+      contactMail: '',
       recruiterName: faker.name.findName(),
       recruiterFirstName: faker.name.findName(),
       recruiterMail: faker.internet.email(),
@@ -70,7 +70,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       description: faker.lorem.paragraphs(3),
       prerequisites: faker.lorem.paragraphs(3),
       skills: faker.lorem.paragraphs(3),
-      contract: faker.lorem.words(2),
+      contract: faker.random.arrayElement(ContractFilters).value,
       endOfContract: moment().format('YYYY-MM-DD').toString(),
       startOfContract: moment().format('YYYY-MM-DD').toString(),
       isPartTime: faker.datatype.boolean(),
@@ -88,7 +88,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       otherInfo: faker.lorem.words(2),
     };
     return {
-      ...data,
+      ...fakeData,
       ...props,
     };
   }
@@ -99,10 +99,10 @@ export class OpportunityFactory implements Factory<Opportunity> {
     insertInDB = true
   ): Promise<Opportunity> {
     const opportunityData = this.generateOpportunity(props);
-
+    const opportunityId = faker.datatype.uuid();
     if (insertInDB) {
       const createdOpportunity = await this.opportunityModel.create(
-        opportunityData,
+        { ...opportunityData, id: opportunityId },
         {
           hooks: true,
         }
@@ -141,12 +141,13 @@ export class OpportunityFactory implements Factory<Opportunity> {
       this.incrTotalOppsInDB();
     }
     const dbOpportunity = await this.opportunitiesService.findOne(
-      opportunityData.id
+      opportunityData.id || opportunityId
     );
     if (dbOpportunity) {
       return dbOpportunity.toJSON();
     }
     const builtOpportunity = await this.opportunityModel.build(opportunityData);
-    return builtOpportunity.toJSON();
+    const { id, ...builtOpportunityWithoutId } = builtOpportunity.toJSON();
+    return builtOpportunityWithoutId as Opportunity;
   }
 }

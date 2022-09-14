@@ -1,3 +1,6 @@
+/* eslint-disable no-console */
+// eslint-disable no-console
+
 import { FieldSet } from 'airtable';
 import AirtableError from 'airtable/lib/airtable_error';
 import { Records } from 'airtable/lib/records';

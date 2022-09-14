@@ -1,9 +1,8 @@
 import { BusinessLine } from 'src/businessLines/models';
-import { ContractFilters, ContractValue } from 'src/contracts/contracts.types';
+import { ContractValue } from 'src/contracts/contracts.types';
 import { Department } from 'src/locations/locations.types';
 import {
   ExternalOfferOrigin,
-  ExternalOfferOriginFilters,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
 

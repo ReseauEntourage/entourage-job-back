@@ -62,8 +62,8 @@ export function getMailjetVariablesForPrivateOrPublicOffer(
   );
 
   if (!opportunity.isPublic && getCandidates) {
-    const listOfNames = opportunity.users.map((candidate) => {
-      return candidate.firstName;
+    const listOfNames = opportunity.opportunityUsers.map((candidate) => {
+      return candidate.user.firstName;
     });
 
     let stringOfNames = '';
@@ -79,7 +79,7 @@ export function getMailjetVariablesForPrivateOrPublicOffer(
     return {
       ...commonMailjetVariables,
       candidates: stringOfNames,
-      candidatesLength: opportunity.users.length,
+      candidatesLength: opportunity.opportunityUsers.length,
     };
   }
   return commonMailjetVariables;

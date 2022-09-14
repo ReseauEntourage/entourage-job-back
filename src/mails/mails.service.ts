@@ -239,6 +239,20 @@ export class MailsService {
     });
   }
 
+  async sendOnCreatedExternalOfferMail(opportunity: Opportunity) {
+    const { companiesAdminMail } = getAdminMailsFromDepartment(
+      opportunity.department
+    );
+    await this.workQueue.add(Jobs.SEND_MAIL, {
+      toEmail: companiesAdminMail,
+      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED,
+      variables: {
+        offer: getMailjetVariablesForPrivateOrPublicOffer(opportunity),
+        candidat: _.omitBy(opportunity.opportunityUsers[0].user, _.isNil),
+      },
+    });
+  }
+
   async sendOnValidatedOfferMail(opportunity: Opportunity) {
     const { companiesAdminMail, candidatesAdminMail } =
       getAdminMailsFromDepartment(opportunity.department);

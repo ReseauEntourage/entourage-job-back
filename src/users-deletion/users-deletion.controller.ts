@@ -62,9 +62,11 @@ export class UsersDeletionController {
       }
     );
 
-    await this.usersDeletionService.updateRevisionsAndRevisionChanges(
+    await this.usersDeletionService.updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
       userId,
-      opportunityUsers
+      opportunityUsers.map((opportunityUser) => {
+        return opportunityUser.id;
+      })
     );
 
     // Todo change to userDeleted

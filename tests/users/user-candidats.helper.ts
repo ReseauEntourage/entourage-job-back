@@ -4,6 +4,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { LoggedUser } from 'src/auth/auth.types';
 import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
+import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
 
 @Injectable()
@@ -13,7 +14,8 @@ export class UserCandidatsHelper {
     private userCandidatModel: typeof UserCandidat,
     private userCandidatsService: UserCandidatsService,
     private authService: AuthService,
-    private userHelper: UsersHelper
+    private userHelper: UsersHelper,
+    private userFactory: UserFactory
   ) {}
 
   async associateCoachAndCandidat(
@@ -52,6 +54,10 @@ export class UserCandidatsHelper {
         ),
       };
     }
+    return {
+      coach: await this.userFactory.create(coach as User, {}, false),
+      candidat: await this.userFactory.create(candidat as User, {}, false),
+    };
   }
 
   async findOneUserCandidat({

@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { RevisionChangesService } from 'src/revisions/revision-changes.service';
 import { S3Service } from 'src/aws/s3.service';
 import { CVsService } from 'src/cvs/cvs.service';
 import { UpdateOpportunityUserDto } from 'src/opportunities/dto/update-opportunity-user.dto';
-import { OpportunityUser } from 'src/opportunities/models/opportunity-user.model';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
+import { RevisionChangesService } from 'src/revisions/revision-changes.service';
 import { RevisionsService } from 'src/revisions/revisions.service';
 import { UpdateUserCandidatDto, UpdateUserDto } from 'src/users/dto';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
@@ -55,23 +54,18 @@ export class UsersDeletionService {
     );
   }
 
-  async updateRevisionsAndRevisionChanges(
+  async updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
     userId: string,
-    opportunityUsers: OpportunityUser[]
+    opportunityUserIds: string[]
   ) {
-    const documentIds = [
-      userId,
-      ...opportunityUsers.map((opportunityUser) => {
-        return opportunityUser.id;
-      }),
-    ];
+    const documentIds = [userId, ...opportunityUserIds];
 
     const revisions = await this.revisionsService.findAllByDocumentIds(
       documentIds
     );
     await this.revisionChangesService.updateByRevisionIds(
       revisions.map((revision) => {
-        return `'${revision.id}'`;
+        return revision.id;
       }),
       {
         document: {},

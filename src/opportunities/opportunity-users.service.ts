@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Opportunity, OpportunityUser } from './models';
-import { OpportunityCandidateInclude } from './models/opportunity.include';
-import { UpdateCVDto } from '../cvs/dto';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
+import { OpportunityUser } from './models';
+import { OpportunityCandidateInclude } from './models/opportunity.include';
 
 @Injectable()
 export class OpportunityUsersService {

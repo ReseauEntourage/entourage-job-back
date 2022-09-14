@@ -229,9 +229,9 @@ export class CVsController {
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UserPayload() user: PayloadUser
   ) {
-    const candidatId = getCandidateIdFromCoachOrCandidate(user);
+    const candidateId = getCandidateIdFromCoachOrCandidate(user);
 
-    const cv = await this.cvsService.findOneByCandidateId(candidatId);
+    const cv = await this.cvsService.findOneByCandidateId(candidateId);
 
     const { lastModifiedBy } = cv;
 

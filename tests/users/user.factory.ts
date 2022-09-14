@@ -6,7 +6,7 @@ import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { UserCandidat, User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/users/users.types';
+import { Gender, UserRoles } from 'src/users/users.types';
 import { AdminZones, Factory } from 'src/utils/types';
 
 @Injectable()
@@ -26,24 +26,25 @@ export class UserFactory implements Factory<User> {
 
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
+    const fakeData = {
+      email: faker.internet.email().toLowerCase(),
+      firstName: faker.name.firstName(),
+      lastName: faker.name.lastName(),
+      role: UserRoles.CANDIDAT,
+      gender: faker.random.arrayElement([0, 1]) as Gender,
+      phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
+      address: faker.address.streetAddress(),
+      lastConnection: new Date(),
+      zone: AdminZones.PARIS,
+      hashReset: faker.datatype.uuid(),
+      saltReset: faker.datatype.uuid(),
+    };
+
     return {
-      id: props.id || faker.datatype.uuid(),
-      email: props.email || faker.internet.email().toLowerCase(),
-      firstName: props.firstName || faker.name.firstName(),
-      lastName: props.lastName || faker.name.lastName(),
-      role: props.role || UserRoles.CANDIDAT,
+      ...fakeData,
+      ...props,
       password: hash,
-      gender: props.gender || faker.random.arrayElement([0, 1]),
       salt,
-      phone:
-        props.phone || phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
-      address: props.address || faker.address.streetAddress(),
-      lastConnection: props.lastConnection || new Date(),
-      zone: props.zone || AdminZones.PARIS,
-      hashReset: props.hashReset || faker.datatype.uuid(),
-      saltReset: props.saltReset || faker.datatype.uuid(),
-      coach: props.coach,
-      candidat: props.candidat,
     };
   }
 
@@ -53,24 +54,25 @@ export class UserFactory implements Factory<User> {
     insertInDB = true
   ): Promise<User> {
     const userData = this.generateUser(props);
-
+    const userId = faker.datatype.uuid();
     if (insertInDB) {
-      await this.userModel.create(userData, { hooks: true });
+      await this.userModel.create({ ...userData, id: userId }, { hooks: true });
       await this.userCandidatModel.update(
         { ...userCandidatProps },
         {
           where: {
-            candidatId: userData.id,
+            candidatId: userId,
           },
           individualHooks: true,
         }
       );
     }
-    const dbUser = await this.usersService.findOne(userData.id);
+    const dbUser = await this.usersService.findOne(userData.id || userId);
     if (dbUser) {
       return dbUser.toJSON();
     }
     const builtUser = await this.userModel.build(userData);
-    return builtUser.toJSON();
+    const { id, ...builtUserWithoutId } = builtUser.toJSON();
+    return builtUserWithoutId as User;
   }
 }

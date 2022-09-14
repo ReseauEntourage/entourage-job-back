@@ -6,27 +6,21 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateExternalOpportunityDto } from './create-external-opportunity.dto';
+import { CreateOpportunityDto } from './create-opportunity.dto';
 
-export class ExternalOpportunityPipe
-  implements
-    PipeTransform<
-      CreateExternalOpportunityDto,
-      Promise<CreateExternalOpportunityDto>
-    >
+export class OpportunityPipe
+  implements PipeTransform<CreateOpportunityDto, Promise<CreateOpportunityDto>>
 {
   async transform(
-    value: CreateExternalOpportunityDto,
+    value: CreateOpportunityDto,
     { metatype }: ArgumentMetadata
-  ): Promise<CreateExternalOpportunityDto> {
-    if (!metatype || !ExternalOpportunityPipe.toValidate(metatype)) {
+  ): Promise<CreateOpportunityDto> {
+    if (!metatype || !OpportunityPipe.toValidate(metatype)) {
       return value;
     }
     const object = plainToInstance(metatype, value);
     const errors = await validate(object, {
       whitelist: true,
-      forbidNonWhitelisted: true,
-      forbidUnknownValues: true,
     });
 
     if (errors.length > 0) {

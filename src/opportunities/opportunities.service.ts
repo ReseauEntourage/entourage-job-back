@@ -3,11 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
-import {
-  ContactStatus,
-  ContactStatuses,
-  CustomMailParams,
-} from '../mails/mails.types';
+import { ContactStatus, ContactStatuses } from '../mails/mails.types';
+import { getRelatedUser } from '../users/users.utils';
 import { BusinessLine } from 'src/businessLines/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { Department } from 'src/locations/locations.types';
@@ -19,11 +16,13 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
-import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
+import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
+import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { Opportunity, OpportunityUser } from './models';
+import { OpportunityCandidateAttributes } from './models/opportunity.attributes';
 import { OpportunityCompleteInclude } from './models/opportunity.include';
 import { OpportunityUsersService } from './opportunity-users.service';
-import { getRelatedUser } from '../users/users.utils';
 
 @Injectable()
 export class OpportunitiesService {
@@ -45,8 +44,17 @@ export class OpportunitiesService {
   ) {}
 
   async create(
-    createOpportunityDto: Partial<Opportunity>,
-    candidatesId?: string[],
+    createOpportunityDto: Partial<
+      Omit<
+        CreateOpportunityDto,
+        | 'isAdmin'
+        | 'locations'
+        | 'shouldSendNotifications'
+        | 'isCopy'
+        | 'candidatesId'
+      >
+    >,
+    candidateIds?: string[],
     isAdmin = false,
     createdById?: string
   ) {
@@ -65,6 +73,52 @@ export class OpportunitiesService {
       await createdOpportunity.$add('businessLines', businessLines);
     }
     return createdOpportunity;
+  }
+
+  async createExternal(
+    createExternalOpportunityDto: Partial<
+      Omit<
+        CreateExternalOpportunityDto | CreateExternalOpportunityRestrictedDto,
+        'candidateId'
+      >
+    >,
+    candidateId: string,
+    createdById: string
+  ) {
+    const createdOpportunity = await this.opportunityModel.create({
+      ...createExternalOpportunityDto,
+      isExternal: true,
+      isPublic: false,
+      isArchived: false,
+      isValidated: true,
+      createdBy: createdById,
+    });
+
+    await this.opportunityUsersService.create({
+      OpportunityId: createdOpportunity.id,
+      UserId: candidateId,
+      status:
+        createExternalOpportunityDto.status &&
+        createExternalOpportunityDto.status > -1
+          ? createExternalOpportunityDto.status
+          : 0,
+    });
+
+    if (
+      createExternalOpportunityDto instanceof CreateExternalOpportunityDto &&
+      createExternalOpportunityDto.businessLines
+    ) {
+      const businessLines = await Promise.all(
+        createExternalOpportunityDto.businessLines.map(
+          ({ name, order = -1 }) => {
+            return this.businessLineModel.create({ name, order });
+          }
+        )
+      );
+      await createdOpportunity.$add('businessLines', businessLines);
+    }
+
+    return this.findOneAsCandidate(createdOpportunity.id, candidateId);
   }
 
   async findAllCandidateIdsToRecommendOfferTo(
@@ -114,6 +168,8 @@ export class OpportunitiesService {
 
     const opportunity = await this.opportunityModel.findOne({
       where: { isValidated: true, isArchived: false, id },
+      attributes: [...OpportunityCandidateAttributes],
+      include: OpportunityCompleteInclude,
     });
 
     if (!opportunity) {
@@ -126,14 +182,6 @@ export class OpportunitiesService {
     };
   }
 
-  update(id: number, updateOpportunityDto: UpdateOpportunityDto) {
-    return `This action updates a #${id} opportunity`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} opportunity`;
-  }
-
   async countExternalOpportunitiesCreatedByUser(userId: string) {
     const { count } = await this.opportunityModel.findAndCountAll({
       where: {
@@ -144,22 +192,10 @@ export class OpportunitiesService {
     return count;
   }
 
-  async sendRecruitorMailToMailchimp(
-    mail: string,
-    zone: AdminZone | AdminZone[],
-    contactStatus: ContactStatus
-  ) {
-    return this.mailchimpService.sendContact(mail, zone, contactStatus);
-  }
-
-  async sendMailsAfterCreation(
+  async associateUsersToOpportunity(
     opportunity: Opportunity,
-    candidatesId: string[],
-    isAdmin = false,
-    shouldSendNotifications = true
+    candidatesId: string[]
   ) {
-    let candidates: OpportunityUser[] = [];
-
     const candidateIdsToRecommendTo = opportunity.isPublic
       ? await this.findAllCandidateIdsToRecommendOfferTo(
           opportunity.department,
@@ -183,12 +219,29 @@ export class OpportunitiesService {
         })
       );
 
-      candidates =
-        await this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
-          uniqueCandidateIds,
-          opportunity.id
-        );
+      return this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
+        uniqueCandidateIds,
+        opportunity.id
+      );
+    }
+    return null;
+  }
 
+  async sendRecruitorMailToMailchimp(
+    mail: string,
+    zone: AdminZone | AdminZone[],
+    contactStatus: ContactStatus
+  ) {
+    return this.mailchimpService.sendContact(mail, zone, contactStatus);
+  }
+
+  async sendMailsAfterCreation(
+    opportunity: Opportunity,
+    candidates: OpportunityUser[],
+    isAdmin = false,
+    shouldSendNotifications = true
+  ) {
+    if (candidates && candidates.length > 0) {
       if (!isAdmin) {
         await this.mailsService.sendOnCreatedOfferMail(opportunity);
       } else {
@@ -205,6 +258,15 @@ export class OpportunitiesService {
       getZoneFromDepartment(opportunity.department),
       ContactStatuses.COMPANY
     );
+  }
+
+  async sendMailAfterExternalCreation(
+    opportunity: Opportunity,
+    isAdmin = false
+  ) {
+    if (!isAdmin) {
+      return this.mailsService.sendOnCreatedExternalOfferMail(opportunity);
+    }
   }
 
   async sendOnValidatedOfferMail(opportunity: Opportunity) {

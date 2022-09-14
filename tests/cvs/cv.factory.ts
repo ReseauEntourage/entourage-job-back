@@ -69,7 +69,6 @@ export class CVFactory implements Factory<CV> {
 
   generateCV(props: Partial<CV> = {}): Partial<CV> {
     const fakeData = {
-      id: faker.datatype.uuid(),
       urlImg: `images/${props.UserId}.Progress.jpg`,
       story: faker.lorem.text(),
       location: faker.address.city(),
@@ -92,9 +91,12 @@ export class CVFactory implements Factory<CV> {
     insertInDB = true
   ): Promise<CV> {
     const cvData = this.generateCV(props);
-
+    const cvId = faker.datatype.uuid();
     if (insertInDB) {
-      const createdCV = await this.cvModel.create(cvData, { hooks: true });
+      const createdCV = await this.cvModel.create(
+        { ...cvData, id: cvId },
+        { hooks: true }
+      );
 
       await Promise.all(
         Object.keys(components).map(async (componentKey) => {
@@ -111,7 +113,7 @@ export class CVFactory implements Factory<CV> {
                 async (component) => {
                   const instance = await injectedModel.create(
                     {
-                      CVId: createdCV.id,
+                      CVId: cvId,
                       ...(component as Partial<WrapperModel>),
                     },
                     { hooks: true }
@@ -187,11 +189,12 @@ export class CVFactory implements Factory<CV> {
 
       await this.cvsService.generateSearchStringFromCV(cvData.UserId);
     }
-    const dbCV = await this.cvsService.findOne(cvData.id);
+    const dbCV = await this.cvsService.findOne(cvData.id || cvId);
     if (dbCV) {
       return dbCV.toJSON();
     }
     const builtCV = await this.cvModel.build(cvData);
-    return builtCV.toJSON();
+    const { id, ...builtCVWithoutId } = builtCV.toJSON();
+    return builtCVWithoutId as CV;
   }
 }

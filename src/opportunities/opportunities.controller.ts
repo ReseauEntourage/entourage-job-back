@@ -2,19 +2,22 @@ import {
   Controller,
   Post,
   Body,
-  UnauthorizedException,
   BadRequestException,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
+import { LinkedUser, LinkedUserGuard } from 'src/users/guards';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
+import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
+import { ExternalOpportunityPipe } from './dto/external-opportunity.pipe';
+import { OpportunityPipe } from './dto/opportunity.pipe';
 import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
-import { Roles, RolesGuard } from '../users/guards';
 
 // TODO change to /opportunitites
 @Controller('opportunity')
@@ -24,12 +27,11 @@ export class OpportunitiesController {
     private readonly opportunityUsersService: OpportunityUsersService
   ) {}
 
-  // TODO make public and private
   @Public()
   @Post()
   async create(
     @UserPayload('role') role: UserRole,
-    @Body() createOpportunityDto: CreateOpportunityDto,
+    @Body(new OpportunityPipe()) createOpportunityDto: CreateOpportunityDto,
     @UserPayload('id') userId?: string
   ) {
     if (userId && !uuidValidate(userId)) {
@@ -47,7 +49,7 @@ export class OpportunitiesController {
     } = createOpportunityDto;
 
     if (isAdmin && !isLoggedAsAdmin) {
-      throw new UnauthorizedException();
+      throw new ForbiddenException();
     }
 
     if (
@@ -69,11 +71,22 @@ export class OpportunitiesController {
             isAdmin,
             userId
           );
+
+          const candidates =
+            await this.opportunitiesService.associateUsersToOpportunity(
+              createdOpportunity,
+              candidatesId
+            );
+
           await this.opportunitiesService.sendMailsAfterCreation(
             createdOpportunity.toJSON(),
-            candidatesId,
+            candidates,
             isAdmin,
             shouldSendNotifications
+          );
+
+          await this.opportunitiesService.createExternalDBOpportunity(
+            createdOpportunity.id
           );
 
           return createdOpportunity.toJSON();
@@ -105,9 +118,16 @@ export class OpportunitiesController {
       isAdmin,
       userId
     );
+
+    const candidates =
+      await this.opportunitiesService.associateUsersToOpportunity(
+        createdOpportunity,
+        candidatesId
+      );
+
     await this.opportunitiesService.sendMailsAfterCreation(
       createdOpportunity.toJSON(),
-      candidatesId,
+      candidates,
       isAdmin,
       shouldSendNotifications
     );
@@ -117,6 +137,40 @@ export class OpportunitiesController {
     );
 
     return createdOpportunity.toJSON();
+  }
+
+  @LinkedUser('body.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Post('external')
+  async createExternal(
+    @UserPayload('role') role: UserRole,
+    @Body(new ExternalOpportunityPipe())
+    createExternalOpportunityDto: CreateExternalOpportunityDto,
+    @UserPayload('id') userId?: string
+  ) {
+    if (userId && !uuidValidate(userId)) {
+      throw new BadRequestException();
+    }
+    const isAdmin = role === UserRoles.ADMIN;
+
+    const { candidateId, ...restParams } = createExternalOpportunityDto;
+
+    const createdOpportunity = await this.opportunitiesService.createExternal(
+      restParams,
+      candidateId,
+      userId
+    );
+
+    await this.opportunitiesService.sendMailAfterExternalCreation(
+      createdOpportunity,
+      isAdmin
+    );
+
+    await this.opportunitiesService.createExternalDBOpportunity(
+      createdOpportunity.id
+    );
+
+    return createdOpportunity;
   }
 
   /*
