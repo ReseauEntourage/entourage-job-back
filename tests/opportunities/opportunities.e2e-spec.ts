@@ -798,7 +798,7 @@ describe('Opportunities', () => {
         });
       });
       describe('Add a user to an opportunity - /join', () => {
-        it('should return 200, if candidat adds himself to an opportunity', async () => {
+        it('should return 201, if candidat adds himself to an opportunity', async () => {
           const opportunityId = opportunitiesId[0];
           const body = {
             opportunityId,
@@ -808,11 +808,11 @@ describe('Opportunities', () => {
             .post(`${route}/join`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send(body);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(201);
           expect(response.body.OpportunityId).toEqual(opportunityId);
           expect(response.body.UserId).toEqual(loggedInCandidat.user.id);
         });
-        it('should return 200, if a coach adds his associated candidat to an opportunity', async () => {
+        it('should return 201, if a coach adds his associated candidat to an opportunity', async () => {
           const opportunityId = opportunitiesId[1];
           const body = {
             opportunityId,
@@ -822,11 +822,11 @@ describe('Opportunities', () => {
             .post(`${route}/join`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(body);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(201);
           expect(response.body.OpportunityId).toEqual(opportunityId);
           expect(response.body.UserId).toEqual(loggedInCandidat.user.id);
         });
-        it('should return 200, if admin adds candidat to an opportunity', async () => {
+        it('should return 201, if admin adds candidat to an opportunity', async () => {
           const opportunityId = opportunitiesId[2];
           const body = {
             opportunityId,
@@ -836,11 +836,11 @@ describe('Opportunities', () => {
             .post(`${route}/join`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(body);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(201);
           expect(response.body.OpportunityId).toEqual(opportunityId);
           expect(response.body.UserId).toEqual(loggedInCandidat.user.id);
         });
-        it('should return 401, if invalid opportunity id', async () => {
+        it('should return 400, if invalid opportunity id', async () => {
           const opportunityId = 'ka824df-c9e0-42cb-adb6-02267fc9e5f6';
           const body = {
             opportunityId,
@@ -850,9 +850,9 @@ describe('Opportunities', () => {
             .post(`${route}/join`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(body);
-          expect(response.status).toBe(401);
+          expect(response.status).toBe(400);
         });
-        it('should return 401, if candidat updates an other candidat', async () => {
+        it('should return 403, if candidat updates an other candidat', async () => {
           const opportunityId = opportunitiesId[3];
           const body = {
             opportunityId,
@@ -862,9 +862,9 @@ describe('Opportunities', () => {
             .post(`${route}/join`)
             .set('authorization', `Token ${loggedInCandidat.token}`)
             .send(body);
-          expect(response.status).toBe(401);
+          expect(response.status).toBe(403);
         });
-        it('should return 401, if a coach updates not associate candidat', async () => {
+        it('should return 403, if a coach updates not associate candidat', async () => {
           const opportunityId = opportunitiesId[4];
           const body = {
             opportunityId,
@@ -874,7 +874,7 @@ describe('Opportunities', () => {
             .post(`${route}/join`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(body);
-          expect(response.status).toBe(401);
+          expect(response.status).toBe(403);
         });
       });
     });

@@ -62,7 +62,7 @@ export function findOfferStatus(
 }
 
 export function getMailjetVariablesForPrivateOrPublicOffer(
-  opportunity: Opportunity,
+  opportunity: Opportunity | OpportunityRestricted,
   status?: OfferStatus,
   getCandidates = true
 ): object {

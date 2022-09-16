@@ -240,7 +240,7 @@ export class MailsService {
     });
   }
 
-  async sendOnCreatedExternalOfferMail(opportunity: Opportunity) {
+  async sendOnCreatedExternalOfferMail(opportunity: OpportunityRestricted) {
     const { companiesAdminMail } = getAdminMailsFromDepartment(
       opportunity.department
     );
@@ -248,7 +248,11 @@ export class MailsService {
       toEmail: companiesAdminMail,
       templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED,
       variables: {
-        offer: getMailjetVariablesForPrivateOrPublicOffer(opportunity),
+        offer: getMailjetVariablesForPrivateOrPublicOffer(
+          opportunity,
+          opportunity.opportunityUsers.status,
+          false
+        ),
         candidat: _.omitBy(opportunity.opportunityUsers[0].user, _.isNil),
       },
     });

@@ -10,8 +10,7 @@ import {
   Param,
   ParseUUIDPipe,
   NotFoundException,
-  ParseBoolPipe,
-  Patch,
+  Put,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from '../auth/auth.types';
@@ -220,8 +219,7 @@ export class OpportunitiesController {
   @Post('join')
   async openOpportunity(
     @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
-    @Body('userId', new ParseUUIDPipe()) candidateId: string,
-    @Body('seen', new ParseBoolPipe()) seen: boolean
+    @Body('userId', new ParseUUIDPipe()) candidateId: string
   ) {
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
@@ -234,14 +232,14 @@ export class OpportunitiesController {
         candidateId,
         opportunityId,
         {
-          seen,
+          seen: true,
         }
       );
     } else {
       return this.opportunityUsersService.create({
         OpportunityId: opportunityId,
         UserId: candidateId,
-        seen: seen,
+        seen: true,
       });
     }
   }
@@ -400,7 +398,7 @@ export class OpportunitiesController {
   // TODO put Id in params
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @Patch()
+  @Put()
   async update(
     @Body(new UpdateOpportunityPipe())
     updateOpportunityDto: UpdateOpportunityDto

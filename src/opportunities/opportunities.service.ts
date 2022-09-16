@@ -147,6 +147,11 @@ export class OpportunitiesService {
       await createdOpportunity.$add('businessLines', businessLines);
     }
 
+    await this.opportunityUsersService.create({
+      OpportunityId: createdOpportunity.id,
+      UserId: candidateId,
+    });
+
     return this.findOneAsCandidate(createdOpportunity.id, candidateId);
   }
 
