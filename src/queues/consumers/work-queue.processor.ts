@@ -271,7 +271,7 @@ export class WorkQueueProcessor {
   async processCacheCV(job: Job<CacheCVJob>) {
     const { data } = job;
 
-    const cv = await this.cvsService.cacheCV(data.url, data.candidateId);
+    const cv = await this.cvsService.cacheOne(data.url, data.candidateId);
 
     return cv
       ? `CV cached for User ${cv.UserId} and CV ${cv.id}${
@@ -284,7 +284,7 @@ export class WorkQueueProcessor {
   async processCacheAllCVs(job: Job<CacheAllCVJob>) {
     const {} = job;
 
-    const cvs = await this.cvsService.cacheAllCVs(undefined, true);
+    const cvs = await this.cvsService.findAndCacheAll(undefined, true);
 
     return cvs && cvs.length > 0 ? `All published CVs cached` : `No CVs cached`;
   }

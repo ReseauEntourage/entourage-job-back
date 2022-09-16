@@ -14,6 +14,7 @@ import {
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { CVsModule } from '../cvs/cvs.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OpportunityUsersService } from './opportunity-users.service';
       OpportunityBusinessLine,
     ]),
     UsersModule,
+    CVsModule,
     BusinessLinesModule,
     MailsModule,
     SMSModule,

@@ -21,6 +21,7 @@ import {
   MailjetTemplate,
   MailjetTemplates,
 } from './mails.types';
+import { OpportunityRestricted } from '../opportunities/opportunities.types';
 
 @Injectable()
 export class MailsService {
@@ -312,17 +313,15 @@ export class MailsService {
     });
   }
 
-  async sendReminderOfferMail(
-    opportunity: Opportunity & { opportunityUser: OpportunityUser }
-  ) {
+  async sendReminderOfferMail(opportunity: OpportunityRestricted) {
     if (
       opportunity &&
       Object.keys(opportunity).length > 0 &&
       opportunity.isPublic === false &&
-      (!opportunity.opportunityUser.seen ||
-        opportunity.opportunityUser.status < 0)
+      (!opportunity.opportunityUsers.seen ||
+        opportunity.opportunityUsers.status < 0)
     ) {
-      const candidatData = opportunity.opportunityUser.user;
+      const candidatData = opportunity.opportunityUsers.user;
 
       const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
         candidatData.zone

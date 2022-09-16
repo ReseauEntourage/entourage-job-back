@@ -33,66 +33,6 @@ export function queryConditionCV(
     `;
 }
 
-// TODO remove completely
-export function cleanCV(model: CV): CV {
-  if (!model) {
-    return null;
-  }
-  const tmpCV = model.toJSON() as CV;
-  /*if (tmpCV.skills) {
-    tmpCV.skills = tmpCV.skills.map((o) => {
-      return o.name;
-    });
-  }
-  if (tmpCV.contracts) {
-    tmpCV.contracts = tmpCV.contracts.map((o) => {
-      return o.name;
-    });
-  }
-  if (tmpCV.languages) {
-    tmpCV.languages = tmpCV.languages.map((o) => {
-      return o.name;
-    });
-  }
-  if (tmpCV.passions) {
-    tmpCV.passions = tmpCV.passions.map((o) => {
-      return o.name;
-    });
-  }
-  if (tmpCV.ambitions) {
-    tmpCV.ambitions = tmpCV.ambitions.map(({ name, order, prefix }) => {
-      return { name, order, prefix };
-    });
-  }*/
-  // TODO FIX CLEANING
-  /* if (tmpCV.businessLines) {
-    tmpCV.businessLines = tmpCV.businessLines.map(
-      ({ name, order }: BusinessLine) => {
-        return { name, order };
-      }
-    );
-  }
-  if (tmpCV.locations) {
-    tmpCV.locations = tmpCV.locations.map(({ name }: Location) => {
-      return name;
-    });
-  }*/
-  /*if (tmpCV.experiences) {
-    tmpCV.experiences = tmpCV.experiences.map((e) => {
-      if (e.skills) {
-        return {
-          ...e,
-          skills: e.skills.map(({ name }) => {
-            return name;
-          }),
-        };
-      }
-      return e;
-    });
-  }*/
-  return tmpCV;
-}
-
 export function getPDFPaths(candidateId: string, queryFileName: string) {
   const fileName = queryFileName
     ? `${queryFileName}_${candidateId.substring(0, 8)}`

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { UsersService } from 'src/users/users.service';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { OpportunityUser } from './models';
 import { OpportunityCandidateInclude } from './models/opportunity.include';
@@ -8,10 +9,11 @@ import { OpportunityCandidateInclude } from './models/opportunity.include';
 export class OpportunityUsersService {
   constructor(
     @InjectModel(OpportunityUser)
-    private opportunityUserModel: typeof OpportunityUser
+    private opportunityUserModel: typeof OpportunityUser,
+    private usersService: UsersService
   ) {}
 
-  create(createOpportunityUserDto: Partial<OpportunityUser>) {
+  async create(createOpportunityUserDto: Partial<OpportunityUser>) {
     return this.opportunityUserModel.create(createOpportunityUserDto, {
       hooks: true,
     });
@@ -21,6 +23,12 @@ export class OpportunityUsersService {
     candidateId: string,
     opportunityId: string
   ) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    if (!candidate) {
+      return null;
+    }
+
     return this.opportunityUserModel.findOne({
       where: {
         UserId: candidateId,
@@ -31,6 +39,12 @@ export class OpportunityUsersService {
   }
 
   async findAllByCandidateId(candidateId: string) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    if (!candidate) {
+      return null;
+    }
+
     return this.opportunityUserModel.findAll({
       where: {
         UserId: candidateId,
@@ -55,10 +69,37 @@ export class OpportunityUsersService {
     candidateId: string,
     updateOpportunityUserDto: UpdateOpportunityUserDto
   ) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    if (!candidate) {
+      return null;
+    }
+
     return this.opportunityUserModel.update(updateOpportunityUserDto, {
       where: {
         UserId: candidateId,
       },
+      individualHooks: true,
+    });
+  }
+
+  async updateByCandidateIdAndOpportunityId(
+    candidateId: string,
+    opportunityId: string,
+    updateOpportunityUserDto: UpdateOpportunityUserDto
+  ) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    if (!candidate) {
+      return null;
+    }
+
+    return this.opportunityUserModel.update(updateOpportunityUserDto, {
+      where: {
+        UserId: candidateId,
+        OpportunityId: opportunityId,
+      },
+      individualHooks: true,
     });
   }
 }

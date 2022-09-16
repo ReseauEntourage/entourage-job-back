@@ -61,6 +61,16 @@ export const OpportunityCompleteInclude: Includeable[] = [
   },
 ];
 
+export const OpportunityCompleteWithoutOpportunityUsersInclude: Includeable[] =
+  [
+    {
+      model: BusinessLine,
+      as: 'businessLines',
+      attributes: ['name', 'order'],
+      through: { attributes: [] },
+    },
+  ];
+
 export const OpportunityCompleteAdminWithoutBusinessLinesInclude: Includeable[] =
   [
     {

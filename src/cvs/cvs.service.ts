@@ -47,7 +47,6 @@ import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AnyToFix, FilterParams, RedisKeys } from 'src/utils/types';
 import { CVConstantType, CVFilterKey, CVFilters } from './cvs.types';
 import {
-  cleanCV,
   getCVOptions,
   getPublishedCVQuery,
   queryConditionCV,
@@ -267,7 +266,7 @@ export class CVsService {
     const redisKey = RedisKeys.CV_PREFIX + url;
     const redisCV: string = await this.cacheManager.get(redisKey);
 
-    return redisCV ? JSON.parse(redisCV) : await this.cacheCV(url);
+    return redisCV ? JSON.parse(redisCV) : await this.cacheOne(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {
@@ -346,7 +345,7 @@ export class CVsService {
       if (redisCvs) {
         modelCVs = JSON.parse(redisCvs);
       } else {
-        modelCVs = await this.cacheAllCVs(getPublishedCVQuery(), true);
+        modelCVs = await this.findAndCacheAll(getPublishedCVQuery(), true);
       }
     } else {
       const { employed, ...restOptions } = options;
@@ -361,7 +360,7 @@ export class CVsService {
         )} like '%${escapedQuery}%'
     `
         : undefined;
-      modelCVs = await this.cacheAllCVs(
+      modelCVs = await this.findAndCacheAll(
         dbQuery,
         false,
         dbQuery ? restOptions : options
@@ -387,7 +386,7 @@ export class CVsService {
 
             const { employed: newEmployed, ...newRestOptions } = newOptions;
 
-            const filteredOtherCvs = await this.cacheAllCVs(
+            const filteredOtherCvs = await this.findAndCacheAll(
               dbQuery,
               false,
               dbQuery ? newRestOptions : newOptions
@@ -500,7 +499,7 @@ export class CVsService {
       return null;
     }
 
-    return updatedCVs.map(cleanCV);
+    return updatedCVs.map((cv) => cv.toJSON());
   }
 
   async removeByCandidateId(candidateId: string) {
@@ -861,7 +860,7 @@ export class CVsService {
     );
 
     return results.reduce((acc, curr) => {
-      const cleanedCurr = cleanCV(curr);
+      const cleanedCurr = curr.toJSON();
       return {
         ...acc,
         ...cleanedCurr,
@@ -869,7 +868,7 @@ export class CVsService {
     }, {} as Partial<CV>);
   }
 
-  async cacheCV(url: string, candidateId?: string) {
+  async cacheOne(url: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
@@ -903,7 +902,7 @@ export class CVsService {
     return null;
   }
 
-  async cacheAllCVs(
+  async findAndCacheAll(
     dbQuery?: string,
     cache = false,
     options: {
@@ -967,7 +966,7 @@ export class CVsService {
       ],
     });
 
-    const cleanedCVList = cvList.map(cleanCV);
+    const cleanedCVList = cvList.map((cv) => cv.toJSON());
 
     if (cache) {
       await this.cacheManager.set(

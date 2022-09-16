@@ -9,6 +9,14 @@ export interface Filter<K, T extends AnyToFix = AnyToFix> {
   priority?: FilterConstant<T>[];
 }
 
+export type TabFilters<T> = TabFilter<T>[];
+
+export interface TabFilter<T> {
+  tag: T;
+  title: string;
+  active?: boolean;
+}
+
 export interface FilterConstant<T, C extends AnyToFix = AnyToFix> {
   value: T;
   label: string;
@@ -28,3 +36,5 @@ export type FilterObject<
 > = Partial<Record<K, FilterConstant<T>[]>>;
 
 export type FilterParams<K extends string> = Partial<Record<K, string[]>>;
+
+export type TabFilterParam<K extends string> = Partial<Record<K, string[]>>;

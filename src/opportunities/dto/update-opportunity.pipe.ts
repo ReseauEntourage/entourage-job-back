@@ -6,16 +6,16 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateOpportunityDto } from './create-opportunity.dto';
+import { UpdateOpportunityDto } from './update-opportunity.dto';
 
-export class OpportunityPipe
-  implements PipeTransform<CreateOpportunityDto, Promise<CreateOpportunityDto>>
+export class UpdateOpportunityPipe
+  implements PipeTransform<UpdateOpportunityDto, Promise<UpdateOpportunityDto>>
 {
   async transform(
-    value: CreateOpportunityDto,
+    value: UpdateOpportunityDto,
     { metatype }: ArgumentMetadata
-  ): Promise<CreateOpportunityDto> {
-    if (!metatype || !OpportunityPipe.toValidate(metatype)) {
+  ): Promise<UpdateOpportunityDto> {
+    if (!metatype || !UpdateOpportunityPipe.toValidate(metatype)) {
       return value;
     }
     const object = plainToInstance(metatype, value);

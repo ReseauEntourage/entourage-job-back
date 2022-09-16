@@ -46,7 +46,7 @@ jobs:
     - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
       with:
         args:
-          yarn db-migrate
+          yarn db:migrate
     - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
       with:
         args:
