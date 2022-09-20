@@ -37,26 +37,15 @@ export class OpportunityFactory implements Factory<Opportunity> {
     private opportunitiesService: OpportunitiesService
   ) {}
 
-  totalOppsInDB = 0;
-
-  getTotalOppsInDB() {
-    return this.totalOppsInDB;
-  }
-
-  incrTotalOppsInDB() {
-    this.totalOppsInDB += 1;
-  }
-
   generateOpportunity(props: Partial<Opportunity>) {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
-    // TODO random boolean
     const fakeData = {
       title: faker.lorem.words(2),
-      isPublic: true,
-      isExternal: false,
-      isValidated: true,
-      isArchived: false,
+      isPublic: faker.datatype.boolean(),
+      isExternal: faker.datatype.boolean(),
+      isValidated: faker.datatype.boolean(),
+      isArchived: faker.datatype.boolean(),
       company: faker.company.companyName(2),
       companyDescription: faker.lorem.paragraphs(3),
       contactMail: '',
@@ -135,8 +124,6 @@ export class OpportunityFactory implements Factory<Opportunity> {
           await createdOpportunity.$add(componentKey, instances);
         })
       );
-
-      this.incrTotalOppsInDB();
     }
     const dbOpportunity = await this.opportunitiesService.findOne(
       opportunityData.id || opportunityId

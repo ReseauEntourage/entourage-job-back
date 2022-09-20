@@ -318,16 +318,6 @@ export class OpportunitiesService {
     id: string,
     candidateId: string
   ): Promise<OpportunityRestricted> {
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        candidateId,
-        id
-      );
-
-    if (!opportunityUser) {
-      return null;
-    }
-
     const opportunity = await this.opportunityModel.findOne({
       where: { isValidated: true, isArchived: false, id },
       attributes: [...OpportunityCandidateAttributes],
@@ -338,9 +328,19 @@ export class OpportunitiesService {
       return null;
     }
 
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        id
+      );
+
+    if (!opportunityUser && !opportunity.isPublic) {
+      return null;
+    }
+
     return {
       ...opportunity.toJSON(),
-      opportunityUsers: opportunityUser.toJSON(),
+      opportunityUsers: opportunityUser?.toJSON(),
     } as OpportunityRestricted;
   }
 

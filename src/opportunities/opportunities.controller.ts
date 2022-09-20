@@ -37,7 +37,7 @@ import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { UpdateOpportunityPipe } from './dto/update-opportunity.pipe';
-import { Opportunity, OpportunityUser } from './models';
+import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import {
   OfferAdminTab,
@@ -234,19 +234,22 @@ export class OpportunitiesController {
   @LinkedUser('body.userId')
   @UseGuards(LinkedUserGuard)
   @Post('join')
-  async openOpportunity(
+  async createOpportunityUser(
     @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
-    @Body('userId', new ParseUUIDPipe()) candidateId: string
+    @Body('userId', new ParseUUIDPipe()) candidateId: string,
+    @UserPayload('role') role: UserRole
   ) {
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        candidateId,
-        opportunityId
-      );
+    const opportunity = await this.opportunitiesService.findOneAsCandidate(
+      candidateId,
+      opportunityId
+    );
 
-    let updatedOpportunityUser: OpportunityUser;
-    if (opportunityUser) {
-      updatedOpportunityUser =
+    if (opportunity) {
+      if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+        throw new ForbiddenException();
+      }
+
+      const updatedOpportunityUser =
         await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
           candidateId,
           opportunityId,
@@ -254,13 +257,35 @@ export class OpportunitiesController {
             seen: true,
           }
         );
-    } else {
-      updatedOpportunityUser = await this.opportunityUsersService.create({
-        OpportunityId: opportunityId,
-        UserId: candidateId,
-        seen: true,
-      });
+
+      await this.opportunitiesService.updateExternalDBOpportunity(
+        updatedOpportunityUser.OpportunityId
+      );
+
+      return updatedOpportunityUser.toJSON();
     }
+
+    const existingOpportunity = await this.opportunitiesService.findOne(
+      opportunityId
+    );
+
+    if (!existingOpportunity) {
+      throw new NotFoundException();
+    }
+
+    if (
+      (!existingOpportunity.isPublic || !existingOpportunity.isValidated) &&
+      role !== UserRoles.ADMIN
+    ) {
+      throw new ForbiddenException();
+    }
+
+    const updatedOpportunityUser = await this.opportunityUsersService.create({
+      OpportunityId: opportunityId,
+      UserId: candidateId,
+      seen: true,
+    });
+
     await this.opportunitiesService.updateExternalDBOpportunity(
       updatedOpportunityUser.OpportunityId
     );

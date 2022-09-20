@@ -18,7 +18,7 @@ export class UserCandidatsHelper {
     private userFactory: UserFactory
   ) {}
 
-  async associateCoachAndCandidat(
+  async associateCoachAndCandidate(
     coach: User | LoggedUser,
     candidat: User | LoggedUser,
     isLogged = false
@@ -26,17 +26,17 @@ export class UserCandidatsHelper {
     const coachCredentials: Pick<LoggedUser, 'user'> = isLogged
       ? { user: (coach as LoggedUser).user }
       : await this.authService.login(coach as User);
-    const candidatCredentials: Pick<LoggedUser, 'user'> = isLogged
+    const candidateCredentials: Pick<LoggedUser, 'user'> = isLogged
       ? { user: (candidat as LoggedUser).user }
       : await this.authService.login(candidat as User);
 
     await this.userCandidatModel.update(
       {
-        candidatId: candidatCredentials.user.id,
+        candidatId: candidateCredentials.user.id,
         coachId: coachCredentials.user.id,
       },
       {
-        where: { candidatId: candidatCredentials.user.id },
+        where: { candidatId: candidateCredentials.user.id },
         individualHooks: true,
       }
     );
@@ -47,7 +47,7 @@ export class UserCandidatsHelper {
           {},
           false
         ),
-        loggedInCandidat: await this.userHelper.createLoggedInUser(
+        loggedInCandidate: await this.userHelper.createLoggedInUser(
           (candidat as LoggedUser).user,
           {},
           false
@@ -56,7 +56,7 @@ export class UserCandidatsHelper {
     }
     return {
       coach: await this.userFactory.create(coach as User, {}, false),
-      candidat: await this.userFactory.create(candidat as User, {}, false),
+      candidate: await this.userFactory.create(candidat as User, {}, false),
     };
   }
 
