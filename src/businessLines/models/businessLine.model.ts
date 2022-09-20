@@ -10,12 +10,9 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import {
-  Opportunity,
-  OpportunityBusinessLine,
-} from '../../opportunities/models';
 import { BusinessLineValue } from '../businessLines.types';
 import { CV, CVBusinessLine } from 'src/cvs/models';
+import { Opportunity, OpportunityBusinessLine } from 'src/opportunities/models';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'BusinessLines' })

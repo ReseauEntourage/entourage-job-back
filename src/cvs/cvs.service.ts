@@ -44,7 +44,7 @@ import {
   getFiltersObjectsFromQueryParams,
 } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AnyToFix, FilterParams, RedisKeys } from 'src/utils/types';
+import { FilterParams, RedisKeys } from 'src/utils/types';
 import { CVConstantType, CVFilterKey, CVFilters } from './cvs.types';
 import {
   getCVOptions,
@@ -230,11 +230,11 @@ export class CVsService {
 
     await Promise.all(promises);
 
-    return this.dividedCompleteCVQuery(async (include) => {
-      return this.cvModel.findByPk(modelCV.id, {
-        include: [include],
-      });
-    }, true);
+    const cv = await this.cvModel.findByPk(modelCV.id, {
+      include: CVCompleteWithAllUserPrivateInclude,
+    });
+
+    return cv.toJSON();
   }
 
   async findOne(id: string) {
@@ -250,16 +250,13 @@ export class CVsService {
       return null;
     }
 
-    // TODO STOP DIVIDING
-    return this.dividedCompleteCVQuery(async (include) => {
-      return this.cvModel.findOne({
-        include: [include],
-        where: {
-          UserId: candidateId,
-        },
-        order: [['version', 'DESC']],
-      });
-    }, true);
+    return this.cvModel.findOne({
+      include: CVCompleteWithAllUserPrivateInclude,
+      where: {
+        UserId: candidateId,
+      },
+      order: [['version', 'DESC']],
+    });
   }
 
   async findOneByUrl(url: string): Promise<CV> {
@@ -666,6 +663,7 @@ export class CVsService {
     const limitLength = 4028;
 
     const cv = await this.findOneByCandidateId(candidateId);
+
     let searchString = [
       cv.user.candidat.firstName,
       cv.user.candidat.lastName,
@@ -845,29 +843,6 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate);
   }
 
-  async dividedCompleteCVQuery(
-    query: (include: AnyToFix) => Promise<CV>,
-    privateUser = false
-  ) {
-    const completeIncludes = privateUser
-      ? CVCompleteWithAllUserPrivateInclude
-      : CVCompleteWithAllUserInclude;
-
-    const results = await Promise.all(
-      completeIncludes.map(async (include) => {
-        return query(include);
-      })
-    );
-
-    return results.reduce((acc, curr) => {
-      const cleanedCurr = curr.toJSON();
-      return {
-        ...acc,
-        ...cleanedCurr,
-      };
-    }, {} as Partial<CV>);
-  }
-
   async cacheOne(url: string, candidateId?: string) {
     let urlToUse = url;
 
@@ -887,17 +862,13 @@ export class CVsService {
     );
 
     if (cvs && cvs.length > 0) {
-      const cv = await this.dividedCompleteCVQuery(
-        async (include: AnyToFix) => {
-          return this.cvModel.findByPk(cvs[0].id, {
-            include: [include],
-          });
-        }
-      );
+      const cv = await this.cvModel.findByPk(cvs[0].id, {
+        include: CVCompleteWithAllUserInclude,
+      });
 
-      await this.cacheManager.set(redisKey, JSON.stringify(cv), 0);
+      await this.cacheManager.set(redisKey, JSON.stringify(cv.toJSON()), 0);
 
-      return cv;
+      return cv.toJSON();
     }
     return null;
   }

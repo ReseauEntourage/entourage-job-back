@@ -26,8 +26,12 @@ export class OpportunityUsersHelper {
     candidateId: string
   ) {
     return Promise.all(
-      opportunityIds.map((opportunityId) => {
-        return this.associateOpportunityUser(opportunityId, candidateId);
+      opportunityIds.map(async (opportunityId) => {
+        const opportunityUser = await this.associateOpportunityUser(
+          opportunityId,
+          candidateId
+        );
+        return opportunityUser.toJSON();
       })
     );
   }

@@ -14,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from '../auth/auth.types';
-import { UserCandidat } from '../users/models';
 import { getCandidateIdFromCoachOrCandidate } from '../users/users.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { DepartmentFilters } from 'src/locations/locations.types';
@@ -27,19 +26,25 @@ import {
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
+import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
+import { CreateExternalOpportunityPipe } from './dto/create-external-opportunity.pipe';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { CreateOpportunityPipe } from './dto/create-opportunity.pipe';
-import { ExternalOpportunityPipe } from './dto/external-opportunity.pipe';
+import { UpdateExternalOpportunityRestrictedDto } from './dto/update-external-opportunity-restricted.dto';
+import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
+import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity.pipe';
+import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { UpdateOpportunityPipe } from './dto/update-opportunity.pipe';
-import { Opportunity } from './models';
+import { Opportunity, OpportunityUser } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import {
   OfferAdminTab,
   OfferCandidateTab,
   OfferCandidateTabs,
   OfferFilterKey,
+  OfferStatuses,
   OpportunityRestricted,
 } from './opportunities.types';
 import { OpportunityUsersService } from './opportunity-users.service';
@@ -92,9 +97,7 @@ export class OpportunitiesController {
       createdOpportunities = await Promise.all(
         locations.map(async ({ department, address }) => {
           const createdOpportunity = await this.opportunitiesService.create(
-            { ...restBody, department, address },
-            candidatesId,
-            isAdmin,
+            { ...restBody, department, address, isValidated: isAdmin },
             userId
           );
 
@@ -139,9 +142,7 @@ export class OpportunitiesController {
     }
 
     const createdOpportunity = await this.opportunitiesService.create(
-      opportunityToCreate,
-      candidatesId,
-      isAdmin,
+      { ...opportunityToCreate, isValidated: isAdmin },
       userId
     );
 
@@ -170,8 +171,10 @@ export class OpportunitiesController {
   @Post('external')
   async createExternal(
     @UserPayload('role') role: UserRole,
-    @Body(new ExternalOpportunityPipe())
-    createExternalOpportunityDto: CreateExternalOpportunityDto,
+    @Body(CreateExternalOpportunityPipe)
+    createExternalOpportunityDto:
+      | CreateExternalOpportunityDto
+      | CreateExternalOpportunityRestrictedDto,
     @UserPayload('id') userId?: string
   ) {
     if (userId && !uuidValidate(userId)) {
@@ -181,36 +184,50 @@ export class OpportunitiesController {
 
     const { candidateId, ...restParams } = createExternalOpportunityDto;
 
-    const createdOpportunity = await this.opportunitiesService.createExternal(
-      restParams,
-      candidateId,
-      userId
+    const candidate = await this.opportunitiesService.findOneCandidate(
+      candidateId
     );
 
-    if (!createdOpportunity) {
+    if (!candidate) {
       throw new NotFoundException();
     }
+
+    const createdOpportunity = await this.opportunitiesService.create(
+      {
+        ...restParams,
+        isExternal: true,
+        isPublic: false,
+        isArchived: false,
+        isValidated: true,
+      },
+      userId
+    );
 
     await this.opportunityUsersService.create({
       OpportunityId: createdOpportunity.id,
       UserId: candidateId,
       status:
         createExternalOpportunityDto.status &&
-        createExternalOpportunityDto.status > -1
+        createExternalOpportunityDto.status > OfferStatuses.TO_PROCESS.value
           ? createExternalOpportunityDto.status
-          : 0,
+          : OfferStatuses.CONTACTED.value,
     });
 
+    const finalOpportunity = await this.opportunitiesService.findOneAsCandidate(
+      createdOpportunity.id,
+      candidateId
+    );
+
     await this.opportunitiesService.sendMailAfterExternalCreation(
-      createdOpportunity,
+      finalOpportunity,
       isAdmin
     );
 
     await this.opportunitiesService.createExternalDBOpportunity(
-      createdOpportunity.id
+      finalOpportunity.id
     );
 
-    return createdOpportunity;
+    return finalOpportunity;
   }
 
   // todo change to candidateId
@@ -227,21 +244,28 @@ export class OpportunitiesController {
         opportunityId
       );
 
+    let updatedOpportunityUser: OpportunityUser;
     if (opportunityUser) {
-      return this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
-        candidateId,
-        opportunityId,
-        {
-          seen: true,
-        }
-      );
+      updatedOpportunityUser =
+        await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+          candidateId,
+          opportunityId,
+          {
+            seen: true,
+          }
+        );
     } else {
-      return this.opportunityUsersService.create({
+      updatedOpportunityUser = await this.opportunityUsersService.create({
         OpportunityId: opportunityId,
         UserId: candidateId,
         seen: true,
       });
     }
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunityUser.OpportunityId
+    );
+
+    return updatedOpportunityUser.toJSON();
   }
 
   @Roles(UserRoles.ADMIN)
@@ -406,9 +430,11 @@ export class OpportunitiesController {
     const { shouldSendNotifications, id, candidatesId, ...restOpportunity } =
       updateOpportunityDto;
 
-    const opportunity = await this.opportunitiesService.findOne(
-      updateOpportunityDto.id
-    );
+    const opportunity = await this.opportunitiesService.findOne(id);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
 
     const shouldVerifyPhoneForRetroCompatibility =
       opportunity.isValidated === updateOpportunityDto.isValidated &&
@@ -422,10 +448,9 @@ export class OpportunitiesController {
       throw new BadRequestException();
     }
 
-    const updatedOpportunity = await this.opportunitiesService.update(
-      id,
-      restOpportunity
-    );
+    await this.opportunitiesService.update(id, restOpportunity);
+
+    const updatedOpportunity = await this.opportunitiesService.findOne(id);
 
     const candidates =
       await this.opportunitiesService.updateAssociatedCandidatesToOpportunity(
@@ -434,16 +459,126 @@ export class OpportunitiesController {
         candidatesId
       );
 
+    const finalOpportunity = await this.opportunitiesService.findOne(id);
+
     await this.opportunitiesService.sendMailsAfterUpdate(
-      updatedOpportunity,
+      finalOpportunity,
       opportunity,
       candidates
     );
 
-    await this.opportunitiesService.createExternalDBOpportunity(
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunity.id
+    );
+
+    return finalOpportunity.toJSON();
+  }
+
+  // TODO put Id in params
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Put('bulk')
+  async updateAll(
+    @Body('attributes', UpdateOpportunityPipe)
+    updateOpportunityDto: UpdateOpportunityDto,
+    @Body('ids') opportunityIds: string[]
+  ) {
+    const {
+      shouldSendNotifications,
+      candidatesId,
+      isAdmin,
+      isCopy,
+      locations,
+      ...restOpportunity
+    } = updateOpportunityDto;
+
+    const updatedOpportunities = await this.opportunitiesService.updateAll(
+      restOpportunity,
+      opportunityIds
+    );
+
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunities.updatedIds
+    );
+
+    return updatedOpportunities;
+  }
+
+  // TODO put Id in params
+  @LinkedUser('body.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Put('external')
+  async updateExternal(
+    @Body(UpdateExternalOpportunityPipe)
+    updateExternalOpportunityDto:
+      | UpdateExternalOpportunityDto
+      | UpdateExternalOpportunityRestrictedDto
+  ) {
+    const { candidateId, id, ...restOpportunity } =
+      updateExternalOpportunityDto;
+
+    const candidate = await this.opportunitiesService.findOneCandidate(
+      candidateId
+    );
+
+    if (!candidate) {
+      throw new NotFoundException();
+    }
+
+    const opportunity = await this.opportunitiesService.findOne(id);
+
+    if (!opportunity || !opportunity.isExternal) {
+      throw new NotFoundException();
+    }
+
+    await this.opportunitiesService.update(id, restOpportunity);
+
+    const updatedOpportunity =
+      await this.opportunitiesService.findOneAsCandidate(id, candidateId);
+
+    await this.opportunitiesService.updateExternalDBOpportunity(
       updatedOpportunity.id
     );
 
     return updatedOpportunity;
+  }
+
+  // todo change to candidateId
+  @LinkedUser('body.UserId')
+  @UseGuards(LinkedUserGuard)
+  @Put('join')
+  async updateOpportunityUser(
+    @Body() updateOpportunityUserDto: UpdateOpportunityUserDto
+  ) {
+    const { OpportunityId, UserId, ...restOpportunityUser } =
+      updateOpportunityUserDto;
+
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        UserId,
+        OpportunityId
+      );
+
+    if (!opportunityUser) {
+      throw new NotFoundException();
+    }
+
+    const updatedOpportunityUser =
+      await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+        UserId,
+        OpportunityId,
+        restOpportunityUser
+      );
+
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunityUser.OpportunityId
+    );
+
+    await this.opportunitiesService.sendOnStatusUpdatedMails(
+      updatedOpportunityUser,
+      opportunityUser
+    );
+
+    return updatedOpportunityUser;
   }
 }

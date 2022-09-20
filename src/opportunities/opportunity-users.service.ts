@@ -75,12 +75,14 @@ export class OpportunityUsersService {
       return null;
     }
 
-    return this.opportunityUserModel.update(updateOpportunityUserDto, {
+    await this.opportunityUserModel.update(updateOpportunityUserDto, {
       where: {
         UserId: candidateId,
       },
       individualHooks: true,
     });
+
+    return this.findAllByCandidateId(candidateId);
   }
 
   async updateByCandidateIdAndOpportunityId(
@@ -94,12 +96,17 @@ export class OpportunityUsersService {
       return null;
     }
 
-    return this.opportunityUserModel.update(updateOpportunityUserDto, {
+    await this.opportunityUserModel.update(updateOpportunityUserDto, {
       where: {
         UserId: candidateId,
         OpportunityId: opportunityId,
       },
       individualHooks: true,
     });
+
+    return this.findOneByCandidateIdAndOpportunityId(
+      candidateId,
+      opportunityId
+    );
   }
 }

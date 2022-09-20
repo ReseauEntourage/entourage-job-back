@@ -1,7 +1,8 @@
 import * as _ from 'lodash';
+import moment from 'moment';
+import { Includeable, Op, WhereOptions } from 'sequelize';
 import { firstBy } from 'thenby';
 
-import { Includeable, Op, WhereOptions } from 'sequelize';
 import { BusinessLineFilters } from 'src/businessLines/businessLines.types';
 import { BusinessLine } from 'src/businessLines/models';
 import { ContractFilters } from 'src/contracts/contracts.types';
@@ -25,7 +26,6 @@ import {
   OfferStatusFilters,
   OpportunityRestricted,
 } from './opportunities.types';
-import moment from 'moment';
 
 export function findOfferStatus(
   status: OfferStatus,

@@ -23,7 +23,7 @@ import { AdminZone, FilterParams } from 'src/utils/types';
 import {
   UpdateUserCandidatDto,
   UpdateUserRestrictedDto,
-  UserRestrictedPipe,
+  UpdateUserRestrictedPipe,
 } from './dto';
 import {
   LinkedUser,
@@ -286,7 +286,7 @@ export class UsersController {
     @UserPayload('role') role: UserRole,
     @Param('id', new ParseUUIDPipe()) userId: string,
     // Do not instantiante ContactUsFormPipe so that Request can be injected
-    @Body(UserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
+    @Body(UpdateUserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
   ) {
     if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {
       throw new BadRequestException();

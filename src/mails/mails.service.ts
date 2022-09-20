@@ -2,6 +2,10 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
+import {
+  OfferStatuses,
+  OpportunityRestricted,
+} from '../opportunities/opportunities.types';
 import { CV } from 'src/cvs/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/opportunities.utils';
@@ -21,7 +25,6 @@ import {
   MailjetTemplate,
   MailjetTemplates,
 } from './mails.types';
-import { OpportunityRestricted } from '../opportunities/opportunities.types';
 
 @Injectable()
 export class MailsService {
@@ -253,7 +256,7 @@ export class MailsService {
           opportunity.opportunityUsers.status,
           false
         ),
-        candidat: _.omitBy(opportunity.opportunityUsers[0].user, _.isNil),
+        candidat: _.omitBy(opportunity.opportunityUsers.user, _.isNil),
       },
     });
   }
@@ -390,5 +393,46 @@ export class MailsService {
       }
     }
     return false;
+  }
+
+  async sendOnOfferStatusUpdatedMails(
+    opportunityUser: OpportunityUser,
+    opportunity: Opportunity
+  ) {
+    const mailVariables = {
+      candidat: _.omitBy(opportunityUser.user.toJSON(), _.isNil),
+      offer: getMailjetVariablesForPrivateOrPublicOffer(
+        opportunity.toJSON(),
+        opportunityUser.status,
+        false
+      ),
+    };
+
+    const { candidatesAdminMail } = getAdminMailsFromZone(
+      opportunityUser.user.zone
+    );
+
+    await this.workQueue.add(Jobs.SEND_MAIL, {
+      toEmail: candidatesAdminMail,
+      templateId: MailjetTemplates.STATUS_CHANGED,
+      variables: mailVariables,
+    });
+
+    if (
+      opportunityUser.status === OfferStatuses.REFUSAL_BEFORE_INTERVIEW.value &&
+      !opportunity.isPublic &&
+      !opportunity.isExternal
+    ) {
+      const { companiesAdminMail } = getAdminMailsFromDepartment(
+        opportunity.department
+      );
+
+      await this.workQueue.add(Jobs.SEND_MAIL, {
+        toEmail: opportunity.contactMail || opportunity.recruiterMail,
+        replyTo: companiesAdminMail,
+        templateId: MailjetTemplates.OFFER_REFUSED,
+        variables: mailVariables,
+      });
+    }
   }
 }

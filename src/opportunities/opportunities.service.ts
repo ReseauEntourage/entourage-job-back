@@ -16,11 +16,13 @@ import { Jobs, Queues } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterObject, FilterParams } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
+import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import {
   Opportunity,
@@ -38,10 +40,10 @@ import {
   OfferAdminTab,
   OfferAdminTabs,
   OfferCandidateTab,
-  OfferCandidateTabFilters,
   OfferCandidateTabs,
   OfferFilterKey,
   OfferOptions,
+  OfferStatuses,
   OpportunityRestricted,
 } from './opportunities.types';
 import {
@@ -78,26 +80,31 @@ export class OpportunitiesService {
 
   async create(
     createOpportunityDto: Partial<
-      Omit<
-        CreateOpportunityDto,
-        | 'isAdmin'
-        | 'locations'
-        | 'shouldSendNotifications'
-        | 'isCopy'
-        | 'candidatesId'
-      >
+      | Omit<
+          CreateOpportunityDto,
+          | 'isAdmin'
+          | 'locations'
+          | 'shouldSendNotifications'
+          | 'isCopy'
+          | 'candidatesId'
+        >
+      | Omit<
+          CreateExternalOpportunityDto | CreateExternalOpportunityRestrictedDto,
+          'candidateId'
+        >
     >,
-    candidateIds?: string[],
-    isAdmin = false,
     createdById?: string
   ) {
     const createdOpportunity = await this.opportunityModel.create({
       ...createOpportunityDto,
-      isValidated: !!isAdmin,
       createdBy: createdById,
     });
 
-    if (createOpportunityDto.businessLines) {
+    if (
+      (createOpportunityDto instanceof CreateExternalOpportunityDto ||
+        createOpportunityDto instanceof CreateOpportunityDto) &&
+      createOpportunityDto.businessLines
+    ) {
       const businessLines = await Promise.all(
         createOpportunityDto.businessLines.map(({ name, order = -1 }) => {
           return this.businessLineModel.create({ name, order });
@@ -106,53 +113,6 @@ export class OpportunitiesService {
       await createdOpportunity.$add('businessLines', businessLines);
     }
     return createdOpportunity;
-  }
-
-  async createExternal(
-    createExternalOpportunityDto: Partial<
-      Omit<
-        CreateExternalOpportunityDto | CreateExternalOpportunityRestrictedDto,
-        'candidateId'
-      >
-    >,
-    candidateId: string,
-    createdById: string
-  ) {
-    const candidate = await this.usersService.findOne(candidateId);
-
-    if (!candidate) {
-      return null;
-    }
-
-    const createdOpportunity = await this.opportunityModel.create({
-      ...createExternalOpportunityDto,
-      isExternal: true,
-      isPublic: false,
-      isArchived: false,
-      isValidated: true,
-      createdBy: createdById,
-    });
-
-    if (
-      createExternalOpportunityDto instanceof CreateExternalOpportunityDto &&
-      createExternalOpportunityDto.businessLines
-    ) {
-      const businessLines = await Promise.all(
-        createExternalOpportunityDto.businessLines.map(
-          ({ name, order = -1 }) => {
-            return this.businessLineModel.create({ name, order });
-          }
-        )
-      );
-      await createdOpportunity.$add('businessLines', businessLines);
-    }
-
-    await this.opportunityUsersService.create({
-      OpportunityId: createdOpportunity.id,
-      UserId: candidateId,
-    });
-
-    return this.findOneAsCandidate(createdOpportunity.id, candidateId);
   }
 
   async findAllCandidateIdsToRecommendOfferTo(
@@ -384,12 +344,19 @@ export class OpportunitiesService {
     } as OpportunityRestricted;
   }
 
+  async findOneCandidate(candidateId: string) {
+    const user = await this.usersService.findOne(candidateId);
+    if (!user || user.role !== UserRoles.CANDIDAT) {
+      return null;
+    }
+    return user;
+  }
+
   async update(
     id: string,
-    updateOpportunityDto: Omit<
-      UpdateOpportunityDto,
-      'id' | 'shouldSendNotifications'
-    >
+    updateOpportunityDto:
+      | Omit<UpdateOpportunityDto, 'id' | 'shouldSendNotifications'>
+      | Omit<UpdateExternalOpportunityDto, 'id'>
   ) {
     await this.opportunityModel.update(updateOpportunityDto, {
       where: { id },
@@ -398,9 +365,9 @@ export class OpportunitiesService {
 
     const updatedOpportunity = await this.findOne(id);
 
-    if (updatedOpportunity.businessLines) {
+    if (updateOpportunityDto.businessLines) {
       const businessLines = await Promise.all(
-        updatedOpportunity.businessLines.map(({ name, order = -1 }) => {
+        updateOpportunityDto.businessLines.map(({ name, order = -1 }) => {
           return BusinessLine.create({ name, order });
         })
       );
@@ -418,6 +385,33 @@ export class OpportunitiesService {
     }
 
     return updatedOpportunity;
+  }
+
+  async updateAll(
+    attributes: Omit<
+      UpdateOpportunityDto,
+      | 'id'
+      | 'shouldSendNotifications'
+      | 'candidatesId'
+      | 'isAdmin'
+      | 'isCopy'
+      | 'locations'
+    >,
+    opportunitiesId: string[]
+  ) {
+    const [nbUpdated, updatedOpportunities] =
+      await this.opportunityModel.update(attributes, {
+        where: { id: opportunitiesId },
+        returning: true,
+        individualHooks: true,
+      });
+
+    return {
+      nbUpdated,
+      updatedIds: updatedOpportunities.map((opp) => {
+        return opp.id;
+      }),
+    };
   }
 
   async countExternalOpportunitiesCreatedByUser(userId: string) {
@@ -457,7 +451,7 @@ export class OpportunitiesService {
     const cv = await this.cvsService.findOneByCandidateId(candidateId);
 
     const locationFilters = DepartmentFilters.filter((dept) => {
-      return cv.locations && cv.locations.length > 0
+      return cv?.locations?.length > 0
         ? cv.locations.map((location) => location.name).includes(dept.value)
         : candidate.zone === dept.zone;
     });
@@ -743,7 +737,7 @@ export class OpportunitiesService {
   }
 
   async sendMailAfterExternalCreation(
-    opportunity: Opportunity,
+    opportunity: OpportunityRestricted,
     isAdmin = false
   ) {
     if (!isAdmin) {
@@ -807,6 +801,22 @@ export class OpportunitiesService {
         }
       })
     );
+  }
+
+  async sendOnStatusUpdatedMails(
+    opportunityUser: OpportunityUser,
+    oldOpportunityUser: OpportunityUser
+  ) {
+    if (
+      opportunityUser.status !== oldOpportunityUser.status &&
+      opportunityUser.status !== OfferStatuses.CONTACTED.value
+    ) {
+      const opportunity = await this.findOne(opportunityUser.OpportunityId);
+      await this.mailsService.sendOnOfferStatusUpdatedMails(
+        opportunityUser,
+        opportunity
+      );
+    }
   }
 
   async sendNoResponseOffer(opportunityId: string) {

@@ -198,14 +198,14 @@ export class Opportunity extends Model {
   @IsString()
   @IsOptional()
   @AllowNull(true)
-  @Column
+  @Column(DataType.DATEONLY)
   startOfContract: Date;
 
   @ApiProperty()
   @IsString()
   @IsOptional()
   @AllowNull(true)
-  @Column
+  @Column(DataType.DATEONLY)
   endOfContract: Date;
 
   @ApiProperty()

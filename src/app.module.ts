@@ -24,6 +24,7 @@ import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
 import { AirtableModule } from './airtable/airtable.module';
+import { BitlyModule } from './bitly/bitly.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { RevisionsModule } from './revisions/revisions.module';
@@ -102,6 +103,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SalesforceModule,
     AirtableModule,
     SMSModule,
+    BitlyModule,
   ],
   providers: [
     {
