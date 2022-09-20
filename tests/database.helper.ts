@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
+import {
+  Opportunity,
+  OpportunityBusinessLine,
+  OpportunityUser,
+} from '../src/opportunities/models';
 import { Ambition } from 'src/ambitions/models';
 import { BusinessLine } from 'src/businessLines/models';
 import { Contract } from 'src/contracts/models';
@@ -43,6 +48,12 @@ export class DatabaseHelper {
     private businessLineModel: typeof BusinessLine,
     @InjectModel(CVBusinessLine)
     private cvBusinessLineModel: typeof CVBusinessLine,
+    @InjectModel(OpportunityBusinessLine)
+    private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
+    @InjectModel(Opportunity)
+    private opportunityModel: typeof Opportunity,
+    @InjectModel(OpportunityUser)
+    private opportunityUserModel: typeof OpportunityUser,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
     @InjectModel(CVSkill)
@@ -94,6 +105,7 @@ export class DatabaseHelper {
       await this.cvContractModel.truncate(destroyOptions);
       await this.cvAmbitionModel.truncate(destroyOptions);
       await this.cvPassionModel.truncate(destroyOptions);
+      await this.opportunityBusinessLineModel.truncate(destroyOptions);
       await this.experienceSkillModel.truncate(destroyOptions);
       await this.locationModel.truncate(destroyOptions);
       await this.businessLineModel.truncate(destroyOptions);
@@ -107,6 +119,8 @@ export class DatabaseHelper {
       await this.cvSearchModel.truncate(destroyOptions);
       await this.reviewModel.truncate(destroyOptions);
       await this.shareModel.truncate(destroyOptions);
+      await this.opportunityUserModel.truncate(destroyOptions);
+      await this.opportunityModel.truncate(destroyOptions);
       await this.cvModel.truncate(destroyOptions);
       await this.userCandidatModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);

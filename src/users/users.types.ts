@@ -33,32 +33,32 @@ export const Genders = {
 export type Gender = typeof Genders[keyof typeof Genders];
 
 export const CVStatuses = {
-  Published: {
+  PUBLISHED: {
     label: 'Publié',
     value: 'Published',
     style: 'success',
   },
-  Pending: {
+  PENDING: {
     label: 'En attente',
     value: 'Pending',
     style: 'danger',
   },
-  Progress: {
+  PROGRESS: {
     label: 'En cours',
     value: 'Progress',
     style: 'muted',
   },
-  New: {
+  NEW: {
     label: 'Nouveau',
     value: 'New',
     style: 'muted',
   },
-  Draft: {
+  DRAFT: {
     label: 'Brouillon',
     value: 'Draft',
     style: 'warning',
   },
-  Unknown: {
+  UNKNOWN: {
     label: 'Inconnu',
     value: 'Unknown',
     style: '',
@@ -66,14 +66,13 @@ export const CVStatuses = {
 } as const;
 
 export type CVStatusKey = keyof typeof CVStatuses;
-type CVStatus = typeof CVStatuses[CVStatusKey];
-export type CVStatusValue = CVStatus['value'];
+export type CVStatus = typeof CVStatuses[CVStatusKey]['value'];
 
-export const CVStatusFilters: FilterConstant<CVStatusValue>[] = [
-  CVStatuses.Published,
-  CVStatuses.Pending,
-  CVStatuses.Progress,
-  CVStatuses.New,
+export const CVStatusFilters: FilterConstant<CVStatus>[] = [
+  CVStatuses.PUBLISHED,
+  CVStatuses.PENDING,
+  CVStatuses.PROGRESS,
+  CVStatuses.NEW,
 ];
 
 export interface MemberOptions {
@@ -82,7 +81,7 @@ export interface MemberOptions {
   associatedUser: { [Op.or]: boolean[] };
   hidden: { [Op.or]: boolean[] };
   employed: { [Op.or]: boolean[] };
-  cvStatus: { [Op.or]: CVStatusValue[] };
+  cvStatus: { [Op.or]: CVStatus[] };
 }
 
 export type MemberFilterKey = keyof MemberOptions;

@@ -1,9 +1,12 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail as IsEmailClassValidator, IsString } from 'class-validator';
 import {
   AfterCreate,
   AfterDestroy,
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -18,7 +21,6 @@ import {
   Unique,
   UpdatedAt,
 } from 'sequelize-typescript';
-
 import {
   AdminRole,
   Gender,
@@ -31,10 +33,10 @@ import {
   generateUrl,
   getCandidateIdFromCoachOrCandidate,
 } from '../users.utils';
+import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
-import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {
@@ -58,6 +60,7 @@ export class User extends HistorizedModel {
 
   @ApiProperty()
   @IsEmail
+  @IsEmailClassValidator()
   @AllowNull(false)
   @Unique
   @Column
@@ -91,12 +94,14 @@ export class User extends HistorizedModel {
   gender: Gender;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Length({ min: 0, max: 30 })
   @Column
   phone: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Column
   address: string;
@@ -130,10 +135,13 @@ export class User extends HistorizedModel {
   @DeletedAt
   deletedAt: Date;
 
-  /*
-  @BelongsToMany(() => Opportunity, () => OpportunityUser)
-  opportunities: Opportunity[]
-  */
+  @BelongsToMany(
+    () => Opportunity,
+    () => OpportunityUser,
+    'UserId',
+    'OpportunityId'
+  )
+  opportunities: Opportunity[];
 
   // si candidat regarder candidat
   @HasOne(() => UserCandidat, {

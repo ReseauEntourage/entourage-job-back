@@ -38,78 +38,36 @@ export class UsersDeletionController {
       address: null,
     });
 
-    if (user.role === UserRoles.CANDIDAT) {
-      // TODO check cache manager
-      await this.usersDeletionService.uncacheCandidateCV(candidat.url);
-      await this.usersDeletionService.updateUserCandidatByCandidatId(userId, {
-        note: null,
-        url: `deleted-${userId.substring(0, 8)}`,
-      });
-    }
-
-    /*
-    // TODO when opportunities
-    const userOpportunitiesQuery = {
-      where: {
-        UserId: id,
-      },
-    };
-
-    const userOpportunities = await Opportunity_User.findAll(
-      userOpportunitiesQuery
-    );
-
-    await Opportunity_User.update(
-      {
-        note: null,
-      },
-      userOpportunitiesQuery
-    );
-    */
-
-    /*
-    // TODO when revisions work
-    const revisionsQuery = {
-      where: {
-        [Op.or]: [
-          { documentId: id },
-          {
-            documentId: userOpportunities.map((userOpp) => {
-              return userOpp.id;
-            }),
-          },
-        ],
-      },
-    };
-
-    const revisions = await Revision.findAll(revisionsQuery);
-
-    // Have to use raw query because Revision_Change is not declared as a model
-    await sequelize.query(
-      `
-      UPDATE "RevisionChanges"
-      SET "document" = '{}'::jsonb, "diff" = '[{}]'::jsonb
-      WHERE "revisionId" IN (${revisions.map((revision) => {
-        return `'${revision.id}'`;
-      })});
-    `,
-      {
-        type: QueryTypes.UPDATE,
-      }
-    );
-
-    await Revision.update(
-      {
-        document: {},
-      },
-      revisionsQuery
-    );
-    */
-
+    await this.usersDeletionService.uncacheCandidateCV(candidat.url);
     const cvsDeleted = await this.usersDeletionService.removeCandidateCVs(
       userId
     );
+
+    await this.usersDeletionService.updateUserCandidatByCandidatId(userId, {
+      note: null,
+      url: `deleted-${userId.substring(0, 8)}`,
+    });
+
     await this.usersDeletionService.cacheAllCVs();
+
+    const opportunityUsers =
+      await this.usersDeletionService.findAllOpportunityUsersByCandidateId(
+        userId
+      );
+
+    await this.usersDeletionService.updateOpportunityUsersByCandidateId(
+      userId,
+      {
+        note: null,
+      }
+    );
+
+    await this.usersDeletionService.updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
+      userId,
+      opportunityUsers.map((opportunityUser) => {
+        return opportunityUser.id;
+      })
+    );
 
     // Todo change to userDeleted
     const usersDeleted = await this.usersDeletionService.removeUser(userId);

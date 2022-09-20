@@ -1,4 +1,4 @@
 export * from './utils';
-export * from './Departments';
+export * from './Zones';
 export * from './Filters';
 export * from './Redis';

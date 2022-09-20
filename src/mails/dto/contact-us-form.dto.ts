@@ -1,6 +1,6 @@
-import { IsOptional, IsString } from 'class-validator';
-import { HeardAboutValue } from '../mails.types';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
+import { HeardAbout } from '../mails.types';
 
 export class ContactUsFormDto {
   @ApiProperty()
@@ -14,7 +14,7 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  phone: string;
+  phone?: string;
 
   @ApiProperty()
   @IsString()
@@ -23,7 +23,7 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  structure: string;
+  structure?: string;
 
   @ApiProperty()
   @IsString()
@@ -32,5 +32,5 @@ export class ContactUsFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  heardAbout: HeardAboutValue;
+  heardAbout?: HeardAbout;
 }

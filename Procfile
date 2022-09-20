@@ -1,3 +1,3 @@
-release: yarn run db-migrate
-web: yarn run start
-mainWorker: yarn run worker:start
+release: yarn db:migrate
+web: yarn start
+mainWorker: yarn worker:start

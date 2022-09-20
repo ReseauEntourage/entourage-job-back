@@ -11,6 +11,7 @@ import { ExperiencesTestingModule } from './experiences/experiences-testing.modu
 import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { LocationsTestingModule } from './locations/locations-testing.module';
 import { MailsTestingModule } from './mails/mails-testing.module';
+import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
 import { PassionsTestingModule } from './passions/passions-testing.module';
 import { ReviewsTestingModule } from './reviews/reviews-testing.module';
 import { SharesTestingModule } from './shares/shares-testing.module';
@@ -35,6 +36,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ReviewsTestingModule,
     SharesTestingModule,
     MailsTestingModule,
+    OpportunitiesTestingModule,
   ],
   providers: [DatabaseHelper],
 })

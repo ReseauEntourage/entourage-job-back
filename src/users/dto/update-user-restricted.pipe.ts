@@ -15,7 +15,7 @@ import { RequestWithUser } from 'src/utils/types';
 import { UpdateUserRestrictedDto } from './update-user-restricted.dto';
 
 @Injectable({ scope: Scope.REQUEST })
-export class UserRestrictedPipe
+export class UpdateUserRestrictedPipe
   implements
     PipeTransform<UpdateUserRestrictedDto, Promise<UpdateUserRestrictedDto>>
 {
@@ -25,7 +25,7 @@ export class UserRestrictedPipe
     value: UpdateUserRestrictedDto,
     { metatype }: ArgumentMetadata
   ): Promise<UpdateUserRestrictedDto> {
-    if (!metatype || !UserRestrictedPipe.toValidate(metatype)) {
+    if (!metatype || !UpdateUserRestrictedPipe.toValidate(metatype)) {
       return value;
     }
     const object = plainToInstance(metatype, value);

@@ -108,7 +108,7 @@ describe('CVs', () => {
           );
           const cvResponse = {
             ...cv,
-            status: CVStatuses.Progress.value,
+            status: CVStatuses.PROGRESS.value,
           };
           const response: APIResponse<CVsController['createCV']> =
             await request(app.getHttpServer())
@@ -143,7 +143,7 @@ describe('CVs', () => {
               .field('cv', JSON.stringify(cv))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
-          expect(response.body.status).toMatch(CVStatuses.Progress.value);
+          expect(response.body.status).toMatch(CVStatuses.PROGRESS.value);
         });
         it("Should return 201 and CV with cv status set as pending if CV submitted, if logged in user is coach of CV's owner", async () => {
           ({ loggedInCoach, loggedInCandidat } =
@@ -160,7 +160,7 @@ describe('CVs', () => {
             {},
             false
           );
-          cv.status = CVStatuses.Pending.value;
+          cv.status = CVStatuses.PENDING.value;
           const response: APIResponse<CVsController['createCV']> =
             await request(app.getHttpServer())
               .post(`${route}/${loggedInCandidat.user.id}`)
@@ -168,7 +168,7 @@ describe('CVs', () => {
               .field('cv', JSON.stringify(cv))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
-          expect(response.body.status).toMatch(CVStatuses.Pending.value);
+          expect(response.body.status).toMatch(CVStatuses.PENDING.value);
         });
         it('Should return 201 and CV with cv status set as published, if logged in admin', async () => {
           const cv = await cvFactory.create(
@@ -182,7 +182,7 @@ describe('CVs', () => {
           cv.status = undefined;
           const cvResponse = {
             ...cv,
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
           };
           const response: APIResponse<CVsController['createCV']> =
             await request(app.getHttpServer())
@@ -196,7 +196,7 @@ describe('CVs', () => {
           const cv = await cvFactory.create(
             {
               UserId: loggedInCandidat.user.id,
-              status: CVStatuses.Draft.value,
+              status: CVStatuses.DRAFT.value,
               urlImg: null,
             },
             {},
@@ -244,7 +244,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: loggedInCandidat.user.id,
           });
         });
@@ -383,17 +383,17 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: loggedInCandidat.user.id,
             version: 3,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: loggedInCandidat.user.id,
             version: 2,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: loggedInCandidat.user.id,
             version: 1,
           });
@@ -454,7 +454,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: candidat.id,
           });
         });
@@ -505,7 +505,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: loggedInCandidat.user.id,
           });
           jest
@@ -624,7 +624,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
 
@@ -632,7 +632,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
 
@@ -640,7 +640,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
 
@@ -657,7 +657,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           const newCV1 = await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
 
@@ -665,7 +665,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
 
@@ -673,7 +673,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
 
@@ -691,7 +691,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
 
@@ -699,7 +699,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
 
@@ -707,7 +707,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
 
@@ -724,7 +724,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
 
@@ -732,7 +732,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
 
@@ -740,7 +740,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
 
@@ -757,7 +757,7 @@ describe('CVs', () => {
           });
           const newCV1 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser1.id,
             },
             {
@@ -769,7 +769,7 @@ describe('CVs', () => {
           });
           const newCV2 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser2.id,
             },
             {
@@ -781,7 +781,7 @@ describe('CVs', () => {
           });
           await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser3.id,
             },
             {
@@ -809,7 +809,7 @@ describe('CVs', () => {
             }
           );
           const newCV1 = await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
           const newUser2 = await userFactory.create(
@@ -821,7 +821,7 @@ describe('CVs', () => {
             }
           );
           const newCV2 = await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
           const newUser3 = await userFactory.create(
@@ -833,7 +833,7 @@ describe('CVs', () => {
             }
           );
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
           const expectedCVIds = [newCV1.id, newCV2.id];
@@ -854,7 +854,7 @@ describe('CVs', () => {
           });
           const newCV1 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser1.id,
             },
             {
@@ -866,7 +866,7 @@ describe('CVs', () => {
           });
           const newCV2 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser2.id,
             },
             {
@@ -878,7 +878,7 @@ describe('CVs', () => {
           });
           await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser3.id,
             },
             {
@@ -903,7 +903,7 @@ describe('CVs', () => {
           });
           const newCV1 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser1.id,
             },
             {
@@ -916,7 +916,7 @@ describe('CVs', () => {
           });
           const newCV2 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser2.id,
             },
             {
@@ -929,7 +929,7 @@ describe('CVs', () => {
           });
           const newCV3 = await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser3.id,
             },
             {
@@ -959,7 +959,7 @@ describe('CVs', () => {
           });
           await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser1.id,
             },
             {
@@ -971,7 +971,7 @@ describe('CVs', () => {
           });
           await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser2.id,
             },
             {
@@ -983,7 +983,7 @@ describe('CVs', () => {
           });
           await cvFactory.create(
             {
-              status: CVStatuses.Published.value,
+              status: CVStatuses.PUBLISHED.value,
               UserId: newUser3.id,
             },
             {
@@ -1004,7 +1004,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
 
@@ -1012,7 +1012,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
 
@@ -1020,7 +1020,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
 
@@ -1047,7 +1047,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser1.id,
           });
 
@@ -1055,7 +1055,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser2.id,
           });
 
@@ -1063,7 +1063,7 @@ describe('CVs', () => {
             role: UserRoles.CANDIDAT,
           });
           await cvFactory.create({
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
 
@@ -1267,7 +1267,7 @@ describe('CVs', () => {
           });
           await cvFactory.create({
             UserId: candidat.id,
-            status: CVStatuses.Published.value,
+            status: CVStatuses.PUBLISHED.value,
           });
         });
 

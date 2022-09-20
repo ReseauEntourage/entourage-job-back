@@ -9,8 +9,10 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
+import { AirtableService } from 'src/airtable/airtable.service';
 import { CVsService } from 'src/cvs/cvs.service';
 import { MailjetService } from 'src/mails/mailjet.service';
+import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CacheCVJob,
   GenerateCVSearchString,
@@ -27,7 +29,15 @@ import {
   SendReminderExternalOffersJob,
   PusherChannels,
   PusherEvents,
+  CreateOrUpdateSalesforceOpportunity,
+  UpdateAirtable,
+  InsertAirtable,
+  SendNoResponseOffer,
+  SendReminderOffer,
+  SendSMSJob,
 } from 'src/queues/queues.types';
+import { SalesforceService } from 'src/salesforce/salesforce.service';
+import { VonageService } from 'src/sms/vonage.service';
 import { AnyCantFix } from 'src/utils/types';
 import { PusherService } from './pusher.service';
 
@@ -35,8 +45,12 @@ import { PusherService } from './pusher.service';
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
+    private vonageService: VonageService,
     private pusherService: PusherService,
-    private cvsService: CVsService
+    private cvsService: CVsService,
+    private opportunitiesService: OpportunitiesService,
+    private airtableService: AirtableService,
+    private salesforceService: SalesforceService
   ) {}
 
   @OnQueueActive()
@@ -83,14 +97,78 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.SEND_MAIL)
-  async processSendMail(job: Job<SendMailJob>) {
+  async processSendMail(job: Job<SendMailJob | SendMailJob[]>) {
     const { data } = job;
 
-    await this.mailjetService.sendMail(data);
+    let emails: SendMailJob[];
 
-    return `Mail sent to '${JSON.stringify(data.toEmail)}' with template '${
-      data.templateId
-    }'`;
+    if (Array.isArray(data)) {
+      emails = data;
+    } else {
+      emails = [data];
+    }
+
+    await this.mailjetService.sendMail(emails);
+
+    return `Mail sent to '${JSON.stringify(
+      emails.map(({ toEmail }) => {
+        return toEmail;
+      })
+    )}' with template '${emails.map(({ templateId }) => {
+      return templateId;
+    })}'`;
+  }
+
+  @Process(Jobs.SEND_SMS)
+  async processSendSMS(job: Job<SendSMSJob | SendSMSJob[]>) {
+    const { data } = job;
+
+    let sms: SendSMSJob[];
+
+    if (Array.isArray(data)) {
+      sms = data;
+    } else {
+      sms = [data];
+    }
+
+    await this.vonageService.sendSMS(sms);
+
+    return `SMS sent to '${JSON.stringify(
+      sms.map(({ toPhone }) => {
+        return toPhone;
+      })
+    )}'`;
+  }
+
+  @Process(Jobs.REMINDER_OFFER)
+  async processSendReminderOffer(job: Job<SendReminderOffer>) {
+    const { data } = job;
+
+    const sentToReminderOffer =
+      await this.opportunitiesService.sendReminderAboutOffer(
+        data.opportunityId,
+        data.candidateId
+      );
+
+    return sentToReminderOffer
+      ? `Reminder about opportunity '${data.opportunityId}' sent to '${
+          data.candidateId
+        }' (${JSON.stringify(sentToReminderOffer)})`
+      : `No reminder about opportunity '${data.opportunityId}' sent to '${data.candidateId}'`;
+  }
+
+  @Process(Jobs.NO_RESPONSE_OFFER)
+  async processSendNoResponseOffer(job: Job<SendNoResponseOffer>) {
+    const { data } = job;
+
+    const sentToNoResponseOffer =
+      await this.opportunitiesService.sendNoResponseOffer(data.opportunityId);
+
+    return sentToNoResponseOffer
+      ? `Mail sent to recruiter because no response on opportunity '${
+          data.opportunityId
+        }' (${JSON.stringify(sentToNoResponseOffer)})`
+      : `No mail sent to recruiter because no response on opportunity '${data.opportunityId}'`;
   }
 
   @Process(Jobs.REMINDER_CV_10)
@@ -178,7 +256,9 @@ export class WorkQueueProcessor {
     const { data } = job;
 
     const sentToReminderExternalOffers =
-      await this.cvsService.sendReminderAboutExternalOffers(data.candidateId);
+      await this.opportunitiesService.sendReminderAboutExternalOffers(
+        data.candidateId
+      );
 
     return sentToReminderExternalOffers
       ? `Reminder about external offers sent to '${
@@ -191,7 +271,7 @@ export class WorkQueueProcessor {
   async processCacheCV(job: Job<CacheCVJob>) {
     const { data } = job;
 
-    const cv = await this.cvsService.cacheCV(data.url, data.candidateId);
+    const cv = await this.cvsService.cacheOne(data.url, data.candidateId);
 
     return cv
       ? `CV cached for User ${cv.UserId} and CV ${cv.id}${
@@ -204,7 +284,7 @@ export class WorkQueueProcessor {
   async processCacheAllCVs(job: Job<CacheAllCVJob>) {
     const {} = job;
 
-    const cvs = await this.cvsService.cacheAllCVs(undefined, true);
+    const cvs = await this.cvsService.findAndCacheAll(undefined, true);
 
     return cvs && cvs.length > 0 ? `All published CVs cached` : `No CVs cached`;
   }
@@ -258,5 +338,46 @@ export class WorkQueueProcessor {
     await this.cvsService.generateSearchStringFromCV(data.candidateId);
 
     return `CV search string created for User ${data.candidateId}`;
+  }
+
+  @Process(Jobs.INSERT_AIRTABLE)
+  async processInsertAirtable(job: Job<InsertAirtable>) {
+    const { data } = job;
+
+    await this.airtableService.insertOpportunityAirtable(
+      data.tableName,
+      data.opportunityId
+    );
+
+    return `Airtable : insertion in '${data.tableName}'`;
+  }
+
+  @Process(Jobs.UPDATE_AIRTABLE)
+  async processUpdateAirtable(job: Job<UpdateAirtable>) {
+    const { data } = job;
+
+    await this.airtableService.updateOpportunityAirtable(
+      data.tableName,
+      data.opportunityId
+    );
+
+    return `Airtable : update in '${data.tableName}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY)
+  async processCreateOrUpdateSalesforceOpportunity(
+    job: Job<CreateOrUpdateSalesforceOpportunity>
+  ) {
+    const { data } = job;
+
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceOpportunity(
+        data.opportunityId,
+        data.isSameOpportunity
+      );
+      return `Salesforce : created or updated offer '${data.opportunityId}'`;
+    }
+
+    return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
   }
 }

@@ -28,7 +28,7 @@ import { Passion } from 'src/passions/models';
 import { Review } from 'src/reviews/models/review.model';
 import { Skill } from 'src/skills/models';
 import { UserCandidat } from 'src/users/models';
-import { CVStatuses, CVStatusValue } from 'src/users/users.types';
+import { CVStatuses, CVStatus } from 'src/users/users.types';
 import { CVAmbition } from './cv-ambition.model';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVContract } from './cv-contract.model';
@@ -98,9 +98,9 @@ export class CV extends Model {
 
   @ApiProperty()
   @AllowNull(false)
-  @Default(CVStatuses.New.value)
+  @Default(CVStatuses.NEW.value)
   @Column
-  status: CVStatusValue;
+  status: CVStatus;
 
   @ApiProperty()
   @AllowNull(false)
@@ -141,75 +141,57 @@ export class CV extends Model {
   )
   businessLines: BusinessLine[];
 
-  @HasMany(() => CVBusinessLine, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVBusinessLine, 'CVId')
   cvBusinessLines: CVBusinessLine[];
 
   @ApiProperty()
   @BelongsToMany(() => Location, () => CVLocation, 'CVId', 'LocationId')
   locations: Location[];
 
-  @HasMany(() => CVLocation, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVLocation, 'CVId')
   cvLocations: CVLocation[];
 
   @ApiProperty()
   @BelongsToMany(() => Ambition, () => CVAmbition, 'CVId', 'AmbitionId')
   ambitions: Ambition[];
 
-  @HasMany(() => CVAmbition, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVAmbition, 'CVId')
   cvAmbitions: CVAmbition[];
 
   @ApiProperty()
   @BelongsToMany(() => Contract, () => CVContract, 'CVId', 'ContractId')
   contracts: Contract[];
 
-  @HasMany(() => CVContract, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVContract, 'CVId')
   cvContracts: CVContract[];
 
   @ApiProperty()
   @BelongsToMany(() => Language, () => CVLanguage, 'CVId', 'LanguageId')
   languages: Language[];
 
-  @HasMany(() => CVLanguage, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVLanguage, 'CVId')
   cvLanguages: CVLanguage[];
 
   @ApiProperty()
   @BelongsToMany(() => Passion, () => CVPassion, 'CVId', 'PassionId')
   passions: Passion[];
 
-  @HasMany(() => CVPassion, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVPassion, 'CVId')
   cvPassions: CVPassion[];
 
   @ApiProperty()
   @BelongsToMany(() => Skill, () => CVSkill, 'CVId', 'SkillId')
   skills: Skill[];
 
-  @HasMany(() => CVSkill, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => CVSkill, 'CVId')
   cvSkills: CVSkill[];
 
   @ApiProperty()
-  @HasMany(() => Experience, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => Experience, 'CVId')
   experiences: Experience[];
 
   @ApiProperty()
-  @HasMany(() => Review, {
-    foreignKey: 'CVId',
-  })
+  @HasMany(() => Review, 'CVId')
   reviews: Review[];
 
   @AfterDestroy

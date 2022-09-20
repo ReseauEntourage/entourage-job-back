@@ -1,4 +1,5 @@
-import { MailjetTemplate } from 'src/mails/mails.types';
+import { CustomMailParams, MailjetTemplate } from 'src/mails/mails.types';
+import { CustomSMSParams } from 'src/sms/sms.types';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',
@@ -24,10 +25,24 @@ export const Jobs = {
 
 export type Job = typeof Jobs[keyof typeof Jobs];
 
-export interface SendMailJob {
+export interface SendMailJob extends CustomMailParams {
   toEmail: string;
   templateId: MailjetTemplate;
   variables: object;
+}
+
+export interface SendSMSJob extends CustomSMSParams {
+  toPhone: string | string[];
+  text: string;
+}
+
+export interface SendReminderOffer {
+  opportunityId: string;
+  candidateId: string;
+}
+
+export interface SendNoResponseOffer {
+  opportunityId: string;
 }
 
 export interface SendReminderCVJob {
@@ -74,6 +89,21 @@ export interface GenerateCVSearchString {
   candidateId: string;
   token: string;
   paths: string[];
+}
+
+export interface InsertAirtable {
+  tableName: string;
+  opportunityId: string;
+}
+
+export interface UpdateAirtable {
+  tableName: string;
+  opportunityId: string;
+}
+
+export interface CreateOrUpdateSalesforceOpportunity {
+  opportunityId: string;
+  isSameOpportunity: boolean;
 }
 
 export const Queues = {

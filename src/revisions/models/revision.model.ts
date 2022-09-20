@@ -37,9 +37,7 @@ export class Revision extends Model {
   @Column
   revision: number;
 
-  @HasMany(() => RevisionChange, {
-    foreignKey: 'revisionId',
-  })
+  @HasMany(() => RevisionChange, 'revisionId')
   revisionsChanges: RevisionChange[];
 
   @CreatedAt

@@ -36,7 +36,7 @@ import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatuses, CVStatusValue } from 'src/users/users.types';
+import { CVStatuses, CVStatus } from 'src/users/users.types';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -44,10 +44,9 @@ import {
   getFiltersObjectsFromQueryParams,
 } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AnyToFix, FilterParams, RedisKeys } from 'src/utils/types';
+import { FilterParams, RedisKeys } from 'src/utils/types';
 import { CVConstantType, CVFilterKey, CVFilters } from './cvs.types';
 import {
-  cleanCV,
   getCVOptions,
   getPublishedCVQuery,
   queryConditionCV,
@@ -231,11 +230,11 @@ export class CVsService {
 
     await Promise.all(promises);
 
-    return this.dividedCompleteCVQuery(async (include) => {
-      return this.cvModel.findByPk(modelCV.id, {
-        include: [include],
-      });
-    }, true);
+    const cv = await this.cvModel.findByPk(modelCV.id, {
+      include: CVCompleteWithAllUserPrivateInclude,
+    });
+
+    return cv.toJSON();
   }
 
   async findOne(id: string) {
@@ -251,23 +250,20 @@ export class CVsService {
       return null;
     }
 
-    // TODO STOP DIVIDING
-    return this.dividedCompleteCVQuery(async (include) => {
-      return this.cvModel.findOne({
-        include: [include],
-        where: {
-          UserId: candidateId,
-        },
-        order: [['version', 'DESC']],
-      });
-    }, true);
+    return this.cvModel.findOne({
+      include: CVCompleteWithAllUserPrivateInclude,
+      where: {
+        UserId: candidateId,
+      },
+      order: [['version', 'DESC']],
+    });
   }
 
   async findOneByUrl(url: string): Promise<CV> {
     const redisKey = RedisKeys.CV_PREFIX + url;
     const redisCV: string = await this.cacheManager.get(redisKey);
 
-    return redisCV ? JSON.parse(redisCV) : await this.cacheCV(url);
+    return redisCV ? JSON.parse(redisCV) : await this.cacheOne(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {
@@ -346,7 +342,7 @@ export class CVsService {
       if (redisCvs) {
         modelCVs = JSON.parse(redisCvs);
       } else {
-        modelCVs = await this.cacheAllCVs(getPublishedCVQuery(), true);
+        modelCVs = await this.findAndCacheAll(getPublishedCVQuery(), true);
       }
     } else {
       const { employed, ...restOptions } = options;
@@ -361,7 +357,7 @@ export class CVsService {
         )} like '%${escapedQuery}%'
     `
         : undefined;
-      modelCVs = await this.cacheAllCVs(
+      modelCVs = await this.findAndCacheAll(
         dbQuery,
         false,
         dbQuery ? restOptions : options
@@ -387,7 +383,7 @@ export class CVsService {
 
             const { employed: newEmployed, ...newRestOptions } = newOptions;
 
-            const filteredOtherCvs = await this.cacheAllCVs(
+            const filteredOtherCvs = await this.findAndCacheAll(
               dbQuery,
               false,
               dbQuery ? newRestOptions : newOptions
@@ -500,7 +496,7 @@ export class CVsService {
       return null;
     }
 
-    return updatedCVs.map(cleanCV);
+    return updatedCVs.map((cv) => cv.toJSON());
   }
 
   async removeByCandidateId(candidateId: string) {
@@ -667,6 +663,7 @@ export class CVsService {
     const limitLength = 4028;
 
     const cv = await this.findOneByCandidateId(candidateId);
+
     let searchString = [
       cv.user.candidat.firstName,
       cv.user.candidat.lastName,
@@ -803,7 +800,7 @@ export class CVsService {
     ) {
       const cvs = await this.findAllVersionsByCandidateId(candidateId);
       const hasSubmittedAtLeastOnce = cvs?.some(({ status }) => {
-        return status === CVStatuses.Pending.value;
+        return status === CVStatuses.PENDING.value;
       });
 
       if (!hasSubmittedAtLeastOnce) {
@@ -846,62 +843,12 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate);
   }
 
-  async sendReminderAboutExternalOffers(candidateId: string) {
-    const candidate = await this.usersService.findOne(candidateId);
-
-    if (!candidate.candidat.employed) {
-      const toEmail: CustomMailParams['toEmail'] = {
-        to: candidate.email,
-      };
-
-      /*  // TODO when opportunity
-      let opportunitiesCreatedByCandidateOrCoach =
-        await getExternalOpportunitiesCreatedByUserCount(candidateId);
-
-      const coach = getRelatedUser(candidate);
-      if (coach) {
-        toEmail.cc = coach.email;
-        opportunitiesCreatedByCandidateOrCoach +=
-          await getExternalOpportunitiesCreatedByUserCount(coach.id);
-      }
-
-      if (opportunitiesCreatedByCandidateOrCoach === 0) {
-        await this.mailsService.sendExternalOffersReminderMails(candidate);
-        return toEmail;
-      }*/
-    }
-    return false;
-  }
-
-  async dividedCompleteCVQuery(
-    query: (include: AnyToFix) => Promise<CV>,
-    privateUser = false
-  ) {
-    const completeIncludes = privateUser
-      ? CVCompleteWithAllUserPrivateInclude
-      : CVCompleteWithAllUserInclude;
-
-    const results = await Promise.all(
-      completeIncludes.map(async (include) => {
-        return query(include);
-      })
-    );
-
-    return results.reduce((acc, curr) => {
-      const cleanedCurr = cleanCV(curr);
-      return {
-        ...acc,
-        ...cleanedCurr,
-      };
-    }, {} as Partial<CV>);
-  }
-
-  async cacheCV(url: string, candidatId?: string) {
+  async cacheOne(url: string, candidateId?: string) {
     let urlToUse = url;
 
-    if (!urlToUse && candidatId) {
+    if (!urlToUse && candidateId) {
       ({ url: urlToUse } = await this.userCandidatsService.findOneByCandidateId(
-        candidatId
+        candidateId
       ));
     }
 
@@ -915,22 +862,18 @@ export class CVsService {
     );
 
     if (cvs && cvs.length > 0) {
-      const cv = await this.dividedCompleteCVQuery(
-        async (include: AnyToFix) => {
-          return this.cvModel.findByPk(cvs[0].id, {
-            include: [include],
-          });
-        }
-      );
+      const cv = await this.cvModel.findByPk(cvs[0].id, {
+        include: CVCompleteWithAllUserInclude,
+      });
 
-      await this.cacheManager.set(redisKey, JSON.stringify(cv), 0);
+      await this.cacheManager.set(redisKey, JSON.stringify(cv.toJSON()), 0);
 
-      return cv;
+      return cv.toJSON();
     }
     return null;
   }
 
-  async cacheAllCVs(
+  async findAndCacheAll(
     dbQuery?: string,
     cache = false,
     options: {
@@ -994,7 +937,7 @@ export class CVsService {
       ],
     });
 
-    const cleanedCVList = cvList.map(cleanCV);
+    const cleanedCVList = cvList.map((cv) => cv.toJSON());
 
     if (cache) {
       await this.cacheManager.set(
@@ -1050,7 +993,7 @@ export class CVsService {
   async uploadCVImage(
     file: Express.Multer.File,
     candidateId: string,
-    status: CVStatusValue
+    status: CVStatus
   ) {
     const { path } = file;
 

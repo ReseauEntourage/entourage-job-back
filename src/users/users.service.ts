@@ -6,6 +6,7 @@ import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
 import { getPublishedCVQuery } from '../cvs/cvs.utils';
+import { Department } from '../locations/locations.types';
 import { BusinessLine } from 'src/businessLines/models';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
@@ -292,7 +293,43 @@ export class UsersService {
         ],
       },
     };
-    return User.findAll(options);
+    return this.userModel.findAll(options);
+  }
+
+  async findAllPublishedCandidatesByDepartmentAndBusinessLines(
+    department: Department,
+    businessLines: BusinessLine[]
+  ) {
+    const publishedCVs: CV[] = await this.userModel.sequelize.query(
+      getPublishedCVQuery(
+        { [Op.or]: [false] },
+        { [Op.or]: [department] },
+        {
+          [Op.or]: businessLines.map(({ name }) => {
+            return name;
+          }),
+        }
+      ),
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+
+    const options = {
+      attributes: [...UserAttributes],
+      where: {
+        [Op.and]: [
+          {
+            id: publishedCVs.map((publishedCV) => {
+              return publishedCV.UserId;
+            }),
+          },
+        ],
+      },
+      include: UserCandidatInclude,
+    };
+
+    return this.userModel.findAll(options);
   }
 
   async countSubmittedCVMembers(zone: AdminZone) {
@@ -352,7 +389,7 @@ export class UsersService {
 
     return {
       pendingCVs: filterMembersByCVStatus(membersWithLastCV, [
-        CVStatuses.Pending,
+        CVStatuses.PENDING,
       ]).length,
     };
   }

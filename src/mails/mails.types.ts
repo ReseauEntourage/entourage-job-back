@@ -46,10 +46,11 @@ export const MailjetTemplates = {
   OFFER_REFUSED: 3905291,
 } as const;
 
-export type MailjetTemplate =
-  typeof MailjetTemplates[keyof typeof MailjetTemplates];
+export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
-export type HeardAboutValue =
+export type MailjetTemplate = typeof MailjetTemplates[MailjetTemplateKey];
+
+export type HeardAbout =
   | 'contact'
   | 'search'
   | 'socialAdd'
@@ -57,7 +58,7 @@ export type HeardAboutValue =
   | 'press'
   | 'other';
 
-export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
+export const HeardAboutFilters: FilterConstant<HeardAbout>[] = [
   {
     label: 'Par un de mes contacts',
     value: 'contact',
@@ -84,8 +85,12 @@ export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
   },
 ];
 
+export const ContactStatuses = {
+  INDIVIDUAL: 'PARTICULIER',
+  COMPANY: 'ENTREPRISE',
+  STRUCTURE: 'STRUCTURE_INSERTION',
+  CANDIDATE: 'CANDIDAT_POTENTIEL',
+} as const;
+
 export type ContactStatus =
-  | 'PARTICULIER'
-  | 'ENTREPRISE'
-  | 'STRUCTURE_INSERTION'
-  | 'CANDIDAT_POTENTIEL';
+  typeof ContactStatuses[keyof typeof ContactStatuses];
