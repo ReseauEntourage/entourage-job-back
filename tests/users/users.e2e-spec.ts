@@ -1057,7 +1057,7 @@ describe('Users', () => {
         });
       });
 
-      describe('Members - Count all pending members', () => {
+      describe('/members/count - Count all pending members', () => {
         it('Should return 403 if user is not a logged in admin', async () => {
           const loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,

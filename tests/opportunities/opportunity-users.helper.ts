@@ -14,11 +14,14 @@ export class OpportunityUsersHelper {
     candidateId: string,
     props = {}
   ) {
-    return this.opportunityUserModel.create({
-      OpportunityId: opportunityId,
-      UserId: candidateId,
-      ...props,
-    });
+    return this.opportunityUserModel.create(
+      {
+        OpportunityId: opportunityId,
+        UserId: candidateId,
+        ...props,
+      },
+      { hooks: true }
+    );
   }
 
   async associateManyOpportunityUsers(

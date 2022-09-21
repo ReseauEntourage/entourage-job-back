@@ -616,7 +616,7 @@ describe('CVs', () => {
         });
       });
     });
-    describe('R - Read list of CVs', () => {
+    describe('R - Read many CVs', () => {
       describe('/cards/random/?nb=&search= - Get a list of n random CVs matching a search', () => {
         it('Should return 200, and 2 CVs', async () => {
           const newUser1 = await userFactory.create({
