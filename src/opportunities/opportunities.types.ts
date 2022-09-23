@@ -2,8 +2,11 @@ import { Op } from 'sequelize';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/businessLines/businessLines.types';
-import { Department, DepartmentFilters } from 'src/locations/locations.types';
+} from 'src/common/businessLines/businessLines.types';
+import {
+  Department,
+  DepartmentFilters,
+} from 'src/common/locations/locations.types';
 import {
   AdminZones,
   FilterConstant,

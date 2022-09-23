@@ -1,19 +1,15 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { Public } from '../auth/guards';
 import { isValidPhone } from '../utils/misc';
+import { ContactStatus } from 'src/external-services/mailchimp/mailchimp.types';
 import { AdminZone } from 'src/utils/types';
 import { ContactUsFormDto, ContactUsFormPipe } from './dto';
-import { MailchimpService } from './mailchimp.service';
 import { MailsService } from './mails.service';
-import { ContactStatus } from './mails.types';
 
 // TODO change to mails
 @Controller('mail')
 export class MailsController {
-  constructor(
-    private readonly mailsService: MailsService,
-    private readonly mailchimpService: MailchimpService
-  ) {}
+  constructor(private readonly mailsService: MailsService) {}
 
   // TODO change to contactUs
   @Public()
@@ -38,6 +34,6 @@ export class MailsController {
     if (!email) {
       throw new BadRequestException();
     }
-    return this.mailchimpService.sendContact(email, zone, status);
+    return this.mailsService.sendContactToMailchimp(email, zone, status);
   }
 }

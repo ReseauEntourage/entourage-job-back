@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { S3Service } from 'src/aws/s3.service';
 import { CVsService } from 'src/cvs/cvs.service';
+import { S3Service } from 'src/external-services/aws/s3.service';
 import { UpdateOpportunityUserDto } from 'src/opportunities/dto/update-opportunity-user.dto';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { RevisionChangesService } from 'src/revisions/revision-changes.service';

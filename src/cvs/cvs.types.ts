@@ -3,12 +3,12 @@ import { Op } from 'sequelize';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/businessLines/businessLines.types';
+} from 'src/common/businessLines/businessLines.types';
 import {
   Department,
   DepartmentFilters,
   RegionFilters,
-} from 'src/locations/locations.types';
+} from 'src/common/locations/locations.types';
 import { EmployedFilters } from 'src/users/users.types';
 import { AdminZones, Filters } from 'src/utils/types';
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { Contract } from 'src/contracts/models';
+import { Contract } from 'src/common/contracts/models';
 
 @Injectable()
 export class ContractsHelper {

@@ -2,7 +2,7 @@ import Mailchimp, { AddListMemberBody } from '@mailchimp/mailchimp_marketing';
 import { Injectable } from '@nestjs/common';
 
 import { AdminZone } from 'src/utils/types';
-import { ContactStatus } from './mails.types';
+import { ContactStatus } from './mailchimp.types';
 
 @Injectable()
 export class MailchimpService {

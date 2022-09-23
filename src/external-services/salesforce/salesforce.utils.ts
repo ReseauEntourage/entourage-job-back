@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
-import { BusinessLineFilters } from 'src/businessLines/businessLines.types';
-import { BusinessLine } from 'src/businessLines/models';
-import { ContractFilters } from 'src/contracts/contracts.types';
-import { Department } from 'src/locations/locations.types';
+import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { ContractFilters } from 'src/common/contracts/contracts.types';
+import { Department } from 'src/common/locations/locations.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';

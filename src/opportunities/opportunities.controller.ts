@@ -16,7 +16,7 @@ import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from '../auth/auth.types';
 import { getCandidateIdFromCoachOrCandidate } from '../users/users.utils';
 import { Public, UserPayload } from 'src/auth/guards';
-import { DepartmentFilters } from 'src/locations/locations.types';
+import { DepartmentFilters } from 'src/common/locations/locations.types';
 import {
   LinkedUser,
   LinkedUserGuard,

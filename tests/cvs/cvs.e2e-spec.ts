@@ -10,10 +10,10 @@ import {
   S3Mocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { CloudFrontService } from 'src/aws/cloud-front.service';
-import { S3Service } from 'src/aws/s3.service';
 import { CVsController } from 'src/cvs/cvs.controller';
 import { CVsService } from 'src/cvs/cvs.service';
+import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
+import { S3Service } from 'src/external-services/aws/s3.service';
 import { Queues } from 'src/queues/queues.types';
 import { SharesController } from 'src/shares/shares.controller';
 import { User } from 'src/users/models';

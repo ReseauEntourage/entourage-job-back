@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { Language } from 'src/languages/models';
+import { Language } from 'src/common/languages/models';
 
 @Injectable()
 export class LanguagesHelper {

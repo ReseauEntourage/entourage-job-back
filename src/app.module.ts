@@ -7,28 +7,31 @@ import { SequelizeModule, SequelizeModuleOptions } from '@nestjs/sequelize';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import type { ClientOpts } from 'redis';
-import { AmbitionsModule } from 'src/ambitions/ambitions.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
-import { BusinessLinesModule } from 'src/businessLines/businessLines.module';
-import { ContractsModule } from 'src/contracts/contracts.module';
+import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
+import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
+import { ContractsModule } from 'src/common/contracts/contracts.module';
+import { ExperiencesModule } from 'src/common/experiences/experiences.module';
+import { LanguagesModule } from 'src/common/languages/languages.module';
+import { LocationsModule } from 'src/common/locations/locations.module';
+import { PassionsModule } from 'src/common/passions/passions.module';
+import { ReviewsModule } from 'src/common/reviews/reviews.module';
+import { SkillsModule } from 'src/common/skills/skills.module';
 import { CVsModule } from 'src/cvs/cvs.module';
-import { ExperiencesModule } from 'src/experiences/experiences.module';
-import { LanguagesModule } from 'src/languages/languages.module';
-import { LocationsModule } from 'src/locations/locations.module';
-import { PassionsModule } from 'src/passions/passions.module';
-import { ReviewsModule } from 'src/reviews/reviews.module';
 import { SharesModule } from 'src/shares/shares.module';
-import { SkillsModule } from 'src/skills/skills.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
-import { AirtableModule } from './airtable/airtable.module';
-import { BitlyModule } from './bitly/bitly.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
+import { AirtableModule } from './external-services/airtable/airtable.module';
+import { BitlyModule } from './external-services/bitly/bitly.module';
+import { MailchimpModule } from './external-services/mailchimp/mailchimp.module';
+import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { SalesforceModule } from './external-services/salesforce/salesforce.module';
+import { MailsModule } from './mails/mails.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { RevisionsModule } from './revisions/revisions.module';
-import { SalesforceModule } from './salesforce/salesforce.module';
 import { SMSModule } from './sms/sms.module';
 
 const ENV = `${process.env.NODE_ENV}`;
@@ -105,6 +108,9 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
+    MailsModule,
+    MailjetModule,
+    MailchimpModule,
     ExternalDatabasesModule,
     SalesforceModule,
     AirtableModule,

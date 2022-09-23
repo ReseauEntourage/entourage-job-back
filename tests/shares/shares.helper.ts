@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Skill } from 'src/common/skills/models';
 import { Share } from 'src/shares/models';
 import { SharesService } from 'src/shares/shares.service';
-import { Skill } from 'src/skills/models';
 
 @Injectable()
 export class SharesHelper {

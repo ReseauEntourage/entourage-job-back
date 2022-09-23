@@ -2,8 +2,11 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
-import { BitlyService } from 'src/bitly/bitly.service';
-import { MailjetTemplateKey, MailjetTemplates } from 'src/mails/mails.types';
+import { BitlyService } from 'src/external-services/bitly/bitly.service';
+import {
+  MailjetTemplateKey,
+  MailjetTemplates,
+} from 'src/external-services/mailjet/mailjet.types';
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { isValidPhone } from 'src/utils/misc';
 

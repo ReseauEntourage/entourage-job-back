@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ContractsModule } from 'src/contracts/contracts.module';
+import { ContractsModule } from 'src/common/contracts/contracts.module';
 import { ContractsHelper } from './contracts.helper';
 
 @Module({

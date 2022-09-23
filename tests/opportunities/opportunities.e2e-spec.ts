@@ -10,10 +10,11 @@ import {
   QueueMocks,
   SalesforceMocks,
 } from '../mocks.types';
-import { AirtableService } from 'src/airtable/airtable.service';
 import { LoggedUser } from 'src/auth/auth.types';
-import { BitlyService } from 'src/bitly/bitly.service';
-import { MailchimpService } from 'src/mails/mailchimp.service';
+import { AirtableService } from 'src/external-services/airtable/airtable.service';
+import { BitlyService } from 'src/external-services/bitly/bitly.service';
+import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
+import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
@@ -21,7 +22,6 @@ import {
   OfferStatuses,
 } from 'src/opportunities/opportunities.types';
 import { Queues } from 'src/queues/queues.types';
-import { SalesforceService } from 'src/salesforce/salesforce.service';
 import { User } from 'src/users/models/user.model';
 import { UserRoles } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';

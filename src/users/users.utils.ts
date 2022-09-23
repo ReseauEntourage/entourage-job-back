@@ -1,6 +1,6 @@
 import { col, Op, where } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
-import { BusinessLineValue } from 'src/businessLines/businessLines.types';
+import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
 import { User } from './models';

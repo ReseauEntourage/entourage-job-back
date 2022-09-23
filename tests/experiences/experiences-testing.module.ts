@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ExperiencesModule } from 'src/experiences/experiences.module';
+import { ExperiencesModule } from 'src/common/experiences/experiences.module';
 import { ExperiencesSkillsHelper } from './experiences-skills.helper';
 import { ExperiencesHelper } from './experiences.helper';
 

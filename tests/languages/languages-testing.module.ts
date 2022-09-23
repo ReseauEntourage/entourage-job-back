@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { LanguagesModule } from 'src/languages/languages.module';
+import { LanguagesModule } from 'src/common/languages/languages.module';
 import { LanguagesHelper } from './languages.helper';
 
 @Module({

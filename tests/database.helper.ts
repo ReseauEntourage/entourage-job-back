@@ -6,9 +6,15 @@ import {
   OpportunityBusinessLine,
   OpportunityUser,
 } from '../src/opportunities/models';
-import { Ambition } from 'src/ambitions/models';
-import { BusinessLine } from 'src/businessLines/models';
-import { Contract } from 'src/contracts/models';
+import { Ambition } from 'src/common/ambitions/models';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { Contract } from 'src/common/contracts/models';
+import { Experience, ExperienceSkill } from 'src/common/experiences/models';
+import { Language } from 'src/common/languages/models';
+import { Location } from 'src/common/locations/models';
+import { Passion } from 'src/common/passions/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
 import {
   CV,
   CVAmbition,
@@ -20,14 +26,8 @@ import {
   CVSearch,
   CVSkill,
 } from 'src/cvs/models';
-import { Experience, ExperienceSkill } from 'src/experiences/models';
-import { Language } from 'src/languages/models';
-import { Location } from 'src/locations/models';
-import { Passion } from 'src/passions/models';
-import { Review } from 'src/reviews/models';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import { Share } from 'src/shares/models';
-import { Skill } from 'src/skills/models';
 import { UserCandidat, User } from 'src/users/models';
 import { Factory } from 'src/utils/types';
 

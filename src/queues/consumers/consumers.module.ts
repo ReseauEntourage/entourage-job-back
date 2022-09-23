@@ -2,18 +2,24 @@ import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 
 import { CVsModule } from 'src/cvs/cvs.module';
-import { MailsModule } from 'src/mails/mails.module';
+import { AirtableModule } from 'src/external-services/airtable/airtable.module';
+import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
+import { PusherService } from 'src/external-services/pusher/pusher.service';
+import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
+import { VonageModule } from 'src/external-services/vonage/vonage.module';
+import { OpportunitiesModule } from 'src/opportunities/opportunities.module';
 import { getBullWorkQueueOptions } from 'src/queues/queues.utils';
-import { SMSModule } from 'src/sms/sms.module';
-import { PusherService } from './pusher.service';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
   imports: [
     BullModule.registerQueue(getBullWorkQueueOptions()),
     CVsModule,
-    MailsModule,
-    SMSModule,
+    OpportunitiesModule,
+    MailjetModule,
+    VonageModule,
+    AirtableModule,
+    SalesforceModule,
   ],
   providers: [WorkQueueProcessor, PusherService],
   exports: [WorkQueueProcessor],

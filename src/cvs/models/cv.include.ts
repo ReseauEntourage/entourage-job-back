@@ -1,13 +1,13 @@
 import { Includeable } from 'sequelize/types';
-import { Ambition } from 'src/ambitions/models';
-import { BusinessLine } from 'src/businessLines/models';
-import { Contract } from 'src/contracts/models';
-import { Experience } from 'src/experiences/models/experience.model';
-import { Language } from 'src/languages/models';
-import { Location } from 'src/locations/models';
-import { Passion } from 'src/passions/models';
-import { Review } from 'src/reviews/models/review.model';
-import { Skill } from 'src/skills/models';
+import { Ambition } from 'src/common/ambitions/models';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models/experience.model';
+import { Language } from 'src/common/languages/models';
+import { Location } from 'src/common/locations/models';
+import { Passion } from 'src/common/passions/models';
+import { Review } from 'src/common/reviews/models/review.model';
+import { Skill } from 'src/common/skills/models';
 import { User, UserCandidat } from 'src/users/models';
 
 export const UserAllInclude: Includeable = {

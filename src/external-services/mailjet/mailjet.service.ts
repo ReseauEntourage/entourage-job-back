@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import _ from 'lodash';
 import { Email, connect } from 'node-mailjet';
-import { CustomMailParams, MailjetTemplates } from './mails.types';
+import { CustomMailParams, MailjetTemplates } from './mailjet.types';
 import SendParams = Email.SendParams;
 
 const useCampaigns = process.env.MAILJET_CAMPAIGNS_ACTIVATED === 'true';

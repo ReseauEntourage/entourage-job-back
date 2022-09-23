@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { Location } from 'src/locations/models';
+import { Location } from 'src/common/locations/models';
 
 @Injectable()
 export class LocationsHelper {
