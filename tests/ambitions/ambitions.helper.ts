@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { Ambition } from 'src/ambitions/models';
+import { Ambition } from 'src/common/ambitions/models';
 
 @Injectable()
 export class AmbitionsHelper {

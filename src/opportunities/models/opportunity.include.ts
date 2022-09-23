@@ -1,5 +1,5 @@
 import { Includeable } from 'sequelize';
-import { BusinessLine } from 'src/businessLines/models';
+import { BusinessLine } from 'src/common/businessLines/models';
 import { User, UserCandidat } from 'src/users/models';
 import { OpportunityUser } from './opportunity-user.model';
 

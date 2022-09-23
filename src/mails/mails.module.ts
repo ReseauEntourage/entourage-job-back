@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
+import { MailchimpModule } from 'src/external-services/mailchimp/mailchimp.module';
 import { QueuesModule } from 'src/queues/producers';
-import { MailchimpService } from './mailchimp.service';
-import { MailjetService } from './mailjet.service';
 import { MailsController } from './mails.controller';
 import { MailsService } from './mails.service';
 
 @Module({
-  imports: [QueuesModule],
+  imports: [QueuesModule, MailchimpModule],
   controllers: [MailsController],
-  providers: [MailsService, MailjetService, MailchimpService],
-  exports: [MailsService, MailjetService, MailchimpService],
+  providers: [MailsService],
+  exports: [MailsService],
 })
 export class MailsModule {}

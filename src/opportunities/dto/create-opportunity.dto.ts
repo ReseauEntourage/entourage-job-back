@@ -1,7 +1,7 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsOptional } from 'class-validator';
 import { Opportunity } from '../models';
-import { Department } from 'src/locations/locations.types';
+import { Department } from 'src/common/locations/locations.types';
 
 interface LocationDto {
   department: Department;

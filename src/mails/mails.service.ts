@@ -7,6 +7,13 @@ import {
   OpportunityRestricted,
 } from '../opportunities/opportunities.types';
 import { CV } from 'src/cvs/models';
+import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
+import { ContactStatus } from 'src/external-services/mailchimp/mailchimp.types';
+import {
+  CustomMailParams,
+  MailjetTemplate,
+  MailjetTemplates,
+} from 'src/external-services/mailjet/mailjet.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/opportunities.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
@@ -18,20 +25,25 @@ import {
   getZoneFromDepartment,
 } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
+import { AdminZone } from 'src/utils/types';
 import { ContactUsFormDto } from './dto';
-import {
-  CustomMailParams,
-  HeardAboutFilters,
-  MailjetTemplate,
-  MailjetTemplates,
-} from './mails.types';
+import { HeardAboutFilters } from './mails.types';
 
 @Injectable()
 export class MailsService {
   constructor(
     @InjectQueue(Queues.WORK)
-    private workQueue: Queue
+    private workQueue: Queue,
+    private mailchimpService: MailchimpService
   ) {}
+
+  async sendContactToMailchimp(
+    email: string,
+    zone: AdminZone | AdminZone[],
+    status: ContactStatus | ContactStatus[]
+  ) {
+    return this.mailchimpService.sendContact(email, zone, status);
+  }
 
   async sendPasswordResetLinkMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
@@ -211,10 +223,12 @@ export class MailsService {
         ..._.omitBy(
           {
             ...contactUsFormDto,
-            heardAbout: findConstantFromValue(
-              contactUsFormDto.heardAbout,
-              HeardAboutFilters
-            ).label,
+            heardAbout: contactUsFormDto.heardAbout
+              ? findConstantFromValue(
+                  contactUsFormDto.heardAbout,
+                  HeardAboutFilters
+                ).label
+              : null,
           },
           _.isNil
         ),

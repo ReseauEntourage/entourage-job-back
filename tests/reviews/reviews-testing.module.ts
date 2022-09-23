@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ReviewsModule } from 'src/reviews/reviews.module';
+import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { ReviewsHelper } from './reviews.helper';
 
 @Module({

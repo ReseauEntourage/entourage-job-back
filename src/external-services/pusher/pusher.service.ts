@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import Pusher from 'pusher';
-
-import { PusherChannel, PusherEvent } from '../queues.types';
+import { PusherChannel, PusherEvent } from './pusher.types';
 
 @Injectable()
 export class PusherService {

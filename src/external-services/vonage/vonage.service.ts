@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import Vonage, { SendSms } from '@vonage/server-sdk';
-import { CustomSMSParams } from './sms.types';
+import { CustomSMSParams } from './vonage.types';
 
 const useSMS = process.env.USE_SMS === 'true';
 

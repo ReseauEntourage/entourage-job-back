@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { BusinessLine } from 'src/businessLines/models';
+import { BusinessLine } from 'src/common/businessLines/models';
 import { Opportunity } from './opportunity.model';
 
 @Table({ tableName: 'Opportunity_BusinessLines' })

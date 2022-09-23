@@ -1,6 +1,6 @@
-import { BusinessLine } from 'src/businessLines/models';
-import { ContractValue } from 'src/contracts/contracts.types';
-import { Department } from 'src/locations/locations.types';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { ContractValue } from 'src/common/contracts/contracts.types';
+import { Department } from 'src/common/locations/locations.types';
 import {
   ExternalOfferOrigin,
   OfferStatus,

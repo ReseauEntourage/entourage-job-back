@@ -12,8 +12,8 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
+import { Skill } from 'src/common/skills/models';
 import { CV } from 'src/cvs/models/cv.model';
-import { Skill } from 'src/skills/models';
 import { ExperienceSkill } from './experience-skill.model';
 
 @Table({ tableName: 'Experiences' })

@@ -1,5 +1,8 @@
-import { CustomMailParams, MailjetTemplate } from 'src/mails/mails.types';
-import { CustomSMSParams } from 'src/sms/sms.types';
+import {
+  CustomMailParams,
+  MailjetTemplate,
+} from 'src/external-services/mailjet/mailjet.types';
+import { CustomSMSParams } from 'src/external-services/vonage/vonage.types';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',
@@ -111,17 +114,3 @@ export const Queues = {
 } as const;
 
 export type Queue = typeof Queues[keyof typeof Queues];
-
-export const PusherChannels = {
-  CV_PREVIEW: 'cv-preview-channel',
-  CV_PDF: 'cv-pdf-channel',
-} as const;
-
-export type PusherChannel = typeof PusherChannels[keyof typeof PusherChannels];
-
-export const PusherEvents = {
-  CV_PREVIEW_DONE: 'cv-preview-done',
-  CV_PDF_DONE: 'cv-pdf-done',
-} as const;
-
-export type PusherEvent = typeof PusherEvents[keyof typeof PusherEvents];

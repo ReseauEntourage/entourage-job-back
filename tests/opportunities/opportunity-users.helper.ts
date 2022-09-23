@@ -12,26 +12,27 @@ export class OpportunityUsersHelper {
   async associateOpportunityUser(
     opportunityId: string,
     candidateId: string,
-    props = {}
-  ) {
-    return this.opportunityUserModel.create({
-      OpportunityId: opportunityId,
-      UserId: candidateId,
-      ...props,
-    });
+    props: Partial<OpportunityUser> = {}
+  ): Promise<OpportunityUser> {
+    const opportunityUser = await this.opportunityUserModel.create(
+      {
+        OpportunityId: opportunityId,
+        UserId: candidateId,
+        ...props,
+      },
+      { hooks: true }
+    );
+    return opportunityUser.toJSON();
   }
 
   async associateManyOpportunityUsers(
     opportunityIds: string[],
-    candidateId: string
+    candidateId: string,
+    props: Partial<OpportunityUser> = {}
   ) {
     return Promise.all(
-      opportunityIds.map(async (opportunityId) => {
-        const opportunityUser = await this.associateOpportunityUser(
-          opportunityId,
-          candidateId
-        );
-        return opportunityUser.toJSON();
+      opportunityIds.map((opportunityId) => {
+        return this.associateOpportunityUser(opportunityId, candidateId, props);
       })
     );
   }

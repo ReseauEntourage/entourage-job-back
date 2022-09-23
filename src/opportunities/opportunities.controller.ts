@@ -16,7 +16,7 @@ import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from '../auth/auth.types';
 import { getCandidateIdFromCoachOrCandidate } from '../users/users.utils';
 import { Public, UserPayload } from 'src/auth/guards';
-import { DepartmentFilters } from 'src/locations/locations.types';
+import { DepartmentFilters } from 'src/common/locations/locations.types';
 import {
   LinkedUser,
   LinkedUserGuard,
@@ -37,7 +37,7 @@ import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { UpdateOpportunityPipe } from './dto/update-opportunity.pipe';
-import { Opportunity, OpportunityUser } from './models';
+import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import {
   OfferAdminTab,
@@ -180,6 +180,7 @@ export class OpportunitiesController {
     if (userId && !uuidValidate(userId)) {
       throw new BadRequestException();
     }
+
     const isAdmin = role === UserRoles.ADMIN;
 
     const { candidateId, ...restParams } = createExternalOpportunityDto;
@@ -234,19 +235,22 @@ export class OpportunitiesController {
   @LinkedUser('body.userId')
   @UseGuards(LinkedUserGuard)
   @Post('join')
-  async openOpportunity(
+  async createOpportunityUser(
     @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
-    @Body('userId', new ParseUUIDPipe()) candidateId: string
+    @Body('userId', new ParseUUIDPipe()) candidateId: string,
+    @UserPayload('role') role: UserRole
   ) {
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        candidateId,
-        opportunityId
-      );
+    const opportunity = await this.opportunitiesService.findOneAsCandidate(
+      candidateId,
+      opportunityId
+    );
 
-    let updatedOpportunityUser: OpportunityUser;
-    if (opportunityUser) {
-      updatedOpportunityUser =
+    if (opportunity) {
+      if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+        throw new ForbiddenException();
+      }
+
+      const updatedOpportunityUser =
         await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
           candidateId,
           opportunityId,
@@ -254,13 +258,35 @@ export class OpportunitiesController {
             seen: true,
           }
         );
-    } else {
-      updatedOpportunityUser = await this.opportunityUsersService.create({
-        OpportunityId: opportunityId,
-        UserId: candidateId,
-        seen: true,
-      });
+
+      await this.opportunitiesService.updateExternalDBOpportunity(
+        updatedOpportunityUser.OpportunityId
+      );
+
+      return updatedOpportunityUser.toJSON();
     }
+
+    const existingOpportunity = await this.opportunitiesService.findOne(
+      opportunityId
+    );
+
+    if (!existingOpportunity) {
+      throw new NotFoundException();
+    }
+
+    if (
+      (!existingOpportunity.isPublic || !existingOpportunity.isValidated) &&
+      role !== UserRoles.ADMIN
+    ) {
+      throw new ForbiddenException();
+    }
+
+    const updatedOpportunityUser = await this.opportunityUsersService.create({
+      OpportunityId: opportunityId,
+      UserId: candidateId,
+      seen: true,
+    });
+
     await this.opportunitiesService.updateExternalDBOpportunity(
       updatedOpportunityUser.OpportunityId
     );
@@ -311,6 +337,8 @@ export class OpportunitiesController {
     );
   }
 
+  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/user/all/:candidateId')
@@ -330,7 +358,10 @@ export class OpportunitiesController {
     }
 
     if (opportunityUsers.length === 0) {
-      return [] as Opportunity[];
+      return {
+        offers: [],
+        otherOffers: [],
+      };
     }
 
     const opportunityUserIds = opportunityUsers.map((opportunityUser) => {
@@ -517,15 +548,14 @@ export class OpportunitiesController {
     const { candidateId, id, ...restOpportunity } =
       updateExternalOpportunityDto;
 
-    const candidate = await this.opportunitiesService.findOneCandidate(
-      candidateId
-    );
-
-    if (!candidate) {
-      throw new NotFoundException();
+    if (!candidateId || !uuidValidate(candidateId)) {
+      throw new BadRequestException();
     }
 
-    const opportunity = await this.opportunitiesService.findOne(id);
+    const opportunity = await this.opportunitiesService.findOneAsCandidate(
+      id,
+      candidateId
+    );
 
     if (!opportunity || !opportunity.isExternal) {
       throw new NotFoundException();

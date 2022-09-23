@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Ambition } from 'src/ambitions/models/ambition.model';
+import { Ambition } from 'src/common/ambitions/models/ambition.model';
 import { CV } from './cv.model';
 
 @Table({ tableName: 'CV_Ambitions' })

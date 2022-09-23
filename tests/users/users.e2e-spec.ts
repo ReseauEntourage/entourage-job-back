@@ -4,14 +4,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
-import { Ambition } from 'src/ambitions/models';
 import { LoggedUser } from 'src/auth/auth.types';
-import { S3Service } from 'src/aws/s3.service';
-import { BusinessLine } from 'src/businessLines/models';
-import { Experience } from 'src/experiences/models';
+import { Ambition } from 'src/common/ambitions/models';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { Experience } from 'src/common/experiences/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
+import { S3Service } from 'src/external-services/aws/s3.service';
 import { Queues } from 'src/queues/queues.types';
-import { Review } from 'src/reviews/models';
-import { Skill } from 'src/skills/models';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User } from 'src/users/models';
@@ -134,13 +134,13 @@ describe('Users', () => {
     describe('C - Create 1 User', () => {
       describe('/ - Create user', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
         });
@@ -194,7 +194,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send(candidat);
           expect(response.status).toBe(403);
         });
@@ -218,14 +218,14 @@ describe('Users', () => {
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
@@ -249,10 +249,10 @@ describe('Users', () => {
         it('Should return 200 when logged in candidat get himself', async () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(app.getHttpServer())
-              .get(`${route}/${loggedInCandidat.user.email}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`);
+              .get(`${route}/${loggedInCandidate.user.email}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
-          expect(response.body.email).toEqual(loggedInCandidat.user.email);
+          expect(response.body.email).toEqual(loggedInCandidate.user.email);
         });
         it('Should return 200 when logged in coach get himself', async () => {
           const response: APIResponse<UsersController['findUser']> =
@@ -265,26 +265,26 @@ describe('Users', () => {
         it('Should return 403 when logged in coach get a candidat', async () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(app.getHttpServer())
-              .get(`${route}/${loggedInCandidat.user.email}`)
+              .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and get a user by email when logged in as admin', async () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(app.getHttpServer())
-              .get(`${route}/${loggedInCandidat.user.email}`)
+              .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           const receivedUser = response.body;
-          expect(receivedUser.email).toEqual(loggedInCandidat.user.email);
+          expect(receivedUser.email).toEqual(loggedInCandidate.user.email);
         });
         it('Should return 200 and get a user by id when logged in as admin', async () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(app.getHttpServer())
-              .get(`${route}/${loggedInCandidat.user.id}`)
+              .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
-          expect(response.body.id).toEqual(loggedInCandidat.user.id);
+          expect(response.body.id).toEqual(loggedInCandidate.user.id);
         });
         it('Should return 404 if user not found', async () => {
           const response: APIResponse<UsersController['findUser']> =
@@ -296,14 +296,14 @@ describe('Users', () => {
       });
       describe('/candidat?coachId=&candidatId= - Get user associated to a candidate or coach', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
@@ -339,42 +339,42 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(app.getHttpServer())
               .get(`${route}/candidat`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .query({
-                candidatId: loggedInCandidat.user.id,
+                candidatId: loggedInCandidate.user.id,
               });
 
           expect(response.status).toBe(200);
           expect(response.body.coach).toBeFalsy();
           expect(response.body.candidat).toBeTruthy();
-          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
         it('Should return 200 and related coach if candidat searching for himself and is associated to coach', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(app.getHttpServer())
               .get(`${route}/candidat`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .query({
-                candidatId: loggedInCandidat.user.id,
+                candidatId: loggedInCandidate.user.id,
               });
 
           expect(response.status).toBe(200);
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
-          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
         it('Should return 200 and related candidat if coach searching for himself and is associated to candidat', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const response: APIResponse<UsersController['findRelatedUser']> =
@@ -389,7 +389,7 @@ describe('Users', () => {
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
-          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
         it('Should return 403 if a not admin user search for others than himself.', async () => {
           const otherCoach = await userFactory.create(
@@ -410,10 +410,10 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 200 and related candidate, admin searching for coach', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const response: APIResponse<UsersController['findRelatedUser']> =
@@ -427,13 +427,13 @@ describe('Users', () => {
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
-          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
         it('Should return 200 and related coach, admin searching for candidate', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const response: APIResponse<UsersController['findRelatedUser']> =
@@ -441,27 +441,27 @@ describe('Users', () => {
               .get(`${route}/candidat`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .query({
-                candidatId: loggedInCandidat.user.id,
+                candidatId: loggedInCandidate.user.id,
               });
           expect(response.status).toBe(200);
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
-          expect(response.body.candidat.id).toBe(loggedInCandidat.user.id);
+          expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
       });
     });
-    describe('R - Many Users', () => {
+    describe('R - Read many Users', () => {
       describe('/search?query=&role= - Search a user where query string in email, first name or last name', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
@@ -471,25 +471,25 @@ describe('Users', () => {
         it('Should return 200 and part of candidates if user is logged in as admin', async () => {
           const privateCandidateInfo = [
             {
-              id: loggedInCandidat.user.id,
-              firstName: loggedInCandidat.user.firstName,
-              lastName: loggedInCandidat.user.lastName,
-              role: loggedInCandidat.user.role,
-              adminRole: loggedInCandidat.user.adminRole,
-              address: loggedInCandidat.user.address,
-              email: loggedInCandidat.user.email,
-              gender: loggedInCandidat.user.gender,
+              id: loggedInCandidate.user.id,
+              firstName: loggedInCandidate.user.firstName,
+              lastName: loggedInCandidate.user.lastName,
+              role: loggedInCandidate.user.role,
+              adminRole: loggedInCandidate.user.adminRole,
+              address: loggedInCandidate.user.address,
+              email: loggedInCandidate.user.email,
+              gender: loggedInCandidate.user.gender,
               lastConnection:
-                loggedInCandidat.user.lastConnection?.toISOString(),
-              phone: loggedInCandidat.user.phone,
-              zone: loggedInCandidat.user.zone,
+                loggedInCandidate.user.lastConnection?.toISOString(),
+              phone: loggedInCandidate.user.phone,
+              zone: loggedInCandidate.user.zone,
             },
           ];
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?query=${loggedInCandidat.user.firstName}&role=${UserRoles.CANDIDAT}`
+                `${route}/search?query=${loggedInCandidate.user.firstName}&role=${UserRoles.CANDIDAT}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -500,7 +500,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(`${route}/search?query=e&role=${UserRoles.CANDIDAT}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`);
+              .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if user is not logged in as candidate', async () => {
@@ -564,14 +564,14 @@ describe('Users', () => {
           expect(response.status).toBe(401);
         });
         it('Should return 403 if user is not a logged in admin', async () => {
-          const loggedInCandidat = await usersHelper.createLoggedInUser({
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
 
           const response: APIResponse<UsersController['findMembers']> =
             await request(app.getHttpServer())
               .get(`${route}/members`)
-              .set('authorization', `Token ${loggedInCandidat.token}`);
+              .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         describe('/members?limit=&offset= - Get paginated and alphabetically sorted users', () => {
@@ -993,7 +993,7 @@ describe('Users', () => {
 
             await Promise.all(
               associatedUserCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidat(
+                return userCandidatsHelper.associateCoachAndCandidate(
                   coaches[index],
                   candidate
                 );
@@ -1036,7 +1036,7 @@ describe('Users', () => {
 
             await Promise.all(
               associatedUserCoaches.map(async (coach, index) => {
-                return userCandidatsHelper.associateCoachAndCandidat(
+                return userCandidatsHelper.associateCoachAndCandidate(
                   coach,
                   candidates[index]
                 );
@@ -1057,16 +1057,16 @@ describe('Users', () => {
         });
       });
 
-      describe('Members - Count all pending members', () => {
+      describe('/members/count - Count all pending members', () => {
         it('Should return 403 if user is not a logged in admin', async () => {
-          const loggedInCandidat = await usersHelper.createLoggedInUser({
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           const response: APIResponse<
             UsersController['countSubmittedCVMembers']
           > = await request(app.getHttpServer())
             .get(`${route}/members/count`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+            .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and count of members with pending CVs', async () => {
@@ -1120,14 +1120,14 @@ describe('Users', () => {
     describe('U - Update 1 User', () => {
       describe('/:id - Update user', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
@@ -1138,7 +1138,7 @@ describe('Users', () => {
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
               .send({
                 phone: updates.phone,
                 firstName: updates.firstName,
@@ -1146,16 +1146,16 @@ describe('Users', () => {
           expect(response.status).toBe(401);
         });
         it("Should return 403 if user doesn't update himself, even if they are associated", async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`)
               .send({
                 phone: updates.phone,
@@ -1167,8 +1167,8 @@ describe('Users', () => {
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 phone: updates.phone,
                 address: updates.address,
@@ -1181,8 +1181,8 @@ describe('Users', () => {
         it('Should return 400 when a candidate update himself with invalid phone', async () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 phone: '1234',
               });
@@ -1216,8 +1216,8 @@ describe('Users', () => {
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 firstName: updates.firstName,
               });
@@ -1238,7 +1238,7 @@ describe('Users', () => {
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 phone: updates.phone,
@@ -1253,7 +1253,7 @@ describe('Users', () => {
         it('Should return 400 when an admin update a user with invalid phone', async () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 phone: '1234',
@@ -1261,15 +1261,15 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200 and updated user, and updated userCandidat when an admin update a user role', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const response: APIResponse<UsersController['updateUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/${loggedInCandidat.user.id}`)
+              .put(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 role: UserRoles.COACH,
@@ -1278,18 +1278,18 @@ describe('Users', () => {
           expect(response.body.role).toEqual(UserRoles.COACH);
 
           const userCandidat = await userCandidatsHelper.findOneUserCandidat({
-            coachId: loggedInCandidat.user.id,
+            coachId: loggedInCandidate.user.id,
           });
 
           expect(userCandidat).toBeFalsy();
         });
       });
       describe('/change-pwd - Update password', () => {
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         const password = 'Candidat123!';
 
         beforeEach(async () => {
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password,
           });
@@ -1306,7 +1306,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer())
               .put(`${route}/change-pwd`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 oldPassword: 'falsePassword123!',
                 newPassword: 'Candidat123?',
@@ -1317,7 +1317,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer())
               .put(`${route}/change-pwd`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 oldPassword: password,
                 newPassword: 'candidat123?',
@@ -1328,9 +1328,9 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(app.getHttpServer())
               .put(`${route}/change-pwd`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
-                email: loggedInCandidat.user.email,
+                email: loggedInCandidate.user.email,
                 oldPassword: password,
                 newPassword: 'Candidat123?',
               });
@@ -1339,14 +1339,14 @@ describe('Users', () => {
       });
       describe('/candidat/:candidateId - Update userCandidat', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
@@ -1356,7 +1356,7 @@ describe('Users', () => {
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/${loggedInCandidate.user.id}`)
               .send({
                 hidden: false,
                 note: 'updated note',
@@ -1370,7 +1370,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
               .put(`${route}/candidat/${otherCandidat.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 employed: false,
                 note: 'updated note by other',
@@ -1380,7 +1380,7 @@ describe('Users', () => {
         it('Should return 403, if coach updates candidate not associated to him', async () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`)
               .send({
                 employed: false,
@@ -1389,16 +1389,16 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 200 and updated userCandidat, if logged in admin', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const updatedNote = 'updated note by admin';
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 employed: false,
@@ -1409,36 +1409,36 @@ describe('Users', () => {
           expect(response.body.lastModifiedBy).toBe(loggedInAdmin.user.id);
         });
         it('Should return 200 and updated userCandidat, if candidat updates himself', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const updatedNote = 'updated note by candidat';
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/${loggedInCandidat.user.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`)
+              .put(`${route}/candidat/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 hidden: false,
                 note: updatedNote,
               });
           expect(response.status).toBe(200);
           expect(response.body.note).toMatch(updatedNote);
-          expect(response.body.lastModifiedBy).toBe(loggedInCandidat.user.id);
+          expect(response.body.lastModifiedBy).toBe(loggedInCandidate.user.id);
         });
         it('Should return 200 and updated userCandidat, if coach updates candidate associated to him', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           const updatedNote = 'updated note by coach';
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`)
               .send({
                 employed: false,
@@ -1451,7 +1451,7 @@ describe('Users', () => {
       });
       describe('/candidat/checkUpdate - Check if update has been made on userCandidat note', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
@@ -1464,8 +1464,8 @@ describe('Users', () => {
           const coach = await userFactory.create({
             role: UserRoles.COACH,
           });
-          await userCandidatsHelper.associateCoachAndCandidat(coach, candidat);
-          loggedInCandidat = await usersHelper.createLoggedInUser(
+          await userCandidatsHelper.associateCoachAndCandidate(coach, candidat);
+          loggedInCandidate = await usersHelper.createLoggedInUser(
             candidat,
             {},
             false
@@ -1495,8 +1495,8 @@ describe('Users', () => {
         });
         it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
-            loggedInCandidat.user.id
+            loggedInCandidate.user.id,
+            loggedInCandidate.user.id
           );
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
@@ -1508,7 +1508,7 @@ describe('Users', () => {
         });
         it('Should return 200 and noteHasBeenModified be false, if coach reads note', async () => {
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
+            loggedInCandidate.user.id,
             null
           );
 
@@ -1522,7 +1522,7 @@ describe('Users', () => {
         });
         it('Should return 200 and noteHasBeenModified be false, if coach is the last one to have updated note', async () => {
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
+            loggedInCandidate.user.id,
             loggedInCoach.user.id
           );
 
@@ -1537,20 +1537,20 @@ describe('Users', () => {
 
         it('Should return 200 and noteHasBeenModified, if candidat checks if note has been updated', async () => {
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
+            loggedInCandidate.user.id,
             loggedInCoach.user.id
           );
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
             .get(`${route}/candidat/checkUpdate`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+            .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
         });
         it('Should return 200 and noteHasBeenModified be false, if candidat reads note', async () => {
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
+            loggedInCandidate.user.id,
             null
           );
 
@@ -1558,35 +1558,35 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
             .get(`${route}/candidat/checkUpdate`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+            .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
         });
         it('Should return 200 and noteHasBeenModified be false, if candidat is the last one to have updated note', async () => {
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
-            loggedInCandidat.user.id
+            loggedInCandidate.user.id,
+            loggedInCandidate.user.id
           );
 
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
             .get(`${route}/candidat/checkUpdate`)
-            .set('authorization', `Token ${loggedInCandidat.token}`);
+            .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
         });
       });
       describe('/candidat/read/:candidateId - Set note to has been read', () => {
         let loggedInAdmin: LoggedUser;
-        let loggedInCandidat: LoggedUser;
+        let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidat = await usersHelper.createLoggedInUser({
+          loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
@@ -1596,7 +1596,7 @@ describe('Users', () => {
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(app.getHttpServer()).put(
-              `${route}/candidat/read/${loggedInCandidat.user.id}`
+              `${route}/candidat/read/${loggedInCandidate.user.id}`
             );
 
           expect(response.status).toBe(401);
@@ -1604,58 +1604,58 @@ describe('Users', () => {
         it('Should return 403, if admin sets the note has been read', async () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/read/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if coach sets the note has been read on candidate not related', async () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/read/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200, if candidat sets the note and is not related to a coach', async () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`);
+              .put(`${route}/candidat/read/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastModifiedBy).toBe(null);
         });
         it('Should return 200 and userCandidat, if coach sets the note has been read', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
-            loggedInCandidat.user.id
+            loggedInCandidate.user.id,
+            loggedInCandidate.user.id
           );
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
+              .put(`${route}/candidat/read/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastModifiedBy).toBe(null);
         });
         it('Should return 200 and userCandidat, if candidat sets the note has been read', async () => {
-          ({ loggedInCoach, loggedInCandidat } =
-            await userCandidatsHelper.associateCoachAndCandidat(
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
-              loggedInCandidat,
+              loggedInCandidate,
               true
             ));
           await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidat.user.id,
+            loggedInCandidate.user.id,
             loggedInCoach.user.id
           );
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(app.getHttpServer())
-              .put(`${route}/candidat/read/${loggedInCandidat.user.id}`)
-              .set('authorization', `Token ${loggedInCandidat.token}`);
+              .put(`${route}/candidat/read/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastModifiedBy).toBe(null);
         });

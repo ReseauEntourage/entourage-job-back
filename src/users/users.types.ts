@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/businessLines/businessLines.types';
+} from 'src/common/businessLines/businessLines.types';
 
 import {
   AdminZone,

@@ -10,7 +10,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { ContractValue } from 'src/contracts/contracts.types';
+import { ContractValue } from 'src/common/contracts/contracts.types';
 import { CV, CVContract } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
 

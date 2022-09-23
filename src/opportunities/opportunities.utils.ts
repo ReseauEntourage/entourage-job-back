@@ -3,9 +3,9 @@ import moment from 'moment';
 import { Includeable, Op, WhereOptions } from 'sequelize';
 import { firstBy } from 'thenby';
 
-import { BusinessLineFilters } from 'src/businessLines/businessLines.types';
-import { BusinessLine } from 'src/businessLines/models';
-import { ContractFilters } from 'src/contracts/contracts.types';
+import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
   getFiltersObjectsFromQueryParams,

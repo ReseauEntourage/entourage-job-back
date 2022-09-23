@@ -5,12 +5,18 @@ import { Queue } from 'bull';
 import * as _ from 'lodash';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
-import { ContactStatus, ContactStatuses } from '../mails/mails.types';
 import { getRelatedUser } from '../users/users.utils';
-import { BusinessLine } from 'src/businessLines/models';
+import { BusinessLine } from 'src/common/businessLines/models';
+import {
+  Department,
+  DepartmentFilters,
+} from 'src/common/locations/locations.types';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
-import { Department, DepartmentFilters } from 'src/locations/locations.types';
-import { MailchimpService } from 'src/mails/mailchimp.service';
+import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
+import {
+  ContactStatus,
+  ContactStatuses,
+} from 'src/external-services/mailchimp/mailchimp.types';
 import { MailsService } from 'src/mails/mails.service';
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
@@ -318,16 +324,6 @@ export class OpportunitiesService {
     id: string,
     candidateId: string
   ): Promise<OpportunityRestricted> {
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        candidateId,
-        id
-      );
-
-    if (!opportunityUser) {
-      return null;
-    }
-
     const opportunity = await this.opportunityModel.findOne({
       where: { isValidated: true, isArchived: false, id },
       attributes: [...OpportunityCandidateAttributes],
@@ -338,9 +334,19 @@ export class OpportunitiesService {
       return null;
     }
 
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        id
+      );
+
+    if (!opportunityUser && !opportunity.isPublic) {
+      return null;
+    }
+
     return {
       ...opportunity.toJSON(),
-      opportunityUsers: opportunityUser.toJSON(),
+      opportunityUsers: opportunityUser?.toJSON(),
     } as OpportunityRestricted;
   }
 

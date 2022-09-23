@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Review } from 'src/reviews/models';
+import { Review } from 'src/common/reviews/models';
 
 @Injectable()
 export class ReviewsHelper {

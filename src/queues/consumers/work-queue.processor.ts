@@ -9,9 +9,16 @@ import {
   OnQueueError,
 } from '@nestjs/bull';
 import { Job } from 'bull';
-import { AirtableService } from 'src/airtable/airtable.service';
+import {
+  PusherChannels,
+  PusherEvents,
+} from '../../external-services/pusher/pusher.types';
 import { CVsService } from 'src/cvs/cvs.service';
-import { MailjetService } from 'src/mails/mailjet.service';
+import { AirtableService } from 'src/external-services/airtable/airtable.service';
+import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
+import { PusherService } from 'src/external-services/pusher/pusher.service';
+import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { VonageService } from 'src/external-services/vonage/vonage.service';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CacheCVJob,
@@ -27,8 +34,6 @@ import {
   SendReminderInterviewTrainingJob,
   SendReminderActionsJob,
   SendReminderExternalOffersJob,
-  PusherChannels,
-  PusherEvents,
   CreateOrUpdateSalesforceOpportunity,
   UpdateAirtable,
   InsertAirtable,
@@ -36,10 +41,7 @@ import {
   SendReminderOffer,
   SendSMSJob,
 } from 'src/queues/queues.types';
-import { SalesforceService } from 'src/salesforce/salesforce.service';
-import { VonageService } from 'src/sms/vonage.service';
 import { AnyCantFix } from 'src/utils/types';
-import { PusherService } from './pusher.service';
 
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {

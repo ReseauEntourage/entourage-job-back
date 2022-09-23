@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Passion } from 'src/passions/models';
+import { Passion } from 'src/common/passions/models';
 import { CV } from './cv.model';
 
 @Table({ tableName: 'CV_Passions' })

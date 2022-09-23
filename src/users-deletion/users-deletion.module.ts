@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AWSModule } from 'src/aws/aws.module';
 import { CVsModule } from 'src/cvs/cvs.module';
+import { AWSModule } from 'src/external-services/aws/aws.module';
 import { OpportunitiesModule } from 'src/opportunities/opportunities.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
 import { UsersModule } from 'src/users/users.module';

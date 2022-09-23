@@ -12,27 +12,30 @@ import { PDFDocument } from 'pdf-lib';
 import * as puppeteer from 'puppeteer-core';
 import { col, fn, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
-import { Ambition } from 'src/ambitions/models';
-import { CloudFrontService } from 'src/aws/cloud-front.service';
-import { S3Service } from 'src/aws/s3.service';
+import { Ambition } from 'src/common/ambitions/models';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/businessLines/businessLines.types';
-import { buildBusinessLineForSentence } from 'src/businessLines/businessLines.utils';
-import { BusinessLine } from 'src/businessLines/models';
-import { ContractFilters } from 'src/contracts/contracts.types';
-import { Contract } from 'src/contracts/models';
-import { Experience } from 'src/experiences/models';
-import { Language } from 'src/languages/models';
-import { Department, DepartmentFilters } from 'src/locations/locations.types';
-import { Location } from 'src/locations/models';
+} from 'src/common/businessLines/businessLines.types';
+import { buildBusinessLineForSentence } from 'src/common/businessLines/businessLines.utils';
+import { BusinessLine } from 'src/common/businessLines/models';
+import { ContractFilters } from 'src/common/contracts/contracts.types';
+import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models';
+import { Language } from 'src/common/languages/models';
+import {
+  Department,
+  DepartmentFilters,
+} from 'src/common/locations/locations.types';
+import { Location } from 'src/common/locations/models';
+import { Passion } from 'src/common/passions/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
+import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
+import { S3Service } from 'src/external-services/aws/s3.service';
+import { CustomMailParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
-import { CustomMailParams } from 'src/mails/mails.types';
-import { Passion } from 'src/passions/models';
 import { Jobs, Queues } from 'src/queues/queues.types';
-import { Review } from 'src/reviews/models';
-import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
@@ -250,13 +253,18 @@ export class CVsService {
       return null;
     }
 
-    return this.cvModel.findOne({
+    const cv = await this.cvModel.findOne({
       include: CVCompleteWithAllUserPrivateInclude,
       where: {
         UserId: candidateId,
       },
       order: [['version', 'DESC']],
     });
+
+    if (!cv) {
+      return {} as CV;
+    }
+    return cv;
   }
 
   async findOneByUrl(url: string): Promise<CV> {

@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
-import { BusinessLineFilters } from 'src/businessLines/businessLines.types';
-import { DepartmentFilters } from 'src/locations/locations.types';
+import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
+import { DepartmentFilters } from 'src/common/locations/locations.types';
 import { CVStatuses, EmployedFilters } from 'src/users/users.types';
 import { FilterObject } from 'src/utils/types';
 import { CVFilterKey, CVOptions } from './cvs.types';

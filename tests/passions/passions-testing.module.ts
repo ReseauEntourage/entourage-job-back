@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PassionsModule } from 'src/passions/passions.module';
+import { PassionsModule } from 'src/common/passions/passions.module';
 import { PassionsHelper } from './passions.helper';
 
 @Module({

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Experience } from 'src/experiences/models';
+import { Experience } from 'src/common/experiences/models';
 
 @Injectable()
 export class ExperiencesHelper {

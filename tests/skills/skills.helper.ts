@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { Skill } from 'src/skills/models';
+import { Skill } from 'src/common/skills/models';
 
 @Injectable()
 export class SkillsHelper {

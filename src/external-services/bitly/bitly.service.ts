@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BitlyClient } from 'bitly';
 import { BitlyLink } from 'bitly/dist/types';
-import { MailjetTemplateKey } from 'src/mails/mails.types';
+import { MailjetTemplateKey } from 'src/external-services/mailjet/mailjet.types';
 
 @Injectable()
 export class BitlyService {
