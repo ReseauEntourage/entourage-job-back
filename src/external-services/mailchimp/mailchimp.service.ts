@@ -6,14 +6,14 @@ import { ContactStatus } from './mailchimp.types';
 
 @Injectable()
 export class MailchimpService {
-  private add: typeof Mailchimp.lists.addListMember;
+  private mailchimp: typeof Mailchimp;
 
   constructor() {
     Mailchimp.setConfig({
       apiKey: process.env.MAILCHIMP_API_KEY,
       server: 'us12',
     });
-    this.add = Mailchimp.lists.addListMember;
+    this.mailchimp = Mailchimp;
   }
 
   async sendContact(
@@ -30,10 +30,19 @@ export class MailchimpService {
       tags = [...tags, ...(Array.isArray(status) ? status : [status])];
     }
 
-    return this.add(process.env.MAILCHIMP_AUDIENCE_ID, {
-      email_address: email,
-      status: 'subscribed',
-      tags,
-    });
+    try {
+      await this.mailchimp.lists.addListMember(
+        process.env.MAILCHIMP_AUDIENCE_ID,
+        {
+          email_address: email,
+          status: 'subscribed',
+          tags,
+        }
+      );
+    } catch (err) {
+      if ((err as Mailchimp.MemberErrorResponse).status !== 400) {
+        throw err;
+      }
+    }
   }
 }

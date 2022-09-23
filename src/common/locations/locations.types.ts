@@ -284,8 +284,9 @@ export const Departments = [
   },
   {
     name: 'Morbihan (56)',
-    zone: AdminZones.HZ,
-    region: 'Bretagne',
+    zone: AdminZones.LORIENT,
+    // TODO put back to Bretagne
+    region: 'Lorient',
   },
   {
     name: 'Moselle (57)',
@@ -516,6 +517,7 @@ const RegionLabels: Partial<Record<Region, string>> = {
   'Île-de-France': 'Paris et sa région',
   'Auvergne-Rhône-Alpes': 'Lyon et sa région',
   'Hauts-de-France': 'Lille et sa région',
+  Lorient: 'Lorient',
 };
 
 /*

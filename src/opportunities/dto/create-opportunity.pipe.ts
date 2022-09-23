@@ -21,6 +21,8 @@ export class CreateOpportunityPipe
     const object = plainToInstance(metatype, value);
     const errors = await validate(object, {
       whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
     });
 
     if (errors.length > 0) {

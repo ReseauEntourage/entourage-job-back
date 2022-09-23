@@ -107,18 +107,22 @@ export class OpportunitiesController {
               candidatesId
             );
 
+          const finalOpportunity = await this.opportunitiesService.findOne(
+            createdOpportunity.id
+          );
+
           await this.opportunitiesService.sendMailsAfterCreation(
-            createdOpportunity.toJSON(),
+            finalOpportunity.toJSON(),
             candidates,
             isAdmin,
             shouldSendNotifications
           );
 
           await this.opportunitiesService.createExternalDBOpportunity(
-            createdOpportunity.id
+            finalOpportunity.id
           );
 
-          return createdOpportunity.toJSON();
+          return finalOpportunity.toJSON();
         })
       );
 
@@ -152,15 +156,19 @@ export class OpportunitiesController {
         candidatesId
       );
 
+    const finalOpportunity = await this.opportunitiesService.findOne(
+      createdOpportunity.id
+    );
+
     await this.opportunitiesService.sendMailsAfterCreation(
-      createdOpportunity.toJSON(),
+      finalOpportunity.toJSON(),
       candidates,
       isAdmin,
       shouldSendNotifications
     );
 
     await this.opportunitiesService.createExternalDBOpportunity(
-      createdOpportunity.id
+      finalOpportunity.id
     );
 
     return createdOpportunity.toJSON();

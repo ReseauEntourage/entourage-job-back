@@ -44,10 +44,13 @@ export function getRedisOptions(uri: string) {
     port: parseInt(port),
     host: hostname,
     password: password,
-    tls: {
-      rejectUnauthorized: false,
-      requestCert: true,
-    },
+
+    tls: process.env.DEBUG_JOBS
+      ? undefined
+      : {
+          rejectUnauthorized: false,
+          requestCert: true,
+        },
   };
 }
 
