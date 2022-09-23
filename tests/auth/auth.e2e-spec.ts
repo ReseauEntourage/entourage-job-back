@@ -194,21 +194,14 @@ describe('Auth', () => {
           );
         expect(response.status).toBe(200);
       });
-      it('Should return 401, if invalid user id', async () => {
-        const unknownUser: User = await userFactory.create(
-          {
-            role: UserRoles.CANDIDAT,
-          },
-          {},
-          false
-        );
-
+      it('Should return 400, if invalid user id', async () => {
+        const invalidUserId = '1111-invalid-99999';
         const token = await authHelper.getResetToken(candidat);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
-            `${route}/reset/${unknownUser.id}/${token}`
+            `${route}/reset/${invalidUserId}/${token}`
           );
-        expect(response.status).toBe(401);
+        expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
         await authHelper.getResetToken(candidat);
@@ -268,24 +261,18 @@ describe('Auth', () => {
 
         expect(response.status).toBe(400);
       });
-      it('Should return 401, if invalid user id', async () => {
-        const unknownUser: User = await userFactory.create(
-          {
-            role: UserRoles.CANDIDAT,
-          },
-          {},
-          false
-        );
+      it('Should return 400, if invalid user id', async () => {
+        const invalidUserId = '1111-invalid-99999';
 
         const token = await authHelper.getResetToken(candidat);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
-            .post(`${route}/reset/${unknownUser.id}/${token}`)
+            .post(`${route}/reset/${invalidUserId}/${token}`)
             .send({
               newPassword: 'newPassword123!',
               confirmPassword: 'newPassword123!',
             });
-        expect(response.status).toBe(401);
+        expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
         await authHelper.getResetToken(candidat);

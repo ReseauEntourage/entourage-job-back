@@ -223,10 +223,12 @@ export class MailsService {
         ..._.omitBy(
           {
             ...contactUsFormDto,
-            heardAbout: findConstantFromValue(
-              contactUsFormDto.heardAbout,
-              HeardAboutFilters
-            ).label,
+            heardAbout: contactUsFormDto.heardAbout
+              ? findConstantFromValue(
+                  contactUsFormDto.heardAbout,
+                  HeardAboutFilters
+                ).label
+              : null,
           },
           _.isNil
         ),
