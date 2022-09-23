@@ -278,7 +278,7 @@ describe('CVs', () => {
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
         });
-        it("Should return 200 if valid user id provided and logged in as candidate and candidate doesn't have a CV", async () => {
+        it("Should return 404 if valid user id provided and logged in as candidate and candidate doesn't have a CV", async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
@@ -287,10 +287,10 @@ describe('CVs', () => {
             await request(app.getHttpServer())
               .get(`${route}/?userId=${candidatNoCv.user.id}`)
               .set('authorization', `Token ${candidatNoCv.token}`);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(404);
           expect(response.body).toStrictEqual({});
         });
-        it("Should return 200 if valid user id provided and logged in as coach and candidate doesn't have a CV", async () => {
+        it("Should return 404 if valid user id provided and logged in as coach and candidate doesn't have a CV", async () => {
           const candidatNoCv = await userFactory.create({
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
@@ -320,10 +320,10 @@ describe('CVs', () => {
             await request(app.getHttpServer())
               .get(`${route}/?userId=${loggedCandidatNoCv.user.id}`)
               .set('authorization', `Token ${loggedCoachNoCv.token}`);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(404);
           expect(response.body).toStrictEqual({});
         });
-        it("Should return 200 if valid user id provided and logged in as admin and candidate doesn't have a CV", async () => {
+        it("Should return 404 if valid user id provided and logged in as admin and candidate doesn't have a CV", async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDAT,
             password: 'candidatNoCv',
@@ -332,7 +332,7 @@ describe('CVs', () => {
             await request(app.getHttpServer())
               .get(`${route}/?userId=${candidatNoCv.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
+          expect(response.status).toBe(404);
           expect(response.body).toStrictEqual({});
         });
         it('Should return 401 if invalid user id provided', async () => {
