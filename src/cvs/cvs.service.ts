@@ -253,13 +253,18 @@ export class CVsService {
       return null;
     }
 
-    return this.cvModel.findOne({
+    const cv = await this.cvModel.findOne({
       include: CVCompleteWithAllUserPrivateInclude,
       where: {
         UserId: candidateId,
       },
       order: [['version', 'DESC']],
     });
+
+    if (!cv) {
+      return {} as CV;
+    }
+    return cv;
   }
 
   async findOneByUrl(url: string): Promise<CV> {
