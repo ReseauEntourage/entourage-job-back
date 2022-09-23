@@ -31,7 +31,6 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      REDIS_TLS_URL: ${{ secrets.REDIS_TLS_URL }}
       CHROME_PATH: ${{ secrets.CHROME_PATH }}
 
     steps:

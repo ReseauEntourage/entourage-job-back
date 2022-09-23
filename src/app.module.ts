@@ -75,11 +75,17 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       ttl: 60,
       limit: 100,
     }),
-    BullModule.forRoot({ redis: getRedisOptions(process.env.REDIS_TLS_URL) }),
+    BullModule.forRoot({
+      redis: process.env.REDIS_TLS_URL
+        ? getRedisOptions(process.env.REDIS_TLS_URL)
+        : {},
+    }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...getRedisOptions(process.env.REDIS_TLS_URL),
+      ...(process.env.REDIS_TLS_URL
+        ? getRedisOptions(process.env.REDIS_TLS_URL)
+        : {}),
     }),
     RevisionsModule,
     SharesModule,

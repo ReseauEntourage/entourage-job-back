@@ -14,7 +14,7 @@ import { AirtableService } from 'src/airtable/airtable.service';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BitlyService } from 'src/bitly/bitly.service';
 import { MailchimpService } from 'src/mails/mailchimp.service';
-import { Opportunity } from 'src/opportunities/models';
+import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
   OfferAdminTabs,
@@ -26,10 +26,12 @@ import { User } from 'src/users/models/user.model';
 import { UserRoles } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
+import { CVFactory } from 'tests/cvs/cv.factory';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
+import { OpportunitiesHelper } from './opportunities.helper';
 import { OpportunityUsersHelper } from './opportunity-users.helper';
 import { OpportunityFactory } from './opportunity.factory';
 
@@ -39,12 +41,13 @@ describe('Opportunities', () => {
   const route = '/opportunity';
 
   let databaseHelper: DatabaseHelper;
-  /*  let opportunitiesHelper: OpportunitiesHelper;*/
+  let opportunitiesHelper: OpportunitiesHelper;
   let opportunityFactory: OpportunityFactory;
   let opportunityUsersHelper: OpportunityUsersHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
+  let cvFactory: CVFactory;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -70,8 +73,8 @@ describe('Opportunities', () => {
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     opportunityFactory =
       moduleFixture.get<OpportunityFactory>(OpportunityFactory);
-    /*opportunitiesHelper =
-      moduleFixture.get<OpportunitiesHelper>(OpportunitiesHelper);*/
+    opportunitiesHelper =
+      moduleFixture.get<OpportunitiesHelper>(OpportunitiesHelper);
     opportunityUsersHelper = moduleFixture.get<OpportunityUsersHelper>(
       OpportunityUsersHelper
     );
@@ -79,340 +82,7 @@ describe('Opportunities', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
-    /*
-    opportunities = [
-      ...(await databaseHelper.createEntities(
-        opportunityFactory,
-        nbOpportunity / 2,
-        {
-          isValidated: true,
-          isPublic: true,
-          department: 'Rhône (69)',
-        },
-        { businessLines: ['id', 'aa'] },
-        true
-      )),
-      ...(await databaseHelper.createEntities(
-        opportunityFactory,
-        nbOpportunity / 2,
-        {
-          isValidated: true,
-          isPublic: true,
-          department: 'Paris (75)',
-        },
-        { businessLines: ['id', 'aa'] },
-        true
-      )),
-    ];
-
-    await databaseHelper.createEntities(
-      opportunityFactory,
-      2,
-      {
-        isValidated: false,
-        isPublic: false,
-        department: 'Paris (75)',
-      },
-      { businessLines: ['id', 'aa'] },
-      true
-    );
-
-    opportunitiesId = opportunities.map((o) => {
-      return o.id;
-    });
-
-    const admin = await userFactory.create({
-      role: UserRoles.ADMIN,
-      password: 'admin',
-    });
-    let coach = await userFactory.create({
-      role: UserRoles.COACH,
-      password: 'coach',
-    });
-    let candidate = await userFactory.create({
-      role: UserRoles.CANDIDAT,
-      password: 'candidate',
-    });
-    privateOpportunities = [
-      ...(await databaseHelper.createEntities(
-        opportunityFactory,
-        nbPrivateOpportunity / 2,
-        {
-          isValidated: true,
-          isPublic: false,
-          department: 'Rhône (69)',
-        },
-        { businessLines: ['id', 'aa'] },
-        true
-      )),
-      ...(await databaseHelper.createEntities(
-        opportunityFactory,
-        nbPrivateOpportunity / 2,
-        {
-          isValidated: true,
-          isPublic: false,
-          department: 'Paris (75)',
-        },
-        { businessLines: ['id', 'aa'] },
-        true
-      )),
-    ];
-    const privateOpportunitiesId = privateOpportunities.map((op) => {
-      return op.id;
-    });
-
-    opportunitiesCandidat =
-      await opportunityUsersHelper.associateManyOpportunityUsers(
-        privateOpportunitiesId,
-        candidate.id
-      );
-
-    const publicOpportunitiesToAssociate = await databaseHelper.createEntities(
-      opportunityFactory,
-      nbPublicOpportunitiesToAssociate,
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['id', 'aa'] },
-      true
-    );
-
-    await opportunityUsersHelper.associateManyOpportunityUsers(
-      publicOpportunitiesToAssociate.map((opp) => {
-        return opp.id;
-      }),
-      candidate.id
-    );
-    /!*
-    ({ coach, candidate } = await userCandidatsHelper.associateCoachAndCandidat(
-      coach,
-      candidate
-    ));
-    loggedInAdmin = await usersHelper.createLoggedInUser(admin, {}, false);
-    loggedInCoach = await usersHelper.createLoggedInUser(coach, {}, false);
-    loggedInCandidate = await usersHelper.createLoggedInUser(
-      candidate,
-      {},
-      false
-    );*!/
-    otherCandidat = await usersHelper.createLoggedInUser({
-      role: UserRoles.CANDIDAT,
-      password: 'user',
-    });
-    otherOpportunity = await opportunityFactory.create({
-      isValidated: true,
-      isPublic: false,
-    });
-
-    opportunityOtherCandidat = await opportunityFactory.create({
-      isValidated: true,
-      isPublic: true,
-    });
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunityOtherCandidat.id,
-      otherCandidat.user.id
-    );
-
-    await opportunityFactory.create({
-      isValidated: false,
-      isPublic: true,
-      isArchived: false,
-    });
-    await opportunityFactory.create({
-      isValidated: false,
-      isPublic: false,
-      isArchived: false,
-    });
-
-    await opportunityFactory.create({
-      isValidated: false,
-      isPublic: true,
-      isArchived: true,
-    });
-
-    await opportunityFactory.create({
-      isValidated: false,
-      isPublic: false,
-      isArchived: true,
-    });
-
-    const opportunity1ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: false,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['aa'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity1ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: false,
-        recommended: false,
-      }
-    );
-
-    const opportunity2ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['id'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity2ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.CONTACTED.value,
-        archived: false,
-        recommended: false,
-      }
-    );
-    const opportunity3ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['aa'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity3ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: false,
-        recommended: false,
-      }
-    );
-
-    const opportunity4ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['id'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity4ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: true,
-        recommended: false,
-      }
-    );
-
-    const opportunity5ForFilters = await opportunityFactory.create(
-      {
-        isValidated: false,
-        isPublic: false,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['aa'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity5ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: false,
-        recommended: true,
-      }
-    );
-
-    const opportunity6ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['id'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity6ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: false,
-        recommended: false,
-      }
-    );
-
-    const opportunity7ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['aa'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity7ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: false,
-        recommended: false,
-      }
-    );
-
-    const opportunity8ForFilters = await opportunityFactory.create(
-      {
-        isValidated: true,
-        isPublic: true,
-        department: 'Rhône (69)',
-      },
-      { businessLines: ['aa'] }
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      opportunity8ForFilters.id,
-      loggedInCandidate.user.id,
-      {
-        status: OfferStatuses.INTERVIEW.value,
-        archived: false,
-        recommended: false,
-      }
-    );
-
-    candidatExternalOpportunity = await opportunityFactory.create({
-      isValidated: true,
-      isPublic: false,
-      isArchived: false,
-      isExternal: true,
-    });
-
-    otherCandidatExternalOpportunity = await opportunityFactory.create({
-      isValidated: true,
-      isPublic: false,
-      isArchived: false,
-      isExternal: true,
-    });
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      candidatExternalOpportunity.id,
-      loggedInCandidate.user.id
-    );
-
-    await opportunityUsersHelper.associateOpportunityUser(
-      otherCandidatExternalOpportunity.id,
-      otherCandidat.user.id
-    );*/
+    cvFactory = moduleFixture.get<CVFactory>(CVFactory);
   });
 
   afterAll(async () => {
@@ -1288,7 +958,6 @@ describe('Opportunities', () => {
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-
         it('Should return 200 and a list of all opportunities, if logged in admin and no filters', async () => {
           const firstOpportunity = await opportunityFactory.create({});
 
@@ -1312,7 +981,6 @@ describe('Opportunities', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-
         it('Should return 200, and all the opportunities that matches the search query', async () => {
           const searchedOpportunity = await opportunityFactory.create({
             title: 'XXXXX',
@@ -1338,7 +1006,6 @@ describe('Opportunities', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-
         it('Should return 200, and all the opportunities that matches the pending filter', async () => {
           const firstPendingOpportunity = await opportunityFactory.create({
             isValidated: false,
@@ -1608,8 +1275,7 @@ describe('Opportunities', () => {
           );
         });
       });
-
-      describe('/admin/count - Count all pending opportunities', () => {
+      describe('/admin/count - Count all pending opportunities as admin', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
 
@@ -1651,9 +1317,30 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
       });
-      /*
-      describe("/user/private/:id - Read a user's private opportunities as admin", () => {
-        const userOpportunitiesCount = 26;
+      describe("/user/private/:id?search=&type=&businessLines[]=&status[]=&isPublic[]&department[]= - Read a user's private opportunities as admin", () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+
         it('Should return 403, if candidate reads his opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
@@ -1670,15 +1357,6 @@ describe('Opportunities', () => {
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
-        it("Should return 200, if a admin reads candidate's opportunities", async () => {
-          const response: APIResponse<
-            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
-            .get(`${route}/user/private/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(userOpportunitiesCount);
-        });
         it('Should return 400, if invalid user id', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
@@ -1687,181 +1365,289 @@ describe('Opportunities', () => {
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(400);
         });
-        describe("Read user's opportunities with filters as admin", () => {
-          it('Should return 200, and all the opportunities that matches the hide public filter', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/private/${loggedInCandidate.user.id}?isPublic[]=true`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(14);
-            expect(response.body).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  isPublic: false,
-                }),
-              ])
-            );
+        it("Should return 200, if a admin reads candidate's opportunities without filters", async () => {
+          const opportunities = await databaseHelper.createEntities(
+            opportunityFactory,
+            3,
+            { isArchived: false, isValidated: true }
+          );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            opportunities.map(({ id }) => id),
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = opportunities.map(({ id }) => id);
+
+          const response: APIResponse<
+            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/private/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the hide public filter', async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            isPublic: true,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the department filters', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/private/${loggedInCandidate.user.id}?department[]=Rhône (69)`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(19);
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
+
+          const secondOpportunity = await opportunityFactory.create({
+            isPublic: true,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the status filters', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/private/${loggedInCandidate.user.id}?status[]=1`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(7);
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  opportunityUsers: expect.arrayContaining([
-                    expect.objectContaining({
-                      status: 1,
-                    }),
-                  ]),
-                }),
-              ])
-            );
+
+          const thirdOpportunity = await opportunityFactory.create({
+            isPublic: false,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the search query', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/private/${loggedInCandidate.user.id}?search=Rhône`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(19);
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [firstOpportunity.id, secondOpportunity.id, thirdOpportunity.id],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/private/${loggedInCandidate.user.id}?isPublic[]=true`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the department filters', async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            department: 'Rhône (69)',
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the businessLines filters', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/private/${loggedInCandidate.user.id}?businessLines[]=id`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(17);
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  businessLines: expect.arrayContaining([
-                    expect.objectContaining({ name: 'id' }),
-                  ]),
-                }),
-              ])
-            );
+
+          const secondOpportunity = await opportunityFactory.create({
+            department: 'Rhône (69)',
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the multiple filters (AND between different filters, OR inside each filters)', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/private/${loggedInCandidate.user.id}?department[]=Rhône (69)&status[]=0&status[]=1&isPublic[]=true&businessLines[]=id`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(3);
-            expect(response.body).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  isPublic: false,
-                }),
-              ])
-            );
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  opportunityUsers: expect.arrayContaining([
-                    expect.objectContaining({
-                      status: 0,
-                    }) ||
-                      expect.objectContaining({
-                        status: 1,
-                      }),
-                  ]),
-                }),
-              ])
-            );
-            expect(response.body).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  businessLines: expect.arrayContaining([
-                    expect.objectContaining({ name: 'id' }),
-                  ]),
-                }),
-              ])
-            );
+
+          const thirdOpportunity = await opportunityFactory.create({
+            department: 'Nord (59)',
+            isArchived: false,
+            isValidated: true,
           });
+
+          const fourthOpportunity = await opportunityFactory.create({
+            department: 'Paris (75)',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+              fourthOpportunity.id,
+            ],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+            thirdOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/private/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the status filters', async () => {
+          const firstOpportunity = await opportunityFactory.create({});
+          await opportunityUsersHelper.associateOpportunityUser(
+            firstOpportunity.id,
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.INTERVIEW.value }
+          );
+
+          const secondOpportunity = await opportunityFactory.create({});
+          await opportunityUsersHelper.associateOpportunityUser(
+            secondOpportunity.id,
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.HIRED.value }
+          );
+
+          const thirdOpportunity = await opportunityFactory.create({});
+          await opportunityUsersHelper.associateOpportunityUser(
+            thirdOpportunity.id,
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.CONTACTED.value }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/private/${loggedInCandidate.user.id}?status[]=1&status[]=2`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the businessLines filters', async () => {
+          const firstOpportunity = await opportunityFactory.create(
+            {},
+            { businessLines: ['id', 'bat'] }
+          );
+
+          const secondOpportunity = await opportunityFactory.create(
+            {},
+            { businessLines: ['bat'] }
+          );
+
+          const thirdOpportunity = await opportunityFactory.create(
+            {},
+            { businessLines: ['id'] }
+          );
+
+          const fourthOpportunity = await opportunityFactory.create(
+            {},
+            { businessLines: ['asp'] }
+          );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+              fourthOpportunity.id,
+            ],
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.CONTACTED.value }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+            thirdOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/private/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the search query', async () => {
+          const searchedOpportunity = await opportunityFactory.create({
+            title: 'XXXXX',
+          });
+
+          const secondOpportunity = await opportunityFactory.create({
+            title: 'AZERTY',
+          });
+
+          const thirdOpportunity = await opportunityFactory.create({
+            title: 'AZERTY',
+          });
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [searchedOpportunity.id, secondOpportunity.id, thirdOpportunity.id],
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.CONTACTED.value }
+          );
+
+          const expectedOpportunitiesId = [searchedOpportunity.id];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllUserOpportunitiesAsAdmin']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/private/${loggedInCandidate.user.id}?search=XXXXX`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(1);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
         });
       });
-      describe("/user/all/:id - Read all user's opportunities", () => {
-        const userOpportunitiesCount = 33;
-        it('Should return 200, if candidate reads his opportunities', async () => {
-          const response: APIResponse<
-            OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.offers.length).toBe(userOpportunitiesCount);
+      describe("/user/all/:id?search=&type=&businessLines[]=&status[]=&department[]= - Read all user's opportunities", () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let candidate: User;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
         });
-        it('Should return 200, if a coach reads his associated candidate opportunities', async () => {
-          const response: APIResponse<
-            OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.offers.length).toBe(userOpportunitiesCount);
-        });
-        it('Should return 200, if a admin reads a candidates opportunities', async () => {
+
+        it('Should return 403, if a admin reads a candidates opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
             .get(`${route}/user/all/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.offers.length).toBe(userOpportunitiesCount);
+          expect(response.status).toBe(403);
         });
         it('Should return 400, if invalid user id', async () => {
           const response: APIResponse<
@@ -1869,312 +1655,1244 @@ describe('Opportunities', () => {
           > = await request(app.getHttpServer())
             .get(`${route}/user/all/1111-invalid-99999`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(400);
+          expect(response.status).toBe(403);
         });
         it('Should return 403, if candidate reads an other candidate opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${otherCandidat.token}`);
+            .get(`${route}/user/all/${candidate.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if a coach reads not associate candidate's opportunities", async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${otherCandidat.user.id}`)
+            .get(`${route}/user/all/${candidate.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
 
-        describe("Read user's opportunities with filters", () => {
-          it('Should return 200, and all the opportunities that matches the private filter', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?type=private`
-              )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(11);
-            expect(response.body.offers).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  isPublic: true,
-                }),
-                expect.objectContaining({
-                  opportunityUsers: expect.objectContaining({
-                    archived: true,
-                  }),
-                }),
-              ])
-            );
+        it('Should return 200, if candidate reads his opportunities without filters', async () => {
+          const opportunities = await databaseHelper.createEntities(
+            opportunityFactory,
+            3,
+            { isArchived: false, isValidated: true }
+          );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            opportunities.map(({ id }) => id),
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = opportunities.map(({ id }) => id);
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, if a coach reads his associated candidate opportunities without filters', async () => {
+          const opportunities = await databaseHelper.createEntities(
+            opportunityFactory,
+            3,
+            { isArchived: false, isValidated: true }
+          );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            opportunities.map(({ id }) => id),
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = opportunities.map(({ id }) => id);
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200, and all the opportunities that matches the private filter', async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            isPublic: false,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the public filter', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(`${route}/user/all/${loggedInCandidate.user.id}?type=public`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(21);
-            expect(response.body.offers).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  isPublic: false,
-                }),
-                expect.objectContaining({
-                  opportunityUsers: expect.objectContaining({
-                    archived: true,
-                  }),
-                }),
-              ])
-            );
+
+          const secondOpportunity = await opportunityFactory.create({
+            isPublic: false,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the archived filter', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?type=archived`
-              )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(1);
-            expect(response.body.offers).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  opportunityUsers: expect.objectContaining({
-                    archived: false,
-                  }),
-                }),
-              ])
-            );
+
+          const thirdOpportunity = await opportunityFactory.create({
+            isPublic: true,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the department filters', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)`
-              )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(20);
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [firstOpportunity.id, secondOpportunity.id, thirdOpportunity.id],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/all/${loggedInCandidate.user.id}?type=private`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the public filter', async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            isPublic: true,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the businessLines filters', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?businessLines[]=id`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(24);
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  businessLines: expect.arrayContaining([
-                    expect.objectContaining({ name: 'id' }),
-                  ]),
-                }),
-              ])
-            );
+
+          const secondOpportunity = await opportunityFactory.create({
+            isPublic: true,
+            isArchived: false,
+            isValidated: true,
           });
-          it("Should return 200, and offers suggestions of different location if the department filters don't match", async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&type=private`
-              )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(4);
-            expect(response.body.otherOffers.length).toBe(7);
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
-            expect(response.body.otherOffers).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
-            expect(response.body.otherOffers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Paris (75)',
-                }),
-              ])
-            );
+
+          const thirdOpportunity = await opportunityFactory.create({
+            isPublic: false,
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the status filters', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(`${route}/user/all/${loggedInCandidate.user.id}?status[]=1`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(6);
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  opportunityUsers: expect.objectContaining({
-                    status: 1,
-                  }),
-                }),
-              ])
-            );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [firstOpportunity.id, secondOpportunity.id, thirdOpportunity.id],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/all/${loggedInCandidate.user.id}?type=public`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the archived filter', async () => {
+          const firstArchivedOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the search query', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?search=Rhône`
-              )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(21);
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
+
+          const secondArchivedOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
           });
-          it('Should return 200, and all the opportunities that matches the multiple filters (AND between different filters, OR inside each filters)', async () => {
-            const response: APIResponse<
-              OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
-              .get(
-                `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&status[]=0&status[]=1&type=public&businessLines[]=id`
-              )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.offers.length).toBe(2);
-            expect(response.body.offers).not.toEqual(
-              expect.arrayContaining([
-                expect.objectContaining({
-                  isPublic: false,
-                }),
-                expect.objectContaining({
-                  opportunityUsers: expect.objectContaining({
-                    archived: true,
-                  }),
-                }),
-              ])
-            );
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  department: 'Rhône (69)',
-                }),
-              ])
-            );
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  opportunityUsers:
-                    expect.objectContaining({
-                      status: 0,
-                    }) ||
-                    expect.objectContaining({
-                      status: 1,
-                    }),
-                }),
-              ])
-            );
-            expect(response.body.offers).not.toEqual(
-              expect.not.arrayContaining([
-                expect.objectContaining({
-                  businessLines: expect.arrayContaining([
-                    expect.objectContaining({ name: 'id' }),
-                  ]),
-                }),
-              ])
-            );
+
+          const thirdOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
           });
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [firstArchivedOpportunity.id, secondArchivedOpportunity.id],
+            loggedInCandidate.user.id,
+            { archived: true }
+          );
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            thirdOpportunity.id,
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstArchivedOpportunity.id,
+            secondArchivedOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/all/${loggedInCandidate.user.id}?type=archived`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the department filters', async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            department: 'Rhône (69)',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          const secondOpportunity = await opportunityFactory.create({
+            department: 'Rhône (69)',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          const thirdOpportunity = await opportunityFactory.create({
+            department: 'Nord (59)',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          const fourthOpportunity = await opportunityFactory.create({
+            department: 'Paris (75)',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+              fourthOpportunity.id,
+            ],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+            thirdOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the businessLines filters', async () => {
+          const firstOpportunity = await opportunityFactory.create(
+            { isArchived: false, isValidated: true },
+            { businessLines: ['id', 'bat'] }
+          );
+
+          const secondOpportunity = await opportunityFactory.create(
+            { isArchived: false, isValidated: true },
+            { businessLines: ['bat'] }
+          );
+
+          const thirdOpportunity = await opportunityFactory.create(
+            { isArchived: false, isValidated: true },
+            { businessLines: ['id'] }
+          );
+
+          const fourthOpportunity = await opportunityFactory.create(
+            { isArchived: false, isValidated: true },
+            { businessLines: ['asp'] }
+          );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+              fourthOpportunity.id,
+            ],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+            thirdOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/all/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(3);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it("Should return 200, and offers suggestions of different location if the department filters don't match", async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+            department: 'Rhône (69)',
+          });
+
+          const secondOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+            department: 'Rhône (69)',
+          });
+
+          const thirdOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+            department: 'Ain (01)',
+          });
+
+          const fourthOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+            department: 'Paris (75)',
+          });
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+              fourthOpportunity.id,
+            ],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+          ];
+
+          const expectedOtherOpportunitiesId = [
+            thirdOpportunity.id,
+            fourthOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&type=private`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(2);
+          expect(response.body.otherOffers.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+          expect(expectedOtherOpportunitiesId).toEqual(
+            expect.arrayContaining(
+              response.body.otherOffers.map(({ id }) => id)
+            )
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the status filters', async () => {
+          const firstOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+          });
+          await opportunityUsersHelper.associateOpportunityUser(
+            firstOpportunity.id,
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.INTERVIEW.value, archived: false }
+          );
+
+          const secondOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+          });
+          await opportunityUsersHelper.associateOpportunityUser(
+            secondOpportunity.id,
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.HIRED.value, archived: false }
+          );
+
+          const thirdOpportunity = await opportunityFactory.create({
+            isArchived: false,
+            isValidated: true,
+          });
+          await opportunityUsersHelper.associateOpportunityUser(
+            thirdOpportunity.id,
+            loggedInCandidate.user.id,
+            { status: OfferStatuses.CONTACTED.value, archived: false }
+          );
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondOpportunity.id,
+          ];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/user/all/${loggedInCandidate.user.id}?status[]=${OfferStatuses.INTERVIEW.value}&status[]=${OfferStatuses.HIRED.value}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
+        });
+        it('Should return 200, and all the opportunities that matches the search query', async () => {
+          const searchedOpportunity = await opportunityFactory.create({
+            title: 'XXXXX',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          const secondOpportunity = await opportunityFactory.create({
+            title: 'AZERTY',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          const thirdOpportunity = await opportunityFactory.create({
+            title: 'AZERTY',
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [searchedOpportunity.id, secondOpportunity.id, thirdOpportunity.id],
+            loggedInCandidate.user.id,
+            { archived: false }
+          );
+
+          const expectedOpportunitiesId = [searchedOpportunity.id];
+
+          const response: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(`${route}/user/all/${loggedInCandidate.user.id}?search=XXXXX`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.offers.length).toBe(1);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.offers.map(({ id }) => id))
+          );
         });
       });
       describe("/user/count/:id - Count all new user's opportunities", () => {
-        const userOpportunitiesCount = 8;
-        it('Should return 200, if candidate counts his opportunities', async () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let candidate: User;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          await cvFactory.create(
+            { UserId: loggedInCandidate.user.id },
+            { locations: ['Rhône (69)'] }
+          );
+
+          const opportunities = await databaseHelper.createEntities(
+            opportunityFactory,
+            3,
+            {
+              isArchived: false,
+              isValidated: true,
+              department: 'Rhône (69)',
+            }
+          );
+
+          const otherOpportunities = await databaseHelper.createEntities(
+            opportunityFactory,
+            3,
+            {
+              isArchived: false,
+              isValidated: true,
+              department: 'Ain (01)',
+            }
+          );
+
+          await opportunityUsersHelper.associateManyOpportunityUsers(
+            [
+              ...opportunities.map(({ id }) => id),
+              ...otherOpportunities.map(({ id }) => id),
+            ],
+            loggedInCandidate.user.id,
+            { seen: false, archived: false }
+          );
+        });
+
+        it('Should return 200, if candidate counts his unseen opportunities', async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
               .get(`${route}/user/count/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
-          expect(response.body.unseenOpportunities).toBe(
-            userOpportunitiesCount
-          );
+          expect(response.body.unseenOpportunities).toBe(3);
         });
-        it('Should return 200, if a coach counts his associated candidate opportunities', async () => {
+        it("Should return 200, if a coach counts his associated candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
               .get(`${route}/user/count/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
-          expect(response.body.unseenOpportunities).toBe(
-            userOpportunitiesCount
-          );
+          expect(response.body.unseenOpportunities).toBe(3);
         });
-        it('Should return 403, if a admin counts a candidate opportunities', async () => {
+        it("Should return 403, if a admin counts a candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
               .get(`${route}/user/count/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if candidate counts an other candidate opportunities', async () => {
+        it("Should return 403, if candidate counts an other candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${otherCandidat.token}`);
+              .get(`${route}/user/count/${candidate.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        it("Should return 403, if a coach counts not associate candidate's opportunities", async () => {
+        it("Should return 403, if a coach counts not associate candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${otherCandidat.user.id}`)
+              .get(`${route}/user/count/${candidate.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
-      });*/
+      });
     });
-    /*
-    describe('U - Update 1', () => {
-      describe('Update an opportunity - /', () => {
+    describe('U - Update 1 Opportunity', () => {
+      describe('/ - Update an opportunity', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let opportunity: Opportunity;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+
+          opportunity = await opportunityFactory.create({});
+        });
+
         it('Should return 200, if admin updates an opportunity', async () => {
           const update = {
-            ...opportunities[0],
-            isValidated: true,
+            ...opportunity,
             title: 'updated title',
           };
-          const response = await request(app.getHttpServer())
-            .put(`${route}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(update);
+          const response: APIResponse<OpportunitiesController['update']> =
+            await request(app.getHttpServer())
+              .put(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(update);
           expect(response.status).toBe(200);
           expect(response.body.title).toBe('updated title');
         });
+
+        it('Should return 200, if admin adds a user to a public opportunity', async () => {
+          const update = {
+            ...opportunity,
+            candidatesId: [loggedInCandidate.user.id],
+          };
+          const response: APIResponse<OpportunitiesController['update']> =
+            await request(app.getHttpServer())
+              .put(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(update);
+          expect(response.status).toBe(200);
+          expect(
+            response.body.opportunityUsers.map((userOpp: OpportunityUser) => {
+              return userOpp.UserId;
+            })
+          ).toEqual(expect.arrayContaining([loggedInCandidate.user.id]));
+        });
+        it('Should return 403, if not an admin', async () => {
+          const update = {
+            ...opportunity,
+            title: 'updated title',
+          };
+          const response: APIResponse<OpportunitiesController['update']> =
+            await request(app.getHttpServer())
+              .put(`${route}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send(update);
+          expect(response.status).toBe(403);
+        });
+      });
+      describe('/external - Update an external opportunity', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let candidate: User;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+
+        it('Should return 200, if logged in as candidate and updates own opportunity with authorized values', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'Updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(updatedOpportunity)
+          );
+          expect(response.body.opportunityUsers.UserId).toMatch(candidateId);
+        });
+
+        it('Should return 400, if logged in as candidate and updates own opportunity with unauthorized values', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+            businessLines: [{ name: 'id', order: 0 }],
+          };
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 403, if logged in as candidate and updates somebody elses opportunity', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            candidate.id
+          );
+
+          const newTitle = 'updated title';
+          const candidateId = candidate.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 404, if logged in as candidate and updates non external opportunity', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(404);
+        });
+
+        it('Should return 200, if logged in as coach and updates own candidate opportunity with authorized values', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'Updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(updatedOpportunity)
+          );
+          expect(response.body.opportunityUsers.UserId).toMatch(candidateId);
+        });
+        it('Should return 400, if logged in as coach and updates own candidate opportunity with unauthorized values', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+            businessLines: [{ name: 'id', order: 0 }],
+          };
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(400);
+        });
+        it("Should return 403, if logged in as coach and creates another candidate's opportunity", async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            candidate.id
+          );
+
+          const newTitle = 'updated title';
+
+          const candidateId = candidate.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 200, if logged in as admin and updates opportunity', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+            isPublic: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(updatedOpportunity)
+          );
+          expect(response.body.opportunityUsers.UserId).toMatch(candidateId);
+        });
+        it('Should return 404, if logged in as admin and updates non external opportunity', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(404);
+        });
+        it('Should return 400, if logged in as admin and updates opportunity without candidateId', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send(updatedOpportunity);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 401, if not logged in', async () => {
+          const opportunity = await opportunityFactory.create({
+            isExternal: true,
+            isArchived: false,
+            isValidated: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const newTitle = 'updated title';
+          const candidateId = loggedInCandidate.user.id;
+          const updatedOpportunity = {
+            id: opportunity.id,
+            title: newTitle,
+            company: opportunity.company,
+            contract: opportunity.contract,
+            startOfContract: opportunity.startOfContract,
+            endOfContract: opportunity.endOfContract,
+            isPartTime: opportunity.isPartTime,
+            department: opportunity.department,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateExternal']
+          > = await request(app.getHttpServer())
+            .put(`${route}/external`)
+            .send({ candidateId, ...updatedOpportunity });
+          expect(response.status).toBe(401);
+        });
+      });
+      describe('/join - Update a user opportunity association', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let candidate: User;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+
+        it('Should return 200, if candidate updates his opportunities asociations', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          const opportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              loggedInCandidate.user.id,
+              { seen: false }
+            );
+
+          const update = {
+            ...opportunityUser,
+            note: 'noteUpdate',
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(update);
+          expect(response.status).toBe(200);
+          expect(response.body.note).toBe('noteUpdate');
+        });
+        it('Should return 200, if a coach updates his associated candidate opportunities asociations', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          const opportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              loggedInCandidate.user.id,
+              { seen: false }
+            );
+
+          const update = {
+            ...opportunityUser,
+            seen: true,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(update);
+          expect(response.status).toBe(200);
+          expect(response.body.seen).toBe(true);
+        });
+        it('Should return 200, if a admin updates candidate opportunities associations', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          const opportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              loggedInCandidate.user.id,
+              { bookmarked: false }
+            );
+
+          const update = {
+            ...opportunityUser,
+            bookmarked: true,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send(update);
+          expect(response.status).toBe(200);
+          expect(response.body.bookmarked).toBe(true);
+        });
+        it('Should return 400, if invalid user id', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          const opportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              loggedInCandidate.user.id,
+              { seen: false }
+            );
+
+          const update = {
+            ...opportunityUser,
+            UserId: '1111-invalid-99999',
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(update);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate updates an other candidate opportunities asociations', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          const opportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              candidate.id,
+              { status: OfferStatuses.TO_PROCESS.value }
+            );
+
+          const update = {
+            ...opportunityUser,
+            status: OfferStatuses.CONTACTED.value,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(update);
+          expect(response.status).toBe(403);
+        });
+        it("Should return 403, if a coach updates not associate candidate's opportunities asociations", async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          const opportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              candidate.id,
+              { status: OfferStatuses.TO_PROCESS.value }
+            );
+
+          const update = {
+            ...opportunityUser,
+            status: OfferStatuses.CONTACTED.value,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(update);
+          expect(response.status).toBe(403);
+        });
+      });
+    });
+    describe('U - Update many Opportunities', () => {
+      describe('/bulk - Bulk update opportunities', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDAT,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+
         it('Should return 200, and updated opportunities ids, if admin bulk updates some opportunities', async () => {
           const originalOpportunities = await databaseHelper.createEntities(
             opportunityFactory,
@@ -2194,15 +2912,16 @@ describe('Opportunities', () => {
             }
           );
 
-          const response = await request(app.getHttpServer())
-            .put(`${route}/bulk`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({
-              attributes: {
-                isArchived: true,
-              },
-              ids: originalOpportunitiesIds,
-            });
+          const response: APIResponse<OpportunitiesController['update']> =
+            await request(app.getHttpServer())
+              .put(`${route}/bulk`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                attributes: {
+                  isArchived: true,
+                },
+                ids: originalOpportunitiesIds,
+              });
 
           expect(response.status).toBe(200);
 
@@ -2228,369 +2947,39 @@ describe('Opportunities', () => {
             ])
           );
         });
-        it('Should return 200, if admin adds a user to a public opportunity', async () => {
-          const update = {
-            ...opportunities[0],
-            candidatesId: [otherCandidat.user.id],
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(update);
-          expect(response.status).toBe(200);
-          expect(
-            response.body.opportunityUsers.map((userOpp: OpportunityUser) => {
-              return userOpp.UserId;
-            })
-          ).toEqual(expect.arrayContaining([otherCandidat.user.id]));
-        });
-        it('Should return 403, if not an admin', async () => {
-          const update = {
-            ...opportunities[1],
-            isValidated: true,
-            title: 'updated title',
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send(update);
-          expect(response.status).toBe(403);
-        });
-      });
-      describe('Update an external opportunity - /', () => {
-        it('Should return 200, if logged in as candidate and updates own opportunity with authorized values', async () => {
-          const newTitle = 'Updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: candidatExternalOpportunity.id,
-            title: newTitle,
-            company: candidatExternalOpportunity.company,
-            contract: candidatExternalOpportunity.contract,
-            startOfContract: candidatExternalOpportunity.startOfContract,
-            endOfContract: candidatExternalOpportunity.endOfContract,
-            isPartTime: candidatExternalOpportunity.isPartTime,
-            department: candidatExternalOpportunity.department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...updatedOpportunity,
-              isExternal: true,
-              isPublic: false,
+        it('Should return 403, if not logged in as admin', async () => {
+          const originalOpportunities = await databaseHelper.createEntities(
+            opportunityFactory,
+            5,
+            {
               isValidated: true,
-            })
+              isPublic: true,
+              isArchived: false,
+              department: 'Rhône (69)',
+            },
+            { businessLines: ['id', 'aa'] },
+            true
           );
-          expect(response.body.opportunityUsers.UserId).toMatch(candidateId);
-        });
-
-        it('Should return 400, if logged in as candidate and updates own opportunity with unauthorized values', async () => {
-          const newTitle = 'updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: candidatExternalOpportunity.id,
-            title: newTitle,
-            company: candidatExternalOpportunity.company,
-            contract: candidatExternalOpportunity.contract,
-            startOfContract: candidatExternalOpportunity.startOfContract,
-            endOfContract: candidatExternalOpportunity.endOfContract,
-            isPartTime: candidatExternalOpportunity.isPartTime,
-            department: candidatExternalOpportunity.department,
-            businessLines: [{ name: 'id', order: 0 }],
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 403, if logged in as candidate and updates somebody elses opportunity', async () => {
-          const newTitle = 'updated title';
-          const candidateId = otherCandidat.user.id;
-          const updatedOpportunity = {
-            id: otherCandidatExternalOpportunity.id,
-            title: newTitle,
-            company: otherCandidatExternalOpportunity.company,
-            contract: otherCandidatExternalOpportunity.contract,
-            startOfContract: otherCandidatExternalOpportunity.startOfContract,
-            endOfContract: otherCandidatExternalOpportunity.endOfContract,
-            isPartTime: otherCandidatExternalOpportunity.isPartTime,
-            department: otherCandidatExternalOpportunity.department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 404, if logged in as candidate and updates non external opportunity', async () => {
-          const newTitle = 'updated title';
-
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: opportunities[0].id,
-            title: newTitle,
-            company: opportunities[0].company,
-            contract: opportunities[0].contract,
-            startOfContract: opportunities[0].startOfContract,
-            endOfContract: opportunities[0].endOfContract,
-            isPartTime: opportunities[0].isPartTime,
-            department: opportunities[0].department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(404);
-        });
-
-        it('Should return 200, if logged in as coach and updates own candidate opportunity with authorized values', async () => {
-          const newTitle = 'Updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: candidatExternalOpportunity.id,
-            title: newTitle,
-            company: candidatExternalOpportunity.company,
-            contract: candidatExternalOpportunity.contract,
-            startOfContract: candidatExternalOpportunity.startOfContract,
-            endOfContract: candidatExternalOpportunity.endOfContract,
-            isPartTime: candidatExternalOpportunity.isPartTime,
-            department: candidatExternalOpportunity.department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...updatedOpportunity,
-              isExternal: true,
-              isPublic: false,
-              isValidated: true,
-            })
+          const originalOpportunitiesIds = originalOpportunities.map(
+            ({ id }) => {
+              return id;
+            }
           );
-          expect(response.body.opportunityUsers.UserId).toMatch(candidateId);
-        });
-        it('Should return 400, if logged in as coach and updates own candidate opportunity with unauthorized values', async () => {
-          const newTitle = 'updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            title: newTitle,
-            company: candidatExternalOpportunity.company,
-            contract: candidatExternalOpportunity.contract,
-            startOfContract: candidatExternalOpportunity.startOfContract,
-            endOfContract: candidatExternalOpportunity.endOfContract,
-            isPartTime: candidatExternalOpportunity.isPartTime,
-            department: candidatExternalOpportunity.department,
-            businessLines: [{ name: 'id', order: 0 }],
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(400);
-        });
-        it("Should return 403, if logged in as coach and creates another candidate's opportunity", async () => {
-          const newTitle = 'updated title';
 
-          const candidateId = otherCandidat.user.id;
-          const updatedOpportunity = {
-            id: otherCandidatExternalOpportunity.id,
-            title: newTitle,
-            company: otherCandidatExternalOpportunity.company,
-            contract: otherCandidatExternalOpportunity.contract,
-            startOfContract: otherCandidatExternalOpportunity.startOfContract,
-            endOfContract: otherCandidatExternalOpportunity.endOfContract,
-            isPartTime: otherCandidatExternalOpportunity.isPartTime,
-            department: otherCandidatExternalOpportunity.department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(403);
-        });
+          const response: APIResponse<OpportunitiesController['update']> =
+            await request(app.getHttpServer())
+              .put(`${route}/bulk`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send({
+                attributes: {
+                  isArchived: true,
+                },
+                ids: originalOpportunitiesIds,
+              });
 
-        it('Should return 200, if logged in as admin and updates opportunity', async () => {
-          const newTitle = 'updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: candidatExternalOpportunity.id,
-            title: newTitle,
-            company: candidatExternalOpportunity.company,
-            contract: candidatExternalOpportunity.contract,
-            startOfContract: candidatExternalOpportunity.startOfContract,
-            endOfContract: candidatExternalOpportunity.endOfContract,
-            isPartTime: candidatExternalOpportunity.isPartTime,
-            department: candidatExternalOpportunity.department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...updatedOpportunity,
-              isExternal: true,
-              isPublic: false,
-              isValidated: true,
-            })
-          );
-          expect(response.body.opportunityUsers.UserId).toMatch(candidateId);
-        });
-        it('Should return 404, if logged in as admin and updates non external opportunity', async () => {
-          const newTitle = 'updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: opportunities[0].id,
-            title: newTitle,
-            company: opportunities[0].company,
-            contract: opportunities[0].contract,
-            startOfContract: opportunities[0].startOfContract,
-            endOfContract: opportunities[0].endOfContract,
-            isPartTime: opportunities[0].isPartTime,
-            department: opportunities[0].department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(404);
-        });
-        it('Should return 404, if logged in as admin and updates opportunity without candidateId', async () => {
-          const newTitle = 'updated title';
-          const updatedOpportunity = {
-            id: opportunities[0].id,
-            title: newTitle,
-            company: opportunities[0].company,
-            contract: opportunities[0].contract,
-            startOfContract: opportunities[0].startOfContract,
-            endOfContract: opportunities[0].endOfContract,
-            isPartTime: opportunities[0].isPartTime,
-            department: opportunities[0].department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(updatedOpportunity);
-          expect(response.status).toBe(404);
-        });
-
-        it('Should return 401, if not logged in', async () => {
-          const newTitle = 'updated title';
-          const candidateId = loggedInCandidate.user.id;
-          const updatedOpportunity = {
-            id: opportunities[0].id,
-            title: newTitle,
-            company: opportunities[0].company,
-            contract: opportunities[0].contract,
-            startOfContract: opportunities[0].startOfContract,
-            endOfContract: opportunities[0].endOfContract,
-            isPartTime: opportunities[0].isPartTime,
-            department: opportunities[0].department,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .send({ candidateId, ...updatedOpportunity });
-          expect(response.status).toBe(401);
-        });
-      });
-      describe('Update a user opportunity association - /join', () => {
-        it('Should return 200, if candidate updates his opportunities asociations', async () => {
-          const update = {
-            ...opportunitiesCandidat[0],
-            note: 'noteUpdate',
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/join`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send(update);
-          expect(response.status).toBe(200);
-          expect(response.body.note).toBe('noteUpdate');
-        });
-        it('Should return 200, if a coach updates his associated candidate opportunities asociations', async () => {
-          const update = {
-            ...opportunitiesCandidat[1],
-            seen: true,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send(update);
-          expect(response.status).toBe(200);
-          expect(response.body.seen).toBe(true);
-        });
-        it('Should return 200, if a admin updates candidate opportunities asociations', async () => {
-          const update = {
-            ...opportunitiesCandidat[2],
-            bookmarked: true,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/join`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send(update);
-          expect(response.status).toBe(200);
-          expect(response.body.bookmarked).toBe(true);
-        });
-        it('Should return 400, if invalid user id', async () => {
-          const update = {
-            ...opportunitiesCandidat[3],
-            UserId: '1111-invalid-99999',
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send(update);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if candidate updates an other candidate opportunities asociations', async () => {
-          const update = {
-            ...opportunitiesCandidat[4],
-            status: 1000,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/join`)
-            .set('authorization', `Token ${otherCandidat.token}`)
-            .send(update);
-          expect(response.status).toBe(403);
-        });
-        it("Should return 403, if a coach updates not associate candidate's opportunities asociations", async () => {
-          const update = {
-            ...opportunityOtherCandidat,
-            bookmarked: true,
-          };
-          const response = await request(app.getHttpServer())
-            .put(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send(update);
           expect(response.status).toBe(403);
         });
       });
     });
-    describe.skip('D - Delete 1', () => {
-      it('Should return 200, if admin', async () => {
-        const response = await request(app.getHttpServer())
-          .delete(`${route}/${opportunitiesId[9]}`)
-          .set('authorization', `Token ${loggedInAdmin.token}`);
-        expect(response.status).toBe(200);
-      });
-      it('Should return 401, if not admin', async () => {
-        const response = await request(app.getHttpServer())
-          .delete(`${route}/${opportunitiesId[8]}`)
-          .set('authorization', `Token ${loggedInCoach.token}`);
-        expect(response.status).toBe(401);
-      });
-      it("Should return 401, if not opportnity doesn't exist", async () => {
-        const response = await request(app.getHttpServer())
-          .delete(`${route}/a824df-c9e0-42cb-adb6-02267fc9e5f6`)
-          .set('authorization', `Token ${loggedInCoach.token}`);
-        expect(response.status).toBe(401);
-      });
-    });*/
   });
 });

@@ -180,6 +180,7 @@ export class OpportunitiesController {
     if (userId && !uuidValidate(userId)) {
       throw new BadRequestException();
     }
+
     const isAdmin = role === UserRoles.ADMIN;
 
     const { candidateId, ...restParams } = createExternalOpportunityDto;
@@ -336,6 +337,8 @@ export class OpportunitiesController {
     );
   }
 
+  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/user/all/:candidateId')
@@ -355,7 +358,10 @@ export class OpportunitiesController {
     }
 
     if (opportunityUsers.length === 0) {
-      return [] as Opportunity[];
+      return {
+        offers: [],
+        otherOffers: [],
+      };
     }
 
     const opportunityUserIds = opportunityUsers.map((opportunityUser) => {
@@ -542,15 +548,14 @@ export class OpportunitiesController {
     const { candidateId, id, ...restOpportunity } =
       updateExternalOpportunityDto;
 
-    const candidate = await this.opportunitiesService.findOneCandidate(
-      candidateId
-    );
-
-    if (!candidate) {
-      throw new NotFoundException();
+    if (!candidateId || !uuidValidate(candidateId)) {
+      throw new BadRequestException();
     }
 
-    const opportunity = await this.opportunitiesService.findOne(id);
+    const opportunity = await this.opportunitiesService.findOneAsCandidate(
+      id,
+      candidateId
+    );
 
     if (!opportunity || !opportunity.isExternal) {
       throw new NotFoundException();
