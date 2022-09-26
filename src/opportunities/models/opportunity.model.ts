@@ -138,7 +138,7 @@ export class Opportunity extends Model {
   recruiterPhone: string;
 
   @ApiProperty()
-  @IsNumber()
+  @IsString()
   @IsOptional()
   @AllowNull(false)
   @Default(new Date())

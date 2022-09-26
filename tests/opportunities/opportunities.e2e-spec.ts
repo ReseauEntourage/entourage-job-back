@@ -2234,7 +2234,7 @@ describe('Opportunities', () => {
 
         it('Should return 200, if admin updates an opportunity', async () => {
           const update = {
-            ...opportunity,
+            id: opportunity.id,
             title: 'updated title',
           };
           const response: APIResponse<OpportunitiesController['update']> =
@@ -2248,7 +2248,7 @@ describe('Opportunities', () => {
 
         it('Should return 200, if admin adds a user to a public opportunity', async () => {
           const update = {
-            ...opportunity,
+            id: opportunity.id,
             candidatesId: [loggedInCandidate.user.id],
           };
           const response: APIResponse<OpportunitiesController['update']> =
@@ -2321,12 +2321,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2359,12 +2353,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
             businessLines: [{ name: 'id', order: 0 }],
           };
           const response: APIResponse<
@@ -2392,12 +2380,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2424,12 +2406,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
           const response: APIResponse<
             OpportunitiesController['updateExternal']
@@ -2458,12 +2434,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2494,12 +2464,6 @@ describe('Opportunities', () => {
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
             businessLines: [{ name: 'id', order: 0 }],
           };
           const response: APIResponse<
@@ -2528,12 +2492,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2563,12 +2521,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2598,12 +2550,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2630,12 +2576,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<
@@ -2664,12 +2604,6 @@ describe('Opportunities', () => {
           const updatedOpportunity = {
             id: opportunity.id,
             title: newTitle,
-            company: opportunity.company,
-            contract: opportunity.contract,
-            startOfContract: opportunity.startOfContract,
-            endOfContract: opportunity.endOfContract,
-            isPartTime: opportunity.isPartTime,
-            department: opportunity.department,
           };
 
           const response: APIResponse<

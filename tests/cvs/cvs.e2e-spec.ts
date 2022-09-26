@@ -21,7 +21,7 @@ import { UserRoles, CVStatuses } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { SharesHelper } from 'tests/shares/shares.helper';
+import { SharesHelper } from 'tests/common/shares/shares.helper';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';

@@ -1,21 +1,21 @@
 import { Module } from '@nestjs/common';
 
 import { AppModule } from 'src/app.module';
-import { AmbitionsTestingModule } from './ambitions/ambitions-testing.module';
+import { AmbitionsTestingModule } from './common/ambitions/ambitions-testing.module';
 import { AuthTestingModule } from './auth/auth-testing.module';
-import { BusinessLinesTestingModule } from './businessLines/businessLines-testing.module';
-import { ContractsTestingModule } from './contracts/contracts-testing.module';
+import { BusinessLinesTestingModule } from './common/businessLines/businessLines-testing.module';
+import { ContractsTestingModule } from './common/contracts/contracts-testing.module';
 import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
-import { ExperiencesTestingModule } from './experiences/experiences-testing.module';
-import { LanguagesTestingModule } from './languages/languages-testing.module';
-import { LocationsTestingModule } from './locations/locations-testing.module';
+import { ExperiencesTestingModule } from './common/experiences/experiences-testing.module';
+import { LanguagesTestingModule } from './common/languages/languages-testing.module';
+import { LocationsTestingModule } from './common/locations/locations-testing.module';
 import { MailsTestingModule } from './mails/mails-testing.module';
 import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
-import { PassionsTestingModule } from './passions/passions-testing.module';
-import { ReviewsTestingModule } from './reviews/reviews-testing.module';
-import { SharesTestingModule } from './shares/shares-testing.module';
-import { SkillsTestingModule } from './skills/skills-testing.module';
+import { PassionsTestingModule } from './common/passions/passions-testing.module';
+import { ReviewsTestingModule } from './common/reviews/reviews-testing.module';
+import { SharesTestingModule } from './common/shares/shares-testing.module';
+import { SkillsTestingModule } from './common/skills/skills-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
 
 @Module({
