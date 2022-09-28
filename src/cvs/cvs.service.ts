@@ -111,133 +111,183 @@ export class CVsService {
       updatedAt: null as Date,
     };
 
-    const modelCV = await this.cvModel.create(cvData);
+    const t = await this.cvModel.sequelize.transaction();
 
-    const promises = [];
+    try {
+      const createdCV = await this.cvModel.create(cvData, {
+        hooks: true,
+        transaction: t,
+      });
 
-    if (cvData.skills) {
-      promises.push(async () => {
+      if (cvData.skills) {
         const skills = await Promise.all(
-          cvData.skills.map((name) => {
-            return this.skillModel.create({ name });
+          cvData.skills.map(({ name }) => {
+            return this.skillModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('skills', skills);
-      });
-    }
+        await createdCV.$add('skills', skills, { transaction: t });
+      }
 
-    if (cvData.languages) {
-      promises.push(async () => {
+      if (cvData.languages) {
         const languages = await Promise.all(
-          cvData.languages.map((name) => {
-            // on trouve ou créé la donné
-            return this.languageModel.create({ name });
+          cvData.languages.map(({ name }) => {
+            return this.languageModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('languages', languages);
-      });
-    }
+        await createdCV.$add('languages', languages, { transaction: t });
+      }
 
-    if (cvData.contracts) {
-      promises.push(async () => {
+      if (cvData.contracts) {
         const contracts = await Promise.all(
-          cvData.contracts.map((name) => {
-            return this.contractModel.create({ name });
+          cvData.contracts.map(({ name }) => {
+            return this.contractModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('contracts', contracts);
-      });
-    }
+        await createdCV.$add('contracts', contracts, { transaction: t });
+      }
 
-    if (cvData.passions) {
-      promises.push(async () => {
+      if (cvData.passions) {
         const passions = await Promise.all(
-          cvData.passions.map((name) => {
-            return this.passionModel.create({ name });
+          cvData.passions.map(({ name }) => {
+            return this.passionModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('passions', passions);
-      });
-    }
+        await createdCV.$add('passions', passions, { transaction: t });
+      }
 
-    if (cvData.ambitions) {
-      promises.push(async () => {
+      if (cvData.ambitions) {
         const ambitions = await Promise.all(
           cvData.ambitions.map(({ name, order = -1, prefix = 'dans' }) => {
-            return this.ambitionModel.create({ name, order, prefix });
+            return this.ambitionModel.create(
+              { name, order, prefix },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('ambitions', ambitions);
-      });
-    }
+        await createdCV.$add('ambitions', ambitions, { transaction: t });
+      }
 
-    if (cvData.businessLines) {
-      promises.push(async () => {
+      if (cvData.businessLines) {
         const businessLines = await Promise.all(
           cvData.businessLines.map(({ name, order }) => {
-            return this.businessLineModel.create({ name, order });
+            return this.businessLineModel.create(
+              { name, order },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('businessLines', businessLines);
-      });
-    }
+        await createdCV.$add('businessLines', businessLines, {
+          transaction: t,
+        });
+      }
 
-    if (cvData.locations) {
-      promises.push(async () => {
+      if (cvData.locations) {
         const locations = await Promise.all(
-          cvData.locations.map((name) => {
-            return this.locationModel.create({ name });
+          cvData.locations.map(({ name }) => {
+            return this.locationModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('locations', locations);
-      });
-    }
+        await createdCV.$add('locations', locations, { transaction: t });
+      }
 
-    if (cvData.experiences) {
-      promises.push(async () => {
+      if (cvData.experiences) {
         await Promise.all(
           cvData.experiences.map(async (experience) => {
-            const modelExperience = await this.experienceModel.create({
-              CVId: modelCV.id,
-              description: experience.description,
-              order: experience.order,
-            });
+            const modelExperience = await this.experienceModel.create(
+              {
+                CVId: createdCV.id,
+                description: experience.description,
+                order: experience.order,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
             if (experience.skills) {
               const skills = await Promise.all(
-                experience.skills.map((name) => {
-                  return this.skillModel.create({ name });
+                experience.skills.map(({ name }) => {
+                  return this.skillModel.create(
+                    { name },
+                    {
+                      hooks: true,
+                      transaction: t,
+                    }
+                  );
                 })
               );
-              await modelExperience.$add('skills', skills);
+              await modelExperience.$add('skills', skills, { transaction: t });
             }
-            return modelExperience;
           })
         );
-      });
-    }
+      }
 
-    if (cvData.reviews) {
-      promises.push(async () => {
+      if (cvData.reviews) {
         await Promise.all(
           cvData.reviews.map(async (review) => {
-            return this.reviewModel.create({
-              CVId: modelCV.id,
-              text: review.text,
-              status: review.status,
-              name: review.name,
-            });
+            await this.reviewModel.create(
+              {
+                CVId: createdCV.id,
+                text: review.text,
+                status: review.status,
+                name: review.name,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
+      }
+
+      await t.commit();
+
+      const cv = await this.cvModel.findByPk(createdCV.id, {
+        include: CVCompleteWithAllUserPrivateInclude,
       });
+
+      return cv.toJSON();
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-
-    await Promise.all(promises);
-
-    const cv = await this.cvModel.findByPk(modelCV.id, {
-      include: CVCompleteWithAllUserPrivateInclude,
-    });
-
-    return cv.toJSON();
   }
 
   async findOne(id: string) {

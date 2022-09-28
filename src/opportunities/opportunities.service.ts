@@ -101,24 +101,39 @@ export class OpportunitiesService {
     >,
     createdById?: string
   ) {
-    const createdOpportunity = await this.opportunityModel.create({
-      ...createOpportunityDto,
-      createdBy: createdById,
-    });
+    const t = await this.opportunityModel.sequelize.transaction();
 
-    if (
-      (createOpportunityDto instanceof CreateExternalOpportunityDto ||
-        createOpportunityDto instanceof CreateOpportunityDto) &&
-      createOpportunityDto.businessLines
-    ) {
-      const businessLines = await Promise.all(
-        createOpportunityDto.businessLines.map(({ name, order = -1 }) => {
-          return this.businessLineModel.create({ name, order });
-        })
+    try {
+      const createdOpportunity = await this.opportunityModel.create(
+        {
+          ...createOpportunityDto,
+          createdBy: createdById,
+        },
+        { hooks: true, transaction: t }
       );
-      await createdOpportunity.$add('businessLines', businessLines);
+
+      if (
+        (createOpportunityDto instanceof CreateExternalOpportunityDto ||
+          createOpportunityDto instanceof CreateOpportunityDto) &&
+        createOpportunityDto.businessLines
+      ) {
+        const businessLines = await Promise.all(
+          createOpportunityDto.businessLines.map(({ name, order = -1 }) => {
+            return this.businessLineModel.create(
+              { name, order },
+              { hooks: true, transaction: t }
+            );
+          })
+        );
+        await createdOpportunity.$add('businessLines', businessLines, {
+          transaction: t,
+        });
+      }
+      return createdOpportunity;
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-    return createdOpportunity;
   }
 
   async findAllCandidateIdsToRecommendOfferTo(

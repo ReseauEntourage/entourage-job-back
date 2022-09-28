@@ -59,8 +59,8 @@ export class User extends HistorizedModel {
   lastName: string;
 
   @ApiProperty()
-  @IsEmail
   @IsEmailClassValidator()
+  @IsEmail
   @AllowNull(false)
   @Unique
   @Column
