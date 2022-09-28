@@ -14,6 +14,7 @@ export class LinkedUserGuard implements CanActivate {
       LINKED_USER_KEY,
       context.getHandler()
     );
+
     if (!linkedUserIdKey) {
       return false;
     }

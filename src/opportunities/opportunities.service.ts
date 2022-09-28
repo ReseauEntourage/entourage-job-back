@@ -113,12 +113,18 @@ export class OpportunitiesService {
       );
 
       if (
-        (createOpportunityDto instanceof CreateExternalOpportunityDto ||
-          createOpportunityDto instanceof CreateOpportunityDto) &&
-        createOpportunityDto.businessLines
+        (
+          createOpportunityDto as
+            | CreateExternalOpportunityDto
+            | CreateOpportunityDto
+        ).businessLines
       ) {
         const businessLines = await Promise.all(
-          createOpportunityDto.businessLines.map(({ name, order = -1 }) => {
+          (
+            createOpportunityDto as
+              | CreateExternalOpportunityDto
+              | CreateOpportunityDto
+          ).businessLines.map(({ name, order = -1 }) => {
             return this.businessLineModel.create(
               { name, order },
               { hooks: true, transaction: t }
@@ -129,6 +135,8 @@ export class OpportunitiesService {
           transaction: t,
         });
       }
+
+      await t.commit();
       return createdOpportunity;
     } catch (error) {
       await t.rollback();
@@ -379,33 +387,50 @@ export class OpportunitiesService {
       | Omit<UpdateOpportunityDto, 'id' | 'shouldSendNotifications'>
       | Omit<UpdateExternalOpportunityDto, 'id'>
   ) {
-    await this.opportunityModel.update(updateOpportunityDto, {
-      where: { id },
-      individualHooks: true,
-    });
+    const t = await this.opportunityModel.sequelize.transaction();
 
-    const updatedOpportunity = await this.findOne(id);
-
-    if (updateOpportunityDto.businessLines) {
-      const businessLines = await Promise.all(
-        updateOpportunityDto.businessLines.map(({ name, order = -1 }) => {
-          return BusinessLine.create({ name, order });
-        })
-      );
-      await updatedOpportunity.$add('businessLines', businessLines);
-      await this.opportunityBusinessLineModel.destroy({
-        where: {
-          OpportunityId: updatedOpportunity.id,
-          BusinessLineId: {
-            [Op.not]: businessLines.map((bl) => {
-              return bl.id;
-            }),
-          },
-        },
+    try {
+      await this.opportunityModel.update(updateOpportunityDto, {
+        where: { id },
+        individualHooks: true,
+        transaction: t,
       });
-    }
 
-    return updatedOpportunity;
+      const updatedOpportunity = await this.findOne(id);
+
+      if (updateOpportunityDto.businessLines) {
+        const businessLines = await Promise.all(
+          updateOpportunityDto.businessLines.map(({ name, order = -1 }) => {
+            return this.businessLineModel.create(
+              { name, order },
+              { hooks: true, transaction: t }
+            );
+          })
+        );
+        await updatedOpportunity.$add('businessLines', businessLines, {
+          transaction: t,
+        });
+
+        await this.opportunityBusinessLineModel.destroy({
+          where: {
+            OpportunityId: updatedOpportunity.id,
+            BusinessLineId: {
+              [Op.not]: businessLines.map((bl) => {
+                return bl.id;
+              }),
+            },
+          },
+          hooks: true,
+          transaction: t,
+        });
+      }
+      await t.commit();
+
+      return updatedOpportunity;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
   }
 
   async updateAll(

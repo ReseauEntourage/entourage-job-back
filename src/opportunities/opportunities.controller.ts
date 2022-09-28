@@ -249,11 +249,11 @@ export class OpportunitiesController {
     @UserPayload('role') role: UserRole
   ) {
     const opportunity = await this.opportunitiesService.findOneAsCandidate(
-      candidateId,
-      opportunityId
+      opportunityId,
+      candidateId
     );
 
-    if (opportunity) {
+    if (opportunity && opportunity.opportunityUsers) {
       if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
         throw new ForbiddenException();
       }

@@ -1,5 +1,4 @@
 import fs from 'fs';
-
 import { Readable } from 'stream';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
@@ -8,6 +7,7 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
+import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
 import * as puppeteer from 'puppeteer-core';
 import { col, fn, Op, QueryTypes } from 'sequelize';
@@ -712,7 +712,7 @@ export class CVsService {
       }),
     });
 
-    const { previewUrl } = await response.json();
+    const { previewUrl } = (await response.json()) as { previewUrl: string };
 
     return previewUrl;
   }
