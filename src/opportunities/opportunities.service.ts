@@ -903,7 +903,9 @@ export class OpportunitiesService {
     }
 
     if (opportunitiesCreatedByCandidateOrCoach === 0) {
-      return this.mailsService.sendExternalOffersReminderMails(candidate);
+      return this.mailsService.sendExternalOffersReminderMails(
+        candidate.toJSON()
+      );
     }
   }
 

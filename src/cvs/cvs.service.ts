@@ -851,7 +851,7 @@ export class CVsService {
 
   async sendReminderAboutCV(candidateId: string, is20Days = false) {
     const firstOfMarch2022 = '2022-03-01';
-    const candidate = await this.usersService.findOne(candidateId);
+    const candidate = (await this.usersService.findOne(candidateId)).toJSON();
     if (
       moment(candidate.createdAt).isAfter(
         moment(firstOfMarch2022, 'YYYY-MM-DD')
@@ -872,7 +872,7 @@ export class CVsService {
         }
 
         await this.mailsService.sendCVReminderMail(
-          candidate.toJSON(),
+          candidate,
           is20Days,
           toEmail
         );
@@ -899,7 +899,7 @@ export class CVsService {
   async sendReminderAboutActions(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
 
-    return this.mailsService.sendActionsReminderMails(candidate);
+    return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
   async cacheOne(url: string, candidateId?: string) {
