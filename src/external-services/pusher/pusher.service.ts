@@ -18,6 +18,6 @@ export class PusherService {
   }
 
   async sendEvent<T>(channel: PusherChannel, event: PusherEvent, data: T) {
-    await this.pusher.trigger(channel, event, data);
+    return this.pusher.trigger(channel, event, data);
   }
 }
