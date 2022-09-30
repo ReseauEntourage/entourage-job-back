@@ -501,8 +501,8 @@ export class OpportunitiesController {
     const finalOpportunity = await this.opportunitiesService.findOne(id);
 
     await this.opportunitiesService.sendMailsAfterUpdate(
-      finalOpportunity,
-      opportunity,
+      finalOpportunity.toJSON(),
+      opportunity.toJSON(),
       candidates
     );
 

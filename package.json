@@ -26,6 +26,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.142.0",
     "@aws-sdk/client-s3": "^3.142.0",
+    "@aws-sdk/lib-storage": "^3.180.0",
     "@aws-sdk/s3-request-presigner": "^3.142.0",
     "@mailchimp/mailchimp_marketing": "^3.0.78",
     "@nestjs/bull": "^0.5.3",

@@ -316,6 +316,7 @@ export class WorkQueueProcessor {
   async processGenerateCVPreview(job: Job<GenerateCVPreviewJob>) {
     const { data } = job;
 
+    // TODO FIX PREVIEW GENERATION
     const previewUrl = await this.cvsService.generatePreviewFromCV(
       data.candidateId,
       data.uploadedImg,

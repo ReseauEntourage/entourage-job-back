@@ -182,7 +182,13 @@ export class User extends HistorizedModel {
   @BeforeUpdate
   static async manageRoleChange(userToUpdate: User) {
     const previousUserValues: Partial<User> = userToUpdate.previous();
-    if (userToUpdate && previousUserValues && previousUserValues.role) {
+    if (
+      userToUpdate &&
+      userToUpdate.role &&
+      previousUserValues &&
+      previousUserValues.role !== undefined &&
+      previousUserValues.role !== userToUpdate.role
+    ) {
       if (
         previousUserValues.role === UserRoles.CANDIDAT &&
         userToUpdate.role !== UserRoles.CANDIDAT
@@ -232,9 +238,10 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
+      userToUpdate.role === UserRoles.CANDIDAT &&
       previousUserValues &&
-      previousUserValues.firstName &&
-      userToUpdate.role === UserRoles.CANDIDAT
+      previousUserValues.firstName != undefined &&
+      previousUserValues.firstName !== userToUpdate.firstName
     ) {
       await UserCandidat.update(
         {

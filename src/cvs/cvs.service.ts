@@ -1,5 +1,4 @@
 import fs from 'fs';
-import { Readable } from 'stream';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -296,7 +295,7 @@ export class CVsService {
     });
   }
 
-  async findOneByCandidateId(candidateId: string) {
+  async findOneByCandidateId(candidateId: string): Promise<CV> {
     const candidate = await this.usersService.findOne(candidateId);
 
     if (!candidate) {
@@ -314,7 +313,7 @@ export class CVsService {
     if (!cv) {
       return {} as CV;
     }
-    return cv;
+    return cv.toJSON();
   }
 
   async findOneByUrl(url: string): Promise<CV> {
@@ -645,10 +644,9 @@ export class CVsService {
     const mergedPdfFile = await mergedPdf.save();
 
     const pdfBuffer = Buffer.from(mergedPdfFile);
-    const pdfStream = Readable.from(pdfBuffer);
 
     await this.s3Service.upload(
-      pdfStream,
+      pdfBuffer,
       'application/pdf',
       `${paths[2]}`,
       true
@@ -681,6 +679,7 @@ export class CVsService {
       return order > -1;
     });
 
+    // TODO Update Lambda to use new association objects with name
     const response = await fetch(`${process.env.AWS_LAMBA_URL}/preview`, {
       headers: {
         Accept: 'application/json',
@@ -690,6 +689,8 @@ export class CVsService {
       body: JSON.stringify({
         cv: {
           ...cv,
+          skills: cv.skills.map(({ name }) => name),
+          locations: cv.locations.map(({ name }) => name),
           ambitions: isNewCareerPath
             ? _.uniqWith(cv.businessLines, (a, b) => {
                 return a.name === b.name;
@@ -706,7 +707,7 @@ export class CVsService {
               })
             : cv.ambitions,
         },
-        user: candidate,
+        user: candidate.toJSON(),
         uploadedImg,
         oldImg,
       }),
@@ -912,12 +913,11 @@ export class CVsService {
 
     const redisKey = RedisKeys.CV_PREFIX + urlToUse;
 
-    const cvs: CV[] = await this.cvModel.sequelize.query(
-      queryConditionCV('url', urlToUse.replace("'", "''")),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
+    const query = queryConditionCV('url', urlToUse.replace("'", "''"));
+
+    const cvs: CV[] = await this.cvModel.sequelize.query(query, {
+      type: QueryTypes.SELECT,
+    });
 
     if (cvs && cvs.length > 0) {
       const cv = await this.cvModel.findByPk(cvs[0].id, {
@@ -928,6 +928,7 @@ export class CVsService {
 
       return cv.toJSON();
     }
+
     return null;
   }
 
@@ -1063,10 +1064,8 @@ export class CVsService {
         .jpeg({ quality: 75 })
         .toBuffer();
 
-      const fileStream = Readable.from(fileBuffer);
-
       uploadedImg = await this.s3Service.upload(
-        fileStream,
+        fileBuffer,
         'image/jpeg',
         `${candidateId}.${status}.jpg`
       );
