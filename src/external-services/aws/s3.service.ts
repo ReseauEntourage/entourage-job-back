@@ -2,10 +2,11 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
-  PutObjectCommand,
-  PutObjectRequest,
+  PutObjectCommandInput,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 
@@ -24,8 +25,8 @@ export class S3Service {
   }
 
   async upload(
-    data: PutObjectRequest['Body'],
-    contentType: PutObjectRequest['ContentType'],
+    data: PutObjectCommandInput['Body'],
+    contentType: PutObjectCommandInput['ContentType'],
     outputPath: string,
     isPrivate = false
   ) {
@@ -35,15 +36,18 @@ export class S3Service {
         : process.env.AWSS3_FILE_DIRECTORY
     }${outputPath}`;
 
-    const putObjectCommand = new PutObjectCommand({
-      Bucket: process.env.AWSS3_BUCKET_NAME,
-      Key: key, // File name you want to save as in S3
-      Body: data,
-      ACL: isPrivate ? 'private' : 'public-read', // allow public reading access to the file
-      ContentType: contentType,
+    const upload = new Upload({
+      client: this.s3,
+      params: {
+        Bucket: process.env.AWSS3_BUCKET_NAME,
+        Key: key, // File name you want to save as in S3
+        Body: data,
+        ACL: isPrivate ? 'private' : 'public-read', // allow public reading access to the file
+        ContentType: contentType,
+      },
     });
 
-    await this.s3.send(putObjectCommand);
+    await upload.done();
 
     return key;
   }

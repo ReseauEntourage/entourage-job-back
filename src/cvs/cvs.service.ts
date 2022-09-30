@@ -1,6 +1,4 @@
 import fs from 'fs';
-
-import { Readable } from 'stream';
 import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -8,6 +6,7 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
+import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
 import * as puppeteer from 'puppeteer-core';
 import { col, fn, Op, QueryTypes } from 'sequelize';
@@ -111,133 +110,183 @@ export class CVsService {
       updatedAt: null as Date,
     };
 
-    const modelCV = await this.cvModel.create(cvData);
+    const t = await this.cvModel.sequelize.transaction();
 
-    const promises = [];
+    try {
+      const createdCV = await this.cvModel.create(cvData, {
+        hooks: true,
+        transaction: t,
+      });
 
-    if (cvData.skills) {
-      promises.push(async () => {
+      if (cvData.skills) {
         const skills = await Promise.all(
-          cvData.skills.map((name) => {
-            return this.skillModel.create({ name });
+          cvData.skills.map(({ name }) => {
+            return this.skillModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('skills', skills);
-      });
-    }
+        await createdCV.$add('skills', skills, { transaction: t });
+      }
 
-    if (cvData.languages) {
-      promises.push(async () => {
+      if (cvData.languages) {
         const languages = await Promise.all(
-          cvData.languages.map((name) => {
-            // on trouve ou créé la donné
-            return this.languageModel.create({ name });
+          cvData.languages.map(({ name }) => {
+            return this.languageModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('languages', languages);
-      });
-    }
+        await createdCV.$add('languages', languages, { transaction: t });
+      }
 
-    if (cvData.contracts) {
-      promises.push(async () => {
+      if (cvData.contracts) {
         const contracts = await Promise.all(
-          cvData.contracts.map((name) => {
-            return this.contractModel.create({ name });
+          cvData.contracts.map(({ name }) => {
+            return this.contractModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('contracts', contracts);
-      });
-    }
+        await createdCV.$add('contracts', contracts, { transaction: t });
+      }
 
-    if (cvData.passions) {
-      promises.push(async () => {
+      if (cvData.passions) {
         const passions = await Promise.all(
-          cvData.passions.map((name) => {
-            return this.passionModel.create({ name });
+          cvData.passions.map(({ name }) => {
+            return this.passionModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('passions', passions);
-      });
-    }
+        await createdCV.$add('passions', passions, { transaction: t });
+      }
 
-    if (cvData.ambitions) {
-      promises.push(async () => {
+      if (cvData.ambitions) {
         const ambitions = await Promise.all(
           cvData.ambitions.map(({ name, order = -1, prefix = 'dans' }) => {
-            return this.ambitionModel.create({ name, order, prefix });
+            return this.ambitionModel.create(
+              { name, order, prefix },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('ambitions', ambitions);
-      });
-    }
+        await createdCV.$add('ambitions', ambitions, { transaction: t });
+      }
 
-    if (cvData.businessLines) {
-      promises.push(async () => {
+      if (cvData.businessLines) {
         const businessLines = await Promise.all(
           cvData.businessLines.map(({ name, order }) => {
-            return this.businessLineModel.create({ name, order });
+            return this.businessLineModel.create(
+              { name, order },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('businessLines', businessLines);
-      });
-    }
+        await createdCV.$add('businessLines', businessLines, {
+          transaction: t,
+        });
+      }
 
-    if (cvData.locations) {
-      promises.push(async () => {
+      if (cvData.locations) {
         const locations = await Promise.all(
-          cvData.locations.map((name) => {
-            return this.locationModel.create({ name });
+          cvData.locations.map(({ name }) => {
+            return this.locationModel.create(
+              { name },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
-        await modelCV.$add('locations', locations);
-      });
-    }
+        await createdCV.$add('locations', locations, { transaction: t });
+      }
 
-    if (cvData.experiences) {
-      promises.push(async () => {
+      if (cvData.experiences) {
         await Promise.all(
           cvData.experiences.map(async (experience) => {
-            const modelExperience = await this.experienceModel.create({
-              CVId: modelCV.id,
-              description: experience.description,
-              order: experience.order,
-            });
+            const modelExperience = await this.experienceModel.create(
+              {
+                CVId: createdCV.id,
+                description: experience.description,
+                order: experience.order,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
             if (experience.skills) {
               const skills = await Promise.all(
-                experience.skills.map((name) => {
-                  return this.skillModel.create({ name });
+                experience.skills.map(({ name }) => {
+                  return this.skillModel.create(
+                    { name },
+                    {
+                      hooks: true,
+                      transaction: t,
+                    }
+                  );
                 })
               );
-              await modelExperience.$add('skills', skills);
+              await modelExperience.$add('skills', skills, { transaction: t });
             }
-            return modelExperience;
           })
         );
-      });
-    }
+      }
 
-    if (cvData.reviews) {
-      promises.push(async () => {
+      if (cvData.reviews) {
         await Promise.all(
           cvData.reviews.map(async (review) => {
-            return this.reviewModel.create({
-              CVId: modelCV.id,
-              text: review.text,
-              status: review.status,
-              name: review.name,
-            });
+            await this.reviewModel.create(
+              {
+                CVId: createdCV.id,
+                text: review.text,
+                status: review.status,
+                name: review.name,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
           })
         );
+      }
+
+      await t.commit();
+
+      const cv = await this.cvModel.findByPk(createdCV.id, {
+        include: CVCompleteWithAllUserPrivateInclude,
       });
+
+      return cv.toJSON();
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-
-    await Promise.all(promises);
-
-    const cv = await this.cvModel.findByPk(modelCV.id, {
-      include: CVCompleteWithAllUserPrivateInclude,
-    });
-
-    return cv.toJSON();
   }
 
   async findOne(id: string) {
@@ -246,7 +295,7 @@ export class CVsService {
     });
   }
 
-  async findOneByCandidateId(candidateId: string) {
+  async findOneByCandidateId(candidateId: string): Promise<CV> {
     const candidate = await this.usersService.findOne(candidateId);
 
     if (!candidate) {
@@ -264,14 +313,14 @@ export class CVsService {
     if (!cv) {
       return {} as CV;
     }
-    return cv;
+    return cv.toJSON();
   }
 
   async findOneByUrl(url: string): Promise<CV> {
     const redisKey = RedisKeys.CV_PREFIX + url;
     const redisCV: string = await this.cacheManager.get(redisKey);
 
-    return redisCV ? JSON.parse(redisCV) : await this.cacheOne(url);
+    return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {
@@ -595,10 +644,9 @@ export class CVsService {
     const mergedPdfFile = await mergedPdf.save();
 
     const pdfBuffer = Buffer.from(mergedPdfFile);
-    const pdfStream = Readable.from(pdfBuffer);
 
     await this.s3Service.upload(
-      pdfStream,
+      pdfBuffer,
       'application/pdf',
       `${paths[2]}`,
       true
@@ -631,6 +679,7 @@ export class CVsService {
       return order > -1;
     });
 
+    // TODO Update Lambda to use new association objects with name
     const response = await fetch(`${process.env.AWS_LAMBA_URL}/preview`, {
       headers: {
         Accept: 'application/json',
@@ -640,6 +689,8 @@ export class CVsService {
       body: JSON.stringify({
         cv: {
           ...cv,
+          skills: cv.skills.map(({ name }) => name),
+          locations: cv.locations.map(({ name }) => name),
           ambitions: isNewCareerPath
             ? _.uniqWith(cv.businessLines, (a, b) => {
                 return a.name === b.name;
@@ -656,13 +707,13 @@ export class CVsService {
               })
             : cv.ambitions,
         },
-        user: candidate,
+        user: candidate.toJSON(),
         uploadedImg,
         oldImg,
       }),
     });
 
-    const { previewUrl } = await response.json();
+    const { previewUrl } = (await response.json()) as { previewUrl: string };
 
     return previewUrl;
   }
@@ -800,7 +851,7 @@ export class CVsService {
 
   async sendReminderAboutCV(candidateId: string, is20Days = false) {
     const firstOfMarch2022 = '2022-03-01';
-    const candidate = await this.usersService.findOne(candidateId);
+    const candidate = (await this.usersService.findOne(candidateId)).toJSON();
     if (
       moment(candidate.createdAt).isAfter(
         moment(firstOfMarch2022, 'YYYY-MM-DD')
@@ -821,7 +872,7 @@ export class CVsService {
         }
 
         await this.mailsService.sendCVReminderMail(
-          candidate.toJSON(),
+          candidate,
           is20Days,
           toEmail
         );
@@ -848,10 +899,10 @@ export class CVsService {
   async sendReminderAboutActions(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
 
-    return this.mailsService.sendActionsReminderMails(candidate);
+    return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
-  async cacheOne(url: string, candidateId?: string) {
+  async findAndCacheOneByUrl(url: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
@@ -862,12 +913,11 @@ export class CVsService {
 
     const redisKey = RedisKeys.CV_PREFIX + urlToUse;
 
-    const cvs: CV[] = await this.cvModel.sequelize.query(
-      queryConditionCV('url', urlToUse.replace("'", "''")),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
+    const query = queryConditionCV('url', urlToUse.replace("'", "''"));
+
+    const cvs: CV[] = await this.cvModel.sequelize.query(query, {
+      type: QueryTypes.SELECT,
+    });
 
     if (cvs && cvs.length > 0) {
       const cv = await this.cvModel.findByPk(cvs[0].id, {
@@ -878,6 +928,7 @@ export class CVsService {
 
       return cv.toJSON();
     }
+
     return null;
   }
 
@@ -1013,10 +1064,8 @@ export class CVsService {
         .jpeg({ quality: 75 })
         .toBuffer();
 
-      const fileStream = Readable.from(fileBuffer);
-
       uploadedImg = await this.s3Service.upload(
-        fileStream,
+        fileBuffer,
         'image/jpeg',
         `${candidateId}.${status}.jpg`
       );

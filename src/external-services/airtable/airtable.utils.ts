@@ -5,6 +5,7 @@ import { FieldSet } from 'airtable';
 import AirtableError from 'airtable/lib/airtable_error';
 import { Records } from 'airtable/lib/records';
 import * as _ from 'lodash';
+import moment from 'moment';
 import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
@@ -60,26 +61,37 @@ export function mapAirtableOpportunityFields(
     'Description entreprise': opportunity.companyDescription,
     'Compétences requises': opportunity.skills,
     'Pré-requis': opportunity.prerequisites,
-    "Secteur d'activité": _.uniq(
-      opportunity.businessLines.map(({ name }) => {
-        return findConstantFromValue(name, BusinessLineFilters).label;
-      })
-    ),
+    "Secteur d'activité":
+      opportunity.businessLines && opportunity.businessLines.length > 0
+        ? _.uniq(
+            opportunity.businessLines.map(({ name }) => {
+              return findConstantFromValue(name, BusinessLineFilters).label;
+            })
+          )
+        : undefined,
     Publique: opportunity.isPublic,
     Externe: opportunity.isExternal,
     'Lien externe': opportunity.link,
-    'Origine externe': findConstantFromValue(
-      opportunity.externalOrigin,
-      ExternalOfferOriginFilters
-    ).label,
+    'Origine externe': opportunity.externalOrigin
+      ? findConstantFromValue(
+          opportunity.externalOrigin,
+          ExternalOfferOriginFilters
+        ).label
+      : undefined,
     Validé: opportunity.isValidated,
     Archivé: opportunity.isArchived,
-    'Date de création': opportunity.createdAt.toString(),
+    'Date de création': opportunity.createdAt
+      ? moment(opportunity.createdAt).toISOString()
+      : undefined,
     Département: opportunity.department,
     Adresse: opportunity.address,
     Contrat: findConstantFromValue(opportunity.contract, ContractFilters).label,
-    'Début de contrat': opportunity.startOfContract.toString(),
-    'Fin de contrat': opportunity.endOfContract.toString(),
+    'Début de contrat': opportunity.startOfContract
+      ? moment(opportunity.startOfContract).toISOString()
+      : undefined,
+    'Fin de contrat': opportunity.endOfContract
+      ? moment(opportunity.endOfContract).toISOString()
+      : undefined,
     'Temps partiel ?': opportunity.isPartTime,
     'Nombre de postes': opportunity.numberOfPositions,
     'Souhaite être recontacté': opportunity.beContacted,

@@ -107,10 +107,9 @@ export function mapSalesforceOfferFields({
   companySfId,
   contactSfId,
 }: OfferProps): SalesforceOffer {
-  const externalOriginConstant = findConstantFromValue(
-    externalOrigin,
-    ExternalOfferOriginFilters
-  );
+  const externalOriginConstant = externalOrigin
+    ? findConstantFromValue(externalOrigin, ExternalOfferOriginFilters)
+    : null;
 
   return {
     ID__c: id,
@@ -137,7 +136,7 @@ export function mapSalesforceOfferFields({
     Autre_precision_sur_votre_besoin__c: otherInfo,
     Permis_de_conduire_necessaire__c: driversLicense,
     Source_de_l_offre__c:
-      externalOriginConstant.salesforceLabel || externalOriginConstant.label,
+      externalOriginConstant?.salesforceLabel || externalOriginConstant?.label,
     Nom__c: recruiterName,
     Prenom__c: recruiterFirstName,
     Mail_du_recruteur__c: recruiterMail,

@@ -28,6 +28,7 @@ import {
   mapSalesforceProcessFields,
   parseAddress,
 } from './salesforce.utils';
+import { Opportunity } from '../../opportunities/models';
 
 @Injectable()
 export class SalesforceService {
@@ -98,7 +99,7 @@ export class SalesforceService {
     name: string,
     params: T | T[],
     extIdField: keyof T,
-    findIdFunction: (id: T[keyof T]) => Promise<string>
+    findIdFunction: 'findProcessById' | 'findOfferById'
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
 
@@ -115,14 +116,15 @@ export class SalesforceService {
               return null;
             }
             return (
-              id || (await findIdFunction((params as T[])[index][extIdField]))
+              id ||
+              (await this[findIdFunction]((params as T[])[index][extIdField]))
             );
           })
         );
       }
       return (
         (result as SuccessResult).id ||
-        (await findIdFunction((params as T)[extIdField]))
+        (await this[findIdFunction]((params as T)[extIdField]))
       );
     } catch (err) {
       if (
@@ -149,7 +151,7 @@ export class SalesforceService {
       ObjectNames.PROCESS,
       records,
       'ID_Externe__c',
-      this.findProcessById
+      'findProcessById'
     );
   }
 
@@ -167,7 +169,7 @@ export class SalesforceService {
       ObjectNames.OFFER,
       records,
       'ID__c',
-      this.findOfferById
+      'findOfferById'
     );
   }
 
@@ -521,8 +523,12 @@ export class SalesforceService {
   async findOfferFromOpportunityId(
     opportunityId: string
   ): Promise<OfferAndProcessProps> {
-    const { opportunityUsers, ...opportunity } =
-      await this.opportunitiesService.findOne(opportunityId);
+    const opportunityDb = await this.opportunitiesService.findOne(
+      opportunityId
+    );
+
+    const { opportunityUsers, ...opportunity }: Opportunity =
+      opportunityDb.toJSON();
 
     return {
       offer: opportunity,

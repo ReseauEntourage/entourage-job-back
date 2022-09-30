@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { BitlyClient } from 'bitly';
-import { BitlyLink } from 'bitly/dist/types';
 import { MailjetTemplateKey } from 'src/external-services/mailjet/mailjet.types';
 
 @Injectable()
 export class BitlyService {
-  private shorten: (longUrl: string) => Promise<BitlyLink>;
+  private bitly: BitlyClient;
 
   constructor() {
-    const bitly = new BitlyClient(process.env.BITLY_TOKEN);
-    this.shorten = bitly.shorten;
+    this.bitly = new BitlyClient(process.env.BITLY_TOKEN);
   }
 
   async getShortenedOfferURL(
@@ -18,7 +16,7 @@ export class BitlyService {
   ) {
     try {
       const offerUrl = `${process.env.FRONT_URL}/backoffice/candidat/offres/${opportunityId}`;
-      const { link } = await this.shorten(
+      const { link } = await this.bitly.shorten(
         `${offerUrl.replace('localhost', '127.0.0.1')}${
           campaign
             ? `?utm_source=SMS&utm_medium=SMS&utm_campaign=${campaign}`

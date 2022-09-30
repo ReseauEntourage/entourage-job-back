@@ -109,9 +109,10 @@ export class UserCandidat extends Model {
     const previousUserCandidatValues = userCandidatToUpdate.previous();
     if (
       userCandidatToUpdate &&
-      previousUserCandidatValues &&
       userCandidatToUpdate.coachId &&
-      previousUserCandidatValues.coachId
+      previousUserCandidatValues &&
+      previousUserCandidatValues.coachId !== undefined &&
+      previousUserCandidatValues.coachId !== userCandidatToUpdate.coachId
     ) {
       await UserCandidat.update(
         { coachId: null },
