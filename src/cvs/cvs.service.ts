@@ -320,7 +320,7 @@ export class CVsService {
     const redisKey = RedisKeys.CV_PREFIX + url;
     const redisCV: string = await this.cacheManager.get(redisKey);
 
-    return redisCV ? JSON.parse(redisCV) : await this.cacheOne(url);
+    return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {
@@ -902,7 +902,7 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
-  async cacheOne(url: string, candidateId?: string) {
+  async findAndCacheOneByUrl(url: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
