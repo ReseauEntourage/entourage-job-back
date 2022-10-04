@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, SuccessResult, Record } from 'jsforce';
+import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CompanyProps,
@@ -28,7 +29,6 @@ import {
   mapSalesforceProcessFields,
   parseAddress,
 } from './salesforce.utils';
-import { Opportunity } from '../../opportunities/models';
 
 @Injectable()
 export class SalesforceService {
