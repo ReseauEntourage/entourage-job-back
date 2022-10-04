@@ -1,5 +1,5 @@
 import { Diff, diff } from 'deep-diff';
-import * as jsdiff from 'diff';
+import { diff_match_patch } from 'diff-match-patch';
 import * as _ from 'lodash';
 import { AnyCantFix, HistorizedModel } from 'src/utils/types';
 import { Revision, RevisionChange } from './models';
@@ -163,35 +163,37 @@ export async function createAfterHook(
       const objectRevision = await revision.save();
 
       // Loop diffs and create a revision-diff for each
-      _.forEach(
-        delta,
-        async (
-          difference: Diff<
-            Partial<HistorizedModel>,
-            Partial<HistorizedModel>
-          > & {
-            lhs?: Partial<HistorizedModel>;
-            rhs?: Partial<HistorizedModel>;
+      await Promise.all(
+        delta.map(
+          async (
+            difference: Diff<
+              Partial<HistorizedModel>,
+              Partial<HistorizedModel>
+            > & {
+              lhs?: Partial<HistorizedModel>;
+              rhs?: Partial<HistorizedModel>;
+            }
+          ) => {
+            const o = diffToString(difference.lhs);
+            const n = diffToString(difference.rhs);
+
+            document = difference as Partial<HistorizedModel>;
+
+            const dmp = new diff_match_patch();
+
+            const diff = o || n ? dmp.diff_main(o, n) : [];
+
+            const d = RevisionChange.build({
+              path: difference.path[0],
+              document,
+              diff,
+              revisionId: objectRevision.id,
+            });
+
+            const savedD = await d.save();
+            return objectRevision.$add(`revisionsChanges`, savedD);
           }
-        ) => {
-          const o = diffToString(difference.lhs);
-          const n = diffToString(difference.rhs);
-
-          document = difference as Partial<HistorizedModel>;
-          const diff = o || n ? jsdiff.diffChars(o, n) : [];
-
-          const d = RevisionChange.build({
-            path: difference.path[0],
-            document,
-            diff,
-            revisionId: objectRevision.id,
-          });
-
-          const savedD = await d.save();
-          await objectRevision.$add(`revisionsChanges`, savedD);
-
-          return null;
-        }
+        )
       );
 
       return;

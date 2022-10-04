@@ -109,15 +109,19 @@ export function mapSalesforceOfferFields({
 }: OfferProps): SalesforceOffer {
   const externalOriginConstant = externalOrigin
     ? findConstantFromValue(externalOrigin, ExternalOfferOriginFilters)
-    : null;
+    : undefined;
 
   return {
     ID__c: id,
     Name: `${title} - ${formatCompanyName(company, address, department)}`,
     Titre__c: title,
     Entreprise_Recruteuse__c: companySfId,
-    Secteur_d_activite_de_l_offre__c: formatBusinessLines(businessLines),
-    Type_de_contrat__c: findConstantFromValue(contract, ContractFilters).label,
+    Secteur_d_activite_de_l_offre__c: businessLines
+      ? formatBusinessLines(businessLines)
+      : undefined,
+    Type_de_contrat__c: contract
+      ? findConstantFromValue(contract, ContractFilters).label
+      : undefined,
     Temps_partiel__c: isPartTime,
     Offre_publique__c: isPublic,
     Offre_externe__c: isExternal,

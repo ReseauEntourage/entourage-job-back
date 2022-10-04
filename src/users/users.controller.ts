@@ -196,7 +196,6 @@ export class UsersController {
     }
 
     const { hash, salt } = encryptPassword(newPassword);
-
     const updatedUser = await this.usersService.update(user.id, {
       password: hash,
       salt,
