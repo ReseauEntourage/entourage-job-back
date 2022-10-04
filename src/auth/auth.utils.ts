@@ -38,9 +38,13 @@ export function getPartialUserForPayload(user: User): PayloadUser {
   };
 }
 
+const ITERATIONS = 10000;
+
 export function encryptPassword(password: string) {
   const salt = randomBytes(16).toString('hex');
-  const hash = pbkdf2Sync(password, salt, 10000, 512, 'sha512').toString('hex');
+  const hash = pbkdf2Sync(password, salt, ITERATIONS, 512, 'sha512').toString(
+    'hex'
+  );
 
   return {
     salt,
@@ -52,7 +56,7 @@ export function validatePassword(password: string, hash: string, salt: string) {
   const passwordHash = pbkdf2Sync(
     password,
     salt,
-    10000,
+    ITERATIONS,
     512,
     'sha512'
   ).toString('hex');

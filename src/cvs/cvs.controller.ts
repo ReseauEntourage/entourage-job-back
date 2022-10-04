@@ -97,7 +97,7 @@ export class CVsController {
     const { status } = createdCV;
 
     if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
-      await this.cvsService.sendMailsAfterSubmitting(user);
+      await this.cvsService.sendMailsAfterSubmitting(user, createdCV);
     }
 
     if (!autoSave) {
@@ -116,10 +116,7 @@ export class CVsController {
           }).length > 1;
 
         if (!hasPublishedAtLeastOnce) {
-          await this.cvsService.sendMailsAfterPublishing(
-            candidateId,
-            createdCV
-          );
+          await this.cvsService.sendMailsAfterPublishing(candidateId);
         }
       }
 

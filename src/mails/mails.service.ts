@@ -109,7 +109,7 @@ export class MailsService {
     );
   }
 
-  async sendCVSubmittedMail(candidate: User) {
+  async sendCVPublishedMail(candidate: User) {
     const coach = getRelatedUser(candidate);
 
     const toEmail: CustomMailParams['toEmail'] = coach
@@ -120,7 +120,7 @@ export class MailsService {
 
     await this.workQueue.add(Jobs.SEND_MAIL, {
       toEmail,
-      templateId: MailjetTemplates.CV_SUBMITTED,
+      templateId: MailjetTemplates.CV_PUBLISHED,
       replyTo: candidatesAdminMail,
       variables: {
         ..._.omitBy(candidate, _.isNil),
@@ -128,7 +128,7 @@ export class MailsService {
     });
   }
 
-  async sendCVPublishedMail(coach: User, cv: Partial<CV>) {
+  async sendCVSubmittedMail(coach: User, cv: Partial<CV>) {
     const { candidatesAdminMail } = getAdminMailsFromZone(coach.zone);
 
     await this.workQueue.add(Jobs.SEND_MAIL, {
