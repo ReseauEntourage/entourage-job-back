@@ -781,14 +781,14 @@ export class CVsService {
     return searchString;
   }
 
-  async sendMailsAfterSubmitting(user: User) {
-    await this.mailsService.sendCVSubmittedMail(user);
+  async sendMailsAfterSubmitting(user: User, cv: Partial<CV>) {
+    await this.mailsService.sendCVSubmittedMail(user, cv);
   }
 
-  async sendMailsAfterPublishing(candidateId: string, cv: Partial<CV>) {
+  async sendMailsAfterPublishing(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
 
-    await this.mailsService.sendCVPublishedMail(candidate.toJSON(), cv);
+    await this.mailsService.sendCVPublishedMail(candidate.toJSON());
 
     await this.workQueue.add(
       Jobs.REMINDER_INTERVIEW_TRAINING,

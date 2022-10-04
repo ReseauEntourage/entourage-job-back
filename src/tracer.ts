@@ -8,7 +8,7 @@ if (ENV === 'production') {
   });
 
   tracer.use('pg', {
-    service: 'linkedout-back-postgres',
+    service: 'linkedout-backend-postgres',
   });
 }
 
