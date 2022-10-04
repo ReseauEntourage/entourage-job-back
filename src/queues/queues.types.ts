@@ -1,3 +1,5 @@
+import { BusinessLine } from 'src/common/businessLines/models';
+import { Location } from 'src/common/locations/models';
 import {
   CustomMailParams,
   MailjetTemplate,
@@ -24,6 +26,7 @@ export const Jobs = {
   REMINDER_ACTIONS: 'reminder_actions',
   REMINDER_EXTERNAL_OFFERS: 'reminder_external_offers',
   NO_RESPONSE_OFFER: 'no_response_offer',
+  SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH: 'send_offers_email_after_cv_publish',
 } as const;
 
 export type Job = typeof Jobs[keyof typeof Jobs];
@@ -107,6 +110,12 @@ export interface UpdateAirtable {
 export interface CreateOrUpdateSalesforceOpportunity {
   opportunityId: string;
   isSameOpportunity: boolean;
+}
+
+export interface SendOffersEmailAfterCvPublish {
+  candidateId: string;
+  locations: Location[];
+  businessLines: BusinessLine[];
 }
 
 export const Queues = {
