@@ -7,6 +7,7 @@ import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
 import { getRelatedUser } from '../users/users.utils';
+import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
   Department,
@@ -63,7 +64,6 @@ import {
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
-import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 
 @Injectable()
 export class OpportunitiesService {
