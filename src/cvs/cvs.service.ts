@@ -1097,7 +1097,7 @@ export class CVsService {
     return uploadedImg;
   }
 
-  async sendOffersAfterPublish(
+  async sendOffersAfterPublishing(
     candidateId: string,
     locations: Location[],
     businessLines: BusinessLine[]
