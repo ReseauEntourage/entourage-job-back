@@ -63,6 +63,7 @@ import {
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 
 @Injectable()
 export class OpportunitiesService {
@@ -924,8 +925,8 @@ export class OpportunitiesService {
   }
 
   async findRelevantOpportunities(
-    locations: string[],
-    businessLinesNames: string[],
+    locations: Department[],
+    businessLinesNames: BusinessLineValue[],
     period: Date
     // other parameters might be added
   ) {
@@ -970,10 +971,10 @@ export class OpportunitiesService {
       return `No offer for this user ${user.email} - job send relevant opportunities after cv publish`;
     }
     const lastMonth = moment().subtract(30, 'd').toDate();
-    const businessLinesNames: string[] = businessLines.map((bl) => {
+    const businessLinesNames: BusinessLineValue[] = businessLines.map((bl) => {
       return bl.name;
     });
-    const locationsName: string[] = locations.map((loc) => {
+    const locationsName: Department[] = locations.map((loc) => {
       return loc.name;
     });
     const opportunities = await this.findRelevantOpportunities(

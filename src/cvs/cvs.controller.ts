@@ -115,14 +115,14 @@ export class CVsController {
             return status === CVStatuses.PUBLISHED.value;
           }).length > 1;
 
-        await this.cvsService.sendOffersAfterPublish(
-          candidateId,
-          createCVDto.locations,
-          createCVDto.businessLines
-        );
-        if (!hasPublishedAtLeastOnce) {
-          await this.cvsService.sendMailsAfterPublishing(candidateId);
-        }
+          if (!hasPublishedAtLeastOnce) {
+            await this.cvsService.sendMailsAfterPublishing(candidateId);
+            await this.cvsService.sendOffersAfterPublishing(
+              candidateId,
+              createCVDto.locations,
+              createCVDto.businessLines
+              );
+          }
       }
 
       const uploadedImg = file

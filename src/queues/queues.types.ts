@@ -112,7 +112,7 @@ export interface CreateOrUpdateSalesforceOpportunity {
   isSameOpportunity: boolean;
 }
 
-export interface SendOffersEmailAfterCvPublish {
+export interface SendOffersEmailAfterCVPublish {
   candidateId: string;
   locations: Location[];
   businessLines: BusinessLine[];

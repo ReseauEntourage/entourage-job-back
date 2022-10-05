@@ -465,7 +465,7 @@ export class MailsService {
           variables: {
             offer: getMailjetVariablesForPrivateOrPublicOffer(
               opportunity.toJSON(),
-              -1,
+              OfferStatuses.TO_PROCESS.value,
               false
             ),
             candidat: user,

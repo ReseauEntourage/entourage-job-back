@@ -40,7 +40,7 @@ import {
   SendNoResponseOffer,
   SendReminderOffer,
   SendSMSJob,
-  SendOffersEmailAfterCvPublish,
+  SendOffersEmailAfterCVPublish,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -389,8 +389,8 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)
-  async processSendOffersEmailAfterCvPublish(
-    job: Job<SendOffersEmailAfterCvPublish>
+  async processSendOffersEmailAfterCVPublish(
+    job: Job<SendOffersEmailAfterCVPublish>
   ) {
     const { data } = job;
     const sendOpportunity =
