@@ -109,4 +109,15 @@ export class OpportunityUsersService {
       opportunityId
     );
   }
+
+  async findOrCreate(opportunityId: string, userId: string) {
+    const [opportunityUser] = await this.opportunityUserModel.findOrCreate({
+      where: {
+        OpportunityId: opportunityId,
+        UserId: userId,
+        recommended: true,
+      },
+    });
+    return opportunityUser;
+  }
 }

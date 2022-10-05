@@ -117,6 +117,11 @@ export class CVsController {
 
         if (!hasPublishedAtLeastOnce) {
           await this.cvsService.sendMailsAfterPublishing(candidateId);
+          await this.cvsService.sendOffersAfterPublishing(
+            candidateId,
+            createCVDto.locations,
+            createCVDto.businessLines
+          );
         }
       }
 

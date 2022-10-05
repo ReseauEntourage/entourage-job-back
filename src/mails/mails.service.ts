@@ -449,4 +449,29 @@ export class MailsService {
       });
     }
   }
+
+  async sendRelevantOpportunitiesMail(
+    user: User,
+    opportunities: Opportunity[]
+  ) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
+    await this.workQueue.add(
+      Jobs.SEND_MAIL,
+      opportunities.map((opportunity) => {
+        return {
+          toEmail: user.email,
+          templateId: MailjetTemplates.OFFER_RECOMMENDED,
+          replyTo: candidatesAdminMail,
+          variables: {
+            offer: getMailjetVariablesForPrivateOrPublicOffer(
+              opportunity.toJSON(),
+              OfferStatuses.TO_PROCESS.value,
+              false
+            ),
+            candidat: user,
+          },
+        };
+      })
+    );
+  }
 }

@@ -40,6 +40,7 @@ import {
   SendNoResponseOffer,
   SendReminderOffer,
   SendSMSJob,
+  SendOffersEmailAfterCVPublish,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -385,5 +386,19 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
+  }
+
+  @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)
+  async processSendOffersEmailAfterCVPublish(
+    job: Job<SendOffersEmailAfterCVPublish>
+  ) {
+    const { data } = job;
+    const sendOpportunity =
+      await this.opportunitiesService.sendRelevantOpportunities(
+        data.candidateId,
+        data.locations,
+        data.businessLines
+      );
+    console.log(sendOpportunity);
   }
 }
