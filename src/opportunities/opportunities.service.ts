@@ -3,14 +3,17 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
+import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
 import { getRelatedUser } from '../users/users.utils';
+import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
   Department,
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
+import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
 import {
@@ -919,5 +922,78 @@ export class OpportunitiesService {
     return this.externalDatabasesService.updateExternalDBOpportunity(
       updatedOpportunityId
     );
+  }
+
+  async findRelevantOpportunities(
+    locations: Department[],
+    businessLinesNames: BusinessLineValue[],
+    period: Date
+    // other parameters might be added
+  ) {
+    const opportunities = await this.opportunityModel.findAll({
+      where: {
+        isPublic: true,
+        isValidated: true,
+        department: {
+          [Op.in]: locations,
+        },
+        createdAt: {
+          [Op.gt]: period,
+        },
+      },
+      include: [
+        {
+          model: BusinessLine,
+          as: 'businessLines',
+          where: {
+            name: {
+              [Op.in]: businessLinesNames,
+            },
+          },
+        },
+      ],
+    });
+    return opportunities;
+  }
+
+  async sendRelevantOpportunities(
+    candidateId: string,
+    locations: Location[],
+    businessLines: BusinessLine[]
+  ) {
+    const user = await this.usersService.findOne(candidateId);
+    const autoRecommendationsZone = process.env.AUTO_RECOMMENDATIONS_ZONE;
+    if (
+      (autoRecommendationsZone && user.zone !== autoRecommendationsZone) ||
+      locations?.length === 0 ||
+      businessLines?.length === 0
+    ) {
+      return `No offer for this user ${user.email} - job send relevant opportunities after cv publish`;
+    }
+    const lastMonth = moment().subtract(30, 'd').toDate();
+    const businessLinesNames: BusinessLineValue[] = businessLines.map((bl) => {
+      return bl.name;
+    });
+    const locationsName: Department[] = locations.map((loc) => {
+      return loc.name;
+    });
+    const opportunities = await this.findRelevantOpportunities(
+      locationsName,
+      businessLinesNames,
+      lastMonth
+    );
+    if (opportunities.length > 0) {
+      opportunities.map(async (model) => {
+        // add to table opportunity_user
+        await this.opportunityUsersService.findOrCreate(model.id, candidateId);
+      });
+      await this.mailsService.sendRelevantOpportunitiesMail(
+        user,
+        opportunities
+      );
+    } else {
+      return `No offer for ${user.email}`;
+    }
+    return `${opportunities.length} offer(s) were sent to ${user.email} - job send relevant opportunities after cv publish`;
   }
 }

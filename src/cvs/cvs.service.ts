@@ -1096,4 +1096,27 @@ export class CVsService {
     }
     return uploadedImg;
   }
+
+  async sendOffersAfterPublishing(
+    candidateId: string,
+    locations: Location[],
+    businessLines: BusinessLine[]
+  ) {
+    await this.workQueue.add(
+      Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH,
+      {
+        candidateId,
+        locations,
+        businessLines,
+      },
+      {
+        delay:
+          (process.env.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH_DELAY
+            ? parseFloat(process.env.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH_DELAY)
+            : 60) *
+          3600000 *
+          24,
+      }
+    );
+  }
 }
