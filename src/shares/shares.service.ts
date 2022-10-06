@@ -79,7 +79,7 @@ export class SharesService {
         }, 0);
       }
 
-      await this.cacheManager.set(redisKey, totalShares, 60);
+      await this.cacheManager.set(redisKey, totalShares, { ttl: 60 });
     }
     return totalShares;
   }
