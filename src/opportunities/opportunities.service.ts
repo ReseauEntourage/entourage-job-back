@@ -623,7 +623,10 @@ export class OpportunitiesService {
           opportunity.businessLines
         )
       : [];
-    const candidatesToRemove: OpportunityUser[] = oldOpportunity.opportunityUsers.filter(oppUs => !candidatesId.includes(oppUs.UserId))    
+    const candidatesToRemove: OpportunityUser[] =
+      oldOpportunity.opportunityUsers.filter(
+        (oppUs) => !candidatesId.includes(oppUs.UserId)
+      );
 
     const uniqueCandidatesIds = _.uniq([
       ...(candidatesId || []),
@@ -689,7 +692,6 @@ export class OpportunitiesService {
               transaction: t,
             }
           );
-     
         } else {
           await this.opportunityUserModel.destroy({
             where: {
@@ -704,9 +706,6 @@ export class OpportunitiesService {
           });
         }
       }
-
-      
-      
 
       await t.commit();
     } catch (error) {
