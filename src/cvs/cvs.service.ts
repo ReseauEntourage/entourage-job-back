@@ -924,7 +924,7 @@ export class CVsService {
         include: CVCompleteWithAllUserInclude,
       });
 
-      await this.cacheManager.set(redisKey, JSON.stringify(cv.toJSON()), 0);
+      await this.cacheManager.set(redisKey, JSON.stringify(cv.toJSON()), { ttl: 0 });
 
       return cv.toJSON();
     }
@@ -1002,7 +1002,7 @@ export class CVsService {
       await this.cacheManager.set(
         RedisKeys.CV_LIST,
         JSON.stringify(cleanedCVList),
-        0
+         { ttl: 0 }
       );
     }
 
