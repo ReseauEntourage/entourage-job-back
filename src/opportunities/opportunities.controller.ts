@@ -336,11 +336,13 @@ export class OpportunitiesController {
       return [] as Opportunity[];
     }
 
+    const opportunityIds = opportunityUsers.map((opportunityUser) => {
+      return opportunityUser.OpportunityId;
+    });
+
     return this.opportunitiesService.findAllUserOpportunitiesAsAdmin(
       candidateId,
-      opportunityUsers.map((opportunityUser) => {
-        return opportunityUser.OpportunityId;
-      }),
+      opportunityIds,
       query
     );
   }
@@ -365,22 +367,13 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    if (opportunityUsers.length === 0) {
-      return {
-        offers: [],
-        otherOffers: [],
-      };
-    }
-
-    const opportunityUserIds = opportunityUsers.map((opportunityUser) => {
+    const opportunityIds = opportunityUsers.map((opportunityUser) => {
       return opportunityUser.OpportunityId;
     });
 
     const opportunities = await this.opportunitiesService.findAllAsCandidate(
       candidateId,
-      opportunityUsers.map((opportunityUser) => {
-        return opportunityUser.OpportunityId;
-      }),
+      opportunityIds,
       query
     );
 
@@ -398,7 +391,7 @@ export class OpportunitiesController {
       const otherOpportunities =
         await this.opportunitiesService.findAllAsCandidate(
           candidateId,
-          opportunityUserIds,
+          opportunityIds,
           {
             department: otherDepartments.map((dept) => {
               return dept.value;
