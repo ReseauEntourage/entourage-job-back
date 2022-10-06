@@ -257,7 +257,7 @@ export class OpportunitiesService {
 
   async findAllAsCandidate(
     candidateId: string,
-    opportunityUserIds: string[],
+    opportunityIds: string[],
     query: {
       type: OfferCandidateTab;
       search: string;
@@ -284,12 +284,14 @@ export class OpportunitiesService {
       where: {
         [Op.or]: [
           { isPublic: true, isValidated: true, isArchived: false },
-          {
-            id: opportunityUserIds,
-            isPublic: false,
-            isValidated: true,
-            isArchived: false,
-          },
+          opportunityIds.length > 0
+            ? {
+                id: opportunityIds,
+                isPublic: false,
+                isValidated: true,
+                isArchived: false,
+              }
+            : {},
         ],
         ...searchOptions,
         ...filterOptions,
