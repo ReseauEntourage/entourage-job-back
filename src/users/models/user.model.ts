@@ -209,9 +209,7 @@ export class User extends HistorizedModel {
             },
             {
               where: {
-                candidatId: getCandidateIdFromCoachOrCandidate(
-                  previousUserValues as User
-                ),
+                coachId: userToUpdate.id,
               },
             }
           );
