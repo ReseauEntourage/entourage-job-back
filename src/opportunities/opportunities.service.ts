@@ -623,6 +623,7 @@ export class OpportunitiesService {
           opportunity.businessLines
         )
       : [];
+    const candidatesToRemove: OpportunityUser[] = oldOpportunity.opportunityUsers.filter(oppUs => !candidatesId.includes(oppUs.UserId))    
 
     const uniqueCandidatesIds = _.uniq([
       ...(candidatesId || []),
@@ -631,14 +632,24 @@ export class OpportunitiesService {
 
     const t = await this.opportunityUserModel.sequelize.transaction();
     try {
-      if (uniqueCandidatesIds?.length > 0) {
+      if (candidatesToRemove.length > 0) {
+        await this.opportunityUserModel.destroy({
+          where: {
+            OpportunityId: opportunity.id,
+            UserId: candidatesToRemove.map((opportunityUser) => {
+              return opportunityUser.UserId;
+            }),
+          },
+          transaction: t,
+        });
+      } else if (uniqueCandidatesIds?.length > 0) {
         const opportunityUsers = await Promise.all(
-          uniqueCandidatesIds.map((candidatId) => {
+          uniqueCandidatesIds.map((candidateId) => {
             return this.opportunityUserModel
               .findOrCreate({
                 where: {
                   OpportunityId: opportunity.id,
-                  UserId: candidatId,
+                  UserId: candidateId,
                 },
                 transaction: t,
               })
@@ -678,6 +689,7 @@ export class OpportunitiesService {
               transaction: t,
             }
           );
+     
         } else {
           await this.opportunityUserModel.destroy({
             where: {
@@ -692,6 +704,9 @@ export class OpportunitiesService {
           });
         }
       }
+
+      
+      
 
       await t.commit();
     } catch (error) {
