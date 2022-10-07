@@ -469,13 +469,13 @@ export class OpportunitiesController {
     }
 
     const shouldVerifyPhoneForRetroCompatibility =
-      opportunity.isValidated === updateOpportunityDto.isValidated &&
-      opportunity.isArchived === updateOpportunityDto.isArchived;
+      opportunity.isValidated === restOpportunity.isValidated &&
+      opportunity.isArchived === restOpportunity.isArchived;
 
     if (
       shouldVerifyPhoneForRetroCompatibility &&
-      opportunity.recruiterPhone &&
-      !isValidPhone(opportunity.recruiterPhone)
+      restOpportunity.recruiterPhone &&
+      !isValidPhone(restOpportunity.recruiterPhone)
     ) {
       throw new BadRequestException();
     }
