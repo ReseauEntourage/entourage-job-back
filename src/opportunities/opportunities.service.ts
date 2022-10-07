@@ -581,12 +581,13 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidateIdsToRecommendTo = opportunity.isPublic
-      ? await this.findAllCandidateIdsToRecommendOfferTo(
-          opportunity.department,
-          opportunity.businessLines
-        )
-      : [];
+    const candidateIdsToRecommendTo =
+      opportunity.isPublic && opportunity.isValidated
+        ? await this.findAllCandidateIdsToRecommendOfferTo(
+            opportunity.department,
+            opportunity.businessLines
+          )
+        : [];
 
     if (candidatesId?.length > 0 || candidateIdsToRecommendTo?.length > 0) {
       const uniqueCandidateIds = _.uniq([
@@ -617,16 +618,15 @@ export class OpportunitiesService {
     oldOpportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidatesToRecommendTo = opportunity.isPublic
-      ? await this.findAllCandidateIdsToRecommendOfferTo(
-          opportunity.department,
-          opportunity.businessLines
-        )
-      : [];
-    const candidatesToRemove: OpportunityUser[] =
-      oldOpportunity.opportunityUsers.filter(
-        (oppUs) => !candidatesId.includes(oppUs.UserId)
-      );
+    const candidatesToRecommendTo =
+      opportunity.isPublic &&
+      !oldOpportunity.isValidated &&
+      opportunity.isValidated
+        ? await this.findAllCandidateIdsToRecommendOfferTo(
+            opportunity.department,
+            opportunity.businessLines
+          )
+        : [];
 
     const uniqueCandidatesIds = _.uniq([
       ...(candidatesId || []),
@@ -635,17 +635,7 @@ export class OpportunitiesService {
 
     const t = await this.opportunityUserModel.sequelize.transaction();
     try {
-      if (candidatesToRemove.length > 0) {
-        await this.opportunityUserModel.destroy({
-          where: {
-            OpportunityId: opportunity.id,
-            UserId: candidatesToRemove.map((opportunityUser) => {
-              return opportunityUser.UserId;
-            }),
-          },
-          transaction: t,
-        });
-      } else if (uniqueCandidatesIds?.length > 0) {
+      if (uniqueCandidatesIds?.length > 0) {
         const opportunityUsers = await Promise.all(
           uniqueCandidatesIds.map((candidateId) => {
             return this.opportunityUserModel
