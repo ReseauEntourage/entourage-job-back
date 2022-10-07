@@ -581,12 +581,13 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidateIdsToRecommendTo = opportunity.isPublic
-      ? await this.findAllCandidateIdsToRecommendOfferTo(
-          opportunity.department,
-          opportunity.businessLines
-        )
-      : [];
+    const candidateIdsToRecommendTo =
+      opportunity.isPublic && opportunity.isValidated
+        ? await this.findAllCandidateIdsToRecommendOfferTo(
+            opportunity.department,
+            opportunity.businessLines
+          )
+        : [];
 
     if (candidatesId?.length > 0 || candidateIdsToRecommendTo?.length > 0) {
       const uniqueCandidateIds = _.uniq([
@@ -617,12 +618,15 @@ export class OpportunitiesService {
     oldOpportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidatesToRecommendTo = opportunity.isPublic
-      ? await this.findAllCandidateIdsToRecommendOfferTo(
-          opportunity.department,
-          opportunity.businessLines
-        )
-      : [];
+    const candidatesToRecommendTo =
+      opportunity.isPublic &&
+      !oldOpportunity.isValidated &&
+      opportunity.isValidated
+        ? await this.findAllCandidateIdsToRecommendOfferTo(
+            opportunity.department,
+            opportunity.businessLines
+          )
+        : [];
 
     const uniqueCandidatesIds = _.uniq([
       ...(candidatesId || []),
@@ -631,55 +635,41 @@ export class OpportunitiesService {
 
     const t = await this.opportunityUserModel.sequelize.transaction();
     try {
-      if (uniqueCandidatesIds?.length > 0) {
-        const opportunityUsers = await Promise.all(
-          uniqueCandidatesIds.map((candidatId) => {
-            return this.opportunityUserModel
-              .findOrCreate({
-                where: {
-                  OpportunityId: opportunity.id,
-                  UserId: candidatId,
-                },
-                transaction: t,
-              })
-              .then((model) => {
-                return model[0];
-              });
-          })
-        );
-
-        if (opportunity.isPublic) {
-          await this.opportunityUserModel.update(
-            {
-              recommended: true,
-            },
-            {
-              where: {
-                id: opportunityUsers.map((opportunityUser) => {
-                  return opportunityUser.id;
-                }),
-              },
-              transaction: t,
-            }
-          );
-          await this.opportunityUserModel.update(
-            {
-              recommended: false,
-            },
-            {
+      const opportunityUsers = await Promise.all(
+        uniqueCandidatesIds.map((candidateId) => {
+          return this.opportunityUserModel
+            .findOrCreate({
               where: {
                 OpportunityId: opportunity.id,
-                UserId: {
-                  [Op.not]: opportunityUsers.map((opportunityUser) => {
-                    return opportunityUser.UserId;
-                  }),
-                },
+                UserId: candidateId,
               },
               transaction: t,
-            }
-          );
-        } else {
-          await this.opportunityUserModel.destroy({
+            })
+            .then((model) => {
+              return model[0];
+            });
+        })
+      );
+
+      if (opportunity.isPublic) {
+        await this.opportunityUserModel.update(
+          {
+            recommended: true,
+          },
+          {
+            where: {
+              id: opportunityUsers.map((opportunityUser) => {
+                return opportunityUser.id;
+              }),
+            },
+            transaction: t,
+          }
+        );
+        await this.opportunityUserModel.update(
+          {
+            recommended: false,
+          },
+          {
             where: {
               OpportunityId: opportunity.id,
               UserId: {
@@ -689,8 +679,20 @@ export class OpportunitiesService {
               },
             },
             transaction: t,
-          });
-        }
+          }
+        );
+      } else {
+        await this.opportunityUserModel.destroy({
+          where: {
+            OpportunityId: opportunity.id,
+            UserId: {
+              [Op.not]: opportunityUsers.map((opportunityUser) => {
+                return opportunityUser.UserId;
+              }),
+            },
+          },
+          transaction: t,
+        });
       }
 
       await t.commit();
