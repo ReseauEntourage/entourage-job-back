@@ -39,6 +39,7 @@ export const OpportunityCompleteWithoutBusinessLinesInclude: Includeable[] = [
     attributes: [
       'id',
       'UserId',
+      'OpportunityId',
       'status',
       'seen',
       'bookmarked',
@@ -94,6 +95,7 @@ export const OpportunityCompleteAdminWithoutBusinessLinesInclude: Includeable[] 
       attributes: [
         'id',
         'UserId',
+        'OpportunityId',
         'status',
         'bookmarked',
         'archived',
