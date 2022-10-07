@@ -28,11 +28,7 @@ import {
   UserRole,
   UserRoles,
 } from '../users.types';
-import {
-  capitalizeNameAndTrim,
-  generateUrl,
-  getCandidateIdFromCoachOrCandidate,
-} from '../users.utils';
+import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
