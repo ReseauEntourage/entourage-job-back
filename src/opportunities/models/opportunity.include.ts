@@ -2,7 +2,6 @@ import { Includeable } from 'sequelize';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { User, UserCandidat } from 'src/users/models';
 import { OpportunityUser } from './opportunity-user.model';
-
 export const OpportunityCandidateInclude: Includeable[] = [
   {
     model: User,
