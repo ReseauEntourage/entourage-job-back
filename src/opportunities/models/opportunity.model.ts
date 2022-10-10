@@ -90,7 +90,6 @@ export class Opportunity extends Model {
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   @AllowNull(true)
   @Column
   company: string;
@@ -189,7 +188,6 @@ export class Opportunity extends Model {
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   @AllowNull(true)
   @Column
   contract: ContractValue;
