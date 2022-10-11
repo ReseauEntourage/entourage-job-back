@@ -1666,7 +1666,8 @@ describe('Users', () => {
       describe('/:id - Delete user and all associated models', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCoach: LoggedUser;
-        let candidat: User;
+        let candidate: User;
+        let coach: User;
         const uniqIdToFind = uuid();
         const uniqId2ToFind = uuid();
         let cvId: string;
@@ -1676,9 +1677,22 @@ describe('Users', () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          candidat = await userFactory.create({
+
+          candidate = await userFactory.create({
             role: UserRoles.CANDIDAT,
           });
+
+          coach = await userFactory.create({
+            role: UserRoles.COACH,
+          });
+
+          ({ candidate, coach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              coach,
+              candidate,
+              false
+            ));
+
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
@@ -1688,8 +1702,8 @@ describe('Users', () => {
             experiences: [{ id: experienceId }],
           } = await cvFactory.create(
             {
-              UserId: candidat.id,
-              urlImg: `images/${candidat.id}.Published.jpg`,
+              UserId: candidate.id,
+              urlImg: `images/${candidate.id}.Published.jpg`,
               intro: null,
               story: 'test',
               availability: 'En semaine',
@@ -1732,19 +1746,42 @@ describe('Users', () => {
         it('Should return 403 if not logged in admin', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
             await request(app.getHttpServer())
-              .delete(`${route}/${candidat.id}`)
+              .delete(`${route}/${candidate.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
-        it('Should return 200 if logged in as admin', async () => {
+        it('Should return 200 if logged in as admin and deletes candidate', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
             await request(app.getHttpServer())
-              .delete(`${route}/${candidat.id}`)
+              .delete(`${route}/${candidate.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body.usersDeleted).toBe(1);
           expect(response.body.cvsDeleted).toBe(1);
+
+          const user = await usersHelper.findUser(candidate.id);
+          expect(user).toBeFalsy();
+
+          const userCandidatByCoachIdAndCandidateId =
+            await userCandidatsHelper.findOneUserCandidat({
+              candidateId: candidate.id,
+              coachId: coach.id,
+            });
+          const userCandidatByCandidateId =
+            await userCandidatsHelper.findOneUserCandidat({
+              candidateId: candidate.id,
+            });
+          const userCandidatByCoachId =
+            await userCandidatsHelper.findOneUserCandidat({
+              coachId: coach.id,
+            });
+          expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
+          expect(userCandidatByCandidateId).toBeTruthy();
+          expect(userCandidatByCoachId).toBeFalsy();
+
+          const cvs = await cvsHelper.findAllCVsByCandidateId(candidate.id);
+          expect(cvs.length).toBeFalsy();
 
           const locationsCount = await locationsHelper.countLocationByName(
             uniqIdToFind
@@ -1763,12 +1800,6 @@ describe('Users', () => {
             await cvBusinessLinesHelper.countCVBusinessLinesByCVId(cvId);
           expect(businessLinesCount).toBe(2);
           expect(cvBusinessLinesCount).toBe(0);
-
-          const user = await usersHelper.findUser(candidat.id);
-          expect(user).toBeFalsy();
-
-          const cvs = await cvsHelper.findAllCVsByCandidateId(candidat.id);
-          expect(cvs.length).toBeFalsy();
 
           const ambitionsCount = await ambitionsHelper.countAmbitionsByName([
             uniqIdToFind,
@@ -1832,6 +1863,36 @@ describe('Users', () => {
 
           const reviewsCount = await reviewsHelper.countReviewsByCVId(cvId);
           expect(reviewsCount).toBe(0);
+        });
+        it('Should return 200 if logged in as admin and deletes coach', async () => {
+          const response: APIResponse<UsersDeletionController['removeUser']> =
+            await request(app.getHttpServer())
+              .delete(`${route}/${coach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(response.body.usersDeleted).toBe(1);
+          expect(response.body.cvsDeleted).toBe(0);
+
+          const user = await usersHelper.findUser(coach.id);
+          expect(user).toBeFalsy();
+
+          const userCandidatByCoachIdAndCandidateId =
+            await userCandidatsHelper.findOneUserCandidat({
+              candidateId: candidate.id,
+              coachId: coach.id,
+            });
+          const userCandidatByCandidateId =
+            await userCandidatsHelper.findOneUserCandidat({
+              candidateId: candidate.id,
+            });
+          const userCandidatByCoachId =
+            await userCandidatsHelper.findOneUserCandidat({
+              coachId: coach.id,
+            });
+          expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
+          expect(userCandidatByCandidateId).toBeTruthy();
+          expect(userCandidatByCoachId).toBeFalsy();
         });
       });
     });

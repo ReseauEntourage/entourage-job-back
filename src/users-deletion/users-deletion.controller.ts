@@ -38,7 +38,8 @@ export class UsersDeletionController {
       address: null,
     });
 
-    await this.usersDeletionService.uncacheCandidateCV(candidat.url);
+    if (candidat?.url)
+      await this.usersDeletionService.uncacheCandidateCV(candidat.url);
     const cvsDeleted = await this.usersDeletionService.removeCandidateCVs(
       userId
     );

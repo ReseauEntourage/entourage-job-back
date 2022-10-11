@@ -723,6 +723,9 @@ export class CVsService {
 
     const cv = await this.findOneByCandidateId(candidateId);
 
+    if (!cv || _.isEmpty(cv)) {
+      return;
+    }
     let searchString = [
       cv.user.candidat.firstName,
       cv.user.candidat.lastName,
@@ -777,7 +780,6 @@ export class CVsService {
       CVId: cv.id,
       searchString,
     });
-
     return searchString;
   }
 
