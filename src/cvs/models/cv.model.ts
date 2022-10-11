@@ -199,14 +199,16 @@ export class CV extends Model {
     await Promise.all(
       CVAssociations.map(async (cvAssociation) => {
         const associationInstances = await destroyedCV.$get(cvAssociation);
-        if (Array.isArray(associationInstances)) {
-          return Promise.all(
-            associationInstances.map(async (assocationInstance) => {
-              return assocationInstance.destroy();
-            })
-          );
-        } else {
-          return associationInstances.destroy();
+        if (associationInstances) {
+          if (Array.isArray(associationInstances)) {
+            return Promise.all(
+              associationInstances.map((assocationInstance) => {
+                return assocationInstance.destroy();
+              })
+            );
+          } else {
+            return associationInstances.destroy();
+          }
         }
       })
     );
