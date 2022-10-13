@@ -27,8 +27,6 @@ export const CloudFrontMocks = {
   }),
 } as const;
 
-export const MailchimpMocks = { sendContact: jest.fn() };
-
 export const BitlyMocks = {
   getShortenedOfferURL: jest.fn(async () => {
     return 'url';

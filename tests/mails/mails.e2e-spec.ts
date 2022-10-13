@@ -2,14 +2,13 @@ import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
-import { ContactStatus } from 'src/external-services/mailchimp/mailchimp.types';
 import { MailsController } from 'src/mails/mails.controller';
+import { ContactStatus } from 'src/mails/mails.types';
 import { Queues } from 'src/queues/queues.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { CacheMocks, MailchimpMocks, QueueMocks } from 'tests/mocks.types';
+import { CacheMocks, QueueMocks } from 'tests/mocks.types';
 import { ContactUsFormFactory } from './contact-us-form.factory';
 
 describe('Mails', () => {
@@ -28,8 +27,6 @@ describe('Mails', () => {
       .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
       .useValue(CacheMocks)
-      .overrideProvider(MailchimpService)
-      .useValue(MailchimpMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
