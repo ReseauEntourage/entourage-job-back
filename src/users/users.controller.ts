@@ -253,6 +253,31 @@ export class UsersController {
     return updatedUserCandidat;
   }
 
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Put('candidat/bulk')
+  async updateAll(
+    @Body('attributes', UpdateUserRestrictedPipe)
+    updateUserCandidatDto: UpdateUserCandidatDto,
+    @Body('ids') userIds: string[]
+  ) {
+    const { nbUpdated, updatedUserCandidats } =
+      await this.userCandidatsService.updateAll(userIds, updateUserCandidatDto);
+    if (updateUserCandidatDto.hidden) {
+      updatedUserCandidats.forEach(async (user) => {
+        await this.usersService.uncacheCandidateCV(user.url);
+      });
+    }
+    await this.usersService.cacheAllCVs();
+
+    return {
+      nbUpdated,
+      updatedIds: updatedUserCandidats.map((user) => {
+        return user.id;
+      }),
+    };
+  }
+
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
