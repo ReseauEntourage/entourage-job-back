@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WhereOptions } from 'sequelize';
-import { UpdateUserCandidatDto } from './dto';
+import { UpdateUserCandidatDto } from 'src/users/dto';
 import { UserCandidat, UserCandidatAttributes } from './models';
 import { UserInclude } from './models/user-candidat.include';
 
@@ -64,6 +64,18 @@ export class UserCandidatsService {
       return null;
     }
     return updatedUserCandidat.toJSON();
+  }
+
+  async updateAll(userIds: string[], attributes: UpdateUserCandidatDto) {
+    const [nbUpdated, updatedUserCandidats] =
+      await this.userCandidatModel.update(attributes, {
+        where: { candidatId: userIds },
+        returning: true,
+      });
+    return {
+      nbUpdated,
+      updatedUserCandidats,
+    };
   }
 
   async checkNoteHasBeenModified(candidateId: string, userId: string) {
