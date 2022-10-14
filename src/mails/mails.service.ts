@@ -28,7 +28,11 @@ import {
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZone } from 'src/utils/types';
 import { ContactUsFormDto } from './dto';
-import { ContactStatus, HeardAboutFilters } from './mails.types';
+import {
+  ContactStatus,
+  HeardAboutFilters,
+  PleziTrackingData,
+} from './mails.types';
 
 @Injectable()
 export class MailsService {
@@ -41,29 +45,25 @@ export class MailsService {
     email: string,
     zone: AdminZone | AdminZone[],
     status: ContactStatus | ContactStatus[],
-    visit?: string,
-    visitor?: string,
-    urlParams?: {
-      utm?: string;
-      utm_medium?: string;
-      utm_source?: string;
-      gclid?: string;
-      referer?: string;
-    }
+    visit?: PleziTrackingData['visit'],
+    visitor?: PleziTrackingData['visitor'],
+    urlParams?: PleziTrackingData['urlParams']
   ) {
     const queryParams = `${qs.stringify(
       {
         visit,
         visitor,
         form_id: process.env.PLEZI_FORM_ID,
-        content_web_form_id: process.env.PLEZI_CONTENT_ID,
+        content_web_form_id: process.env.PLEZI_CONTENT_WEB_FORM_ID,
         email,
         plz_ma_region: zone,
         plz_je_suis: status,
       },
       { arrayFormat: 'brackets' }
     )}${
-      urlParams ? `${qs.stringify(urlParams, { arrayFormat: 'brackets' })}` : ''
+      urlParams
+        ? `&${qs.stringify(urlParams, { arrayFormat: 'brackets' })}`
+        : ''
     }`;
 
     const pleziApiRoute = `https://app.plezi.co/api/v1/create_contact_after_webform`;
@@ -72,7 +72,7 @@ export class MailsService {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        'X-Tenant-Company': process.env.PLEZI_TENANT_KEY,
+        'X-Tenant-Company': process.env.PLEZI_TENANT_ID,
         'X-API-Key': process.env.PLEZI_API_KEY,
       },
       method: 'GET',

@@ -16,7 +16,7 @@ import {
 import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { MailsService } from 'src/mails/mails.service';
-import { ContactStatuses } from 'src/mails/mails.types';
+import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
 
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
@@ -741,7 +741,8 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidates: OpportunityUser[],
     isAdmin = false,
-    shouldSendNotifications = true
+    shouldSendNotifications = true,
+    pleziTrackingData?: PleziTrackingData
   ) {
     if (candidates && candidates.length > 0) {
       if (!isAdmin) {
@@ -754,12 +755,19 @@ export class OpportunitiesService {
         }
       }
     }
-
-    await this.mailsService.sendContactToPlezi(
-      opportunity.contactMail || opportunity.recruiterMail,
-      getZoneFromDepartment(opportunity.department),
-      ContactStatuses.COMPANY
-    );
+    try {
+      await this.mailsService.sendContactToPlezi(
+        opportunity.contactMail || opportunity.recruiterMail,
+        getZoneFromDepartment(opportunity.department),
+        ContactStatuses.COMPANY,
+        pleziTrackingData?.visit,
+        pleziTrackingData?.visitor,
+        pleziTrackingData?.urlParams
+      );
+    }
+    catch (err) {
+      console.error(err)
+    }
   }
 
   async sendMailsAfterUpdate(

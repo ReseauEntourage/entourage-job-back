@@ -4,7 +4,7 @@ import { isValidPhone } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
 import { ContactUsFormDto, ContactUsFormPipe } from './dto';
 import { MailsService } from './mails.service';
-import { ContactStatus } from './mails.types';
+import { ContactStatus, PleziTrackingData } from './mails.types';
 
 // TODO change to mails
 @Controller('mail')
@@ -30,16 +30,10 @@ export class MailsController {
     @Body('email') email: string,
     @Body('zone') zone: AdminZone | AdminZone[],
     @Body('status') status: ContactStatus | ContactStatus[],
-    @Body('visit') visit: string,
-    @Body('visitor') visitor: string,
+    @Body('visit') visit?: PleziTrackingData['visit'],
+    @Body('visitor') visitor?: PleziTrackingData['visitor'],
     @Body('urlParams')
-    urlParams?: {
-      utm?: string;
-      utm_medium?: string;
-      utm_source?: string;
-      gclid?: string;
-      referer?: string;
-    }
+    urlParams?: PleziTrackingData['urlParams']
   ) {
     if (!email) {
       throw new BadRequestException();

@@ -3,6 +3,7 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { MailsController } from 'src/mails/mails.controller';
+import { MailsService } from 'src/mails/mails.service';
 import { ContactStatus } from 'src/mails/mails.types';
 import { Queues } from 'src/queues/queues.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
@@ -90,6 +91,12 @@ describe('Mails', () => {
   });
 
   describe('/newsletter - Subscribe contact email to newsletter list', () => {
+    beforeEach(() => {
+      jest
+        .spyOn(MailsService.prototype, 'sendContactToPlezi')
+        .mockImplementationOnce(async () => null);
+    });
+
     it('Should return 201, if all content provided', async () => {
       const response: APIResponse<MailsController['addContactForNewsletter']> =
         await request(app.getHttpServer())
