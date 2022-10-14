@@ -764,9 +764,8 @@ export class OpportunitiesService {
         pleziTrackingData?.visitor,
         pleziTrackingData?.urlParams
       );
-    }
-    catch (err) {
-      console.error(err)
+    } catch (err) {
+      console.error(err);
     }
   }
 

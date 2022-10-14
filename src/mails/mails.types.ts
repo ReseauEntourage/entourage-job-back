@@ -9,7 +9,7 @@ export interface PleziTrackingData {
     utm_source?: string;
     gclid?: string;
     referer?: string;
-  }
+  };
 }
 
 export type HeardAbout =
