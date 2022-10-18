@@ -1,4 +1,5 @@
-import { FilterConstant } from 'src/utils/types';
+import _ from 'lodash';
+import { AdminZone, AdminZones, FilterConstant } from 'src/utils/types';
 
 export interface PleziTrackingData {
   visit?: string;
@@ -56,3 +57,18 @@ export const ContactStatuses = {
 
 export type ContactStatus =
   typeof ContactStatuses[keyof typeof ContactStatuses];
+
+export const PleziContactRegions: { [K in AdminZone]: string } = {
+  [AdminZones.LYON]: _.capitalize(AdminZones.LYON),
+  [AdminZones.PARIS]: _.capitalize(AdminZones.PARIS),
+  [AdminZones.LILLE]: _.capitalize(AdminZones.LILLE),
+  [AdminZones.LORIENT]: 'Rennes',
+  [AdminZones.HZ]: _.capitalize(AdminZones.HZ),
+} as const;
+
+export const PleziContactStatuses: { [K in ContactStatus]: string } = {
+  PARTICULIER: 'un-particulier',
+  ENTREPRISE: 'une-entreprise',
+  STRUCTURE_INSERTION: 'une-structure-d-insertion',
+  CANDIDAT_POTENTIEL: 'un-candidat-potentiel',
+} as const;

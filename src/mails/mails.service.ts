@@ -31,6 +31,8 @@ import { ContactUsFormDto } from './dto';
 import {
   ContactStatus,
   HeardAboutFilters,
+  PleziContactRegions,
+  PleziContactStatuses,
   PleziTrackingData,
 } from './mails.types';
 
@@ -56,13 +58,24 @@ export class MailsService {
         form_id: process.env.PLEZI_FORM_ID,
         content_web_form_id: process.env.PLEZI_CONTENT_WEB_FORM_ID,
         email,
-        plz_ma_region: zone,
-        plz_je_suis: status,
+        plz_ma_region: Array.isArray(zone)
+          ? zone.map((singleZone) => {
+              return PleziContactRegions[singleZone];
+            })
+          : PleziContactRegions[zone],
+        plz_je_suis: Array.isArray(status)
+          ? status.map((singleStatus) => {
+              return PleziContactStatuses[singleStatus];
+            })
+          : [PleziContactStatuses[status]],
+        keep_multiple_select_values: true,
       },
-      { arrayFormat: 'brackets' }
+      { encode: false, arrayFormat: 'comma' }
     )}${
       urlParams
-        ? `&${qs.stringify(urlParams, { arrayFormat: 'brackets' })}`
+        ? `&${qs.stringify(urlParams, {
+            encode: false,
+          })}`
         : ''
     }`;
 
@@ -72,7 +85,7 @@ export class MailsService {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        'X-Tenant-Company': process.env.PLEZI_TENANT_ID,
+        'X-Tenant-Company': process.env.PLEZI_TENANT_NAME,
         'X-API-Key': process.env.PLEZI_API_KEY,
       },
       method: 'GET',
@@ -85,8 +98,6 @@ export class MailsService {
         `${response.status}, ${responseJSON.errors[0].title}, ${responseJSON.errors[0].detail}`
       );
     }
-
-    return responseJSON;
   }
 
   async sendPasswordResetLinkMail(
