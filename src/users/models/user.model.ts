@@ -1,136 +1,148 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail as IsEmailClassValidator, IsString } from 'class-validator';
 import {
   AfterCreate,
   AfterDestroy,
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
+  BelongsToMany,
   Column,
+  CreatedAt,
+  DataType,
   Default,
+  DeletedAt,
   HasOne,
   IsEmail,
   IsUUID,
   Length,
-  Model,
   PrimaryKey,
   Table,
   Unique,
+  UpdatedAt,
 } from 'sequelize-typescript';
-
-import { v4 as uuid } from 'uuid';
+import {
+  AdminRole,
+  Gender,
+  Genders,
+  UserRole,
+  UserRoles,
+} from '../users.types';
+import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
+import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import { Share } from 'src/shares/models';
+import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
-export const UserRoles = {
-  Candidat: 'Candidat',
-  Coach: 'Coach',
-  Admin: 'Admin',
-} as const;
-export type UserRole = typeof UserRoles[keyof typeof UserRoles];
-
-const AdminRoles = {
-  Candidats: 'Candidats',
-  Entreprises: 'Entreprises',
-} as const;
-
-type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
-
-const AdminZones = {
-  PARIS: 'PARIS',
-  LYON: 'LYON',
-  LILLE: 'LILLE',
-  HZ: 'HORS ZONE',
-} as const;
-
-type AdminZone = typeof AdminZones[keyof typeof AdminZones];
-
-const Genders = {
-  Male: 0,
-  Female: 1,
-} as const;
-
-type Gender = typeof Genders[keyof typeof Genders];
-
-// TODO : paranoid, papertrail
-
 @Table({ tableName: 'Users' })
-export class User extends Model {
+export class User extends HistorizedModel {
   @IsUUID(4)
   @PrimaryKey
+  @Default(DataType.UUIDV4)
   @Column
   id: string;
 
+  @ApiProperty()
   @AllowNull(false)
   @Length({ min: 1, max: 40 })
   @Column
   firstName: string;
 
+  @ApiProperty()
   @Length({ min: 1, max: 40 })
   @AllowNull(false)
   @Column
   lastName: string;
 
+  @ApiProperty()
+  @IsEmailClassValidator()
   @IsEmail
   @AllowNull(false)
   @Unique
   @Column
   email: string;
 
+  @ApiProperty()
   @AllowNull(false)
-  @Default(UserRoles.Candidat)
+  @Default(UserRoles.CANDIDAT)
   @Column
   role: UserRole;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   adminRole: AdminRole;
 
+  @ApiProperty()
   @AllowNull(false)
   @Column
   password: string; // hash
 
+  @ApiProperty()
   @AllowNull(false)
   @Column
   salt: string;
 
+  @ApiProperty()
   @AllowNull(false)
-  @Default(Genders.Male)
+  @Default(Genders.MALE)
   @Column
   gender: Gender;
 
+  @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Length({ min: 0, max: 30 })
   @Column
   phone: string;
 
+  @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Column
   address: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   lastConnection: Date;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   hashReset: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   saltReset: string;
 
+  @ApiProperty()
   @AllowNull(true)
   @Column
   zone: AdminZone;
 
-  /*
-  @BelongsToMany(() => Opportunity, () => OpportunityUser)
-  opportunities: Opportunity[]
-  */
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
+
+  @BelongsToMany(
+    () => Opportunity,
+    () => OpportunityUser,
+    'UserId',
+    'OpportunityId'
+  )
+  opportunities: Opportunity[];
 
   // si candidat regarder candidat
   @HasOne(() => UserCandidat, {
     foreignKey: 'candidatId',
     hooks: true,
-    onDelete: 'CASCADE',
   })
   candidat: UserCandidat;
 
@@ -139,115 +151,104 @@ export class User extends Model {
   coach: UserCandidat;
 
   @BeforeCreate
-  static generateId(user: User) {
-    user.id = uuid();
-  }
-
-  @BeforeCreate
   @BeforeUpdate
   static trimValues(user: User) {
-    const { firstName, lastName, email } = user;
+    const { firstName, lastName, email, role } = user;
+    user.role = role || UserRoles.CANDIDAT;
     user.email = email.toLowerCase();
-    user.firstName = firstName.trim().replace(/\s\s+/g, ' ');
-    user.lastName = lastName.trim().replace(/\s\s+/g, ' ');
+    user.firstName = capitalizeNameAndTrim(firstName);
+    user.lastName = capitalizeNameAndTrim(lastName);
   }
 
   @AfterCreate
-  static async createAssociations(user: User) {
-    if (user.role === UserRoles.Candidat) {
+  static async createAssociations(createdUser: User) {
+    if (createdUser.role === UserRoles.CANDIDAT) {
       await UserCandidat.create(
         {
-          candidatId: user.id,
+          candidatId: createdUser.id,
         },
-        { hooks: true },
+        { hooks: true }
       );
-      // TODO
-      /*await models.Share.create({
-        CandidatId: user.id,
-      });*/
+      await Share.create({
+        CandidatId: createdUser.id,
+      });
     }
   }
 
-  /* @BeforeUpdate
-  static beforeUpdate(user: User) {
-    const nextData = user.dataValues;
-    const previousData = user._previousDataValues;
-    if (nextData && previousData) {
-      if (nextData.role && nextData.role !== previousData.role) {
-        if (
-          previousData.role === UserRoles.Candidat &&
-          nextData.role !== UserRoles.Candidat
-        ) {
-          try {
-            UserCandidat.destroy({
-              where: {
-                candidatId: nextData.id,
-              },
-            });
-          } catch (e) {
-            console.log('Candidat inexistant');
-          }
-        } else if (
-          previousData.role !== UserRoles.Candidat &&
-          nextData.role === UserRoles.Candidat
-        ) {
-          if (previousData.role === UserRoles.Coach) {
-            try {
-              // TODO
-              /!* await UserCandidat.update(
-                {
-                  coachId: null,
-                },
-                {
-                  where: {
-                    candidatId: previousData.coach.candidat.id,
-                  },
-                },
-              );*!/
-            } catch (e) {
-              console.log('Pas de candidat associé');
-            }
-          }
-
-          try {
-            // TODO
-            /!* await UserCandidat.create({
-              candidatId: nextData.id,
-              url: generateUrl(nextData),
-            });*!/
-            // TODO
-            /!*await models.Share.findOrCreate({
-              where: {
-                CandidatId: nextData.id,
-              },
-            });*!/
-          } catch (e) {
-            console.log(e);
-          }
-        }
-      }
+  @BeforeUpdate
+  static async manageRoleChange(userToUpdate: User) {
+    const previousUserValues: Partial<User> = userToUpdate.previous();
+    if (
+      userToUpdate &&
+      userToUpdate.role &&
+      previousUserValues &&
+      previousUserValues.role !== undefined &&
+      previousUserValues.role !== userToUpdate.role
+    ) {
       if (
-        nextData.firstName !== previousData.firstName &&
-        nextData.role === UserRoles.Candidat
+        previousUserValues.role === UserRoles.CANDIDAT &&
+        userToUpdate.role !== UserRoles.CANDIDAT
       ) {
-        try {
-          // TODO
-          /!*await UserCandidat.update(
+        await UserCandidat.destroy({
+          where: {
+            candidatId: userToUpdate.id,
+          },
+        });
+      } else if (
+        previousUserValues.role !== UserRoles.CANDIDAT &&
+        userToUpdate.role === UserRoles.CANDIDAT
+      ) {
+        if (previousUserValues.role === UserRoles.COACH) {
+          await UserCandidat.update(
             {
-              url: generateUrl(nextData),
+              coachId: null,
             },
             {
               where: {
-                candidatId: nextData.id,
+                coachId: userToUpdate.id,
               },
-            },
-          );*!/
-        } catch (e) {
-          console.log(e);
+            }
+          );
         }
+
+        await UserCandidat.create(
+          {
+            candidatId: userToUpdate.id,
+            url: generateUrl(userToUpdate),
+          },
+          { hooks: true }
+        );
+        await Share.findOrCreate({
+          where: {
+            CandidatId: userToUpdate.id,
+          },
+        });
       }
     }
-  }*/
+  }
+
+  @BeforeUpdate
+  static async manageNameChange(userToUpdate: User) {
+    const previousUserValues = userToUpdate.previous();
+    if (
+      userToUpdate &&
+      userToUpdate.role === UserRoles.CANDIDAT &&
+      previousUserValues &&
+      previousUserValues.firstName != undefined &&
+      previousUserValues.firstName !== userToUpdate.firstName
+    ) {
+      await UserCandidat.update(
+        {
+          url: generateUrl(userToUpdate),
+        },
+        {
+          where: {
+            candidatId: userToUpdate.id,
+          },
+        }
+      );
+    }
+  }
 
   @AfterDestroy
   static async unbindCoach(destroyedUser: User) {
@@ -257,10 +258,10 @@ export class User extends Model {
       },
       {
         where: {
-          [destroyedUser.role === UserRoles.Coach ? 'coachId' : 'candidatId']:
+          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
             destroyedUser.id,
         },
-      },
+      }
     );
   }
 }

@@ -1,37 +1,36 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   NotFoundException,
+  Param,
+  ParseUUIDPipe,
   Post,
   Redirect,
-  Request,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { Throttle } from '@nestjs/throttler';
-import { UsersService } from '../users/users.service';
-import { User } from '../users/models/user.model';
-import { Public } from './public.decorator';
-import { LocalAuthGuard } from './local-auth.guard';
+import { passwordStrength } from 'check-password-strength';
+import { User } from 'src/users/models';
+import { AuthService } from './auth.service';
+import { encryptPassword } from './auth.utils';
+import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req) {
-    return this.authService.login(req.user);
+  async login(@UserPayload() user: User) {
+    return this.authService.login(user);
   }
 
-  @Redirect(`${process.env.FRONT_URL}`, 301)
+  @Redirect(`${process.env.FRONT_URL}`, 302)
   @Post('logout')
   async logout() {
     return;
@@ -39,68 +38,119 @@ export class AuthController {
 
   @Public()
   @Post('forgot')
-  async forgot(@Request() req) {
-    const { email } = req.body;
-
+  async forgot(@Body('email') email: string) {
     if (!email) {
       throw new BadRequestException();
     }
 
-    const user = await this.usersService.findOneByMail(email);
+    const user = await this.authService.findOneUserByMail(email);
 
     if (!user) {
       throw new NotFoundException();
     }
 
-    const loggedInUser = await this.authService.login(user, '1d');
+    const { updatedUser, token } = await this.authService.generateResetToken(
+      user
+    );
 
-    const token = loggedInUser.token;
-    const { hash, salt } = this.authService.encryptPassword(token);
+    const { id, firstName, role, zone } = updatedUser;
 
-    const updatedUser: User = await this.usersService.update(user.id, {
-      hashReset: hash,
-      saltReset: salt,
+    await this.authService.sendPasswordResetLinkMail(
+      {
+        id,
+        firstName,
+        role,
+        zone,
+        email,
+      },
+      token
+    );
+
+    return;
+  }
+
+  @Public()
+  @Get('reset/:userId/:token')
+  async checkReset(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Param('token') token: string
+  ) {
+    const user = await this.authService.findOneUserComplete(userId);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const { hashReset, saltReset } = user;
+
+    const isValidResetToken = this.authService.isValidResetToken(
+      hashReset,
+      saltReset,
+      token
+    );
+    if (!isValidResetToken) {
+      throw new UnauthorizedException();
+    }
+    return;
+  }
+
+  @Public()
+  @Post('reset/:userId/:token')
+  async resetPassword(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Param('token') token: string,
+    @Body('newPassword') newPassword: string,
+    @Body('confirmPassword') confirmPassword: string
+  ) {
+    const user = await this.authService.findOneUserComplete(userId);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const { hashReset, saltReset } = user;
+
+    const isValidResetToken = this.authService.isValidResetToken(
+      hashReset,
+      saltReset,
+      token
+    );
+
+    if (!isValidResetToken) {
+      throw new UnauthorizedException();
+    }
+
+    if (passwordStrength(newPassword).id < 2) {
+      throw new BadRequestException();
+    }
+
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException();
+    }
+
+    const { hash, salt } = encryptPassword(newPassword);
+
+    const updatedUser = await this.authService.updateUser(user.id, {
+      password: hash,
+      salt,
+      hashReset: null,
+      saltReset: null,
     });
 
     if (!updatedUser) {
       throw new NotFoundException();
     }
 
-    if (updatedUser) {
-      //TODO
-      /*     const {
-        password,
-        salt: unusedSalt,
-        revision,
-        hashReset,
-        saltReset,
-        ...restProps
-      } = updatedUser.toJSON();
-
-      // Envoi du mail
-      await addToWorkQueue({
-        type: JOBS.JOB_TYPES.SEND_MAIL,
-        toEmail: user.email,
-        templateId: MAILJET_TEMPLATES.PASSWORD_RESET,
-        variables: {
-          ..._.omitBy(restProps, _.isNil),
-          token,
-        },
-      });*/
-
-      return;
-    }
+    return updatedUser;
   }
 
   @Throttle(100, 60)
   @Get('current')
-  async getCurrent(@Request() req) {
-    const { user } = req;
-    const updatedUser = await this.usersService.update(user.id, {
-      lastConnection: Date.now(),
+  async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+    const updatedUser = await this.authService.updateUser(id, {
+      lastConnection: new Date(),
     });
     if (!updatedUser) {
-      throw new UnauthorizedException();
+      throw new NotFoundException();
     }
 
     return updatedUser;
