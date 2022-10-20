@@ -9,7 +9,7 @@ import moment from 'moment/moment';
 import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
 import * as puppeteer from 'puppeteer-core';
-import { col, fn, Op, QueryTypes } from 'sequelize';
+import { col, fn, Includeable, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import {
@@ -38,7 +38,7 @@ import { Jobs, Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatuses, CVStatus } from 'src/users/users.types';
+import { CVStatus, CVStatuses } from 'src/users/users.types';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -278,15 +278,44 @@ export class CVsService {
 
       await t.commit();
 
-      const cv = await this.cvModel.findByPk(createdCV.id, {
-        include: CVCompleteWithAllUserPrivateInclude,
-      });
+      /*
+        const cv = await this.cvModel.findByPk(createdCV.id, {
+          include: CVCompleteWithAllUserPrivateInclude,
+        });
+      */
 
-      return cv.toJSON();
+      return this.dividedCompleteCVQuery((include) => {
+        return this.cvModel.findByPk(createdCV.id, {
+          include: [include],
+        });
+      }, true);
     } catch (error) {
       await t.rollback();
       throw error;
     }
+  }
+
+  async dividedCompleteCVQuery(
+    query: (include: Includeable) => Promise<CV>,
+    privateUser = false
+  ) {
+    const completeIncludes = privateUser
+      ? CVCompleteWithAllUserPrivateInclude
+      : CVCompleteWithAllUserInclude;
+
+    const results = await Promise.all(
+      completeIncludes.map((include) => {
+        return query(include);
+      })
+    );
+
+    return results.reduce((acc, curr) => {
+      const cleanedCurr = curr ? curr.toJSON() : {};
+      return {
+        ...acc,
+        ...cleanedCurr,
+      };
+    }, {} as Partial<CV>);
   }
 
   async findOne(id: string) {
@@ -301,19 +330,31 @@ export class CVsService {
     if (!candidate) {
       return null;
     }
+    /*
 
-    const cv = await this.cvModel.findOne({
-      include: CVCompleteWithAllUserPrivateInclude,
-      where: {
-        UserId: candidateId,
-      },
-      order: [['version', 'DESC']],
-    });
+        const cv = await this.cvModel.findOne({
+          include: CVCompleteWithAllUserPrivateInclude,
+          where: {
+            UserId: candidateId,
+          },
+          order: [['version', 'DESC']],
+        });
+    */
+
+    const cv = await this.dividedCompleteCVQuery((include) => {
+      return this.cvModel.findOne({
+        include: [include],
+        where: {
+          UserId: candidateId,
+        },
+        order: [['version', 'DESC']],
+      });
+    }, true);
 
     if (!cv) {
       return {} as CV;
     }
-    return cv.toJSON();
+    return cv as CV;
   }
 
   async findOneByUrl(url: string): Promise<CV> {
@@ -922,15 +963,22 @@ export class CVsService {
     });
 
     if (cvs && cvs.length > 0) {
-      const cv = await this.cvModel.findByPk(cvs[0].id, {
-        include: CVCompleteWithAllUserInclude,
+      const cv = await this.dividedCompleteCVQuery((include) => {
+        return this.cvModel.findByPk(cvs[0].id, {
+          include: [include],
+        });
       });
+      /*
+        const cv = await this.cvModel.findByPk(cvs[0].id, {
+          include: CVCompleteWithAllUserInclude,
+        });
+      */
 
-      await this.cacheManager.set(redisKey, JSON.stringify(cv.toJSON()), {
+      await this.cacheManager.set(redisKey, JSON.stringify(cv), {
         ttl: 0,
       });
 
-      return cv.toJSON();
+      return cv;
     }
 
     return null;
