@@ -36,6 +36,8 @@ import { SMSModule } from './sms/sms.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
+const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
+
 const getParsedURI = (uri: string) => new URL(uri);
 
 export function getRedisOptions(uri: string) {
@@ -81,16 +83,12 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       limit: 100,
     }),
     BullModule.forRoot({
-      redis: process.env.REDIS_TLS_URL
-        ? getRedisOptions(process.env.REDIS_TLS_URL)
-        : {},
+      redis: redisUrl ? getRedisOptions(redisUrl) : {},
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...(process.env.REDIS_TLS_URL
-        ? getRedisOptions(process.env.REDIS_TLS_URL)
-        : {}),
+      ...(redisUrl ? getRedisOptions(redisUrl) : {}),
     }),
     RevisionsModule,
     SharesModule,
