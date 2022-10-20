@@ -8,7 +8,7 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "start": "node dist/main",
+    "start": "node --optimize_for_size dist/main",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "worker:start": "node dist/worker",
