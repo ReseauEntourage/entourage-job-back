@@ -10,13 +10,15 @@ import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getRedisOptions, getSequelizeOptions } from './app.module';
 
+const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
     SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
-    BullModule.forRoot({ redis: getRedisOptions(process.env.REDIS_TLS_URL) }),
+    BullModule.forRoot({ redis: getRedisOptions(redisUrl) }),
     BullModule.registerQueue({
       name: Queues.WORK,
       defaultJobOptions: {
@@ -36,7 +38,7 @@ import { getRedisOptions, getSequelizeOptions } from './app.module';
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...getRedisOptions(process.env.REDIS_TLS_URL),
+      ...getRedisOptions(redisUrl),
     }),
     ConsumersModule,
   ],
