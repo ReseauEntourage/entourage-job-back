@@ -10,7 +10,9 @@ export const UserAttributes = [
   'zone',
   'gender',
   'lastConnection',
-  'deletedAt',
+  /*'createdAt',
+  'updatedAt',
+  'deletedAt',*/
 ] as const;
 
 export type UserAttribute = typeof UserAttributes[number];

@@ -1,0 +1,52 @@
+name: LinkedOut Backend Test
+
+on:
+  push:
+  pull_request:
+    branches: [ master, develop ]
+  workflow_dispatch:
+
+jobs:
+   test:
+    runs-on: ubuntu-latest
+    environment: entourage-job-back-test
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: linkedout
+          POSTGRES_USER: linkedout
+          POSTGRES_DB: linkedout
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      CHROME_PATH: ${{ secrets.CHROME_PATH }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '16.x'
+    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
+      with:
+        args:
+          yarn install
+    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
+      with:
+        args:
+          yarn db:migrate
+    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
+      with:
+        args:
+          yarn test:e2e
