@@ -598,6 +598,10 @@ describe('Users', () => {
               firstName: 'D',
             });
             await userFactory.create({
+              role: UserRoles.CANDIDAT,
+              firstName: 'E',
+            });
+            await userFactory.create({
               role: UserRoles.COACH,
               firstName: 'A',
             });
@@ -613,11 +617,17 @@ describe('Users', () => {
               role: UserRoles.COACH,
               firstName: 'D',
             });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'E',
+            });
           });
           it('Should return 200 and 2 first candidates', async () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
-                .get(`${route}/members?limit=2&role=${UserRoles.CANDIDAT}`)
+                .get(
+                  `${route}/members?limit=2&offset=0&role=${UserRoles.CANDIDAT}`
+                )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
@@ -631,7 +641,9 @@ describe('Users', () => {
           it('Should return 200 and 3 first coaches', async () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
-                .get(`${route}/members?limit=3&role=${UserRoles.COACH}`)
+                .get(
+                  `${route}/members?limit=3&offset=0&role=${UserRoles.COACH}`
+                )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
