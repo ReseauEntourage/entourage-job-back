@@ -59,11 +59,11 @@ export type ContactStatus =
   typeof ContactStatuses[keyof typeof ContactStatuses];
 
 export const PleziContactRegions: { [K in AdminZone]: string } = {
-  [AdminZones.LYON]: _.capitalize(AdminZones.LYON),
-  [AdminZones.PARIS]: _.capitalize(AdminZones.PARIS),
-  [AdminZones.LILLE]: _.capitalize(AdminZones.LILLE),
-  [AdminZones.LORIENT]: 'Rennes',
-  [AdminZones.HZ]: _.capitalize(AdminZones.HZ),
+  [AdminZones.LYON]: AdminZones.LYON.toLowerCase(),
+  [AdminZones.PARIS]: AdminZones.PARIS.toLowerCase(),
+  [AdminZones.LILLE]: AdminZones.LILLE.toLowerCase(),
+  [AdminZones.LORIENT]: 'rennes',
+  [AdminZones.HZ]: AdminZones.HZ.toLowerCase(),
 } as const;
 
 export const PleziContactStatuses: { [K in ContactStatus]: string } = {
@@ -72,3 +72,5 @@ export const PleziContactStatuses: { [K in ContactStatus]: string } = {
   STRUCTURE_INSERTION: 'une-structure-d-insertion',
   CANDIDAT_POTENTIEL: 'un-candidat-potentiel',
 } as const;
+
+export const PleziNewsletter = 'linkedout-newsletter' as const;
