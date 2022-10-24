@@ -99,6 +99,7 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
   {
     model: Experience,
     as: 'experiences',
+    separate: true,
     attributes: ['id', 'description', 'order'],
     include: [
       {
@@ -112,6 +113,7 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
   {
     model: Review,
     as: 'reviews',
+    separate: true,
     attributes: ['id', 'text', 'status', 'name'],
   },
 ];
