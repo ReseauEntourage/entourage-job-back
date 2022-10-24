@@ -33,7 +33,7 @@ import {
   HeardAboutFilters,
   PleziContactRegions,
   PleziContactStatuses,
-  PleziNewsletter,
+  PleziNewsletterId,
   PleziTrackingData,
 } from './mails.types';
 
@@ -68,13 +68,12 @@ export class MailsService {
           ? status.map((singleStatus) => {
               return PleziContactStatuses[singleStatus];
             })
-          : [PleziContactStatuses[status]],
+          : PleziContactStatuses[status],
         keep_multiple_select_values: true,
-        subscriptions: PleziNewsletter,
+        subscriptions: PleziNewsletterId,
       },
       { encode: false, arrayFormat: 'comma' }
-    )}
-    ${
+    )}${
       urlParams
         ? `&${qs.stringify(urlParams, {
             encode: false,

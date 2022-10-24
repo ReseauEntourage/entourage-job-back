@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import { AdminZone, AdminZones, FilterConstant } from 'src/utils/types';
 
 export interface PleziTrackingData {
@@ -73,4 +72,4 @@ export const PleziContactStatuses: { [K in ContactStatus]: string } = {
   CANDIDAT_POTENTIEL: 'un-candidat-potentiel',
 } as const;
 
-export const PleziNewsletter = 'linkedout-newsletter' as const;
+export const PleziNewsletterId = '6311128ae317a70f550b73fc' as const;
