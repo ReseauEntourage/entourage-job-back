@@ -278,17 +278,19 @@ export class CVsService {
 
       await t.commit();
 
+      const cv = await this.cvModel.findByPk(createdCV.id, {
+        include: CVCompleteWithAllUserPrivateInclude,
+      });
+
       /*
-        const cv = await this.cvModel.findByPk(createdCV.id, {
-          include: CVCompleteWithAllUserPrivateInclude,
-        });
+        return this.dividedCompleteCVQuery((include) => {
+          return this.cvModel.findByPk(createdCV.id, {
+            include: [include],
+          });
+        }, CVCompleteWithAllUserPrivateInclude);
       */
 
-      return this.dividedCompleteCVQuery((include) => {
-        return this.cvModel.findByPk(createdCV.id, {
-          include: [include],
-        });
-      }, true);
+      return cv.toJSON();
     } catch (error) {
       await t.rollback();
       throw error;
@@ -297,14 +299,10 @@ export class CVsService {
 
   async dividedCompleteCVQuery(
     query: (include: Includeable) => Promise<CV>,
-    privateUser = false
+    includes: Includeable[]
   ) {
-    const completeIncludes = privateUser
-      ? CVCompleteWithAllUserPrivateInclude
-      : CVCompleteWithAllUserInclude;
-
     const results = await Promise.all(
-      completeIncludes.map((include) => {
+      includes.map((include) => {
         return query(include);
       })
     );
@@ -319,6 +317,12 @@ export class CVsService {
   }
 
   async findOne(id: string) {
+    /* return (await this.dividedCompleteCVQuery((include) => {
+      return this.cvModel.findByPk(id, {
+        include: [include],
+      });
+    }, CVCompleteWithoutUserInclude)) as CV;*/
+
     return this.cvModel.findByPk(id, {
       include: CVCompleteWithoutUserInclude,
     });
@@ -330,31 +334,31 @@ export class CVsService {
     if (!candidate) {
       return null;
     }
-    /*
 
-        const cv = await this.cvModel.findOne({
-          include: CVCompleteWithAllUserPrivateInclude,
+    const cv = await this.cvModel.findOne({
+      include: CVCompleteWithAllUserPrivateInclude,
+      where: {
+        UserId: candidateId,
+      },
+      order: [['version', 'DESC']],
+    });
+
+    /*
+      const cv = await this.dividedCompleteCVQuery((include) => {
+        return this.cvModel.findOne({
+          include: [include],
           where: {
             UserId: candidateId,
           },
           order: [['version', 'DESC']],
         });
+      }, CVCompleteWithAllUserPrivateInclude);
     */
-
-    const cv = await this.dividedCompleteCVQuery((include) => {
-      return this.cvModel.findOne({
-        include: [include],
-        where: {
-          UserId: candidateId,
-        },
-        order: [['version', 'DESC']],
-      });
-    }, true);
 
     if (!cv) {
       return {} as CV;
     }
-    return cv as CV;
+    return cv.toJSON();
   }
 
   async findOneByUrl(url: string): Promise<CV> {
@@ -567,8 +571,8 @@ export class CVsService {
     return cvs.length;
   }
 
-  async update(id: string, udpateCVDto: UpdateCVDto): Promise<CV> {
-    await this.cvModel.update(udpateCVDto, {
+  async update(id: string, updateCVDto: UpdateCVDto): Promise<CV> {
+    await this.cvModel.update(updateCVDto, {
       where: { id },
       individualHooks: true,
     });
@@ -963,22 +967,22 @@ export class CVsService {
     });
 
     if (cvs && cvs.length > 0) {
-      const cv = await this.dividedCompleteCVQuery((include) => {
-        return this.cvModel.findByPk(cvs[0].id, {
-          include: [include],
-        });
-      });
       /*
-        const cv = await this.cvModel.findByPk(cvs[0].id, {
-          include: CVCompleteWithAllUserInclude,
-        });
+        const cv = await this.dividedCompleteCVQuery((include) => {
+          return this.cvModel.findByPk(cvs[0].id, {
+            include: [include],
+          });
+        }, CVCompleteWithAllUserInclude);
       */
+      const cv = await this.cvModel.findByPk(cvs[0].id, {
+        include: CVCompleteWithAllUserInclude,
+      });
 
-      await this.cacheManager.set(redisKey, JSON.stringify(cv), {
+      await this.cacheManager.set(redisKey, JSON.stringify(cv.toJSON()), {
         ttl: 0,
       });
 
-      return cv;
+      return cv.toJSON();
     }
 
     return null;
