@@ -1,4 +1,4 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-yarn test:ts-check && yarn test:eslint
+yarn lint-staged

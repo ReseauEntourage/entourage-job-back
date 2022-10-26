@@ -15,12 +15,9 @@ import {
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
-import {
-  ContactStatus,
-  ContactStatuses,
-} from 'src/external-services/mailchimp/mailchimp.types';
 import { MailsService } from 'src/mails/mails.service';
+import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
+
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
@@ -78,7 +75,6 @@ export class OpportunitiesService {
     private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
     @InjectQueue(Queues.WORK)
     private workQueue: Queue,
-    private mailchimpService: MailchimpService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
     private cvsService: CVsService,
@@ -741,19 +737,12 @@ export class OpportunitiesService {
     return null;
   }
 
-  async sendRecruitorMailToMailchimp(
-    mail: string,
-    zone: AdminZone | AdminZone[],
-    contactStatus: ContactStatus
-  ) {
-    return this.mailchimpService.sendContact(mail, zone, contactStatus);
-  }
-
   async sendMailsAfterCreation(
     opportunity: Opportunity,
     candidates: OpportunityUser[],
     isAdmin = false,
-    shouldSendNotifications = true
+    shouldSendNotifications = true,
+    pleziTrackingData?: PleziTrackingData
   ) {
     if (candidates && candidates.length > 0) {
       if (!isAdmin) {
@@ -766,12 +755,18 @@ export class OpportunitiesService {
         }
       }
     }
-
-    await this.sendRecruitorMailToMailchimp(
-      opportunity.contactMail || opportunity.recruiterMail,
-      getZoneFromDepartment(opportunity.department),
-      ContactStatuses.COMPANY
-    );
+    try {
+      await this.mailsService.sendContactToPlezi(
+        opportunity.contactMail || opportunity.recruiterMail,
+        getZoneFromDepartment(opportunity.department),
+        ContactStatuses.COMPANY,
+        pleziTrackingData?.visit,
+        pleziTrackingData?.visitor,
+        pleziTrackingData?.urlParams
+      );
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async sendMailsAfterUpdate(

@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { CVsModule } from '../cvs/cvs.module';
 import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
+import { CVsModule } from 'src/cvs/cvs.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
-import { MailchimpModule } from 'src/external-services/mailchimp/mailchimp.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
 import { SMSModule } from 'src/sms/sms.module';
@@ -27,7 +26,6 @@ import { OpportunityUsersService } from './opportunity-users.service';
     CVsModule,
     BusinessLinesModule,
     MailsModule,
-    MailchimpModule,
     SMSModule,
     ExternalDatabasesModule,
     QueuesModule,

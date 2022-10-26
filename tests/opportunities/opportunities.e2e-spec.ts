@@ -6,15 +6,14 @@ import {
   AirtableMocks,
   BitlyMocks,
   CacheMocks,
-  MailchimpMocks,
   QueueMocks,
   SalesforceMocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { MailsService } from 'src/mails/mails.service';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
@@ -55,8 +54,6 @@ describe('Opportunities', () => {
     })
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
-      .overrideProvider(MailchimpService)
-      .useValue(MailchimpMocks)
       .overrideProvider(BitlyService)
       .useValue(BitlyMocks)
       .overrideProvider(CACHE_MANAGER)
@@ -117,6 +114,10 @@ describe('Opportunities', () => {
               loggedInCandidate,
               true
             ));
+
+          jest
+            .spyOn(MailsService.prototype, 'sendContactToPlezi')
+            .mockImplementation(async () => null);
         });
 
         it('Should return 201, if valid opportunity', async () => {
