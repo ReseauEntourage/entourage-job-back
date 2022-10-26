@@ -72,12 +72,12 @@ export class WorkQueueProcessor {
   }
 
   @OnQueueFailed()
-  onFailed(job: Job, err: Error) {
+  onFailed(job: Job, error: Error) {
     // TODO send error to socket to stop loading if preview or PDF
-    console.error(
-      `Job ${job.id} of type ${job.name} failed with error : "${err}"`
-    );
     console.error(job.data);
+    throw new Error(
+      `Job ${job.id} of type ${job.name} failed with error : "${error}"`
+    );
   }
 
   @OnQueueWaiting()
@@ -87,7 +87,7 @@ export class WorkQueueProcessor {
 
   @OnQueueError()
   onError(error: Error) {
-    console.error(`An error occured on the work queue : "${error}"`);
+    throw new Error(`An error occured on the work queue : "${error}"`);
   }
 
   @Process()
@@ -399,6 +399,5 @@ export class WorkQueueProcessor {
         data.locations,
         data.businessLines
       );
-    console.log(sendOpportunity);
   }
 }

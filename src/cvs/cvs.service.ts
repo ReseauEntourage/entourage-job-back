@@ -725,7 +725,7 @@ export class CVsService {
     });
 
     // TODO Update Lambda to use new association objects with name
-    const response = await fetch(`${process.env.AWS_LAMBA_URL}/preview`, {
+    const response = await fetch(`${process.env.AWS_LAMBDA_URL}/preview`, {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -758,7 +758,13 @@ export class CVsService {
       }),
     });
 
-    const { previewUrl } = (await response.json()) as { previewUrl: string };
+    const responseJSON = await response.json();
+
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error(`${response.status}, ${responseJSON.message}`);
+    }
+
+    const { previewUrl } = responseJSON as { previewUrl: string };
 
     return previewUrl;
   }
@@ -949,7 +955,7 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
-  async findAndCacheOneByUrl(url: string, candidateId?: string) {
+  async findAndCacheOneByUrl(url?: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
