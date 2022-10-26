@@ -955,7 +955,7 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
-  async findAndCacheOneByUrl(url: string, candidateId?: string) {
+  async findAndCacheOneByUrl(url?: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
