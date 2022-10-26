@@ -349,7 +349,12 @@ export class OpportunitiesService {
     candidateId: string
   ): Promise<OpportunityRestricted> {
     const opportunity = await this.opportunityModel.findOne({
-      where: { isValidated: true, isArchived: false, id },
+      where: {
+        [Op.or]: [
+          { isValidated: true, isExternal: false, isArchived: false, id },
+          { isExternal: true, isArchived: false, id },
+        ],
+      },
       attributes: [...OpportunityCandidateAttributes],
       include: OpportunityCompleteWithoutOpportunityUsersInclude,
     });
@@ -612,7 +617,7 @@ export class OpportunitiesService {
   async updateAssociatedCandidatesToOpportunity(
     opportunity: Opportunity,
     oldOpportunity: Opportunity,
-    candidatesId: string[]
+    candidatesId?: string[]
   ) {
     const candidatesToRecommendTo =
       opportunity.isPublic &&
@@ -625,7 +630,9 @@ export class OpportunitiesService {
         : [];
 
     const uniqueCandidatesIds = _.uniq([
-      ...(candidatesId || []),
+      ...(candidatesId ||
+        opportunity.opportunityUsers.map(({ UserId }) => UserId) ||
+        []),
       ...(candidatesToRecommendTo || []),
     ]);
 

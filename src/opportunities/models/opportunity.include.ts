@@ -5,6 +5,7 @@ import { OpportunityUser } from './opportunity-user.model';
 export const OpportunityCandidateInclude: Includeable[] = [
   {
     model: User,
+    as: 'user',
     attributes: [
       'id',
       'email',
