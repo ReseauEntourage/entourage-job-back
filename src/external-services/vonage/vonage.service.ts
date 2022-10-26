@@ -1,19 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import Vonage, { SendSms } from '@vonage/server-sdk';
+import Vonage from '@vonage/server-sdk';
 import { CustomSMSParams } from './vonage.types';
 
 const useSMS = process.env.USE_SMS === 'true';
 
 @Injectable()
 export class VonageService {
-  private send: SendSms;
+  private vonage: Vonage;
 
   constructor() {
-    const vonage = new Vonage({
+    this.vonage = new Vonage({
       apiKey: process.env.VONAGE_API_KEY,
       apiSecret: process.env.VONAGE_API_SECRET,
     });
-    this.send = vonage.message.sendSms;
   }
 
   createSMS({ toPhone, text }: CustomSMSParams) {
@@ -40,7 +39,7 @@ export class VonageService {
       smsToSend.map(({ toPhone, text }) => {
         if (useSMS) {
           return new Promise((res, rej) => {
-            this.send(
+            this.vonage.message.sendSms(
               process.env.MAILJET_FROM_NAME,
               toPhone,
               text,

@@ -21,6 +21,7 @@ export class ContactUsFormFactory implements Factory<ContactUsFormDto> {
       structure: faker.company.companyName(2),
       message: faker.lorem.paragraphs(3, '\n'),
       heardAbout: 'other' as HeardAbout,
+      cgu: true,
     };
     return {
       ...fakeData,

@@ -746,6 +746,7 @@ describe('Opportunities', () => {
             isValidated: false,
             isArchived: false,
             isPublic: false,
+            isExternal: false,
           });
 
           await opportunityUsersHelper.associateOpportunityUser(
@@ -914,14 +915,14 @@ describe('Opportunities', () => {
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(404);
         });
-        it('Should return 404, if candidate reads an opportunity associated to him but not validated', async () => {
+        it('Should return 404, if candidate reads an opportunity associated to him but not validated and not external', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
             await request(app.getHttpServer())
               .get(`${route}/${notValidatedOpportunity.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(404);
         });
-        it('Should return 404, if coach reads an opportunity associated to his candidate but not validated', async () => {
+        it('Should return 404, if coach reads an opportunity associated to his candidate but not validated and not external', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
             await request(app.getHttpServer())
               .get(`${route}/${notValidatedOpportunity.id}`)
