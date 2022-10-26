@@ -65,6 +65,7 @@ describe('Mails', () => {
         lastName: formAnswers.lastName,
         email: formAnswers.email,
         message: formAnswers.message,
+        cgu: formAnswers.cgu,
       };
 
       const response: APIResponse<MailsController['sendMailContactUsForm']> =
