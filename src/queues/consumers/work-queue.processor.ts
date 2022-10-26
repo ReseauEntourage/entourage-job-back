@@ -74,10 +74,10 @@ export class WorkQueueProcessor {
   @OnQueueFailed()
   onFailed(job: Job, error: Error) {
     // TODO send error to socket to stop loading if preview or PDF
-    console.error(job.data);
-    throw new Error(
+    console.error(
       `Job ${job.id} of type ${job.name} failed with error : "${error}"`
     );
+    console.error(job.data);
   }
 
   @OnQueueWaiting()
@@ -87,12 +87,12 @@ export class WorkQueueProcessor {
 
   @OnQueueError()
   onError(error: Error) {
-    throw new Error(`An error occured on the work queue : "${error}"`);
+    console.error(`An error occured on the work queue : "${error}"`);
   }
 
   @Process()
   async process(job: Job<AnyCantFix>) {
-    throw new Error(
+    console.error(
       `No process method for this job ${job.id} with data ${JSON.stringify(
         job.data
       )}`
