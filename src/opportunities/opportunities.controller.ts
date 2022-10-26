@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from '../auth/auth.types';
+import { PleziTrackingData } from '../mails/mails.types';
 import { getCandidateIdFromCoachOrCandidate } from '../users/users.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { DepartmentFilters } from 'src/common/locations/locations.types';
@@ -76,8 +77,13 @@ export class OpportunitiesController {
       shouldSendNotifications,
       isCopy,
       candidatesId,
+      visit,
+      visitor,
+      urlParams,
       ...restBody
     } = createOpportunityDto;
+
+    const pleziTrackingData: PleziTrackingData = { visit, visitor, urlParams };
 
     if (isAdmin && !isLoggedAsAdmin) {
       throw new ForbiddenException();
@@ -115,7 +121,8 @@ export class OpportunitiesController {
             finalOpportunity.toJSON(),
             candidates,
             isAdmin,
-            shouldSendNotifications
+            shouldSendNotifications,
+            pleziTrackingData
           );
 
           await this.opportunitiesService.createExternalDBOpportunity(
@@ -164,7 +171,8 @@ export class OpportunitiesController {
       finalOpportunity.toJSON(),
       candidates,
       isAdmin,
-      shouldSendNotifications
+      shouldSendNotifications,
+      pleziTrackingData
     );
 
     await this.opportunitiesService.createExternalDBOpportunity(

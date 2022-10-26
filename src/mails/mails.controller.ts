@@ -1,10 +1,10 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
-import { Public } from '../auth/guards';
-import { isValidPhone } from '../utils/misc';
-import { ContactStatus } from 'src/external-services/mailchimp/mailchimp.types';
+import { Public } from 'src/auth/guards';
+import { isValidPhone } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
 import { ContactUsFormDto, ContactUsFormPipe } from './dto';
 import { MailsService } from './mails.service';
+import { ContactStatus, PleziTrackingData } from './mails.types';
 
 // TODO change to mails
 @Controller('mail')
@@ -29,11 +29,23 @@ export class MailsController {
   async addContactForNewsletter(
     @Body('email') email: string,
     @Body('zone') zone: AdminZone | AdminZone[],
-    @Body('status') status: ContactStatus | ContactStatus[]
+    @Body('status') status: ContactStatus | ContactStatus[],
+    @Body('visit') visit?: PleziTrackingData['visit'],
+    @Body('visitor') visitor?: PleziTrackingData['visitor'],
+    @Body('urlParams')
+    urlParams?: PleziTrackingData['urlParams']
   ) {
     if (!email) {
       throw new BadRequestException();
     }
-    return this.mailsService.sendContactToMailchimp(email, zone, status);
+
+    return this.mailsService.sendContactToPlezi(
+      email,
+      zone,
+      status,
+      visit,
+      visitor,
+      urlParams
+    );
   }
 }

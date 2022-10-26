@@ -26,7 +26,6 @@ import { UsersModule } from 'src/users/users.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { AirtableModule } from './external-services/airtable/airtable.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
-import { MailchimpModule } from './external-services/mailchimp/mailchimp.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
@@ -110,7 +109,6 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     ReviewsModule,
     MailsModule,
     MailjetModule,
-    MailchimpModule,
     ExternalDatabasesModule,
     SalesforceModule,
     AirtableModule,
