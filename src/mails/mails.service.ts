@@ -2,19 +2,20 @@ import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { Queue } from 'bull';
 import * as _ from 'lodash';
-import {
-  OfferStatuses,
-  OpportunityRestricted,
-} from '../opportunities/opportunities.types';
+import fetch from 'node-fetch';
+import qs from 'qs';
+
 import { CV } from 'src/cvs/models';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
-import { ContactStatus } from 'src/external-services/mailchimp/mailchimp.types';
 import {
   CustomMailParams,
   MailjetTemplate,
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import {
+  OfferStatuses,
+  OpportunityRestricted,
+} from 'src/opportunities/opportunities.types';
 import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/opportunities.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
@@ -27,22 +28,78 @@ import {
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZone } from 'src/utils/types';
 import { ContactUsFormDto } from './dto';
-import { HeardAboutFilters } from './mails.types';
+import {
+  ContactStatus,
+  HeardAboutFilters,
+  PleziContactRegions,
+  PleziContactStatuses,
+  PleziNewsletterId,
+  PleziTrackingData,
+} from './mails.types';
 
 @Injectable()
 export class MailsService {
   constructor(
     @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
-    private mailchimpService: MailchimpService
+    private workQueue: Queue
   ) {}
 
-  async sendContactToMailchimp(
+  async sendContactToPlezi(
     email: string,
     zone: AdminZone | AdminZone[],
-    status: ContactStatus | ContactStatus[]
+    status: ContactStatus | ContactStatus[],
+    visit?: PleziTrackingData['visit'],
+    visitor?: PleziTrackingData['visitor'],
+    urlParams?: PleziTrackingData['urlParams']
   ) {
-    return this.mailchimpService.sendContact(email, zone, status);
+    const queryParams = `${qs.stringify(
+      {
+        visit,
+        visitor,
+        form_id: process.env.PLEZI_FORM_ID,
+        content_web_form_id: process.env.PLEZI_CONTENT_WEB_FORM_ID,
+        email,
+        plz_ma_region: Array.isArray(zone)
+          ? zone.map((singleZone) => {
+              return PleziContactRegions[singleZone];
+            })
+          : PleziContactRegions[zone],
+        plz_je_suis: Array.isArray(status)
+          ? status.map((singleStatus) => {
+              return PleziContactStatuses[singleStatus];
+            })
+          : PleziContactStatuses[status],
+        keep_multiple_select_values: true,
+        subscriptions: PleziNewsletterId,
+      },
+      { encode: false, arrayFormat: 'comma' }
+    )}${
+      urlParams
+        ? `&${qs.stringify(urlParams, {
+            encode: false,
+          })}`
+        : ''
+    }`;
+
+    const pleziApiRoute = `https://app.plezi.co/api/v1/create_contact_after_webform`;
+
+    const response = await fetch(`${pleziApiRoute}?${queryParams}`, {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Tenant-Company': process.env.PLEZI_TENANT_NAME,
+        'X-API-Key': process.env.PLEZI_API_KEY,
+      },
+      method: 'GET',
+    });
+
+    const responseJSON = await response.json();
+
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error(
+        `${response.status}, ${responseJSON.errors[0].title}, ${responseJSON.errors[0].detail}`
+      );
+    }
   }
 
   async sendPasswordResetLinkMail(
