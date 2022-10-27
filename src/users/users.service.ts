@@ -459,7 +459,7 @@ export class UsersService {
   // TODO fix duplicate
   async cacheCandidateCV(candidateId: string) {
     await this.workQueue.add(Jobs.CACHE_CV, {
-      candidatId: candidateId,
+      candidateId,
     });
   }
 
