@@ -72,10 +72,10 @@ export class WorkQueueProcessor {
   }
 
   @OnQueueFailed()
-  onFailed(job: Job, err: Error) {
+  onFailed(job: Job, error: Error) {
     // TODO send error to socket to stop loading if preview or PDF
     console.error(
-      `Job ${job.id} of type ${job.name} failed with error : "${err}"`
+      `Job ${job.id} of type ${job.name} failed with error : "${error}"`
     );
     console.error(job.data);
   }
@@ -92,7 +92,7 @@ export class WorkQueueProcessor {
 
   @Process()
   async process(job: Job<AnyCantFix>) {
-    throw new Error(
+    console.error(
       `No process method for this job ${job.id} with data ${JSON.stringify(
         job.data
       )}`
@@ -399,6 +399,5 @@ export class WorkQueueProcessor {
         data.locations,
         data.businessLines
       );
-    console.log(sendOpportunity);
   }
 }

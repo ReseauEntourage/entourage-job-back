@@ -2,14 +2,14 @@ import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
-import { ContactStatus } from 'src/external-services/mailchimp/mailchimp.types';
 import { MailsController } from 'src/mails/mails.controller';
+import { MailsService } from 'src/mails/mails.service';
+import { ContactStatus } from 'src/mails/mails.types';
 import { Queues } from 'src/queues/queues.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { CacheMocks, MailchimpMocks, QueueMocks } from 'tests/mocks.types';
+import { CacheMocks, QueueMocks } from 'tests/mocks.types';
 import { ContactUsFormFactory } from './contact-us-form.factory';
 
 describe('Mails', () => {
@@ -28,8 +28,6 @@ describe('Mails', () => {
       .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
       .useValue(CacheMocks)
-      .overrideProvider(MailchimpService)
-      .useValue(MailchimpMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -67,6 +65,7 @@ describe('Mails', () => {
         lastName: formAnswers.lastName,
         email: formAnswers.email,
         message: formAnswers.message,
+        cgu: formAnswers.cgu,
       };
 
       const response: APIResponse<MailsController['sendMailContactUsForm']> =
@@ -93,6 +92,12 @@ describe('Mails', () => {
   });
 
   describe('/newsletter - Subscribe contact email to newsletter list', () => {
+    beforeEach(() => {
+      jest
+        .spyOn(MailsService.prototype, 'sendContactToPlezi')
+        .mockImplementationOnce(async () => null);
+    });
+
     it('Should return 201, if all content provided', async () => {
       const response: APIResponse<MailsController['addContactForNewsletter']> =
         await request(app.getHttpServer())

@@ -74,7 +74,7 @@ export interface SendReminderInterviewTrainingJob {
 
 export interface CacheCVJob {
   candidateId: string;
-  url: string;
+  url?: string;
 }
 
 export interface CacheAllCVJob {}

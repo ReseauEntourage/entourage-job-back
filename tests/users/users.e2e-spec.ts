@@ -598,6 +598,10 @@ describe('Users', () => {
               firstName: 'D',
             });
             await userFactory.create({
+              role: UserRoles.CANDIDAT,
+              firstName: 'E',
+            });
+            await userFactory.create({
               role: UserRoles.COACH,
               firstName: 'A',
             });
@@ -613,11 +617,17 @@ describe('Users', () => {
               role: UserRoles.COACH,
               firstName: 'D',
             });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'E',
+            });
           });
           it('Should return 200 and 2 first candidates', async () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
-                .get(`${route}/members?limit=2&role=${UserRoles.CANDIDAT}`)
+                .get(
+                  `${route}/members?limit=2&offset=0&role=${UserRoles.CANDIDAT}`
+                )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
@@ -631,7 +641,9 @@ describe('Users', () => {
           it('Should return 200 and 3 first coaches', async () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
-                .get(`${route}/members?limit=3&role=${UserRoles.COACH}`)
+                .get(
+                  `${route}/members?limit=3&offset=0&role=${UserRoles.COACH}`
+                )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
@@ -719,7 +731,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDAT}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -763,7 +775,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.COACH}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -793,7 +805,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&hidden[]=true`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDAT}&hidden[]=true`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -822,7 +834,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&employed[]=true`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDAT}&employed[]=true`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -889,7 +901,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDAT}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -963,7 +975,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&businessLines[]=bat&businessLines[]=rh`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDAT}&businessLines[]=bat&businessLines[]=rh`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1003,7 +1015,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.CANDIDAT}&associatedUser[]=false`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDAT}&associatedUser[]=false`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1045,7 +1057,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?role=${UserRoles.COACH}&associatedUser[]=false`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&associatedUser[]=false`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);

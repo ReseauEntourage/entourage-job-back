@@ -9,7 +9,7 @@ import moment from 'moment/moment';
 import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
 import * as puppeteer from 'puppeteer-core';
-import { col, fn, Op, QueryTypes } from 'sequelize';
+import { col, fn, Includeable, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import {
@@ -38,7 +38,7 @@ import { Jobs, Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatuses, CVStatus } from 'src/users/users.types';
+import { CVStatus, CVStatuses } from 'src/users/users.types';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -282,6 +282,14 @@ export class CVsService {
         include: CVCompleteWithAllUserPrivateInclude,
       });
 
+      /*
+        return this.dividedCompleteCVQuery((include) => {
+          return this.cvModel.findByPk(createdCV.id, {
+            include: [include],
+          });
+        }, CVCompleteWithAllUserPrivateInclude);
+      */
+
       return cv.toJSON();
     } catch (error) {
       await t.rollback();
@@ -289,7 +297,32 @@ export class CVsService {
     }
   }
 
+  async dividedCompleteCVQuery(
+    query: (include: Includeable) => Promise<CV>,
+    includes: Includeable[]
+  ) {
+    const results = await Promise.all(
+      includes.map((include) => {
+        return query(include);
+      })
+    );
+
+    return results.reduce((acc, curr) => {
+      const cleanedCurr = curr ? curr.toJSON() : {};
+      return {
+        ...acc,
+        ...cleanedCurr,
+      };
+    }, {} as Partial<CV>);
+  }
+
   async findOne(id: string) {
+    /* return (await this.dividedCompleteCVQuery((include) => {
+      return this.cvModel.findByPk(id, {
+        include: [include],
+      });
+    }, CVCompleteWithoutUserInclude)) as CV;*/
+
     return this.cvModel.findByPk(id, {
       include: CVCompleteWithoutUserInclude,
     });
@@ -309,6 +342,18 @@ export class CVsService {
       },
       order: [['version', 'DESC']],
     });
+
+    /*
+      const cv = await this.dividedCompleteCVQuery((include) => {
+        return this.cvModel.findOne({
+          include: [include],
+          where: {
+            UserId: candidateId,
+          },
+          order: [['version', 'DESC']],
+        });
+      }, CVCompleteWithAllUserPrivateInclude);
+    */
 
     if (!cv) {
       return {} as CV;
@@ -526,8 +571,8 @@ export class CVsService {
     return cvs.length;
   }
 
-  async update(id: string, udpateCVDto: UpdateCVDto): Promise<CV> {
-    await this.cvModel.update(udpateCVDto, {
+  async update(id: string, updateCVDto: UpdateCVDto): Promise<CV> {
+    await this.cvModel.update(updateCVDto, {
       where: { id },
       individualHooks: true,
     });
@@ -680,7 +725,7 @@ export class CVsService {
     });
 
     // TODO Update Lambda to use new association objects with name
-    const response = await fetch(`${process.env.AWS_LAMBA_URL}/preview`, {
+    const response = await fetch(`${process.env.AWS_LAMBDA_URL}/preview`, {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -713,7 +758,13 @@ export class CVsService {
       }),
     });
 
-    const { previewUrl } = (await response.json()) as { previewUrl: string };
+    const responseJSON = await response.json();
+
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error(`${response.status}, ${responseJSON.message}`);
+    }
+
+    const { previewUrl } = responseJSON as { previewUrl: string };
 
     return previewUrl;
   }
@@ -904,7 +955,7 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
-  async findAndCacheOneByUrl(url: string, candidateId?: string) {
+  async findAndCacheOneByUrl(url?: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
@@ -922,6 +973,13 @@ export class CVsService {
     });
 
     if (cvs && cvs.length > 0) {
+      /*
+        const cv = await this.dividedCompleteCVQuery((include) => {
+          return this.cvModel.findByPk(cvs[0].id, {
+            include: [include],
+          });
+        }, CVCompleteWithAllUserInclude);
+      */
       const cv = await this.cvModel.findByPk(cvs[0].id, {
         include: CVCompleteWithAllUserInclude,
       });

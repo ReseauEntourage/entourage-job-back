@@ -6,15 +6,14 @@ import {
   AirtableMocks,
   BitlyMocks,
   CacheMocks,
-  MailchimpMocks,
   QueueMocks,
   SalesforceMocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { MailsService } from 'src/mails/mails.service';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
@@ -55,8 +54,6 @@ describe('Opportunities', () => {
     })
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
-      .overrideProvider(MailchimpService)
-      .useValue(MailchimpMocks)
       .overrideProvider(BitlyService)
       .useValue(BitlyMocks)
       .overrideProvider(CACHE_MANAGER)
@@ -117,6 +114,10 @@ describe('Opportunities', () => {
               loggedInCandidate,
               true
             ));
+
+          jest
+            .spyOn(MailsService.prototype, 'sendContactToPlezi')
+            .mockImplementation(async () => null);
         });
 
         it('Should return 201, if valid opportunity', async () => {
@@ -745,6 +746,7 @@ describe('Opportunities', () => {
             isValidated: false,
             isArchived: false,
             isPublic: false,
+            isExternal: false,
           });
 
           await opportunityUsersHelper.associateOpportunityUser(
@@ -913,14 +915,14 @@ describe('Opportunities', () => {
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(404);
         });
-        it('Should return 404, if candidate reads an opportunity associated to him but not validated', async () => {
+        it('Should return 404, if candidate reads an opportunity associated to him but not validated and not external', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
             await request(app.getHttpServer())
               .get(`${route}/${notValidatedOpportunity.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(404);
         });
-        it('Should return 404, if coach reads an opportunity associated to his candidate but not validated', async () => {
+        it('Should return 404, if coach reads an opportunity associated to his candidate but not validated and not external', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
             await request(app.getHttpServer())
               .get(`${route}/${notValidatedOpportunity.id}`)

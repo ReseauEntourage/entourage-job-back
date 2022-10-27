@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Put,
   Query,
@@ -51,23 +52,25 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Get('members')
   async findMembers(
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number,
     @Query()
     query: {
-      limit: number;
-      offset: number;
       query: string;
       role: UserRole | 'All';
     } & FilterParams<MemberFilterKey>
   ) {
     const order = [['firstName', 'ASC']] as Order;
-    const { limit, offset, role, query: search, ...restParams } = query;
+    const { role, query: search, ...restParams } = query;
     return this.usersService.findAllMembers({
+      ...restParams,
       limit,
       order,
       offset,
       search,
       role,
-      ...restParams,
     });
   }
 
