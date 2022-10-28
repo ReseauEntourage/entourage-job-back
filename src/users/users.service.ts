@@ -424,7 +424,7 @@ export class UsersService {
     await this.workQueue.add(
       Jobs.REMINDER_CV_10,
       {
-        candidatId: candidateId,
+        candidateId,
       },
       {
         delay:
@@ -438,7 +438,7 @@ export class UsersService {
     await this.workQueue.add(
       Jobs.REMINDER_CV_20,
       {
-        candidatId: candidateId,
+        candidateId,
       },
       {
         delay:
