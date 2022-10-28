@@ -1,8 +1,6 @@
 import fs from 'fs';
-import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
@@ -34,7 +32,8 @@ import { CloudFrontService } from 'src/external-services/aws/cloud-front.service
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { CustomMailParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
@@ -88,8 +87,7 @@ export class CVsService {
     @InjectModel(CVSearch)
     private cvSearchModel: typeof CVSearch,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
+    private queuesService: QueuesService,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
@@ -843,7 +841,7 @@ export class CVsService {
 
     await this.mailsService.sendCVPublishedMail(candidate.toJSON());
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_INTERVIEW_TRAINING,
       {
         candidateId,
@@ -857,7 +855,7 @@ export class CVsService {
           24,
       }
     );
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_VIDEO,
       {
         candidateId,
@@ -871,7 +869,7 @@ export class CVsService {
           24,
       }
     );
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_ACTIONS,
       {
         candidateId,
@@ -886,7 +884,7 @@ export class CVsService {
       }
     );
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_EXTERNAL_OFFERS,
       {
         candidateId,
@@ -1076,17 +1074,17 @@ export class CVsService {
   }
 
   async sendCacheCV(candidateId: string) {
-    await this.workQueue.add(Jobs.CACHE_CV, {
+    await this.queuesService.addToWorkQueue(Jobs.CACHE_CV, {
       candidateId,
     });
   }
 
   async sendCacheAllCVs() {
-    await this.workQueue.add(Jobs.CACHE_ALL_CVS);
+    await this.queuesService.addToWorkQueue(Jobs.CACHE_ALL_CVS, {});
   }
 
   async sendGenerateCVSearchString(candidateId: string) {
-    await this.workQueue.add(Jobs.CREATE_CV_SEARCH_STRING, {
+    await this.queuesService.addToWorkQueue(Jobs.CREATE_CV_SEARCH_STRING, {
       candidateId,
     });
   }
@@ -1096,7 +1094,7 @@ export class CVsService {
     oldImg: string,
     uploadedImg: string
   ) {
-    await this.workQueue.add(Jobs.GENERATE_CV_PREVIEW, {
+    await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PREVIEW, {
       candidateId,
       oldImg,
       uploadedImg,
@@ -1104,7 +1102,7 @@ export class CVsService {
   }
 
   async sendGenerateCVPDF(candidateId: string, token: string, paths: string[]) {
-    await this.workQueue.add(Jobs.GENERATE_CV_PDF, {
+    await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PDF, {
       candidateId,
       token,
       paths,
@@ -1164,7 +1162,7 @@ export class CVsService {
     locations: Location[],
     businessLines: BusinessLine[]
   ) {
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH,
       {
         candidateId,
