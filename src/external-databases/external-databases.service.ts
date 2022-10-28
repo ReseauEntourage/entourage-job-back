@@ -20,7 +20,7 @@ export class ExternalDatabasesService {
         opportunityId.map(async (singleOpportunityId) => {
           return this.workQueue.add(Jobs.UPDATE_AIRTABLE, {
             tableName: process.env.AIRTABLE_OFFERS,
-            singleOpportunityId,
+            opportunityId: singleOpportunityId,
           });
         }),
       ]);
@@ -47,7 +47,7 @@ export class ExternalDatabasesService {
         opportunityId.map(async (singleOpportunityId) => {
           return this.workQueue.add(Jobs.INSERT_AIRTABLE, {
             tableName: process.env.AIRTABLE_OFFERS,
-            singleOpportunityId,
+            opportunityId: singleOpportunityId,
           });
         }),
       ]);
