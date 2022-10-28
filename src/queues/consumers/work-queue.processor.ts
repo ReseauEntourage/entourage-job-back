@@ -22,7 +22,7 @@ import { VonageService } from 'src/external-services/vonage/vonage.service';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CacheCVJob,
-  GenerateCVSearchString,
+  GenerateCVSearchStringJob,
   GenerateCVPDFJob,
   Jobs,
   Queues,
@@ -34,13 +34,13 @@ import {
   SendReminderInterviewTrainingJob,
   SendReminderActionsJob,
   SendReminderExternalOffersJob,
-  CreateOrUpdateSalesforceOpportunity,
-  UpdateAirtable,
-  InsertAirtable,
-  SendNoResponseOffer,
-  SendReminderOffer,
+  CreateOrUpdateSalesforceOpportunityJob,
+  UpdateAirtableJob,
+  InsertAirtableJob,
+  SendNoResponseOfferJob,
+  SendReminderOfferJob,
   SendSMSJob,
-  SendOffersEmailAfterCVPublish,
+  SendOffersEmailAfterCVPublishJob,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -144,7 +144,7 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.REMINDER_OFFER)
-  async processSendReminderOffer(job: Job<SendReminderOffer>) {
+  async processSendReminderOffer(job: Job<SendReminderOfferJob>) {
     const { data } = job;
 
     const sentToReminderOffer =
@@ -161,7 +161,7 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.NO_RESPONSE_OFFER)
-  async processSendNoResponseOffer(job: Job<SendNoResponseOffer>) {
+  async processSendNoResponseOffer(job: Job<SendNoResponseOfferJob>) {
     const { data } = job;
 
     const sentToNoResponseOffer =
@@ -339,7 +339,7 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.CREATE_CV_SEARCH_STRING)
-  async processGenerateCVSearchString(job: Job<GenerateCVSearchString>) {
+  async processGenerateCVSearchString(job: Job<GenerateCVSearchStringJob>) {
     const { data } = job;
 
     await this.cvsService.generateSearchStringFromCV(data.candidateId);
@@ -348,7 +348,7 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.INSERT_AIRTABLE)
-  async processInsertAirtable(job: Job<InsertAirtable>) {
+  async processInsertAirtable(job: Job<InsertAirtableJob>) {
     const { data } = job;
 
     await this.airtableService.insertOpportunityAirtable(
@@ -360,7 +360,7 @@ export class WorkQueueProcessor {
   }
 
   @Process(Jobs.UPDATE_AIRTABLE)
-  async processUpdateAirtable(job: Job<UpdateAirtable>) {
+  async processUpdateAirtable(job: Job<UpdateAirtableJob>) {
     const { data } = job;
 
     await this.airtableService.updateOpportunityAirtable(
@@ -373,7 +373,7 @@ export class WorkQueueProcessor {
 
   @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY)
   async processCreateOrUpdateSalesforceOpportunity(
-    job: Job<CreateOrUpdateSalesforceOpportunity>
+    job: Job<CreateOrUpdateSalesforceOpportunityJob>
   ) {
     const { data } = job;
 
@@ -390,7 +390,7 @@ export class WorkQueueProcessor {
 
   @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)
   async processSendOffersEmailAfterCVPublish(
-    job: Job<SendOffersEmailAfterCVPublish>
+    job: Job<SendOffersEmailAfterCVPublishJob>
   ) {
     const { data } = job;
     const sendOpportunity =
@@ -399,5 +399,7 @@ export class WorkQueueProcessor {
         data.locations,
         data.businessLines
       );
+
+    console.log(sendOpportunity);
   }
 }
