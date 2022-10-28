@@ -49,6 +49,14 @@ export class UserCandidatsService {
     });
   }
 
+  async findAllById(usersIds: string[]) {
+    return this.userCandidatModel.findAll({
+      where: {
+        id: usersIds,
+      },
+    });
+  }
+
   async updateByCandidateId(
     candidateId: string,
     updateUserCandidatDto: UpdateUserCandidatDto
@@ -74,7 +82,7 @@ export class UserCandidatsService {
       });
     return {
       nbUpdated,
-      updatedUserCandidats,
+      updatedUserCandidats: updatedUserCandidats,
     };
   }
 
