@@ -542,7 +542,7 @@ export class SalesforceService {
   }
 
   async createOrUpdateSalesforceOpportunity(
-    opportunityId: string,
+    opportunityId: string | string[],
     isSameOpportunity: boolean
   ) {
     if (Array.isArray(opportunityId)) {

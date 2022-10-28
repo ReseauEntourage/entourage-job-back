@@ -31,29 +31,48 @@ export const Jobs = {
 
 export type Job = typeof Jobs[keyof typeof Jobs];
 
+type JobsDataTypes = {
+  [Jobs.GENERATE_CV_PDF]: GenerateCVPDFJob;
+  [Jobs.GENERATE_CV_PREVIEW]: GenerateCVPreviewJob;
+  [Jobs.CREATE_CV_SEARCH_STRING]: GenerateCVSearchStringJob;
+  [Jobs.CACHE_CV]: CacheCVJob;
+  [Jobs.CACHE_ALL_CVS]: CacheAllCVJob;
+  [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
+  [Jobs.SEND_SMS]: SendSMSJob | SendSMSJob[];
+  [Jobs.INSERT_AIRTABLE]: InsertAirtableJob;
+  [Jobs.UPDATE_AIRTABLE]: UpdateAirtableJob;
+  [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
+  [Jobs.REMINDER_OFFER]: SendReminderOfferJob;
+  [Jobs.REMINDER_CV_10]: SendReminderCVJob;
+  [Jobs.REMINDER_CV_20]: SendReminderCVJob;
+  [Jobs.REMINDER_VIDEO]: SendReminderVideoJob;
+  [Jobs.REMINDER_INTERVIEW_TRAINING]: SendReminderInterviewTrainingJob;
+  [Jobs.REMINDER_ACTIONS]: SendReminderActionsJob;
+  [Jobs.REMINDER_EXTERNAL_OFFERS]: SendReminderExternalOffersJob;
+  [Jobs.NO_RESPONSE_OFFER]: SendNoResponseOfferJob;
+  [Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH]: SendOffersEmailAfterCVPublishJob;
+};
+
+export type JobDataType<T extends Job> = JobsDataTypes[T];
+
 export interface SendMailJob extends CustomMailParams {
-  toEmail: string;
   templateId: MailjetTemplate;
   variables: object;
 }
 
-export interface SendSMSJob extends CustomSMSParams {
-  toPhone: string | string[];
-  text: string;
-}
+export interface SendSMSJob extends CustomSMSParams {}
 
-export interface SendReminderOffer {
+export interface SendReminderOfferJob {
   opportunityId: string;
   candidateId: string;
 }
 
-export interface SendNoResponseOffer {
+export interface SendNoResponseOfferJob {
   opportunityId: string;
 }
 
 export interface SendReminderCVJob {
   candidateId: string;
-  is20Days: boolean;
 }
 
 export interface SendReminderVideoJob {
@@ -91,28 +110,26 @@ export interface GenerateCVPreviewJob {
   oldImg: string;
 }
 
-export interface GenerateCVSearchString {
+export interface GenerateCVSearchStringJob {
   candidateId: string;
-  token: string;
-  paths: string[];
 }
 
-export interface InsertAirtable {
+export interface InsertAirtableJob {
   tableName: string;
   opportunityId: string;
 }
 
-export interface UpdateAirtable {
+export interface UpdateAirtableJob {
   tableName: string;
   opportunityId: string;
 }
 
-export interface CreateOrUpdateSalesforceOpportunity {
-  opportunityId: string;
+export interface CreateOrUpdateSalesforceOpportunityJob {
+  opportunityId: string | string[];
   isSameOpportunity: boolean;
 }
 
-export interface SendOffersEmailAfterCVPublish {
+export interface SendOffersEmailAfterCVPublishJob {
   candidateId: string;
   locations: Location[];
   businessLines: BusinessLine[];
