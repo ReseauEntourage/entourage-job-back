@@ -90,8 +90,6 @@ describe('Users', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    console.log(process.env.NODE_ENV);
-
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =

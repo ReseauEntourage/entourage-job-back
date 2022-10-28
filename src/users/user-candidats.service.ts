@@ -79,6 +79,7 @@ export class UserCandidatsService {
       await this.userCandidatModel.update(attributes, {
         where: { candidatId: userIds },
         returning: true,
+        individualHooks: true,
       });
     return {
       nbUpdated,
