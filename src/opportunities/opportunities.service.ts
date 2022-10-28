@@ -1,7 +1,5 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
@@ -18,7 +16,8 @@ import { ExternalDatabasesService } from 'src/external-databases/external-databa
 import { MailsService } from 'src/mails/mails.service';
 import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
 
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -73,8 +72,7 @@ export class OpportunitiesService {
     private businessLineModel: typeof BusinessLine,
     @InjectModel(OpportunityBusinessLine)
     private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
+    private queuesService: QueuesService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
     private cvsService: CVsService,
@@ -803,7 +801,7 @@ export class OpportunitiesService {
   async sendOnValidatedOfferMail(opportunity: Opportunity) {
     await this.mailsService.sendOnValidatedOfferMail(opportunity);
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.NO_RESPONSE_OFFER,
       {
         opportunityId: opportunity.id,
@@ -838,7 +836,7 @@ export class OpportunitiesService {
         );
 
         if (!opportunity.isPublic) {
-          await this.workQueue.add(
+          await this.queuesService.addToWorkQueue(
             Jobs.REMINDER_OFFER,
             {
               opportunityId: opportunity.id,
