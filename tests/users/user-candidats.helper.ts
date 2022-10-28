@@ -73,6 +73,10 @@ export class UserCandidatsHelper {
     );
   }
 
+  async findAllUserCandidatsById(UserIds: string[]): Promise<UserCandidat[]> {
+    return this.userCandidatsService.findAllById(UserIds);
+  }
+
   async setLastModifiedBy(candidateId: string, userId: string | null) {
     return this.userCandidatsService.updateByCandidateId(candidateId, {
       lastModifiedBy: userId,
