@@ -1,14 +1,10 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 
 @Injectable()
 export class ExternalDatabasesService {
-  constructor(
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue
-  ) {}
+  constructor(private queuesService: QueuesService) {}
 
   async updateExternalDBOpportunity(
     opportunityId: string | string[],
@@ -18,23 +14,26 @@ export class ExternalDatabasesService {
     if (Array.isArray(opportunityId)) {
       await Promise.all([
         opportunityId.map(async (singleOpportunityId) => {
-          return this.workQueue.add(Jobs.UPDATE_AIRTABLE, {
+          return this.queuesService.addToWorkQueue(Jobs.UPDATE_AIRTABLE, {
             tableName: process.env.AIRTABLE_OFFERS,
             opportunityId: singleOpportunityId,
           });
         }),
       ]);
     } else {
-      await this.workQueue.add(Jobs.UPDATE_AIRTABLE, {
+      await this.queuesService.addToWorkQueue(Jobs.UPDATE_AIRTABLE, {
         tableName: process.env.AIRTABLE_OFFERS,
         opportunityId,
       });
     }
 
-    await this.workQueue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY, {
-      opportunityId,
-      isSameOpportunity,
-    });
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
+      {
+        opportunityId,
+        isSameOpportunity,
+      }
+    );
   }
 
   async createExternalDBOpportunity(
@@ -45,22 +44,25 @@ export class ExternalDatabasesService {
     if (Array.isArray(opportunityId)) {
       await Promise.all([
         opportunityId.map(async (singleOpportunityId) => {
-          return this.workQueue.add(Jobs.INSERT_AIRTABLE, {
+          return this.queuesService.addToWorkQueue(Jobs.INSERT_AIRTABLE, {
             tableName: process.env.AIRTABLE_OFFERS,
             opportunityId: singleOpportunityId,
           });
         }),
       ]);
     } else {
-      await this.workQueue.add(Jobs.INSERT_AIRTABLE, {
+      await this.queuesService.addToWorkQueue(Jobs.INSERT_AIRTABLE, {
         tableName: process.env.AIRTABLE_OFFERS,
         opportunityId,
       });
     }
 
-    await this.workQueue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY, {
-      opportunityId,
-      isSameOpportunity,
-    });
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
+      {
+        opportunityId,
+        isSameOpportunity,
+      }
+    );
   }
 }
