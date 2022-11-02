@@ -1,26 +1,24 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
 import * as _ from 'lodash';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
 import {
   MailjetTemplateKey,
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { isValidPhone } from 'src/utils/misc';
 
 @Injectable()
 export class SMSService {
   constructor(
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
+    private queuesService: QueuesService,
     private bitlyService: BitlyService
   ) {}
 
   async sendCandidateOfferSMS(candidatePhone: string, opportunityId: string) {
     if (candidatePhone && isValidPhone(candidatePhone)) {
-      await this.workQueue.add(Jobs.SEND_SMS, {
+      await this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
         toPhone: candidatePhone,
         text: `Bonjour,\nUn recruteur vous a personnellement adressé une offre sur LinkedOut. Consultez-la ici et traitez-la avec votre coach: ${await this.bitlyService.getShortenedOfferURL(
           opportunityId,
@@ -37,7 +35,7 @@ export class SMSService {
     opportunityId: string
   ) {
     if (candidatePhone && isValidPhone(candidatePhone)) {
-      await this.workQueue.add(Jobs.SEND_SMS, {
+      await this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
         toPhone: candidatePhone,
         text: `Bonjour,\nIl y a 5 jours un recruteur vous a personnellement adressé une offre. Consultez-la ici et traitez-la avec votre coach: ${await this.bitlyService.getShortenedOfferURL(
           opportunityId,
