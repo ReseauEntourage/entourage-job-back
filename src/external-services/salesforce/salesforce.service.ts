@@ -12,7 +12,7 @@ import {
   OfferProps,
   ProcessProps,
   RecordType,
-  RecordTypeIds,
+  RecordTypesIds,
   SalesforceBinome,
   SalesforceContact,
   SalesforceError,
@@ -186,7 +186,7 @@ export class SalesforceService {
   async findBinomeByCandidateEmail(email: string) {
     const candidateSfId = await this.findContactByEmail(
       email,
-      RecordTypeIds.CANDIDATE
+      RecordTypesIds.CANDIDATE
     );
     if (!candidateSfId) {
       return null;
@@ -283,7 +283,7 @@ export class SalesforceService {
       AccountId: companySfId,
       Type_de_contact__c: 'Entreprise',
       Reseaux__c: 'LinkedOut',
-      RecordTypeId: RecordTypeIds.COMPANY,
+      RecordTypeId: RecordTypesIds.COMPANY,
       Antenne__c: formatDepartment(department),
     });
   }
@@ -329,7 +329,7 @@ export class SalesforceService {
     if (contactMail || email) {
       contactSfId = await this.findContactByEmail(
         contactMail || email,
-        RecordTypeIds.COMPANY
+        RecordTypesIds.COMPANY
       );
     }
     if (!contactSfId) {

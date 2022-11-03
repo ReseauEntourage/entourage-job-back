@@ -217,10 +217,13 @@ export class UsersController {
   async updateAll(
     @Body('attributes', UpdateUserRestrictedPipe)
     updateUserCandidatDto: UpdateUserCandidatDto,
-    @Body('ids') userIds: string[]
+    @Body('ids') usersIds: string[]
   ) {
     const { nbUpdated, updatedUserCandidats } =
-      await this.userCandidatsService.updateAll(userIds, updateUserCandidatDto);
+      await this.userCandidatsService.updateAll(
+        usersIds,
+        updateUserCandidatDto
+      );
     if (updateUserCandidatDto.hidden) {
       updatedUserCandidats.forEach(async (user) => {
         await this.usersService.uncacheCandidateCV(user.url);

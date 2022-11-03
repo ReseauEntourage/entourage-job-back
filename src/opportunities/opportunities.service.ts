@@ -141,7 +141,7 @@ export class OpportunitiesService {
     }
   }
 
-  async findAllCandidateIdsToRecommendOfferTo(
+  async findAllCandidatesIdsToRecommendOfferTo(
     department: Department,
     businessLines: BusinessLine[]
   ) {
@@ -212,7 +212,7 @@ export class OpportunitiesService {
 
   async findAllUserOpportunitiesAsAdmin(
     candidateId: string,
-    opportunityUserIds: string[],
+    opportunityUsersIds: string[],
     query: {
       search: string;
     } & FilterParams<OfferFilterKey>
@@ -230,7 +230,7 @@ export class OpportunitiesService {
     const opportunities = await this.opportunityModel.findAll({
       ...options,
       where: {
-        id: opportunityUserIds,
+        id: opportunityUsersIds,
         ...searchOptions,
         ...filterOptions,
       },
@@ -251,7 +251,7 @@ export class OpportunitiesService {
 
   async findAllAsCandidate(
     candidateId: string,
-    opportunityIds: string[],
+    opportunitiesIds: string[],
     query: {
       type: OfferCandidateTab;
       search: string;
@@ -278,9 +278,9 @@ export class OpportunitiesService {
       where: {
         [Op.or]: [
           { isPublic: true, isValidated: true, isArchived: false },
-          opportunityIds.length > 0
+          opportunitiesIds.length > 0
             ? {
-                id: opportunityIds,
+                id: opportunitiesIds,
                 isPublic: false,
                 isValidated: true,
                 isArchived: false,
@@ -580,22 +580,22 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidateIdsToRecommendTo =
+    const candidatesIdsToRecommendTo =
       opportunity.isPublic && opportunity.isValidated
-        ? await this.findAllCandidateIdsToRecommendOfferTo(
+        ? await this.findAllCandidatesIdsToRecommendOfferTo(
             opportunity.department,
             opportunity.businessLines
           )
         : [];
 
-    if (candidatesId?.length > 0 || candidateIdsToRecommendTo?.length > 0) {
-      const uniqueCandidateIds = _.uniq([
+    if (candidatesId?.length > 0 || candidatesIdsToRecommendTo?.length > 0) {
+      const uniqueCandidatesIds = _.uniq([
         ...(candidatesId || []),
-        ...(candidateIdsToRecommendTo || []),
+        ...(candidatesIdsToRecommendTo || []),
       ]);
 
       await Promise.all(
-        uniqueCandidateIds.map((candidateId) => {
+        uniqueCandidatesIds.map((candidateId) => {
           return this.opportunityUsersService.create({
             OpportunityId: opportunity.id,
             UserId: candidateId,
@@ -604,8 +604,8 @@ export class OpportunitiesService {
         })
       );
 
-      return this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
-        uniqueCandidateIds,
+      return this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
+        uniqueCandidatesIds,
         opportunity.id
       );
     }
@@ -621,7 +621,7 @@ export class OpportunitiesService {
       opportunity.isPublic &&
       !oldOpportunity.isValidated &&
       opportunity.isValidated
-        ? await this.findAllCandidateIdsToRecommendOfferTo(
+        ? await this.findAllCandidatesIdsToRecommendOfferTo(
             opportunity.department,
             opportunity.businessLines
           )
@@ -713,7 +713,7 @@ export class OpportunitiesService {
         : null;
 
     const opportunityUsers =
-      await this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
+      await this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
         newCandidatesIdsToSendMailTo,
         opportunity.id
       );
