@@ -74,7 +74,7 @@ export class UserCandidatsHelper {
   }
 
   async findAllUserCandidatsById(usersIds: string[]): Promise<UserCandidat[]> {
-    return this.userCandidatsService.findAllById(UserIds);
+    return this.userCandidatsService.findAllById(usersIds);
   }
 
   async setLastModifiedBy(candidateId: string, userId: string | null) {
