@@ -731,7 +731,10 @@ export class CVsService {
       method: 'POST',
       body: JSON.stringify({
         cv: {
-          ...cv,
+          UserId: cv.UserId,
+          status: cv.status,
+          urlImg: cv.urlImg,
+          catchphrase: cv.catchphrase,
           skills: cv.skills.map(({ name }) => name),
           locations: cv.locations.map(({ name }) => name),
           ambitions: isNewCareerPath
