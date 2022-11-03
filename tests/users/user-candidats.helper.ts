@@ -73,7 +73,7 @@ export class UserCandidatsHelper {
     );
   }
 
-  async findAllUserCandidatsById(UserIds: string[]): Promise<UserCandidat[]> {
+  async findAllUserCandidatsById(usersIds: string[]): Promise<UserCandidat[]> {
     return this.userCandidatsService.findAllById(UserIds);
   }
 
