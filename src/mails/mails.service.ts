@@ -1,6 +1,4 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
-import { Queue } from 'bull';
 import * as _ from 'lodash';
 import fetch from 'node-fetch';
 import qs from 'qs';
@@ -17,7 +15,8 @@ import {
   OpportunityRestricted,
 } from 'src/opportunities/opportunities.types';
 import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/opportunities.utils';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
@@ -39,10 +38,7 @@ import {
 
 @Injectable()
 export class MailsService {
-  constructor(
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue
-  ) {}
+  constructor(private queuesService: QueuesService) {}
 
   async sendContactToPlezi(
     email: string,
@@ -108,7 +104,7 @@ export class MailsService {
   ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
-    return this.workQueue.add(Jobs.SEND_MAIL, {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       replyTo: candidatesAdminMail,
       templateId: MailjetTemplates.PASSWORD_RESET,
@@ -125,7 +121,7 @@ export class MailsService {
   ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
-    return this.workQueue.add(Jobs.SEND_MAIL, {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       replyTo: candidatesAdminMail,
       templateId: MailjetTemplates.ACCOUNT_CREATED,
@@ -145,7 +141,7 @@ export class MailsService {
     }
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.SEND_MAIL,
       {
         toEmail,
@@ -175,7 +171,7 @@ export class MailsService {
 
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail,
       templateId: MailjetTemplates.CV_PUBLISHED,
       replyTo: candidatesAdminMail,
@@ -188,7 +184,7 @@ export class MailsService {
   async sendCVSubmittedMail(coach: User, cv: Partial<CV>) {
     const { candidatesAdminMail } = getAdminMailsFromZone(coach.zone);
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: candidatesAdminMail,
       templateId: MailjetTemplates.CV_SUBMITTED,
       variables: {
@@ -205,7 +201,7 @@ export class MailsService {
   ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail,
       templateId: is20Days
         ? MailjetTemplates.CV_REMINDER_20
@@ -231,7 +227,7 @@ export class MailsService {
       }
       const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
-      await this.workQueue.add(Jobs.SEND_MAIL, {
+      await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail,
         templateId: templateId,
         replyTo: candidatesAdminMail,
@@ -273,7 +269,7 @@ export class MailsService {
   }
 
   async sendContactUsMail(contactUsFormDto: ContactUsFormDto) {
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: process.env.MAILJET_CONTACT_EMAIL,
       templateId: MailjetTemplates.CONTACT_FORM,
       variables: {
@@ -300,13 +296,13 @@ export class MailsService {
 
     const variables = getMailjetVariablesForPrivateOrPublicOffer(opportunity);
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: companiesAdminMail,
       templateId: MailjetTemplates.OFFER_TO_VALIDATE,
       variables,
     });
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: opportunity.recruiterMail,
       replyTo: companiesAdminMail,
       templateId: MailjetTemplates.OFFER_SENT,
@@ -318,7 +314,7 @@ export class MailsService {
     const { companiesAdminMail } = getAdminMailsFromDepartment(
       opportunity.department
     );
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: companiesAdminMail,
       templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED,
       variables: {
@@ -338,7 +334,7 @@ export class MailsService {
 
     const variables = getMailjetVariablesForPrivateOrPublicOffer(opportunity);
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: opportunity.contactMail || opportunity.recruiterMail,
       replyTo: companiesAdminMail,
       templateId: opportunity.isPublic
@@ -347,7 +343,7 @@ export class MailsService {
       variables,
     });
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: candidatesAdminMail,
       templateId: MailjetTemplates.OFFER_VALIDATED_ADMIN,
       variables,
@@ -374,7 +370,7 @@ export class MailsService {
       toEmail.cc = coach.email;
     }
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail,
       templateId: opportunity.isPublic
         ? MailjetTemplates.OFFER_RECOMMENDED
@@ -415,7 +411,7 @@ export class MailsService {
         toEmail.cc = coach.email;
       }
 
-      await this.workQueue.add(Jobs.SEND_MAIL, {
+      await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail,
         templateId: MailjetTemplates.OFFER_REMINDER,
         replyTo: candidatesAdminMail,
@@ -448,7 +444,7 @@ export class MailsService {
           ],
         };
 
-        await this.workQueue.add(Jobs.SEND_MAIL, {
+        await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
           toEmail,
           templateId: opportunity.isPublic
             ? MailjetTemplates.OFFER_PUBLIC_NO_RESPONSE
@@ -483,7 +479,7 @@ export class MailsService {
       opportunityUser.user.zone
     );
 
-    await this.workQueue.add(Jobs.SEND_MAIL, {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: candidatesAdminMail,
       templateId: MailjetTemplates.STATUS_CHANGED,
       variables: mailVariables,
@@ -498,7 +494,7 @@ export class MailsService {
         opportunity.department
       );
 
-      await this.workQueue.add(Jobs.SEND_MAIL, {
+      await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: opportunity.contactMail || opportunity.recruiterMail,
         replyTo: companiesAdminMail,
         templateId: MailjetTemplates.OFFER_REFUSED,
@@ -512,7 +508,7 @@ export class MailsService {
     opportunities: Opportunity[]
   ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.SEND_MAIL,
       opportunities.map((opportunity) => {
         return {

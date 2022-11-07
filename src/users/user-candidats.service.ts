@@ -74,10 +74,10 @@ export class UserCandidatsService {
     return updatedUserCandidat.toJSON();
   }
 
-  async updateAll(userIds: string[], attributes: UpdateUserCandidatDto) {
+  async updateAll(usersIds: string[], attributes: UpdateUserCandidatDto) {
     const [nbUpdated, updatedUserCandidats] =
       await this.userCandidatModel.update(attributes, {
-        where: { candidatId: userIds },
+        where: { candidatId: usersIds },
         returning: true,
         individualHooks: true,
       });

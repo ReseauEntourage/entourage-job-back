@@ -26,12 +26,12 @@ export class OpportunityUsersHelper {
   }
 
   async associateManyOpportunityUsers(
-    opportunityIds: string[],
+    opportunitiesIds: string[],
     candidateId: string,
     props: Partial<OpportunityUser> = {}
   ) {
     return Promise.all(
-      opportunityIds.map((opportunityId) => {
+      opportunitiesIds.map((opportunityId) => {
         return this.associateOpportunityUser(opportunityId, candidateId, props);
       })
     );

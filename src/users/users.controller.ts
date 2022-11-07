@@ -217,10 +217,13 @@ export class UsersController {
   async updateAll(
     @Body('attributes', UpdateUserRestrictedPipe)
     updateUserCandidatDto: UpdateUserCandidatDto,
-    @Body('ids') userIds: string[]
+    @Body('ids') usersIds: string[]
   ) {
     const { nbUpdated, updatedUserCandidats } =
-      await this.userCandidatsService.updateAll(userIds, updateUserCandidatDto);
+      await this.userCandidatsService.updateAll(
+        usersIds,
+        updateUserCandidatDto
+      );
     if (updateUserCandidatDto.hidden) {
       updatedUserCandidats.forEach(async (user) => {
         await this.usersService.uncacheCandidateCV(user.url);
@@ -258,16 +261,19 @@ export class UsersController {
         lastModifiedBy: userId,
       });
 
-    if (updatedUserCandidat.coachId !== userCandidat.coachId) {
+    if (
+      updatedUserCandidat.coach &&
+      updatedUserCandidat.coach.id !== userCandidat.coach?.id
+    ) {
       await this.usersService.sendMailsAfterMatching(
-        updatedUserCandidat.candidatId
+        updatedUserCandidat.candidat.id
       );
     }
 
     if (updatedUserCandidat.hidden) {
       await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
     } else {
-      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidatId);
+      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidat.id);
     }
 
     await this.usersService.cacheAllCVs();
