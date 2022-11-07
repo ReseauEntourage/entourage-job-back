@@ -1739,7 +1739,7 @@ describe('Users', () => {
             ])
           );
         });
-        it('Should return 403, if not logged in as admin', async () => {
+        it('Should return 403, if not logged in as candidate', async () => {
           const originalUsers = await databaseHelper.createEntities(
             userFactory,
             5,
@@ -1762,7 +1762,19 @@ describe('Users', () => {
                 ids: originalUsersIds,
               });
           expect(responseCandidate.status).toBe(403);
-
+        });
+        it('Should return 403, if not logged in as coach', async () => {
+          const originalUsers = await databaseHelper.createEntities(
+            userFactory,
+            5,
+            {
+              role: UserRoles.CANDIDAT,
+              userCandidat: { hidden: true },
+            }
+          );
+          const originalUsersIds = originalUsers.map(({ id }) => {
+            return id;
+          });
           const responseCoach: APIResponse<UsersController['updateAll']> =
             await request(app.getHttpServer())
               .put(`${route}/candidat/bulk`)
