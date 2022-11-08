@@ -44,11 +44,10 @@ export class CreateOpportunityDto extends PickType(Opportunity, [
   'otherInfo',
   'businessLines',
 ] as const) {
-  // TODO change to candidateIds
   @ApiProperty()
   @IsOptional()
   @IsArray()
-  candidatesId?: string[];
+  candidatesIds?: string[];
 
   @ApiProperty()
   @IsOptional()

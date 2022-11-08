@@ -93,7 +93,7 @@ export class OpportunitiesService {
           | 'locations'
           | 'shouldSendNotifications'
           | 'isCopy'
-          | 'candidatesId'
+          | 'candidatesIds'
         >
       | Omit<
           CreateExternalOpportunityDto | CreateExternalOpportunityRestrictedDto,
@@ -387,7 +387,7 @@ export class OpportunitiesService {
 
   async findOneCandidate(candidateId: string) {
     const user = await this.usersService.findOne(candidateId);
-    if (!user || user.role !== UserRoles.CANDIDAT) {
+    if (!user || user.role !== UserRoles.CANDIDATE) {
       return null;
     }
     return user;
@@ -396,8 +396,8 @@ export class OpportunitiesService {
   async update(
     id: string,
     updateOpportunityDto:
-      | Omit<UpdateOpportunityDto, 'id' | 'shouldSendNotifications'>
-      | Omit<UpdateExternalOpportunityDto, 'id'>
+      | Omit<UpdateOpportunityDto, 'shouldSendNotifications'>
+      | UpdateExternalOpportunityDto
   ) {
     const t = await this.opportunityModel.sequelize.transaction();
 
@@ -450,7 +450,7 @@ export class OpportunitiesService {
       UpdateOpportunityDto,
       | 'id'
       | 'shouldSendNotifications'
-      | 'candidatesId'
+      | 'candidatesIds'
       | 'isAdmin'
       | 'isCopy'
       | 'locations'
@@ -586,7 +586,7 @@ export class OpportunitiesService {
 
   async associateCandidatesToOpportunity(
     opportunity: Opportunity,
-    candidatesId: string[]
+    candidatesIds: string[]
   ) {
 
     // disable auto recommandation feature
@@ -599,11 +599,11 @@ export class OpportunitiesService {
     //     : [];
 
     if (
-      candidatesId?.length > 0
+      candidatesIds?.length > 0
       // || candidatesIdsToRecommendTo?.length > 0
     ) {
       const uniqueCandidatesIds = _.uniq([
-        ...(candidatesId || []),
+        ...(candidatesIds || []),
         // ...(candidatesIdsToRecommendTo || []),
       ]);
 
@@ -628,7 +628,7 @@ export class OpportunitiesService {
   async updateAssociatedCandidatesToOpportunity(
     opportunity: Opportunity,
     oldOpportunity: Opportunity,
-    candidatesId?: string[]
+    candidatesIds?: string[]
   ) {
     const candidatesToRecommendTo =
       opportunity.isPublic &&
@@ -641,7 +641,7 @@ export class OpportunitiesService {
         : [];
 
     const uniqueCandidatesIds = _.uniq([
-      ...(candidatesId ||
+      ...(candidatesIds ||
         opportunity.opportunityUsers.map(({ UserId }) => UserId) ||
         []),
       ...(candidatesToRecommendTo || []),
