@@ -9,13 +9,13 @@ export class RevisionChangesService {
     private revisionChangeModel: typeof RevisionChange
   ) {}
 
-  async updateByRevisionIds(
-    revisionIds: string[],
+  async updateByRevisionsIds(
+    revisionsIds: string[],
     updateRevisionChangeDto: Partial<RevisionChange>
   ) {
     return this.revisionChangeModel.update(updateRevisionChangeDto, {
       where: {
-        revisionId: revisionIds,
+        revisionId: revisionsIds,
       },
     });
   }
