@@ -52,13 +52,13 @@ export class OpportunityUsersService {
     });
   }
 
-  async findAllByCandidateIdsAndOpportunityId(
-    candidateIds: string[],
+  async findAllByCandidatesIdsAndOpportunityId(
+    candidatesIds: string[],
     opportunityId: string
   ) {
     return this.opportunityUserModel.findAll({
       where: {
-        UserId: candidateIds,
+        UserId: candidatesIds,
         OpportunityId: opportunityId,
       },
       include: OpportunityCandidateInclude,

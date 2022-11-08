@@ -36,13 +36,13 @@ export const ObjectNames = {
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
 
-export const RecordTypeIds = {
+export const RecordTypesIds = {
   COACH: '0127Q000000Ub9wQAC',
   CANDIDATE: '0127Q000000UbNVQA0',
   COMPANY: '0127Q000000Uhq0QAC',
 } as const;
 
-export type RecordType = typeof RecordTypeIds[keyof typeof RecordTypeIds];
+export type RecordType = typeof RecordTypesIds[keyof typeof RecordTypesIds];
 
 export interface ProcessProps {
   id: string;

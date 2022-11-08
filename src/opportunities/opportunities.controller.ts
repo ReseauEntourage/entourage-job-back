@@ -344,13 +344,13 @@ export class OpportunitiesController {
       return [] as Opportunity[];
     }
 
-    const opportunityIds = opportunityUsers.map((opportunityUser) => {
+    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
       return opportunityUser.OpportunityId;
     });
 
     return this.opportunitiesService.findAllUserOpportunitiesAsAdmin(
       candidateId,
-      opportunityIds,
+      opportunitiesIds,
       query
     );
   }
@@ -375,13 +375,13 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const opportunityIds = opportunityUsers.map((opportunityUser) => {
+    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
       return opportunityUser.OpportunityId;
     });
 
     const opportunities = await this.opportunitiesService.findAllAsCandidate(
       candidateId,
-      opportunityIds,
+      opportunitiesIds,
       query
     );
 
@@ -399,7 +399,7 @@ export class OpportunitiesController {
       const otherOpportunities =
         await this.opportunitiesService.findAllAsCandidate(
           candidateId,
-          opportunityIds,
+          opportunitiesIds,
           {
             department: otherDepartments.map((dept) => {
               return dept.value;
@@ -521,7 +521,7 @@ export class OpportunitiesController {
   async updateAll(
     @Body('attributes', UpdateOpportunityPipe)
     updateOpportunityDto: UpdateOpportunityDto,
-    @Body('ids') opportunityIds: string[]
+    @Body('ids') opportunitiesIds: string[]
   ) {
     const {
       shouldSendNotifications,
@@ -534,7 +534,7 @@ export class OpportunitiesController {
 
     const updatedOpportunities = await this.opportunitiesService.updateAll(
       restOpportunity,
-      opportunityIds
+      opportunitiesIds
     );
 
     await this.opportunitiesService.updateExternalDBOpportunity(
