@@ -60,6 +60,7 @@ import {
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { ContactsService } from 'src/contacts/contacts.service';
 
 @Injectable()
 export class OpportunitiesService {
@@ -78,6 +79,7 @@ export class OpportunitiesService {
     private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
+    private contactsService: ContactsService,
     private smsService: SMSService
   ) {}
 
@@ -761,7 +763,7 @@ export class OpportunitiesService {
       }
     }
     try {
-      await this.mailsService.sendContactToPlezi(
+      await this.contactsService.sendContactToPlezi(
         opportunity.contactMail || opportunity.recruiterMail,
         getZoneFromDepartment(opportunity.department),
         ContactStatuses.COMPANY,

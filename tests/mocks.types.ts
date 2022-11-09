@@ -1,12 +1,24 @@
-export const QueueMocks = { add: jest.fn() } as const;
+import { Queue } from 'bull';
+import { Cache } from 'cache-manager';
+import { AirtableService } from 'src/external-services/airtable/airtable.service';
+import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
+import { S3Service } from 'src/external-services/aws/s3.service';
+import { BitlyService } from 'src/external-services/bitly/bitly.service';
+import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 
-export const CacheMocks = {
+type ProviderMock<T> = Record<keyof T, jest.Mock>;
+
+export const QueueMocks: Partial<ProviderMock<Queue>> = {
+  add: jest.fn(),
+} as const;
+
+export const CacheMocks: Partial<ProviderMock<Cache>> = {
   get: jest.fn(),
   set: jest.fn(),
   del: jest.fn(),
 } as const;
 
-export const S3Mocks = {
+export const S3Mocks: ProviderMock<S3Service> = {
   upload: jest.fn(async () => {
     return 'key';
   }),
@@ -21,19 +33,19 @@ export const S3Mocks = {
   }),
 } as const;
 
-export const CloudFrontMocks = {
+export const CloudFrontMocks: ProviderMock<CloudFrontService> = {
   invalidateCache: jest.fn(async () => {
     return 'id';
   }),
 } as const;
 
-export const BitlyMocks = {
+export const BitlyMocks: ProviderMock<BitlyService> = {
   getShortenedOfferURL: jest.fn(async () => {
     return 'url';
   }),
-};
+} as const;
 
-export const SalesforceMocks = {
+export const SalesforceMocks: ProviderMock<SalesforceService> = {
   loginToSalesforce: jest.fn(),
   refreshSalesforceInstance: jest.fn(),
   createRecord: jest.fn(),
@@ -43,23 +55,29 @@ export const SalesforceMocks = {
   searchCompanyByName: jest.fn(),
   findBinomeByCandidateEmail: jest.fn(),
   findContactByEmail: jest.fn(),
+  findContact: jest.fn(),
+  findLead: jest.fn(),
   findBinomeByCandidateSfId: jest.fn(),
   findOfferById: jest.fn(),
   findOfferRelationsById: jest.fn(),
   findProcessById: jest.fn(),
   createCompany: jest.fn(),
   createContact: jest.fn(),
+  createLead: jest.fn(),
   findOrCreateCompany: jest.fn(),
   findOrCreateContact: jest.fn(),
+  findOrCreateLead: jest.fn(),
   findOrCreateCompanyAndContactFromOffer: jest.fn(),
+  findOrCreateCompanyAndLeadFromCompanyForm: jest.fn(),
   getProcessToCreate: jest.fn(),
   createOrUpdateSalesforceProcess: jest.fn(),
   createOrUpdateSalesforceOffer: jest.fn(),
   findOfferFromOpportunityId: jest.fn(),
   createOrUpdateSalesforceOpportunity: jest.fn(),
-};
+  createOrUpdateSalesforceLead: jest.fn(),
+} as const;
 
-export const AirtableMocks = {
+export const AirtableMocks: ProviderMock<AirtableService> = {
   insertOpportunityAirtable: jest.fn(),
   updateOpportunityAirtable: jest.fn(),
-};
+} as const;

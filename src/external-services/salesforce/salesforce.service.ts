@@ -4,9 +4,11 @@ import { Connection, SuccessResult, Record } from 'jsforce';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
+  CompanyFormProps,
   CompanyProps,
   ContactProps,
   ErrorCodes,
+  LeadProps,
   ObjectNames,
   OfferAndProcessProps,
   OfferProps,
@@ -16,6 +18,7 @@ import {
   SalesforceBinome,
   SalesforceContact,
   SalesforceError,
+  SalesforceLead,
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
@@ -24,6 +27,7 @@ import {
   formatBusinessLines,
   formatCompanyName,
   formatDepartment,
+  formatRegions,
   mapProcessFromOpportunityUser,
   mapSalesforceOfferFields,
   mapSalesforceProcessFields,
@@ -203,6 +207,45 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
+  async findContact(
+    firstName: string,
+    lastName: string,
+    email: string,
+    phone: string,
+    recordType: RecordType
+  ) {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceContact>[] } =
+      await this.salesforce.query(
+        `SELECT Id FROM ${ObjectNames.CONTACT} WHERE (Adresse_email_unique__c='${email}' OR Email='${email}') 
+                       AND Phone='${phone}' AND FirstName='${firstName}' 
+                       AND LastName='${firstName}'
+                       AND RecordTypeId='${recordType}' LIMIT 1`
+      );
+    return records[0]?.Id;
+  }
+
+  async findLead(
+    firstName: string,
+    lastName: string,
+    email: string,
+    phone: string,
+    recordType: RecordType
+  ) {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceLead>[] } =
+      await this.salesforce.query(
+        `
+            SELECT Id FROM ${ObjectNames.LEAD} 
+            WHERE (Adresse_email_unique__c='${email}' OR Email='${email}') 
+              AND Phone='${phone}' AND FirstName='${firstName}' 
+              AND LastName='${firstName}'
+              AND RecordTypeId='${recordType}' LIMIT 1
+          `
+      );
+    return records[0]?.Id;
+  }
+
   async findBinomeByCandidateSfId<T>(id: T) {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceBinome>[] } =
@@ -288,6 +331,27 @@ export class SalesforceService {
     });
   }
 
+  async createLead({
+    firstName,
+    lastName,
+    email,
+    phone,
+    regions,
+    companySfId,
+  }: LeadProps) {
+    return this.createRecord(ObjectNames.LEAD, {
+      LastName: lastName,
+      FirstName: firstName,
+      Email: email,
+      Phone: phone,
+      AccountId: companySfId,
+      Type_de_contact__c: 'Entreprise',
+      Reseaux__c: 'LinkedOut',
+      RecordTypeId: RecordTypesIds.COMPANY,
+      Antenne__c: formatRegions(regions),
+    });
+  }
+
   async findOrCreateCompany({
     name,
     address,
@@ -325,15 +389,16 @@ export class SalesforceService {
     phone,
     position,
   }: ContactProps & { contactMail: string; mainCompanySfId: string }) {
-    let contactSfId;
-    if (contactMail || email) {
-      contactSfId = await this.findContactByEmail(
-        contactMail || email,
-        RecordTypesIds.COMPANY
-      );
-    }
+    let contactSfId = await this.findContact(
+      firstName,
+      lastName,
+      contactMail || email,
+      phone,
+      RecordTypesIds.COMPANY
+    );
+
     if (!contactSfId) {
-      contactSfId = await this.createContact(
+      contactSfId = (await this.createContact(
         contactMail
           ? {
               lastName: 'Inconnu',
@@ -350,9 +415,38 @@ export class SalesforceService {
               department,
               companySfId: mainCompanySfId || companySfId,
             }
-      );
+      )) as string;
     }
     return contactSfId;
+  }
+
+  async findOrCreateLead({
+    firstName,
+    lastName,
+    email,
+    phone,
+    regions,
+    companySfId,
+  }: LeadProps) {
+    let leadSfId = await this.findLead(
+      firstName,
+      lastName,
+      email,
+      phone,
+      RecordTypesIds.COMPANY
+    );
+
+    if (!leadSfId) {
+      leadSfId = (await this.createLead({
+        firstName,
+        lastName,
+        email,
+        phone,
+        regions,
+        companySfId,
+      })) as string;
+    }
+    return leadSfId;
   }
 
   async findOrCreateCompanyAndContactFromOffer(
@@ -404,6 +498,25 @@ export class SalesforceService {
     }
 
     return { contactSfId, companySfId };
+  }
+
+  async findOrCreateCompanyAndLeadFromCompanyForm(lead: CompanyFormProps) {
+    const { firstName, lastName, email, phone, company, regions } = lead;
+
+    const companySfId = await this.findOrCreateCompany({
+      name: company,
+    });
+
+    const leadSfId = (await this.findOrCreateLead({
+      firstName,
+      lastName,
+      email,
+      phone,
+      regions,
+      companySfId,
+    })) as string;
+
+    return { leadSfId, companySfId };
   }
 
   async getProcessToCreate(
@@ -561,5 +674,9 @@ export class SalesforceService {
       );
       return this.createOrUpdateSalesforceOffer(offerToCreate);
     }
+  }
+
+  async createOrUpdateSalesforceLead(lead: CompanyFormProps) {
+    return this.findOrCreateCompanyAndLeadFromCompanyForm(lead);
   }
 }

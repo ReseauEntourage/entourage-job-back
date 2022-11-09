@@ -5,6 +5,7 @@ import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
+import { AdminZone } from '../../utils/types';
 
 export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
@@ -28,6 +29,7 @@ export interface SalesforceError {
 
 export const ObjectNames = {
   COMPANY: 'Account',
+  LEAD: 'Lead',
   PROCESS: 'Processus_d_offres__c',
   OFFER: 'Offre_d_emploi__c',
   CONTACT: 'Contact',
@@ -149,10 +151,10 @@ export interface OfferAndProcessProps {
 
 export interface CompanyProps {
   name: string;
-  businessLines: BusinessLine[];
-  address: string;
-  department: Department;
-  mainCompanySfId: string;
+  businessLines?: BusinessLine[];
+  address?: string;
+  department?: Department;
+  mainCompanySfId?: string;
 }
 
 export interface SalesforceCompany {
@@ -181,6 +183,19 @@ export interface SalesforceContact {
   Antenne__c?: string;
 }
 
+export interface SalesforceLead {
+  Id?: string;
+  LastName: string;
+  FirstName: string;
+  Email: string;
+  Phone: string;
+  AccountId: string;
+  Type_de_contact__c: 'Entreprise';
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: RecordType;
+  Antenne__c?: string;
+}
+
 export interface ContactProps {
   firstName?: string;
   lastName: string;
@@ -191,6 +206,24 @@ export interface ContactProps {
   companySfId: string;
 }
 
+export interface LeadProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  regions: AdminZone[];
+  companySfId: string;
+}
+
+export interface CompanyFormProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  regions: AdminZone[];
+  company: string;
+}
+
 export interface SalesforceBinome {
   Id?: string;
 }
@@ -199,4 +232,5 @@ export type SalesforceObject =
   | SalesforceOffer
   | SalesforceProcess
   | SalesforceCompany
-  | SalesforceContact;
+  | SalesforceContact
+  | SalesforceLead;

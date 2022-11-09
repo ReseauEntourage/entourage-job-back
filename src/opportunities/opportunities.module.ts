@@ -15,6 +15,7 @@ import {
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { ContactsModule } from 'src/contacts/contacts.module';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -26,6 +27,7 @@ import { OpportunityUsersService } from './opportunity-users.service';
     CVsModule,
     BusinessLinesModule,
     MailsModule,
+    ContactsModule,
     SMSModule,
     ExternalDatabasesModule,
     QueuesModule,

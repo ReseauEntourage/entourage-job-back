@@ -8,7 +8,7 @@ import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.type
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones } from 'src/utils/types';
+import { AdminZone, AdminZones } from 'src/utils/types';
 import {
   OfferProps,
   ProcessProps,
@@ -31,6 +31,16 @@ export function formatDepartment(department: Department) {
     return 'National';
   }
   return _.capitalize(AdminZones[getZoneSuffixFromDepartment(department)]);
+}
+
+export function formatRegions(regions: AdminZone[]) {
+  return _.uniq(
+    regions.map((region) => {
+      return _.capitalize(region);
+    })
+  )
+    .toString()
+    .replace(',', ';');
 }
 
 export function formatCompanyName(
