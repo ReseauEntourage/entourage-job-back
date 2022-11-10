@@ -85,7 +85,9 @@ export function mapAirtableOpportunityFields(
       : undefined,
     Département: opportunity.department,
     Adresse: opportunity.address,
-    Contrat: findConstantFromValue(opportunity.contract, ContractFilters).label,
+    Contrat: opportunity.contract
+      ? findConstantFromValue(opportunity.contract, ContractFilters).label
+      : undefined,
     'Début de contrat': opportunity.startOfContract
       ? moment(opportunity.startOfContract).toISOString()
       : undefined,
