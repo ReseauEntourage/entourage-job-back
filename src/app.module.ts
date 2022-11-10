@@ -28,6 +28,7 @@ import { ExternalDatabasesModule } from './external-databases/external-databases
 import { AirtableModule } from './external-services/airtable/airtable.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
@@ -119,6 +120,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SMSModule,
     BitlyModule,
     ContactsModule,
+    PleziModule,
   ],
   providers: [
     {

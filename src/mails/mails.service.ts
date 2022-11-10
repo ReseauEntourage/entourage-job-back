@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as _ from 'lodash';
 
+import { HeardAboutFilters } from 'src/contacts/contacts.types';
+import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
 import {
   CustomMailParams,
@@ -23,8 +25,6 @@ import {
   getZoneFromDepartment,
 } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { ContactUsFormDto } from './dto';
-import { HeardAboutFilters } from './mails.types';
 
 @Injectable()
 export class MailsService {

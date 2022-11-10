@@ -2,8 +2,8 @@
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
-import { ContactUsFormDto } from 'src/mails/dto';
-import { HeardAboutFilters } from 'src/mails/mails.types';
+import { HeardAboutFilters } from 'src/contacts/contacts.types';
+import { ContactUsFormDto } from 'src/contacts/dto';
 import { Factory } from 'src/utils/types';
 
 @Injectable()

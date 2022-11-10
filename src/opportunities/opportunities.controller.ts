@@ -13,11 +13,10 @@ import {
   Put,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
-import { PayloadUser } from '../auth/auth.types';
-import { PleziTrackingData } from '../mails/mails.types';
-import { getCandidateIdFromCoachOrCandidate } from '../users/users.utils';
+import { PayloadUser } from 'src/auth/auth.types';
 import { Public, UserPayload } from 'src/auth/guards';
 import { DepartmentFilters } from 'src/common/locations/locations.types';
+import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 import {
   LinkedUser,
   LinkedUserGuard,
@@ -25,6 +24,7 @@ import {
   RolesGuard,
 } from 'src/users/guards';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';

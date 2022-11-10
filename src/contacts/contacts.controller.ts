@@ -5,15 +5,19 @@ import {
   ContactCompanyFormPipe,
   ContactUsFormDto,
   ContactUsFormPipe,
-} from 'src/mails/dto';
-import { ContactStatus, PleziTrackingData } from 'src/mails/mails.types';
+} from 'src/contacts/dto';
+import {
+  ContactStatus,
+  PleziTrackingData,
+} from 'src/external-services/plezi/plezi.types';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
 import { ContactsService } from './contacts.service';
 
-@Controller('forms')
+// TODO change to /contacts
+@Controller('contact')
 export class ContactsController {
-  constructor(private readonly formsService: ContactsService) {}
+  constructor(private readonly contactsService: ContactsService) {}
 
   // TODO change to contactUs
   @Public()
@@ -25,11 +29,11 @@ export class ContactsController {
       throw new BadRequestException();
     }
 
-    return this.formsService.sendContactUsMail(contactUsFormDto);
+    return this.contactsService.sendContactUsMail(contactUsFormDto);
   }
 
   @Public()
-  @Post('contactCompany')
+  @Post('company')
   async sendMailContactCompanyForm(
     @Body(new ContactCompanyFormPipe())
     contactCompanyFormDto: ContactCompanyFormDto
@@ -41,7 +45,7 @@ export class ContactsController {
       throw new BadRequestException();
     }
 
-    return this.formsService.sendContactToSalesforce(contactCompanyFormDto);
+    return this.contactsService.sendContactToSalesforce(contactCompanyFormDto);
   }
 
   @Public()
@@ -59,7 +63,7 @@ export class ContactsController {
       throw new BadRequestException();
     }
 
-    return this.formsService.sendContactToPlezi(
+    return this.contactsService.sendContactToPlezi(
       email,
       zone,
       status,

@@ -3,6 +3,7 @@ import { BusinessLineFilters } from 'src/common/businessLines/businessLines.type
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
+import { CompanyApproach, HeardAboutValue } from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
@@ -10,6 +11,8 @@ import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZone, AdminZones } from 'src/utils/types';
 import {
+  LeadApproaches,
+  LeadHeardAbout,
   OfferProps,
   ProcessProps,
   SalesforceOffer,
@@ -17,13 +20,15 @@ import {
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
-  return _.uniq(
-    businessLines.map(({ name }) => {
-      return findConstantFromValue(name, BusinessLineFilters).label;
-    })
-  )
-    .toString()
-    .replace(',', ';');
+  if (businessLines) {
+    return _.uniq(
+      businessLines.map(({ name }) => {
+        return findConstantFromValue(name, BusinessLineFilters).label;
+      })
+    )
+      .toString()
+      .replace(',', ';');
+  }
 }
 
 export function formatDepartment(department: Department) {
@@ -41,6 +46,18 @@ export function formatRegions(regions: AdminZone[]) {
   )
     .toString()
     .replace(',', ';');
+}
+
+export function formatApproach(approach: CompanyApproach) {
+  if (approach) {
+    return LeadApproaches[approach].toString();
+  }
+}
+
+export function formatHeardAbout(heardAbout: HeardAboutValue) {
+  if (heardAbout) {
+    return LeadHeardAbout[heardAbout].toString();
+  }
 }
 
 export function formatCompanyName(

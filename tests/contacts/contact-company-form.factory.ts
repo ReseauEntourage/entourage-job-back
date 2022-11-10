@@ -2,14 +2,12 @@
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
-import { ContactCompanyFormDto, ContactUsFormDto } from 'src/mails/dto';
 import {
   CompanyApproachFilters,
-  HeardAbout,
   HeardAboutFilters,
-} from 'src/mails/mails.types';
-import { AdminZoneFilters, AdminZones, Factory } from 'src/utils/types';
-import { Departments } from 'src/common/locations/locations.types';
+} from 'src/contacts/contacts.types';
+import { ContactCompanyFormDto } from 'src/contacts/dto';
+import { AdminZoneFilters, Factory } from 'src/utils/types';
 
 @Injectable()
 export class ContactCompanyFormFactory
@@ -26,12 +24,10 @@ export class ContactCompanyFormFactory
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
       company: faker.company.companyName(2),
-      regions: faker.random.arrayElements(
+      zones: faker.random.arrayElements(
         AdminZoneFilters.map(({ value }) => value)
       ),
-      approach: faker.random.arrayElements(
-        CompanyApproachFilters.map(({ value }) => value)
-      ),
+      approach: faker.random.arrayElement(CompanyApproachFilters).value,
       heardAbout: faker.random.arrayElement(HeardAboutFilters).value,
     };
 

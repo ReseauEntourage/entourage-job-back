@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString } from 'class-validator';
-import { CompanyApproach, HeardAbout } from '../mails.types';
+import { CompanyApproach, HeardAboutValue } from 'src/contacts/contacts.types';
 import { AdminZone } from 'src/utils/types';
 
 export class ContactCompanyFormDto {
@@ -13,8 +13,8 @@ export class ContactCompanyFormDto {
   lastName: string;
 
   @ApiProperty()
-  @IsArray()
-  approach: CompanyApproach[];
+  @IsString()
+  approach: CompanyApproach;
 
   @ApiProperty()
   @IsString()
@@ -26,7 +26,7 @@ export class ContactCompanyFormDto {
 
   @ApiProperty()
   @IsArray()
-  regions: AdminZone[];
+  zones: AdminZone[];
 
   @ApiProperty()
   @IsString()
@@ -36,5 +36,5 @@ export class ContactCompanyFormDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  heardAbout?: HeardAbout;
+  heardAbout?: HeardAboutValue;
 }

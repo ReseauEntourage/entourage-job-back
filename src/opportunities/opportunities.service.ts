@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
+import { PleziService } from '../external-services/plezi/plezi.service';
 import { getRelatedUser } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
@@ -13,9 +14,11 @@ import {
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import {
+  ContactStatuses,
+  PleziTrackingData,
+} from 'src/external-services/plezi/plezi.types';
 import { MailsService } from 'src/mails/mails.service';
-import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
-
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
@@ -60,7 +63,6 @@ import {
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
-import { ContactsService } from 'src/contacts/contacts.service';
 
 @Injectable()
 export class OpportunitiesService {
@@ -79,7 +81,7 @@ export class OpportunitiesService {
     private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
-    private contactsService: ContactsService,
+    private pleziService: PleziService,
     private smsService: SMSService
   ) {}
 
@@ -763,7 +765,7 @@ export class OpportunitiesService {
       }
     }
     try {
-      await this.contactsService.sendContactToPlezi(
+      await this.pleziService.sendContactToPlezi(
         opportunity.contactMail || opportunity.recruiterMail,
         getZoneFromDepartment(opportunity.department),
         ContactStatuses.COMPANY,

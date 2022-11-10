@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { PleziModule } from '../external-services/plezi/plezi.module';
 import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
 import { CVsModule } from 'src/cvs/cvs.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
@@ -15,7 +16,6 @@ import {
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
-import { ContactsModule } from 'src/contacts/contacts.module';
 @Module({
   imports: [
     SequelizeModule.forFeature([
@@ -27,7 +27,7 @@ import { ContactsModule } from 'src/contacts/contacts.module';
     CVsModule,
     BusinessLinesModule,
     MailsModule,
-    ContactsModule,
+    PleziModule,
     SMSModule,
     ExternalDatabasesModule,
     QueuesModule,

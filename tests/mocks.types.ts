@@ -4,9 +4,10 @@ import { AirtableService } from 'src/external-services/airtable/airtable.service
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
+import { PleziService } from 'src/external-services/plezi/plezi.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 
-type ProviderMock<T> = Record<keyof T, jest.Mock>;
+type ProviderMock<T> = { [K in keyof T]: jest.Mock };
 
 export const QueueMocks: Partial<ProviderMock<Queue>> = {
   add: jest.fn(),
@@ -49,6 +50,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   loginToSalesforce: jest.fn(),
   refreshSalesforceInstance: jest.fn(),
   createRecord: jest.fn(),
+  updateRecord: jest.fn(),
   upsertRecord: jest.fn(),
   createOrUpdateProcess: jest.fn(),
   createOrUpdateOffer: jest.fn(),
@@ -66,9 +68,9 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createLead: jest.fn(),
   findOrCreateCompany: jest.fn(),
   findOrCreateContact: jest.fn(),
-  findOrCreateLead: jest.fn(),
+  createOrUpdateLead: jest.fn(),
   findOrCreateCompanyAndContactFromOffer: jest.fn(),
-  findOrCreateCompanyAndLeadFromCompanyForm: jest.fn(),
+  findOrCreateLeadFromCompanyForm: jest.fn(),
   getProcessToCreate: jest.fn(),
   createOrUpdateSalesforceProcess: jest.fn(),
   createOrUpdateSalesforceOffer: jest.fn(),
@@ -80,4 +82,8 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
 export const AirtableMocks: ProviderMock<AirtableService> = {
   insertOpportunityAirtable: jest.fn(),
   updateOpportunityAirtable: jest.fn(),
+} as const;
+
+export const PleziMocks: ProviderMock<PleziService> = {
+  sendContactToPlezi: jest.fn(),
 } as const;
