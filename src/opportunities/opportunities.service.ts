@@ -169,6 +169,10 @@ export class OpportunitiesService {
     return [] as string[];
   }
 
+  async findAllIds() {
+    return this.opportunityModel.findAll({ attributes: ['id'] });
+  }
+
   async findAll(
     query: {
       type: OfferAdminTab;
@@ -938,7 +942,7 @@ export class OpportunitiesService {
     period: Date
     // other parameters might be added
   ) {
-    const opportunities = await this.opportunityModel.findAll({
+    return this.opportunityModel.findAll({
       where: {
         isPublic: true,
         isValidated: true,
@@ -961,7 +965,6 @@ export class OpportunitiesService {
         },
       ],
     });
-    return opportunities;
   }
 
   async sendRelevantOpportunities(
@@ -1003,5 +1006,11 @@ export class OpportunitiesService {
       return `No offer for ${user.email}`;
     }
     return `${opportunities.length} offer(s) were sent to ${user.email} - job send relevant opportunities after cv publish`;
+  }
+
+  async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
+    return this.externalDatabasesService.refreshSalesforceOpportunities(
+      opportunitiesIds
+    );
   }
 }

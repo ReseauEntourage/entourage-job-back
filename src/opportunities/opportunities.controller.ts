@@ -620,4 +620,16 @@ export class OpportunitiesController {
 
     return updatedOpportunityUser;
   }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Post('refreshSalesforce')
+  async refreshSalesforceOpportunities() {
+    const opportunities = await this.opportunitiesService.findAllIds();
+    return this.opportunitiesService.refreshSalesforceOpportunities(
+      opportunities.map(({ id }) => {
+        return id;
+      })
+    );
+  }
 }

@@ -5,8 +5,8 @@ export function escapeQuery(query: string) {
     ? query
         .trim()
         .toLowerCase()
-        .replace("'", "''")
-        .replace('-', ' ')
+        .replace(/'/g, "''")
+        .replace(/-/g, ' ')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
     : '';

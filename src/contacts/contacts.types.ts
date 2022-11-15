@@ -1,4 +1,5 @@
-import { FilterConstant } from 'src/utils/types';
+import * as _ from 'lodash';
+import { AdminZone, AdminZones, FilterConstant } from 'src/utils/types';
 
 export const HeardAbout = {
   COMPANY: 'company',
@@ -80,4 +81,16 @@ export const CompanyApproachFilters: FilterConstant<CompanyApproach>[] = [
     label: 'Soutenir le projet (mécénat)',
     value: CompanyApproaches.DONATION,
   },
+];
+
+export type CompanyZone = AdminZone | 'RENNES' | 'NATIONAL';
+
+export const CompanyZoneFilters: FilterConstant<CompanyZone>[] = [
+  { value: AdminZones.PARIS, label: _.capitalize(AdminZones.PARIS) },
+  { value: AdminZones.LILLE, label: _.capitalize(AdminZones.LILLE) },
+  { value: AdminZones.LYON, label: _.capitalize(AdminZones.LYON) },
+  { value: AdminZones.LORIENT, label: _.capitalize(AdminZones.LORIENT) },
+  { value: 'RENNES', label: 'Rennes' },
+  { value: 'NATIONAL', label: 'National' },
+  { value: AdminZones.HZ, label: _.capitalize(AdminZones.HZ) },
 ];

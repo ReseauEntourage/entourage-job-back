@@ -4,6 +4,7 @@ import { Department } from 'src/common/locations/locations.types';
 import {
   CompanyApproach,
   CompanyApproaches,
+  CompanyZone,
   HeardAbout,
   HeardAboutValue,
 } from 'src/contacts/contacts.types';
@@ -253,7 +254,7 @@ export interface LeadProps {
   email: string;
   phone?: string;
   approach: CompanyApproach;
-  zones: AdminZone[];
+  zones: CompanyZone[];
   heardAbout?: HeardAboutValue;
 }
 
@@ -269,5 +270,5 @@ export interface SalesforceLead {
   Antenne__c: string;
   Votre_demarche__c: string;
   Comment_vous_nous_avez_connu__c: string;
-  Source__c: 'Lead entrant - plateforme';
+  Source__c: 'Lead entrant';
 }

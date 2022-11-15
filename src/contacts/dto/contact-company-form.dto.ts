@@ -1,7 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString } from 'class-validator';
-import { CompanyApproach, HeardAboutValue } from 'src/contacts/contacts.types';
-import { AdminZone } from 'src/utils/types';
+import {
+  CompanyApproach,
+  CompanyZone,
+  HeardAboutValue,
+} from 'src/contacts/contacts.types';
 
 export class ContactCompanyFormDto {
   @ApiProperty()
@@ -26,7 +29,7 @@ export class ContactCompanyFormDto {
 
   @ApiProperty()
   @IsArray()
-  zones: AdminZone[];
+  zones: CompanyZone[];
 
   @ApiProperty()
   @IsString()

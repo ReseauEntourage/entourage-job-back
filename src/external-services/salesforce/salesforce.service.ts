@@ -394,7 +394,7 @@ export class SalesforceService {
       Reseaux__c: 'LinkedOut',
       RecordTypeId: LeadsRecordTypesIds.COMPANY,
       Antenne__c: formatRegions(zones),
-      Source__c: 'Lead entrant - plateforme',
+      Source__c: 'Lead entrant',
       Votre_demarche__c: formatApproach(approach),
       Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
     });
@@ -495,7 +495,7 @@ export class SalesforceService {
       Reseaux__c: 'LinkedOut',
       RecordTypeId: LeadsRecordTypesIds.COMPANY,
       Antenne__c: formatRegions(zones),
-      Source__c: 'Lead entrant - plateforme',
+      Source__c: 'Lead entrant',
       Votre_demarche__c: formatApproach(approach),
       Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
     } as SalesforceObject<typeof ObjectNames.LEAD>;
