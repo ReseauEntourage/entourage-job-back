@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Put,
   Query,
@@ -51,23 +52,25 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Get('members')
   async findMembers(
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number,
     @Query()
     query: {
-      limit: number;
-      offset: number;
       query: string;
       role: UserRole | 'All';
     } & FilterParams<MemberFilterKey>
   ) {
     const order = [['firstName', 'ASC']] as Order;
-    const { limit, offset, role, query: search, ...restParams } = query;
+    const { role, query: search, ...restParams } = query;
     return this.usersService.findAllMembers({
+      ...restParams,
       limit,
       order,
       offset,
       search,
       role,
-      ...restParams,
     });
   }
 
@@ -208,6 +211,34 @@ export class UsersController {
     return updatedUser;
   }
 
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Put('candidat/bulk')
+  async updateAll(
+    @Body('attributes', UpdateUserRestrictedPipe)
+    updateUserCandidatDto: UpdateUserCandidatDto,
+    @Body('ids') usersIds: string[]
+  ) {
+    const { nbUpdated, updatedUserCandidats } =
+      await this.userCandidatsService.updateAll(
+        usersIds,
+        updateUserCandidatDto
+      );
+    if (updateUserCandidatDto.hidden) {
+      updatedUserCandidats.forEach(async (user) => {
+        await this.usersService.uncacheCandidateCV(user.url);
+      });
+    }
+    await this.usersService.cacheAllCVs();
+
+    return {
+      nbUpdated,
+      updatedIds: updatedUserCandidats.map((user) => {
+        return user.candidatId;
+      }),
+    };
+  }
+
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Put('candidat/:candidateId')
@@ -230,16 +261,19 @@ export class UsersController {
         lastModifiedBy: userId,
       });
 
-    if (updatedUserCandidat.coachId !== userCandidat.coachId) {
+    if (
+      updatedUserCandidat.coach &&
+      updatedUserCandidat.coach.id !== userCandidat.coach?.id
+    ) {
       await this.usersService.sendMailsAfterMatching(
-        updatedUserCandidat.candidatId
+        updatedUserCandidat.candidat.id
       );
     }
 
     if (updatedUserCandidat.hidden) {
       await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
     } else {
-      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidatId);
+      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidat.id);
     }
 
     await this.usersService.cacheAllCVs();

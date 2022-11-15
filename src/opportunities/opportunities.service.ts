@@ -1,7 +1,5 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
@@ -15,13 +13,11 @@ import {
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
-import { MailchimpService } from 'src/external-services/mailchimp/mailchimp.service';
-import {
-  ContactStatus,
-  ContactStatuses,
-} from 'src/external-services/mailchimp/mailchimp.types';
 import { MailsService } from 'src/mails/mails.service';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
+
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -76,9 +72,7 @@ export class OpportunitiesService {
     private businessLineModel: typeof BusinessLine,
     @InjectModel(OpportunityBusinessLine)
     private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
-    private mailchimpService: MailchimpService,
+    private queuesService: QueuesService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
     private cvsService: CVsService,
@@ -147,7 +141,7 @@ export class OpportunitiesService {
     }
   }
 
-  async findAllCandidateIdsToRecommendOfferTo(
+  async findAllCandidatesIdsToRecommendOfferTo(
     department: Department,
     businessLines: BusinessLine[]
   ) {
@@ -218,7 +212,7 @@ export class OpportunitiesService {
 
   async findAllUserOpportunitiesAsAdmin(
     candidateId: string,
-    opportunityUserIds: string[],
+    opportunityUsersIds: string[],
     query: {
       search: string;
     } & FilterParams<OfferFilterKey>
@@ -236,7 +230,7 @@ export class OpportunitiesService {
     const opportunities = await this.opportunityModel.findAll({
       ...options,
       where: {
-        id: opportunityUserIds,
+        id: opportunityUsersIds,
         ...searchOptions,
         ...filterOptions,
       },
@@ -257,7 +251,7 @@ export class OpportunitiesService {
 
   async findAllAsCandidate(
     candidateId: string,
-    opportunityIds: string[],
+    opportunitiesIds: string[],
     query: {
       type: OfferCandidateTab;
       search: string;
@@ -284,9 +278,9 @@ export class OpportunitiesService {
       where: {
         [Op.or]: [
           { isPublic: true, isValidated: true, isArchived: false },
-          opportunityIds.length > 0
+          opportunitiesIds.length > 0
             ? {
-                id: opportunityIds,
+                id: opportunitiesIds,
                 isPublic: false,
                 isValidated: true,
                 isArchived: false,
@@ -353,7 +347,12 @@ export class OpportunitiesService {
     candidateId: string
   ): Promise<OpportunityRestricted> {
     const opportunity = await this.opportunityModel.findOne({
-      where: { isValidated: true, isArchived: false, id },
+      where: {
+        [Op.or]: [
+          { isValidated: true, isExternal: false, isArchived: false, id },
+          { isExternal: true, isArchived: false, id },
+        ],
+      },
       attributes: [...OpportunityCandidateAttributes],
       include: OpportunityCompleteWithoutOpportunityUsersInclude,
     });
@@ -581,22 +580,22 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidateIdsToRecommendTo =
+    const candidatesIdsToRecommendTo =
       opportunity.isPublic && opportunity.isValidated
-        ? await this.findAllCandidateIdsToRecommendOfferTo(
+        ? await this.findAllCandidatesIdsToRecommendOfferTo(
             opportunity.department,
             opportunity.businessLines
           )
         : [];
 
-    if (candidatesId?.length > 0 || candidateIdsToRecommendTo?.length > 0) {
-      const uniqueCandidateIds = _.uniq([
+    if (candidatesId?.length > 0 || candidatesIdsToRecommendTo?.length > 0) {
+      const uniqueCandidatesIds = _.uniq([
         ...(candidatesId || []),
-        ...(candidateIdsToRecommendTo || []),
+        ...(candidatesIdsToRecommendTo || []),
       ]);
 
       await Promise.all(
-        uniqueCandidateIds.map((candidateId) => {
+        uniqueCandidatesIds.map((candidateId) => {
           return this.opportunityUsersService.create({
             OpportunityId: opportunity.id,
             UserId: candidateId,
@@ -605,8 +604,8 @@ export class OpportunitiesService {
         })
       );
 
-      return this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
-        uniqueCandidateIds,
+      return this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
+        uniqueCandidatesIds,
         opportunity.id
       );
     }
@@ -616,20 +615,22 @@ export class OpportunitiesService {
   async updateAssociatedCandidatesToOpportunity(
     opportunity: Opportunity,
     oldOpportunity: Opportunity,
-    candidatesId: string[]
+    candidatesId?: string[]
   ) {
     const candidatesToRecommendTo =
       opportunity.isPublic &&
       !oldOpportunity.isValidated &&
       opportunity.isValidated
-        ? await this.findAllCandidateIdsToRecommendOfferTo(
+        ? await this.findAllCandidatesIdsToRecommendOfferTo(
             opportunity.department,
             opportunity.businessLines
           )
         : [];
 
     const uniqueCandidatesIds = _.uniq([
-      ...(candidatesId || []),
+      ...(candidatesId ||
+        opportunity.opportunityUsers.map(({ UserId }) => UserId) ||
+        []),
       ...(candidatesToRecommendTo || []),
     ]);
 
@@ -712,7 +713,7 @@ export class OpportunitiesService {
         : null;
 
     const opportunityUsers =
-      await this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
+      await this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
         newCandidatesIdsToSendMailTo,
         opportunity.id
       );
@@ -741,19 +742,12 @@ export class OpportunitiesService {
     return null;
   }
 
-  async sendRecruitorMailToMailchimp(
-    mail: string,
-    zone: AdminZone | AdminZone[],
-    contactStatus: ContactStatus
-  ) {
-    return this.mailchimpService.sendContact(mail, zone, contactStatus);
-  }
-
   async sendMailsAfterCreation(
     opportunity: Opportunity,
     candidates: OpportunityUser[],
     isAdmin = false,
-    shouldSendNotifications = true
+    shouldSendNotifications = true,
+    pleziTrackingData?: PleziTrackingData
   ) {
     if (candidates && candidates.length > 0) {
       if (!isAdmin) {
@@ -766,12 +760,18 @@ export class OpportunitiesService {
         }
       }
     }
-
-    await this.sendRecruitorMailToMailchimp(
-      opportunity.contactMail || opportunity.recruiterMail,
-      getZoneFromDepartment(opportunity.department),
-      ContactStatuses.COMPANY
-    );
+    try {
+      await this.mailsService.sendContactToPlezi(
+        opportunity.contactMail || opportunity.recruiterMail,
+        getZoneFromDepartment(opportunity.department),
+        ContactStatuses.COMPANY,
+        pleziTrackingData?.visit,
+        pleziTrackingData?.visitor,
+        pleziTrackingData?.urlParams
+      );
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async sendMailsAfterUpdate(
@@ -801,7 +801,7 @@ export class OpportunitiesService {
   async sendOnValidatedOfferMail(opportunity: Opportunity) {
     await this.mailsService.sendOnValidatedOfferMail(opportunity);
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.NO_RESPONSE_OFFER,
       {
         opportunityId: opportunity.id,
@@ -836,7 +836,7 @@ export class OpportunitiesService {
         );
 
         if (!opportunity.isPublic) {
-          await this.workQueue.add(
+          await this.queuesService.addToWorkQueue(
             Jobs.REMINDER_OFFER,
             {
               opportunityId: opportunity.id,

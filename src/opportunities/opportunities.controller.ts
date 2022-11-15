@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from '../auth/auth.types';
+import { PleziTrackingData } from '../mails/mails.types';
 import { getCandidateIdFromCoachOrCandidate } from '../users/users.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { DepartmentFilters } from 'src/common/locations/locations.types';
@@ -76,8 +77,13 @@ export class OpportunitiesController {
       shouldSendNotifications,
       isCopy,
       candidatesId,
+      visit,
+      visitor,
+      urlParams,
       ...restBody
     } = createOpportunityDto;
+
+    const pleziTrackingData: PleziTrackingData = { visit, visitor, urlParams };
 
     if (isAdmin && !isLoggedAsAdmin) {
       throw new ForbiddenException();
@@ -115,7 +121,8 @@ export class OpportunitiesController {
             finalOpportunity.toJSON(),
             candidates,
             isAdmin,
-            shouldSendNotifications
+            shouldSendNotifications,
+            pleziTrackingData
           );
 
           await this.opportunitiesService.createExternalDBOpportunity(
@@ -164,7 +171,8 @@ export class OpportunitiesController {
       finalOpportunity.toJSON(),
       candidates,
       isAdmin,
-      shouldSendNotifications
+      shouldSendNotifications,
+      pleziTrackingData
     );
 
     await this.opportunitiesService.createExternalDBOpportunity(
@@ -336,13 +344,13 @@ export class OpportunitiesController {
       return [] as Opportunity[];
     }
 
-    const opportunityIds = opportunityUsers.map((opportunityUser) => {
+    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
       return opportunityUser.OpportunityId;
     });
 
     return this.opportunitiesService.findAllUserOpportunitiesAsAdmin(
       candidateId,
-      opportunityIds,
+      opportunitiesIds,
       query
     );
   }
@@ -367,13 +375,13 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const opportunityIds = opportunityUsers.map((opportunityUser) => {
+    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
       return opportunityUser.OpportunityId;
     });
 
     const opportunities = await this.opportunitiesService.findAllAsCandidate(
       candidateId,
-      opportunityIds,
+      opportunitiesIds,
       query
     );
 
@@ -391,7 +399,7 @@ export class OpportunitiesController {
       const otherOpportunities =
         await this.opportunitiesService.findAllAsCandidate(
           candidateId,
-          opportunityIds,
+          opportunitiesIds,
           {
             department: otherDepartments.map((dept) => {
               return dept.value;
@@ -513,7 +521,7 @@ export class OpportunitiesController {
   async updateAll(
     @Body('attributes', UpdateOpportunityPipe)
     updateOpportunityDto: UpdateOpportunityDto,
-    @Body('ids') opportunityIds: string[]
+    @Body('ids') opportunitiesIds: string[]
   ) {
     const {
       shouldSendNotifications,
@@ -526,7 +534,7 @@ export class OpportunitiesController {
 
     const updatedOpportunities = await this.opportunitiesService.updateAll(
       restOpportunity,
-      opportunityIds
+      opportunitiesIds
     );
 
     await this.opportunitiesService.updateExternalDBOpportunity(
