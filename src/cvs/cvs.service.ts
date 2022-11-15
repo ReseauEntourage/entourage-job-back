@@ -1,15 +1,13 @@
 import fs from 'fs';
-import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
 import fetch from 'node-fetch';
 import { PDFDocument } from 'pdf-lib';
 import * as puppeteer from 'puppeteer-core';
-import { col, fn, Op, QueryTypes } from 'sequelize';
+import { col, fn, Includeable, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import {
@@ -34,11 +32,12 @@ import { CloudFrontService } from 'src/external-services/aws/cloud-front.service
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { CustomMailParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatuses, CVStatus } from 'src/users/users.types';
+import { CVStatus, CVStatuses } from 'src/users/users.types';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -88,8 +87,7 @@ export class CVsService {
     @InjectModel(CVSearch)
     private cvSearchModel: typeof CVSearch,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
+    private queuesService: QueuesService,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
@@ -282,6 +280,14 @@ export class CVsService {
         include: CVCompleteWithAllUserPrivateInclude,
       });
 
+      /*
+        return this.dividedCompleteCVQuery((include) => {
+          return this.cvModel.findByPk(createdCV.id, {
+            include: [include],
+          });
+        }, CVCompleteWithAllUserPrivateInclude);
+      */
+
       return cv.toJSON();
     } catch (error) {
       await t.rollback();
@@ -289,7 +295,32 @@ export class CVsService {
     }
   }
 
+  async dividedCompleteCVQuery(
+    query: (include: Includeable) => Promise<CV>,
+    includes: Includeable[]
+  ) {
+    const results = await Promise.all(
+      includes.map((include) => {
+        return query(include);
+      })
+    );
+
+    return results.reduce((acc, curr) => {
+      const cleanedCurr = curr ? curr.toJSON() : {};
+      return {
+        ...acc,
+        ...cleanedCurr,
+      };
+    }, {} as Partial<CV>);
+  }
+
   async findOne(id: string) {
+    /* return (await this.dividedCompleteCVQuery((include) => {
+      return this.cvModel.findByPk(id, {
+        include: [include],
+      });
+    }, CVCompleteWithoutUserInclude)) as CV;*/
+
     return this.cvModel.findByPk(id, {
       include: CVCompleteWithoutUserInclude,
     });
@@ -309,6 +340,18 @@ export class CVsService {
       },
       order: [['version', 'DESC']],
     });
+
+    /*
+      const cv = await this.dividedCompleteCVQuery((include) => {
+        return this.cvModel.findOne({
+          include: [include],
+          where: {
+            UserId: candidateId,
+          },
+          order: [['version', 'DESC']],
+        });
+      }, CVCompleteWithAllUserPrivateInclude);
+    */
 
     if (!cv) {
       return {} as CV;
@@ -526,8 +569,8 @@ export class CVsService {
     return cvs.length;
   }
 
-  async update(id: string, udpateCVDto: UpdateCVDto): Promise<CV> {
-    await this.cvModel.update(udpateCVDto, {
+  async update(id: string, updateCVDto: UpdateCVDto): Promise<CV> {
+    await this.cvModel.update(updateCVDto, {
       where: { id },
       individualHooks: true,
     });
@@ -680,7 +723,7 @@ export class CVsService {
     });
 
     // TODO Update Lambda to use new association objects with name
-    const response = await fetch(`${process.env.AWS_LAMBA_URL}/preview`, {
+    const response = await fetch(`${process.env.AWS_LAMBDA_URL}/preview`, {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -688,7 +731,10 @@ export class CVsService {
       method: 'POST',
       body: JSON.stringify({
         cv: {
-          ...cv,
+          UserId: cv.UserId,
+          status: cv.status,
+          urlImg: cv.urlImg,
+          catchphrase: cv.catchphrase,
           skills: cv.skills.map(({ name }) => name),
           locations: cv.locations.map(({ name }) => name),
           ambitions: isNewCareerPath
@@ -713,7 +759,13 @@ export class CVsService {
       }),
     });
 
-    const { previewUrl } = (await response.json()) as { previewUrl: string };
+    const responseJSON = await response.json();
+
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error(`${response.status}, ${responseJSON.message}`);
+    }
+
+    const { previewUrl } = responseJSON as { previewUrl: string };
 
     return previewUrl;
   }
@@ -792,7 +844,7 @@ export class CVsService {
 
     await this.mailsService.sendCVPublishedMail(candidate.toJSON());
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_INTERVIEW_TRAINING,
       {
         candidateId,
@@ -806,7 +858,7 @@ export class CVsService {
           24,
       }
     );
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_VIDEO,
       {
         candidateId,
@@ -820,7 +872,7 @@ export class CVsService {
           24,
       }
     );
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_ACTIONS,
       {
         candidateId,
@@ -835,7 +887,7 @@ export class CVsService {
       }
     );
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_EXTERNAL_OFFERS,
       {
         candidateId,
@@ -904,7 +956,7 @@ export class CVsService {
     return this.mailsService.sendActionsReminderMails(candidate.toJSON());
   }
 
-  async findAndCacheOneByUrl(url: string, candidateId?: string) {
+  async findAndCacheOneByUrl(url?: string, candidateId?: string) {
     let urlToUse = url;
 
     if (!urlToUse && candidateId) {
@@ -922,6 +974,13 @@ export class CVsService {
     });
 
     if (cvs && cvs.length > 0) {
+      /*
+        const cv = await this.dividedCompleteCVQuery((include) => {
+          return this.cvModel.findByPk(cvs[0].id, {
+            include: [include],
+          });
+        }, CVCompleteWithAllUserInclude);
+      */
       const cv = await this.cvModel.findByPk(cvs[0].id, {
         include: CVCompleteWithAllUserInclude,
       });
@@ -1018,17 +1077,17 @@ export class CVsService {
   }
 
   async sendCacheCV(candidateId: string) {
-    await this.workQueue.add(Jobs.CACHE_CV, {
+    await this.queuesService.addToWorkQueue(Jobs.CACHE_CV, {
       candidateId,
     });
   }
 
   async sendCacheAllCVs() {
-    await this.workQueue.add(Jobs.CACHE_ALL_CVS);
+    await this.queuesService.addToWorkQueue(Jobs.CACHE_ALL_CVS, {});
   }
 
   async sendGenerateCVSearchString(candidateId: string) {
-    await this.workQueue.add(Jobs.CREATE_CV_SEARCH_STRING, {
+    await this.queuesService.addToWorkQueue(Jobs.CREATE_CV_SEARCH_STRING, {
       candidateId,
     });
   }
@@ -1038,7 +1097,7 @@ export class CVsService {
     oldImg: string,
     uploadedImg: string
   ) {
-    await this.workQueue.add(Jobs.GENERATE_CV_PREVIEW, {
+    await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PREVIEW, {
       candidateId,
       oldImg,
       uploadedImg,
@@ -1046,7 +1105,7 @@ export class CVsService {
   }
 
   async sendGenerateCVPDF(candidateId: string, token: string, paths: string[]) {
-    await this.workQueue.add(Jobs.GENERATE_CV_PDF, {
+    await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PDF, {
       candidateId,
       token,
       paths,
@@ -1106,7 +1165,7 @@ export class CVsService {
     locations: Location[],
     businessLines: BusinessLine[]
   ) {
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH,
       {
         candidateId,

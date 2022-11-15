@@ -1,7 +1,5 @@
-import { InjectQueue } from '@nestjs/bull';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
@@ -10,7 +8,8 @@ import { getPublishedCVQuery } from '../cvs/cvs.utils';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
-import { Jobs, Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -44,8 +43,7 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    @InjectQueue(Queues.WORK)
-    private workQueue: Queue,
+    private queuesService: QueuesService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private mailsService: MailsService
   ) {}
@@ -421,10 +419,10 @@ export class UsersService {
 
     await this.mailsService.sendCVPreparationMail(candidate.toJSON());
 
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_CV_10,
       {
-        candidatId: candidateId,
+        candidateId,
       },
       {
         delay:
@@ -435,10 +433,10 @@ export class UsersService {
           24,
       }
     );
-    await this.workQueue.add(
+    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_CV_20,
       {
-        candidatId: candidateId,
+        candidateId,
       },
       {
         delay:
@@ -458,13 +456,13 @@ export class UsersService {
 
   // TODO fix duplicate
   async cacheCandidateCV(candidateId: string) {
-    await this.workQueue.add(Jobs.CACHE_CV, {
-      candidatId: candidateId,
+    await this.queuesService.addToWorkQueue(Jobs.CACHE_CV, {
+      candidateId,
     });
   }
 
   // TODO fix duplicate
   async cacheAllCVs() {
-    await this.workQueue.add(Jobs.CACHE_ALL_CVS);
+    await this.queuesService.addToWorkQueue(Jobs.CACHE_ALL_CVS, {});
   }
 }

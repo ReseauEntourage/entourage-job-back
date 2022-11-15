@@ -56,14 +56,14 @@ export class UsersDeletionService {
 
   async updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
     userId: string,
-    opportunityUserIds: string[]
+    opportunityUsersIds: string[]
   ) {
-    const documentIds = [userId, ...opportunityUserIds];
+    const documentsIds = [userId, ...opportunityUsersIds];
 
-    const revisions = await this.revisionsService.findAllByDocumentIds(
-      documentIds
+    const revisions = await this.revisionsService.findAllByDocumentsIds(
+      documentsIds
     );
-    await this.revisionChangesService.updateByRevisionIds(
+    await this.revisionChangesService.updateByRevisionsIds(
       revisions.map((revision) => {
         return revision.id;
       }),
@@ -72,7 +72,7 @@ export class UsersDeletionService {
         diff: [{}],
       }
     );
-    await this.revisionsService.updateByDocumentIds(documentIds, {
+    await this.revisionsService.updateByDocumentsIds(documentsIds, {
       document: {},
     });
   }

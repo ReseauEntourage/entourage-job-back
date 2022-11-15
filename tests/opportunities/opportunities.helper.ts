@@ -9,10 +9,10 @@ export class OpportunitiesHelper {
     private opportunityModel: typeof Opportunity
   ) {}
 
-  async findAllOpportunitiesById(opportunityIds: string[]) {
+  async findAllOpportunitiesById(opportunitiesIds: string[]) {
     return this.opportunityModel.findAll({
       where: {
-        id: opportunityIds,
+        id: opportunitiesIds,
       },
     });
   }

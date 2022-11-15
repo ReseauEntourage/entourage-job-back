@@ -26,7 +26,6 @@ import { UsersModule } from 'src/users/users.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { AirtableModule } from './external-services/airtable/airtable.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
-import { MailchimpModule } from './external-services/mailchimp/mailchimp.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
@@ -73,7 +72,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ENV === 'dev-test' ? '.env.test' : '.env',
+      envFilePath: ENV === 'dev-test' || ENV === 'test' ? '.env.test' : '.env',
     }),
     SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
     ThrottlerModule.forRoot({
@@ -81,16 +80,17 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       limit: 100,
     }),
     BullModule.forRoot({
-      redis: process.env.REDIS_TLS_URL
-        ? getRedisOptions(process.env.REDIS_TLS_URL)
-        : {},
+      redis:
+        ENV === 'dev-test' || ENV === 'test'
+          ? {}
+          : getRedisOptions(process.env.REDIS_URL),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...(process.env.REDIS_TLS_URL
-        ? getRedisOptions(process.env.REDIS_TLS_URL)
-        : {}),
+      ...(ENV === 'dev-test' || ENV === 'test'
+        ? {}
+        : getRedisOptions(process.env.REDIS_URL)),
     }),
     RevisionsModule,
     SharesModule,
@@ -112,7 +112,6 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     ReviewsModule,
     MailsModule,
     MailjetModule,
-    MailchimpModule,
     ExternalDatabasesModule,
     SalesforceModule,
     AirtableModule,
