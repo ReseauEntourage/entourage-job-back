@@ -967,7 +967,7 @@ export class CVsService {
 
     const redisKey = RedisKeys.CV_PREFIX + urlToUse;
 
-    const query = queryConditionCV('url', urlToUse.replace("'", "''"));
+    const query = queryConditionCV('url', urlToUse.replace(/'/g, "''"));
 
     const cvs: CV[] = await this.cvModel.sequelize.query(query, {
       type: QueryTypes.SELECT,
