@@ -12,9 +12,9 @@ import { PassionsTestingModule } from './common/passions/passions-testing.module
 import { ReviewsTestingModule } from './common/reviews/reviews-testing.module';
 import { SharesTestingModule } from './common/shares/shares-testing.module';
 import { SkillsTestingModule } from './common/skills/skills-testing.module';
+import { ContactsTestingModule } from './contacts/contacts-testing.module';
 import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
-import { MailsTestingModule } from './mails/mails-testing.module';
 import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
 
@@ -35,7 +35,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     UsersTestingModule,
     ReviewsTestingModule,
     SharesTestingModule,
-    MailsTestingModule,
+    ContactsTestingModule,
     OpportunitiesTestingModule,
   ],
   providers: [DatabaseHelper],

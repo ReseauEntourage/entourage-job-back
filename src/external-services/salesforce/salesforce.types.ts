@@ -2,9 +2,17 @@ import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractValue } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
+  CompanyApproach,
+  CompanyApproaches,
+  CompanyZone,
+  HeardAbout,
+  HeardAboutValue,
+} from 'src/contacts/contacts.types';
+import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
+import { AdminZone } from 'src/utils/types';
 
 export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
@@ -28,6 +36,7 @@ export interface SalesforceError {
 
 export const ObjectNames = {
   COMPANY: 'Account',
+  LEAD: 'Lead',
   PROCESS: 'Processus_d_offres__c',
   OFFER: 'Offre_d_emploi__c',
   CONTACT: 'Contact',
@@ -36,13 +45,65 @@ export const ObjectNames = {
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
 
-export const RecordTypesIds = {
+type SalesforceObjects = {
+  [ObjectNames.COMPANY]: SalesforceCompany;
+  [ObjectNames.LEAD]: SalesforceLead;
+  [ObjectNames.PROCESS]: SalesforceProcess;
+  [ObjectNames.OFFER]: SalesforceOffer;
+  [ObjectNames.CONTACT]: SalesforceContact;
+  [ObjectNames.BINOME]: SalesforceBinome;
+};
+
+export type SalesforceObject<T extends ObjectName> = SalesforceObjects[T];
+
+export const ContactsRecordTypesIds = {
   COACH: '0127Q000000Ub9wQAC',
   CANDIDATE: '0127Q000000UbNVQA0',
   COMPANY: '0127Q000000Uhq0QAC',
+  ASSOCIATION: '0127Q000000Uhq0QAC',
 } as const;
 
-export type RecordType = typeof RecordTypesIds[keyof typeof RecordTypesIds];
+export type ContactRecordType =
+  typeof ContactsRecordTypesIds[keyof typeof ContactsRecordTypesIds];
+
+export const LeadsRecordTypesIds = {
+  COACH: '0127Q000000UbQPQA0',
+  CANDIDATE: '0127Q000000UbQKQA0',
+  COMPANY: '0127Q000000ThTsQAK',
+  ASSOCIATION: '0127Q000000Thz9QAC',
+} as const;
+
+export type LeadRecordType =
+  typeof LeadsRecordTypesIds[keyof typeof LeadsRecordTypesIds];
+
+export const LeadApproaches: { [K in CompanyApproach]: string } = {
+  [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
+  [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
+
+  [CompanyApproaches.MOBILIZATION]: 'Mobiliser des collaborateurs',
+  [CompanyApproaches.RECRUITMENT]: 'Recruter inclusif',
+} as const;
+
+export const LeadHeardAbout: { [K in HeardAboutValue]: string } = {
+  [HeardAbout.COMPANY]: 'Mon entreprise',
+  [HeardAbout.ENTOURAGE]: 'Le réseau Entourage (newsletter, application...)',
+  [HeardAbout.PRESS]: 'Un article dans la presse, une newsletter',
+  [HeardAbout.LINKEDIN]: 'LinkedIn',
+  [HeardAbout.SOCIAL]: 'Autres réseaux (facebook, twitter, instagram...)',
+  [HeardAbout.SPORTS]: 'Partenariat_Sport',
+  [HeardAbout.VOLUNTEER]: 'Un site de bénévolat',
+  [HeardAbout.CONTACT]: 'Le bouche à oreille',
+  [HeardAbout.OTHER]: 'Autre',
+} as const;
+
+export interface SalesforceBinome {
+  Id?: string;
+}
+
+export interface OfferAndProcessProps {
+  offer: OfferProps;
+  process: ProcessProps[];
+}
 
 export interface ProcessProps {
   id: string;
@@ -142,11 +203,6 @@ export interface SalesforceOffer {
   Antenne__c: string;
 }
 
-export interface OfferAndProcessProps {
-  offer: OfferProps;
-  process: ProcessProps[];
-}
-
 export interface CompanyProps {
   name: string;
   businessLines: BusinessLine[];
@@ -167,20 +223,6 @@ export interface SalesforceCompany {
   ParentId: string;
 }
 
-export interface SalesforceContact {
-  Id?: string;
-  LastName: string;
-  FirstName: string;
-  Email: string;
-  Phone: string;
-  Title: string;
-  AccountId: string;
-  Type_de_contact__c: 'Entreprise';
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: RecordType;
-  Antenne__c?: string;
-}
-
 export interface ContactProps {
   firstName?: string;
   lastName: string;
@@ -191,12 +233,42 @@ export interface ContactProps {
   companySfId: string;
 }
 
-export interface SalesforceBinome {
+export interface SalesforceContact {
   Id?: string;
+  LastName: string;
+  FirstName: string;
+  Email: string;
+  Phone: string;
+  Title: string;
+  AccountId: string;
+  Type_de_contact__c: 'Entreprise';
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: ContactRecordType;
+  Antenne__c?: string;
 }
 
-export type SalesforceObject =
-  | SalesforceOffer
-  | SalesforceProcess
-  | SalesforceCompany
-  | SalesforceContact;
+export interface LeadProps {
+  firstName: string;
+  lastName: string;
+  company: string;
+  email: string;
+  phone?: string;
+  approach: CompanyApproach;
+  zones: CompanyZone[];
+  heardAbout?: HeardAboutValue;
+}
+
+export interface SalesforceLead {
+  Id?: string;
+  LastName: string;
+  FirstName: string;
+  Company: string;
+  Email: string;
+  Phone?: string;
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: LeadRecordType;
+  Antenne__c: string;
+  Votre_demarche__c: string;
+  Comment_vous_nous_avez_connu__c: string;
+  Source__c: 'Lead entrant';
+}

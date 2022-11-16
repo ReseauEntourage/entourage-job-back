@@ -7,7 +7,6 @@ export class PusherService {
   private pusher: Pusher;
 
   constructor() {
-    // TODO FIX BECAUSE NOT WORKING
     this.pusher = new Pusher({
       appId: process.env.PUSHER_APP_ID,
       key: process.env.PUSHER_API_KEY,

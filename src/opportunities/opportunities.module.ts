@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { PleziModule } from '../external-services/plezi/plezi.module';
 import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
 import { CVsModule } from 'src/cvs/cvs.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
@@ -26,6 +27,7 @@ import { OpportunityUsersService } from './opportunity-users.service';
     CVsModule,
     BusinessLinesModule,
     MailsModule,
+    PleziModule,
     SMSModule,
     ExternalDatabasesModule,
     QueuesModule,

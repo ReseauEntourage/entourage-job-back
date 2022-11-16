@@ -9,6 +9,7 @@ import { ClientOpts } from 'redis';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getRedisOptions, getSequelizeOptions } from './app.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({

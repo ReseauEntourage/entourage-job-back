@@ -41,7 +41,7 @@ export function getPDFPaths(candidateId: string, queryFileName: string) {
   return [
     `${candidateId}-page1.pdf`,
     `${candidateId}-page2.pdf`,
-    `${fileName.replace("'", '')}.pdf`,
+    `${fileName.replace(/'/g, '')}.pdf`,
   ];
 }
 
