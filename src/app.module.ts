@@ -23,10 +23,12 @@ import { SharesModule } from 'src/shares/shares.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
+import { ContactsModule } from './contacts/contacts.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { AirtableModule } from './external-services/airtable/airtable.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
@@ -117,6 +119,8 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     AirtableModule,
     SMSModule,
     BitlyModule,
+    ContactsModule,
+    PleziModule,
   ],
   providers: [
     {

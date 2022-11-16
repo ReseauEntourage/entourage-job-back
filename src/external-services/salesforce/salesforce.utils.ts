@@ -3,6 +3,11 @@ import { BusinessLineFilters } from 'src/common/businessLines/businessLines.type
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
+import {
+  CompanyApproach,
+  CompanyZone,
+  HeardAboutValue,
+} from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
@@ -10,6 +15,8 @@ import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones } from 'src/utils/types';
 import {
+  LeadApproaches,
+  LeadHeardAbout,
   OfferProps,
   ProcessProps,
   SalesforceOffer,
@@ -17,13 +24,15 @@ import {
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
-  return _.uniq(
-    businessLines.map(({ name }) => {
-      return findConstantFromValue(name, BusinessLineFilters).label;
-    })
-  )
-    .toString()
-    .replace(',', ';');
+  if (businessLines) {
+    return _.uniq(
+      businessLines.map(({ name }) => {
+        return findConstantFromValue(name, BusinessLineFilters).label;
+      })
+    )
+      .toString()
+      .replace(/,/g, ';');
+  }
 }
 
 export function formatDepartment(department: Department) {
@@ -31,6 +40,28 @@ export function formatDepartment(department: Department) {
     return 'National';
   }
   return _.capitalize(AdminZones[getZoneSuffixFromDepartment(department)]);
+}
+
+export function formatRegions(regions: CompanyZone[]) {
+  return _.uniq(
+    regions.map((region) => {
+      return _.capitalize(region);
+    })
+  )
+    .toString()
+    .replace(/,/g, ';');
+}
+
+export function formatApproach(approach: CompanyApproach) {
+  if (approach) {
+    return LeadApproaches[approach].toString();
+  }
+}
+
+export function formatHeardAbout(heardAbout: HeardAboutValue) {
+  if (heardAbout) {
+    return LeadHeardAbout[heardAbout].toString();
+  }
 }
 
 export function formatCompanyName(
@@ -49,8 +80,8 @@ export function parseAddress(address: string) {
       const postalCode = parsedPostalCode[0];
       const parsedAddress = address.split(postalCode);
       return {
-        street: parsedAddress[0]?.replace(',', '').trim(),
-        city: parsedAddress[1]?.replace(',', '').trim(),
+        street: parsedAddress[0]?.replace(/,/g, '').trim(),
+        city: parsedAddress[1]?.replace(/,/g, '').trim(),
         postalCode: parsedPostalCode[0],
       };
     } else {
@@ -58,15 +89,15 @@ export function parseAddress(address: string) {
 
       if (number) {
         const parsedStreet = address
-          .replace(number[0], number[0].replace(',', ''))
+          .replace(number[0], number[0].replace(/,/g, ''))
           .split(',');
 
         return {
-          street: parsedStreet[0]?.replace(',', '').trim(),
-          city: parsedStreet[1]?.replace(',', '').trim(),
+          street: parsedStreet[0]?.replace(/,/g, '').trim(),
+          city: parsedStreet[1]?.replace(/,/g, '').trim(),
         };
       }
-      return { street: address.replace(',', '').trim() };
+      return { street: address.replace(/,/g, '').trim() };
     }
   }
   return {

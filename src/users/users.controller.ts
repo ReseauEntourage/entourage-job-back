@@ -318,7 +318,7 @@ export class UsersController {
   async updateUser(
     @UserPayload('role') role: UserRole,
     @Param('id', new ParseUUIDPipe()) userId: string,
-    // Do not instantiante ContactUsFormPipe so that Request can be injected
+    // Do not instantiante UpdateUserRestrictedPipe so that Request can be injected
     @Body(UpdateUserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
   ) {
     if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {

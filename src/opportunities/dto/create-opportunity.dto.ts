@@ -2,7 +2,7 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsOptional } from 'class-validator';
 import { Opportunity } from '../models';
 import { Department } from 'src/common/locations/locations.types';
-import { PleziTrackingData } from 'src/mails/mails.types';
+import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 
 interface LocationDto {
   department: Department;

@@ -65,4 +65,14 @@ export class ExternalDatabasesService {
       }
     );
   }
+
+  async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
+      {
+        opportunityId: opportunitiesIds,
+        isSameOpportunity: false,
+      }
+    );
+  }
 }
