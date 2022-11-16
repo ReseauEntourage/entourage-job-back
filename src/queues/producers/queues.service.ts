@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import { JobOptions, Queue } from 'bull';
-import { Job, JobDataType, Queues } from '../queues.types';
+import { Job, JobData, Queues } from '../queues.types';
 
 @Injectable()
 export class QueuesService {
@@ -12,7 +12,7 @@ export class QueuesService {
 
   async addToWorkQueue<T extends Job>(
     type: T,
-    data: JobDataType<T>,
+    data: JobData<T>,
     opts?: JobOptions
   ) {
     return this.workQueue.add(type, data, opts);

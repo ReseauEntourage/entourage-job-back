@@ -6,14 +6,15 @@ import {
   AirtableMocks,
   BitlyMocks,
   CacheMocks,
+  PleziMocks,
   QueueMocks,
   SalesforceMocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
+import { PleziService } from 'src/external-services/plezi/plezi.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
-import { MailsService } from 'src/mails/mails.service';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
@@ -62,6 +63,8 @@ describe('Opportunities', () => {
       .useValue(SalesforceMocks)
       .overrideProvider(AirtableService)
       .useValue(AirtableMocks)
+      .overrideProvider(PleziService)
+      .useValue(PleziMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -114,10 +117,6 @@ describe('Opportunities', () => {
               loggedInCandidate,
               true
             ));
-
-          jest
-            .spyOn(MailsService.prototype, 'sendContactToPlezi')
-            .mockImplementation(async () => null);
         });
 
         it('Should return 201, if valid opportunity', async () => {

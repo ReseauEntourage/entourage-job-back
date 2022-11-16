@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
+import { PleziService } from '../external-services/plezi/plezi.service';
 import { getRelatedUser } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
@@ -13,9 +14,11 @@ import {
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import {
+  ContactStatuses,
+  PleziTrackingData,
+} from 'src/external-services/plezi/plezi.types';
 import { MailsService } from 'src/mails/mails.service';
-import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
-
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
@@ -78,6 +81,7 @@ export class OpportunitiesService {
     private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
+    private pleziService: PleziService,
     private smsService: SMSService
   ) {}
 
@@ -163,6 +167,10 @@ export class OpportunitiesService {
       }
     }
     return [] as string[];
+  }
+
+  async findAllIds() {
+    return this.opportunityModel.findAll({ attributes: ['id'] });
   }
 
   async findAll(
@@ -761,7 +769,7 @@ export class OpportunitiesService {
       }
     }
     try {
-      await this.mailsService.sendContactToPlezi(
+      await this.pleziService.sendContactToPlezi(
         opportunity.contactMail || opportunity.recruiterMail,
         getZoneFromDepartment(opportunity.department),
         ContactStatuses.COMPANY,
@@ -934,7 +942,7 @@ export class OpportunitiesService {
     period: Date
     // other parameters might be added
   ) {
-    const opportunities = await this.opportunityModel.findAll({
+    return this.opportunityModel.findAll({
       where: {
         isPublic: true,
         isValidated: true,
@@ -957,7 +965,6 @@ export class OpportunitiesService {
         },
       ],
     });
-    return opportunities;
   }
 
   async sendRelevantOpportunities(
@@ -999,5 +1006,11 @@ export class OpportunitiesService {
       return `No offer for ${user.email}`;
     }
     return `${opportunities.length} offer(s) were sent to ${user.email} - job send relevant opportunities after cv publish`;
+  }
+
+  async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
+    return this.externalDatabasesService.refreshSalesforceOpportunities(
+      opportunitiesIds
+    );
   }
 }
