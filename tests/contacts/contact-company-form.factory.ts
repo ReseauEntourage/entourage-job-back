@@ -24,7 +24,7 @@ export class ContactCompanyFormFactory
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
       company: faker.company.companyName(2),
-      zones: faker.random.arrayElements(
+      zone: faker.random.arrayElement(
         AdminZoneFilters.map(({ value }) => value)
       ),
       approach: faker.random.arrayElement(CompanyApproachFilters).value,
