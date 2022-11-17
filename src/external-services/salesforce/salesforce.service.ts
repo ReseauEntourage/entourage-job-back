@@ -84,7 +84,7 @@ export class SalesforceService {
       if (Array.isArray(result)) {
         return result.map(({ id, success, errors }) => {
           if (!success) {
-            console.error(errors);
+            console.error(`Error creating Salesforce records : `, errors);
             return null;
           }
           return id;
@@ -114,7 +114,7 @@ export class SalesforceService {
       if (Array.isArray(result)) {
         return result.map(({ id, success, errors }) => {
           if (!success) {
-            console.error(errors);
+            console.error(`Error updating Salesforce records : `, errors);
             return null;
           }
           return id;
@@ -127,6 +127,15 @@ export class SalesforceService {
       ) {
         return (err as SalesforceError).duplicateResut.matchResults[0]
           .matchRecords[0].record.Id;
+      }
+      if (
+        (err as SalesforceError).errorCode ===
+        ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD
+      ) {
+        if (Array.isArray(params)) {
+          return params.map(({ Id }) => Id);
+        }
+        return params.Id;
       }
       console.error(err);
       throw err;
@@ -150,7 +159,7 @@ export class SalesforceService {
         return Promise.all(
           result.map(async ({ id, success, errors }, index) => {
             if (!success) {
-              console.error(errors);
+              console.error(`Error upserting Salesforce records : `, errors);
               return null;
             }
             return (
@@ -226,7 +235,7 @@ export class SalesforceService {
   }
 
   async findBinomeByCandidateEmail(email: string) {
-    const candidateSfId = await this.findContactByEmail(
+    const candidateSfId = await this.findContact(
       email,
       ContactsRecordTypesIds.CANDIDATE
     );
@@ -236,7 +245,7 @@ export class SalesforceService {
     return this.findBinomeByCandidateSfId(candidateSfId);
   }
 
-  async findContactByEmail(email: string, recordType: ContactRecordType) {
+  async findContact(email: string, recordType: ContactRecordType) {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceContact>[] } =
       await this.salesforce.query(
@@ -245,46 +254,11 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findContact(
-    firstName: string,
-    lastName: string,
-    email: string,
-    phone: string,
-    recordType: ContactRecordType
-  ) {
-    await this.refreshSalesforceInstance();
-    const { records }: { records: Partial<SalesforceContact>[] } =
-      await this.salesforce.query(
-        `
-            SELECT Id 
-            FROM ${ObjectNames.CONTACT} 
-            WHERE (Adresse_email_unique__c='${email}' OR Email='${email}') 
-              AND Phone='${phone}' 
-              AND FirstName='${firstName}' 
-              AND LastName='${lastName}'
-              AND RecordTypeId='${recordType}' LIMIT 1
-            `
-      );
-    return records[0]?.Id;
-  }
-
-  async findLead(
-    firstName: string,
-    lastName: string,
-    email: string,
-    phone: string,
-    recordType: LeadRecordType
-  ) {
+  async findLead(email: string, recordType: LeadRecordType) {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceLead>[] } =
       await this.salesforce.query(
-        `
-            SELECT Id FROM ${ObjectNames.LEAD} 
-            WHERE Email='${email}'
-              AND Phone='${phone}' 
-              AND FirstName='${firstName}' 
-              AND LastName='${lastName}'
-              AND RecordTypeId='${recordType}' LIMIT 1
+        `SELECT Id FROM ${ObjectNames.LEAD} WHERE Email='${email}' AND RecordTypeId='${recordType}' LIMIT 1
           `
       );
     return records[0]?.Id;
@@ -362,9 +336,12 @@ export class SalesforceService {
     companySfId,
   }: ContactProps) {
     return this.createRecord(ObjectNames.CONTACT, {
-      LastName: lastName,
+      LastName: lastName || 'Inconnu',
       FirstName: firstName,
-      Email: email,
+      Email: email
+        ?.replace(/\+/g, '.')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''),
       Phone: phone,
       Title: position,
       AccountId: companySfId,
@@ -381,19 +358,22 @@ export class SalesforceService {
     company,
     email,
     phone,
-    zones,
+    zone,
     approach,
     heardAbout,
   }: LeadProps) {
     return this.createRecord(ObjectNames.LEAD, {
-      LastName: lastName,
+      LastName: lastName || 'Inconnu',
       FirstName: firstName,
       Company: company,
-      Email: email,
+      Email: email
+        ?.replace(/\+/g, '.')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''),
       Phone: phone,
       Reseaux__c: 'LinkedOut',
       RecordTypeId: LeadsRecordTypesIds.COMPANY,
-      Antenne__c: formatRegions(zones),
+      Antenne__c: formatRegions(zone),
       Source__c: 'Lead entrant',
       Votre_demarche__c: formatApproach(approach),
       Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
@@ -438,10 +418,7 @@ export class SalesforceService {
     position,
   }: ContactProps & { contactMail: string; mainCompanySfId: string }) {
     let contactSfId = await this.findContact(
-      firstName,
-      lastName,
       contactMail || email,
-      phone,
       ContactsRecordTypesIds.COMPANY
     );
 
@@ -474,40 +451,31 @@ export class SalesforceService {
     company,
     email,
     phone,
-    zones,
+    zone,
     approach,
     heardAbout,
   }: LeadProps) {
-    const leadSfId = await this.findLead(
-      firstName,
-      lastName,
-      email,
-      phone,
-      LeadsRecordTypesIds.COMPANY
-    );
-
-    const leadParams = {
-      LastName: lastName,
-      FirstName: firstName,
-      Company: company,
-      Email: email,
-      Phone: phone,
-      Reseaux__c: 'LinkedOut',
-      RecordTypeId: LeadsRecordTypesIds.COMPANY,
-      Antenne__c: formatRegions(zones),
-      Source__c: 'Lead entrant',
-      Votre_demarche__c: formatApproach(approach),
-      Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
-    } as SalesforceObject<typeof ObjectNames.LEAD>;
+    const leadSfId = await this.findLead(email, LeadsRecordTypesIds.COMPANY);
 
     if (!leadSfId) {
-      return (await this.createRecord(ObjectNames.LEAD, leadParams)) as string;
-    } else {
-      return (await this.updateRecord(ObjectNames.LEAD, {
-        Id: leadSfId,
-        ...leadParams,
+      return (await this.createRecord(ObjectNames.LEAD, {
+        LastName: lastName,
+        FirstName: firstName,
+        Company: company,
+        Email: email
+          ?.replace(/\+/g, '.')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, ''),
+        Phone: phone,
+        Reseaux__c: 'LinkedOut',
+        RecordTypeId: LeadsRecordTypesIds.COMPANY,
+        Antenne__c: formatRegions(zone),
+        Source__c: 'Lead entrant',
+        Votre_demarche__c: formatApproach(approach),
+        Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
       })) as string;
     }
+    return leadSfId;
   }
 
   async findOrCreateCompanyAndContactFromOffer(
@@ -567,7 +535,7 @@ export class SalesforceService {
     email,
     phone,
     company,
-    zones,
+    zone,
     approach,
     heardAbout,
   }: LeadProps) {
@@ -577,7 +545,7 @@ export class SalesforceService {
       company,
       email,
       phone,
-      zones,
+      zone,
       approach,
       heardAbout,
     })) as string;

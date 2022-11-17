@@ -83,14 +83,14 @@ export const CompanyApproachFilters: FilterConstant<CompanyApproach>[] = [
   },
 ];
 
-export type CompanyZone = AdminZone | 'RENNES' | 'NATIONAL';
+export type CompanyZone = AdminZone | 'NATIONAL';
 
 export const CompanyZoneFilters: FilterConstant<CompanyZone>[] = [
   { value: AdminZones.PARIS, label: _.capitalize(AdminZones.PARIS) },
   { value: AdminZones.LILLE, label: _.capitalize(AdminZones.LILLE) },
   { value: AdminZones.LYON, label: _.capitalize(AdminZones.LYON) },
   { value: AdminZones.LORIENT, label: _.capitalize(AdminZones.LORIENT) },
-  { value: 'RENNES', label: 'Rennes' },
+  { value: AdminZones.RENNES, label: _.capitalize(AdminZones.RENNES) },
   { value: 'NATIONAL', label: 'National' },
   { value: AdminZones.HZ, label: _.capitalize(AdminZones.HZ) },
 ];

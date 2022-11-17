@@ -14,7 +14,8 @@ export const PleziContactRegions: { [K in AdminZone]: string } = {
   [AdminZones.LYON]: AdminZones.LYON.toLowerCase(),
   [AdminZones.PARIS]: AdminZones.PARIS.toLowerCase(),
   [AdminZones.LILLE]: AdminZones.LILLE.toLowerCase(),
-  [AdminZones.LORIENT]: 'rennes',
+  [AdminZones.LORIENT]: AdminZones.LORIENT.toLowerCase(),
+  [AdminZones.RENNES]: AdminZones.RENNES.toLowerCase(),
   [AdminZones.HZ]: AdminZones.HZ.toLowerCase(),
 } as const;
 
