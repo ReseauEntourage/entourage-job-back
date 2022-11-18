@@ -8,14 +8,15 @@ import {
   HeardAbout,
   HeardAboutValue,
 } from 'src/contacts/contacts.types';
+
 import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
-import { AdminZone } from 'src/utils/types';
 
 export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
+  CANNOT_UPDATE_CONVERTED_LEAD: 'CANNOT_UPDATE_CONVERTED_LEAD',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
@@ -79,7 +80,6 @@ export type LeadRecordType =
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
   [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
-
   [CompanyApproaches.MOBILIZATION]: 'Mobiliser des collaborateurs',
   [CompanyApproaches.RECRUITMENT]: 'Recruter inclusif',
 } as const;
@@ -254,7 +254,7 @@ export interface LeadProps {
   email: string;
   phone?: string;
   approach: CompanyApproach;
-  zones: CompanyZone[];
+  zone: CompanyZone;
   heardAbout?: HeardAboutValue;
 }
 

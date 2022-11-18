@@ -42,14 +42,8 @@ export function formatDepartment(department: Department) {
   return _.capitalize(AdminZones[getZoneSuffixFromDepartment(department)]);
 }
 
-export function formatRegions(regions: CompanyZone[]) {
-  return _.uniq(
-    regions.map((region) => {
-      return _.capitalize(region);
-    })
-  )
-    .toString()
-    .replace(/,/g, ';');
+export function formatRegions(region: CompanyZone) {
+  return _.capitalize(region);
 }
 
 export function formatApproach(approach: CompanyApproach) {
@@ -172,12 +166,18 @@ export function mapSalesforceOfferFields({
     Permis_de_conduire_necessaire__c: driversLicense,
     Source_de_l_offre__c:
       externalOriginConstant?.salesforceLabel || externalOriginConstant?.label,
-    Nom__c: recruiterName,
-    Prenom__c: recruiterFirstName,
-    Mail_du_recruteur__c: recruiterMail,
+    Nom__c: recruiterName || 'Inconnu',
+    Prenom__c: recruiterFirstName || 'Inconnu',
+    Mail_du_recruteur__c: recruiterMail
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
     Telephone_du_recruteur__c: recruiterPhone,
     Fonction_du_recruteur__c: recruiterPosition,
-    Mail_de_contact__c: contactMail,
+    Mail_de_contact__c: contactMail
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
     Prenom_Nom_du_recruteur__c: contactSfId,
     Contact_cree_existant__c: true,
     Antenne__c: _.capitalize(
