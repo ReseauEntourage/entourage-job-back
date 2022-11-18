@@ -4,26 +4,27 @@ import { Connection, SuccessResult } from 'jsforce';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
-  LeadProps,
   CompanyProps,
   ContactProps,
+  ContactRecordType,
+  ContactsRecordTypesIds,
   ErrorCodes,
+  LeadProps,
+  LeadRecordType,
+  LeadsRecordTypesIds,
   ObjectName,
   ObjectNames,
   OfferAndProcessProps,
   OfferProps,
   ProcessProps,
-  ContactRecordType,
-  ContactsRecordTypesIds,
   SalesforceBinome,
+  SalesforceCompany,
   SalesforceContact,
   SalesforceError,
   SalesforceLead,
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  LeadsRecordTypesIds,
-  LeadRecordType,
 } from './salesforce.types';
 import {
   formatApproach,
@@ -38,12 +39,26 @@ import {
   parseAddress,
 } from './salesforce.utils';
 
+const RETRY_DELAY = 60;
+const RETRY_NUMBER = 5;
+
+const asyncTimeout = (delay: number) =>
+  new Promise<void>((res) => {
+    setTimeout(() => {
+      res();
+    }, delay * 1000);
+  });
+
 @Injectable()
 export class SalesforceService {
   private salesforce: Connection;
+  private retries = RETRY_NUMBER;
 
-  constructor(private opportunitiesService: OpportunitiesService) {
+  constructor(private opportunitiesService: OpportunitiesService) {}
+
+  async loginToSalesforce() {
     this.salesforce = new jsforce.Connection({
+      instanceUrl: process.env.SALESFORCE_LOGIN_URL,
       oauth2: {
         loginUrl: process.env.SALESFORCE_LOGIN_URL,
         clientId: process.env.SALESFORCE_CLIENT_ID,
@@ -51,10 +66,7 @@ export class SalesforceService {
         redirectUri: process.env.SALESFORCE_REDIRECT_URI,
       },
     });
-  }
-
-  async loginToSalesforce() {
-    await this.salesforce.login(
+    return await this.salesforce.login(
       process.env.SALESFORCE_USERNAME,
       process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN
     );
@@ -62,14 +74,20 @@ export class SalesforceService {
 
   async refreshSalesforceInstance() {
     try {
-      await this.salesforce.identity();
+      await this.loginToSalesforce();
+      this.retries = RETRY_NUMBER;
     } catch (err) {
       console.error(
-        `Error after check if still logged in '${
-          (err as SalesforceError).message
-        }'`
+        `Error after trying to log in '${(err as SalesforceError).message}'`
       );
-      await this.loginToSalesforce();
+      console.log('auth retries', this.retries);
+      if (this.retries > 0) {
+        this.retries -= 1;
+        await asyncTimeout(RETRY_DELAY);
+        await this.refreshSalesforceInstance();
+      } else {
+        throw err;
+      }
     }
   }
 
@@ -227,6 +245,14 @@ export class SalesforceService {
   async searchCompanyByName(search: string) {
     const escapedSearch = search.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
     await this.refreshSalesforceInstance();
+    if (escapedSearch.length === 1) {
+      const { records }: { records: Partial<SalesforceCompany>[] } =
+        await this.salesforce.query(
+          `SELECT Id FROM ${ObjectNames.COMPANY} WHERE Name LIKE '${escapedSearch}%' LIMIT 1`
+        );
+      return records[0]?.Id;
+    }
+
     const { searchRecords } = await this.salesforce.search(
       `FIND {${escapedSearch}} IN NAME FIELDS RETURNING ${ObjectNames.COMPANY}(Id) LIMIT 1`
     );
@@ -315,7 +341,7 @@ export class SalesforceService {
     return this.createRecord(ObjectNames.COMPANY, {
       Name: mainCompanySfId
         ? formatCompanyName(name, address, department)
-        : name,
+        : name || 'Inconnu',
       Industry: formatBusinessLines(businessLines),
       BillingStreet: parsedAddress.street,
       BillingCity: parsedAddress.city,
@@ -345,10 +371,11 @@ export class SalesforceService {
       Phone: phone,
       Title: position,
       AccountId: companySfId,
-      Type_de_contact__c: 'Entreprise',
+      Casquettes_r_les__c: 'Partenaire Entreprise',
       Reseaux__c: 'LinkedOut',
       RecordTypeId: ContactsRecordTypesIds.COMPANY,
       Antenne__c: formatDepartment(department),
+      Source__c: 'Lead entrant',
     });
   }
 
@@ -392,7 +419,7 @@ export class SalesforceService {
     );
 
     if (!companySfId) {
-      companySfId = await this.searchCompanyByName(`${name}`);
+      companySfId = await this.searchCompanyByName(name || 'Inconnu');
     }
     if (!companySfId) {
       companySfId = (await this.createCompany({
@@ -426,7 +453,6 @@ export class SalesforceService {
       contactSfId = (await this.createContact(
         contactMail
           ? {
-              lastName: 'Inconnu',
               email: contactMail,
               department,
               companySfId: mainCompanySfId || companySfId,
@@ -571,12 +597,16 @@ export class SalesforceService {
     offerSfId?: string
   ) {
     if (Array.isArray(process)) {
-      const processToCreate = await Promise.all(
-        process.map(async (singleProcess) => {
-          return this.getProcessToCreate(singleProcess, offerSfId);
-        })
-      );
-      return this.createOrUpdateProcess(processToCreate);
+      let processesToCreate: ProcessProps[] = [];
+      for (let i = 0; i < process.length; i += 1) {
+        const processToCreate = await this.getProcessToCreate(
+          process[i],
+          offerSfId
+        );
+        processesToCreate = [...processesToCreate, processToCreate];
+      }
+
+      return this.createOrUpdateProcess(processesToCreate);
     } else {
       const processToCreate = await this.getProcessToCreate(process, offerSfId);
       return this.createOrUpdateProcess(processToCreate);
@@ -616,34 +646,35 @@ export class SalesforceService {
         offers: OfferProps[];
         processes: ProcessProps[];
       } = offerAndProcess.reduce(
-        (acc, curr) => {
+        (acc, { offer, process }) => {
           return {
-            offers: [...acc.offers, curr.offer],
-            processes: [
-              ...acc.processes,
-              ...(Array.isArray(curr.process) ? curr.process : [curr.process]),
-            ],
+            offers: [...acc.offers, offer],
+            processes: [...acc.processes, ...process],
           };
         },
         { offers: [], processes: [] }
       );
 
-      const offersToCreate = await Promise.all(
-        offersAndProcessesToCreate.offers.map(async (offer) => {
-          const { contactSfId, companySfId } =
-            await this.findOrCreateCompanyAndContactFromOffer(
-              offer,
-              mainCompanySfId,
-              mainContactSfId
-            );
+      let offersToCreate: OfferProps[] = [];
 
-          return {
+      for (let i = 0; i < offersAndProcessesToCreate.offers.length; i += 1) {
+        const offer = offersAndProcessesToCreate.offers[i];
+        const { contactSfId, companySfId } =
+          await this.findOrCreateCompanyAndContactFromOffer(
+            offer,
+            mainCompanySfId,
+            mainContactSfId
+          );
+
+        offersToCreate = [
+          ...offersToCreate,
+          {
             ...offer,
             contactSfId,
             companySfId,
-          };
-        })
-      );
+          },
+        ];
+      }
 
       await this.createOrUpdateOffer(offersToCreate);
 
@@ -682,7 +713,7 @@ export class SalesforceService {
         opportunity.id,
         opportunity.title,
         opportunity.company
-      ) as ProcessProps[],
+      ).filter((singleProcess) => !!singleProcess) as ProcessProps[],
     };
   }
 

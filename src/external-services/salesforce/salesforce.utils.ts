@@ -220,16 +220,17 @@ export function mapProcessFromOpportunityUser(
   title: string,
   company: string
 ): Partial<ProcessProps>[] {
-  return opportunityUsers.map(
-    ({ UserId, user: { email, firstName, lastName }, ...restProps }) => {
-      return {
-        offerTitle: title,
-        candidateEmail: email,
-        firstName,
-        lastName,
-        company,
-        ...restProps,
-      };
+  return opportunityUsers.map(({ UserId, user, ...restProps }) => {
+    if (!user) {
+      return null;
     }
-  );
+    return {
+      offerTitle: title,
+      candidateEmail: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      company,
+      ...restProps,
+    };
+  });
 }

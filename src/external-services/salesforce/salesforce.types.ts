@@ -225,7 +225,7 @@ export interface SalesforceCompany {
 
 export interface ContactProps {
   firstName?: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   phone?: string;
   position?: string;
@@ -241,10 +241,11 @@ export interface SalesforceContact {
   Phone: string;
   Title: string;
   AccountId: string;
-  Type_de_contact__c: 'Entreprise';
+  Casquettes_r_les__c: 'Partenaire Entreprise';
   Reseaux__c: 'LinkedOut';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
+  Source__c: 'Lead entrant';
 }
 
 export interface LeadProps {
