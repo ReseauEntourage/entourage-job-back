@@ -182,7 +182,7 @@ export interface SalesforceOffer {
   Offre_valid_e__c: boolean;
   Lien_externe__c: string;
   Lien_Offre_Backoffice__c: string;
-  Departement__c: string;
+  Departement__c: Department;
   Adresse_de_l_offre__c: string;
   Jours_et_horaires_de_travail__c: string;
   Salaire_et_complement__c: string;
@@ -252,6 +252,7 @@ export interface LeadProps {
   firstName: string;
   lastName: string;
   company: string;
+  position: string;
   email: string;
   phone?: string;
   approach: CompanyApproach;
@@ -264,6 +265,7 @@ export interface SalesforceLead {
   LastName: string;
   FirstName: string;
   Company: string;
+  Title: string;
   Email: string;
   Phone?: string;
   Reseaux__c: 'LinkedOut';

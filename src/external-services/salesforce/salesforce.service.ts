@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
-import { Connection, SuccessResult } from 'jsforce';
+import { Connection, ErrorResult, RecordResult, SuccessResult } from 'jsforce';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
@@ -27,6 +27,7 @@ import {
   SalesforceProcess,
 } from './salesforce.types';
 import {
+  addListenersToSalesforceJobQueue,
   formatApproach,
   formatBusinessLines,
   formatCompanyName,
@@ -39,7 +40,7 @@ import {
   parseAddress,
 } from './salesforce.utils';
 
-const RETRY_DELAY = 60;
+const RETRY_DELAY = 60 * 10;
 const RETRY_NUMBER = 5;
 
 const asyncTimeout = (delay: number) =>
@@ -52,7 +53,6 @@ const asyncTimeout = (delay: number) =>
 @Injectable()
 export class SalesforceService {
   private salesforce: Connection;
-  private retries = RETRY_NUMBER;
 
   constructor(private opportunitiesService: OpportunitiesService) {}
 
@@ -65,6 +65,7 @@ export class SalesforceService {
         clientSecret: process.env.SALESFORCE_CLIENT_SECRET,
         redirectUri: process.env.SALESFORCE_REDIRECT_URI,
       },
+      maxRequest: 10000,
     });
     return await this.salesforce.login(
       process.env.SALESFORCE_USERNAME,
@@ -72,19 +73,19 @@ export class SalesforceService {
     );
   }
 
-  async refreshSalesforceInstance() {
+  async refreshSalesforceInstance(retries?: number) {
+    const remainingRetries = retries || retries === 0 ? retries : RETRY_NUMBER;
     try {
       await this.loginToSalesforce();
-      this.retries = RETRY_NUMBER;
     } catch (err) {
       console.error(
         `Error after trying to log in '${(err as SalesforceError).message}'`
       );
-      console.log('auth retries', this.retries);
-      if (this.retries > 0) {
-        this.retries -= 1;
+      // eslint-disable-next-line no-console
+      console.log('Salesforce auth retries', remainingRetries);
+      if (remainingRetries > 0) {
         await asyncTimeout(RETRY_DELAY);
-        await this.refreshSalesforceInstance();
+        await this.refreshSalesforceInstance(remainingRetries - 1);
       } else {
         throw err;
       }
@@ -98,17 +99,36 @@ export class SalesforceService {
     await this.refreshSalesforceInstance();
 
     try {
-      const result = await this.salesforce.sobject(name).create(params);
-      if (Array.isArray(result)) {
-        return result.map(({ id, success, errors }) => {
-          if (!success) {
-            console.error(`Error creating Salesforce records : `, errors);
-            return null;
-          }
-          return id;
+      if (Array.isArray(params)) {
+        const job = this.salesforce.bulk.createJob(name, 'create');
+
+        const batch = job.createBatch();
+        batch.execute(params);
+
+        return new Promise((res, rej) => {
+          addListenersToSalesforceJobQueue(batch, rej);
+          batch.on('response', async (results: RecordResult[]) => {
+            let resultsIds: string[] = [];
+
+            for (let i = 0; i < results.length; i += 1) {
+              const { id, success, errors } = results[i] as ErrorResult &
+                SuccessResult;
+              if (!success) {
+                console.error(`Error creating Salesforce records : `, errors);
+              } else {
+                resultsIds = [...resultsIds, id];
+              }
+            }
+            res(resultsIds);
+          });
         });
+      } else {
+        const result = await this.salesforce.sobject(name).create(params);
+        if (!result.success) {
+          throw (result as ErrorResult).errors;
+        }
+        return (result as SuccessResult).id;
       }
-      return (result as SuccessResult).id;
     } catch (err) {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.DUPLICATES_DETECTED
@@ -128,17 +148,36 @@ export class SalesforceService {
     await this.refreshSalesforceInstance();
 
     try {
-      const result = await this.salesforce.sobject(name).update(params);
-      if (Array.isArray(result)) {
-        return result.map(({ id, success, errors }) => {
-          if (!success) {
-            console.error(`Error updating Salesforce records : `, errors);
-            return null;
-          }
-          return id;
+      if (Array.isArray(params)) {
+        const job = this.salesforce.bulk.createJob(name, 'update');
+
+        const batch = job.createBatch();
+        batch.execute(params);
+
+        return new Promise((res, rej) => {
+          addListenersToSalesforceJobQueue(batch, rej);
+          batch.on('response', async (results: RecordResult[]) => {
+            let resultsIds: string[] = [];
+
+            for (let i = 0; i < results.length; i += 1) {
+              const { id, success, errors } = results[i] as ErrorResult &
+                SuccessResult;
+              if (!success) {
+                console.error(`Error updating Salesforce records : `, errors);
+              } else {
+                resultsIds = [...resultsIds, id];
+              }
+            }
+            res(resultsIds);
+          });
         });
+      } else {
+        const result = await this.salesforce.sobject(name).update(params);
+        if (!result.success) {
+          throw (result as ErrorResult).errors;
+        }
+        return (result as SuccessResult).id;
       }
-      return (result as SuccessResult).id;
     } catch (err) {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.DUPLICATES_DETECTED
@@ -169,32 +208,51 @@ export class SalesforceService {
     await this.refreshSalesforceInstance();
 
     try {
-      const result = await this.salesforce
-        .sobject(name)
-        .upsert(params, extIdField as string);
+      if (Array.isArray(params)) {
+        const job = this.salesforce.bulk.createJob(name, 'upsert', {
+          extIdField: extIdField as string,
+        });
 
-      if (Array.isArray(result)) {
-        return Promise.all(
-          result.map(async ({ id, success, errors }, index) => {
-            if (!success) {
-              console.error(`Error upserting Salesforce records : `, errors);
-              return null;
+        const batch = job.createBatch();
+        batch.execute(params);
+
+        return new Promise((res, rej) => {
+          addListenersToSalesforceJobQueue(batch, rej);
+          batch.on('response', async (results: RecordResult[]) => {
+            let resultsIds: string[] = [];
+
+            for (let i = 0; i < results.length; i += 1) {
+              const { id, success, errors } = results[i] as ErrorResult &
+                SuccessResult;
+              if (!success) {
+                console.error(`Error upserting Salesforce records : `, errors);
+              } else {
+                resultsIds = [
+                  ...resultsIds,
+                  id ||
+                    (await this[findIdFunction](
+                      (params as SalesforceObject<T>[])[i][extIdField]
+                    )),
+                ];
+              }
             }
-            return (
-              id ||
-              (await this[findIdFunction](
-                (params as SalesforceObject<T>[])[index][extIdField]
-              ))
-            );
-          })
+            res(resultsIds);
+          });
+        });
+      } else {
+        const result = await this.salesforce
+          .sobject(name)
+          .upsert(params, extIdField as string);
+        if (!result.success) {
+          throw (result as ErrorResult).errors;
+        }
+        return (
+          (result as SuccessResult).id ||
+          (await this[findIdFunction](
+            (params as SalesforceObject<T>)[extIdField]
+          ))
         );
       }
-      return (
-        (result as SuccessResult).id ||
-        (await this[findIdFunction](
-          (params as SalesforceObject<T>)[extIdField]
-        ))
-      );
     } catch (err) {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.DUPLICATES_DETECTED
@@ -208,7 +266,7 @@ export class SalesforceService {
   }
 
   async createOrUpdateProcess(params: ProcessProps | ProcessProps[]) {
-    let records;
+    let records: SalesforceProcess | SalesforceProcess[];
     if (Array.isArray(params)) {
       records = params.map((singleParams) => {
         return mapSalesforceProcessFields(singleParams);
@@ -225,7 +283,7 @@ export class SalesforceService {
   }
 
   async createOrUpdateOffer(params: OfferProps | OfferProps[]) {
-    let records;
+    let records: SalesforceOffer | SalesforceOffer[];
     if (Array.isArray(params)) {
       records = params.map((singleParams) => {
         return mapSalesforceOfferFields(singleParams);
@@ -368,7 +426,7 @@ export class SalesforceService {
         ?.replace(/\+/g, '.')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, ''),
-      Phone: phone,
+      Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
       Title: position,
       AccountId: companySfId,
       Casquettes_r_les__c: 'Partenaire Entreprise',
@@ -383,6 +441,7 @@ export class SalesforceService {
     firstName,
     lastName,
     company,
+    position,
     email,
     phone,
     zone,
@@ -393,11 +452,12 @@ export class SalesforceService {
       LastName: lastName || 'Inconnu',
       FirstName: firstName,
       Company: company,
+      Title: position,
       Email: email
         ?.replace(/\+/g, '.')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, ''),
-      Phone: phone,
+      Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
       Reseaux__c: 'LinkedOut',
       RecordTypeId: LeadsRecordTypesIds.COMPANY,
       Antenne__c: formatRegions(zone),
@@ -475,6 +535,7 @@ export class SalesforceService {
     firstName,
     lastName,
     company,
+    position,
     email,
     phone,
     zone,
@@ -488,11 +549,12 @@ export class SalesforceService {
         LastName: lastName,
         FirstName: firstName,
         Company: company,
+        Title: position,
         Email: email
           ?.replace(/\+/g, '.')
           .normalize('NFD')
           .replace(/[\u0300-\u036f]/g, ''),
-        Phone: phone,
+        Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
         Reseaux__c: 'LinkedOut',
         RecordTypeId: LeadsRecordTypesIds.COMPANY,
         Antenne__c: formatRegions(zone),
@@ -536,6 +598,9 @@ export class SalesforceService {
       });
     }
 
+    // eslint-disable-next-line no-console
+    console.log('Created Salesforce Company', companySfId);
+
     if (mainContactSfId) {
       contactSfId = mainContactSfId;
     } else if (!contactSfId) {
@@ -552,6 +617,9 @@ export class SalesforceService {
       })) as string;
     }
 
+    // eslint-disable-next-line no-console
+    console.log('Created Salesforce Contact', contactSfId);
+
     return { contactSfId, companySfId };
   }
 
@@ -561,6 +629,7 @@ export class SalesforceService {
     email,
     phone,
     company,
+    position,
     zone,
     approach,
     heardAbout,
@@ -569,6 +638,7 @@ export class SalesforceService {
       firstName,
       lastName,
       company,
+      position,
       email,
       phone,
       zone,
@@ -656,7 +726,6 @@ export class SalesforceService {
       );
 
       let offersToCreate: OfferProps[] = [];
-
       for (let i = 0; i < offersAndProcessesToCreate.offers.length; i += 1) {
         const offer = offersAndProcessesToCreate.offers[i];
         const { contactSfId, companySfId } =
@@ -678,9 +747,14 @@ export class SalesforceService {
 
       await this.createOrUpdateOffer(offersToCreate);
 
-      await this.createOrUpdateSalesforceProcess(
-        offersAndProcessesToCreate.processes
-      );
+      if (
+        offersAndProcessesToCreate.processes &&
+        offersAndProcessesToCreate.processes.length > 0
+      ) {
+        await this.createOrUpdateSalesforceProcess(
+          offersAndProcessesToCreate.processes
+        );
+      }
     } else {
       const { offer, process } = offerAndProcess;
       const { contactSfId, companySfId } =
@@ -692,7 +766,9 @@ export class SalesforceService {
         companySfId,
       })) as string;
 
-      await this.createOrUpdateSalesforceProcess(process, offerSfId);
+      if (process && process.length > 0) {
+        await this.createOrUpdateSalesforceProcess(process, offerSfId);
+      }
     }
   }
 
