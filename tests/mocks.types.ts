@@ -56,7 +56,6 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createOrUpdateOffer: jest.fn(),
   searchCompanyByName: jest.fn(),
   findBinomeByCandidateEmail: jest.fn(),
-  findContactByEmail: jest.fn(),
   findContact: jest.fn(),
   findLead: jest.fn(),
   findBinomeByCandidateSfId: jest.fn(),
