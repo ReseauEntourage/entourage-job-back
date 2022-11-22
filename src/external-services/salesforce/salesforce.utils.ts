@@ -1,4 +1,4 @@
-import { Batch } from 'jsforce';
+import { Batch, ErrorResult, Job, RecordResult, SuccessResult } from 'jsforce';
 import * as _ from 'lodash';
 import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
@@ -18,8 +18,10 @@ import { AdminZones, AnyCantFix } from 'src/utils/types';
 import {
   LeadApproaches,
   LeadHeardAbout,
+  ObjectName,
   OfferProps,
   ProcessProps,
+  SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
 } from './salesforce.types';
@@ -162,7 +164,7 @@ export function mapSalesforceOfferFields({
     Lien_externe__c: link,
     Lien_Offre_Backoffice__c:
       process.env.FRONT_URL + '/backoffice/admin/offres/' + id,
-    Departement__c: department || 'Paris (75)',
+    Departement__c: department || 'Inconnu',
     Adresse_de_l_offre__c: address,
     Jours_et_horaires_de_travail__c:
       workingHours?.length > 100
@@ -257,17 +259,26 @@ export function mapProcessFromOpportunityUser(
   });
 }
 
-export function addListenersToSalesforceJobQueue(
-  batch: Batch,
-  rej: (reason?: AnyCantFix) => void
-) {
-  batch.on('error', (error) => {
-    console.error('Error, batchInfo:', error);
-    rej(error);
-  });
-  batch.on('queue', (batchInfo) => {
-    // eslint-disable-next-line no-console
-    console.log('Queue, batchInfo:', batchInfo);
-    batch.poll(1000, 20000);
+export function executeBulkAction<T extends ObjectName>(
+  params: SalesforceObject<T>[],
+  job: Job
+): Promise<RecordResult[]> {
+  return new Promise((res, rej) => {
+    const batch = job.createBatch();
+
+    batch.execute(params);
+
+    batch.on('error', (error) => {
+      console.error('Error, batchInfo:', error);
+      rej(error);
+    });
+    batch.on('queue', (batchInfo) => {
+      // eslint-disable-next-line no-console
+      console.log('Queue, batchInfo:', batchInfo);
+      batch.poll(1000, 20000);
+    });
+    batch.on('response', async (results: RecordResult[]) => {
+      res(results);
+    });
   });
 }
