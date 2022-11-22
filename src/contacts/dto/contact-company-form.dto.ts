@@ -29,6 +29,10 @@ export class ContactCompanyFormDto {
 
   @ApiProperty()
   @IsString()
+  position: string;
+
+  @ApiProperty()
+  @IsString()
   zone: CompanyZone;
 
   @ApiProperty()
