@@ -125,8 +125,9 @@ describe('Contacts', () => {
         firstName: formAnswers.firstName,
         lastName: formAnswers.lastName,
         email: formAnswers.email,
-        zones: formAnswers.zones,
+        zone: formAnswers.zone,
         company: formAnswers.company,
+        position: formAnswers.position,
         approach: formAnswers.approach,
       };
 

@@ -1,3 +1,4 @@
+import { Batch } from 'jsforce';
 import * as _ from 'lodash';
 import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
@@ -13,7 +14,7 @@ import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.type
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones } from 'src/utils/types';
+import { AdminZones, AnyCantFix } from 'src/utils/types';
 import {
   LeadApproaches,
   LeadHeardAbout,
@@ -42,14 +43,8 @@ export function formatDepartment(department: Department) {
   return _.capitalize(AdminZones[getZoneSuffixFromDepartment(department)]);
 }
 
-export function formatRegions(regions: CompanyZone[]) {
-  return _.uniq(
-    regions.map((region) => {
-      return _.capitalize(region);
-    })
-  )
-    .toString()
-    .replace(/,/g, ';');
+export function formatRegions(region: CompanyZone) {
+  return _.capitalize(region);
 }
 
 export function formatApproach(approach: CompanyApproach) {
@@ -69,7 +64,9 @@ export function formatCompanyName(
   address: string,
   department: Department
 ) {
-  return `${name} - ${address} - ${department}`;
+  return `${name || 'Inconnu'} - ${address || 'Inconnu'} - ${
+    department || 'Inconnu'
+  }`;
 }
 
 export function parseAddress(address: string) {
@@ -142,17 +139,21 @@ export function mapSalesforceOfferFields({
     ? findConstantFromValue(externalOrigin, ExternalOfferOriginFilters)
     : undefined;
 
+  let name = `${title} - ${formatCompanyName(company, address, department)}`;
+  if (name.length > 80) {
+    name = name.substring(0, 80);
+  }
   return {
     ID__c: id,
-    Name: `${title} - ${formatCompanyName(company, address, department)}`,
-    Titre__c: title,
+    Name: name,
+    Titre__c: title.length > 80 ? title.substring(0, 80) : title,
     Entreprise_Recruteuse__c: companySfId,
     Secteur_d_activite_de_l_offre__c: businessLines
       ? formatBusinessLines(businessLines)
       : undefined,
     Type_de_contrat__c: contract
       ? findConstantFromValue(contract, ContractFilters).label
-      : undefined,
+      : 'Autre',
     Temps_partiel__c: isPartTime,
     Offre_publique__c: isPublic,
     Offre_externe__c: isExternal,
@@ -161,10 +162,14 @@ export function mapSalesforceOfferFields({
     Lien_externe__c: link,
     Lien_Offre_Backoffice__c:
       process.env.FRONT_URL + '/backoffice/admin/offres/' + id,
-    Departement__c: department,
+    Departement__c: department || 'Paris (75)',
     Adresse_de_l_offre__c: address,
-    Jours_et_horaires_de_travail__c: workingHours,
-    Salaire_et_complement__c: salary,
+    Jours_et_horaires_de_travail__c:
+      workingHours?.length > 100
+        ? workingHours.substring(0, 100)
+        : workingHours,
+    Salaire_et_complement__c:
+      salary?.length > 50 ? salary.substring(0, 50) : salary,
     Message_au_candidat__c: message,
     Presentation_de_l_entreprise__c: companyDescription,
     Descriptif_des_missions_proposees__c: description,
@@ -172,12 +177,23 @@ export function mapSalesforceOfferFields({
     Permis_de_conduire_necessaire__c: driversLicense,
     Source_de_l_offre__c:
       externalOriginConstant?.salesforceLabel || externalOriginConstant?.label,
-    Nom__c: recruiterName,
-    Prenom__c: recruiterFirstName,
-    Mail_du_recruteur__c: recruiterMail,
+    Nom__c:
+      recruiterName?.length >= 25
+        ? recruiterName.substring(0, 25)
+        : recruiterName || 'Inconnu',
+    Prenom__c: recruiterFirstName || 'Inconnu',
+    Mail_du_recruteur__c: recruiterMail
+      ? recruiterMail
+          .replace(/\+/g, '.')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+      : 'entreprises@entourage.social',
     Telephone_du_recruteur__c: recruiterPhone,
     Fonction_du_recruteur__c: recruiterPosition,
-    Mail_de_contact__c: contactMail,
+    Mail_de_contact__c: contactMail
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
     Prenom_Nom_du_recruteur__c: contactSfId,
     Contact_cree_existant__c: true,
     Antenne__c: _.capitalize(
@@ -201,9 +217,15 @@ export function mapSalesforceProcessFields({
   binomeSfId,
   offerSfId,
 }: ProcessProps): SalesforceProcess {
+  let name = `${firstName} ${lastName} - ${offerTitle || 'Inconnu'} - ${
+    company || 'Inconnu'
+  }`;
+  if (name.length > 80) {
+    name = name.substring(0, 80);
+  }
   return {
     ID_Externe__c: id,
-    Name: `${firstName} ${lastName} - ${offerTitle} - ${company}`,
+    Name: name,
     Statut__c: findOfferStatus(status, isPublic, recommended).label,
     Vue__c: seen,
     Favoris__c: bookmarked,
@@ -220,16 +242,32 @@ export function mapProcessFromOpportunityUser(
   title: string,
   company: string
 ): Partial<ProcessProps>[] {
-  return opportunityUsers.map(
-    ({ UserId, user: { email, firstName, lastName }, ...restProps }) => {
-      return {
-        offerTitle: title,
-        candidateEmail: email,
-        firstName,
-        lastName,
-        company,
-        ...restProps,
-      };
+  return opportunityUsers.map(({ UserId, user, ...restProps }) => {
+    if (!user) {
+      return null;
     }
-  );
+    return {
+      offerTitle: title,
+      candidateEmail: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      company,
+      ...restProps,
+    };
+  });
+}
+
+export function addListenersToSalesforceJobQueue(
+  batch: Batch,
+  rej: (reason?: AnyCantFix) => void
+) {
+  batch.on('error', (error) => {
+    console.error('Error, batchInfo:', error);
+    rej(error);
+  });
+  batch.on('queue', (batchInfo) => {
+    // eslint-disable-next-line no-console
+    console.log('Queue, batchInfo:', batchInfo);
+    batch.poll(1000, 20000);
+  });
 }

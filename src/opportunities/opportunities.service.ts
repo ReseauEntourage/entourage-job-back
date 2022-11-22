@@ -588,18 +588,23 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidatesIdsToRecommendTo =
-      opportunity.isPublic && opportunity.isValidated
-        ? await this.findAllCandidatesIdsToRecommendOfferTo(
-            opportunity.department,
-            opportunity.businessLines
-          )
-        : [];
 
-    if (candidatesId?.length > 0 || candidatesIdsToRecommendTo?.length > 0) {
+    // disable auto recommandation feature
+    // const candidatesIdsToRecommendTo =
+    //   opportunity.isPublic && opportunity.isValidated
+    //     ? await this.findAllCandidatesIdsToRecommendOfferTo(
+    //         opportunity.department,
+    //         opportunity.businessLines
+    //       )
+    //     : [];
+
+    if (
+      candidatesId?.length > 0
+      // || candidatesIdsToRecommendTo?.length > 0
+    ) {
       const uniqueCandidatesIds = _.uniq([
         ...(candidatesId || []),
-        ...(candidatesIdsToRecommendTo || []),
+        // ...(candidatesIdsToRecommendTo || []),
       ]);
 
       await Promise.all(

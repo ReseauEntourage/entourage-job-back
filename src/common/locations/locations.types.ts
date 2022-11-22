@@ -104,7 +104,7 @@ export const Departments = [
   },
   {
     name: "Côtes-d'Armor (22)",
-    zone: AdminZones.HZ,
+    zone: AdminZones.RENNES,
     region: 'Bretagne',
   },
   {
@@ -139,7 +139,7 @@ export const Departments = [
   },
   {
     name: 'Finistère (29)',
-    zone: AdminZones.HZ,
+    zone: AdminZones.RENNES,
     region: 'Bretagne',
   },
   {
@@ -179,7 +179,7 @@ export const Departments = [
   },
   {
     name: 'Ille-et-Vilaine (35)',
-    zone: AdminZones.HZ,
+    zone: AdminZones.RENNES,
     region: 'Bretagne',
   },
   {
@@ -517,6 +517,7 @@ const RegionLabels: Partial<Record<Region, string>> = {
   'Île-de-France': 'Paris et sa région',
   'Auvergne-Rhône-Alpes': 'Lyon et sa région',
   'Hauts-de-France': 'Lille et sa région',
+  Bretagne: 'Rennes et sa région',
   Lorient: 'Lorient',
 };
 
