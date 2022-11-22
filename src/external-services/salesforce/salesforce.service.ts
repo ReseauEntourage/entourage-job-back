@@ -27,7 +27,7 @@ import {
   SalesforceProcess,
 } from './salesforce.types';
 import {
-  addListenersToSalesforceJobQueue,
+  executeBulkAction,
   formatApproach,
   formatBusinessLines,
   formatCompanyName,
@@ -102,26 +102,21 @@ export class SalesforceService {
       if (Array.isArray(params)) {
         const job = this.salesforce.bulk.createJob(name, 'create');
 
-        const batch = job.createBatch();
-        batch.execute(params);
+        const results = await executeBulkAction<T>(params, job);
 
-        return new Promise((res, rej) => {
-          addListenersToSalesforceJobQueue(batch, rej);
-          batch.on('response', async (results: RecordResult[]) => {
-            let resultsIds: string[] = [];
+        let resultsIds: string[] = [];
 
-            for (let i = 0; i < results.length; i += 1) {
-              const { id, success, errors } = results[i] as ErrorResult &
-                SuccessResult;
-              if (!success) {
-                console.error(`Error creating Salesforce records : `, errors);
-              } else {
-                resultsIds = [...resultsIds, id];
-              }
-            }
-            res(resultsIds);
-          });
-        });
+        for (let i = 0; i < results.length; i += 1) {
+          const { id, success, errors } = results[i] as ErrorResult &
+            SuccessResult;
+          if (!success) {
+            console.error(`Error creating Salesforce records : `, errors);
+          } else {
+            resultsIds = [...resultsIds, id];
+          }
+        }
+
+        return resultsIds;
       } else {
         const result = await this.salesforce.sobject(name).create(params);
         if (!result.success) {
@@ -151,26 +146,21 @@ export class SalesforceService {
       if (Array.isArray(params)) {
         const job = this.salesforce.bulk.createJob(name, 'update');
 
-        const batch = job.createBatch();
-        batch.execute(params);
+        const results = await executeBulkAction<T>(params, job);
 
-        return new Promise((res, rej) => {
-          addListenersToSalesforceJobQueue(batch, rej);
-          batch.on('response', async (results: RecordResult[]) => {
-            let resultsIds: string[] = [];
+        let resultsIds: string[] = [];
 
-            for (let i = 0; i < results.length; i += 1) {
-              const { id, success, errors } = results[i] as ErrorResult &
-                SuccessResult;
-              if (!success) {
-                console.error(`Error updating Salesforce records : `, errors);
-              } else {
-                resultsIds = [...resultsIds, id];
-              }
-            }
-            res(resultsIds);
-          });
-        });
+        for (let i = 0; i < results.length; i += 1) {
+          const { id, success, errors } = results[i] as ErrorResult &
+            SuccessResult;
+          if (!success) {
+            console.error(`Error updating Salesforce records : `, errors);
+          } else {
+            resultsIds = [...resultsIds, id];
+          }
+        }
+
+        return resultsIds;
       } else {
         const result = await this.salesforce.sobject(name).update(params);
         if (!result.success) {
@@ -213,32 +203,27 @@ export class SalesforceService {
           extIdField: extIdField as string,
         });
 
-        const batch = job.createBatch();
-        batch.execute(params);
+        const results = await executeBulkAction<T>(params, job);
 
-        return new Promise((res, rej) => {
-          addListenersToSalesforceJobQueue(batch, rej);
-          batch.on('response', async (results: RecordResult[]) => {
-            let resultsIds: string[] = [];
+        let resultsIds: string[] = [];
 
-            for (let i = 0; i < results.length; i += 1) {
-              const { id, success, errors } = results[i] as ErrorResult &
-                SuccessResult;
-              if (!success) {
-                console.error(`Error upserting Salesforce records : `, errors);
-              } else {
-                resultsIds = [
-                  ...resultsIds,
-                  id ||
-                    (await this[findIdFunction](
-                      (params as SalesforceObject<T>[])[i][extIdField]
-                    )),
-                ];
-              }
-            }
-            res(resultsIds);
-          });
-        });
+        for (let i = 0; i < results.length; i += 1) {
+          const { id, success, errors } = results[i] as ErrorResult &
+            SuccessResult;
+          if (!success) {
+            console.error(`Error upserting Salesforce records : `, errors);
+          } else {
+            resultsIds = [
+              ...resultsIds,
+              id ||
+                (await this[findIdFunction](
+                  (params as SalesforceObject<T>[])[i][extIdField]
+                )),
+            ];
+          }
+        }
+
+        return resultsIds;
       } else {
         const result = await this.salesforce
           .sobject(name)
