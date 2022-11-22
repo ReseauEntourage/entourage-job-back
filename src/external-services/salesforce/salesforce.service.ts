@@ -420,7 +420,10 @@ export class SalesforceService {
     companySfId,
   }: ContactProps) {
     return this.createRecord(ObjectNames.CONTACT, {
-      LastName: lastName || 'Inconnu',
+      LastName:
+        lastName?.length > 80
+          ? lastName.substring(0, 80)
+          : lastName || 'Inconnu',
       FirstName: firstName,
       Email: email
         ?.replace(/\+/g, '.')
@@ -449,7 +452,10 @@ export class SalesforceService {
     heardAbout,
   }: LeadProps) {
     return this.createRecord(ObjectNames.LEAD, {
-      LastName: lastName || 'Inconnu',
+      LastName:
+        lastName?.length > 80
+          ? lastName.substring(0, 80)
+          : lastName || 'Inconnu',
       FirstName: firstName,
       Company: company,
       Title: position,
@@ -531,7 +537,7 @@ export class SalesforceService {
     return contactSfId;
   }
 
-  async createOrUpdateLead({
+  async findOrCreateLead({
     firstName,
     lastName,
     company,
@@ -545,22 +551,16 @@ export class SalesforceService {
     const leadSfId = await this.findLead(email, LeadsRecordTypesIds.COMPANY);
 
     if (!leadSfId) {
-      return (await this.createRecord(ObjectNames.LEAD, {
-        LastName: lastName,
-        FirstName: firstName,
-        Company: company,
-        Title: position,
-        Email: email
-          ?.replace(/\+/g, '.')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, ''),
-        Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-        Reseaux__c: 'LinkedOut',
-        RecordTypeId: LeadsRecordTypesIds.COMPANY,
-        Antenne__c: formatRegions(zone),
-        Source__c: 'Lead entrant',
-        Votre_demarche__c: formatApproach(approach),
-        Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
+      return (await this.createLead({
+        firstName,
+        lastName,
+        company,
+        position,
+        email,
+        phone,
+        zone,
+        approach,
+        heardAbout,
       })) as string;
     }
     return leadSfId;
@@ -634,7 +634,7 @@ export class SalesforceService {
     approach,
     heardAbout,
   }: LeadProps) {
-    return (await this.createOrUpdateLead({
+    return (await this.findOrCreateLead({
       firstName,
       lastName,
       company,
