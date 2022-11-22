@@ -182,7 +182,7 @@ export interface SalesforceOffer {
   Offre_valid_e__c: boolean;
   Lien_externe__c: string;
   Lien_Offre_Backoffice__c: string;
-  Departement__c: string;
+  Departement__c: Department;
   Adresse_de_l_offre__c: string;
   Jours_et_horaires_de_travail__c: string;
   Salaire_et_complement__c: string;
@@ -225,7 +225,7 @@ export interface SalesforceCompany {
 
 export interface ContactProps {
   firstName?: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   phone?: string;
   position?: string;
@@ -241,16 +241,18 @@ export interface SalesforceContact {
   Phone: string;
   Title: string;
   AccountId: string;
-  Type_de_contact__c: 'Entreprise';
+  Casquettes_r_les__c: 'Partenaire Entreprise';
   Reseaux__c: 'LinkedOut';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
+  Source__c: 'Lead entrant';
 }
 
 export interface LeadProps {
   firstName: string;
   lastName: string;
   company: string;
+  position: string;
   email: string;
   phone?: string;
   approach: CompanyApproach;
@@ -263,6 +265,7 @@ export interface SalesforceLead {
   LastName: string;
   FirstName: string;
   Company: string;
+  Title: string;
   Email: string;
   Phone?: string;
   Reseaux__c: 'LinkedOut';

@@ -127,6 +127,7 @@ describe('Contacts', () => {
         email: formAnswers.email,
         zone: formAnswers.zone,
         company: formAnswers.company,
+        position: formAnswers.position,
         approach: formAnswers.approach,
       };
 
