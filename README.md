@@ -1,73 +1,276 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
-</p>
+# LinkedOut Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Modules principaux & versions
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+> Node 16.x.x
 
-## Description
+> NestJS 8.0.0
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+> Sequelize 6.21.4
 
-## Installation
+> ESLint 8.0.1
 
-```bash
-$ npm install
+> TypeScript 4.3.5
+
+## Architecture (TO UPDATE)
+
+- `.github`: configuration de la CI avec **_Github Actions_**
+- `.husky` : scripts de hook de commit avec **_Husky_**
+- `/public` : stockage des ressources non dynamique accessible publiquement
+- `/src`
+    - `/constants` : fichiers de constantes
+    - `/controllers` : logiques métier de chaque use case de l'application
+    - `/helpers` : fichier d'utilitaire lié aux use cases
+    - `/jobs` : configuration des jobs asynchrones et gestions des jobs entrants
+    - `/routes` : configuration des routes avec **Express.js**
+        - `/db` : configuration de la base de données avec **Sequelize**
+            - `/config` : configuration d'accès à la base de données
+            - `/migrations`: fichiers de migration de la structure de la base
+            - `/models` : fichiers modèles des objets en base
+    - `/utils` : fonctions utilitaires communes
+    - `app.js`: point d'entrée de lancement du serveur
+    - `mainWorker.js`: point d'entrée de lancement du worker
+    - `server.js`: gestion du serveur
+- `.babelrc` : configuration pour **_Babel_**
+- `.editorconfig` : configuration par défaut de la syntaxe du code de l'éditeur
+- `.env` : à ajouter pour gérer les variables d'environnements ([cf. exemple](#fichier-env-minimal))
+- `.eslintignore` : configuration pour **_ESLint_**
+- `.eslintrc.json` : configuration pour **_ESLint_**
+- `.prettierignore` : configuration pour **_Prettier_**
+- `.prettierrc.json` : configuration pour **_Prettier_**
+- `.sequelizerc` : configuration pour **Sequelize**
+- `.slugignore` : dossiers ou fichiers à exclure du package finale pendant la compilation
+- `Procfile` : configuration des process **_Heroku_** à lancer après déploiement
+
+## Configuration
+
+### Pré-requis
+
+Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJs**.
+
+### Installation des modules sans Docker
+
+```
+yarn
 ```
 
-## Running the app
+### Initialisation des modules avec Docker
 
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```
+docker-compose up --build
 ```
 
-## Test
+### Initialisation de la BDD
 
-```bash
-# unit tests
-$ npm run test
+#### Sans Docker
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```
+yarn db:create
 ```
 
-## Support
+Pour lancer les migrations :
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```
+yarn db:migrate
+```
 
-## Stay in touch
+APour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres utilisateurs :
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```
+yarn db:seed
+```
 
-## License
+#### Avec Docker
 
-Nest is [MIT licensed](LICENSE).
+La même chose que sans Docker, mais vous devez précéder les commandes par la suivante, et ne pas lancer la commande de création de DB:
+
+```
+docker exec -it api bash
+```
+
+### Une fois la DB initialisée
+
+Les identifiants de l'administrateur crée sont :
+
+> Adresse mail : **admin@linkedout.fr**
+>
+> Mot de passe : **Admin123!**
+
+### Remplir la DB avec un dump
+
+#### Sans Docker
+
+```
+psql -d linkedout -p 5432 -U linkedout -W
+```
+
+Entrez le mdp de la BD (dans le docker-compose: "linkedout"), puis exécutez la commande SQL.
+
+#### Avec Docker
+
+Même chose que sans Docker, mais précédez par la commande suivante pour entrer dans le container de la DB:
+
+```
+docker exec -it db sh
+```
+
+### Lancer le projet en mode développement
+
+#### Sans docker
+
+```
+yarn start:dev
+```
+
+#### Avec docker
+
+```
+docker-compose up
+```
+
+### Lancer le projet en mode production
+
+```
+yarn build
+yarn start
+```
+
+### Lancement du worker (si vous n'utilisez pas Docker)
+
+#### Mode développement
+
+Pour pouvoir utiliser le worker en local il faut lancer une instance de **_Redis_** en local : https://redis.io/docs/getting-started
+
+Il faut également enlever les variables d'environnement _REDIS_URL_ et _REDIS_TLS_URL_ afin que les modules **_Redis_** et **_Bull_** utilisent leur configuration par défaut pour se connecter à _**Redis**_ en local (`127.0.0.1:6379`)
+
+```
+yarn worker:start:dev
+```
+
+#### Mode production
+
+```
+yarn worker:start
+```
+
+### Prettier + Linter
+
+```
+yarn test:eslint
+```
+
+Ces deux commandes sont lancées par les hooks de commit.
+
+### Fichier `.env` minimal
+
+```.dotenv
+ACTIONS_REMINDER_DELAY=
+ADMIN_CANDIDATES_HZ=
+ADMIN_CANDIDATES_LILLE=
+ADMIN_CANDIDATES_LORIENT=
+ADMIN_CANDIDATES_LYON=
+ADMIN_CANDIDATES_PARIS=
+ADMIN_CANDIDATES_RENNES=
+ADMIN_COMPANIES_HZ=
+ADMIN_COMPANIES_LILLE=
+ADMIN_COMPANIES_LORIENT=
+ADMIN_COMPANIES_LYON=
+ADMIN_COMPANIES_PARIS=
+ADMIN_COMPANIES_RENNES=
+AIRTABLE_API_KEY=
+AIRTABLE_BASE_ID=
+AIRTABLE_OFFERS=
+AUTO_RECOMMENDATIONS_ZONE=
+AWS_LAMBDA_URL=
+AWSS3_BUCKET_NAME=
+AWSS3_FILE_DIRECTORY=
+AWSS3_ID=
+AWSS3_IMAGE_DIRECTORY=
+AWSS3_SECRET=
+BITLY_TOKEN=
+CDN_ID=
+CHROME_PATH=
+CV_10_REMINDER_DELAY=
+CV_20_REMINDER_DELAY=
+CV_START_DELAY=
+DATABASE_URL=
+EXTERNAL_OFFERS_REMINDER_DELAY=
+FRONT_URL=
+INTERVIEW_TRAINING_REMINDER_DELAY=
+JWT_SECRET=
+MAILCHIMP_API_KEY=
+MAILCHIMP_AUDIENCE_ID=
+MAILJET_CONTACT_EMAIL=
+MAILJET_FROM_EMAIL=
+MAILJET_FROM_NAME=
+MAILJET_PUB=
+MAILJET_SEC=
+MAILJET_SMS_TOKEN=
+MAILJET_SUPPORT_EMAIL=
+OFFER_NO_RESPONSE_DELAY=
+OFFER_REMINDER_DELAY=
+PLEZI_API_KEY=
+PLEZI_CONTENT_WEB_FORM_ID=
+PLEZI_FORM_ID=
+PLEZI_TENANT_NAME=
+PORT=
+PUSHER_API_KEY=
+PUSHER_API_SECRET=
+PUSHER_APP_ID=
+PUSHER_URL=
+REDIS_URL=
+SALESFORCE_CLIENT_ID=
+SALESFORCE_CLIENT_ID=
+SALESFORCE_CLIENT_SECRET=
+SALESFORCE_CLIENT_SECRET=
+SALESFORCE_LOGIN_URL=
+SALESFORCE_LOGIN_URL=
+SALESFORCE_PASSWORD=
+SALESFORCE_PASSWORD=
+SALESFORCE_REDIRECT_URI=
+SALESFORCE_REDIRECT_URI=
+SALESFORCE_SECURITY_TOKEN=
+SALESFORCE_SECURITY_TOKEN=
+SALESFORCE_USERNAME=
+SALESFORCE_USERNAME=
+SENTRY_DSN=
+SERVER_TIMEOUT=
+USE_MAILJET_SMS=
+USE_SMS=
+VIDEO_REMINDER_DELAY=
+VONAGE_API_KEY=
+VONAGE_API_SECRET=
+```
+
+## Tests
+
+### Initialisation de la BDD de test
+
+```
+docker run --name linkedout-db-test -e POSTGRES_PASSWORD=linkedout -e POSTGRES_USER=linkedout -e POSTGRES_DB=linkedout -d -p 54300:5432 postgres
+```
+
+Vous avez besoin des données du fichier `.env.test` pour les tests en local, et de renseigner le champ _DATABASE_URL_ (_ex:_ `postgresql://linkedout:linkedout@localhost:54300/linkedout`) avec l'adresse de l'instance **_Docker_**
+
+```
+NODE_ENV=dev-test yarn db:migrate
+```
+
+### Lancer les tests
+
+- `yarn test:e2e` est utilisé pour l'intégration continue pour lancer les tests avec les valeurs du fichier `.env`
+- `NODE_ENV=dev-test yarn test:e2e` pour lancer les tests en local, en utilisant le fichier `.env.test`
+
+## Déploiement
+
+Le déploiement se fait automatiquement grâce à **_Github Actions_** et **_Heroku_**.
+
+Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-production : **[https://entourage-job-preprod.herokuapp.com](https://entourage-job-preprod.herokuapp.com)**
+
+Si un commit est poussé sur `master`, l'application sera déployé sur la production : **[https://api.linkedout.fr](https://api.linkedout.fr)**
+
+Les tests sont effectués sur **_Github Actions_** avant de déployer le projet sur **_Heroku_**.
+
+## Stack technique
+
+![Stack technique LinkedOut](./stack.svg)
