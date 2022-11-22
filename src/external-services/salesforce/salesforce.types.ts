@@ -182,7 +182,7 @@ export interface SalesforceOffer {
   Offre_valid_e__c: boolean;
   Lien_externe__c: string;
   Lien_Offre_Backoffice__c: string;
-  Departement__c: Department;
+  Departement__c: Department | 'Inconnu';
   Adresse_de_l_offre__c: string;
   Jours_et_horaires_de_travail__c: string;
   Salaire_et_complement__c: string;
