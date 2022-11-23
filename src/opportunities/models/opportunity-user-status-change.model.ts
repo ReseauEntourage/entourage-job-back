@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber } from 'class-validator';
+import { IsNumber } from 'class-validator';
 import {
   AllowNull,
   Column,
@@ -10,6 +10,8 @@ import {
   Model,
   PrimaryKey,
   Table,
+  CreatedAt,
+  UpdatedAt,
 } from 'sequelize-typescript';
 import { OpportunityUser } from './opportunity-user.model';
 
@@ -28,10 +30,6 @@ export class OpportunityUser_StatusChange extends Model {
   @Column
   Opportunity_UserId: string;
 
-  @IsString()
-  @Column(DataType.DATEONLY)
-  createdAt: Date;
-
   @ApiProperty()
   @AllowNull(true)
   @IsNumber()
@@ -42,4 +40,10 @@ export class OpportunityUser_StatusChange extends Model {
   @IsNumber()
   @Column
   newStatus: number;
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
 }
