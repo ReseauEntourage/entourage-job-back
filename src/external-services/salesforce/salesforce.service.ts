@@ -772,8 +772,9 @@ export class SalesforceService {
       process: mapProcessFromOpportunityUser(
         opportunityUsers,
         opportunity.title,
-        opportunity.company
-      ).filter((singleProcess) => !!singleProcess) as ProcessProps[],
+        opportunity.company,
+        opportunity.isPublic
+      ),
     };
   }
 
