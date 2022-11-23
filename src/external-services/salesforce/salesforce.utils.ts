@@ -240,23 +240,25 @@ export function mapSalesforceProcessFields({
 
 export function mapProcessFromOpportunityUser(
   opportunityUsers: OpportunityUser[],
-  id: string,
   title: string,
   company: string
 ): Partial<ProcessProps>[] {
-  return opportunityUsers.map(({ UserId, user, ...restProps }) => {
-    if (!user) {
-      return null;
+  return opportunityUsers.map(
+    ({ OpportunityId, UserId, user, ...restProps }) => {
+      if (!user) {
+        return null;
+      }
+      return {
+        offerTitle: title,
+        candidateEmail: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        offerId: OpportunityId,
+        company,
+        ...restProps,
+      };
     }
-    return {
-      offerTitle: title,
-      candidateEmail: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      company,
-      ...restProps,
-    };
-  });
+  );
 }
 
 export function executeBulkAction<T extends ObjectName>(
