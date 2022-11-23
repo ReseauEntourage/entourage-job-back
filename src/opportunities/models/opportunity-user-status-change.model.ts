@@ -13,8 +13,8 @@ import {
 } from 'sequelize-typescript';
 import { OpportunityUser } from './opportunity-user.model';
 
-@Table({ tableName: 'Opportunity_StatusChange' })
-export class Opportunity_statusChange extends Model {
+@Table({ tableName: 'OpportunityUser_StatusChange' })
+export class OpportunityUser_StatusChange extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -26,14 +26,14 @@ export class Opportunity_statusChange extends Model {
   @ForeignKey(() => OpportunityUser)
   @AllowNull(false)
   @Column
-  Opportunity_UsersId: string;
+  Opportunity_UserId: string;
 
   @IsString()
-  @AllowNull(true)
   @Column(DataType.DATEONLY)
-  updatedAt: Date;
+  createdAt: Date;
 
   @ApiProperty()
+  @AllowNull(true)
   @IsNumber()
   @Column
   oldStatus: number;
@@ -42,5 +42,4 @@ export class Opportunity_statusChange extends Model {
   @IsNumber()
   @Column
   newStatus: number;
-
 }
