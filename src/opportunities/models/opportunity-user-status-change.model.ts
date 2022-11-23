@@ -15,8 +15,8 @@ import {
 } from 'sequelize-typescript';
 import { OpportunityUser } from './opportunity-user.model';
 
-@Table({ tableName: 'OpportunityUser_StatusChange' })
-export class OpportunityUser_StatusChange extends Model {
+@Table({ tableName: 'OpportunityUser_StatusChanges' })
+export class OpportunityUserStatusChange extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -28,7 +28,7 @@ export class OpportunityUser_StatusChange extends Model {
   @ForeignKey(() => OpportunityUser)
   @AllowNull(false)
   @Column
-  Opportunity_UserId: string;
+  OpportunityUserId: string;
 
   @ApiProperty()
   @AllowNull(true)

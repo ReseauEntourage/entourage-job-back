@@ -2,7 +2,7 @@ const uuid = require('uuid');
 
 module.exports = {
   up(queryInterface, Sequelize) {
-    return queryInterface.createTable('OpportunityUser_StatusChange', {
+    return queryInterface.createTable('OpportunityUser_StatusChanges', {
           id: {
             allowNull: false,
             primaryKey: true,
@@ -17,7 +17,7 @@ module.exports = {
           newStatus: {
             type: Sequelize.INTEGER
           },
-          Opportunity_UserId: {
+          OpportunityUserId: {
             type: Sequelize.UUID,
             allowNull: false,
             references: {
@@ -29,12 +29,12 @@ module.exports = {
           },
         })
         .then(() => {
-          return queryInterface.addColumn('Opportunity_Users', 'opportunityUserStatusChange', {
+          return queryInterface.addColumn('Opportunity_Users', 'opportunityUserStatusChanges', {
             type: Sequelize.UUID,
             primaryKey: true,
             allowNull: true,
             references: {
-              model: 'OpportunityUser_StatusChange',
+              model: 'OpportunityUser_StatusChanges',
               key: 'id',
             },
             onDelete: 'cascade',
@@ -44,6 +44,6 @@ module.exports = {
 
   },
   async down(queryInterface) {
-    await queryInterface.dropTable('OpportunityUser_StatusChange');
+    await queryInterface.dropTable('OpportunityUser_StatusChanges');
   }
 };

@@ -16,7 +16,7 @@ import {
 import { OfferStatus, OfferStatuses } from '../opportunities.types';
 import { User } from 'src/users/models';
 import { HistorizedModel } from 'src/utils/types';
-import { OpportunityUser_StatusChange } from './opportunity-user-status-change.model';
+import { OpportunityUserStatusChange } from './opportunity-user-status-change.model';
 import { Opportunity } from './opportunity.model';
 
 @Table({ tableName: 'Opportunity_Users' })
@@ -80,13 +80,13 @@ export class OpportunityUser extends HistorizedModel {
   @BelongsTo(() => Opportunity, 'OpportunityId')
   opportunity: Opportunity;
 
-  @HasMany(() => OpportunityUser_StatusChange, 'OpportunityUser_StatusChange')
-  opportunityUserStatusChange: OpportunityUser_StatusChange[];
+  @HasMany(() => OpportunityUserStatusChange, 'opportunityUserStatusChanges')
+  opportunityUserStatusChanges: OpportunityUserStatusChange[];
 
   @AfterCreate
   static async createAssociations(createdOpportunityUser: OpportunityUser) {
-    OpportunityUser_StatusChange.create({
-      Opportunity_UserId: createdOpportunityUser.id,
+    OpportunityUserStatusChange.create({
+      OpportunityUserId: createdOpportunityUser.id,
       oldStatus: null,
       newStatus: createdOpportunityUser.status,
     });
@@ -95,8 +95,8 @@ export class OpportunityUser extends HistorizedModel {
   @BeforeUpdate
   static async updateAssociations(updatedOpportunityUser: OpportunityUser) {
     const previousStatus = updatedOpportunityUser.previous().status;
-    OpportunityUser_StatusChange.create({
-      Opportunity_UserId: updatedOpportunityUser.id,
+    OpportunityUserStatusChange.create({
+      OpportunityUserId: updatedOpportunityUser.id,
       oldStatus: previousStatus,
       newStatus: updatedOpportunityUser.status,
     });
