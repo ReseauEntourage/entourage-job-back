@@ -771,7 +771,6 @@ export class SalesforceService {
       offer: opportunity,
       process: mapProcessFromOpportunityUser(
         opportunityUsers,
-        opportunity.id,
         opportunity.title,
         opportunity.company
       ).filter((singleProcess) => !!singleProcess) as ProcessProps[],
