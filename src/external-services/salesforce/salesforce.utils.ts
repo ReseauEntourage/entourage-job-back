@@ -241,10 +241,11 @@ export function mapSalesforceProcessFields({
 export function mapProcessFromOpportunityUser(
   opportunityUsers: OpportunityUser[],
   title: string,
-  company: string
-): Partial<ProcessProps>[] {
-  return opportunityUsers.map(
-    ({ OpportunityId, UserId, user, ...restProps }) => {
+  company: string,
+  isPublic: boolean
+): ProcessProps[] {
+  return opportunityUsers
+    .map(({ OpportunityId, UserId, user, ...restProps }) => {
       if (!user) {
         return null;
       }
@@ -255,10 +256,11 @@ export function mapProcessFromOpportunityUser(
         lastName: user.lastName,
         offerId: OpportunityId,
         company,
+        isPublic,
         ...restProps,
-      };
-    }
-  );
+      } as ProcessProps;
+    })
+    .filter((singleProcess) => !!singleProcess);
 }
 
 export function executeBulkAction<T extends ObjectName>(
