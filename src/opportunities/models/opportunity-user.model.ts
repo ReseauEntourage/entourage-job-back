@@ -11,7 +11,7 @@ import {
   PrimaryKey,
   Table,
   AfterCreate,
-  BeforeUpdate,
+  AfterUpdate,
 } from 'sequelize-typescript';
 import { OfferStatus, OfferStatuses } from '../opportunities.types';
 import { User } from 'src/users/models';
@@ -92,9 +92,9 @@ export class OpportunityUser extends HistorizedModel {
     });
   }
 
-  @BeforeUpdate
+  @AfterUpdate
   static async updateAssociations(updatedOpportunityUser: OpportunityUser) {
-    const previousStatus = updatedOpportunityUser.previous().status;
+    const previousStatus = updatedOpportunityUser.previous('status');
     OpportunityUserStatusChange.create({
       OpportunityUserId: updatedOpportunityUser.id,
       oldStatus: previousStatus,
