@@ -1,15 +1,23 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { Public } from 'src/auth/guards';
+import {
+  ContactCompanyFormDto,
+  ContactCompanyFormPipe,
+  ContactUsFormDto,
+  ContactUsFormPipe,
+} from 'src/contacts/dto';
+import {
+  ContactStatus,
+  PleziTrackingData,
+} from 'src/external-services/plezi/plezi.types';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
-import { ContactUsFormDto, ContactUsFormPipe } from './dto';
-import { MailsService } from './mails.service';
-import { ContactStatus, PleziTrackingData } from './mails.types';
+import { ContactsService } from './contacts.service';
 
-// TODO change to mails
-@Controller('mail')
-export class MailsController {
-  constructor(private readonly mailsService: MailsService) {}
+// TODO change to /contacts
+@Controller('contact')
+export class ContactsController {
+  constructor(private readonly contactsService: ContactsService) {}
 
   // TODO change to contactUs
   @Public()
@@ -21,7 +29,23 @@ export class MailsController {
       throw new BadRequestException();
     }
 
-    return this.mailsService.sendContactUsMail(contactUsFormDto);
+    return this.contactsService.sendContactUsMail(contactUsFormDto);
+  }
+
+  @Public()
+  @Post('company')
+  async sendMailContactCompanyForm(
+    @Body(new ContactCompanyFormPipe())
+    contactCompanyFormDto: ContactCompanyFormDto
+  ) {
+    if (
+      contactCompanyFormDto.phone &&
+      !isValidPhone(contactCompanyFormDto.phone)
+    ) {
+      throw new BadRequestException();
+    }
+
+    return this.contactsService.sendContactToSalesforce(contactCompanyFormDto);
   }
 
   @Public()
@@ -39,7 +63,7 @@ export class MailsController {
       throw new BadRequestException();
     }
 
-    return this.mailsService.sendContactToPlezi(
+    return this.contactsService.sendContactToPlezi(
       email,
       zone,
       status,

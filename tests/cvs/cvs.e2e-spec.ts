@@ -788,14 +788,14 @@ describe('CVs', () => {
               locations: ['Nord (59)'],
             }
           );
-          const expectedCVIds = [newCV1.id, newCV2.id];
+          const expectedCVsIds = [newCV1.id, newCV2.id];
           const response: APIResponse<CVsController['findAllPublishedCVs']> =
             await request(app.getHttpServer()).get(
               `${route}/cards/random/?locations[]=Île-de-France&locations[]=Auvergne-Rhône-Alpes`
             );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(2);
-          expect(expectedCVIds).toEqual(
+          expect(expectedCVsIds).toEqual(
             expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
@@ -836,7 +836,7 @@ describe('CVs', () => {
             status: CVStatuses.PUBLISHED.value,
             UserId: newUser3.id,
           });
-          const expectedCVIds = [newCV1.id, newCV2.id];
+          const expectedCVsIds = [newCV1.id, newCV2.id];
 
           const response: APIResponse<CVsController['findAllPublishedCVs']> =
             await request(app.getHttpServer()).get(
@@ -844,7 +844,7 @@ describe('CVs', () => {
             );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(2);
-          expect(expectedCVIds).toEqual(
+          expect(expectedCVsIds).toEqual(
             expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
@@ -885,7 +885,7 @@ describe('CVs', () => {
               businessLines: ['sa'],
             }
           );
-          const expectedCVIds = [newCV1.id, newCV2.id];
+          const expectedCVsIds = [newCV1.id, newCV2.id];
 
           const response: APIResponse<CVsController['findAllPublishedCVs']> =
             await request(app.getHttpServer()).get(
@@ -893,7 +893,7 @@ describe('CVs', () => {
             );
           expect(response.status).toBe(200);
           expect(response.body.cvs.length).toBe(2);
-          expect(expectedCVIds).toEqual(
+          expect(expectedCVsIds).toEqual(
             expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });
@@ -938,7 +938,7 @@ describe('CVs', () => {
             }
           );
 
-          const expectedCVIds = [newCV1.id, newCV2.id, newCV3.id];
+          const expectedCVsIds = [newCV1.id, newCV2.id, newCV3.id];
 
           const response: APIResponse<CVsController['findAllPublishedCVs']> =
             await request(app.getHttpServer()).get(
@@ -948,7 +948,7 @@ describe('CVs', () => {
           expect(response.body.cvs.length).toBe(3);
           expect(response.body.suggestions).toBe(true);
 
-          expect(expectedCVIds).toEqual(
+          expect(expectedCVsIds).toEqual(
             expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
         });

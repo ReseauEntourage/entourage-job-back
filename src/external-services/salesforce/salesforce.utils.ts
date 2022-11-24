@@ -1,29 +1,41 @@
+import { Batch, ErrorResult, Job, RecordResult, SuccessResult } from 'jsforce';
 import * as _ from 'lodash';
 import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
+import {
+  CompanyApproach,
+  CompanyZone,
+  HeardAboutValue,
+} from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones } from 'src/utils/types';
+import { AdminZones, AnyCantFix } from 'src/utils/types';
 import {
+  LeadApproaches,
+  LeadHeardAbout,
+  ObjectName,
   OfferProps,
   ProcessProps,
+  SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
-  return _.uniq(
-    businessLines.map(({ name }) => {
-      return findConstantFromValue(name, BusinessLineFilters).label;
-    })
-  )
-    .toString()
-    .replace(',', ';');
+  if (businessLines) {
+    return _.uniq(
+      businessLines.map(({ name }) => {
+        return findConstantFromValue(name, BusinessLineFilters).label;
+      })
+    )
+      .toString()
+      .replace(/,/g, ';');
+  }
 }
 
 export function formatDepartment(department: Department) {
@@ -33,12 +45,30 @@ export function formatDepartment(department: Department) {
   return _.capitalize(AdminZones[getZoneSuffixFromDepartment(department)]);
 }
 
+export function formatRegions(region: CompanyZone) {
+  return _.capitalize(region);
+}
+
+export function formatApproach(approach: CompanyApproach) {
+  if (approach) {
+    return LeadApproaches[approach].toString();
+  }
+}
+
+export function formatHeardAbout(heardAbout: HeardAboutValue) {
+  if (heardAbout) {
+    return LeadHeardAbout[heardAbout].toString();
+  }
+}
+
 export function formatCompanyName(
   name: string,
   address: string,
   department: Department
 ) {
-  return `${name} - ${address} - ${department}`;
+  return `${name || 'Inconnu'} - ${address || 'Inconnu'} - ${
+    department || 'Inconnu'
+  }`;
 }
 
 export function parseAddress(address: string) {
@@ -49,8 +79,8 @@ export function parseAddress(address: string) {
       const postalCode = parsedPostalCode[0];
       const parsedAddress = address.split(postalCode);
       return {
-        street: parsedAddress[0]?.replace(',', '').trim(),
-        city: parsedAddress[1]?.replace(',', '').trim(),
+        street: parsedAddress[0]?.replace(/,/g, '').trim(),
+        city: parsedAddress[1]?.replace(/,/g, '').trim(),
         postalCode: parsedPostalCode[0],
       };
     } else {
@@ -58,15 +88,15 @@ export function parseAddress(address: string) {
 
       if (number) {
         const parsedStreet = address
-          .replace(number[0], number[0].replace(',', ''))
+          .replace(number[0], number[0].replace(/,/g, ''))
           .split(',');
 
         return {
-          street: parsedStreet[0]?.replace(',', '').trim(),
-          city: parsedStreet[1]?.replace(',', '').trim(),
+          street: parsedStreet[0]?.replace(/,/g, '').trim(),
+          city: parsedStreet[1]?.replace(/,/g, '').trim(),
         };
       }
-      return { street: address.replace(',', '').trim() };
+      return { street: address.replace(/,/g, '').trim() };
     }
   }
   return {
@@ -111,17 +141,21 @@ export function mapSalesforceOfferFields({
     ? findConstantFromValue(externalOrigin, ExternalOfferOriginFilters)
     : undefined;
 
+  let name = `${title} - ${formatCompanyName(company, address, department)}`;
+  if (name.length > 80) {
+    name = name.substring(0, 80);
+  }
   return {
     ID__c: id,
-    Name: `${title} - ${formatCompanyName(company, address, department)}`,
-    Titre__c: title,
+    Name: name,
+    Titre__c: title.length > 80 ? title.substring(0, 80) : title,
     Entreprise_Recruteuse__c: companySfId,
     Secteur_d_activite_de_l_offre__c: businessLines
       ? formatBusinessLines(businessLines)
       : undefined,
     Type_de_contrat__c: contract
       ? findConstantFromValue(contract, ContractFilters).label
-      : undefined,
+      : 'Autre',
     Temps_partiel__c: isPartTime,
     Offre_publique__c: isPublic,
     Offre_externe__c: isExternal,
@@ -130,10 +164,14 @@ export function mapSalesforceOfferFields({
     Lien_externe__c: link,
     Lien_Offre_Backoffice__c:
       process.env.FRONT_URL + '/backoffice/admin/offres/' + id,
-    Departement__c: department,
+    Departement__c: department || 'Inconnu',
     Adresse_de_l_offre__c: address,
-    Jours_et_horaires_de_travail__c: workingHours,
-    Salaire_et_complement__c: salary,
+    Jours_et_horaires_de_travail__c:
+      workingHours?.length > 100
+        ? workingHours.substring(0, 100)
+        : workingHours,
+    Salaire_et_complement__c:
+      salary?.length > 50 ? salary.substring(0, 50) : salary,
     Message_au_candidat__c: message,
     Presentation_de_l_entreprise__c: companyDescription,
     Descriptif_des_missions_proposees__c: description,
@@ -141,12 +179,23 @@ export function mapSalesforceOfferFields({
     Permis_de_conduire_necessaire__c: driversLicense,
     Source_de_l_offre__c:
       externalOriginConstant?.salesforceLabel || externalOriginConstant?.label,
-    Nom__c: recruiterName,
-    Prenom__c: recruiterFirstName,
-    Mail_du_recruteur__c: recruiterMail,
+    Nom__c:
+      recruiterName?.length >= 25
+        ? recruiterName.substring(0, 25)
+        : recruiterName || 'Inconnu',
+    Prenom__c: recruiterFirstName || 'Inconnu',
+    Mail_du_recruteur__c: recruiterMail
+      ? recruiterMail
+          .replace(/\+/g, '.')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+      : 'entreprises@entourage.social',
     Telephone_du_recruteur__c: recruiterPhone,
     Fonction_du_recruteur__c: recruiterPosition,
-    Mail_de_contact__c: contactMail,
+    Mail_de_contact__c: contactMail
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
     Prenom_Nom_du_recruteur__c: contactSfId,
     Contact_cree_existant__c: true,
     Antenne__c: _.capitalize(
@@ -170,9 +219,15 @@ export function mapSalesforceProcessFields({
   binomeSfId,
   offerSfId,
 }: ProcessProps): SalesforceProcess {
+  let name = `${firstName} ${lastName} - ${offerTitle || 'Inconnu'} - ${
+    company || 'Inconnu'
+  }`;
+  if (name.length > 80) {
+    name = name.substring(0, 80);
+  }
   return {
     ID_Externe__c: id,
-    Name: `${firstName} ${lastName} - ${offerTitle} - ${company}`,
+    Name: name,
     Statut__c: findOfferStatus(status, isPublic, recommended).label,
     Vue__c: seen,
     Favoris__c: bookmarked,
@@ -185,20 +240,49 @@ export function mapSalesforceProcessFields({
 
 export function mapProcessFromOpportunityUser(
   opportunityUsers: OpportunityUser[],
-  id: string,
   title: string,
-  company: string
-): Partial<ProcessProps>[] {
-  return opportunityUsers.map(
-    ({ UserId, user: { email, firstName, lastName }, ...restProps }) => {
+  company: string,
+  isPublic: boolean
+): ProcessProps[] {
+  return opportunityUsers
+    .map(({ OpportunityId, UserId, user, ...restProps }) => {
+      if (!user) {
+        return null;
+      }
       return {
         offerTitle: title,
-        candidateEmail: email,
-        firstName,
-        lastName,
+        candidateEmail: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        offerId: OpportunityId,
         company,
+        isPublic,
         ...restProps,
-      };
-    }
-  );
+      } as ProcessProps;
+    })
+    .filter((singleProcess) => !!singleProcess);
+}
+
+export function executeBulkAction<T extends ObjectName>(
+  params: SalesforceObject<T>[],
+  job: Job
+): Promise<RecordResult[]> {
+  return new Promise((res, rej) => {
+    const batch = job.createBatch();
+
+    batch.execute(params);
+
+    batch.on('error', (error) => {
+      console.error('Error, batchInfo:', error);
+      rej(error);
+    });
+    batch.on('queue', (batchInfo) => {
+      // eslint-disable-next-line no-console
+      console.log('Queue, batchInfo:', batchInfo);
+      batch.poll(1000, 20000);
+    });
+    batch.on('response', async (results: RecordResult[]) => {
+      res(results);
+    });
+  });
 }

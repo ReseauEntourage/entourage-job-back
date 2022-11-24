@@ -1,6 +1,5 @@
 import './tracer';
 
-import { getHeapStatistics } from 'v8';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -20,10 +19,5 @@ async function bootstrap() {
 
   app.enableCors({ origin: `${process.env.FRONT_URL}` });
   await app.listen(process.env.PORT || 3000);
-
-  // eslint-disable-next-line no-console
-  console.log('MEMORY USAGE');
-  // eslint-disable-next-line no-console
-  console.log(getHeapStatistics());
 }
 bootstrap();

@@ -211,6 +211,34 @@ export class UsersController {
     return updatedUser;
   }
 
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Put('candidat/bulk')
+  async updateAll(
+    @Body('attributes', UpdateUserRestrictedPipe)
+    updateUserCandidatDto: UpdateUserCandidatDto,
+    @Body('ids') usersIds: string[]
+  ) {
+    const { nbUpdated, updatedUserCandidats } =
+      await this.userCandidatsService.updateAll(
+        usersIds,
+        updateUserCandidatDto
+      );
+    if (updateUserCandidatDto.hidden) {
+      updatedUserCandidats.forEach(async (user) => {
+        await this.usersService.uncacheCandidateCV(user.url);
+      });
+    }
+    await this.usersService.cacheAllCVs();
+
+    return {
+      nbUpdated,
+      updatedIds: updatedUserCandidats.map((user) => {
+        return user.candidatId;
+      }),
+    };
+  }
+
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Put('candidat/:candidateId')
@@ -290,7 +318,7 @@ export class UsersController {
   async updateUser(
     @UserPayload('role') role: UserRole,
     @Param('id', new ParseUUIDPipe()) userId: string,
-    // Do not instantiante ContactUsFormPipe so that Request can be injected
+    // Do not instantiante UpdateUserRestrictedPipe so that Request can be injected
     @Body(UpdateUserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
   ) {
     if (updateUserDto.phone && !isValidPhone(updateUserDto.phone)) {
