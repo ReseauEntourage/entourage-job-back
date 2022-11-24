@@ -588,7 +588,6 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesIds: string[]
   ) {
-
     // disable auto recommandation feature
     // const candidatesIdsToRecommendTo =
     //   opportunity.isPublic && opportunity.isValidated
@@ -657,6 +656,7 @@ export class OpportunitiesService {
                 OpportunityId: opportunity.id,
                 UserId: candidateId,
               },
+              hooks: true,
               transaction: t,
             })
             .then((model) => {
@@ -1001,7 +1001,13 @@ export class OpportunitiesService {
     if (opportunities.length > 0) {
       opportunities.map(async (model) => {
         // add to table opportunity_user
-        await this.opportunityUsersService.findOrCreate(model.id, candidateId);
+        await this.opportunityUsersService.findOrCreateByCandidateIdAndOpportunityId(
+          candidateId,
+          model.id,
+          {
+            recommended: true,
+          }
+        );
       });
       await this.mailsService.sendRelevantOpportunitiesMail(
         user,

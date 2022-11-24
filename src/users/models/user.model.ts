@@ -222,6 +222,7 @@ export class User extends HistorizedModel {
           where: {
             CandidatId: userToUpdate.id,
           },
+          hooks: true,
         });
       }
     }
