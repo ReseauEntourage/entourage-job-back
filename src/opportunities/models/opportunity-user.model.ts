@@ -80,7 +80,7 @@ export class OpportunityUser extends HistorizedModel {
   @BelongsTo(() => Opportunity, 'OpportunityId')
   opportunity: Opportunity;
 
-  @HasMany(() => OpportunityUserStatusChange, 'opportunityUserStatusChanges')
+  @HasMany(() => OpportunityUserStatusChange, 'OpportunityUserId')
   opportunityUserStatusChanges: OpportunityUserStatusChange[];
 
   @AfterCreate

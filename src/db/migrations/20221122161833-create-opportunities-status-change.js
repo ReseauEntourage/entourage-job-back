@@ -15,6 +15,7 @@ module.exports = {
             type: Sequelize.INTEGER
           },
           newStatus: {
+            allowNull: false,
             type: Sequelize.INTEGER
           },
           OpportunityUserId: {
@@ -28,20 +29,6 @@ module.exports = {
             onUpdate: 'cascade',
           },
         })
-        .then(() => {
-          return queryInterface.addColumn('Opportunity_Users', 'opportunityUserStatusChanges', {
-            type: Sequelize.UUID,
-            primaryKey: true,
-            allowNull: true,
-            references: {
-              model: 'OpportunityUser_StatusChanges',
-              key: 'id',
-            },
-            onDelete: 'cascade',
-            onUpdate: 'cascade',
-          })
-        })
-
   },
   async down(queryInterface) {
     await queryInterface.dropTable('OpportunityUser_StatusChanges');
