@@ -31,7 +31,7 @@ export const Jobs = {
 
 export type Job = typeof Jobs[keyof typeof Jobs];
 
-type JobsDataTypes = {
+type JobsData = {
   [Jobs.GENERATE_CV_PDF]: GenerateCVPDFJob;
   [Jobs.GENERATE_CV_PREVIEW]: GenerateCVPreviewJob;
   [Jobs.CREATE_CV_SEARCH_STRING]: GenerateCVSearchStringJob;
@@ -53,7 +53,7 @@ type JobsDataTypes = {
   [Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH]: SendOffersEmailAfterCVPublishJob;
 };
 
-export type JobDataType<T extends Job> = JobsDataTypes[T];
+export type JobData<T extends Job> = JobsData[T];
 
 export interface SendMailJob extends CustomMailParams {
   templateId: MailjetTemplate;

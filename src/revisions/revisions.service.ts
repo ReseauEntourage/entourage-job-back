@@ -9,21 +9,21 @@ export class RevisionsService {
     private revisionModel: typeof Revision
   ) {}
 
-  async findAllByDocumentIds(documentIds: string[]) {
+  async findAllByDocumentsIds(documentsIds: string[]) {
     return this.revisionModel.findAll({
       where: {
-        documentId: documentIds,
+        documentId: documentsIds,
       },
     });
   }
 
-  async updateByDocumentIds(
-    documentIds: string[],
+  async updateByDocumentsIds(
+    documentsIds: string[],
     updateRevisionDto: Partial<Revision>
   ) {
     return this.revisionModel.update(updateRevisionDto, {
       where: {
-        documentId: documentIds,
+        documentId: documentsIds,
       },
     });
   }

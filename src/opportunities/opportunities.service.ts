@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
+import { PleziService } from '../external-services/plezi/plezi.service';
 import { getRelatedUser } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
@@ -13,9 +14,11 @@ import {
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import {
+  ContactStatuses,
+  PleziTrackingData,
+} from 'src/external-services/plezi/plezi.types';
 import { MailsService } from 'src/mails/mails.service';
-import { ContactStatuses, PleziTrackingData } from 'src/mails/mails.types';
-
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
@@ -78,6 +81,7 @@ export class OpportunitiesService {
     private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
+    private pleziService: PleziService,
     private smsService: SMSService
   ) {}
 
@@ -141,7 +145,7 @@ export class OpportunitiesService {
     }
   }
 
-  async findAllCandidateIdsToRecommendOfferTo(
+  async findAllCandidatesIdsToRecommendOfferTo(
     department: Department,
     businessLines: BusinessLine[]
   ) {
@@ -163,6 +167,10 @@ export class OpportunitiesService {
       }
     }
     return [] as string[];
+  }
+
+  async findAllIds() {
+    return this.opportunityModel.findAll({ attributes: ['id'] });
   }
 
   async findAll(
@@ -212,7 +220,7 @@ export class OpportunitiesService {
 
   async findAllUserOpportunitiesAsAdmin(
     candidateId: string,
-    opportunityUserIds: string[],
+    opportunityUsersIds: string[],
     query: {
       search: string;
     } & FilterParams<OfferFilterKey>
@@ -230,7 +238,7 @@ export class OpportunitiesService {
     const opportunities = await this.opportunityModel.findAll({
       ...options,
       where: {
-        id: opportunityUserIds,
+        id: opportunityUsersIds,
         ...searchOptions,
         ...filterOptions,
       },
@@ -251,7 +259,7 @@ export class OpportunitiesService {
 
   async findAllAsCandidate(
     candidateId: string,
-    opportunityIds: string[],
+    opportunitiesIds: string[],
     query: {
       type: OfferCandidateTab;
       search: string;
@@ -278,9 +286,9 @@ export class OpportunitiesService {
       where: {
         [Op.or]: [
           { isPublic: true, isValidated: true, isArchived: false },
-          opportunityIds.length > 0
+          opportunitiesIds.length > 0
             ? {
-                id: opportunityIds,
+                id: opportunitiesIds,
                 isPublic: false,
                 isValidated: true,
                 isArchived: false,
@@ -580,22 +588,27 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-    const candidateIdsToRecommendTo =
-      opportunity.isPublic && opportunity.isValidated
-        ? await this.findAllCandidateIdsToRecommendOfferTo(
-            opportunity.department,
-            opportunity.businessLines
-          )
-        : [];
 
-    if (candidatesId?.length > 0 || candidateIdsToRecommendTo?.length > 0) {
-      const uniqueCandidateIds = _.uniq([
+    // disable auto recommandation feature
+    // const candidatesIdsToRecommendTo =
+    //   opportunity.isPublic && opportunity.isValidated
+    //     ? await this.findAllCandidatesIdsToRecommendOfferTo(
+    //         opportunity.department,
+    //         opportunity.businessLines
+    //       )
+    //     : [];
+
+    if (
+      candidatesId?.length > 0
+      // || candidatesIdsToRecommendTo?.length > 0
+    ) {
+      const uniqueCandidatesIds = _.uniq([
         ...(candidatesId || []),
-        ...(candidateIdsToRecommendTo || []),
+        // ...(candidatesIdsToRecommendTo || []),
       ]);
 
       await Promise.all(
-        uniqueCandidateIds.map((candidateId) => {
+        uniqueCandidatesIds.map((candidateId) => {
           return this.opportunityUsersService.create({
             OpportunityId: opportunity.id,
             UserId: candidateId,
@@ -604,8 +617,8 @@ export class OpportunitiesService {
         })
       );
 
-      return this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
-        uniqueCandidateIds,
+      return this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
+        uniqueCandidatesIds,
         opportunity.id
       );
     }
@@ -621,7 +634,7 @@ export class OpportunitiesService {
       opportunity.isPublic &&
       !oldOpportunity.isValidated &&
       opportunity.isValidated
-        ? await this.findAllCandidateIdsToRecommendOfferTo(
+        ? await this.findAllCandidatesIdsToRecommendOfferTo(
             opportunity.department,
             opportunity.businessLines
           )
@@ -713,7 +726,7 @@ export class OpportunitiesService {
         : null;
 
     const opportunityUsers =
-      await this.opportunityUsersService.findAllByCandidateIdsAndOpportunityId(
+      await this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
         newCandidatesIdsToSendMailTo,
         opportunity.id
       );
@@ -761,7 +774,7 @@ export class OpportunitiesService {
       }
     }
     try {
-      await this.mailsService.sendContactToPlezi(
+      await this.pleziService.sendContactToPlezi(
         opportunity.contactMail || opportunity.recruiterMail,
         getZoneFromDepartment(opportunity.department),
         ContactStatuses.COMPANY,
@@ -934,7 +947,7 @@ export class OpportunitiesService {
     period: Date
     // other parameters might be added
   ) {
-    const opportunities = await this.opportunityModel.findAll({
+    return this.opportunityModel.findAll({
       where: {
         isPublic: true,
         isValidated: true,
@@ -957,7 +970,6 @@ export class OpportunitiesService {
         },
       ],
     });
-    return opportunities;
   }
 
   async sendRelevantOpportunities(
@@ -999,5 +1011,11 @@ export class OpportunitiesService {
       return `No offer for ${user.email}`;
     }
     return `${opportunities.length} offer(s) were sent to ${user.email} - job send relevant opportunities after cv publish`;
+  }
+
+  async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
+    return this.externalDatabasesService.refreshSalesforceOpportunities(
+      opportunitiesIds
+    );
   }
 }

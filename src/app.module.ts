@@ -23,10 +23,12 @@ import { SharesModule } from 'src/shares/shares.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
+import { ContactsModule } from './contacts/contacts.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { AirtableModule } from './external-services/airtable/airtable.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
@@ -34,8 +36,6 @@ import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
 
 const ENV = `${process.env.NODE_ENV}`;
-
-const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
 
 const getParsedURI = (uri: string) => new URL(uri);
 
@@ -74,7 +74,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ENV === 'dev-test' ? '.env.test' : '.env',
+      envFilePath: ENV === 'dev-test' || ENV === 'test' ? '.env.test' : '.env',
     }),
     SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
     ThrottlerModule.forRoot({
@@ -82,12 +82,17 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
       limit: 100,
     }),
     BullModule.forRoot({
-      redis: redisUrl ? getRedisOptions(redisUrl) : {},
+      redis:
+        ENV === 'dev-test' || ENV === 'test'
+          ? {}
+          : getRedisOptions(process.env.REDIS_URL),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...(redisUrl ? getRedisOptions(redisUrl) : {}),
+      ...(ENV === 'dev-test' || ENV === 'test'
+        ? {}
+        : getRedisOptions(process.env.REDIS_URL)),
     }),
     RevisionsModule,
     SharesModule,
@@ -114,6 +119,8 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     AirtableModule,
     SMSModule,
     BitlyModule,
+    ContactsModule,
+    PleziModule,
   ],
   providers: [
     {
