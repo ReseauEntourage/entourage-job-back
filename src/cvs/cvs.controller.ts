@@ -58,7 +58,7 @@ export class CVsController {
     @UploadedFile() file: Express.Multer.File
   ) {
     switch (role) {
-      case UserRoles.CANDIDAT:
+      case UserRoles.CANDIDATE:
         createCVDto.status = CVStatuses.PROGRESS.value;
         break;
       case UserRoles.COACH:
@@ -145,21 +145,6 @@ export class CVsController {
     return createdCV;
   }
 
-  // TODO put userId as Param and change to candidateId
-  @LinkedUser('query.userId')
-  @UseGuards(LinkedUserGuard)
-  @Get()
-  async findCVByCandidateId(
-    @Query('userId', new ParseUUIDPipe()) candidateId: string
-  ) {
-    const cv = await this.cvsService.findOneByCandidateId(candidateId);
-
-    if (!cv) {
-      throw new NotFoundException();
-    }
-    return cv;
-  }
-
   @Public()
   @Get('cards/random')
   async findAllPublishedCVs(
@@ -225,7 +210,7 @@ export class CVsController {
     return { nbPublishedCVs };
   }
 
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
   @UseGuards(RolesGuard)
   @Get('checkUpdate')
   async checkCVHasBeenModified(
@@ -247,7 +232,7 @@ export class CVsController {
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
   @UseGuards(RolesGuard)
   @Put('read/:candidateId')
   async setCVHasBeenRead(
@@ -274,13 +259,13 @@ export class CVsController {
   }
 
   @Public()
-  @Get(':url')
+  @Get('url/:url')
   async findCVByUrl(@Param('url') url: string) {
     const cv = await this.cvsService.findOneByUrl(url);
 
-    const userCandidat = await this.cvsService.findOneUserCandidateByUrl(url);
+    const userCandidate = await this.cvsService.findOneUserCandidateByUrl(url);
 
-    const exists = cv ? true : !!userCandidat;
+    const exists = cv ? true : !!userCandidate;
     if (!exists) {
       throw new NotFoundException();
     }
@@ -288,5 +273,19 @@ export class CVsController {
       cv,
       exists,
     };
+  }
+
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Get(':candidateId')
+  async findCVByCandidateId(
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
+  ) {
+    const cv = await this.cvsService.findOneByCandidateId(candidateId);
+
+    if (!cv) {
+      throw new NotFoundException();
+    }
+    return cv;
   }
 }
