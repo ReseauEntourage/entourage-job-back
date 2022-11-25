@@ -36,6 +36,7 @@ import { UpdateExternalOpportunityRestrictedDto } from './dto/update-external-op
 import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
 import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity.pipe';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
+import { UpdateOpportunityUserPipe } from './dto/update-opportunity-user.pipe';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
 import { UpdateOpportunityPipe } from './dto/update-opportunity.pipe';
 import { Opportunity } from './models';
@@ -76,7 +77,7 @@ export class OpportunitiesController {
       locations,
       shouldSendNotifications,
       isCopy,
-      candidatesId,
+      candidatesIds,
       visit,
       visitor,
       urlParams,
@@ -110,7 +111,7 @@ export class OpportunitiesController {
           const candidates =
             await this.opportunitiesService.associateCandidatesToOpportunity(
               createdOpportunity,
-              candidatesId
+              candidatesIds
             );
 
           const finalOpportunity = await this.opportunitiesService.findOne(
@@ -160,7 +161,7 @@ export class OpportunitiesController {
     const candidates =
       await this.opportunitiesService.associateCandidatesToOpportunity(
         createdOpportunity,
-        candidatesId
+        candidatesIds
       );
 
     const finalOpportunity = await this.opportunitiesService.findOne(
@@ -187,6 +188,7 @@ export class OpportunitiesController {
   @Post('external')
   async createExternal(
     @UserPayload('role') role: UserRole,
+    // Do not instantiate CreateExternalOpportunityPipe so that Request can be injected
     @Body(CreateExternalOpportunityPipe)
     createExternalOpportunityDto:
       | CreateExternalOpportunityDto
@@ -247,13 +249,12 @@ export class OpportunitiesController {
     return finalOpportunity;
   }
 
-  // todo change to candidateId
-  @LinkedUser('body.userId')
+  @LinkedUser('body.candidateId')
   @UseGuards(LinkedUserGuard)
   @Post('join')
   async createOpportunityUser(
     @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
-    @Body('userId', new ParseUUIDPipe()) candidateId: string,
+    @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
     @UserPayload('role') role: UserRole
   ) {
     const opportunity = await this.opportunitiesService.findOneAsCandidate(
@@ -355,7 +356,7 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
   @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
@@ -423,12 +424,11 @@ export class OpportunitiesController {
     return this.opportunitiesService.countPending(zone);
   }
 
-  // TODO change to candidate/count
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
   @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Get('user/count/:candidateId')
+  @Get('candidate/count/:candidateId')
   async countUnseen(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
@@ -459,15 +459,116 @@ export class OpportunitiesController {
     return opportunity;
   }
 
-  // TODO put Id in params
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @Put()
+  @Put('bulk')
+  async updateAll(
+    // Do not instantiate UpdateOpportunityPipe so that Request can be injected
+    @Body('attributes', UpdateOpportunityPipe)
+    updateOpportunityDto: UpdateOpportunityDto,
+    @Body('ids') opportunitiesIds: string[]
+  ) {
+    const {
+      shouldSendNotifications,
+      candidatesIds,
+      isAdmin,
+      isCopy,
+      locations,
+      ...restOpportunity
+    } = updateOpportunityDto;
+
+    const updatedOpportunities = await this.opportunitiesService.updateAll(
+      restOpportunity,
+      opportunitiesIds
+    );
+
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunities.updatedIds
+    );
+
+    return updatedOpportunities;
+  }
+
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Put('external/:id/:candidateId')
+  async updateExternal(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    // Do not instantiate UpdateExternalOpportunityPipe so that Request can be injected
+    @Body(UpdateExternalOpportunityPipe)
+    updateExternalOpportunityDto:
+      | UpdateExternalOpportunityDto
+      | UpdateExternalOpportunityRestrictedDto
+  ) {
+    const opportunity = await this.opportunitiesService.findOneAsCandidate(
+      id,
+      candidateId
+    );
+
+    if (!opportunity || !opportunity.isExternal) {
+      throw new NotFoundException();
+    }
+
+    await this.opportunitiesService.update(id, updateExternalOpportunityDto);
+
+    const updatedOpportunity =
+      await this.opportunitiesService.findOneAsCandidate(id, candidateId);
+
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunity.id
+    );
+
+    return updatedOpportunity;
+  }
+
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Put('join/:opportunityId/:candidateId')
+  async updateOpportunityUser(
+    @Param('opportunityId', new ParseUUIDPipe()) opportunityId: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @Body(new UpdateOpportunityUserPipe())
+    updateOpportunityUserDto: UpdateOpportunityUserDto
+  ) {
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    if (!opportunityUser) {
+      throw new NotFoundException();
+    }
+
+    const updatedOpportunityUser =
+      await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId,
+        updateOpportunityUserDto
+      );
+
+    await this.opportunitiesService.updateExternalDBOpportunity(
+      updatedOpportunityUser.OpportunityId
+    );
+
+    await this.opportunitiesService.sendOnStatusUpdatedMails(
+      updatedOpportunityUser,
+      opportunityUser
+    );
+
+    return updatedOpportunityUser;
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Put(':id')
   async update(
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new UpdateOpportunityPipe())
     updateOpportunityDto: UpdateOpportunityDto
   ) {
-    const { shouldSendNotifications, id, candidatesId, ...restOpportunity } =
+    const { shouldSendNotifications, candidatesIds, ...restOpportunity } =
       updateOpportunityDto;
 
     const opportunity = await this.opportunitiesService.findOne(id);
@@ -496,7 +597,7 @@ export class OpportunitiesController {
       await this.opportunitiesService.updateAssociatedCandidatesToOpportunity(
         updatedOpportunity,
         opportunity,
-        candidatesId
+        candidatesIds
       );
 
     const finalOpportunity = await this.opportunitiesService.findOne(id);
@@ -512,113 +613,6 @@ export class OpportunitiesController {
     );
 
     return finalOpportunity.toJSON();
-  }
-
-  // TODO put Id in params
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
-  @Put('bulk')
-  async updateAll(
-    @Body('attributes', UpdateOpportunityPipe)
-    updateOpportunityDto: UpdateOpportunityDto,
-    @Body('ids') opportunitiesIds: string[]
-  ) {
-    const {
-      shouldSendNotifications,
-      candidatesId,
-      isAdmin,
-      isCopy,
-      locations,
-      ...restOpportunity
-    } = updateOpportunityDto;
-
-    const updatedOpportunities = await this.opportunitiesService.updateAll(
-      restOpportunity,
-      opportunitiesIds
-    );
-
-    await this.opportunitiesService.updateExternalDBOpportunity(
-      updatedOpportunities.updatedIds
-    );
-
-    return updatedOpportunities;
-  }
-
-  // TODO put Id in params
-  @LinkedUser('body.candidateId')
-  @UseGuards(LinkedUserGuard)
-  @Put('external')
-  async updateExternal(
-    @Body(UpdateExternalOpportunityPipe)
-    updateExternalOpportunityDto:
-      | UpdateExternalOpportunityDto
-      | UpdateExternalOpportunityRestrictedDto
-  ) {
-    const { candidateId, id, ...restOpportunity } =
-      updateExternalOpportunityDto;
-
-    if (!candidateId || !uuidValidate(candidateId)) {
-      throw new BadRequestException();
-    }
-
-    const opportunity = await this.opportunitiesService.findOneAsCandidate(
-      id,
-      candidateId
-    );
-
-    if (!opportunity || !opportunity.isExternal) {
-      throw new NotFoundException();
-    }
-
-    await this.opportunitiesService.update(id, restOpportunity);
-
-    const updatedOpportunity =
-      await this.opportunitiesService.findOneAsCandidate(id, candidateId);
-
-    await this.opportunitiesService.updateExternalDBOpportunity(
-      updatedOpportunity.id
-    );
-
-    return updatedOpportunity;
-  }
-
-  // todo change to candidateId
-  @LinkedUser('body.UserId')
-  @UseGuards(LinkedUserGuard)
-  @Put('join')
-  async updateOpportunityUser(
-    @Body() updateOpportunityUserDto: UpdateOpportunityUserDto
-  ) {
-    const { OpportunityId, UserId, ...restOpportunityUser } =
-      updateOpportunityUserDto;
-
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        UserId,
-        OpportunityId
-      );
-
-    if (!opportunityUser) {
-      throw new NotFoundException();
-    }
-
-    const updatedOpportunityUser =
-      await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
-        UserId,
-        OpportunityId,
-        restOpportunityUser
-      );
-
-    await this.opportunitiesService.updateExternalDBOpportunity(
-      updatedOpportunityUser.OpportunityId
-    );
-
-    await this.opportunitiesService.sendOnStatusUpdatedMails(
-      updatedOpportunityUser,
-      opportunityUser
-    );
-
-    return updatedOpportunityUser;
   }
 
   @Roles(UserRoles.ADMIN)
