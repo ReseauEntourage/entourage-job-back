@@ -93,7 +93,7 @@ describe('CVs', () => {
             role: UserRoles.COACH,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           path = cvsHelper.getTestImagePath();
         });
@@ -228,7 +228,7 @@ describe('CVs', () => {
       });
     });
     describe('R - Read 1 CV', () => {
-      describe('/?userId= - Get a CV by user id', () => {
+      describe('/:candidateId - Get a CV by candidate id', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -241,7 +241,7 @@ describe('CVs', () => {
             role: UserRoles.COACH,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -251,7 +251,7 @@ describe('CVs', () => {
         it('Should return 200 if valid user id provided and logged in as candidate', async () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${loggedInCandidate.user.id}`)
+              .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
@@ -265,7 +265,7 @@ describe('CVs', () => {
             ));
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${loggedInCandidate.user.id}`)
+              .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
@@ -273,26 +273,26 @@ describe('CVs', () => {
         it('Should return 200 if valid user id provided and logged in as admin', async () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${loggedInCandidate.user.id}`)
+              .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
         });
         it("Should return 200 if valid user id provided and logged in as candidate and candidate doesn't have a CV", async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
             password: 'candidatNoCv',
           });
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${candidatNoCv.user.id}`)
+              .get(`${route}/${candidatNoCv.user.id}`)
               .set('authorization', `Token ${candidatNoCv.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
         it("Should return 200 if valid user id provided and logged in as coach and candidate doesn't have a CV", async () => {
           const candidatNoCv = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
             password: 'candidatNoCv',
           });
           const coachNoCv = await userFactory.create({
@@ -318,51 +318,49 @@ describe('CVs', () => {
 
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${loggedCandidatNoCv.user.id}`)
+              .get(`${route}/${loggedCandidatNoCv.user.id}`)
               .set('authorization', `Token ${loggedCoachNoCv.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
         it("Should return 200 if valid user id provided and logged in as admin and candidate doesn't have a CV", async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
             password: 'candidatNoCv',
           });
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${candidatNoCv.user.id}`)
+              .get(`${route}/${candidatNoCv.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
         it('Should return 401 if invalid user id provided', async () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
-            await request(app.getHttpServer()).get(
-              `${route}/?userId=123-fakeuserid`
-            );
+            await request(app.getHttpServer()).get(`${route}/123-fakeuserid`);
           expect(response.status).toBe(401);
         });
         it('Should return 401 if valid user id provided and not logged in', async () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer()).get(
-              `${route}/?userId=${loggedInCandidate.user.id}`
+              `${route}/${loggedInCandidate.user.id}`
             );
           expect(response.status).toBe(401);
         });
         it('Should return 403 if valid user id provided and logged in as other candidate', async () => {
           const loggedInOtherCandidat = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${loggedInCandidate.user.id}`)
+              .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInOtherCandidat.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if valid user id provided and logged in as other coach', async () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(app.getHttpServer())
-              .get(`${route}/?userId=${loggedInCandidate.user.id}`)
+              .get(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
@@ -380,7 +378,7 @@ describe('CVs', () => {
             role: UserRoles.COACH,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -430,7 +428,7 @@ describe('CVs', () => {
         });
         it('Should return 403 and last CV version if valid user id provided and logged in as other candidate', async () => {
           const loggedInOtherCandidat = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const response: APIResponse<CVsController['findLastCVVersion']> =
             await request(app.getHttpServer())
@@ -446,30 +444,32 @@ describe('CVs', () => {
           expect(response.status).toBe(403);
         });
       });
-      describe("/:url - Get a CV by candidat's url", () => {
-        let candidat: User;
+      describe("/:url - Get a CV by candidate's url", () => {
+        let candidate: User;
 
         beforeEach(async () => {
-          candidat = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+          candidate = await userFactory.create({
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
-            UserId: candidat.id,
+            UserId: candidate.id,
           });
         });
-        it("Should return 200 if valid candidat's url provided", async () => {
+        it("Should return 200 if valid candidate's url provided", async () => {
           const candidatUrl = await userCandidatsHelper.getCandidatUrl(
-            candidat.id
+            candidate.id
           );
           const response: APIResponse<CVsController['findCVByUrl']> =
-            await request(app.getHttpServer()).get(`${route}/${candidatUrl}`);
+            await request(app.getHttpServer()).get(
+              `${route}/url/${candidatUrl}`
+            );
           expect(response.status).toBe(200);
-          expect(response.body.cv.UserId).toBe(candidat.id);
+          expect(response.body.cv.UserId).toBe(candidate.id);
         });
-        it('Should return 200 if valid url provided and candidat has hidden CV', async () => {
+        it('Should return 200 if valid url provided and candidate has hidden CV', async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
             password: 'candidatNoCv',
           });
           const candidatNoCvUrl = await userCandidatsHelper.getCandidatUrl(
@@ -477,15 +477,17 @@ describe('CVs', () => {
           );
           const response: APIResponse<CVsController['findCVByUrl']> =
             await request(app.getHttpServer()).get(
-              `${route}/${candidatNoCvUrl}`
+              `${route}/url/${candidatNoCvUrl}`
             );
           expect(response.status).toBe(200);
           expect(response.body.cv).toBe(null);
           expect(response.body.exists).toBe(true);
         });
-        it("Should return 404 if candidat's url is invalid", async () => {
+        it("Should return 404 if candidate's url is invalid", async () => {
           const response: APIResponse<CVsController['findCVByUrl']> =
-            await request(app.getHttpServer()).get(`${route}/fakeuser-1234553`);
+            await request(app.getHttpServer()).get(
+              `${route}/url/fakeuser-1234553`
+            );
           expect(response.status).toBe(404);
         });
       });
@@ -502,7 +504,7 @@ describe('CVs', () => {
             role: UserRoles.COACH,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -523,7 +525,7 @@ describe('CVs', () => {
 
         it('Should return 403 if logged as another candidate', async () => {
           const loggedInOtherCandidat = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(app.getHttpServer())
@@ -621,7 +623,7 @@ describe('CVs', () => {
         it('Should return 200, and 2 CVs', async () => {
           const newUser1 = await userFactory.create({
             firstName: 'xxxxKnownFirstNamexxxx',
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -629,7 +631,7 @@ describe('CVs', () => {
           });
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -637,7 +639,7 @@ describe('CVs', () => {
           });
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -654,7 +656,7 @@ describe('CVs', () => {
         it("Should return 200, and 1 CV if user's first name or other property contains the query", async () => {
           const newUser1 = await userFactory.create({
             firstName: 'xxxxKnownFirstNamexxxx',
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV1 = await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -662,7 +664,7 @@ describe('CVs', () => {
           });
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -670,7 +672,7 @@ describe('CVs', () => {
           });
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -688,7 +690,7 @@ describe('CVs', () => {
         it('Should return 200 and empty list, if no result found', async () => {
           const newUser1 = await userFactory.create({
             firstName: 'xxxxKnownFirstNamexxxx',
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -696,7 +698,7 @@ describe('CVs', () => {
           });
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -704,7 +706,7 @@ describe('CVs', () => {
           });
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -721,7 +723,7 @@ describe('CVs', () => {
         it('Should return 200 and many CVs, if no nb provided', async () => {
           const newUser1 = await userFactory.create({
             firstName: 'xxxxKnownFirstNamexxxx',
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -729,7 +731,7 @@ describe('CVs', () => {
           });
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -737,7 +739,7 @@ describe('CVs', () => {
           });
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -753,7 +755,7 @@ describe('CVs', () => {
       describe('/cards/random/?locations[]=&employed[]=&businessLine[]= - Get a list of CVs matching specific filters', () => {
         it('Should return 200, and all the CVs that matches the location filters', async () => {
           const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV1 = await cvFactory.create(
             {
@@ -765,7 +767,7 @@ describe('CVs', () => {
             }
           );
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV2 = await cvFactory.create(
             {
@@ -777,7 +779,7 @@ describe('CVs', () => {
             }
           );
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create(
             {
@@ -802,7 +804,7 @@ describe('CVs', () => {
         it('Should return 200, and all the CVs that matches the employed filters', async () => {
           const newUser1 = await userFactory.create(
             {
-              role: UserRoles.CANDIDAT,
+              role: UserRoles.CANDIDATE,
             },
             {
               employed: false,
@@ -814,7 +816,7 @@ describe('CVs', () => {
           });
           const newUser2 = await userFactory.create(
             {
-              role: UserRoles.CANDIDAT,
+              role: UserRoles.CANDIDATE,
             },
             {
               employed: false,
@@ -826,7 +828,7 @@ describe('CVs', () => {
           });
           const newUser3 = await userFactory.create(
             {
-              role: UserRoles.CANDIDAT,
+              role: UserRoles.CANDIDATE,
             },
             {
               employed: true,
@@ -850,7 +852,7 @@ describe('CVs', () => {
         });
         it('Should return 200, and all the CVs that matches the businessLine filters', async () => {
           const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV1 = await cvFactory.create(
             {
@@ -862,7 +864,7 @@ describe('CVs', () => {
             }
           );
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV2 = await cvFactory.create(
             {
@@ -874,7 +876,7 @@ describe('CVs', () => {
             }
           );
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create(
             {
@@ -899,7 +901,7 @@ describe('CVs', () => {
         });
         it("Should return 200, and CVs suggestions of same location if the businessLine filter doesn't match", async () => {
           const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV1 = await cvFactory.create(
             {
@@ -912,7 +914,7 @@ describe('CVs', () => {
             }
           );
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV2 = await cvFactory.create(
             {
@@ -925,7 +927,7 @@ describe('CVs', () => {
             }
           );
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const newCV3 = await cvFactory.create(
             {
@@ -955,7 +957,7 @@ describe('CVs', () => {
 
         it('Should return 200 and empty list, if no result found', async () => {
           const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create(
             {
@@ -967,7 +969,7 @@ describe('CVs', () => {
             }
           );
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create(
             {
@@ -979,7 +981,7 @@ describe('CVs', () => {
             }
           );
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create(
             {
@@ -1001,7 +1003,7 @@ describe('CVs', () => {
         it('Should return 200 and many cv, if no filters provided', async () => {
           const newUser1 = await userFactory.create({
             firstName: 'xxxxKnownFirstNamexxxx',
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -1009,7 +1011,7 @@ describe('CVs', () => {
           });
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -1017,7 +1019,7 @@ describe('CVs', () => {
           });
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -1043,7 +1045,7 @@ describe('CVs', () => {
       describe('/published - Count number of published CVs', () => {
         it('Should return 200 and the number of published CVs', async () => {
           const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -1051,7 +1053,7 @@ describe('CVs', () => {
           });
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -1059,7 +1061,7 @@ describe('CVs', () => {
           });
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             status: CVStatuses.PUBLISHED.value,
@@ -1087,7 +1089,7 @@ describe('CVs', () => {
             role: UserRoles.COACH,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           ({ loggedInCoach, loggedInCandidate: loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -1104,7 +1106,7 @@ describe('CVs', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
-        it('Should return 200 and cvHasBeenModified, if coach checks if CV has been updated and candidat is the last one to have modified it', async () => {
+        it('Should return 200 and cvHasBeenModified, if coach checks if CV has been updated and candidate is the last one to have modified it', async () => {
           await cvFactory.create({
             UserId: loggedInCandidate.user.id,
             lastModifiedBy: loggedInCandidate.user.id,
@@ -1128,7 +1130,7 @@ describe('CVs', () => {
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(false);
         });
-        it('Should return 200 and cvHasBeenModified, if candidat checks if CV has been updated and coach is the last one to have modified it', async () => {
+        it('Should return 200 and cvHasBeenModified, if candidate checks if CV has been updated and coach is the last one to have modified it', async () => {
           await cvFactory.create({
             UserId: loggedInCandidate.user.id,
             lastModifiedBy: loggedInCoach.user.id,
@@ -1168,7 +1170,7 @@ describe('CVs', () => {
             role: UserRoles.COACH,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           ({ loggedInCoach, loggedInCandidate: loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -1201,7 +1203,7 @@ describe('CVs', () => {
         });
         it('Should return 403 if coach sets that he has read the last updates made by another candidate', async () => {
           const candidat = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             UserId: candidat.id,
@@ -1214,7 +1216,7 @@ describe('CVs', () => {
         });
         it('Should return 403 if candidat sets that he has read the last updates made by another candidate', async () => {
           const candidat = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             UserId: candidat.id,
@@ -1262,7 +1264,7 @@ describe('CVs', () => {
         let candidat: User;
         beforeEach(async () => {
           candidat = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           await cvFactory.create({
             UserId: candidat.id,
@@ -1277,7 +1279,7 @@ describe('CVs', () => {
 
           const response: APIResponse<SharesController['updateShareCount']> =
             await request(app.getHttpServer()).post(`${route}/count`).send({
-              candidatId: candidat.id,
+              candidateId: candidat.id,
               type: 'other',
             });
           expect(response.status).toBe(201);
@@ -1292,7 +1294,7 @@ describe('CVs', () => {
         it('Should return 404 if wrong candidate id', async () => {
           const response: APIResponse<SharesController['updateShareCount']> =
             await request(app.getHttpServer()).post(`${route}/count`).send({
-              candidatId: uuid(),
+              candidateId: uuid(),
               type: 'other',
             });
           expect(response.status).toBe(404);
@@ -1303,7 +1305,7 @@ describe('CVs', () => {
           });
           const response: APIResponse<SharesController['updateShareCount']> =
             await request(app.getHttpServer()).post(`${route}/count`).send({
-              candidatId: coach.id,
+              candidateId: coach.id,
               type: 'other',
             });
           expect(response.status).toBe(404);

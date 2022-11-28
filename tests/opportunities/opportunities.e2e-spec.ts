@@ -106,7 +106,7 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
@@ -235,7 +235,7 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
@@ -248,7 +248,7 @@ describe('Opportunities', () => {
             ));
 
           candidate = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
         });
 
@@ -511,7 +511,7 @@ describe('Opportunities', () => {
 
         beforeEach(async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
@@ -524,7 +524,7 @@ describe('Opportunities', () => {
             ));
 
           candidate = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
 
           publicOpportunity = await opportunityFactory.create({
@@ -547,7 +547,7 @@ describe('Opportunities', () => {
           const opportunityId = publicOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -563,7 +563,7 @@ describe('Opportunities', () => {
           const opportunityId = publicOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -579,7 +579,7 @@ describe('Opportunities', () => {
           const opportunityId = publicOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -595,7 +595,7 @@ describe('Opportunities', () => {
           const opportunityId = '1111-invalid-99999';
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -609,7 +609,7 @@ describe('Opportunities', () => {
           const opportunityId = publicOpportunity.id;
           const body = {
             opportunityId,
-            userId: candidate,
+            candidateId: candidate,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -623,7 +623,7 @@ describe('Opportunities', () => {
           const opportunityId = publicOpportunity.id;
           const body = {
             opportunityId,
-            userId: candidate.id,
+            candidateId: candidate.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -637,7 +637,7 @@ describe('Opportunities', () => {
           const opportunityId = privateOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -651,7 +651,7 @@ describe('Opportunities', () => {
           const opportunityId = privateOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -666,7 +666,7 @@ describe('Opportunities', () => {
           const opportunityId = notValidatedOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -680,7 +680,7 @@ describe('Opportunities', () => {
           const opportunityId = notValidatedOpportunity.id;
           const body = {
             opportunityId,
-            userId: loggedInCandidate.user.id,
+            candidateId: loggedInCandidate.user.id,
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
@@ -708,7 +708,7 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
@@ -721,7 +721,7 @@ describe('Opportunities', () => {
             ));
 
           candidate = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
 
           publicOpportunity = await opportunityFactory.create({
@@ -948,7 +948,7 @@ describe('Opportunities', () => {
           });
 
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
         });
 
@@ -1229,7 +1229,7 @@ describe('Opportunities', () => {
         });
         it('Should return 200, and all the opportunities that matches the status filters', async () => {
           const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const firstOpportunity = await opportunityFactory.create({});
           await opportunityUsersHelper.associateOpportunityUser(
@@ -1239,7 +1239,7 @@ describe('Opportunities', () => {
           );
 
           const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const secondOpportunity = await opportunityFactory.create({});
           await opportunityUsersHelper.associateOpportunityUser(
@@ -1249,7 +1249,7 @@ describe('Opportunities', () => {
           );
 
           const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           const thirdOpportunity = await opportunityFactory.create({});
           await opportunityUsersHelper.associateOpportunityUser(
@@ -1286,7 +1286,7 @@ describe('Opportunities', () => {
             zone: AdminZones.LYON,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
 
           await databaseHelper.createEntities(opportunityFactory, 3, {
@@ -1328,10 +1328,10 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
 
           ({ loggedInCandidate, loggedInCoach } =
@@ -1627,12 +1627,12 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+          candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
 
           ({ loggedInCandidate, loggedInCoach } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -2117,7 +2117,7 @@ describe('Opportunities', () => {
           );
         });
       });
-      describe("/user/count/:id - Count all new user's opportunities", () => {
+      describe("/candidate/count/:id - Count all new candidate's opportunities", () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -2128,12 +2128,12 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+          candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
 
           ({ loggedInCandidate, loggedInCoach } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -2180,7 +2180,7 @@ describe('Opportunities', () => {
         it('Should return 200, if candidate counts his unseen opportunities', async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${loggedInCandidate.user.id}`)
+              .get(`${route}/candidate/count/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.unseenOpportunities).toBe(3);
@@ -2188,7 +2188,7 @@ describe('Opportunities', () => {
         it("Should return 200, if a coach counts his associated candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${loggedInCandidate.user.id}`)
+              .get(`${route}/candidate/count/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.unseenOpportunities).toBe(3);
@@ -2196,28 +2196,28 @@ describe('Opportunities', () => {
         it("Should return 403, if a admin counts a candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${loggedInCandidate.user.id}`)
+              .get(`${route}/candidate/count/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if candidate counts an other candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${candidate.id}`)
+              .get(`${route}/candidate/count/${candidate.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if a coach counts not associate candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
             await request(app.getHttpServer())
-              .get(`${route}/user/count/${candidate.id}`)
+              .get(`${route}/candidate/count/${candidate.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
     });
     describe('U - Update 1 Opportunity', () => {
-      describe('/ - Update an opportunity', () => {
+      describe('/:id - Update an opportunity', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let opportunity: Opportunity;
@@ -2227,7 +2227,7 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
 
           opportunity = await opportunityFactory.create({});
@@ -2235,12 +2235,11 @@ describe('Opportunities', () => {
 
         it('Should return 200, if admin updates an opportunity', async () => {
           const update = {
-            id: opportunity.id,
             title: 'updated title',
           };
           const response: APIResponse<OpportunitiesController['update']> =
             await request(app.getHttpServer())
-              .put(`${route}`)
+              .put(`${route}/${opportunity.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send(update);
           expect(response.status).toBe(200);
@@ -2249,12 +2248,11 @@ describe('Opportunities', () => {
 
         it('Should return 200, if admin adds a user to a public opportunity', async () => {
           const update = {
-            id: opportunity.id,
-            candidatesId: [loggedInCandidate.user.id],
+            candidatesIds: [loggedInCandidate.user.id],
           };
           const response: APIResponse<OpportunitiesController['update']> =
             await request(app.getHttpServer())
-              .put(`${route}`)
+              .put(`${route}/${opportunity.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send(update);
           expect(response.status).toBe(200);
@@ -2271,13 +2269,13 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<OpportunitiesController['update']> =
             await request(app.getHttpServer())
-              .put(`${route}`)
+              .put(`${route}/${opportunity.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`)
               .send(update);
           expect(response.status).toBe(403);
         });
       });
-      describe('/external - Update an external opportunity', () => {
+      describe('/external/:id/:candidateId - Update an external opportunity', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -2288,13 +2286,13 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
 
-          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+          candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
 
           ({ loggedInCandidate, loggedInCoach } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -2320,16 +2318,15 @@ describe('Opportunities', () => {
           const newTitle = 'Updated title';
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(updatedOpportunity)
@@ -2359,9 +2356,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(400);
         });
         it('Should return 403, if logged in as candidate and updates somebody elses opportunity', async () => {
@@ -2386,9 +2383,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(403);
         });
         it('Should return 404, if logged in as candidate and updates non external opportunity', async () => {
@@ -2405,15 +2402,14 @@ describe('Opportunities', () => {
 
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(404);
         });
 
@@ -2433,16 +2429,15 @@ describe('Opportunities', () => {
           const newTitle = 'Updated title';
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(updatedOpportunity)
@@ -2470,9 +2465,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(400);
         });
         it("Should return 403, if logged in as coach and creates another candidate's opportunity", async () => {
@@ -2491,16 +2486,15 @@ describe('Opportunities', () => {
 
           const candidateId = candidate.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(403);
         });
 
@@ -2520,16 +2514,15 @@ describe('Opportunities', () => {
           const newTitle = 'updated title';
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(updatedOpportunity)
@@ -2549,19 +2542,18 @@ describe('Opportunities', () => {
           const newTitle = 'updated title';
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({ candidateId, ...updatedOpportunity });
+            .send(updatedOpportunity);
           expect(response.status).toBe(404);
         });
-        it('Should return 400, if logged in as admin and updates opportunity without candidateId', async () => {
+        it('Should return 404, if logged in as admin and updates opportunity without candidateId', async () => {
           const opportunity = await opportunityFactory.create({
             isExternal: true,
             isArchived: false,
@@ -2575,17 +2567,16 @@ describe('Opportunities', () => {
 
           const newTitle = 'updated title';
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
+            .put(`${route}/external/${opportunity.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send(updatedOpportunity);
-          expect(response.status).toBe(400);
+          expect(response.status).toBe(404);
         });
 
         it('Should return 401, if not logged in', async () => {
@@ -2603,19 +2594,18 @@ describe('Opportunities', () => {
           const newTitle = 'updated title';
           const candidateId = loggedInCandidate.user.id;
           const updatedOpportunity = {
-            id: opportunity.id,
             title: newTitle,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
           > = await request(app.getHttpServer())
-            .put(`${route}/external`)
-            .send({ candidateId, ...updatedOpportunity });
+            .put(`${route}/external/${opportunity.id}/${candidateId}`)
+            .send(updatedOpportunity);
           expect(response.status).toBe(401);
         });
       });
-      describe('/join - Update a user opportunity association', () => {
+      describe('/join/:opportunityId/:candidateId - Update a user opportunity association', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -2626,13 +2616,13 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
 
-          candidate = await userFactory.create({ role: UserRoles.CANDIDAT });
+          candidate = await userFactory.create({ role: UserRoles.CANDIDATE });
 
           ({ loggedInCandidate, loggedInCoach } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -2642,28 +2632,28 @@ describe('Opportunities', () => {
             ));
         });
 
-        it('Should return 200, if candidate updates his opportunities asociations', async () => {
+        it('Should return 200, if candidate updates his opportunities associations', async () => {
           const opportunity = await opportunityFactory.create({
             isValidated: true,
             isArchived: false,
           });
 
-          const opportunityUser =
-            await opportunityUsersHelper.associateOpportunityUser(
-              opportunity.id,
-              loggedInCandidate.user.id,
-              { seen: false }
-            );
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { seen: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
 
           const update = {
-            ...opportunityUser,
             note: 'noteUpdate',
           };
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
           > = await request(app.getHttpServer())
-            .put(`${route}/join`)
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
             .send(update);
           expect(response.status).toBe(200);
@@ -2675,22 +2665,22 @@ describe('Opportunities', () => {
             isArchived: false,
           });
 
-          const opportunityUser =
-            await opportunityUsersHelper.associateOpportunityUser(
-              opportunity.id,
-              loggedInCandidate.user.id,
-              { seen: false }
-            );
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { seen: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
 
           const update = {
-            ...opportunityUser,
             seen: true,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
           > = await request(app.getHttpServer())
-            .put(`${route}/join`)
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(200);
@@ -2702,22 +2692,22 @@ describe('Opportunities', () => {
             isArchived: false,
           });
 
-          const opportunityUser =
-            await opportunityUsersHelper.associateOpportunityUser(
-              opportunity.id,
-              loggedInCandidate.user.id,
-              { bookmarked: false }
-            );
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { bookmarked: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
 
           const update = {
-            ...opportunityUser,
             bookmarked: true,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
           > = await request(app.getHttpServer())
-            .put(`${route}/join`)
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send(update);
           expect(response.status).toBe(200);
@@ -2729,22 +2719,22 @@ describe('Opportunities', () => {
             isArchived: false,
           });
 
-          const opportunityUser =
-            await opportunityUsersHelper.associateOpportunityUser(
-              opportunity.id,
-              loggedInCandidate.user.id,
-              { seen: false }
-            );
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { seen: false }
+          );
+
+          const candidateId = '1111-invalid-99999';
 
           const update = {
-            ...opportunityUser,
-            UserId: '1111-invalid-99999',
+            title: 'new title',
           };
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
           > = await request(app.getHttpServer())
-            .put(`${route}/join`)
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(403);
@@ -2755,22 +2745,22 @@ describe('Opportunities', () => {
             isArchived: false,
           });
 
-          const opportunityUser =
-            await opportunityUsersHelper.associateOpportunityUser(
-              opportunity.id,
-              candidate.id,
-              { status: OfferStatuses.TO_PROCESS.value }
-            );
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            candidate.id,
+            { status: OfferStatuses.TO_PROCESS.value }
+          );
+
+          const candidateId = candidate.id;
 
           const update = {
-            ...opportunityUser,
             status: OfferStatuses.CONTACTED.value,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
           > = await request(app.getHttpServer())
-            .put(`${route}/join`)
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
             .send(update);
           expect(response.status).toBe(403);
@@ -2781,22 +2771,22 @@ describe('Opportunities', () => {
             isArchived: false,
           });
 
-          const opportunityUser =
-            await opportunityUsersHelper.associateOpportunityUser(
-              opportunity.id,
-              candidate.id,
-              { status: OfferStatuses.TO_PROCESS.value }
-            );
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            candidate.id,
+            { status: OfferStatuses.TO_PROCESS.value }
+          );
+
+          const candidateId = candidate.id;
 
           const update = {
-            ...opportunityUser,
             status: OfferStatuses.CONTACTED.value,
           };
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
           > = await request(app.getHttpServer())
-            .put(`${route}/join`)
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(403);
@@ -2814,7 +2804,7 @@ describe('Opportunities', () => {
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDAT,
+            role: UserRoles.CANDIDATE,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,

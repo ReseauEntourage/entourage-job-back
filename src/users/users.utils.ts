@@ -56,7 +56,7 @@ export function getRelatedUser(member: User) {
 
 export function getUserCandidateFromCoachOrCandidate(member: User) {
   if (member) {
-    if (member.role === UserRoles.CANDIDAT) {
+    if (member.role === UserRoles.CANDIDATE) {
       return member.candidat;
     }
 
@@ -69,7 +69,7 @@ export function getUserCandidateFromCoachOrCandidate(member: User) {
 
 export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
   if (member) {
-    if (member.role === UserRoles.CANDIDAT) {
+    if (member.role === UserRoles.CANDIDATE) {
       return member.id;
     }
 

@@ -19,9 +19,8 @@ import { ContactsService } from './contacts.service';
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
 
-  // TODO change to contactUs
   @Public()
-  @Post('contact-us')
+  @Post('contactUs')
   async sendMailContactUsForm(
     @Body(new ContactUsFormPipe()) contactUsFormDto: ContactUsFormDto
   ) {

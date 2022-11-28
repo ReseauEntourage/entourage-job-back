@@ -30,7 +30,7 @@ export class UserFactory implements Factory<User> {
       email: faker.internet.email().toLowerCase(),
       firstName: faker.name.firstName(),
       lastName: faker.name.lastName(),
-      role: UserRoles.CANDIDAT,
+      role: UserRoles.CANDIDATE,
       gender: faker.random.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       address: faker.address.streetAddress(),

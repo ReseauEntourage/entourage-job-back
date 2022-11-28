@@ -20,15 +20,15 @@ export class UserCandidatsHelper {
 
   async associateCoachAndCandidate(
     coach: User | LoggedUser,
-    candidat: User | LoggedUser,
+    candidate: User | LoggedUser,
     isLogged = false
   ) {
     const coachCredentials: Pick<LoggedUser, 'user'> = isLogged
       ? { user: (coach as LoggedUser).user }
       : await this.authService.login(coach as User);
     const candidateCredentials: Pick<LoggedUser, 'user'> = isLogged
-      ? { user: (candidat as LoggedUser).user }
-      : await this.authService.login(candidat as User);
+      ? { user: (candidate as LoggedUser).user }
+      : await this.authService.login(candidate as User);
 
     await this.userCandidatModel.update(
       {
@@ -48,7 +48,7 @@ export class UserCandidatsHelper {
           false
         ),
         loggedInCandidate: await this.userHelper.createLoggedInUser(
-          (candidat as LoggedUser).user,
+          (candidate as LoggedUser).user,
           {},
           false
         ),
@@ -56,7 +56,7 @@ export class UserCandidatsHelper {
     }
     return {
       coach: await this.userFactory.create(coach as User, {}, false),
-      candidate: await this.userFactory.create(candidat as User, {}, false),
+      candidate: await this.userFactory.create(candidate as User, {}, false),
     };
   }
 
