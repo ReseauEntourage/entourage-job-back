@@ -74,23 +74,23 @@ export class UsersCreationController {
     );
 
     if (userToCreate.userToCoach) {
-      let candidatId: string;
+      let candidateId: string;
       let coachId: string;
 
       if (createdUser.role === UserRoles.COACH) {
-        candidatId = userToCreate.userToCoach;
+        candidateId = userToCreate.userToCoach;
         coachId = createdUser.id;
       }
-      if (createdUser.role === UserRoles.CANDIDAT) {
-        candidatId = createdUser.id;
+      if (createdUser.role === UserRoles.CANDIDATE) {
+        candidateId = createdUser.id;
         coachId = userToCreate.userToCoach;
       }
 
       const updatedUserCandidat =
         await this.usersCreationService.updateUserCandidatByCandidateId(
-          candidatId,
+          candidateId,
           {
-            candidatId,
+            candidatId: candidateId,
             coachId,
           }
         );
@@ -98,7 +98,7 @@ export class UsersCreationController {
       if (!updatedUserCandidat) {
         throw new NotFoundException();
       }
-      await this.usersCreationService.sendMailsAfterMatching(candidatId);
+      await this.usersCreationService.sendMailsAfterMatching(candidateId);
     }
 
     return createdUser;

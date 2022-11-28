@@ -100,22 +100,22 @@ export class UsersController {
     return this.usersService.findAllUsers(search, role);
   }
 
-  // TODO use more explicit route name
-  @Self('query.candidatId', 'query.coachId')
-  @UseGuards(SelfGuard)
-  @Get('candidat')
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @Get('candidate')
   async findRelatedUser(
-    @Query('candidatId') candidateId?: string,
-    @Query('coachId') coachId?: string
+    @UserPayload('id') userId: string,
+    @UserPayload('role') role: UserRole
   ) {
-    if (!uuidValidate(candidateId) && !uuidValidate(coachId)) {
-      throw new BadRequestException();
-    }
+    const ids = {
+      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
+      coachId: role === UserRoles.COACH ? userId : undefined,
+    };
 
     const userCandidat =
       await this.userCandidatsService.findOneByCandidateOrCoachId(
-        candidateId,
-        coachId
+        ids.candidateId,
+        ids.coachId
       );
 
     if (!userCandidat) {
@@ -145,15 +145,15 @@ export class UsersController {
     return user;
   }
 
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
   @UseGuards(RolesGuard)
-  @Get('candidat/checkUpdate')
+  @Get('candidate/checkUpdate')
   async checkNoteHasBeenModified(
     @UserPayload('role') role: UserRole,
     @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {
     const ids = {
-      candidateId: role === UserRoles.CANDIDAT ? userId : undefined,
+      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
       coachId: role === UserRoles.COACH ? userId : undefined,
     };
 
@@ -174,8 +174,7 @@ export class UsersController {
     };
   }
 
-  // TODO change to changePwd
-  @Put('change-pwd')
+  @Put('changePwd')
   async updatePassword(
     @UserPayload('email') email: string,
     @Body('oldPassword') oldPassword: string,
@@ -213,7 +212,7 @@ export class UsersController {
 
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @Put('candidat/bulk')
+  @Put('candidate/bulk')
   async updateAll(
     @Body('attributes', UpdateUserRestrictedPipe)
     updateUserCandidatDto: UpdateUserCandidatDto,
@@ -241,7 +240,7 @@ export class UsersController {
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Put('candidat/:candidateId')
+  @Put('candidate/:candidateId')
   async updateUserCandidat(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
@@ -283,9 +282,9 @@ export class UsersController {
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDAT, UserRoles.COACH)
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
   @UseGuards(RolesGuard)
-  @Put('candidat/read/:candidateId')
+  @Put('candidate/read/:candidateId')
   async setNoteHasBeenRead(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @UserPayload('id', new ParseUUIDPipe()) userId: string

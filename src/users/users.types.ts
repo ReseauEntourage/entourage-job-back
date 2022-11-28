@@ -12,14 +12,14 @@ import {
 } from 'src/utils/types';
 
 export const UserRoles = {
-  CANDIDAT: 'Candidat',
+  CANDIDATE: 'Candidat',
   COACH: 'Coach',
   ADMIN: 'Admin',
 } as const;
 export type UserRole = typeof UserRoles[keyof typeof UserRoles];
 
 export const AdminRoles = {
-  CANDIDATS: 'Candidats',
+  CANDIDATES: 'Candidats',
   ENTREPRISES: 'Entreprises',
 } as const;
 
