@@ -15,7 +15,7 @@ export class BitlyService {
     campaign: MailjetTemplateKey
   ) {
     try {
-      const offerUrl = `${process.env.FRONT_URL}/backoffice/candidat/offres/${opportunityId}`;
+      const offerUrl = `${process.env.FRONT_URL}/backoffice/candidate/offres/${opportunityId}`;
       const { link } = await this.bitly.shorten(
         `${offerUrl.replace('localhost', '127.0.0.1')}${
           campaign

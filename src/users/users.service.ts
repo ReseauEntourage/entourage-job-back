@@ -125,7 +125,7 @@ export class UsersService {
     }
 
     // filtre par role
-    if (role === UserRoles.CANDIDAT || role === UserRoles.COACH) {
+    if (role === UserRoles.CANDIDATE || role === UserRoles.COACH) {
       options.where = {
         ...options.where,
         role,
@@ -134,7 +134,7 @@ export class UsersService {
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
-      (role === UserRoles.CANDIDAT || role === 'All') &&
+      (role === UserRoles.CANDIDATE || role === 'All') &&
       (filterOptions.hidden || filterOptions.employed)
     ) {
       userCandidatOptions.where = {};
@@ -231,7 +231,7 @@ export class UsersService {
 
     let finalFilteredMembers = membersWithLastCV;
 
-    if (role === UserRoles.CANDIDAT || role === 'All') {
+    if (role === UserRoles.CANDIDATE || role === 'All') {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,
         cvStatus
@@ -338,7 +338,7 @@ export class UsersService {
     const options: FindOptions<User> = {
       where: {
         ...whereOptions,
-        role: UserRoles.CANDIDAT,
+        role: UserRoles.CANDIDATE,
       } as WhereOptions<User>,
       attributes: [...UserAttributes],
       include: UserCandidatInclude,
