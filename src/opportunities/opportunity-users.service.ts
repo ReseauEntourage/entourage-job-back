@@ -117,6 +117,7 @@ export class OpportunityUsersService {
         UserId: userId,
         recommended: true,
       },
+      hooks: true,
     });
     return opportunityUser;
   }

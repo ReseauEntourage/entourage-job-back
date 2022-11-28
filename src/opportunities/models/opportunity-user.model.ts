@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   AllowNull,
   BelongsTo,
-  HasMany,
   Column,
   DataType,
   Default,
@@ -12,7 +11,9 @@ import {
   Table,
   AfterCreate,
   AfterUpdate,
+  // AfterDestroy,
 } from 'sequelize-typescript';
+import { Transaction } from 'sequelize/types';
 import { OfferStatus, OfferStatuses } from '../opportunities.types';
 import { User } from 'src/users/models';
 import { HistorizedModel } from 'src/utils/types';
@@ -80,25 +81,60 @@ export class OpportunityUser extends HistorizedModel {
   @BelongsTo(() => Opportunity, 'OpportunityId')
   opportunity: Opportunity;
 
-  @HasMany(() => OpportunityUserStatusChange, 'OpportunityUserId')
-  opportunityUserStatusChanges: OpportunityUserStatusChange[];
-
   @AfterCreate
-  static async createAssociations(createdOpportunityUser: OpportunityUser) {
-    OpportunityUserStatusChange.create({
-      OpportunityUserId: createdOpportunityUser.id,
-      oldStatus: null,
-      newStatus: createdOpportunityUser.status,
-    });
+  static async createAssociations(
+    createdOpportunityUser: OpportunityUser,
+    options: { transaction: Transaction }
+  ) {
+    await OpportunityUserStatusChange.create(
+      {
+        OpportunityUserId: createdOpportunityUser.id,
+        oldStatus: null,
+        newStatus: createdOpportunityUser.status,
+        UserId: createdOpportunityUser.UserId,
+        OpportunityId: createdOpportunityUser.OpportunityId,
+      },
+      options?.transaction ? { transaction: options.transaction } : {}
+    );
   }
 
   @AfterUpdate
-  static async updateAssociations(updatedOpportunityUser: OpportunityUser) {
+  static async updateAssociations(
+    updatedOpportunityUser: OpportunityUser,
+    options: { transaction: Transaction }
+  ) {
     const previousStatus = updatedOpportunityUser.previous('status');
-    OpportunityUserStatusChange.create({
-      OpportunityUserId: updatedOpportunityUser.id,
-      oldStatus: previousStatus,
-      newStatus: updatedOpportunityUser.status,
-    });
+    if (previousStatus !== updatedOpportunityUser.status) {
+      await OpportunityUserStatusChange.create(
+        {
+          oldStatus: previousStatus,
+          newStatus: updatedOpportunityUser.status,
+          OpportunityUserId: updatedOpportunityUser.id,
+          UserId: updatedOpportunityUser.UserId,
+          OpportunityId: updatedOpportunityUser.OpportunityId,
+        },
+        options?.transaction ? { transaction: options.transaction } : {}
+      );
+    }
   }
+
+  // kept in case => for now not working
+  // @AfterDestroy
+  // static async destroyAssociations(
+  //   destroyedOpportunityUser: OpportunityUser,
+  //   options: { transaction: Transaction }
+  // ) {
+  //   console.log('destruction opp: ')
+  //   console.log(destroyedOpportunityUser);
+  //   await OpportunityUserStatusChange.create(
+  //     {
+  //       oldStatus: destroyedOpportunityUser.status,
+  //       newStatus: null,
+  //       OpportunityUserId: destroyedOpportunityUser.id,
+  //       UserId: destroyedOpportunityUser.UserId,
+  //       OpportunityId: destroyedOpportunityUser.OpportunityId,
+  //     },
+  //     options?.transaction ? { transaction: options.transaction } : {}
+  //   );
+  // }
 }
