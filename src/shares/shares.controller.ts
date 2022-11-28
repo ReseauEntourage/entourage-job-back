@@ -24,7 +24,7 @@ export class SharesController {
   @Public()
   @Post('count')
   async updateShareCount(
-    @Body('candidatId', new ParseUUIDPipe()) candidateId: string,
+    @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Body('type') type: ShareType
   ) {
     const updatedShare = await this.sharesService.updateByCandidateId(

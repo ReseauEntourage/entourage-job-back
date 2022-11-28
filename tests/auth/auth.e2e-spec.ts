@@ -59,15 +59,15 @@ describe('Auth', () => {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
 
   describe('/login - Login', () => {
-    let candidat: User;
-    let candidatResponse: PayloadUser;
+    let candidate: User;
+    let candidateResponse: PayloadUser;
     beforeEach(async () => {
-      candidat = await userFactory.create({
-        role: UserRoles.CANDIDAT,
+      candidate = await userFactory.create({
+        role: UserRoles.CANDIDATE,
         password: 'Candidat123!',
       });
 
-      candidatResponse = getPartialUserForPayload(candidat);
+      candidateResponse = getPartialUserForPayload(candidate);
     });
 
     it("Should return 201 and user's info with token, if valid email and password", async () => {
@@ -76,12 +76,12 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidat.email,
+          email: candidate.email,
           password: 'Candidat123!',
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
-        ...candidatResponse,
+        ...candidateResponse,
         lastConnection: response.body.user.lastConnection,
       });
       expect(response.body.token).toBeTruthy();
@@ -93,7 +93,7 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: 'invalidEmail',
-          password: 'candidat',
+          password: 'candidate',
         });
       expect(response.status).toBe(401);
     });
@@ -103,7 +103,7 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidat.email,
+          email: candidate.email,
           password: 'invalidPassword',
         });
       expect(response.status).toBe(401);
@@ -114,7 +114,7 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          password: 'candidat',
+          password: 'candidate',
         });
       expect(response.status).toBe(401);
     });
@@ -124,7 +124,7 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidat.email,
+          email: candidate.email,
         });
       expect(response.status).toBe(401);
     });
@@ -132,7 +132,7 @@ describe('Auth', () => {
   describe('/logout - Logout', () => {
     it(`Should logout the user`, async () => {
       const loggedInCandidat = await usersHelper.createLoggedInUser({
-        role: UserRoles.CANDIDAT,
+        role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
 
@@ -163,8 +163,8 @@ describe('Auth', () => {
       expect(response.status).toBe(404);
     });
     it('Should return 201 and send email, if valid user email provided', async () => {
-      const candidat = await userFactory.create({
-        role: UserRoles.CANDIDAT,
+      const candidate = await userFactory.create({
+        role: UserRoles.CANDIDATE,
       });
 
       const response: APIResponse<AuthController['forgot']> = await request(
@@ -172,31 +172,31 @@ describe('Auth', () => {
       )
         .post(`${route}/forgot`)
         .send({
-          email: candidat.email,
+          email: candidate.email,
         });
       expect(response.status).toBe(201);
     });
   });
   describe('/reset/:userId/:token - Reset', () => {
     describe("Verify password's reset link", () => {
-      let candidat: User;
+      let candidate: User;
       beforeEach(async () => {
-        candidat = await userFactory.create({
-          role: UserRoles.CANDIDAT,
+        candidate = await userFactory.create({
+          role: UserRoles.CANDIDATE,
         });
       });
 
       it('Should return 200, if valid link', async () => {
-        const token = await authHelper.getResetToken(candidat);
+        const token = await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
-            `${route}/reset/${candidat.id}/${token}`
+            `${route}/reset/${candidate.id}/${token}`
           );
         expect(response.status).toBe(200);
       });
       it('Should return 400, if invalid user id', async () => {
         const invalidUserId = '1111-invalid-99999';
-        const token = await authHelper.getResetToken(candidat);
+        const token = await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
             `${route}/reset/${invalidUserId}/${token}`
@@ -204,44 +204,44 @@ describe('Auth', () => {
         expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
-        await authHelper.getResetToken(candidat);
+        await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
-            `${route}/reset/${candidat.id}/${invalidToken}`
+            `${route}/reset/${candidate.id}/${invalidToken}`
           );
         expect(response.status).toBe(401);
       });
     });
     describe('Reset password', () => {
-      let candidat: User;
-      let candidatResponse: PayloadUser;
+      let candidate: User;
+      let candidateResponse: PayloadUser;
       beforeEach(async () => {
-        candidat = await userFactory.create({
-          role: UserRoles.CANDIDAT,
+        candidate = await userFactory.create({
+          role: UserRoles.CANDIDATE,
         });
-        candidatResponse = getPartialUserForPayload(candidat);
+        candidateResponse = getPartialUserForPayload(candidate);
       });
 
       it('Should return 200 and updated user, if valid link', async () => {
-        const token = await authHelper.getResetToken(candidat);
+        const token = await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
-            .post(`${route}/reset/${candidat.id}/${token}`)
+            .post(`${route}/reset/${candidate.id}/${token}`)
             .send({
               newPassword: 'newPassword123!',
               confirmPassword: 'newPassword123!',
             });
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
-          ...candidatResponse,
+          ...candidateResponse,
           lastConnection: response.body.lastConnection,
         });
       });
       it('Should return 400, if not matching passwords', async () => {
-        const token = await authHelper.getResetToken(candidat);
+        const token = await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
-            .post(`${route}/reset/${candidat.id}/${token}`)
+            .post(`${route}/reset/${candidate.id}/${token}`)
             .send({
               newPassword: 'newPassword123!',
               confirmPassword: 'Password123!',
@@ -250,10 +250,10 @@ describe('Auth', () => {
         expect(response.status).toBe(400);
       });
       it("Should return 400, if password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
-        const token = await authHelper.getResetToken(candidat);
+        const token = await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
-            .post(`${route}/reset/${candidat.id}/${token}`)
+            .post(`${route}/reset/${candidate.id}/${token}`)
             .send({
               newPassword: 'newPassword',
               confirmPassword: 'newPassword',
@@ -264,7 +264,7 @@ describe('Auth', () => {
       it('Should return 400, if invalid user id', async () => {
         const invalidUserId = '1111-invalid-99999';
 
-        const token = await authHelper.getResetToken(candidat);
+        const token = await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
             .post(`${route}/reset/${invalidUserId}/${token}`)
@@ -275,10 +275,10 @@ describe('Auth', () => {
         expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
-        await authHelper.getResetToken(candidat);
+        await authHelper.getResetToken(candidate);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
-            .post(`${route}/reset/${candidat.id}/${invalidToken}`)
+            .post(`${route}/reset/${candidate.id}/${invalidToken}`)
             .send({
               newPassword: 'newPassword123!',
               confirmPassword: 'newPassword123!',
@@ -290,7 +290,7 @@ describe('Auth', () => {
   describe('/current - Current', () => {
     it('Should return a user with token if valid token provided', async () => {
       const loggedInCandidat = await usersHelper.createLoggedInUser({
-        role: UserRoles.CANDIDAT,
+        role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
       const candidatResponse = getPartialUserForPayload(loggedInCandidat.user);

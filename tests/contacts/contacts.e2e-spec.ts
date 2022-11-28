@@ -63,12 +63,12 @@ describe('Contacts', () => {
     await databaseHelper.resetTestDB();
   });
 
-  describe('/contact-us - Send contact form answers to contact mail', () => {
+  describe('/contactUs - Send contact form answers to contact mail', () => {
     it('Should return 201, if all content provided', async () => {
       const formAnswers = await contactUsFormFactory.create({});
       const response: APIResponse<ContactsController['sendMailContactUsForm']> =
         await request(app.getHttpServer())
-          .post(`${route}/contact-us`)
+          .post(`${route}/contactUs`)
           .send(formAnswers);
       expect(response.status).toBe(201);
     });
@@ -86,7 +86,7 @@ describe('Contacts', () => {
 
       const response: APIResponse<ContactsController['sendMailContactUsForm']> =
         await request(app.getHttpServer())
-          .post(`${route}/contact-us`)
+          .post(`${route}/contactUs`)
           .send(shortData);
       expect(response.status).toBe(201);
     });
@@ -101,7 +101,7 @@ describe('Contacts', () => {
 
       const response: APIResponse<ContactsController['sendMailContactUsForm']> =
         await request(app.getHttpServer())
-          .post(`${route}/contact-us`)
+          .post(`${route}/contactUs`)
           .send(shortData);
       expect(response.status).toBe(400);
     });

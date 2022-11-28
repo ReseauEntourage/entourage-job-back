@@ -4,8 +4,4 @@ import { CreateExternalOpportunityRestrictedDto } from './create-external-opport
 
 export class UpdateExternalOpportunityRestrictedDto extends PartialType(
   CreateExternalOpportunityRestrictedDto
-) {
-  @ApiProperty()
-  @IsUUID()
-  id: string;
-}
+) {}

@@ -27,7 +27,7 @@ export class SharesService {
 
   async updateByCandidateId(candidateId: string, type: ShareType) {
     const candidate = await this.usersService.findOne(candidateId);
-    if (!candidate || candidate.role !== UserRoles.CANDIDAT) {
+    if (!candidate || candidate.role !== UserRoles.CANDIDATE) {
       return null;
     }
     const candidatShares = await this.shareModel.findOne({
