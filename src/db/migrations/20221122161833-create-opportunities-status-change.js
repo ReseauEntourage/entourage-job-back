@@ -15,7 +15,6 @@ module.exports = {
             type: Sequelize.INTEGER
           },
           newStatus: {
-            allowNull: false,
             type: Sequelize.INTEGER
           },
           createdAt: {
@@ -28,14 +27,16 @@ module.exports = {
           },
           OpportunityUserId: {
             type: Sequelize.UUID,
-            allowNull: false,
-            references: {
-              model: 'Opportunity_Users',
-              key: 'id',
-            },
-            onDelete: 'cascade',
-            onUpdate: 'cascade',
+            allowNull: true,
           },
+          UserId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+          },
+          OpportunityId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+          }
         })
   },
   async down(queryInterface) {

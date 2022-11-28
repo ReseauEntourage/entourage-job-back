@@ -36,6 +36,7 @@ import {
   Opportunity,
   OpportunityBusinessLine,
   OpportunityUser,
+  OpportunityUserStatusChange,
 } from './models';
 import { OpportunityCandidateAttributes } from './models/opportunity.attributes';
 import {
@@ -75,6 +76,8 @@ export class OpportunitiesService {
     private businessLineModel: typeof BusinessLine,
     @InjectModel(OpportunityBusinessLine)
     private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
+    @InjectModel(OpportunityUserStatusChange)
+    private opportunityUserStatusChangeModel: typeof OpportunityUserStatusChange,
     private queuesService: QueuesService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
@@ -588,7 +591,6 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-
     // disable auto recommandation feature
     // const candidatesIdsToRecommendTo =
     //   opportunity.isPublic && opportunity.isValidated
@@ -630,21 +632,21 @@ export class OpportunitiesService {
     oldOpportunity: Opportunity,
     candidatesId?: string[]
   ) {
-    const candidatesToRecommendTo =
-      opportunity.isPublic &&
-      !oldOpportunity.isValidated &&
-      opportunity.isValidated
-        ? await this.findAllCandidatesIdsToRecommendOfferTo(
-            opportunity.department,
-            opportunity.businessLines
-          )
-        : [];
+    // const candidatesToRecommendTo =
+    //   opportunity.isPublic &&
+    //   !oldOpportunity.isValidated &&
+    //   opportunity.isValidated
+    //     ? await this.findAllCandidatesIdsToRecommendOfferTo(
+    //         opportunity.department,
+    //         opportunity.businessLines
+    //       )
+    //     : [];
 
     const uniqueCandidatesIds = _.uniq([
       ...(candidatesId ||
         opportunity.opportunityUsers.map(({ UserId }) => UserId) ||
         []),
-      ...(candidatesToRecommendTo || []),
+      // ...(candidatesToRecommendTo || []),
     ]);
 
     const t = await this.opportunityUserModel.sequelize.transaction();
@@ -657,6 +659,7 @@ export class OpportunitiesService {
                 OpportunityId: opportunity.id,
                 UserId: candidateId,
               },
+              hooks: true,
               transaction: t,
             })
             .then((model) => {
@@ -676,6 +679,7 @@ export class OpportunitiesService {
                 return opportunityUser.id;
               }),
             },
+            hooks: true,
             transaction: t,
           }
         );
@@ -692,23 +696,45 @@ export class OpportunitiesService {
                 }),
               },
             },
+            hooks: true,
             transaction: t,
           }
         );
       } else {
+        const opportunitiesUsersToDestroy =
+          await this.opportunityUserModel.findAll({
+            where: {
+              OpportunityId: opportunity.id,
+              UserId: {
+                [Op.not]: opportunityUsers.map((opportunityUser) => {
+                  return opportunityUser.UserId;
+                }),
+              },
+            },
+            transaction: t,
+          });
+        await opportunitiesUsersToDestroy.map((oppUs) => {
+          this.opportunityUserStatusChangeModel.create(
+            {
+              oldStatus: oppUs.status,
+              newStatus: null,
+              OpportunityUserId: oppUs.id,
+              UserId: oppUs.UserId,
+              OpportunityId: opportunity.id,
+            },
+            { transaction: t }
+          );
+        });
         await this.opportunityUserModel.destroy({
           where: {
             OpportunityId: opportunity.id,
-            UserId: {
-              [Op.not]: opportunityUsers.map((opportunityUser) => {
-                return opportunityUser.UserId;
-              }),
-            },
+            UserId: opportunitiesUsersToDestroy.map((opportunityUser) => {
+              return opportunityUser.UserId;
+            }),
           },
           transaction: t,
         });
       }
-
       await t.commit();
     } catch (error) {
       await t.rollback();

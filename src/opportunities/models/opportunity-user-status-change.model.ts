@@ -5,7 +5,6 @@ import {
   Column,
   DataType,
   Default,
-  ForeignKey,
   IsUUID,
   Model,
   PrimaryKey,
@@ -13,7 +12,6 @@ import {
   CreatedAt,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { OpportunityUser } from './opportunity-user.model';
 
 @Table({ tableName: 'OpportunityUser_StatusChanges' })
 export class OpportunityUserStatusChange extends Model {
@@ -25,18 +23,28 @@ export class OpportunityUserStatusChange extends Model {
 
   @ApiProperty()
   @IsUUID(4)
-  @ForeignKey(() => OpportunityUser)
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   OpportunityUserId: string;
+
+  @IsUUID(4)
+  @AllowNull(true)
+  @Column
+  UserId: string;
+
+  @IsUUID(4)
+  @AllowNull(true)
+  @Column
+  OpportunityId: string;
 
   @ApiProperty()
   @AllowNull(true)
   @IsNumber()
   @Column
   oldStatus: number;
-
+  
   @ApiProperty()
+  @AllowNull(true)
   @IsNumber()
   @Column
   newStatus: number;
