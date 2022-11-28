@@ -86,11 +86,11 @@ export const LeadApproaches: { [K in CompanyApproach]: string } = {
 
 export const LeadHeardAbout: { [K in HeardAboutValue]: string } = {
   [HeardAbout.COMPANY]: 'Mon entreprise',
-  [HeardAbout.ENTOURAGE]: 'Le réseau Entourage (newsletter, application...)',
-  [HeardAbout.PRESS]: 'Un article dans la presse, une newsletter',
+  [HeardAbout.ENTOURAGE]: 'Le réseau Entourage',
+  [HeardAbout.PRESS]: 'Les médias (presse, web, TV)',
   [HeardAbout.LINKEDIN]: 'LinkedIn',
   [HeardAbout.SOCIAL]: 'Autres réseaux (facebook, twitter, instagram...)',
-  [HeardAbout.SPORTS]: 'Partenariat_Sport',
+  [HeardAbout.SPORTS]: 'Un partenariat sportif',
   [HeardAbout.VOLUNTEER]: 'Un site de bénévolat',
   [HeardAbout.CONTACT]: 'Le bouche à oreille',
   [HeardAbout.OTHER]: 'Autre',
@@ -214,7 +214,7 @@ export interface CompanyProps {
 export interface SalesforceCompany {
   Id?: string;
   Name: string;
-  Industry: string;
+  M_tiers_LinkedOut__c: string;
   BillingStreet: string;
   BillingCity: string;
   BillingPostalCode: string;
