@@ -326,7 +326,7 @@ export class OpportunitiesController {
 
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @Get('/user/private/:candidateId')
+  @Get('/candidate/private/:candidateId')
   async findAllUserOpportunitiesAsAdmin(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Query()
@@ -360,7 +360,7 @@ export class OpportunitiesController {
   @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Get('/user/all/:candidateId')
+  @Get('/candidate/all/:candidateId')
   async findAllAsCandidate(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Query()
