@@ -385,7 +385,7 @@ export class SalesforceService {
       Name: mainCompanySfId
         ? formatCompanyName(name, address, department)
         : name || 'Inconnu',
-      Industry: formatBusinessLines(businessLines),
+      M_tiers_LinkedOut__c: formatBusinessLines(businessLines),
       BillingStreet: parsedAddress.street,
       BillingCity: parsedAddress.city,
       BillingPostalCode: parsedAddress.postalCode,
