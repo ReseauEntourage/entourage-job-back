@@ -32,9 +32,7 @@ export function formatBusinessLines(businessLines: BusinessLine[]) {
       businessLines.map(({ name }) => {
         return findConstantFromValue(name, BusinessLineFilters).label;
       })
-    )
-      .toString()
-      .replace(/,/g, ';');
+    ).join(';');
   }
 }
 
