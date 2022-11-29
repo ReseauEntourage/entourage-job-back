@@ -1318,7 +1318,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
       });
-      describe("/user/private/:id?search=&type=&businessLines[]=&status[]=&isPublic[]&department[]= - Read a user's private opportunities as admin", () => {
+      describe("/candidate/private/:id?search=&type=&businessLines[]=&status[]=&isPublic[]&department[]= - Read a user's private opportunities as admin", () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -1346,7 +1346,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/private/${loggedInCandidate.user.id}`)
+            .get(`${route}/candidate/private/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
@@ -1354,7 +1354,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/private/${loggedInCandidate.user.id}`)
+            .get(`${route}/candidate/private/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
@@ -1362,7 +1362,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/private/1111-invalid-99999`)
+            .get(`${route}/candidate/private/1111-invalid-99999`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(400);
         });
@@ -1384,7 +1384,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/private/${loggedInCandidate.user.id}`)
+            .get(`${route}/candidate/private/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(3);
@@ -1426,7 +1426,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/private/${loggedInCandidate.user.id}?isPublic[]=true`
+              `${route}/candidate/private/${loggedInCandidate.user.id}?isPublic[]=true`
             )
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
@@ -1481,7 +1481,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/private/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
+              `${route}/candidate/private/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
             )
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
@@ -1521,7 +1521,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/private/${loggedInCandidate.user.id}?status[]=1&status[]=2`
+              `${route}/candidate/private/${loggedInCandidate.user.id}?status[]=1&status[]=2`
             )
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
@@ -1572,7 +1572,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/private/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
+              `${route}/candidate/private/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
             )
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
@@ -1606,7 +1606,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/private/${loggedInCandidate.user.id}?search=XXXXX`
+              `${route}/candidate/private/${loggedInCandidate.user.id}?search=XXXXX`
             )
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
@@ -1616,7 +1616,7 @@ describe('Opportunities', () => {
           );
         });
       });
-      describe("/user/all/:id?search=&type=&businessLines[]=&status[]=&department[]= - Read all user's opportunities", () => {
+      describe("/candidate/all/:id?search=&type=&businessLines[]=&status[]=&department[]= - Read all user's opportunities", () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -1646,7 +1646,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
+            .get(`${route}/candidate/all/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
@@ -1654,7 +1654,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/1111-invalid-99999`)
+            .get(`${route}/candidate/all/1111-invalid-99999`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
@@ -1662,7 +1662,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${candidate.id}`)
+            .get(`${route}/candidate/all/${candidate.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
@@ -1670,7 +1670,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${candidate.id}`)
+            .get(`${route}/candidate/all/${candidate.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
@@ -1693,7 +1693,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
+            .get(`${route}/candidate/all/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.offers.length).toBe(3);
@@ -1719,7 +1719,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}`)
+            .get(`${route}/candidate/all/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.offers.length).toBe(3);
@@ -1761,7 +1761,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}?type=private`)
+            .get(
+              `${route}/candidate/all/${loggedInCandidate.user.id}?type=private`
+            )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.offers.length).toBe(2);
@@ -1802,7 +1804,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}?type=public`)
+            .get(
+              `${route}/candidate/all/${loggedInCandidate.user.id}?type=public`
+            )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.offers.length).toBe(2);
@@ -1846,7 +1850,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}?type=archived`)
+            .get(
+              `${route}/candidate/all/${loggedInCandidate.user.id}?type=archived`
+            )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.offers.length).toBe(2);
@@ -1900,7 +1906,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
+              `${route}/candidate/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
             )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
@@ -1951,7 +1957,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/all/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
+              `${route}/candidate/all/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
             )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
@@ -2014,7 +2020,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&type=private`
+              `${route}/candidate/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&type=private`
             )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
@@ -2069,7 +2075,7 @@ describe('Opportunities', () => {
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
             .get(
-              `${route}/user/all/${loggedInCandidate.user.id}?status[]=${OfferStatuses.INTERVIEW.value}&status[]=${OfferStatuses.HIRED.value}`
+              `${route}/candidate/all/${loggedInCandidate.user.id}?status[]=${OfferStatuses.INTERVIEW.value}&status[]=${OfferStatuses.HIRED.value}`
             )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
@@ -2108,7 +2114,9 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
           > = await request(app.getHttpServer())
-            .get(`${route}/user/all/${loggedInCandidate.user.id}?search=XXXXX`)
+            .get(
+              `${route}/candidate/all/${loggedInCandidate.user.id}?search=XXXXX`
+            )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.offers.length).toBe(1);
