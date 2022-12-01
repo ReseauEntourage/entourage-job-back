@@ -588,7 +588,6 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidatesId: string[]
   ) {
-
     // disable auto recommandation feature
     // const candidatesIdsToRecommendTo =
     //   opportunity.isPublic && opportunity.isValidated
@@ -726,10 +725,7 @@ export class OpportunitiesService {
         : null;
 
     const opportunityUsers =
-      await this.opportunityUsersService.findAllByCandidatesIdsAndOpportunityId(
-        newCandidatesIdsToSendMailTo,
-        opportunity.id
-      );
+      await this.opportunityUsersService.findAllByOpportunityId(opportunity.id);
 
     if (oldOpportunity && opportunityUsers && opportunityUsers.length > 0) {
       // Case where the opportunity was not validated and has been validated, we send the mail to everybody
