@@ -492,7 +492,7 @@ export class OpportunitiesController {
 
     const updatedOpportunity = await this.opportunitiesService.findOne(id);
 
-    const candidates =
+    const candidatesToSendMailTo =
       await this.opportunitiesService.updateAssociatedCandidatesToOpportunity(
         updatedOpportunity,
         opportunity,
@@ -504,7 +504,7 @@ export class OpportunitiesController {
     await this.opportunitiesService.sendMailsAfterUpdate(
       finalOpportunity.toJSON(),
       opportunity.toJSON(),
-      candidates
+      candidatesToSendMailTo
     );
 
     await this.opportunitiesService.updateExternalDBOpportunity(
