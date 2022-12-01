@@ -52,6 +52,15 @@ export class OpportunityUsersService {
     });
   }
 
+  async findAllByOpportunityId(opportunityId: string) {
+    return this.opportunityUserModel.findAll({
+      where: {
+        OpportunityId: opportunityId,
+      },
+      include: OpportunityCandidateInclude,
+    });
+  }
+
   async findAllByCandidatesIdsAndOpportunityId(
     candidatesIds: string[],
     opportunityId: string
