@@ -230,6 +230,7 @@ export class OpportunitiesController {
         createExternalOpportunityDto.status > OfferStatuses.TO_PROCESS.value
           ? createExternalOpportunityDto.status
           : OfferStatuses.CONTACTED.value,
+      seen: true,
     });
 
     const finalOpportunity = await this.opportunitiesService.findOneAsCandidate(
