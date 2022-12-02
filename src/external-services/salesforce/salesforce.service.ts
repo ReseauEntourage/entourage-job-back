@@ -387,7 +387,10 @@ export class SalesforceService {
         : name || 'Inconnu',
       M_tiers_LinkedOut__c: formatBusinessLines(businessLines),
       BillingStreet: parsedAddress.street,
-      BillingCity: parsedAddress.city,
+      BillingCity:
+        parsedAddress.city?.length > 40
+          ? parsedAddress.city.substring(0, 40)
+          : parsedAddress.city,
       BillingPostalCode: parsedAddress.postalCode,
       Reseaux__c: 'LinkedOut',
       Antenne__c: formatDepartment(department),
@@ -736,9 +739,12 @@ export class SalesforceService {
         offersAndProcessesToCreate.processes &&
         offersAndProcessesToCreate.processes.length > 0
       ) {
-        await this.createOrUpdateSalesforceProcess(
-          offersAndProcessesToCreate.processes
-        );
+        const processToCreate =
+          offersAndProcessesToCreate.processes.length === 1
+            ? offersAndProcessesToCreate.processes[0]
+            : offersAndProcessesToCreate.processes;
+
+        await this.createOrUpdateSalesforceProcess(processToCreate);
       }
     } else {
       const { offer, process } = offerAndProcess;
@@ -752,7 +758,8 @@ export class SalesforceService {
       })) as string;
 
       if (process && process.length > 0) {
-        await this.createOrUpdateSalesforceProcess(process, offerSfId);
+        const processToCreate = process.length === 1 ? process[0] : process;
+        await this.createOrUpdateSalesforceProcess(processToCreate, offerSfId);
       }
     }
   }

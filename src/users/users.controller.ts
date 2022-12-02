@@ -224,9 +224,9 @@ export class UsersController {
         updateUserCandidatDto
       );
     if (updateUserCandidatDto.hidden) {
-      updatedUserCandidats.forEach(async (user) => {
-        await this.usersService.uncacheCandidateCV(user.url);
-      });
+      for (const candidate of updatedUserCandidats) {
+        await this.usersService.uncacheCandidateCV(candidate.url);
+      }
     }
     await this.usersService.cacheAllCVs();
 

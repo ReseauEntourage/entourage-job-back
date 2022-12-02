@@ -230,6 +230,7 @@ export class OpportunitiesController {
         createExternalOpportunityDto.status > OfferStatuses.TO_PROCESS.value
           ? createExternalOpportunityDto.status
           : OfferStatuses.CONTACTED.value,
+      seen: true,
     });
 
     const finalOpportunity = await this.opportunitiesService.findOneAsCandidate(
@@ -593,7 +594,7 @@ export class OpportunitiesController {
 
     const updatedOpportunity = await this.opportunitiesService.findOne(id);
 
-    const candidates =
+    const candidatesToSendMailTo =
       await this.opportunitiesService.updateAssociatedCandidatesToOpportunity(
         updatedOpportunity,
         opportunity,
@@ -605,7 +606,7 @@ export class OpportunitiesController {
     await this.opportunitiesService.sendMailsAfterUpdate(
       finalOpportunity.toJSON(),
       opportunity.toJSON(),
-      candidates
+      candidatesToSendMailTo
     );
 
     await this.opportunitiesService.updateExternalDBOpportunity(
