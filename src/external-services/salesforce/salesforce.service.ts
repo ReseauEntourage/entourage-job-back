@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
-import { Connection, ErrorResult, RecordResult, SuccessResult } from 'jsforce';
+import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
@@ -26,6 +26,7 @@ import {
   SalesforceOffer,
   SalesforceProcess,
 } from './salesforce.types';
+
 import {
   executeBulkAction,
   formatApproach,
