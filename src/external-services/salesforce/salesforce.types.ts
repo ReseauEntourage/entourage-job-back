@@ -60,7 +60,7 @@ export type SalesforceObject<T extends ObjectName> = SalesforceObjects[T];
 export const ContactsRecordTypesIds = {
   COACH: '0127Q000000Ub9wQAC',
   CANDIDATE: '0127Q000000UbNVQA0',
-  COMPANY: '0127Q000000Uhq0QAC',
+  COMPANY: '0127Q000000UomWQAS',
   ASSOCIATION: '0127Q000000Uhq0QAC',
 } as const;
 
