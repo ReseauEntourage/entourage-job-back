@@ -421,7 +421,7 @@ export class SalesforceService {
       Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
       Title: position,
       AccountId: companySfId,
-      Casquettes_r_les__c: 'Partenaire Entreprise',
+      Casquettes_r_les__c: 'Contact Entreprise/Financeur',
       Reseaux__c: 'LinkedOut',
       RecordTypeId: ContactsRecordTypesIds.COMPANY,
       Antenne__c: formatDepartment(department),
