@@ -1,6 +1,8 @@
-import { Includeable } from 'sequelize';
+import { Includeable, Op } from 'sequelize';
+import { OfferStatus } from '../opportunities.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { User, UserCandidat } from 'src/users/models';
+import { FilterConstant } from 'src/utils/types';
 import { OpportunityUser } from './opportunity-user.model';
 export const OpportunityCandidateInclude: Includeable[] = [
   {
@@ -51,6 +53,45 @@ export const OpportunityCompleteWithoutBusinessLinesInclude: Includeable[] = [
     include: OpportunityCandidateInclude,
   },
 ];
+
+export function renderOpportunityCompleteWithoutBusinessLinesInclude(
+  statusParams: FilterConstant<OfferStatus>[],
+  candidateId: string
+): Includeable[] {
+  return [
+    {
+      model: OpportunityUser,
+      as: 'opportunityUsers',
+      attributes: [
+        'id',
+        'UserId',
+        'OpportunityId',
+        'status',
+        'seen',
+        'bookmarked',
+        'archived',
+        'note',
+        'updatedAt',
+        'recommended',
+      ],
+      include: OpportunityCandidateInclude,
+      where: {
+        UserId: { [Op.eq]: candidateId },
+        ...(statusParams && statusParams.length > 0
+          ? { status: { [Op.or]: statusParams.map((status) => status.value) } }
+          : {}),
+        ...(statusParams.map((status) => status.value).includes(-1)
+          ? {
+              [Op.or]: {
+                bookmarked: true,
+                recommended: true,
+              },
+            }
+          : {}),
+      },
+    },
+  ];
+}
 
 export const OpportunityCompleteInclude: Includeable[] = [
   ...OpportunityCompleteWithoutBusinessLinesInclude,

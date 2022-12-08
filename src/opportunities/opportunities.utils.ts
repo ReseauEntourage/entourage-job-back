@@ -15,6 +15,10 @@ import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { getZoneFromDepartment } from 'src/utils/misc/getZoneFromDepartment';
 import { FilterConstant, FilterObject, FilterParams } from 'src/utils/types';
 import {
+  OpportunityCompleteWithoutBusinessLinesInclude,
+  renderOpportunityCompleteWithoutBusinessLinesInclude,
+} from './models/opportunity.include';
+import {
   OfferAdminTab,
   OfferAdminTabs,
   OfferCandidateTab,
@@ -167,6 +171,75 @@ export function getOfferOptions(
   return whereOptions;
 }
 
+export function renderOffersQuery(
+  candidateId: string,
+  params: {
+    type?: OfferAdminTab | OfferCandidateTab;
+    search: string;
+  } & FilterParams<OfferFilterKey>
+): {
+  includeOptions: Includeable[];
+  whereOptions: WhereOptions;
+} {
+  const basicParams = {
+    isValidated: true,
+    isArchived: false,
+  };
+
+  const { type, search, ...restParams } = params;
+
+  const filtersObj = getFiltersObjectsFromQueryParams(restParams, OfferFilters);
+
+  const { businessLines, department, status: statusParams } = filtersObj;
+
+  const businessLinesInclude = {
+    model: BusinessLine,
+    as: 'businessLines',
+    attributes: ['name', 'order'],
+    ...(businessLines
+      ? {
+          where: {
+            name: { [Op.or]: businessLines },
+          },
+        }
+      : {}),
+  };
+  if (type && type === 'public') {
+    const searchOptions = getOfferSearchOptions(search);
+
+    return {
+      includeOptions: [
+        ...OpportunityCompleteWithoutBusinessLinesInclude,
+        businessLinesInclude,
+      ],
+      whereOptions: {
+        isPublic: true,
+        ...(department
+          ? { department: { [Op.or]: department.map((dep) => dep.value) } }
+          : {}),
+        ...searchOptions,
+        ...basicParams,
+      },
+    };
+  } else {
+    return {
+      includeOptions: [
+        businessLinesInclude,
+        ...renderOpportunityCompleteWithoutBusinessLinesInclude(
+          statusParams,
+          candidateId
+        ),
+      ],
+      whereOptions: {
+        // OpportunityUsers: {
+        //   UserId: candidateId,
+        // },
+        ...basicParams,
+      },
+    };
+  }
+}
+
 export function destructureOptionsAndParams(
   params: {
     type?: OfferAdminTab | OfferCandidateTab;
@@ -240,6 +313,7 @@ export function filterCandidateOffersByType(
   offers: OpportunityRestricted[],
   type: OfferCandidateTab
 ) {
+  console.log(type);
   let filteredList = offers;
   if (offers) {
     filteredList = filteredList.filter((offer) => {
