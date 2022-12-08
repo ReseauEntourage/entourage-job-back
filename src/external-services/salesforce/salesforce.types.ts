@@ -241,7 +241,7 @@ export interface SalesforceContact {
   Phone: string;
   Title: string;
   AccountId: string;
-  Casquettes_r_les__c: 'Partenaire Entreprise';
+  Casquettes_r_les__c: 'Contact Entreprise/Financeur';
   Reseaux__c: 'LinkedOut';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
