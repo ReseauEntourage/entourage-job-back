@@ -368,13 +368,21 @@ export class OpportunitiesController {
     query: {
       type: OfferCandidateTab;
       search: string;
+      offset: number;
     } & FilterParams<OfferFilterKey>
   ) {
+
+
     const opportunityUsers =
       await this.opportunityUsersService.findAllByCandidateId(candidateId);
 
     if (!opportunityUsers) {
       throw new NotFoundException();
+    }
+
+    const { department, type, status, ...restQuery } = query;
+    if (type !== 'public' && !status) {
+      throw new BadRequestException('status expected');
     }
 
     const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
@@ -387,7 +395,6 @@ export class OpportunitiesController {
       query
     );
 
-    const { department, type, ...restQuery } = query;
 
     if (!department || type !== OfferCandidateTabs.PRIVATE) {
       return {

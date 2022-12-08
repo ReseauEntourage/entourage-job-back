@@ -44,6 +44,7 @@ import {
   OpportunityCompleteInclude,
   OpportunityCompleteWithoutBusinessLinesInclude,
   OpportunityCompleteWithoutOpportunityUsersInclude,
+  renderOpportunityCompleteWithoutBusinessLinesInclude,
 } from './models/opportunity.include';
 import {
   OfferAdminTab,
@@ -61,6 +62,7 @@ import {
   filterCandidateOffersByType,
   filterOffersByStatus,
   getOfferOptions,
+  renderOffersQuery,
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
@@ -266,63 +268,95 @@ export class OpportunitiesService {
     query: {
       type: OfferCandidateTab;
       search: string;
+      offset: number;
     } & FilterParams<OfferFilterKey>
   ) {
-    const {
-      typeParams,
-      statusParams,
-      searchOptions,
-      businessLinesOptions,
-      filterOptions,
-    } = destructureOptionsAndParams(query);
+    // const {
+    //   typeParams,
+    //   statusParams,
+    //   searchOptions,
+    //   businessLinesOptions,
+    //   filterOptions,
+    // } = destructureOptionsAndParams(query);
 
-    const options = {
-      attributes: [...OpportunityCandidateAttributes],
-      include: [
-        ...OpportunityCompleteWithoutBusinessLinesInclude,
-        businessLinesOptions,
-      ],
-    };
+
+    /*
+    - type: string
+    - status: tableau de string
+    - department: tableau de string
+    - businessLines: tableau de string
+    - search: string
+
+    construire:
+    - where
+    - include
+
+    une query Public avec
+    - search
+    - businessLines
+    - department
+
+    une query Associated avec
+    - status
+
+    */
+    console.log(query);
+
+    // const options = {
+    //   attributes: [...OpportunityCandidateAttributes],
+    //   include: [
+    //     ...renderOpportunityCompleteWithoutBusinessLinesInclude(
+    //       statusParams ? statusParams : []
+    //     ),
+    //     businessLinesOptions,
+    //   ],
+    // };
+    // basic params
+    // const basicParams = {
+    //   isPublic: {
+    //     [Op.or]: [true, false],
+    //   },
+    //   isValidated: true,
+    //   isArchived: true,
+    //   ...searchOptions,
+    //   ...filterOptions,
+    // };
+
+    // if (query.type === 'public') {
+    //   basicParams.isPublic[Op.or] = [true];
+    // }
+
+    const { includeOptions, whereOptions } = renderOffersQuery(candidateId, query);
+
 
     const opportunities = await this.opportunityModel.findAll({
-      ...options,
-      where: {
-        [Op.and]: [
-          {
-            [Op.or]: [
-              { isPublic: true, isValidated: true, isArchived: false },
-              opportunitiesIds.length > 0
-                ? {
-                    id: opportunitiesIds,
-                    isPublic: false,
-                    isValidated: true,
-                    isArchived: false,
-                  }
-                : {},
-            ],
-          },
-          {
-            ...searchOptions,
-          },
-          {
-            ...filterOptions,
-          },
-        ],
-      },
+      logging: console.log,
+      attributes: [...OpportunityCandidateAttributes],
+      include: includeOptions,
+      where: whereOptions,
+      offset: query.offset,
+      limit: 5,
+      // ...options,
+      // where: {
+      // [Op.or]: [
+      //   { isPublic: true, isValidated: true, isArchived: false },
+      //   opportunitiesIds.length > 0
+      //     ? {
+      //         id: opportunitiesIds,
+      //         isPublic: false,
+      //         isValidated: true,
+      //         isArchived: false,
+      //       }
+      //     : {},
+      // ],
+      // ...basicParams,
+      // },
     });
 
+    // trier à l'intérieur du opportunity les opportunityUsers
     const finalOpportunities = opportunities.map((opportunity) => {
       const cleanedOpportunity = opportunity.toJSON();
-      if (
-        opportunity.opportunityUsers &&
-        opportunity.opportunityUsers.length > 0
-      ) {
-        opportunity.opportunityUsers.sort(
-          (a: OpportunityUser, b: OpportunityUser) => {
-            return b.updatedAt - a.updatedAt;
-          }
-        );
-      }
+
       const opportunityUser = opportunity.opportunityUsers.find(
         (opportunityUser) => {
           return opportunityUser.UserId === candidateId;
@@ -337,22 +371,26 @@ export class OpportunitiesService {
       } as OpportunityRestricted;
     });
 
-    const sortedOpportunities = sortOpportunities(
-      finalOpportunities,
-      candidateId,
-      typeParams === OfferCandidateTabs.PRIVATE
-    );
+    // const sortedOpportunities = sortOpportunities(
+    //   finalOpportunities,
+    //   candidateId,
+    //   typeParams === OfferCandidateTabs.PRIVATE
+    // );
+    // console.log('3', sortedOpportunities.length);
 
-    const filteredTypeOpportunities = filterCandidateOffersByType(
-      sortedOpportunities as OpportunityRestricted[],
-      typeParams as OfferCandidateTab
-    );
+    // const filteredTypeOpportunities = filterCandidateOffersByType(
+    //   sortedOpportunities as OpportunityRestricted[],
+    //   typeParams as OfferCandidateTab
+    // );
+    // console.log('4', filteredTypeOpportunities.length);
 
-    return filterOffersByStatus(
-      filteredTypeOpportunities,
-      statusParams,
-      candidateId
-    );
+    // return filterOffersByStatus(
+    //   filteredTypeOpportunities,
+    //   statusParams,
+    //   candidateId
+    // );
+
+    return finalOpportunities;
   }
 
   async findOne(id: string) {
