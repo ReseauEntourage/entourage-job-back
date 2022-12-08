@@ -391,7 +391,6 @@ export class OpportunitiesController {
       type: OfferCandidateTab;
       search: string;
       offset: number;
-      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const opportunityUsers =
@@ -401,19 +400,48 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const { type, status } = query;
+    const { department, type, status, ...restQuery } = query;
     if (type !== 'public' && !status) {
       throw new BadRequestException('status expected');
     }
 
+    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
+      return opportunityUser.OpportunityId;
+    });
+
     const opportunities = await this.opportunitiesService.findAllAsCandidate(
       candidateId,
+      opportunitiesIds,
       query
     );
 
-    return {
-      offers: opportunities,
-    };
+    if (!department || type !== OfferCandidateTabs.PRIVATE) {
+      return {
+        offers: opportunities,
+        otherOffers: [],
+      };
+    } else {
+      const otherDepartments = DepartmentFilters.filter((dept) => {
+        return !department.includes(dept.value);
+      });
+      const otherOpportunities =
+        await this.opportunitiesService.findAllAsCandidate(
+          candidateId,
+          opportunitiesIds,
+          {
+            department: otherDepartments.map((dept) => {
+              return dept.value;
+            }),
+            type: type,
+            ...restQuery,
+          }
+        );
+
+      return {
+        offers: opportunities,
+        otherOffers: otherOpportunities,
+      };
+    }
   }
 
   @Roles(UserRoles.ADMIN)
