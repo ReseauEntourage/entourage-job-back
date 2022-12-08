@@ -319,7 +319,7 @@ export class SalesforceService {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceContact>[] } =
       await this.salesforce.query(
-        `SELECT Id FROM ${ObjectNames.CONTACT} WHERE (Adresse_email_unique__c='${email}' OR Email='${email}') AND RecordTypeId='${recordType}' LIMIT 1`
+        `SELECT Id FROM ${ObjectNames.CONTACT} WHERE Email='${email}' AND RecordTypeId='${recordType}' LIMIT 1`
       );
     return records[0]?.Id;
   }
