@@ -361,6 +361,28 @@ export class OpportunitiesController {
   @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
+  @Get('/candidate/tabCount/:candidateId')
+  async countOffersByStatus(
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
+  ) {
+    const opportunityUsers =
+      await this.opportunityUsersService.findAllByCandidateId(candidateId);
+
+    if (!opportunityUsers) {
+      throw new NotFoundException();
+    }
+
+    const counts = await this.opportunityUsersService.countOffersByStatus(
+      candidateId
+    );
+
+    return counts;
+  }
+
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
   @Get('/candidate/all/:candidateId')
   async findAllAsCandidate(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
@@ -371,8 +393,6 @@ export class OpportunitiesController {
       offset: number;
     } & FilterParams<OfferFilterKey>
   ) {
-
-
     const opportunityUsers =
       await this.opportunityUsersService.findAllByCandidateId(candidateId);
 
@@ -394,8 +414,6 @@ export class OpportunitiesController {
       opportunitiesIds,
       query
     );
-
-
     if (!department || type !== OfferCandidateTabs.PRIVATE) {
       return {
         offers: opportunities,
