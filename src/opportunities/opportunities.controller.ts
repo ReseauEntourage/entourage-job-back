@@ -414,7 +414,6 @@ export class OpportunitiesController {
       opportunitiesIds,
       query
     );
-
     if (!department || type !== OfferCandidateTabs.PRIVATE) {
       return {
         offers: opportunities,
