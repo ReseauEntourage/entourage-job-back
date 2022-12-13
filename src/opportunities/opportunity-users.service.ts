@@ -4,7 +4,7 @@ import { UsersService } from 'src/users/users.service';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { OpportunityUser } from './models';
 import { OpportunityCandidateInclude } from './models/opportunity.include';
-
+import { QueryTypes } from 'sequelize';
 @Injectable()
 export class OpportunityUsersService {
   constructor(
@@ -133,5 +133,16 @@ export class OpportunityUsersService {
       hooks: true,
     });
     return opportunityUser;
+  }
+
+  async countOffersByStatus(candidateId: string) {
+    const counts = await this.opportunityUserModel.sequelize.query(
+      `SELECT status, count(*) FROM "Opportunity_Users" WHERE "UserId"=:candidateId AND (("status"=-1 AND ("recommended"=true OR "bookmarked"=true)) OR status IN (0,1,2,3,4))GROUP BY "status";`,
+      {
+        replacements: { candidateId },
+        type: QueryTypes.SELECT,
+      }
+    );
+    return counts;
   }
 }
