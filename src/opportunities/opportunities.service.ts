@@ -277,8 +277,6 @@ export class OpportunitiesService {
     //   businessLinesOptions,
     //   filterOptions,
     // } = destructureOptionsAndParams(query);
-
-
     /*
     - type: string
     - status: tableau de string
@@ -325,11 +323,13 @@ export class OpportunitiesService {
     //   basicParams.isPublic[Op.or] = [true];
     // }
 
-    const { includeOptions, whereOptions } = renderOffersQuery(candidateId, query);
 
+    const { includeOptions, whereOptions } = renderOffersQuery(
+      candidateId,
+      query
+    );
 
     const opportunities = await this.opportunityModel.findAll({
-      logging: console.log,
       attributes: [...OpportunityCandidateAttributes],
       include: includeOptions,
       where: whereOptions,
