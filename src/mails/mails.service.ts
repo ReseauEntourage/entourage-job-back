@@ -114,7 +114,8 @@ export class MailsService {
   }
 
   async sendCVSubmittedMail(coach: User, cv: Partial<CV>) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(coach.zone);
+    const candidate = getRelatedUser(coach);
+    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: candidatesAdminMail,
@@ -385,7 +386,9 @@ export class MailsService {
             process.env[
               `ADMIN_COMPANIES_${getZoneFromDepartment(opportunity.department)}`
             ],
-          variables: getMailjetVariablesForPrivateOrPublicOffer(opportunity),
+          variables: getMailjetVariablesForPrivateOrPublicOffer(
+            opportunity.toJSON()
+          ),
         });
 
         return toEmail;
