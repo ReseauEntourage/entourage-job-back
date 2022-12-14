@@ -385,7 +385,9 @@ export class MailsService {
             process.env[
               `ADMIN_COMPANIES_${getZoneFromDepartment(opportunity.department)}`
             ],
-          variables: getMailjetVariablesForPrivateOrPublicOffer(opportunity),
+          variables: getMailjetVariablesForPrivateOrPublicOffer(
+            opportunity.toJSON()
+          ),
         });
 
         return toEmail;
