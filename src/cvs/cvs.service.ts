@@ -835,8 +835,8 @@ export class CVsService {
     return searchString;
   }
 
-  async sendMailsAfterSubmitting(user: User, cv: Partial<CV>) {
-    await this.mailsService.sendCVSubmittedMail(user, cv);
+  async sendMailsAfterSubmitting(coach: User, cv: Partial<CV>) {
+    await this.mailsService.sendCVSubmittedMail(coach, cv);
   }
 
   async sendMailsAfterPublishing(candidateId: string) {
