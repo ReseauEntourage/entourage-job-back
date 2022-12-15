@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { QueryTypes } from 'sequelize';
 import { UsersService } from 'src/users/users.service';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { OpportunityUser } from './models';
 import { OpportunityCandidateInclude } from './models/opportunity.include';
-import { QueryTypes } from 'sequelize';
 @Injectable()
 export class OpportunityUsersService {
   constructor(
@@ -136,13 +136,35 @@ export class OpportunityUsersService {
   }
 
   async countOffersByStatus(candidateId: string) {
-    const counts = await this.opportunityUserModel.sequelize.query(
-      `SELECT status, count(*) FROM "Opportunity_Users" WHERE "UserId"=:candidateId AND (("status"=-1 AND ("recommended"=true OR "bookmarked"=true)) OR status IN (0,1,2,3,4))GROUP BY "status";`,
+    const statusCounts = await this.opportunityUserModel.sequelize.query(
+      `SELECT status, count(*) 
+        FROM "Opportunity_Users" 
+        LEFT JOIN "Opportunities" ON "Opportunities" . "id" = "Opportunity_Users" . "OpportunityId"
+        WHERE "Opportunity_Users" . "UserId"=:candidateId 
+        AND (("status"=-1 AND ("recommended"=true OR "bookmarked"=true)) 
+            OR status IN (0,1,2,3,4))
+        AND "Opportunities" . "isValidated"=true
+        AND "Opportunities" . "isArchived"=false
+        AND "Opportunity_Users" . "archived"=false
+        GROUP BY "status";`,
       {
         replacements: { candidateId },
         type: QueryTypes.SELECT,
       }
     );
-    return counts;
+    const archivedOppUs = await this.opportunityUserModel.findAll({
+      where: {
+        UserId: candidateId,
+        archived: true,
+      },
+    });
+
+    return [
+      {
+        status: 'archived',
+        count: archivedOppUs.length,
+      },
+      ...statusCounts,
+    ];
   }
 }

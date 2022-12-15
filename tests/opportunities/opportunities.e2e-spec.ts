@@ -2067,6 +2067,9 @@ describe('Opportunities', () => {
               department: 'Rhône (69)',
             }
           );
+
+          console.log(opportunities.length);
+
           opportunities.forEach(async (opp, i) => {
             let status;
             let archived = false;
@@ -2076,6 +2079,7 @@ describe('Opportunities', () => {
               status = -1;
               archived = true;
             }
+            console.log(status);
             await opportunityUsersHelper.associateOpportunityUser(
               opp.id,
               loggedInCandidate.user.id,
@@ -2091,6 +2095,19 @@ describe('Opportunities', () => {
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
+
+
+          const opportunities: APIResponse<
+            OpportunitiesController['findAllAsCandidate']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/candidate/all/${loggedInCandidate.user.id}?status[]=1`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          console.log(opportunities.body);
+
+
+          console.log(response.body);
           expect(response.body.length).toBe(7);
         });
         it("Should return 200, if a coach counts his associated candidate's opportunities according to status", async () => {
