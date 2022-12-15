@@ -186,11 +186,11 @@ export function renderOffersQuery(
     isArchived: false,
   };
 
-  const { type, search, ...restParams } = params;
+  const { type, search, businessLines, ...restParams } = params;
 
   const filtersObj = getFiltersObjectsFromQueryParams(restParams, OfferFilters);
 
-  const { businessLines, department, status: statusParams } = filtersObj;
+  const { department, status: statusParams } = filtersObj;
 
   const businessLinesInclude = {
     model: BusinessLine,
@@ -205,6 +205,7 @@ export function renderOffersQuery(
       : {}),
   };
   if (type && type === 'public') {
+
     const searchOptions = getOfferSearchOptions(search);
 
     return {
