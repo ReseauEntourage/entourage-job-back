@@ -298,7 +298,7 @@ export class OpportunitiesService {
     - status
 
     */
-    console.log(query);
+    // console.log(query);
 
     // const options = {
     //   attributes: [...OpportunityCandidateAttributes],
@@ -335,7 +335,8 @@ export class OpportunitiesService {
       include: includeOptions,
       where: whereOptions,
       offset: query.offset,
-      limit: 5,
+      limit: 25,
+      order: [['createdAt', 'DESC']],
       // ...options,
       // where: {
       // [Op.or]: [
