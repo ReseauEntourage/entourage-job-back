@@ -405,42 +405,14 @@ export class OpportunitiesController {
       throw new BadRequestException('status expected');
     }
 
-    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
-      return opportunityUser.OpportunityId;
-    });
-
     const opportunities = await this.opportunitiesService.findAllAsCandidate(
       candidateId,
-      opportunitiesIds,
       query
     );
-    if (!department || type !== OfferCandidateTabs.PRIVATE) {
-      return {
-        offers: opportunities,
-        otherOffers: [],
-      };
-    } else {
-      const otherDepartments = DepartmentFilters.filter((dept) => {
-        return !department.includes(dept.value);
-      });
-      const otherOpportunities =
-        await this.opportunitiesService.findAllAsCandidate(
-          candidateId,
-          opportunitiesIds,
-          {
-            department: otherDepartments.map((dept) => {
-              return dept.value;
-            }),
-            type: type,
-            ...restQuery,
-          }
-        );
 
-      return {
-        offers: opportunities,
-        otherOffers: otherOpportunities,
-      };
-    }
+    return {
+      offers: opportunities,
+    };
   }
 
   @Roles(UserRoles.ADMIN)
