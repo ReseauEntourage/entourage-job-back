@@ -286,7 +286,17 @@ export class OpportunitiesService {
       order: [['createdAt', 'DESC']],
     });
 
-    return opportunities;
+    const cleanedOpportunities = opportunities.map((opportunity) => {
+      const cleanedOpportunity = opportunity.toJSON();
+      const opportunityUser = opportunity.opportunityUsers[0];
+      const { opportunityUsers, ...opportunityWithoutOpportunityUsers } =
+        cleanedOpportunity;
+      return {
+        ...opportunityWithoutOpportunityUsers,
+        opportunityUsers: opportunityUser,
+      } as OpportunityRestricted;
+    });
+    return cleanedOpportunities;
   }
 
   async findOne(id: string) {
