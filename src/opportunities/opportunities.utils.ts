@@ -205,12 +205,14 @@ export function renderOffersQuery(
       : {}),
   };
   if (type && type === 'public') {
-
     const searchOptions = getOfferSearchOptions(search);
 
     return {
       includeOptions: [
-        ...OpportunityCompleteWithoutBusinessLinesInclude,
+        ...renderOpportunityCompleteWithoutBusinessLinesInclude(
+          null,
+          candidateId
+        ),
         businessLinesInclude,
       ],
       whereOptions: {
