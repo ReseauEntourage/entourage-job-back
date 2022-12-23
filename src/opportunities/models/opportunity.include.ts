@@ -75,6 +75,7 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
         'recommended',
       ],
       include: OpportunityCandidateInclude,
+      required: statusParams ? true : false,
       where: {
         UserId: { [Op.eq]: candidateId },
         ...(statusParams &&
