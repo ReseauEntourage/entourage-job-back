@@ -79,14 +79,14 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
         UserId: { [Op.eq]: candidateId },
         ...(statusParams &&
         statusParams.length > 0 &&
-        !statusParams.map((status) => status.value).includes(3)
+        !statusParams?.map((status) => status.value).includes(3)
           ? { 
               status: { [Op.or]: statusParams.map((status) => status.value) },
               archived: false,
             }
           : // special case, for "refus avant/après entretien" (status 3 which goes with 4): include Offer archived by user
             {
-              ...(statusParams && statusParams.length > 0
+              ...(statusParams && statusParams?.length > 0
                 ? {
                     [Op.or]: {
                       status: {
@@ -98,7 +98,7 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
                 : {}),
             }),
         // for "à traiter", specify bookmarked and recommended
-        ...(statusParams.map((status) => status.value).includes(-1)
+        ...(statusParams?.map((status) => status.value).includes(-1)
           ? {
               [Op.or]: {
                 bookmarked: true,
