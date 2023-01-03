@@ -81,7 +81,7 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
         ...(statusParams &&
         statusParams.length > 0 &&
         !statusParams?.map((status) => status.value).includes(3)
-          ? { 
+          ? {
               status: { [Op.or]: statusParams.map((status) => status.value) },
               archived: false,
             }
