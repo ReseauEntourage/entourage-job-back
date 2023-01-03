@@ -391,6 +391,7 @@ export class OpportunitiesController {
       type: OfferCandidateTab;
       search: string;
       offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const opportunityUsers =
@@ -400,7 +401,7 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const { department, type, status, ...restQuery } = query;
+    const { type, status } = query;
     if (type !== 'public' && !status) {
       throw new BadRequestException('status expected');
     }

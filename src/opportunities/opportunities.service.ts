@@ -268,6 +268,7 @@ export class OpportunitiesService {
       type: OfferCandidateTab;
       search: string;
       offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const { includeOptions, whereOptions } = renderOffersQuery(
@@ -275,14 +276,14 @@ export class OpportunitiesService {
       query
     );
 
-    const limit = 25;
+    const limit = query.limit ? query.limit : 25;
 
     const opportunities = await this.opportunityModel.findAll({
       attributes: [...OpportunityCandidateAttributes],
       include: includeOptions,
       where: whereOptions,
       offset: query.offset * limit,
-      limit,
+      limit: limit,
       order: [['createdAt', 'DESC']],
     });
 
