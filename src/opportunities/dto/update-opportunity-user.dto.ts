@@ -1,6 +1,13 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateOpportunityUserDto } from './create-opportunity-user.dto';
+import { PartialType, PickType } from '@nestjs/swagger';
+import { OpportunityUser } from '../models';
 
 export class UpdateOpportunityUserDto extends PartialType(
-  CreateOpportunityUserDto
+  PickType(OpportunityUser, [
+    'status',
+    'seen',
+    'bookmarked',
+    'archived',
+    'recommended',
+    'note',
+  ] as const)
 ) {}

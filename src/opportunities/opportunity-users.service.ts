@@ -119,13 +119,18 @@ export class OpportunityUsersService {
     );
   }
 
-  async findOrCreate(opportunityId: string, userId: string) {
+  async findOrCreateByCandidateIdAndOpportunityId(
+    candidateId: string,
+    opportunityId: string,
+    findOrCreateOpportunityUserDto: UpdateOpportunityUserDto = {} as UpdateOpportunityUserDto
+  ) {
     const [opportunityUser] = await this.opportunityUserModel.findOrCreate({
       where: {
         OpportunityId: opportunityId,
-        UserId: userId,
-        recommended: true,
+        UserId: candidateId,
+        ...findOrCreateOpportunityUserDto,
       },
+      hooks: true,
     });
     return opportunityUser;
   }

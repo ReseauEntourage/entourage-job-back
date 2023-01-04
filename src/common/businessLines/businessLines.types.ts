@@ -17,7 +17,8 @@ export type BusinessLineValue =
   | 'ca'
   | 'aev'
   | 'sa'
-  | 'fjr';
+  | 'fjr'
+  | 'sm';
 
 export const BusinessLineFilters: FilterConstant<BusinessLineValue>[] = [
   {
@@ -104,5 +105,10 @@ export const BusinessLineFilters: FilterConstant<BusinessLineValue>[] = [
     label: 'Direction financière, juridique et ressources humaines',
     value: 'fjr',
     prefix: ['la', 'les'],
+  },
+  {
+    label: 'Santé et médical',
+    value: 'sm',
+    prefix: ['la', 'le'],
   },
 ];
