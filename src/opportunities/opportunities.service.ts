@@ -36,6 +36,7 @@ import {
   Opportunity,
   OpportunityBusinessLine,
   OpportunityUser,
+  OpportunityUserStatusChange,
 } from './models';
 import { OpportunityCandidateAttributes } from './models/opportunity.attributes';
 import {
@@ -75,6 +76,8 @@ export class OpportunitiesService {
     private businessLineModel: typeof BusinessLine,
     @InjectModel(OpportunityBusinessLine)
     private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
+    @InjectModel(OpportunityUserStatusChange)
+    private opportunityUserStatusChangeModel: typeof OpportunityUserStatusChange,
     private queuesService: QueuesService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
@@ -93,7 +96,7 @@ export class OpportunitiesService {
           | 'locations'
           | 'shouldSendNotifications'
           | 'isCopy'
-          | 'candidatesId'
+          | 'candidatesIds'
         >
       | Omit<
           CreateExternalOpportunityDto | CreateExternalOpportunityRestrictedDto,
@@ -387,7 +390,7 @@ export class OpportunitiesService {
 
   async findOneCandidate(candidateId: string) {
     const user = await this.usersService.findOne(candidateId);
-    if (!user || user.role !== UserRoles.CANDIDAT) {
+    if (!user || user.role !== UserRoles.CANDIDATE) {
       return null;
     }
     return user;
@@ -396,8 +399,8 @@ export class OpportunitiesService {
   async update(
     id: string,
     updateOpportunityDto:
-      | Omit<UpdateOpportunityDto, 'id' | 'shouldSendNotifications'>
-      | Omit<UpdateExternalOpportunityDto, 'id'>
+      | Omit<UpdateOpportunityDto, 'shouldSendNotifications'>
+      | UpdateExternalOpportunityDto
   ) {
     const t = await this.opportunityModel.sequelize.transaction();
 
@@ -450,7 +453,7 @@ export class OpportunitiesService {
       UpdateOpportunityDto,
       | 'id'
       | 'shouldSendNotifications'
-      | 'candidatesId'
+      | 'candidatesIds'
       | 'isAdmin'
       | 'isCopy'
       | 'locations'
@@ -586,7 +589,7 @@ export class OpportunitiesService {
 
   async associateCandidatesToOpportunity(
     opportunity: Opportunity,
-    candidatesId: string[]
+    candidatesIds: string[]
   ) {
     // disable auto recommandation feature
     // const candidatesIdsToRecommendTo =
@@ -598,11 +601,11 @@ export class OpportunitiesService {
     //     : [];
 
     if (
-      candidatesId?.length > 0
+      candidatesIds?.length > 0
       // || candidatesIdsToRecommendTo?.length > 0
     ) {
       const uniqueCandidatesIds = _.uniq([
-        ...(candidatesId || []),
+        ...(candidatesIds || []),
         // ...(candidatesIdsToRecommendTo || []),
       ]);
 
@@ -627,23 +630,23 @@ export class OpportunitiesService {
   async updateAssociatedCandidatesToOpportunity(
     opportunity: Opportunity,
     oldOpportunity: Opportunity,
-    candidatesId?: string[]
+    candidatesIds?: string[]
   ) {
-    const candidatesToRecommendTo =
-      opportunity.isPublic &&
-      !oldOpportunity.isValidated &&
-      opportunity.isValidated
-        ? await this.findAllCandidatesIdsToRecommendOfferTo(
-            opportunity.department,
-            opportunity.businessLines
-          )
-        : [];
+    // const candidatesToRecommendTo =
+    //   opportunity.isPublic &&
+    //   !oldOpportunity.isValidated &&
+    //   opportunity.isValidated
+    //     ? await this.findAllCandidatesIdsToRecommendOfferTo(
+    //         opportunity.department,
+    //         opportunity.businessLines
+    //       )
+    //     : [];
 
     const uniqueCandidatesIds = _.uniq([
-      ...(candidatesId ||
+      ...(candidatesIds ||
         opportunity.opportunityUsers.map(({ UserId }) => UserId) ||
         []),
-      ...(candidatesToRecommendTo || []),
+      // ...(candidatesToRecommendTo || []),
     ]);
 
     const t = await this.opportunityUserModel.sequelize.transaction();
@@ -656,6 +659,7 @@ export class OpportunitiesService {
                 OpportunityId: opportunity.id,
                 UserId: candidateId,
               },
+              hooks: true,
               transaction: t,
             })
             .then((model) => {
@@ -675,6 +679,7 @@ export class OpportunitiesService {
                 return opportunityUser.id;
               }),
             },
+            hooks: true,
             transaction: t,
           }
         );
@@ -691,23 +696,45 @@ export class OpportunitiesService {
                 }),
               },
             },
+            hooks: true,
             transaction: t,
           }
         );
       } else {
+        const opportunitiesUsersToDestroy =
+          await this.opportunityUserModel.findAll({
+            where: {
+              OpportunityId: opportunity.id,
+              UserId: {
+                [Op.not]: opportunityUsers.map((opportunityUser) => {
+                  return opportunityUser.UserId;
+                }),
+              },
+            },
+            transaction: t,
+          });
+        await opportunitiesUsersToDestroy.map((oppUs) => {
+          this.opportunityUserStatusChangeModel.create(
+            {
+              oldStatus: oppUs.status,
+              newStatus: null,
+              OpportunityUserId: oppUs.id,
+              UserId: oppUs.UserId,
+              OpportunityId: opportunity.id,
+            },
+            { transaction: t }
+          );
+        });
         await this.opportunityUserModel.destroy({
           where: {
             OpportunityId: opportunity.id,
-            UserId: {
-              [Op.not]: opportunityUsers.map((opportunityUser) => {
-                return opportunityUser.UserId;
-              }),
-            },
+            UserId: opportunitiesUsersToDestroy.map((opportunityUser) => {
+              return opportunityUser.UserId;
+            }),
           },
           transaction: t,
         });
       }
-
       await t.commit();
     } catch (error) {
       await t.rollback();
@@ -995,7 +1022,13 @@ export class OpportunitiesService {
     if (opportunities.length > 0) {
       opportunities.map(async (model) => {
         // add to table opportunity_user
-        await this.opportunityUsersService.findOrCreate(model.id, candidateId);
+        await this.opportunityUsersService.findOrCreateByCandidateIdAndOpportunityId(
+          candidateId,
+          model.id,
+          {
+            recommended: true,
+          }
+        );
       });
       await this.mailsService.sendRelevantOpportunitiesMail(
         user,

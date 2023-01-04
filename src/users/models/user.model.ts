@@ -64,7 +64,7 @@ export class User extends HistorizedModel {
 
   @ApiProperty()
   @AllowNull(false)
-  @Default(UserRoles.CANDIDAT)
+  @Default(UserRoles.CANDIDATE)
   @Column
   role: UserRole;
 
@@ -154,7 +154,7 @@ export class User extends HistorizedModel {
   @BeforeUpdate
   static trimValues(user: User) {
     const { firstName, lastName, email, role } = user;
-    user.role = role || UserRoles.CANDIDAT;
+    user.role = role || UserRoles.CANDIDATE;
     user.email = email.toLowerCase();
     user.firstName = capitalizeNameAndTrim(firstName);
     user.lastName = capitalizeNameAndTrim(lastName);
@@ -162,7 +162,7 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (createdUser.role === UserRoles.CANDIDAT) {
+    if (createdUser.role === UserRoles.CANDIDATE) {
       await UserCandidat.create(
         {
           candidatId: createdUser.id,
@@ -186,8 +186,8 @@ export class User extends HistorizedModel {
       previousUserValues.role !== userToUpdate.role
     ) {
       if (
-        previousUserValues.role === UserRoles.CANDIDAT &&
-        userToUpdate.role !== UserRoles.CANDIDAT
+        previousUserValues.role === UserRoles.CANDIDATE &&
+        userToUpdate.role !== UserRoles.CANDIDATE
       ) {
         await UserCandidat.destroy({
           where: {
@@ -195,8 +195,8 @@ export class User extends HistorizedModel {
           },
         });
       } else if (
-        previousUserValues.role !== UserRoles.CANDIDAT &&
-        userToUpdate.role === UserRoles.CANDIDAT
+        previousUserValues.role !== UserRoles.CANDIDATE &&
+        userToUpdate.role === UserRoles.CANDIDATE
       ) {
         if (previousUserValues.role === UserRoles.COACH) {
           await UserCandidat.update(
@@ -222,6 +222,7 @@ export class User extends HistorizedModel {
           where: {
             CandidatId: userToUpdate.id,
           },
+          hooks: true,
         });
       }
     }
@@ -232,7 +233,7 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
-      userToUpdate.role === UserRoles.CANDIDAT &&
+      userToUpdate.role === UserRoles.CANDIDATE &&
       previousUserValues &&
       previousUserValues.firstName != undefined &&
       previousUserValues.firstName !== userToUpdate.firstName

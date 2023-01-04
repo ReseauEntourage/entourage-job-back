@@ -4,9 +4,5 @@ import { CreateExternalOpportunityDto } from './create-external-opportunity.dto'
 
 export class UpdateExternalOpportunityDto extends OmitType(
   PartialType(CreateExternalOpportunityDto),
-  ['status'] as const
-) {
-  @ApiProperty()
-  @IsUUID()
-  id: string;
-}
+  ['status', 'candidateId'] as const
+) {}
