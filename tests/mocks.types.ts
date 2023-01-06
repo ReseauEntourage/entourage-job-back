@@ -75,7 +75,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createOrUpdateSalesforceOffer: jest.fn(),
   findOfferFromOpportunityId: jest.fn(),
   createOrUpdateSalesforceOpportunity: jest.fn(),
-  createOrUpdateSalesforceLead: jest.fn(),
+  createOrUpdateCompanySalesforceLead: jest.fn(),
 } as const;
 
 export const AirtableMocks: ProviderMock<AirtableService> = {

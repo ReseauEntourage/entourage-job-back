@@ -1,5 +1,4 @@
-import * as _ from 'lodash';
-import { AdminZone, AdminZones, FilterConstant } from 'src/utils/types';
+import { AdminZone, FilterConstant } from 'src/utils/types';
 
 export const HeardAbout = {
   COMPANY: 'company',
@@ -21,11 +20,11 @@ export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
     value: HeardAbout.COMPANY,
   },
   {
-    label: 'Le réseau Entourage (newsletter, application...)',
+    label: 'Le réseau Entourage',
     value: HeardAbout.ENTOURAGE,
   },
   {
-    label: 'Un article dans la presse, une newsletter',
+    label: 'Les médias (presse, web, TV)',
     value: HeardAbout.PRESS,
   },
   {
@@ -37,7 +36,7 @@ export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
     value: HeardAbout.SOCIAL,
   },
   {
-    label: 'Un partenariat sportif (Bateau LinkedOut, Red Star)',
+    label: 'Un partenariat sportif',
     value: HeardAbout.SPORTS,
   },
   {
@@ -64,33 +63,47 @@ export const CompanyApproaches = {
 export type CompanyApproach =
   typeof CompanyApproaches[keyof typeof CompanyApproaches];
 
-export const CompanyApproachFilters: FilterConstant<CompanyApproach>[] = [
-  {
-    label: 'Recruter inclusif',
-    value: CompanyApproaches.RECRUITMENT,
-  },
-  {
-    label: "Avoir plus d'informations sur LinkedOut",
-    value: CompanyApproaches.INFORMATION,
-  },
-  {
-    label: 'Mobiliser mes collaborateurs',
-    value: CompanyApproaches.MOBILIZATION,
-  },
-  {
-    label: 'Soutenir le projet (mécénat)',
-    value: CompanyApproaches.DONATION,
-  },
-];
-
 export type CompanyZone = AdminZone | 'NATIONAL';
 
-export const CompanyZoneFilters: FilterConstant<CompanyZone>[] = [
-  { value: AdminZones.PARIS, label: _.capitalize(AdminZones.PARIS) },
-  { value: AdminZones.LILLE, label: _.capitalize(AdminZones.LILLE) },
-  { value: AdminZones.LYON, label: _.capitalize(AdminZones.LYON) },
-  { value: AdminZones.LORIENT, label: _.capitalize(AdminZones.LORIENT) },
-  { value: AdminZones.RENNES, label: _.capitalize(AdminZones.RENNES) },
-  { value: 'NATIONAL', label: 'National' },
-  { value: AdminZones.HZ, label: _.capitalize(AdminZones.HZ) },
-];
+export const CandidateNationalities = {
+  FR: 'fr',
+  EU: 'ue',
+  NOT_EU: 'not_eu',
+  STATELESS: 'stateless',
+} as const;
+
+export type CandidateNationality =
+  typeof CandidateNationalities[keyof typeof CandidateNationalities];
+
+export const CandidateAdministrativeSituations = {
+  ID_CARD_FR: 'id_card_fr',
+  PASSPORT: 'passport',
+  RESIDENCE_PERMIT: 'residence_permit',
+  RESIDENCE_PERMIT_RECEIPT: 'residence_permit_receipt',
+  RESIDENT_CARD: 'resident_card',
+  ASYLUM: 'asylum',
+  ASYLUM_DISMISSED: 'asylum_dismissed',
+} as const;
+
+export type CandidateAdministrativeSituation =
+  typeof CandidateAdministrativeSituations[keyof typeof CandidateAdministrativeSituations];
+
+export const CandidateYesNo = {
+  YES: 'yes',
+  NO: 'no',
+} as const;
+
+export type CandidateYesNoValue =
+  typeof CandidateYesNo[keyof typeof CandidateYesNo];
+
+export const CandidateAccommodations = {
+  PERSONAL: 'personal',
+  SOMEONE: 'someone',
+  URGENCY: 'urgency',
+  INSERTION: 'insertion',
+  STREET: 'street',
+  OTHER: 'other',
+} as const;
+
+export type CandidateAccommodation =
+  typeof CandidateAccommodations[keyof typeof CandidateAccommodations];

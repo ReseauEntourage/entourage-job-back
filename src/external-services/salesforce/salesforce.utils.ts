@@ -1,9 +1,9 @@
-import { Batch, ErrorResult, Job, RecordResult, SuccessResult } from 'jsforce';
+import { Job, RecordResult } from 'jsforce';
 import * as _ from 'lodash';
 import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
-import { Department } from 'src/common/locations/locations.types';
+import { Department, Departments } from 'src/common/locations/locations.types';
 import {
   CompanyApproach,
   CompanyZone,
@@ -14,7 +14,7 @@ import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.type
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones, AnyCantFix } from 'src/utils/types';
+import { AdminZones } from 'src/utils/types';
 import {
   LeadApproaches,
   LeadHeardAbout,
@@ -102,6 +102,14 @@ export function parseAddress(address: string) {
     city: '',
     postalCode: '',
   };
+}
+
+export function getDepartmentFromPostalCode(postalCode: string): Department {
+  const deptNumber = postalCode.substring(0, 2);
+  const department = Departments.find(({ name }) => {
+    return name.includes(`(${deptNumber})`);
+  });
+  return department.name;
 }
 
 export function mapSalesforceOfferFields({

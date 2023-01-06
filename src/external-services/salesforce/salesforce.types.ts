@@ -1,7 +1,16 @@
+import { AnyCantFix } from '../../utils/types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractValue } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
+  CandidateAccommodation,
+  CandidateAccommodations,
+  CandidateAdministrativeSituation,
+  CandidateAdministrativeSituations,
+  CandidateNationalities,
+  CandidateNationality,
+  CandidateYesNo,
+  CandidateYesNoValue,
   CompanyApproach,
   CompanyApproaches,
   CompanyZone,
@@ -46,16 +55,19 @@ export const ObjectNames = {
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
 
-type SalesforceObjects = {
+type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.COMPANY]: SalesforceCompany;
-  [ObjectNames.LEAD]: SalesforceLead;
+  [ObjectNames.LEAD]: SalesforceLead<K>;
   [ObjectNames.PROCESS]: SalesforceProcess;
   [ObjectNames.OFFER]: SalesforceOffer;
   [ObjectNames.CONTACT]: SalesforceContact;
   [ObjectNames.BINOME]: SalesforceBinome;
 };
 
-export type SalesforceObject<T extends ObjectName> = SalesforceObjects[T];
+export type SalesforceObject<
+  T extends ObjectName,
+  K extends LeadRecordType = AnyCantFix
+> = SalesforceObjects<K>[T];
 
 export const ContactsRecordTypesIds = {
   COACH: '0127Q000000Ub9wQAC',
@@ -77,6 +89,24 @@ export const LeadsRecordTypesIds = {
 export type LeadRecordType =
   typeof LeadsRecordTypesIds[keyof typeof LeadsRecordTypesIds];
 
+type LeadsProps = {
+  [LeadsRecordTypesIds.CANDIDATE]: CandidateLeadProps;
+  [LeadsRecordTypesIds.COACH]: CoachLeadProps;
+  [LeadsRecordTypesIds.ASSOCIATION]: WorkerLeadProps;
+  [LeadsRecordTypesIds.COMPANY]: CompanyLeadProps;
+};
+
+export type LeadProp<T extends LeadRecordType> = LeadsProps[T];
+
+type SalesforceLeads = {
+  [LeadsRecordTypesIds.CANDIDATE]: CandidateSalesforceLead;
+  [LeadsRecordTypesIds.COACH]: CoachSalesforceLead;
+  [LeadsRecordTypesIds.ASSOCIATION]: WorkerSalesforceLead;
+  [LeadsRecordTypesIds.COMPANY]: CompanySalesforceLead;
+};
+
+export type SalesforceLead<T extends LeadRecordType> = SalesforceLeads[T];
+
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
   [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
@@ -94,6 +124,49 @@ export const LeadHeardAbout: { [K in HeardAboutValue]: string } = {
   [HeardAbout.VOLUNTEER]: 'Un site de bénévolat',
   [HeardAbout.CONTACT]: 'Le bouche à oreille',
   [HeardAbout.OTHER]: 'Autre',
+} as const;
+
+export const LeadNationalities: { [K in CandidateNationality]: string } = {
+  [CandidateNationalities.FR]: 'Française',
+  [CandidateNationalities.EU]: 'Union Européenne',
+  [CandidateNationalities.NOT_EU]: 'Hors Union Européenne',
+  [CandidateNationalities.STATELESS]: 'Apatride',
+} as const;
+
+export const LeadAdministrativeSituations: {
+  [K in CandidateAdministrativeSituation]: string;
+} = {
+  [CandidateAdministrativeSituations.ID_CARD_FR]:
+    "Carte nationale d'identité Française",
+  [CandidateAdministrativeSituations.PASSPORT]: 'Passeport',
+  [CandidateAdministrativeSituations.ASYLUM]: "Demande d'asile",
+  [CandidateAdministrativeSituations.ASYLUM_DISMISSED]:
+    "Débouté de droit d'asile",
+  [CandidateAdministrativeSituations.RESIDENT_CARD]: 'Carte de résident',
+  [CandidateAdministrativeSituations.RESIDENCE_PERMIT]: 'Titre de séjour',
+  [CandidateAdministrativeSituations.RESIDENCE_PERMIT_RECEIPT]:
+    'Récépissé de titre de séjour',
+} as const;
+
+export const LeadAccomodations: {
+  [K in CandidateAccommodation]: string;
+} = {
+  [CandidateAccommodations.PERSONAL]: 'Logement personnel',
+  [CandidateAccommodations.SOMEONE]:
+    'Hébergé chez un tiers (famille, amis, etc, ...)',
+  [CandidateAccommodations.URGENCY]: "Hébergement d'urgence (CHU, hôtel...)",
+  [CandidateAccommodations.INSERTION]:
+    "Hébergement d'insertion (CHRS, FJT, Solibail, Résidence Sociale, Pension, ...)",
+  [CandidateAccommodations.STREET]:
+    'Rue ou abri de fortune (squat, voiture, camping...)',
+  [CandidateAccommodations.OTHER]: 'Autre',
+} as const;
+
+export const LeadYesNo: {
+  [K in CandidateYesNoValue]: string;
+} = {
+  [CandidateYesNo.YES]: 'Oui',
+  [CandidateYesNo.NO]: 'Non',
 } as const;
 
 export interface SalesforceBinome {
@@ -205,10 +278,10 @@ export interface SalesforceOffer {
 
 export interface CompanyProps {
   name: string;
-  businessLines: BusinessLine[];
+  businessLines?: BusinessLine[];
   address: string;
   department: Department;
-  mainCompanySfId: string;
+  mainCompanySfId?: string;
 }
 
 export interface SalesforceCompany {
@@ -248,7 +321,7 @@ export interface SalesforceContact {
   Source__c: 'Lead entrant';
 }
 
-export interface LeadProps {
+export interface CompanyLeadProps {
   firstName: string;
   lastName: string;
   company: string;
@@ -260,7 +333,7 @@ export interface LeadProps {
   heardAbout?: HeardAboutValue;
 }
 
-export interface SalesforceLead {
+export interface CompanySalesforceLead {
   Id?: string;
   LastName: string;
   FirstName: string;
@@ -273,5 +346,123 @@ export interface SalesforceLead {
   Antenne__c: string;
   Votre_demarche__c: string;
   Comment_vous_nous_avez_connu__c: string;
+  Source__c: 'Lead entrant';
+}
+
+export interface CandidateLeadProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  birthDate: string;
+  nationality: CandidateNationality;
+  administrativeSituation: CandidateAdministrativeSituation;
+  workingRight: CandidateYesNoValue;
+  accommodation: CandidateAccommodation;
+  domiciliation: CandidateYesNoValue;
+  socialSecurity: CandidateYesNoValue;
+  bankAccount: CandidateYesNoValue;
+  diagnostic: string;
+  comment: string;
+  zone: CompanyZone;
+  workerSfId: string;
+  associationSfId: string;
+}
+
+export interface CoachLeadProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  company: string;
+  position: string;
+  zone: CompanyZone;
+}
+
+export interface WorkerLeadProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  company: string;
+  address: string;
+  zone: CompanyZone;
+}
+
+export interface CandidateAndWorkerLeadProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  postalCode: string;
+  birthDate: string;
+  nationality: CandidateNationality;
+  administrativeSituation: CandidateAdministrativeSituation;
+  workingRight: CandidateYesNoValue;
+  accommodation: CandidateAccommodation;
+  domiciliation: CandidateYesNoValue;
+  socialSecurity: CandidateYesNoValue;
+  bankAccount: CandidateYesNoValue;
+  diagnostic: string;
+  comment: string;
+  workerFirstName: string;
+  workerLastName: string;
+  workerEmail: string;
+  workerPhone: string;
+  structure: string;
+  structureAddress: string;
+}
+
+export interface CandidateSalesforceLead {
+  Id?: string;
+  LastName: string;
+  FirstName: string;
+  Title: string;
+  Email: string;
+  Phone?: string;
+  BillingPostalCode: string;
+  Date_de_naissance__c: string;
+  Nationalite__c: string;
+  Situation_administrative__c: string;
+  Droit_de_travailler_en_France__c: string;
+  Situation_hebergement__c: string;
+  Domiciliation__c: string;
+  Securite_Sociale__c: string;
+  Compte_bancaire__c: string;
+  Diagnostic_social_par_le_prescripteur__c: string;
+  Commentaires__c: string;
+  Association_prescriptrice__c: string;
+  Company: 'Candidats LinkedOut';
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: LeadRecordType;
+  Antenne__c: string;
+  Source__c: 'Lead entrant';
+}
+
+export interface CoachSalesforceLead {
+  Id?: string;
+  LastName: string;
+  FirstName: string;
+  Company: string;
+  Title: string;
+  Email: string;
+  Phone?: string;
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: LeadRecordType;
+  Antenne__c: string;
+  Source__c: 'Lead entrant';
+}
+
+export interface WorkerSalesforceLead {
+  Id?: string;
+  LastName: string;
+  FirstName: string;
+  Email: string;
+  Phone?: string;
+  Company: string
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: LeadRecordType;
+  Antenne__c: string;
   Source__c: 'Lead entrant';
 }
