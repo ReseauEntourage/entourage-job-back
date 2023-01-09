@@ -1,3 +1,11 @@
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsPostalCode,
+  IsString,
+} from 'class-validator';
 import { AnyCantFix } from '../../utils/types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractValue } from 'src/common/contracts/contracts.types';
@@ -7,8 +15,13 @@ import {
   CandidateAccommodations,
   CandidateAdministrativeSituation,
   CandidateAdministrativeSituations,
-  CandidateNationalities,
-  CandidateNationality,
+  CandidateGender,
+  CandidateHelpWith,
+  CandidateHelpWithValue,
+  CandidateProfessionalSituation,
+  CandidateProfessionalSituations,
+  CandidateResource,
+  CandidateResources,
   CandidateYesNo,
   CandidateYesNoValue,
   CompanyApproach,
@@ -126,11 +139,35 @@ export const LeadHeardAbout: { [K in HeardAboutValue]: string } = {
   [HeardAbout.OTHER]: 'Autre',
 } as const;
 
-export const LeadNationalities: { [K in CandidateNationality]: string } = {
-  [CandidateNationalities.FR]: 'Française',
-  [CandidateNationalities.EU]: 'Union Européenne',
-  [CandidateNationalities.NOT_EU]: 'Hors Union Européenne',
-  [CandidateNationalities.STATELESS]: 'Apatride',
+export const LeadHelpWith: { [K in CandidateHelpWithValue]: string } = {
+  [CandidateHelpWith.WORK]: 'Emploi',
+  [CandidateHelpWith.SOCIAL]: 'Social',
+  [CandidateHelpWith.ACCOMMODATION]: 'Logement',
+  [CandidateHelpWith.HEALTH]: 'Santé',
+  [CandidateHelpWith.RIGHTS]: 'Accès aux droits',
+  [CandidateHelpWith.OTHER]: 'Autre',
+} as const;
+export const LeadResources: { [K in CandidateResource]: string } = {
+  [CandidateResources.SALARY]: 'Salaire',
+  [CandidateResources.UNEMPLOYMENT]: 'Allocation chômage',
+  [CandidateResources.INVALIDITY]: "Pension d'invalidité",
+  [CandidateResources.RSA]: 'RSA',
+  [CandidateResources.AAH]: 'AAH',
+  [CandidateResources.OTHER]: 'Autre',
+  [CandidateResources.NONE]: 'Aucune',
+} as const;
+
+export const LeadProfessionalSituation: {
+  [K in CandidateProfessionalSituation]: string;
+} = {
+  [CandidateProfessionalSituations.UNEMPLOYED]: 'Sans emploi',
+  [CandidateProfessionalSituations.CDI]: 'CDI',
+  [CandidateProfessionalSituations.CDD]: 'CDD',
+  [CandidateProfessionalSituations.CDDI]: "Contrat d'insertion",
+  [CandidateProfessionalSituations.INTE]: 'Intérim',
+  [CandidateProfessionalSituations.FORM]: 'En formation',
+  [CandidateProfessionalSituations.OTHER]: 'Autre',
+  [CandidateProfessionalSituations.STUDENT]: 'Etudiant.e',
 } as const;
 
 export const LeadAdministrativeSituations: {
@@ -236,6 +273,7 @@ export interface OfferProps {
   recruiterPhone: string;
   recruiterPosition: string;
   contactMail: string;
+  date: Date;
   companySfId?: string;
   contactSfId?: string;
 }
@@ -271,6 +309,7 @@ export interface SalesforceOffer {
   Telephone_du_recruteur__c: string;
   Fonction_du_recruteur__c: string;
   Mail_de_contact__c: string;
+  Date_de_cr_ation__c: Date;
   Prenom_Nom_du_recruteur__c: string;
   Contact_cree_existant__c: true;
   Antenne__c: string;
@@ -352,19 +391,27 @@ export interface CompanySalesforceLead {
 export interface CandidateLeadProps {
   firstName: string;
   lastName: string;
-  email: string;
-  phone: string;
+  helpWith: CandidateHelpWithValue[];
+  gender: CandidateGender[];
+  birthDate?: Date;
+  address?: Date;
   postalCode: string;
-  birthDate: string;
-  nationality: CandidateNationality;
-  administrativeSituation: CandidateAdministrativeSituation;
+  city?: Date;
+  phone: string;
+  email?: string;
+  registeredUnemploymentOffice: CandidateYesNoValue;
+  administrativeSituation?: CandidateAdministrativeSituation;
   workingRight: CandidateYesNoValue;
   accommodation: CandidateAccommodation;
+  professionalSituation: CandidateProfessionalSituation;
+  resources?: CandidateResource;
   domiciliation: CandidateYesNoValue;
   socialSecurity: CandidateYesNoValue;
+  handicapped?: CandidateYesNoValue;
   bankAccount: CandidateYesNoValue;
+  businessLines?: BusinessLine[];
+  description: string;
   diagnostic: string;
-  comment: string;
   zone: CompanyZone;
   workerSfId: string;
   associationSfId: string;
@@ -383,46 +430,60 @@ export interface CoachLeadProps {
 export interface WorkerLeadProps {
   firstName: string;
   lastName: string;
+  company: string;
+  position?: string;
   email: string;
   phone: string;
-  company: string;
-  address: string;
+  heardAbout: HeardAboutValue;
+
   zone: CompanyZone;
 }
 
 export interface CandidateAndWorkerLeadProps {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  postalCode: string;
-  birthDate: string;
-  nationality: CandidateNationality;
-  administrativeSituation: CandidateAdministrativeSituation;
-  workingRight: CandidateYesNoValue;
-  accommodation: CandidateAccommodation;
-  domiciliation: CandidateYesNoValue;
-  socialSecurity: CandidateYesNoValue;
-  bankAccount: CandidateYesNoValue;
-  diagnostic: string;
-  comment: string;
   workerFirstName: string;
   workerLastName: string;
+  structure: string;
+  workerPosition?: string;
   workerEmail: string;
   workerPhone: string;
-  structure: string;
-  structureAddress: string;
+  firstName: string;
+  lastName: string;
+  helpWith: CandidateHelpWithValue[];
+  gender: CandidateGender[];
+  birthDate?: Date;
+  address?: Date;
+  postalCode: string;
+  city?: Date;
+  phone: string;
+  email?: string;
+  registeredUnemploymentOffice: CandidateYesNoValue;
+  administrativeSituation?: CandidateAdministrativeSituation;
+  workingRight: CandidateYesNoValue;
+  accommodation: CandidateAccommodation;
+  professionalSituation: CandidateProfessionalSituation;
+  resources?: CandidateResource;
+  domiciliation: CandidateYesNoValue;
+  socialSecurity: CandidateYesNoValue;
+  handicapped?: CandidateYesNoValue;
+  bankAccount: CandidateYesNoValue;
+  businessLines?: BusinessLine[];
+  description: string;
+  heardAbout: HeardAboutValue;
+  diagnostic: string;
+  comment?: string;
+  stayInformed: boolean;
+  contactWithCoach: boolean;
 }
 
 export interface CandidateSalesforceLead {
   Id?: string;
   LastName: string;
   FirstName: string;
-  Title: string;
   Email: string;
   Phone?: string;
+  Title: string;
   BillingPostalCode: string;
-  Date_de_naissance__c: string;
+  Date_de_naissance__c: Date;
   Nationalite__c: string;
   Situation_administrative__c: string;
   Droit_de_travailler_en_France__c: string;
@@ -460,7 +521,7 @@ export interface WorkerSalesforceLead {
   FirstName: string;
   Email: string;
   Phone?: string;
-  Company: string
+  Company: string;
   Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;

@@ -6,8 +6,6 @@ import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CandidateAndWorkerLeadProps,
-  CandidateLeadProps,
-  CoachLeadProps,
   CompanyLeadProps,
   CompanyProps,
   ContactProps,
@@ -30,19 +28,16 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  WorkerLeadProps,
 } from './salesforce.types';
 
 import {
   executeBulkAction,
-  formatApproach,
   formatBusinessLines,
   formatCompanyName,
   formatDepartment,
-  formatHeardAbout,
-  formatRegions,
   getDepartmentFromPostalCode,
   mapProcessFromOpportunityUser,
+  mapSalesforceLeadFields,
   mapSalesforceOfferFields,
   mapSalesforceProcessFields,
   parseAddress,
@@ -452,109 +447,11 @@ export class SalesforceService {
     });
   }
 
-  mapSalesforceLeadFields<T extends LeadRecordType>(
-    leadProps: LeadProp<T>,
-    recordType: T
-  ): SalesforceLead<T> {
-    const { firstName, lastName, email, phone, zone } = leadProps;
-
-    const commonFields = {
-      LastName:
-        lastName?.length > 80
-          ? lastName.substring(0, 80)
-          : lastName || 'Inconnu',
-      FirstName: firstName,
-      Email: email
-        ?.replace(/\+/g, '.')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, ''),
-      Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-      Reseaux__c: 'LinkedOut',
-      RecordTypeId: recordType,
-      Antenne__c: formatRegions(zone),
-      Source__c: 'Lead entrant',
-    } as Pick<
-      SalesforceLead<T>,
-      | 'LastName'
-      | 'FirstName'
-      | 'Email'
-      | 'Phone'
-      | 'Reseaux__c'
-      | 'RecordTypeId'
-      | 'Antenne__c'
-      | 'Source__c'
-    >;
-
-    if (recordType === LeadsRecordTypesIds.COMPANY) {
-      const { company, position, approach, heardAbout } =
-        leadProps as CompanyLeadProps;
-
-      return {
-        ...commonFields,
-        Company: company,
-        Title: position,
-        Votre_demarche__c: formatApproach(approach),
-        Comment_vous_nous_avez_connu__c: formatHeardAbout(heardAbout),
-      };
-    }
-
-    if (recordType === LeadsRecordTypesIds.ASSOCIATION) {
-      const { company } = leadProps as WorkerLeadProps;
-
-      return {
-        ...commonFields,
-        Company: company,
-      };
-    }
-
-    if (recordType === LeadsRecordTypesIds.CANDIDATE) {
-      const {
-        postalCode,
-        birthDate,
-        nationality,
-        administrativeSituation,
-        workingRight,
-        accommodation,
-        domiciliation,
-        socialSecurity,
-        bankAccount,
-        diagnostic,
-        comment,
-      } = leadProps as CandidateLeadProps;
-
-      return {
-        ...commonFields,
-        BillingPostalCode: postalCode,
-        Date_de_naissance__c: birthDate,
-        Nationalite__c: nationality,
-        Situation_administrative__c: administrativeSituation,
-        Droit_de_travailler_en_France__c: workingRight,
-        Situation_hebergement__c: accommodation,
-        Domiciliation__c: domiciliation,
-        Securite_Sociale__c: socialSecurity,
-        Compte_bancaire__c: bankAccount,
-        Diagnostic_social_par_le_prescripteur__c: diagnostic,
-        Commentaires__c: comment,
-        Company: 'Candidats LinkedOut'
-      };
-    }
-
-    if (recordType === LeadsRecordTypesIds.COACH) {
-      const { company, position } = leadProps as CoachLeadProps;
-
-      return {
-        ...commonFields,
-        Company: company,
-        Title: position,
-      };
-    }
-  }
-
   async createLead<T extends LeadRecordType>(
     leadProps: LeadProp<T>,
     recordType: T
   ) {
-    const record = this.mapSalesforceLeadFields(leadProps, recordType);
+    const record = mapSalesforceLeadFields(leadProps, recordType);
 
     return this.createRecord<typeof ObjectNames.LEAD, T>(
       ObjectNames.LEAD,

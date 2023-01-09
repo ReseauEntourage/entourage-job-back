@@ -1,45 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsPostalCode, IsString, Length } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsPostalCode,
+  IsString,
+} from 'class-validator';
+import { BusinessLine } from 'src/common/businessLines/models';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
-  CandidateNationality,
+  CandidateGender,
+  CandidateHelpWithValue,
+  CandidateProfessionalSituation,
+  CandidateResource,
   CandidateYesNoValue,
+  HeardAboutValue,
 } from 'src/contacts/contacts.types';
 
 export class ContactCandidateFormDto {
-  @ApiProperty()
-  @IsString()
-  firstName: string;
-
-  @ApiProperty()
-  @IsString()
-  lastName: string;
-
-  @ApiProperty()
-  @IsString()
-  email: string;
-
-  @ApiProperty()
-  @IsString()
-  phone: string;
-
-  @ApiProperty()
-  @IsPostalCode('FR')
-  postalCode: string;
-
-  @ApiProperty()
-  @IsString()
-  birthDate: string;
-
-  @ApiProperty()
-  @IsString()
-  structure: string;
-
-  @ApiProperty()
-  @IsString()
-  structureAddress: string;
-
   @ApiProperty()
   @IsString()
   workerFirstName: string;
@@ -50,7 +29,12 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  workerPhone: string;
+  structure: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  workerPosition?: string;
 
   @ApiProperty()
   @IsString()
@@ -58,11 +42,58 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  nationality: CandidateNationality;
+  workerPhone: string;
 
   @ApiProperty()
   @IsString()
-  administrativeSituation: CandidateAdministrativeSituation;
+  firstName: string;
+
+  @ApiProperty()
+  @IsString()
+  lastName: string;
+
+  @ApiProperty()
+  @IsArray()
+  helpWith: CandidateHelpWithValue[];
+
+  @ApiProperty()
+  @IsString()
+  gender: CandidateGender[];
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  birthDate?: Date;
+
+  @ApiProperty()
+  @IsString()
+  address?: Date;
+
+  @ApiProperty()
+  @IsPostalCode('FR')
+  postalCode: string;
+
+  @ApiProperty()
+  @IsString()
+  city?: Date;
+
+  @ApiProperty()
+  @IsString()
+  phone: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty()
+  @IsString()
+  registeredUnemploymentOffice: CandidateYesNoValue;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  administrativeSituation?: CandidateAdministrativeSituation;
 
   @ApiProperty()
   @IsString()
@@ -74,6 +105,15 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
+  professionalSituation: CandidateProfessionalSituation;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  resources?: CandidateResource;
+
+  @ApiProperty()
+  @IsString()
   domiciliation: CandidateYesNoValue;
 
   @ApiProperty()
@@ -82,15 +122,37 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
+  handicapped?: CandidateYesNoValue;
+
+  @ApiProperty()
+  @IsString()
   bankAccount: CandidateYesNoValue;
 
   @ApiProperty()
-  @IsString()
-  @Length(1, 256)
-  diagnostic: string;
+  @IsArray()
+  @IsOptional()
+  businessLines?: BusinessLine[];
 
   @ApiProperty()
   @IsString()
+  description: string;
+
+  @ApiProperty()
+  @IsString()
+  heardAbout: HeardAboutValue;
+
+  @ApiProperty()
+  @IsString()
+  diagnostic: string;
+
+  @ApiProperty()
+  @IsBoolean()
   @IsOptional()
-  comment: string;
+  stayInformed: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  contactWithCoach: boolean;
 }

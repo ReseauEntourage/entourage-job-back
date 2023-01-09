@@ -17,6 +17,7 @@ import {
   QueueMocks,
   SalesforceMocks,
 } from 'tests/mocks.types';
+import { ContactCandidateFormFactory } from './contact-candidate-form.factory';
 import { ContactCompanyFormFactory } from './contact-company-form.factory';
 import { ContactUsFormFactory } from './contact-us-form.factory';
 
@@ -26,6 +27,7 @@ describe('Contacts', () => {
   let databaseHelper: DatabaseHelper;
   let contactUsFormFactory: ContactUsFormFactory;
   let contactCompanyFormFactory: ContactCompanyFormFactory;
+  let contactCandidateFormFactory: ContactCandidateFormFactory;
 
   const route = '/contact';
 
@@ -52,6 +54,10 @@ describe('Contacts', () => {
     contactCompanyFormFactory = moduleFixture.get<ContactCompanyFormFactory>(
       ContactCompanyFormFactory
     );
+    contactCandidateFormFactory =
+      moduleFixture.get<ContactCandidateFormFactory>(
+        ContactCandidateFormFactory
+      );
   });
 
   afterAll(async () => {
@@ -110,11 +116,10 @@ describe('Contacts', () => {
   describe('/company - Send contact form answers to salesforce', () => {
     it('Should return 201, if all content provided', async () => {
       const formAnswers = await contactCompanyFormFactory.create({});
-      const response: APIResponse<
-        ContactsController['sendMailContactCompanyForm']
-      > = await request(app.getHttpServer())
-        .post(`${route}/company`)
-        .send(formAnswers);
+      const response: APIResponse<ContactsController['sendCompanyForm']> =
+        await request(app.getHttpServer())
+          .post(`${route}/company`)
+          .send(formAnswers);
       expect(response.status).toBe(201);
     });
 
@@ -131,11 +136,10 @@ describe('Contacts', () => {
         approach: formAnswers.approach,
       };
 
-      const response: APIResponse<
-        ContactsController['sendMailContactCompanyForm']
-      > = await request(app.getHttpServer())
-        .post(`${route}/company`)
-        .send(shortData);
+      const response: APIResponse<ContactsController['sendCompanyForm']> =
+        await request(app.getHttpServer())
+          .post(`${route}/company`)
+          .send(shortData);
       expect(response.status).toBe(201);
     });
 
@@ -147,11 +151,70 @@ describe('Contacts', () => {
         lastName: formAnswers.lastName,
       };
 
-      const response: APIResponse<
-        ContactsController['sendMailContactCompanyForm']
-      > = await request(app.getHttpServer())
-        .post(`${route}/company`)
-        .send(shortData);
+      const response: APIResponse<ContactsController['sendCompanyForm']> =
+        await request(app.getHttpServer())
+          .post(`${route}/company`)
+          .send(shortData);
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('/candidate - Send candidate form answers to salesforce', () => {
+    it('Should return 201, if all content provided', async () => {
+      const formAnswers = await contactCandidateFormFactory.create({});
+      const response: APIResponse<ContactsController['sendCandidateForm']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidate`)
+          .send(formAnswers);
+      expect(response.status).toBe(201);
+    });
+
+    it('Should return 201, if optional fields not provided', async () => {
+      const formAnswers = await contactCandidateFormFactory.create({});
+
+      const shortData = {
+        firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
+        phone: formAnswers.phone,
+        email: formAnswers.email,
+        postalCode: formAnswers.postalCode,
+        birthDate: formAnswers.birthDate,
+        structure: formAnswers.structure,
+        structureAddress: formAnswers.structureAddress,
+        workerFirstName: formAnswers.workerFirstName,
+        workerLastName: formAnswers.workerLastName,
+        workerPhone: formAnswers.workerPhone,
+        workerEmail: formAnswers.workerEmail,
+        nationality: formAnswers.nationality,
+        administrativeSituation: formAnswers.administrativeSituation,
+        workingRight: formAnswers.workingRight,
+        accommodation: formAnswers.accommodation,
+        domiciliation: formAnswers.domiciliation,
+        socialSecurity: formAnswers.socialSecurity,
+        bankAccount: formAnswers.bankAccount,
+        diagnostic: formAnswers.diagnostic,
+        cgu: formAnswers.cgu,
+      };
+
+      const response: APIResponse<ContactsController['sendCandidateForm']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidate`)
+          .send(shortData);
+      expect(response.status).toBe(201);
+    });
+
+    it('Should return 400, if missing mandatory fields', async () => {
+      const formAnswers = await contactCandidateFormFactory.create({});
+
+      const shortData = {
+        firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
+      };
+
+      const response: APIResponse<ContactsController['sendCandidateForm']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidate`)
+          .send(shortData);
       expect(response.status).toBe(400);
     });
   });
