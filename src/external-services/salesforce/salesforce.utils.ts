@@ -1,18 +1,24 @@
 import { Job, RecordResult } from 'jsforce';
 import * as _ from 'lodash';
-import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
+import {
+  BusinessLineFilters,
+  BusinessLineValue,
+} from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
-  CandidateNationality,
+  CandidateGender,
+  CandidateHelpWithValue,
+  CandidateProfessionalSituation,
+  CandidateResource, CandidateYesNo,
   CandidateYesNoValue,
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,
-} from 'src/contacts/contacts.types';
+} from 'src/contacts/contacts.types'
 import { OpportunityUser } from 'src/opportunities/models';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
@@ -26,10 +32,14 @@ import {
   LeadAccomodations,
   LeadAdministrativeSituations,
   LeadApproaches,
+  LeadBusinessLines,
+  LeadGender,
   LeadHeardAbout,
-  LeadNationalities,
+  LeadHelpWith,
+  LeadProfessionalSituation,
   LeadProp,
   LeadRecordType,
+  LeadResources,
   LeadsRecordTypesIds,
   LeadYesNo,
   ObjectName,
@@ -64,10 +74,17 @@ export function formatRegions(region: CompanyZone) {
 }
 
 export function formatSalesforceValue<T extends string>(
-  value: T,
+  value: T | T[],
   constants: { [K in T]: string }
 ) {
   if (value) {
+    if (Array.isArray(value)) {
+      return value
+        .map((val) => {
+          return constants[val].toString();
+        })
+        .join(';');
+    }
     return constants[value].toString();
   }
 }
@@ -262,7 +279,7 @@ export function mapSalesforceProcessFields({
 export function mapSalesforceLeadFields<T extends LeadRecordType>(
   leadProps: LeadProp<T>,
   recordType: T
-): SalesforceLead<T> {
+) {
   const { firstName, lastName, email, phone, zone } = leadProps;
 
   const commonFields = {
@@ -310,48 +327,80 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
   }
 
   if (recordType === LeadsRecordTypesIds.ASSOCIATION) {
-    const { company } = leadProps as WorkerLeadProps;
+    const { company, heardAbout, contactWithCoach, position } =
+      leadProps as WorkerLeadProps;
 
     return {
       ...commonFields,
       Company: company,
+      Title: position,
+      Comment_vous_nous_avez_connu__c: formatSalesforceValue<HeardAboutValue>(
+        heardAbout,
+        LeadHeardAbout
+      ),
+      TS_Mettre_en_relation_Coach__c: contactWithCoach,
     } as SalesforceLead<T>;
   }
 
   if (recordType === LeadsRecordTypesIds.CANDIDATE) {
     const {
-      postalCode,
+      helpWith,
+      gender,
       birthDate,
-      nationality,
+      address,
+      registeredUnemploymentOffice,
       administrativeSituation,
       workingRight,
       accommodation,
+      professionalSituation,
+      resources,
       domiciliation,
       socialSecurity,
+      handicapped,
       bankAccount,
+      businessLines,
+      description,
       diagnostic,
-      comment,
+      workerSfIdAsProspect,
+      workerSfIdAsContact,
       associationSfId,
     } = leadProps as CandidateLeadProps;
 
+    const parsedAddress = parseAddress(address);
+
     return {
       ...commonFields,
-      BillingPostalCode: postalCode,
+      Street: parsedAddress?.street,
+      City:
+        parsedAddress.city?.length > 40
+          ? parsedAddress.city.substring(0, 40)
+          : parsedAddress.city,
+      PostalCode: parsedAddress?.postalCode,
+      Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
       Date_de_naissance__c: birthDate,
-      Nationalite__c: formatSalesforceValue<CandidateNationality>(
-        nationality,
-        LeadNationalities
+      Accompagnement_social__c: formatSalesforceValue<CandidateHelpWithValue>(
+        helpWith,
+        LeadHelpWith
       ),
       Situation_administrative__c:
         formatSalesforceValue<CandidateAdministrativeSituation>(
           administrativeSituation,
           LeadAdministrativeSituations
         ),
-      Droit_de_travailler_en_France__c:
-        formatSalesforceValue<CandidateYesNoValue>(workingRight, LeadYesNo),
+      Situation_Professionnelle__c:
+        formatSalesforceValue<CandidateProfessionalSituation>(
+          professionalSituation,
+          LeadProfessionalSituation
+        ),
       Situation_hebergement__c: formatSalesforceValue<CandidateAccommodation>(
         accommodation,
         LeadAccomodations
+      ),
+      Droit_de_travailler_en_France__c:
+        formatSalesforceValue<CandidateYesNoValue>(workingRight, LeadYesNo),
+      Inscrit_au_Pole_Emploi__c: formatSalesforceValue<CandidateYesNoValue>(
+        registeredUnemploymentOffice,
+        LeadYesNo
       ),
       Domiciliation__c: formatSalesforceValue<CandidateYesNoValue>(
         domiciliation,
@@ -365,8 +414,19 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         bankAccount,
         LeadYesNo
       ),
+      RQTH__c: handicapped === CandidateYesNo.YES,
+      Familles_de_m_tiers__c: formatSalesforceValue<BusinessLineValue>(
+        businessLines,
+        LeadBusinessLines
+      ),
       Diagnostic_social_par_le_prescripteur__c: diagnostic,
-      Commentaires__c: comment,
+      Message_For__c: description,
+      Type_de_ressources__c: formatSalesforceValue<CandidateResource>(
+        resources,
+        LeadResources
+      ),
+      TS_Prescripteur_Contact__c: workerSfIdAsContact,
+      Prospect__c: workerSfIdAsProspect,
       Association_prescriptrice__c: associationSfId,
       Company: 'Candidats LinkedOut',
     } as SalesforceLead<T>;

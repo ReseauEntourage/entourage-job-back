@@ -85,33 +85,6 @@ export const CandidateGenders = {
 export type CandidateGender =
   typeof CandidateGenders[keyof typeof CandidateGenders];
 
-export const CandidateResources = {
-  SALARY: 'salary',
-  UNEMPLOYMENT: 'unemployment',
-  AAH: 'aah',
-  RSA: 'rsa',
-  INVALIDITY: 'invalidity',
-  OTHER: 'other',
-  NONE: 'none',
-} as const;
-
-export type CandidateResource =
-  typeof CandidateResources[keyof typeof CandidateResources];
-
-export const CandidateProfessionalSituations = {
-  UNEMPLOYED: 'unemployed',
-  CDI: 'cdi',
-  CDD: 'cdd',
-  FORM: 'form',
-  INTE: 'inte',
-  STUDENT: 'student',
-  CDDI: 'cddi',
-  OTHER: 'other',
-} as const;
-
-export type CandidateProfessionalSituation =
-  typeof CandidateProfessionalSituations[keyof typeof CandidateProfessionalSituations];
-
 export const CandidateAdministrativeSituations = {
   ID_CARD_FR: 'id_card_fr',
   PASSPORT: 'passport',
@@ -136,6 +109,33 @@ export const CandidateAccommodations = {
 
 export type CandidateAccommodation =
   typeof CandidateAccommodations[keyof typeof CandidateAccommodations];
+
+export const CandidateProfessionalSituations = {
+  UNEMPLOYED: 'unemployed',
+  CDI: 'cdi',
+  CDD: 'cdd',
+  FORM: 'form',
+  INTE: 'inte',
+  STUDENT: 'student',
+  CDDI: 'cddi',
+  OTHER: 'other',
+} as const;
+
+export type CandidateProfessionalSituation =
+  typeof CandidateProfessionalSituations[keyof typeof CandidateProfessionalSituations];
+
+export const CandidateResources = {
+  SALARY: 'salary',
+  UNEMPLOYMENT: 'unemployment',
+  AAH: 'aah',
+  RSA: 'rsa',
+  INVALIDITY: 'invalidity',
+  OTHER: 'other',
+  NONE: 'none',
+} as const;
+
+export type CandidateResource =
+  typeof CandidateResources[keyof typeof CandidateResources];
 
 export const CandidateYesNo = {
   YES: 'yes',

@@ -6,7 +6,7 @@ import {
   IsPostalCode,
   IsString,
 } from 'class-validator';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
@@ -17,6 +17,7 @@ import {
   CandidateYesNoValue,
   HeardAboutValue,
 } from 'src/contacts/contacts.types';
+import { BusinessLine } from "src/common/businessLines/models"
 
 export class ContactCandidateFormDto {
   @ApiProperty()
@@ -58,7 +59,7 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  gender: CandidateGender[];
+  gender: CandidateGender;
 
   @ApiProperty()
   @IsString()
@@ -67,7 +68,8 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  address?: Date;
+  @IsOptional()
+  address?: string;
 
   @ApiProperty()
   @IsPostalCode('FR')
@@ -75,7 +77,7 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  city?: Date;
+  city: string;
 
   @ApiProperty()
   @IsString()
@@ -132,7 +134,7 @@ export class ContactCandidateFormDto {
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  businessLines?: BusinessLine[];
+  businessLines?: BusinessLineValue[];
 
   @ApiProperty()
   @IsString()
@@ -144,15 +146,11 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  diagnostic: string;
+  @IsOptional()
+  diagnostic?: string;
 
   @ApiProperty()
   @IsBoolean()
   @IsOptional()
-  stayInformed: boolean;
-
-  @ApiProperty()
-  @IsBoolean()
-  @IsOptional()
-  contactWithCoach: boolean;
+  contactWithCoach?: boolean;
 }

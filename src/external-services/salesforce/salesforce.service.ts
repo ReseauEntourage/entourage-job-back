@@ -7,7 +7,7 @@ import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CandidateAndWorkerLeadProps,
   CompanyLeadProps,
-  CompanyProps,
+  AccountProps,
   ContactProps,
   ContactRecordType,
   ContactsRecordTypesIds,
@@ -21,13 +21,15 @@ import {
   OfferProps,
   ProcessProps,
   SalesforceBinome,
-  SalesforceCompany,
+  SalesforceAccount,
   SalesforceContact,
   SalesforceError,
   SalesforceLead,
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  AccountRecordType,
+  AccountRecordTypesIds,
 } from './salesforce.types';
 
 import {
@@ -288,21 +290,22 @@ export class SalesforceService {
     );
   }
 
-  async searchCompanyByName(search: string) {
+  async searchAccountByName(search: string, recordType: AccountRecordType) {
     const escapedSearch = search.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
     await this.refreshSalesforceInstance();
     if (escapedSearch.length === 1) {
-      const { records }: { records: Partial<SalesforceCompany>[] } =
+      const { records }: { records: Partial<SalesforceAccount>[] } =
         await this.salesforce.query(
           `SELECT Id
-           FROM ${ObjectNames.COMPANY}
-           WHERE Name LIKE '${escapedSearch}%' LIMIT 1`
+           FROM ${ObjectNames.ACCOUNT}
+           WHERE Name LIKE '${escapedSearch}%' 
+             AND RecordTypeId = '${recordType}' LIMIT 1`
         );
       return records[0]?.Id;
     }
 
     const { searchRecords } = await this.salesforce.search(
-      `FIND {${escapedSearch}} IN NAME FIELDS RETURNING ${ObjectNames.COMPANY}(Id) LIMIT 1`
+      `FIND {${escapedSearch}} IN NAME FIELDS RETURNING ${ObjectNames.ACCOUNT}(Id) LIMIT 1`
     );
 
     return searchRecords[0]?.Id;
@@ -391,17 +394,14 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async createCompany({
-    name,
-    businessLines,
-    address,
-    department,
-    mainCompanySfId,
-  }: CompanyProps) {
+  async createAccount(
+    { name, businessLines, address, department, mainAccountSfId }: AccountProps,
+    recordType: AccountRecordType
+  ) {
     const parsedAddress = parseAddress(address);
 
-    return this.createRecord(ObjectNames.COMPANY, {
-      Name: mainCompanySfId
+    return this.createRecord(ObjectNames.ACCOUNT, {
+      Name: mainAccountSfId
         ? formatCompanyName(name, address, department)
         : name || 'Inconnu',
       M_tiers_LinkedOut__c: formatBusinessLines(businessLines),
@@ -413,19 +413,23 @@ export class SalesforceService {
       BillingPostalCode: parsedAddress.postalCode,
       Reseaux__c: 'LinkedOut',
       Antenne__c: formatDepartment(department),
-      ParentId: mainCompanySfId,
+      RecordTypeId: recordType,
+      ParentId: mainAccountSfId,
     });
   }
 
-  async createContact({
-    firstName,
-    lastName,
-    email,
-    phone,
-    position,
-    department,
-    companySfId,
-  }: ContactProps) {
+  async createContact(
+    {
+      firstName,
+      lastName,
+      email,
+      phone,
+      position,
+      department,
+      companySfId,
+    }: ContactProps,
+    recordType: ContactRecordType
+  ) {
     return this.createRecord(ObjectNames.CONTACT, {
       LastName:
         lastName?.length > 80
@@ -441,7 +445,7 @@ export class SalesforceService {
       AccountId: companySfId,
       Casquettes_r_les__c: 'Contact Entreprise/Financeur',
       Reseaux__c: 'LinkedOut',
-      RecordTypeId: ContactsRecordTypesIds.COMPANY,
+      RecordTypeId: recordType,
       Antenne__c: formatDepartment(department),
       Source__c: 'Lead entrant',
     });
@@ -459,47 +463,51 @@ export class SalesforceService {
     );
   }
 
-  async findOrCreateCompany({
-    name,
-    address,
-    department,
-    businessLines,
-    mainCompanySfId,
-  }: CompanyProps) {
-    let companySfId = await this.searchCompanyByName(
-      formatCompanyName(name, address, department)
+  async findOrCreateAccount(
+    { name, address, department, businessLines, mainAccountSfId }: AccountProps,
+    recordType: AccountRecordType
+  ) {
+    let companySfId = await this.searchAccountByName(
+      formatCompanyName(name, address, department),
+      recordType
     );
 
     if (!companySfId) {
-      companySfId = await this.searchCompanyByName(name || 'Inconnu');
+      companySfId = await this.searchAccountByName(
+        name || 'Inconnu',
+        recordType
+      );
     }
     if (!companySfId) {
-      companySfId = (await this.createCompany({
-        name,
-        businessLines,
-        address,
-        department,
-        mainCompanySfId,
-      })) as string;
+      companySfId = (await this.createAccount(
+        {
+          name,
+          businessLines,
+          address,
+          department,
+          mainAccountSfId,
+        },
+        recordType
+      )) as string;
     }
     return companySfId;
   }
 
-  async findOrCreateContact({
-    contactMail,
-    email,
-    department,
-    mainCompanySfId,
-    companySfId,
-    firstName,
-    lastName,
-    phone,
-    position,
-  }: ContactProps & { contactMail: string; mainCompanySfId: string }) {
-    let contactSfId = await this.findContact(
-      contactMail || email,
-      ContactsRecordTypesIds.COMPANY
-    );
+  async findOrCreateContact(
+    {
+      contactMail,
+      email,
+      department,
+      mainCompanySfId,
+      companySfId,
+      firstName,
+      lastName,
+      phone,
+      position,
+    }: ContactProps & { contactMail: string; mainCompanySfId: string },
+    recordType: ContactRecordType
+  ) {
+    let contactSfId = await this.findContact(contactMail || email, recordType);
 
     if (!contactSfId) {
       contactSfId = (await this.createContact(
@@ -517,7 +525,8 @@ export class SalesforceService {
               position,
               department,
               companySfId: mainCompanySfId || companySfId,
-            }
+            },
+        recordType
       )) as string;
     }
     return contactSfId;
@@ -558,13 +567,16 @@ export class SalesforceService {
     );
 
     if (!companySfId) {
-      companySfId = await this.findOrCreateCompany({
-        name: company,
-        businessLines,
-        address,
-        department,
-        mainCompanySfId,
-      });
+      companySfId = await this.findOrCreateAccount(
+        {
+          name: company,
+          businessLines,
+          address,
+          department,
+          mainAccountSfId: mainCompanySfId,
+        },
+        AccountRecordTypesIds.COMPANY
+      );
     }
 
     // eslint-disable-next-line no-console
@@ -573,17 +585,20 @@ export class SalesforceService {
     if (mainContactSfId) {
       contactSfId = mainContactSfId;
     } else if (!contactSfId) {
-      contactSfId = (await this.findOrCreateContact({
-        firstName: recruiterFirstName,
-        lastName: recruiterName,
-        email: recruiterMail,
-        position: recruiterPosition,
-        phone: recruiterPhone,
-        contactMail,
-        department,
-        companySfId,
-        mainCompanySfId,
-      })) as string;
+      contactSfId = (await this.findOrCreateContact(
+        {
+          firstName: recruiterFirstName,
+          lastName: recruiterName,
+          email: recruiterMail,
+          position: recruiterPosition,
+          phone: recruiterPhone,
+          contactMail,
+          department,
+          companySfId,
+          mainCompanySfId,
+        },
+        ContactsRecordTypesIds.COMPANY
+      )) as string;
     }
 
     // eslint-disable-next-line no-console
@@ -620,35 +635,50 @@ export class SalesforceService {
   }
 
   async findOrCreateLeadFromCandidateForm({
-    firstName,
-    lastName,
-    email,
-    phone,
-    postalCode,
-    birthDate,
-    structure,
-    structureAddress,
     workerFirstName,
     workerLastName,
-    workerPhone,
+    structure,
+    workerPosition,
     workerEmail,
-    nationality,
+    workerPhone,
+    firstName,
+    lastName,
+    helpWith,
+    gender,
+    birthDate,
+    address,
+    postalCode,
+    city,
+    phone,
+    email,
+    registeredUnemploymentOffice,
     administrativeSituation,
     workingRight,
     accommodation,
+    professionalSituation,
+    resources,
     domiciliation,
     socialSecurity,
+    handicapped,
     bankAccount,
+    businessLines,
+    description,
+    heardAbout,
     diagnostic,
-    comment,
+    contactWithCoach,
   }: CandidateAndWorkerLeadProps) {
     const department = getDepartmentFromPostalCode(postalCode);
 
-    const associationSfId = await this.findOrCreateCompany({
-      name: structure,
-      address: structureAddress,
-      department: department,
-    });
+    const structureAddress = postalCode + ' ' + city;
+
+    const associationSfId = await this.findOrCreateAccount(
+      {
+        name: structure,
+        address: structureAddress,
+        department: department,
+      },
+      AccountRecordTypesIds.ASSOCIATION
+    );
 
     const zone = getZoneFromDepartment(department);
 
@@ -658,36 +688,52 @@ export class SalesforceService {
         lastName: workerLastName,
         phone: workerPhone,
         email: workerEmail,
-        address: structureAddress,
+        position: workerPosition,
         company: structure,
         zone: zone,
+        heardAbout,
+        contactWithCoach,
       },
       LeadsRecordTypesIds.ASSOCIATION
     )) as string;
 
-    return (await this.findOrCreateLead(
-      {
-        firstName,
-        lastName,
-        email,
-        phone,
-        birthDate,
-        nationality,
-        postalCode,
-        administrativeSituation,
-        workingRight,
-        accommodation,
-        domiciliation,
-        socialSecurity,
-        bankAccount,
-        diagnostic,
-        comment,
-        zone,
-        associationSfId,
-        workerSfId,
-      },
-      LeadsRecordTypesIds.CANDIDATE
-    )) as string;
+    const leadToCreate = {
+      firstName,
+      lastName,
+      helpWith,
+      gender,
+      birthDate,
+      address: address ? address : structureAddress,
+      phone,
+      email,
+      registeredUnemploymentOffice,
+      administrativeSituation,
+      workingRight,
+      accommodation,
+      professionalSituation,
+      resources,
+      domiciliation,
+      socialSecurity,
+      handicapped,
+      bankAccount,
+      businessLines,
+      description,
+      diagnostic,
+      zone,
+      associationSfId,
+    };
+
+    try {
+      return (await this.findOrCreateLead(
+        { ...leadToCreate, workerSfIdAsProspect: workerSfId },
+        LeadsRecordTypesIds.CANDIDATE
+      )) as string;
+    } catch (err) {
+      return (await this.findOrCreateLead(
+        { ...leadToCreate, workerSfIdAsContact: workerSfId },
+        LeadsRecordTypesIds.CANDIDATE
+      )) as string;
+    }
   }
 
   async getProcessToCreate(

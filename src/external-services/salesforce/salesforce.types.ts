@@ -1,12 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsArray,
-  IsBoolean,
-  IsOptional,
-  IsPostalCode,
-  IsString,
-} from 'class-validator';
-import { AnyCantFix } from '../../utils/types';
+  BusinessLineFilters,
+  BusinessLineValue,
+} from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractValue } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
@@ -16,6 +11,7 @@ import {
   CandidateAdministrativeSituation,
   CandidateAdministrativeSituations,
   CandidateGender,
+  CandidateGenders,
   CandidateHelpWith,
   CandidateHelpWithValue,
   CandidateProfessionalSituation,
@@ -35,6 +31,8 @@ import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
+import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
+import { AnyCantFix } from 'src/utils/types';
 
 export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
@@ -58,7 +56,7 @@ export interface SalesforceError {
 }
 
 export const ObjectNames = {
-  COMPANY: 'Account',
+  ACCOUNT: 'Account',
   LEAD: 'Lead',
   PROCESS: 'Processus_d_offres__c',
   OFFER: 'Offre_d_emploi__c',
@@ -69,7 +67,7 @@ export const ObjectNames = {
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
 
 type SalesforceObjects<K extends LeadRecordType> = {
-  [ObjectNames.COMPANY]: SalesforceCompany;
+  [ObjectNames.ACCOUNT]: SalesforceAccount;
   [ObjectNames.LEAD]: SalesforceLead<K>;
   [ObjectNames.PROCESS]: SalesforceProcess;
   [ObjectNames.OFFER]: SalesforceOffer;
@@ -101,6 +99,14 @@ export const LeadsRecordTypesIds = {
 
 export type LeadRecordType =
   typeof LeadsRecordTypesIds[keyof typeof LeadsRecordTypesIds];
+
+export const AccountRecordTypesIds = {
+  COMPANY: '0127Q000000TZ4YQAW',
+  ASSOCIATION: '0127Q000000TZ4sQAG',
+} as const;
+
+export type AccountRecordType =
+  typeof AccountRecordTypesIds[keyof typeof AccountRecordTypesIds];
 
 type LeadsProps = {
   [LeadsRecordTypesIds.CANDIDATE]: CandidateLeadProps;
@@ -199,11 +205,41 @@ export const LeadAccomodations: {
   [CandidateAccommodations.OTHER]: 'Autre',
 } as const;
 
+export const LeadGender: {
+  [K in CandidateGender]: string;
+} = {
+  [CandidateGenders.MALE]: 'Homme',
+  [CandidateGenders.FEMALE]: 'Femme',
+} as const;
+
 export const LeadYesNo: {
   [K in CandidateYesNoValue]: string;
 } = {
   [CandidateYesNo.YES]: 'Oui',
   [CandidateYesNo.NO]: 'Non',
+} as const;
+
+export const LeadBusinessLines: {
+  [K in BusinessLineValue]: string;
+} = {
+  la: findConstantFromValue('la', BusinessLineFilters).label,
+  aa: findConstantFromValue('aa', BusinessLineFilters).label,
+  bat: findConstantFromValue('bat', BusinessLineFilters).label,
+  rh: findConstantFromValue('rh', BusinessLineFilters).label,
+  cd: findConstantFromValue('cd', BusinessLineFilters).label,
+  asp: findConstantFromValue('asp', BusinessLineFilters).label,
+  pr: findConstantFromValue('pr', BusinessLineFilters).label,
+  mi: findConstantFromValue('mi', BusinessLineFilters).label,
+  art: findConstantFromValue('art', BusinessLineFilters).label,
+  tra: findConstantFromValue('tra', BusinessLineFilters).label,
+  id: findConstantFromValue('id', BusinessLineFilters).label,
+  sec: findConstantFromValue('sec', BusinessLineFilters).label,
+  cm: findConstantFromValue('cm', BusinessLineFilters).label,
+  ca: findConstantFromValue('ca', BusinessLineFilters).label,
+  aev: findConstantFromValue('aev', BusinessLineFilters).label,
+  sa: findConstantFromValue('sa', BusinessLineFilters).label,
+  fjr: findConstantFromValue('fjr', BusinessLineFilters).label,
+  sm: findConstantFromValue('sm', BusinessLineFilters).label,
 } as const;
 
 export interface SalesforceBinome {
@@ -315,21 +351,22 @@ export interface SalesforceOffer {
   Antenne__c: string;
 }
 
-export interface CompanyProps {
+export interface AccountProps {
   name: string;
   businessLines?: BusinessLine[];
   address: string;
   department: Department;
-  mainCompanySfId?: string;
+  mainAccountSfId?: string;
 }
 
-export interface SalesforceCompany {
+export interface SalesforceAccount {
   Id?: string;
   Name: string;
   M_tiers_LinkedOut__c: string;
   BillingStreet: string;
   BillingCity: string;
   BillingPostalCode: string;
+  RecordTypeId: AccountRecordType;
   Reseaux__c: 'LinkedOut';
   Antenne__c: string;
   ParentId: string;
@@ -392,11 +429,11 @@ export interface CandidateLeadProps {
   firstName: string;
   lastName: string;
   helpWith: CandidateHelpWithValue[];
-  gender: CandidateGender[];
+  gender: CandidateGender;
   birthDate?: Date;
-  address?: Date;
-  postalCode: string;
-  city?: Date;
+  address?: string;
+  postalCode?: string;
+  city?: string;
   phone: string;
   email?: string;
   registeredUnemploymentOffice: CandidateYesNoValue;
@@ -409,11 +446,12 @@ export interface CandidateLeadProps {
   socialSecurity: CandidateYesNoValue;
   handicapped?: CandidateYesNoValue;
   bankAccount: CandidateYesNoValue;
-  businessLines?: BusinessLine[];
+  businessLines?: BusinessLineValue[];
   description: string;
-  diagnostic: string;
+  diagnostic?: string;
   zone: CompanyZone;
-  workerSfId: string;
+  workerSfIdAsProspect?: string;
+  workerSfIdAsContact?: string;
   associationSfId: string;
 }
 
@@ -435,7 +473,7 @@ export interface WorkerLeadProps {
   email: string;
   phone: string;
   heardAbout: HeardAboutValue;
-
+  contactWithCoach: boolean;
   zone: CompanyZone;
 }
 
@@ -449,11 +487,11 @@ export interface CandidateAndWorkerLeadProps {
   firstName: string;
   lastName: string;
   helpWith: CandidateHelpWithValue[];
-  gender: CandidateGender[];
+  gender: CandidateGender;
   birthDate?: Date;
-  address?: Date;
+  address?: string;
   postalCode: string;
-  city?: Date;
+  city?: string;
   phone: string;
   email?: string;
   registeredUnemploymentOffice: CandidateYesNoValue;
@@ -466,35 +504,59 @@ export interface CandidateAndWorkerLeadProps {
   socialSecurity: CandidateYesNoValue;
   handicapped?: CandidateYesNoValue;
   bankAccount: CandidateYesNoValue;
-  businessLines?: BusinessLine[];
+  businessLines?: BusinessLineValue[];
   description: string;
   heardAbout: HeardAboutValue;
-  diagnostic: string;
-  comment?: string;
-  stayInformed: boolean;
-  contactWithCoach: boolean;
+  diagnostic?: string;
+  contactWithCoach?: boolean;
 }
 
 export interface CandidateSalesforceLead {
   Id?: string;
   LastName: string;
   FirstName: string;
-  Email: string;
-  Phone?: string;
-  Title: string;
-  BillingPostalCode: string;
-  Date_de_naissance__c: Date;
-  Nationalite__c: string;
-  Situation_administrative__c: string;
+  Email?: string;
+  Phone: string;
+  Genre__c: string;
+  Date_de_naissance__c?: Date;
+  Situation_administrative__c?: string;
   Droit_de_travailler_en_France__c: string;
   Situation_hebergement__c: string;
   Domiciliation__c: string;
   Securite_Sociale__c: string;
   Compte_bancaire__c: string;
-  Diagnostic_social_par_le_prescripteur__c: string;
-  Commentaires__c: string;
+  Diagnostic_social_par_le_prescripteur__c?: string;
   Association_prescriptrice__c: string;
+  TS_Prescripteur_Contact__c: string;
+  Prospect__c: string;
+  PostalCode?: string;
+  Street?: string;
+  City?: string;
+  Accompagnement_social__c: string;
+  Situation_Professionnelle__c: string;
+  Inscrit_au_Pole_Emploi__c: string;
+  RQTH__c?: boolean;
+  Familles_de_m_tiers__c?: string;
+  Message_For__c: string;
+  Type_de_ressources__c?: string;
   Company: 'Candidats LinkedOut';
+  Reseaux__c: 'LinkedOut';
+  RecordTypeId: LeadRecordType;
+  Antenne__c: string;
+  Source__c: 'Lead entrant';
+}
+
+export interface WorkerSalesforceLead {
+  Id?: string;
+  LastName: string;
+  FirstName: string;
+  Title?: string;
+  Email: string;
+  Phone: string;
+  Company: string;
+  Comment_vous_nous_avez_connu__c: string;
+
+  TS_Mettre_en_relation_Coach__c: boolean;
   Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
@@ -509,19 +571,6 @@ export interface CoachSalesforceLead {
   Title: string;
   Email: string;
   Phone?: string;
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: LeadRecordType;
-  Antenne__c: string;
-  Source__c: 'Lead entrant';
-}
-
-export interface WorkerSalesforceLead {
-  Id?: string;
-  LastName: string;
-  FirstName: string;
-  Email: string;
-  Phone?: string;
-  Company: string;
   Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
