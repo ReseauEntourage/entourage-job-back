@@ -37,6 +37,7 @@ import { AnyCantFix } from 'src/utils/types';
 export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
   CANNOT_UPDATE_CONVERTED_LEAD: 'CANNOT_UPDATE_CONVERTED_LEAD',
+  FIELD_INTEGRITY_EXCEPTION: 'FIELD_INTEGRITY_EXCEPTION',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
@@ -535,7 +536,7 @@ export interface CandidateSalesforceLead {
   Accompagnement_social__c: string;
   Situation_Professionnelle__c: string;
   Inscrit_au_Pole_Emploi__c: string;
-  RQTH__c?: boolean;
+  RQTH__c?: string;
   Familles_de_m_tiers__c?: string;
   Message_For__c: string;
   Type_de_ressources__c?: string;

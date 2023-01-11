@@ -5,9 +5,11 @@ import { getZoneFromDepartment } from '../../utils/misc';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
+  AccountProps,
+  AccountRecordType,
+  AccountRecordTypesIds,
   CandidateAndWorkerLeadProps,
   CompanyLeadProps,
-  AccountProps,
   ContactProps,
   ContactRecordType,
   ContactsRecordTypesIds,
@@ -20,16 +22,14 @@ import {
   OfferAndProcessProps,
   OfferProps,
   ProcessProps,
-  SalesforceBinome,
   SalesforceAccount,
+  SalesforceBinome,
   SalesforceContact,
   SalesforceError,
   SalesforceLead,
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  AccountRecordType,
-  AccountRecordTypesIds,
 } from './salesforce.types';
 
 import {
@@ -58,8 +58,13 @@ const asyncTimeout = (delay: number) =>
 @Injectable()
 export class SalesforceService {
   private salesforce: Connection;
+  private isWorker = true;
 
   constructor(private opportunitiesService: OpportunitiesService) {}
+
+  setIsWorker(isWorker: boolean) {
+    this.isWorker = isWorker;
+  }
 
   async loginToSalesforce() {
     this.salesforce = new jsforce.Connection({
@@ -88,7 +93,7 @@ export class SalesforceService {
       );
       // eslint-disable-next-line no-console
       console.log('Salesforce auth retries', remainingRetries);
-      if (remainingRetries > 0) {
+      if (this.isWorker && remainingRetries > 0) {
         await asyncTimeout(RETRY_DELAY);
         await this.refreshSalesforceInstance(remainingRetries - 1);
       } else {
@@ -102,6 +107,7 @@ export class SalesforceService {
     params: SalesforceObject<T, K> | SalesforceObject<T, K>[]
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
+
 
     try {
       if (Array.isArray(params)) {
@@ -729,10 +735,17 @@ export class SalesforceService {
         LeadsRecordTypesIds.CANDIDATE
       )) as string;
     } catch (err) {
-      return (await this.findOrCreateLead(
-        { ...leadToCreate, workerSfIdAsContact: workerSfId },
-        LeadsRecordTypesIds.CANDIDATE
-      )) as string;
+      if (
+        (err as SalesforceError).errorCode ===
+        ErrorCodes.FIELD_INTEGRITY_EXCEPTION
+      ) {
+        return (await this.findOrCreateLead(
+          { ...leadToCreate, workerSfIdAsContact: workerSfId },
+          LeadsRecordTypesIds.CANDIDATE
+        )) as string;
+      }
+      console.error(err);
+      throw err;
     }
   }
 
@@ -890,6 +903,8 @@ export class SalesforceService {
     opportunityId: string | string[],
     isSameOpportunity: boolean
   ) {
+    this.setIsWorker(true);
+
     if (Array.isArray(opportunityId)) {
       const offersToCreate = await Promise.all(
         opportunityId.map((singleOpportunityId) => {
@@ -909,12 +924,14 @@ export class SalesforceService {
   }
 
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {
+    this.setIsWorker(false);
     return this.findOrCreateLeadFromCompanyForm(lead);
   }
 
   async createOrUpdateCandidateSalesforceLead(
     lead: CandidateAndWorkerLeadProps
   ) {
+    this.setIsWorker(false);
     return this.findOrCreateLeadFromCandidateForm(lead);
   }
 }

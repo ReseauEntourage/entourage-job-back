@@ -414,7 +414,10 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         bankAccount,
         LeadYesNo
       ),
-      RQTH__c: handicapped === CandidateYesNo.YES,
+      RQTH__c: formatSalesforceValue<CandidateYesNoValue>(
+        handicapped,
+        LeadYesNo
+      ),
       Familles_de_m_tiers__c: formatSalesforceValue<BusinessLineValue>(
         businessLines,
         LeadBusinessLines
