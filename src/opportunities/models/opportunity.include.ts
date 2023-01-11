@@ -19,7 +19,7 @@ export const OpportunityCandidateInclude: Includeable[] = [
       {
         model: UserCandidat,
         as: 'candidat',
-        attributes: ['employed', 'hidden', 'note', 'url'],
+        attributes: ['employed', 'hidden', 'url'],
         include: [
           {
             model: User,
