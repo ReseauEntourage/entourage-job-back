@@ -12,11 +12,11 @@ import {
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
-  ContactsRecordTypesIds,
+  ContactRecordTypesIds,
   ErrorCodes,
   LeadProp,
   LeadRecordType,
-  LeadsRecordTypesIds,
+  LeadRecordTypesIds,
   ObjectName,
   ObjectNames,
   OfferAndProcessProps,
@@ -77,7 +77,7 @@ export class SalesforceService {
       },
       maxRequest: 10000,
     });
-    return await this.salesforce.login(
+    return this.salesforce.login(
       process.env.SALESFORCE_USERNAME,
       process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN
     );
@@ -108,10 +108,9 @@ export class SalesforceService {
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
 
-
     try {
       if (Array.isArray(params)) {
-        const job = this.salesforce.bulk.createJob(name, 'create');
+        const job = this.salesforce.bulk.createJob(name, 'insert');
 
         const results = await executeBulkAction<T>(params, job);
 
@@ -129,7 +128,7 @@ export class SalesforceService {
 
         return resultsIds;
       } else {
-        const result = await this.salesforce.sobject(name).create(params);
+        const result = await this.salesforce.sobject(name).insert(params);
         if (!result.success) {
           throw (result as ErrorResult).errors;
         }
@@ -147,9 +146,9 @@ export class SalesforceService {
     }
   }
 
-  async updateRecord<T extends ObjectName>(
+  async updateRecord<T extends ObjectName, K extends LeadRecordType>(
     name: T,
-    params: SalesforceObject<T> | SalesforceObject<T>[]
+    params: SalesforceObject<T, K> | SalesforceObject<T, K>[]
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
 
@@ -304,7 +303,7 @@ export class SalesforceService {
         await this.salesforce.query(
           `SELECT Id
            FROM ${ObjectNames.ACCOUNT}
-           WHERE Name LIKE '${escapedSearch}%' 
+           WHERE Name LIKE '${escapedSearch}%'
              AND RecordTypeId = '${recordType}' LIMIT 1`
         );
       return records[0]?.Id;
@@ -320,7 +319,7 @@ export class SalesforceService {
   async findBinomeByCandidateEmail(email: string) {
     const candidateSfId = await this.findContact(
       email,
-      ContactsRecordTypesIds.CANDIDATE
+      ContactRecordTypesIds.CANDIDATE
     );
     if (!candidateSfId) {
       return null;
@@ -457,6 +456,19 @@ export class SalesforceService {
     });
   }
 
+  async updateLead<T extends LeadRecordType>(
+    leadSfId: string,
+    leadProps: LeadProp<T>,
+    recordType: T
+  ) {
+    const record = mapSalesforceLeadFields(leadProps, recordType);
+
+    return this.updateRecord<typeof ObjectNames.LEAD, T>(ObjectNames.LEAD, {
+      Id: leadSfId,
+      ...record,
+    });
+  }
+
   async createLead<T extends LeadRecordType>(
     leadProps: LeadProp<T>,
     recordType: T
@@ -545,7 +557,23 @@ export class SalesforceService {
     const leadSfId = await this.findLead(lead.email, recordType);
 
     if (!leadSfId) {
-      return (await this.createLead(lead, recordType)) as string;
+      // Hack : update Lead after creation to set right RecordTypeId because RecordTypeId isn't taken into account when using create
+      const leadSfIdToUpdate = (await this.createLead(
+        lead,
+        recordType
+      )) as string;
+
+      try {
+        return (await this.updateLead(
+          leadSfIdToUpdate,
+          lead,
+          recordType
+        )) as string;
+      } catch (err) {
+        if ((err as SalesforceError).errorCode === ErrorCodes.NOT_FOUND) {
+          return leadSfIdToUpdate;
+        }
+      }
     }
     return leadSfId;
   }
@@ -603,7 +631,7 @@ export class SalesforceService {
           companySfId,
           mainCompanySfId,
         },
-        ContactsRecordTypesIds.COMPANY
+        ContactRecordTypesIds.COMPANY
       )) as string;
     }
 
@@ -636,7 +664,7 @@ export class SalesforceService {
         approach,
         heardAbout,
       },
-      LeadsRecordTypesIds.COMPANY
+      LeadRecordTypesIds.COMPANY
     )) as string;
   }
 
@@ -700,7 +728,7 @@ export class SalesforceService {
         heardAbout,
         contactWithCoach,
       },
-      LeadsRecordTypesIds.ASSOCIATION
+      LeadRecordTypesIds.ASSOCIATION
     )) as string;
 
     const leadToCreate = {
@@ -732,7 +760,7 @@ export class SalesforceService {
     try {
       return (await this.findOrCreateLead(
         { ...leadToCreate, workerSfIdAsProspect: workerSfId },
-        LeadsRecordTypesIds.CANDIDATE
+        LeadRecordTypesIds.CANDIDATE
       )) as string;
     } catch (err) {
       if (
@@ -741,7 +769,7 @@ export class SalesforceService {
       ) {
         return (await this.findOrCreateLead(
           { ...leadToCreate, workerSfIdAsContact: workerSfId },
-          LeadsRecordTypesIds.CANDIDATE
+          LeadRecordTypesIds.CANDIDATE
         )) as string;
       }
       console.error(err);

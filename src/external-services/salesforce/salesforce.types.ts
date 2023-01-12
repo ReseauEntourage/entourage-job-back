@@ -38,6 +38,7 @@ export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
   CANNOT_UPDATE_CONVERTED_LEAD: 'CANNOT_UPDATE_CONVERTED_LEAD',
   FIELD_INTEGRITY_EXCEPTION: 'FIELD_INTEGRITY_EXCEPTION',
+  NOT_FOUND: 'NOT_FOUND',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
@@ -81,7 +82,7 @@ export type SalesforceObject<
   K extends LeadRecordType = AnyCantFix
 > = SalesforceObjects<K>[T];
 
-export const ContactsRecordTypesIds = {
+export const ContactRecordTypesIds = {
   COACH: '0127Q000000Ub9wQAC',
   CANDIDATE: '0127Q000000UbNVQA0',
   COMPANY: '0127Q000000UomWQAS',
@@ -89,9 +90,9 @@ export const ContactsRecordTypesIds = {
 } as const;
 
 export type ContactRecordType =
-  typeof ContactsRecordTypesIds[keyof typeof ContactsRecordTypesIds];
+  typeof ContactRecordTypesIds[keyof typeof ContactRecordTypesIds];
 
-export const LeadsRecordTypesIds = {
+export const LeadRecordTypesIds = {
   COACH: '0127Q000000UbQPQA0',
   CANDIDATE: '0127Q000000UbQKQA0',
   COMPANY: '0127Q000000ThTsQAK',
@@ -99,7 +100,7 @@ export const LeadsRecordTypesIds = {
 } as const;
 
 export type LeadRecordType =
-  typeof LeadsRecordTypesIds[keyof typeof LeadsRecordTypesIds];
+  typeof LeadRecordTypesIds[keyof typeof LeadRecordTypesIds];
 
 export const AccountRecordTypesIds = {
   COMPANY: '0127Q000000TZ4YQAW',
@@ -110,19 +111,19 @@ export type AccountRecordType =
   typeof AccountRecordTypesIds[keyof typeof AccountRecordTypesIds];
 
 type LeadsProps = {
-  [LeadsRecordTypesIds.CANDIDATE]: CandidateLeadProps;
-  [LeadsRecordTypesIds.COACH]: CoachLeadProps;
-  [LeadsRecordTypesIds.ASSOCIATION]: WorkerLeadProps;
-  [LeadsRecordTypesIds.COMPANY]: CompanyLeadProps;
+  [LeadRecordTypesIds.CANDIDATE]: CandidateLeadProps;
+  [LeadRecordTypesIds.COACH]: CoachLeadProps;
+  [LeadRecordTypesIds.ASSOCIATION]: WorkerLeadProps;
+  [LeadRecordTypesIds.COMPANY]: CompanyLeadProps;
 };
 
 export type LeadProp<T extends LeadRecordType> = LeadsProps[T];
 
 type SalesforceLeads = {
-  [LeadsRecordTypesIds.CANDIDATE]: CandidateSalesforceLead;
-  [LeadsRecordTypesIds.COACH]: CoachSalesforceLead;
-  [LeadsRecordTypesIds.ASSOCIATION]: WorkerSalesforceLead;
-  [LeadsRecordTypesIds.COMPANY]: CompanySalesforceLead;
+  [LeadRecordTypesIds.CANDIDATE]: CandidateSalesforceLead;
+  [LeadRecordTypesIds.COACH]: CoachSalesforceLead;
+  [LeadRecordTypesIds.ASSOCIATION]: WorkerSalesforceLead;
+  [LeadRecordTypesIds.COMPANY]: CompanySalesforceLead;
 };
 
 export type SalesforceLead<T extends LeadRecordType> = SalesforceLeads[T];
@@ -556,7 +557,6 @@ export interface WorkerSalesforceLead {
   Phone: string;
   Company: string;
   Comment_vous_nous_avez_connu__c: string;
-
   TS_Mettre_en_relation_Coach__c: boolean;
   Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;

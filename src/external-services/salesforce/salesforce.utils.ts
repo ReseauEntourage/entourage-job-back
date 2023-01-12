@@ -13,12 +13,12 @@ import {
   CandidateGender,
   CandidateHelpWithValue,
   CandidateProfessionalSituation,
-  CandidateResource, CandidateYesNo,
+  CandidateResource,
   CandidateYesNoValue,
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,
-} from 'src/contacts/contacts.types'
+} from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
@@ -39,8 +39,8 @@ import {
   LeadProfessionalSituation,
   LeadProp,
   LeadRecordType,
+  LeadRecordTypesIds,
   LeadResources,
-  LeadsRecordTypesIds,
   LeadYesNo,
   ObjectName,
   OfferProps,
@@ -307,7 +307,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     | 'Source__c'
   >;
 
-  if (recordType === LeadsRecordTypesIds.COMPANY) {
+  if (recordType === LeadRecordTypesIds.COMPANY) {
     const { company, position, approach, heardAbout } =
       leadProps as CompanyLeadProps;
 
@@ -326,7 +326,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     } as SalesforceLead<T>;
   }
 
-  if (recordType === LeadsRecordTypesIds.ASSOCIATION) {
+  if (recordType === LeadRecordTypesIds.ASSOCIATION) {
     const { company, heardAbout, contactWithCoach, position } =
       leadProps as WorkerLeadProps;
 
@@ -342,7 +342,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     } as SalesforceLead<T>;
   }
 
-  if (recordType === LeadsRecordTypesIds.CANDIDATE) {
+  if (recordType === LeadRecordTypesIds.CANDIDATE) {
     const {
       helpWith,
       gender,
@@ -435,7 +435,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     } as SalesforceLead<T>;
   }
 
-  if (recordType === LeadsRecordTypesIds.COACH) {
+  if (recordType === LeadRecordTypesIds.COACH) {
     const { company, position } = leadProps as CoachLeadProps;
 
     return {
