@@ -9,6 +9,7 @@ import {
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { MailsService } from 'src/mails/mails.service';
 import { AdminZone } from 'src/utils/types';
+import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
 
 @Injectable()
 export class ContactsService {
@@ -36,9 +37,19 @@ export class ContactsService {
     );
   }
 
-  async sendContactToSalesforce(contactCompanyFormDto: ContactCompanyFormDto) {
-    return this.salesforceService.createOrUpdateSalesforceLead(
+  async sendCompanyContactToSalesforce(
+    contactCompanyFormDto: ContactCompanyFormDto
+  ) {
+    return this.salesforceService.createOrUpdateCompanySalesforceLead(
       contactCompanyFormDto
+    );
+  }
+
+  async sendCandidateContactToSalesforce(
+    contactCandidateFormDto: ContactCandidateFormDto
+  ) {
+    return this.salesforceService.createOrUpdateCandidateSalesforceLead(
+      contactCandidateFormDto
     );
   }
 

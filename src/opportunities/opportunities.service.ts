@@ -713,18 +713,20 @@ export class OpportunitiesService {
             },
             transaction: t,
           });
-        await opportunitiesUsersToDestroy.map((oppUs) => {
-          this.opportunityUserStatusChangeModel.create(
-            {
-              oldStatus: oppUs.status,
-              newStatus: null,
-              OpportunityUserId: oppUs.id,
-              UserId: oppUs.UserId,
-              OpportunityId: opportunity.id,
-            },
-            { transaction: t }
-          );
-        });
+        await Promise.all(
+          opportunitiesUsersToDestroy.map((oppUs) => {
+            return this.opportunityUserStatusChangeModel.create(
+              {
+                oldStatus: oppUs.status,
+                newStatus: null,
+                OpportunityUserId: oppUs.id,
+                UserId: oppUs.UserId,
+                OpportunityId: opportunity.id,
+              },
+              { transaction: t }
+            );
+          })
+        );
         await this.opportunityUserModel.destroy({
           where: {
             OpportunityId: opportunity.id,

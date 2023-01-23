@@ -13,6 +13,8 @@ import {
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
 import { ContactsService } from './contacts.service';
+import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
+import { ContactCandidateFormPipe } from './dto/contact-candidate-form.pipe';
 
 // TODO change to /contacts
 @Controller('contact')
@@ -33,7 +35,7 @@ export class ContactsController {
 
   @Public()
   @Post('company')
-  async sendMailContactCompanyForm(
+  async sendCompanyForm(
     @Body(new ContactCompanyFormPipe())
     contactCompanyFormDto: ContactCompanyFormDto
   ) {
@@ -44,7 +46,27 @@ export class ContactsController {
       throw new BadRequestException();
     }
 
-    return this.contactsService.sendContactToSalesforce(contactCompanyFormDto);
+    return this.contactsService.sendCompanyContactToSalesforce(
+      contactCompanyFormDto
+    );
+  }
+
+  @Public()
+  @Post('candidate')
+  async sendCandidateForm(
+    @Body(new ContactCandidateFormPipe())
+    contactCandidateFormDto: ContactCandidateFormDto
+  ) {
+    if (
+      !isValidPhone(contactCandidateFormDto.phone) ||
+      !isValidPhone(contactCandidateFormDto.workerPhone)
+    ) {
+      throw new BadRequestException();
+    }
+
+    return this.contactsService.sendCandidateContactToSalesforce(
+      contactCandidateFormDto
+    );
   }
 
   @Public()
