@@ -604,7 +604,16 @@ export class OpportunitiesService {
     const t = await this.opportunityUserModel.sequelize.transaction();
     try {
       const opportunityUsers = await Promise.all(
-        uniqueCandidatesIds.map((candidateId) => {
+        uniqueCandidatesIds.map(async (candidateId) => {
+          await this.opportunityUserModel.restore({
+            where: {
+              OpportunityId: opportunity.id,
+              UserId: candidateId,
+            },
+            hooks: true,
+            transaction: t,
+          });
+
           return this.opportunityUserModel
             .findOrCreate({
               where: {
