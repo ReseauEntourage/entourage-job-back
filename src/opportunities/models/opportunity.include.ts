@@ -4,6 +4,7 @@ import { BusinessLine } from 'src/common/businessLines/models';
 import { User, UserCandidat } from 'src/users/models';
 import { FilterConstant } from 'src/utils/types';
 import { OpportunityUser } from './opportunity-user.model';
+
 export const OpportunityCandidateInclude: Includeable[] = [
   {
     model: User,
@@ -48,6 +49,7 @@ export const OpportunityCompleteWithoutBusinessLinesInclude: Includeable[] = [
       'archived',
       'note',
       'updatedAt',
+      'createdAt',
       'recommended',
     ],
     include: OpportunityCandidateInclude,
@@ -72,6 +74,7 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
         'archived',
         'note',
         'updatedAt',
+        'createdAt',
         'recommended',
       ],
       include: OpportunityCandidateInclude,

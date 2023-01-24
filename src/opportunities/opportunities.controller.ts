@@ -1,16 +1,16 @@
 import {
-  Controller,
-  Post,
-  Body,
   BadRequestException,
-  UseGuards,
+  Body,
+  Controller,
   ForbiddenException,
   Get,
-  Query,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
-  NotFoundException,
+  Post,
   Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from 'src/auth/auth.types';
@@ -29,6 +29,8 @@ import { AdminZone, FilterParams } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
 import { CreateExternalOpportunityPipe } from './dto/create-external-opportunity.pipe';
+import { CreateOpportunityUserEventDto } from './dto/create-opportunity-user-event.dto';
+import { CreateOpportunityUserEventPipe } from './dto/create-opportunity-user-event.pipe';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { CreateOpportunityPipe } from './dto/create-opportunity.pipe';
 import { UpdateExternalOpportunityRestrictedDto } from './dto/update-external-opportunity-restricted.dto';
@@ -221,7 +223,7 @@ export class OpportunitiesController {
       userId
     );
 
-    await this.opportunityUsersService.create({
+    await this.opportunityUsersService.createOrRestore({
       OpportunityId: createdOpportunity.id,
       UserId: candidateId,
       status:
@@ -257,58 +259,81 @@ export class OpportunitiesController {
     @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
     @UserPayload('role') role: UserRole
   ) {
-    const opportunity = await this.opportunitiesService.findOneAsCandidate(
-      opportunityId,
-      candidateId
-    );
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
 
-    if (opportunity && opportunity.opportunityUsers) {
-      if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
-        throw new ForbiddenException();
-      }
-
-      const updatedOpportunityUser =
-        await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
-          candidateId,
-          opportunityId,
-          {
-            seen: true,
-          }
-        );
-
-      await this.opportunitiesService.updateExternalDBOpportunity(
-        updatedOpportunityUser.OpportunityId
-      );
-
-      return updatedOpportunityUser.toJSON();
-    }
-
-    const existingOpportunity = await this.opportunitiesService.findOne(
-      opportunityId
-    );
-
-    if (!existingOpportunity) {
+    if (!opportunity) {
       throw new NotFoundException();
     }
 
     if (
-      (!existingOpportunity.isPublic || !existingOpportunity.isValidated) &&
+      (!opportunity.isPublic || !opportunity.isValidated) &&
       role !== UserRoles.ADMIN
     ) {
       throw new ForbiddenException();
     }
 
-    const updatedOpportunityUser = await this.opportunityUsersService.create({
-      OpportunityId: opportunityId,
-      UserId: candidateId,
-      seen: true,
-    });
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    const createdOrUpdatedOpportunityUser = opportunityUser
+      ? await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+          candidateId,
+          opportunityId,
+          {
+            seen: true,
+          }
+        )
+      : await this.opportunityUsersService.createOrRestore({
+          OpportunityId: opportunityId,
+          UserId: candidateId,
+          seen: true,
+        });
 
     await this.opportunitiesService.updateExternalDBOpportunity(
-      updatedOpportunityUser.OpportunityId
+      createdOrUpdatedOpportunityUser.OpportunityId
     );
 
-    return updatedOpportunityUser.toJSON();
+    return createdOrUpdatedOpportunityUser.toJSON();
+  }
+
+  @LinkedUser('body.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Post('event')
+  async createOpportunityUserEvent(
+    @Body(new CreateOpportunityUserEventPipe())
+    createOpportunityUserEventDto: CreateOpportunityUserEventDto,
+    @UserPayload('role') role: UserRole
+  ) {
+    const { opportunityId, candidateId, ...restCreateOpportunityUserEventDto } =
+      createOpportunityUserEventDto;
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    if (!opportunityUser) {
+      throw new NotFoundException();
+    }
+
+    if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    return await this.opportunityUsersService.createOpportunityUserEvent(
+      candidateId,
+      opportunityId,
+      restCreateOpportunityUserEventDto
+    );
   }
 
   @Roles(UserRoles.ADMIN)
@@ -371,11 +396,7 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const counts = await this.opportunityUsersService.countOffersByStatus(
-      candidateId
-    );
-
-    return counts;
+    return await this.opportunityUsersService.countOffersByStatus(candidateId);
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
@@ -526,9 +547,16 @@ export class OpportunitiesController {
   async updateOpportunityUser(
     @Param('opportunityId', new ParseUUIDPipe()) opportunityId: string,
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @UserPayload('role') role: UserRole,
     @Body(new UpdateOpportunityUserPipe())
     updateOpportunityUserDto: UpdateOpportunityUserDto
   ) {
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
@@ -537,6 +565,10 @@ export class OpportunitiesController {
 
     if (!opportunityUser) {
       throw new NotFoundException();
+    }
+
+    if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+      throw new ForbiddenException();
     }
 
     const updatedOpportunityUser =

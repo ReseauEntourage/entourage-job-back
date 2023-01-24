@@ -563,7 +563,7 @@ export class OpportunitiesService {
 
       await Promise.all(
         uniqueCandidatesIds.map((candidateId) => {
-          return this.opportunityUsersService.create({
+          return this.opportunityUsersService.createOrRestore({
             OpportunityId: opportunity.id,
             UserId: candidateId,
             recommended: opportunity.isPublic,
@@ -605,27 +605,10 @@ export class OpportunitiesService {
     try {
       const opportunityUsers = await Promise.all(
         uniqueCandidatesIds.map(async (candidateId) => {
-          await this.opportunityUserModel.restore({
-            where: {
-              OpportunityId: opportunity.id,
-              UserId: candidateId,
-            },
-            hooks: true,
-            transaction: t,
+          return this.opportunityUsersService.createOrRestore({
+            OpportunityId: opportunity.id,
+            UserId: candidateId,
           });
-
-          return this.opportunityUserModel
-            .findOrCreate({
-              where: {
-                OpportunityId: opportunity.id,
-                UserId: candidateId,
-              },
-              hooks: true,
-              transaction: t,
-            })
-            .then((model) => {
-              return model[0];
-            });
         })
       );
 

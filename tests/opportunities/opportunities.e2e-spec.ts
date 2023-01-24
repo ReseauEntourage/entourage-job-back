@@ -19,6 +19,7 @@ import { SalesforceService } from 'src/external-services/salesforce/salesforce.s
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
+  EventType,
   OfferAdminTabs,
   OfferStatus,
   OfferStatuses,
@@ -656,6 +657,7 @@ describe('Opportunities', () => {
           expect(response.body.OpportunityId).toEqual(opportunityId);
           expect(response.body.UserId).toEqual(loggedInCandidate.user.id);
         });
+
         it('Should return 400, if invalid opportunity id', async () => {
           const opportunityId = '1111-invalid-99999';
           const body = {
@@ -726,7 +728,6 @@ describe('Opportunities', () => {
             .send(body);
           expect(response.status).toBe(403);
         });
-
         it('Should return 403, if candidate adds himself to not validated opportunity', async () => {
           const opportunityId = notValidatedOpportunity.id;
           const body = {
@@ -757,6 +758,218 @@ describe('Opportunities', () => {
         });
       });
     });
+    describe('C - Create 1 Opportunity Event', () => {
+      describe('/event - Create an opportunity event related to an opportunity user', () => {
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let candidate: User;
+        let otherOpportunity: Opportunity;
+        let associatedOpportunity: Opportunity;
+        let notValidatedOpportunity: Opportunity;
+
+        beforeEach(async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          candidate = await userFactory.create({
+            role: UserRoles.CANDIDATE,
+          });
+
+          associatedOpportunity = await opportunityFactory.create({
+            isValidated: true,
+          });
+
+          notValidatedOpportunity = await opportunityFactory.create({
+            isValidated: false,
+          });
+
+          otherOpportunity = await opportunityFactory.create({
+            isValidated: true,
+          });
+        });
+
+        it('Should return 201, if candidate creates an event for one of his opportunities', async () => {
+          const opportunityId = associatedOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(body);
+          expect(response.status).toBe(201);
+          expect(response.body.type).toEqual(body.type);
+        });
+        it("Should return 201, if a coach creates an event for one of his candidate's opportunities", async () => {
+          const opportunityId = associatedOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(body);
+          expect(response.status).toBe(201);
+          expect(response.body.type).toEqual(body.type);
+        });
+        it('Should return 201, if admin creates an event for a opportunity associated to a specified candidate', async () => {
+          const opportunityId = associatedOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(body);
+          expect(response.status).toBe(201);
+          expect(response.body.type).toEqual(body.type);
+        });
+
+        it('Should return 201, if admin creates an event for not validated opportunity associated to a specified candidate', async () => {
+          const opportunityId = notValidatedOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(body);
+          expect(response.status).toBe(201);
+          expect(response.body.type).toEqual(body.type);
+        });
+        it('Should return 403, if candidate creates event for not validated opportunity', async () => {
+          const opportunityId = notValidatedOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(body);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if a coach creates event for not validated opportunity', async () => {
+          const opportunityId = notValidatedOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(body);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 400, if invalid opportunity id', async () => {
+          const opportunityId = '1111-invalid-99999';
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+            type: 'contact' as EventType,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(body);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400, if missing mandatory fields', async () => {
+          const opportunityId = associatedOpportunity.id;
+
+          const body = {
+            opportunityId,
+            candidateId: loggedInCandidate.user.id,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(body);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 404, if candidate creates event for an opportunity not associated to him', async () => {
+          const opportunityId = otherOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: candidate,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(body);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 404, if a coach creates event for an opportunity not associated to his candidate', async () => {
+          const opportunityId = otherOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: candidate.id,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(body);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 404, if an admin creates event for an opportunity not associated to the specified candidate', async () => {
+          const opportunityId = otherOpportunity.id;
+          const body = {
+            opportunityId,
+            candidateId: candidate.id,
+          };
+          const response: APIResponse<
+            OpportunitiesController['createOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .post(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(body);
+          expect(response.status).toBe(403);
+        });
+      });
+    });
     describe('R - Read 1 Opportunity', () => {
       describe('/:id - Get one opportunity', () => {
         let loggedInCandidate: LoggedUser;
@@ -764,6 +977,7 @@ describe('Opportunities', () => {
         let loggedInAdmin: LoggedUser;
         let candidate: User;
         let privateOpportunity: Opportunity;
+        let privateOpportunityUser: OpportunityUser;
         let publicOpportunity: Opportunity;
         let notValidatedOpportunity: Opportunity;
         let otherPrivateOpportunity: Opportunity;
@@ -801,10 +1015,11 @@ describe('Opportunities', () => {
             isPublic: false,
           });
 
-          await opportunityUsersHelper.associateOpportunityUser(
-            privateOpportunity.id,
-            loggedInCandidate.user.id
-          );
+          privateOpportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              privateOpportunity.id,
+              loggedInCandidate.user.id
+            );
 
           notValidatedOpportunity = await opportunityFactory.create({
             isValidated: false,
@@ -840,7 +1055,6 @@ describe('Opportunities', () => {
             beContacted,
             contactMail,
             isArchived,
-            opportunityUsers,
             recruiterPhone,
             ...restPrivateOpportunity
           } = privateOpportunity;
@@ -849,8 +1063,14 @@ describe('Opportunities', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...restPrivateOpportunity,
-              createdAt: restPrivateOpportunity.updatedAt.toISOString(),
-              updatedAt: restPrivateOpportunity.createdAt.toISOString(),
+              opportunityUsers: expect.objectContaining({
+                ...privateOpportunityUser,
+                createdAt: privateOpportunityUser.createdAt.toISOString(),
+                updatedAt: privateOpportunityUser.updatedAt.toISOString(),
+              }),
+
+              createdAt: restPrivateOpportunity.createdAt.toISOString(),
+              updatedAt: restPrivateOpportunity.updatedAt.toISOString(),
               date: restPrivateOpportunity.date.toISOString(),
             })
           );
@@ -865,7 +1085,6 @@ describe('Opportunities', () => {
             beContacted,
             contactMail,
             isArchived,
-            opportunityUsers,
             recruiterPhone,
             ...restPrivateOpportunity
           } = privateOpportunity;
@@ -874,8 +1093,13 @@ describe('Opportunities', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...restPrivateOpportunity,
-              createdAt: restPrivateOpportunity.updatedAt.toISOString(),
-              updatedAt: restPrivateOpportunity.createdAt.toISOString(),
+              opportunityUsers: expect.objectContaining({
+                ...privateOpportunityUser,
+                createdAt: privateOpportunityUser.createdAt.toISOString(),
+                updatedAt: privateOpportunityUser.updatedAt.toISOString(),
+              }),
+              createdAt: restPrivateOpportunity.createdAt.toISOString(),
+              updatedAt: restPrivateOpportunity.updatedAt.toISOString(),
               date: restPrivateOpportunity.date.toISOString(),
             })
           );
@@ -886,16 +1110,23 @@ describe('Opportunities', () => {
               .get(`${route}/${privateOpportunity.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
-          const { opportunityUsers, ...restPrivateOpportunity } =
-            privateOpportunity;
+          const { revision, deletedAt, ...restPrivateOpportunityUser } =
+            privateOpportunityUser;
 
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...restPrivateOpportunity,
-              createdAt: restPrivateOpportunity.updatedAt.toISOString(),
-              updatedAt: restPrivateOpportunity.createdAt.toISOString(),
-              date: restPrivateOpportunity.date.toISOString(),
+              ...privateOpportunity,
+              opportunityUsers: [
+                expect.objectContaining({
+                  ...restPrivateOpportunityUser,
+                  createdAt: restPrivateOpportunityUser.createdAt.toISOString(),
+                  updatedAt: restPrivateOpportunityUser.updatedAt.toISOString(),
+                }),
+              ],
+              createdAt: privateOpportunity.createdAt.toISOString(),
+              updatedAt: privateOpportunity.updatedAt.toISOString(),
+              date: privateOpportunity.date.toISOString(),
             })
           );
         });
@@ -909,8 +1140,8 @@ describe('Opportunities', () => {
             beContacted,
             contactMail,
             isArchived,
-            opportunityUsers,
             recruiterPhone,
+            opportunityUsers,
             ...responsePublicOpportunity
           } = publicOpportunity;
 
@@ -934,8 +1165,8 @@ describe('Opportunities', () => {
             beContacted,
             contactMail,
             isArchived,
-            opportunityUsers,
             recruiterPhone,
+            opportunityUsers,
             ...responsePublicOpportunity
           } = publicOpportunity;
 
@@ -2206,21 +2437,23 @@ describe('Opportunities', () => {
               department: 'Rhône (69)',
             }
           );
-          opportunities.forEach(async (opp, i) => {
-            let status;
-            let archived = false;
-            if (i < 6) {
-              status = i - 1;
-            } else {
-              status = -1;
-              archived = true;
-            }
-            await opportunityUsersHelper.associateOpportunityUser(
-              opp.id,
-              loggedInCandidate.user.id,
-              { status: status as OfferStatus, archived, bookmarked: true }
-            );
-          });
+          await Promise.all(
+            opportunities.map((opp, i) => {
+              let status;
+              let archived = false;
+              if (i < 6) {
+                status = i - 1;
+              } else {
+                status = -1;
+                archived = true;
+              }
+              return opportunityUsersHelper.associateOpportunityUser(
+                opp.id,
+                loggedInCandidate.user.id,
+                { status: status as OfferStatus, archived, bookmarked: true }
+              );
+            })
+          );
         });
 
         it('Should return 200, with the correct array if candidate counts his opportunities according to status', async () => {
@@ -2856,7 +3089,7 @@ describe('Opportunities', () => {
             ));
         });
 
-        it('Should return 200, if candidate updates his opportunities associations', async () => {
+        it('Should return 200, if candidate updates his opportunity association', async () => {
           const opportunity = await opportunityFactory.create({
             isValidated: true,
             isArchived: false,
@@ -2884,7 +3117,7 @@ describe('Opportunities', () => {
           expect(response.body.note).toBe('noteUpdate');
         });
 
-        it('Should return 200, if candidate updates his opportunities associations', async () => {
+        it('Should return 200, if candidate updates his opportunity association', async () => {
           const opportunity = await opportunityFactory.create({
             isValidated: true,
             isArchived: false,
@@ -2911,7 +3144,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(200);
           expect(response.body.note).toBe('noteUpdate');
         });
-        it('Should return 200, if a coach updates his associated candidate opportunities asociations', async () => {
+        it('Should return 200, if a coach updates his associated candidate oppotunity asociation', async () => {
           const opportunity = await opportunityFactory.create({
             isValidated: true,
             isArchived: false,
@@ -2938,7 +3171,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(200);
           expect(response.body.seen).toBe(true);
         });
-        it('Should return 200, if a admin updates candidate opportunities associations', async () => {
+        it('Should return 200, if a admin updates candidate opportunitiy association', async () => {
           const opportunity = await opportunityFactory.create({
             isValidated: true,
             isArchived: false,
@@ -2964,6 +3197,112 @@ describe('Opportunities', () => {
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.bookmarked).toBe(true);
+        });
+        it('Should return 200, if a admin updates candidate validated opportunity association', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: true,
+            isArchived: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { bookmarked: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
+
+          const update = {
+            bookmarked: true,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send(update);
+          expect(response.status).toBe(200);
+          expect(response.body.bookmarked).toBe(true);
+        });
+        it('Should return 200, if a admin updates candidate not validated opportunity association', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: false,
+            isArchived: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { bookmarked: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
+
+          const update = {
+            bookmarked: true,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send(update);
+          expect(response.status).toBe(200);
+          expect(response.body.bookmarked).toBe(true);
+        });
+        it('Should return 403, if candidate updates his opportunity association on a non validated opportunity', async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: false,
+            isArchived: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { seen: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
+
+          const update = {
+            note: 'noteUpdate',
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(update);
+          expect(response.status).toBe(403);
+        });
+        it("Should return 403, if a coach updates  his candidate's association on a non validated opportunity", async () => {
+          const opportunity = await opportunityFactory.create({
+            isValidated: false,
+            isArchived: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            opportunity.id,
+            loggedInCandidate.user.id,
+            { seen: false }
+          );
+
+          const candidateId = loggedInCandidate.user.id;
+
+          const update = {
+            seen: true,
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUser']
+          > = await request(app.getHttpServer())
+            .put(`${route}/join/${opportunity.id}/${candidateId}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(update);
+          expect(response.status).toBe(403);
         });
         it('Should return 400, if invalid user id', async () => {
           const opportunity = await opportunityFactory.create({
@@ -2991,7 +3330,7 @@ describe('Opportunities', () => {
             .send(update);
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if candidate updates an other candidate opportunities asociations', async () => {
+        it('Should return 403, if candidate updates an other candidate opportunities associations', async () => {
           const opportunity = await opportunityFactory.create({
             isValidated: true,
             isArchived: false,
