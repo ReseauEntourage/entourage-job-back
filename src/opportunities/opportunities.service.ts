@@ -50,7 +50,6 @@ import {
   OfferAdminTab,
   OfferAdminTabs,
   OfferCandidateTab,
-  OfferCandidateTabs,
   OfferFilterKey,
   OfferOptions,
   OfferStatuses,
@@ -59,13 +58,14 @@ import {
 import {
   destructureOptionsAndParams,
   filterAdminOffersByType,
-  filterCandidateOffersByType,
   filterOffersByStatus,
   getOfferOptions,
   renderOffersQuery,
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
+
+const LIMIT = 25;
 
 @Injectable()
 export class OpportunitiesService {
@@ -276,18 +276,18 @@ export class OpportunitiesService {
       query
     );
 
-    const limit = query.limit ? query.limit : 25;
+    const limit = query.limit || LIMIT;
 
     const opportunities = await this.opportunityModel.findAll({
       attributes: [...OpportunityCandidateAttributes],
       include: includeOptions,
       where: whereOptions,
-      offset: query.offset * limit,
-      limit: limit,
+      offset: query.offset ? query.offset * limit : 0,
+      limit,
       order: [['createdAt', 'DESC']],
     });
 
-    const cleanedOpportunities = opportunities.map((opportunity) => {
+    return opportunities.map((opportunity) => {
       const cleanedOpportunity = opportunity.toJSON();
       const opportunityUser = opportunity.opportunityUsers[0];
       const { opportunityUsers, ...opportunityWithoutOpportunityUsers } =
@@ -297,7 +297,6 @@ export class OpportunitiesService {
         opportunityUsers: opportunityUser,
       } as OpportunityRestricted;
     });
-    return cleanedOpportunities;
   }
 
   async findOne(id: string) {
