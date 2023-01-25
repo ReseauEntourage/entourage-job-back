@@ -57,35 +57,56 @@ export class OpportunityUsersService {
 
     const t = await this.opportunityUserEventModel.sequelize.transaction();
 
-    const createdOpportunityUserEvent =
-      await this.opportunityUserEventModel.create(
-        {
-          ...createOpportunityUserEventDto,
-          OpportunityUserId: opportunityUser.id,
-        },
-        {
-          hooks: true,
+    try {
+      const createdOpportunityUserEvent =
+        await this.opportunityUserEventModel.create(
+          {
+            ...createOpportunityUserEventDto,
+            OpportunityUserId: opportunityUser.id,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+
+      if (createOpportunityUserEventDto.contract) {
+        const contract = await this.contractModel.create(
+          { name: createOpportunityUserEventDto.contract.name },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+
+        await createdOpportunityUserEvent.$set('contract', contract, {
           transaction: t,
+        });
+      }
+
+      await t.commit();
+      return this.opportunityUserEventModel.findByPk(
+        createdOpportunityUserEvent.id,
+        {
+          include: {
+            model: Contract,
+            as: 'contract',
+          },
         }
       );
-
-    if (createOpportunityUserEventDto.contract) {
-      const contract = await this.contractModel.create(
-        { name: createOpportunityUserEventDto.contract.name },
-        {
-          hooks: true,
-          transaction: t,
-        }
-      );
-
-      await createdOpportunityUserEvent.$add('contract', contract, {
-        transaction: t,
-      });
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
+  }
 
-    return this.opportunityUserEventModel.findByPk(
-      createdOpportunityUserEvent.id
-    );
+  async findOneOpportunityUserEvent(id: string) {
+    return this.opportunityUserEventModel.findByPk(id, {
+      include: {
+        model: Contract,
+        as: 'contract',
+      },
+    });
   }
 
   async findOneByCandidateIdAndOpportunityId(

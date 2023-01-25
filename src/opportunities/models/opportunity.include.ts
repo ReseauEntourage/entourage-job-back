@@ -3,9 +3,14 @@ import { OfferStatus } from '../opportunities.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { User, UserCandidat } from 'src/users/models';
 import { FilterConstant } from 'src/utils/types';
+import { OpportunityUserEvent } from './opportunity-user-event.model';
 import { OpportunityUser } from './opportunity-user.model';
 
 export const OpportunityCandidateInclude: Includeable[] = [
+  {
+    model: OpportunityUserEvent,
+    as: 'opportunityUserEvents',
+  },
   {
     model: User,
     as: 'user',
@@ -78,7 +83,7 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
         'recommended',
       ],
       include: OpportunityCandidateInclude,
-      required: statusParams ? true : false,
+      required: !!statusParams,
       where: {
         UserId: { [Op.eq]: candidateId },
         ...(statusParams &&

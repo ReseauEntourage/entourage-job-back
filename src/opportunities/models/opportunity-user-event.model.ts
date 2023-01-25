@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -7,19 +7,18 @@ import {
   CreatedAt,
   DataType,
   Default,
-  HasOne,
   IsUUID,
-  Model,
   PrimaryKey,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
 import { EventType } from '../opportunities.types';
 import { Contract } from 'src/common/contracts/models';
+import { WrapperModel } from 'src/utils/types';
 import { OpportunityUser } from './opportunity-user.model';
 
 @Table({ tableName: 'OpportunityUser_Events' })
-export class OpportunityUserEvent extends Model {
+export class OpportunityUserEvent extends WrapperModel {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -40,7 +39,7 @@ export class OpportunityUserEvent extends Model {
 
   @ApiProperty()
   @AllowNull(true)
-  @IsNumber()
+  @IsString()
   @Column
   type: EventType;
 
@@ -57,7 +56,9 @@ export class OpportunityUserEvent extends Model {
   @Column
   endDate: Date;
 
-  @HasOne(() => Contract, 'ContractId')
+  @ApiProperty()
+  @IsOptional()
+  @BelongsTo(() => Contract, 'ContractId')
   contract: Contract;
 
   @BelongsTo(() => OpportunityUser, 'OpportunityUserId')

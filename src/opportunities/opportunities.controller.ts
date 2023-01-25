@@ -309,6 +309,7 @@ export class OpportunitiesController {
   ) {
     const { opportunityId, candidateId, ...restCreateOpportunityUserEventDto } =
       createOpportunityUserEventDto;
+
     const opportunity = await this.opportunitiesService.findOne(opportunityId);
 
     if (!opportunity) {
@@ -329,7 +330,7 @@ export class OpportunitiesController {
       throw new ForbiddenException();
     }
 
-    return await this.opportunityUsersService.createOpportunityUserEvent(
+    return this.opportunityUsersService.createOpportunityUserEvent(
       candidateId,
       opportunityId,
       restCreateOpportunityUserEventDto
