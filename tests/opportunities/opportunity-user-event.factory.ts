@@ -71,10 +71,7 @@ export class OpportunityUserEventFactory
 
       await Promise.all(
         Object.keys(components).map(async (componentKey) => {
-          const injectedModelName = `${componentKey.slice(
-            0,
-            -1
-          )}Model` as InjectedModels;
+          const injectedModelName = `${componentKey}Model` as InjectedModels;
 
           const injectedModel = this[injectedModelName] as typeof WrapperModel;
 
@@ -96,7 +93,10 @@ export class OpportunityUserEventFactory
             );
           }
 
-          await createdOpportunityUserEvent.$add(componentKey, instance);
+          await createdOpportunityUserEvent.$set(
+            componentKey as keyof WrapperModel,
+            instance
+          );
         })
       );
     }

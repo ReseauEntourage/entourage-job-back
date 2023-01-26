@@ -605,10 +605,13 @@ export class OpportunitiesService {
     try {
       const opportunityUsers = await Promise.all(
         uniqueCandidatesIds.map(async (candidateId) => {
-          return this.opportunityUsersService.createOrRestore({
-            OpportunityId: opportunity.id,
-            UserId: candidateId,
-          });
+          return this.opportunityUsersService.createOrRestore(
+            {
+              OpportunityId: opportunity.id,
+              UserId: candidateId,
+            },
+            t
+          );
         })
       );
 

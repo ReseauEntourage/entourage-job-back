@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { QueryTypes } from 'sequelize';
+import { QueryTypes, Transaction } from 'sequelize';
 import { Contract } from 'src/common/contracts/models';
 import { MailsService } from 'src/mails/mails.service';
 import { UsersService } from 'src/users/users.service';
@@ -22,12 +22,18 @@ export class OpportunityUsersService {
     private mailsService: MailsService
   ) {}
 
-  async createOrRestore(createOpportunityUserDto: Partial<OpportunityUser>) {
+  async createOrRestore(
+    createOpportunityUserDto: Partial<OpportunityUser>,
+    transaction?: Transaction
+  ) {
+    const transactionOption = transaction ? { transaction } : {};
+
     await this.opportunityUserModel.restore({
       where: {
         OpportunityId: createOpportunityUserDto.OpportunityId,
         UserId: createOpportunityUserDto.UserId,
       },
+      ...transactionOption,
     });
 
     const opportunityUserModelToUpdate = await this.opportunityUserModel
@@ -37,12 +43,16 @@ export class OpportunityUsersService {
           UserId: createOpportunityUserDto.UserId,
         },
         hooks: true,
+        ...transactionOption,
       })
       .then((model) => {
         return model[0];
       });
 
-    return opportunityUserModelToUpdate.update(createOpportunityUserDto);
+    return opportunityUserModelToUpdate.update(
+      createOpportunityUserDto,
+      transactionOption
+    );
   }
 
   async createOpportunityUserEvent(

@@ -17,6 +17,7 @@ import { BitlyService } from 'src/external-services/bitly/bitly.service';
 import { PleziService } from 'src/external-services/plezi/plezi.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { OpportunitiesController } from 'src/opportunities/opportunities.controller';
 import {
   OfferAdminTabs,
@@ -1178,9 +1179,12 @@ describe('Opportunities', () => {
         let candidate: User;
         let privateOpportunity: Opportunity;
         let privateOpportunityUser: OpportunityUser;
+        let privateOpportunityUserEvent: OpportunityUserEvent;
         let publicOpportunity: Opportunity;
         let notValidatedOpportunity: Opportunity;
+        let notValidatedOpportunityUser: OpportunityUser;
         let otherPrivateOpportunity: Opportunity;
+        let otherPrivateOpportunityUser: OpportunityUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -1221,6 +1225,12 @@ describe('Opportunities', () => {
               loggedInCandidate.user.id
             );
 
+          privateOpportunityUserEvent =
+            await opportunityUserEventFactory.create(
+              { OpportunityUserId: privateOpportunityUser.id },
+              { contract: 'cdi' }
+            );
+
           notValidatedOpportunity = await opportunityFactory.create({
             isValidated: false,
             isArchived: false,
@@ -1228,9 +1238,15 @@ describe('Opportunities', () => {
             isExternal: false,
           });
 
-          await opportunityUsersHelper.associateOpportunityUser(
-            notValidatedOpportunity.id,
-            loggedInCandidate.user.id
+          notValidatedOpportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              notValidatedOpportunity.id,
+              loggedInCandidate.user.id
+            );
+
+          await opportunityUserEventFactory.create(
+            { OpportunityUserId: notValidatedOpportunityUser.id },
+            { contract: 'cdi' }
           );
 
           otherPrivateOpportunity = await opportunityFactory.create({
@@ -1239,9 +1255,15 @@ describe('Opportunities', () => {
             isPublic: false,
           });
 
-          await opportunityUsersHelper.associateOpportunityUser(
-            otherPrivateOpportunity.id,
-            candidate.id
+          otherPrivateOpportunityUser =
+            await opportunityUsersHelper.associateOpportunityUser(
+              otherPrivateOpportunity.id,
+              candidate.id
+            );
+
+          await opportunityUserEventFactory.create(
+            { OpportunityUserId: otherPrivateOpportunityUser.id },
+            { contract: 'cdi' }
           );
         });
 
@@ -1267,6 +1289,25 @@ describe('Opportunities', () => {
                 ...privateOpportunityUser,
                 createdAt: privateOpportunityUser.createdAt.toISOString(),
                 updatedAt: privateOpportunityUser.updatedAt.toISOString(),
+                events: expect.arrayContaining([
+                  expect.objectContaining({
+                    ...privateOpportunityUserEvent,
+                    startDate:
+                      privateOpportunityUserEvent.startDate.toISOString(),
+                    endDate: privateOpportunityUserEvent.endDate.toISOString(),
+                    createdAt:
+                      privateOpportunityUserEvent.createdAt.toISOString(),
+                    updatedAt:
+                      privateOpportunityUserEvent.updatedAt.toISOString(),
+                    contract: expect.objectContaining({
+                      ...privateOpportunityUserEvent.contract,
+                      createdAt:
+                        privateOpportunityUserEvent.contract.createdAt.toISOString(),
+                      updatedAt:
+                        privateOpportunityUserEvent.contract.updatedAt.toISOString(),
+                    }),
+                  }),
+                ]),
               }),
 
               createdAt: restPrivateOpportunity.createdAt.toISOString(),
@@ -1297,6 +1338,25 @@ describe('Opportunities', () => {
                 ...privateOpportunityUser,
                 createdAt: privateOpportunityUser.createdAt.toISOString(),
                 updatedAt: privateOpportunityUser.updatedAt.toISOString(),
+                events: expect.arrayContaining([
+                  expect.objectContaining({
+                    ...privateOpportunityUserEvent,
+                    startDate:
+                      privateOpportunityUserEvent.startDate.toISOString(),
+                    endDate: privateOpportunityUserEvent.endDate.toISOString(),
+                    createdAt:
+                      privateOpportunityUserEvent.createdAt.toISOString(),
+                    updatedAt:
+                      privateOpportunityUserEvent.updatedAt.toISOString(),
+                    contract: expect.objectContaining({
+                      ...privateOpportunityUserEvent.contract,
+                      createdAt:
+                        privateOpportunityUserEvent.contract.createdAt.toISOString(),
+                      updatedAt:
+                        privateOpportunityUserEvent.contract.updatedAt.toISOString(),
+                    }),
+                  }),
+                ]),
               }),
               createdAt: restPrivateOpportunity.createdAt.toISOString(),
               updatedAt: restPrivateOpportunity.updatedAt.toISOString(),
@@ -1322,6 +1382,26 @@ describe('Opportunities', () => {
                   ...restPrivateOpportunityUser,
                   createdAt: restPrivateOpportunityUser.createdAt.toISOString(),
                   updatedAt: restPrivateOpportunityUser.updatedAt.toISOString(),
+                  events: expect.arrayContaining([
+                    expect.objectContaining({
+                      ...privateOpportunityUserEvent,
+                      startDate:
+                        privateOpportunityUserEvent.startDate.toISOString(),
+                      endDate:
+                        privateOpportunityUserEvent.endDate.toISOString(),
+                      createdAt:
+                        privateOpportunityUserEvent.createdAt.toISOString(),
+                      updatedAt:
+                        privateOpportunityUserEvent.updatedAt.toISOString(),
+                      contract: expect.objectContaining({
+                        ...privateOpportunityUserEvent.contract,
+                        createdAt:
+                          privateOpportunityUserEvent.contract.createdAt.toISOString(),
+                        updatedAt:
+                          privateOpportunityUserEvent.contract.updatedAt.toISOString(),
+                      }),
+                    }),
+                  ]),
                 }),
               ],
               createdAt: privateOpportunity.createdAt.toISOString(),

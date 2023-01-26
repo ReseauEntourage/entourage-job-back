@@ -1,6 +1,7 @@
 import { Includeable, Op } from 'sequelize';
 import { OfferStatus } from '../opportunities.types';
 import { BusinessLine } from 'src/common/businessLines/models';
+import { Contract } from 'src/common/contracts/models';
 import { User, UserCandidat } from 'src/users/models';
 import { FilterConstant } from 'src/utils/types';
 import { OpportunityUserEvent } from './opportunity-user-event.model';
@@ -9,7 +10,13 @@ import { OpportunityUser } from './opportunity-user.model';
 export const OpportunityCandidateInclude: Includeable[] = [
   {
     model: OpportunityUserEvent,
-    as: 'opportunityUserEvents',
+    as: 'events',
+    include: [
+      {
+        model: Contract,
+        as: 'contract',
+      },
+    ],
   },
   {
     model: User,

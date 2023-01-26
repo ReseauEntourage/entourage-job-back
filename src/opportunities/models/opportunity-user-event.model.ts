@@ -8,17 +8,17 @@ import {
   DataType,
   Default,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
 import { EventType } from '../opportunities.types';
 import { Contract } from 'src/common/contracts/models';
-import { WrapperModel } from 'src/utils/types';
 import { OpportunityUser } from './opportunity-user.model';
 
 @Table({ tableName: 'OpportunityUser_Events' })
-export class OpportunityUserEvent extends WrapperModel {
+export class OpportunityUserEvent extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
