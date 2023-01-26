@@ -4,6 +4,7 @@ import { QueryTypes, Transaction } from 'sequelize';
 import { Contract } from 'src/common/contracts/models';
 import { MailsService } from 'src/mails/mails.service';
 import { UsersService } from 'src/users/users.service';
+import { UpdateOpportunityUserEventDto } from './dto/update-opportunity-user-event.dto';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { OpportunityUser } from './models';
 import { OpportunityUserEvent } from './models/opportunity-user-event.model';
@@ -119,6 +120,12 @@ export class OpportunityUsersService {
     });
   }
 
+  async findOne(id: string) {
+    return this.opportunityUserModel.findByPk(id, {
+      include: OpportunityCandidateInclude,
+    });
+  }
+
   async findOneByCandidateIdAndOpportunityId(
     candidateId: string,
     opportunityId: string
@@ -217,6 +224,19 @@ export class OpportunityUsersService {
       candidateId,
       opportunityId
     );
+  }
+
+  async updateOpportunityUserEvent(
+    id: string,
+    updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
+  ) {
+    // TODO CONTRACTS
+    await this.opportunityUserEventModel.update(updateOpportunityUserEventDto, {
+      where: { id },
+      individualHooks: true,
+    });
+
+    return this.findOneOpportunityUserEvent(id);
   }
 
   async findOrCreateByCandidateIdAndOpportunityId(

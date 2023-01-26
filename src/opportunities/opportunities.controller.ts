@@ -36,6 +36,8 @@ import { CreateOpportunityPipe } from './dto/create-opportunity.pipe';
 import { UpdateExternalOpportunityRestrictedDto } from './dto/update-external-opportunity-restricted.dto';
 import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
 import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity.pipe';
+import { UpdateOpportunityUserEventDto } from './dto/update-opportunity-user-event.dto';
+import { UpdateOpportunityUserEventPipe } from './dto/update-opportunity-user-event.pipe';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { UpdateOpportunityUserPipe } from './dto/update-opportunity-user.pipe';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
@@ -589,6 +591,50 @@ export class OpportunitiesController {
     );
 
     return updatedOpportunityUser;
+  }
+
+  @Put('event/:id')
+  async updateOpportunityUserEvent(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UserPayload('role') role: UserRole,
+    @UserPayload() user: PayloadUser,
+    @Body(new UpdateOpportunityUserEventPipe())
+    updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
+  ) {
+    const opportunityUserEvent =
+      await this.opportunityUsersService.findOneOpportunityUserEvent(id);
+
+    if (!opportunityUserEvent) {
+      throw new NotFoundException();
+    }
+
+    const opportunityUser = await this.opportunityUsersService.findOne(id);
+
+    if (!opportunityUser) {
+      throw new NotFoundException();
+    }
+
+    if (opportunityUser.UserId !== getCandidateIdFromCoachOrCandidate(user)) {
+      throw new ForbiddenException();
+    }
+
+    const opportunity = await this.opportunitiesService.findOne(
+      opportunityUser.OpportunityId
+    );
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
+    if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    // TODO CONTRACTS
+    return this.opportunityUsersService.updateOpportunityUserEvent(
+      id,
+      updateOpportunityUserEventDto
+    );
   }
 
   @Roles(UserRoles.ADMIN)
