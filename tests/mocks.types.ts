@@ -65,6 +65,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createAccount: jest.fn(),
   createContact: jest.fn(),
   createLead: jest.fn(),
+  createCandidateLead: jest.fn(),
   findOrCreateAccount: jest.fn(),
   findOrCreateContact: jest.fn(),
   findOrCreateLead: jest.fn(),
