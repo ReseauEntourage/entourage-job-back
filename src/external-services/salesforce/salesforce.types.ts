@@ -38,6 +38,7 @@ export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
   CANNOT_UPDATE_CONVERTED_LEAD: 'CANNOT_UPDATE_CONVERTED_LEAD',
   FIELD_INTEGRITY_EXCEPTION: 'FIELD_INTEGRITY_EXCEPTION',
+  FIELD_FILTER_VALIDATION_EXCEPTION: 'FIELD_FILTER_VALIDATION_EXCEPTION',
   NOT_FOUND: 'NOT_FOUND',
 } as const;
 
@@ -454,7 +455,7 @@ export interface CandidateLeadProps {
   zone: CompanyZone;
   workerSfIdAsProspect?: string;
   workerSfIdAsContact?: string;
-  associationSfId: string;
+  associationSfId?: string;
 }
 
 export interface CoachLeadProps {

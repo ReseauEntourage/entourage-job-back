@@ -17,7 +17,6 @@ import {
   CandidateYesNoValue,
   HeardAboutValue,
 } from 'src/contacts/contacts.types';
-import { BusinessLine } from "src/common/businessLines/models"
 
 export class ContactCandidateFormDto {
   @ApiProperty()

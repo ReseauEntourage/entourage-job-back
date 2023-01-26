@@ -758,6 +758,31 @@ export class SalesforceService {
     };
 
     try {
+      return (await this.createCandidateLead(
+        leadToCreate,
+        workerSfId
+      )) as string;
+    } catch (err) {
+      if (
+        (err as SalesforceError).errorCode ===
+        ErrorCodes.FIELD_FILTER_VALIDATION_EXCEPTION
+      ) {
+        const { associationSfId, ...restLeadToCreate } = leadToCreate;
+        return (await this.createCandidateLead(
+          restLeadToCreate,
+          workerSfId
+        )) as string;
+      }
+      console.error(err);
+      throw err;
+    }
+  }
+
+  async createCandidateLead(
+    leadToCreate: LeadProp<typeof LeadRecordTypesIds.CANDIDATE>,
+    workerSfId: string
+  ) {
+    try {
       return (await this.findOrCreateLead(
         { ...leadToCreate, workerSfIdAsProspect: workerSfId },
         LeadRecordTypesIds.CANDIDATE
