@@ -630,7 +630,6 @@ export class OpportunitiesController {
       throw new ForbiddenException();
     }
 
-    // TODO CONTRACTS
     return this.opportunityUsersService.updateOpportunityUserEvent(
       id,
       updateOpportunityUserEventDto

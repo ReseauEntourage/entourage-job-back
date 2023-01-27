@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import _ from 'lodash';
 import { QueryTypes, Transaction } from 'sequelize';
 import { Contract } from 'src/common/contracts/models';
 import { MailsService } from 'src/mails/mails.service';
@@ -96,15 +97,7 @@ export class OpportunityUsersService {
       }
 
       await t.commit();
-      return this.opportunityUserEventModel.findByPk(
-        createdOpportunityUserEvent.id,
-        {
-          include: {
-            model: Contract,
-            as: 'contract',
-          },
-        }
-      );
+      return this.findOneOpportunityUserEvent(createdOpportunityUserEvent.id);
     } catch (error) {
       await t.rollback();
       throw error;
@@ -230,13 +223,40 @@ export class OpportunityUsersService {
     id: string,
     updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
   ) {
-    // TODO CONTRACTS
-    await this.opportunityUserEventModel.update(updateOpportunityUserEventDto, {
-      where: { id },
-      individualHooks: true,
-    });
+    const t = await this.opportunityUserEventModel.sequelize.transaction();
+    try {
+      let contract = {};
+      if (_.isNull(updateOpportunityUserEventDto.contract)) {
+        contract = { ContractId: null };
+      } else if (updateOpportunityUserEventDto.contract) {
+        const { id: contractId } = await this.contractModel.create(
+          {
+            name: updateOpportunityUserEventDto.contract.name,
+            OpportunityUserId: id,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+        contract = { ContractId: contractId };
+      }
 
-    return this.findOneOpportunityUserEvent(id);
+      await this.opportunityUserEventModel.update(
+        { ...updateOpportunityUserEventDto, ...contract },
+        {
+          where: { id },
+          individualHooks: true,
+        }
+      );
+
+      await t.commit();
+
+      return this.findOneOpportunityUserEvent(id);
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
   }
 
   async findOrCreateByCandidateIdAndOpportunityId(

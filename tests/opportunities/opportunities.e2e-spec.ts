@@ -4042,7 +4042,7 @@ describe('Opportunities', () => {
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
           > = await request(app.getHttpServer())
-            .post(`${route}/event`)
+            .put(`${route}/event`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
             .send({
               opportunityId: associatedOpportunity.id,
@@ -4251,7 +4251,6 @@ describe('Opportunities', () => {
             });
           expect(response.status).toBe(400);
         });
-
         it('Should return 400, if missing mandatory fields', async () => {
           const opportunityUserEvent = await opportunityUserEventFactory.create(
             {},
@@ -4329,6 +4328,58 @@ describe('Opportunities', () => {
               ...newEvent,
             });
           expect(response.status).toBe(404);
+        });
+        it('Should return 403, if candidate creates event for an opportunity associated to another candidate', async () => {
+          const opportunityUserEvent = await opportunityUserEventFactory.create(
+            {},
+            {},
+            false
+          );
+
+          const newEvent = {
+            startDate: opportunityUserEvent.startDate,
+            endDate: opportunityUserEvent.endDate,
+            type: opportunityUserEvent.type,
+            contract: { name: 'cdi' },
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .put(`${route}/event`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              opportunityId: otherOpportunity.id,
+              candidateId: candidate.id,
+              ...newEvent,
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach creates event for an opportunity associated to another candidate', async () => {
+          const opportunityUserEvent = await opportunityUserEventFactory.create(
+            {},
+            {},
+            false
+          );
+
+          const newEvent = {
+            startDate: opportunityUserEvent.startDate,
+            endDate: opportunityUserEvent.endDate,
+            type: opportunityUserEvent.type,
+            contract: { name: 'cdi' },
+          };
+
+          const response: APIResponse<
+            OpportunitiesController['updateOpportunityUserEvent']
+          > = await request(app.getHttpServer())
+            .put(`${route}/event`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              opportunityId: otherOpportunity.id,
+              candidateId: candidate.id,
+              ...newEvent,
+            });
+          expect(response.status).toBe(403);
         });
         it('Should return 404, if an admin creates event for an opportunity not associated to the specified candidate', async () => {
           const opportunityUserEvent = await opportunityUserEventFactory.create(

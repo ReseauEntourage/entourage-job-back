@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as _ from 'lodash';
+import { User } from '../users/models';
 import { AdminZone, FilterParams } from '../utils/types';
 import {
   PayloadUser,
@@ -96,7 +97,7 @@ export class CVsController {
     const { status } = createdCV;
 
     if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
-      await this.cvsService.sendMailsAfterSubmitting(user, createdCV);
+      await this.cvsService.sendMailsAfterSubmitting(user as User, createdCV);
     }
 
     if (!autoSave) {
