@@ -779,10 +779,22 @@ export class OpportunitiesService {
 
   async sendMailAfterExternalCreation(
     opportunity: OpportunityRestricted,
-    isAdmin = false
+    isAdmin = false,
+    coachNotification = true,
+    candidateId: string
   ) {
     if (!isAdmin) {
-      return this.mailsService.sendOnCreatedExternalOfferMail(opportunity);
+      this.mailsService.sendOnCreatedExternalOfferMailToAdmin(opportunity);
+    }
+    if (coachNotification) {
+      const candidate = await this.usersService.findOne(candidateId);
+      const coach = getRelatedUser(candidate);
+      if (coach) {
+        return this.mailsService.sendOnCreatedExternalOfferMailToCoach(
+          opportunity,
+          coach
+        );
+      }
     }
   }
 

@@ -243,13 +243,33 @@ export class MailsService {
     });
   }
 
-  async sendOnCreatedExternalOfferMail(opportunity: OpportunityRestricted) {
+  async sendOnCreatedExternalOfferMailToAdmin(
+    opportunity: OpportunityRestricted
+  ) {
     const { companiesAdminMail } = getAdminMailsFromDepartment(
       opportunity.department
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: companiesAdminMail,
-      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED,
+      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED_ADMIN,
+      variables: {
+        offer: getMailjetVariablesForPrivateOrPublicOffer(
+          opportunity,
+          opportunity.opportunityUsers.status,
+          false
+        ),
+        candidat: _.omitBy(opportunity.opportunityUsers.user, _.isNil),
+      },
+    });
+  }
+
+  async sendOnCreatedExternalOfferMailToCoach(
+    opportunity: OpportunityRestricted,
+    coach: User
+  ) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: coach.email,
+      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED_COACH,
       variables: {
         offer: getMailjetVariablesForPrivateOrPublicOffer(
           opportunity,
