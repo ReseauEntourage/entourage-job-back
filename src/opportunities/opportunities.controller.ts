@@ -194,6 +194,7 @@ export class OpportunitiesController {
       | CreateExternalOpportunityDto
       | CreateExternalOpportunityRestrictedDto,
     @UserPayload('id') userId?: string
+
   ) {
     if (userId && !uuidValidate(userId)) {
       throw new BadRequestException();
@@ -201,7 +202,7 @@ export class OpportunitiesController {
 
     const isAdmin = role === UserRoles.ADMIN;
 
-    const { candidateId, ...restParams } = createExternalOpportunityDto;
+    const { candidateId, coachNotification, ...restParams } = createExternalOpportunityDto;
 
     const candidate = await this.opportunitiesService.findOneCandidate(
       candidateId
@@ -238,10 +239,14 @@ export class OpportunitiesController {
       candidateId
     );
 
+
     await this.opportunitiesService.sendMailAfterExternalCreation(
       finalOpportunity,
-      isAdmin
+      isAdmin,
+      coachNotification,
+      candidateId,
     );
+
 
     await this.opportunitiesService.createExternalDBOpportunity(
       finalOpportunity.id
