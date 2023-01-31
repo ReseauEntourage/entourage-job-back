@@ -2,10 +2,7 @@
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
-import {
-  CompanyApproachFilters,
-  HeardAboutFilters,
-} from 'src/contacts/contacts.types';
+import { CompanyApproaches, HeardAbout } from 'src/contacts/contacts.types';
 import { ContactCompanyFormDto } from 'src/contacts/dto';
 import { AdminZoneFilters, Factory } from 'src/utils/types';
 
@@ -28,8 +25,8 @@ export class ContactCompanyFormFactory
       zone: faker.random.arrayElement(
         AdminZoneFilters.map(({ value }) => value)
       ),
-      approach: faker.random.arrayElement(CompanyApproachFilters).value,
-      heardAbout: faker.random.arrayElement(HeardAboutFilters).value,
+      approach: faker.random.objectElement(CompanyApproaches),
+      heardAbout: faker.random.objectElement(HeardAbout),
     };
 
     return {
