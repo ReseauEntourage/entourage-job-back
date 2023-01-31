@@ -1,10 +1,20 @@
-import { Batch, ErrorResult, Job, RecordResult, SuccessResult } from 'jsforce';
+import { Job, RecordResult } from 'jsforce';
 import * as _ from 'lodash';
-import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
+import {
+  BusinessLineFilters,
+  BusinessLineValue,
+} from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
-import { Department } from 'src/common/locations/locations.types';
+import { Department, Departments } from 'src/common/locations/locations.types';
 import {
+  CandidateAccommodation,
+  CandidateAdministrativeSituation,
+  CandidateGender,
+  CandidateHelpWithValue,
+  CandidateProfessionalSituation,
+  CandidateResource,
+  CandidateYesNoValue,
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,
@@ -14,16 +24,32 @@ import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.type
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones, AnyCantFix } from 'src/utils/types';
+import { AdminZones } from 'src/utils/types';
 import {
+  CandidateLeadProps,
+  CoachLeadProps,
+  CompanyLeadProps,
+  LeadAccomodations,
+  LeadAdministrativeSituations,
   LeadApproaches,
+  LeadBusinessLines,
+  LeadGender,
   LeadHeardAbout,
+  LeadHelpWith,
+  LeadProfessionalSituation,
+  LeadProp,
+  LeadRecordType,
+  LeadRecordTypesIds,
+  LeadResources,
+  LeadYesNo,
   ObjectName,
   OfferProps,
   ProcessProps,
+  SalesforceLead,
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  WorkerLeadProps,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
@@ -47,15 +73,19 @@ export function formatRegions(region: CompanyZone) {
   return _.capitalize(region);
 }
 
-export function formatApproach(approach: CompanyApproach) {
-  if (approach) {
-    return LeadApproaches[approach].toString();
-  }
-}
-
-export function formatHeardAbout(heardAbout: HeardAboutValue) {
-  if (heardAbout) {
-    return LeadHeardAbout[heardAbout].toString();
+export function formatSalesforceValue<T extends string>(
+  value: T | T[],
+  constants: { [K in T]: string }
+) {
+  if (value) {
+    if (Array.isArray(value)) {
+      return value
+        .map((val) => {
+          return constants[val].toString();
+        })
+        .join(';');
+    }
+    return constants[value].toString();
   }
 }
 
@@ -104,6 +134,14 @@ export function parseAddress(address: string) {
   };
 }
 
+export function getDepartmentFromPostalCode(postalCode: string): Department {
+  const deptNumber = postalCode.substring(0, 2);
+  const department = Departments.find(({ name }) => {
+    return name.includes(`(${deptNumber})`);
+  });
+  return department.name;
+}
+
 export function mapSalesforceOfferFields({
   id,
   company,
@@ -132,6 +170,7 @@ export function mapSalesforceOfferFields({
   recruiterPhone,
   recruiterPosition,
   contactMail,
+  date,
   companySfId,
   contactSfId,
 }: OfferProps): SalesforceOffer {
@@ -194,6 +233,7 @@ export function mapSalesforceOfferFields({
       ?.replace(/\+/g, '.')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, ''),
+    Date_de_cr_ation__c: date,
     Prenom_Nom_du_recruteur__c: contactSfId,
     Contact_cree_existant__c: true,
     Antenne__c: _.capitalize(
@@ -234,6 +274,176 @@ export function mapSalesforceProcessFields({
     Binome__c: binomeSfId,
     Offre_d_emploi__c: offerSfId,
   };
+}
+
+export function mapSalesforceLeadFields<T extends LeadRecordType>(
+  leadProps: LeadProp<T>,
+  recordType: T
+) {
+  const { firstName, lastName, email, phone, zone } = leadProps;
+
+  const commonFields = {
+    LastName:
+      lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
+    FirstName: firstName,
+    Email: email
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
+    Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
+    Reseaux__c: 'LinkedOut',
+    RecordTypeId: recordType,
+    Antenne__c: formatRegions(zone),
+    Source__c: 'Lead entrant',
+  } as Pick<
+    SalesforceLead<T>,
+    | 'LastName'
+    | 'FirstName'
+    | 'Email'
+    | 'Phone'
+    | 'Reseaux__c'
+    | 'RecordTypeId'
+    | 'Antenne__c'
+    | 'Source__c'
+  >;
+
+  if (recordType === LeadRecordTypesIds.COMPANY) {
+    const { company, position, approach, heardAbout } =
+      leadProps as CompanyLeadProps;
+
+    return {
+      ...commonFields,
+      Company: company,
+      Title: position,
+      Votre_demarche__c: formatSalesforceValue<CompanyApproach>(
+        approach,
+        LeadApproaches
+      ),
+      Comment_vous_nous_avez_connu__c: formatSalesforceValue<HeardAboutValue>(
+        heardAbout,
+        LeadHeardAbout
+      ),
+    } as SalesforceLead<T>;
+  }
+
+  if (recordType === LeadRecordTypesIds.ASSOCIATION) {
+    const { company, heardAbout, contactWithCoach, position } =
+      leadProps as WorkerLeadProps;
+
+    return {
+      ...commonFields,
+      Company: company,
+      Title: position,
+      Comment_vous_nous_avez_connu__c: formatSalesforceValue<HeardAboutValue>(
+        heardAbout,
+        LeadHeardAbout
+      ),
+      TS_Mettre_en_relation_Coach__c: contactWithCoach,
+    } as SalesforceLead<T>;
+  }
+
+  if (recordType === LeadRecordTypesIds.CANDIDATE) {
+    const {
+      helpWith,
+      gender,
+      birthDate,
+      address,
+      registeredUnemploymentOffice,
+      administrativeSituation,
+      workingRight,
+      accommodation,
+      professionalSituation,
+      resources,
+      domiciliation,
+      socialSecurity,
+      handicapped,
+      bankAccount,
+      businessLines,
+      description,
+      diagnostic,
+      workerSfIdAsProspect,
+      workerSfIdAsContact,
+      associationSfId,
+    } = leadProps as CandidateLeadProps;
+
+    const parsedAddress = parseAddress(address);
+
+    return {
+      ...commonFields,
+      Street: parsedAddress?.street,
+      City:
+        parsedAddress.city?.length > 40
+          ? parsedAddress.city.substring(0, 40)
+          : parsedAddress.city,
+      PostalCode: parsedAddress?.postalCode,
+      Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
+      Date_de_naissance__c: birthDate,
+      Accompagnement_social__c: formatSalesforceValue<CandidateHelpWithValue>(
+        helpWith,
+        LeadHelpWith
+      ),
+      Situation_administrative__c:
+        formatSalesforceValue<CandidateAdministrativeSituation>(
+          administrativeSituation,
+          LeadAdministrativeSituations
+        ),
+      Situation_Professionnelle__c:
+        formatSalesforceValue<CandidateProfessionalSituation>(
+          professionalSituation,
+          LeadProfessionalSituation
+        ),
+      Situation_hebergement__c: formatSalesforceValue<CandidateAccommodation>(
+        accommodation,
+        LeadAccomodations
+      ),
+      Droit_de_travailler_en_France__c:
+        formatSalesforceValue<CandidateYesNoValue>(workingRight, LeadYesNo),
+      Inscrit_au_Pole_Emploi__c: formatSalesforceValue<CandidateYesNoValue>(
+        registeredUnemploymentOffice,
+        LeadYesNo
+      ),
+      Domiciliation__c: formatSalesforceValue<CandidateYesNoValue>(
+        domiciliation,
+        LeadYesNo
+      ),
+      Securite_Sociale__c: formatSalesforceValue<CandidateYesNoValue>(
+        socialSecurity,
+        LeadYesNo
+      ),
+      Compte_bancaire__c: formatSalesforceValue<CandidateYesNoValue>(
+        bankAccount,
+        LeadYesNo
+      ),
+      RQTH__c: formatSalesforceValue<CandidateYesNoValue>(
+        handicapped,
+        LeadYesNo
+      ),
+      Familles_de_m_tiers__c: formatSalesforceValue<BusinessLineValue>(
+        businessLines,
+        LeadBusinessLines
+      ),
+      Diagnostic_social_par_le_prescripteur__c: diagnostic,
+      Message_For__c: description,
+      Type_de_ressources__c: formatSalesforceValue<CandidateResource>(
+        resources,
+        LeadResources
+      ),
+      TS_Prescripteur_Contact__c: workerSfIdAsContact,
+      Prospect__c: workerSfIdAsProspect,
+      Association_prescriptrice__c: associationSfId,
+      Company: 'Candidats LinkedOut',
+    } as SalesforceLead<T>;
+  }
+
+  if (recordType === LeadRecordTypesIds.COACH) {
+    const { company, position } = leadProps as CoachLeadProps;
+
+    return {
+      ...commonFields,
+      Company: company,
+      Title: position,
+    } as SalesforceLead<T>;
+  }
 }
 
 export function mapProcessFromOpportunityUser(
