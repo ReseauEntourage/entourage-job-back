@@ -240,12 +240,14 @@ export class OpportunitiesController {
       createdOpportunity.id,
       candidateId
     );
+
     await this.opportunitiesService.sendMailAfterExternalCreation(
       finalOpportunity,
       isAdmin,
       coachNotification,
       candidateId
     );
+
     await this.opportunitiesService.createExternalDBOpportunity(
       finalOpportunity.id
     );
@@ -608,13 +610,18 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const opportunityUser = await this.opportunityUsersService.findOne(id);
+    const opportunityUser = await this.opportunityUsersService.findOne(
+      opportunityUserEvent.OpportunityUserId
+    );
 
     if (!opportunityUser) {
       throw new NotFoundException();
     }
 
-    if (opportunityUser.UserId !== getCandidateIdFromCoachOrCandidate(user)) {
+    if (
+      opportunityUser.UserId !== getCandidateIdFromCoachOrCandidate(user) &&
+      role !== UserRoles.ADMIN
+    ) {
       throw new ForbiddenException();
     }
 

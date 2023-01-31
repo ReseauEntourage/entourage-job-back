@@ -2,9 +2,7 @@
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
-import {
-  BusinessLineFilters,
-} from 'src/common/businessLines/businessLines.types';
+import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
 import {
   CandidateAccommodations,
   CandidateAdministrativeSituations,

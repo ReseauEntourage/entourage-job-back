@@ -44,7 +44,6 @@ import {
   OpportunityCompleteInclude,
   OpportunityCompleteWithoutBusinessLinesInclude,
   OpportunityCompleteWithoutOpportunityUsersInclude,
-  renderOpportunityCompleteWithoutBusinessLinesInclude,
 } from './models/opportunity.include';
 import {
   OfferAdminTab,

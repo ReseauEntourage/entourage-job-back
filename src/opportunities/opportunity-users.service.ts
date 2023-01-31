@@ -225,13 +225,16 @@ export class OpportunityUsersService {
   ) {
     const t = await this.opportunityUserEventModel.sequelize.transaction();
     try {
-      let contract = {};
-      if (_.isNull(updateOpportunityUserEventDto.contract)) {
-        contract = { ContractId: null };
-      } else if (updateOpportunityUserEventDto.contract) {
+      const { contract: contractDto, ...restUpdateOpportunityUserEventDto } =
+        updateOpportunityUserEventDto;
+
+      let contractObject = {};
+      if (_.isNull(contractDto)) {
+        contractObject = { ContractId: null };
+      } else if (contractDto) {
         const { id: contractId } = await this.contractModel.create(
           {
-            name: updateOpportunityUserEventDto.contract.name,
+            name: contractDto.name,
             OpportunityUserId: id,
           },
           {
@@ -239,14 +242,15 @@ export class OpportunityUsersService {
             transaction: t,
           }
         );
-        contract = { ContractId: contractId };
+        contractObject = { ContractId: contractId };
       }
 
       await this.opportunityUserEventModel.update(
-        { ...updateOpportunityUserEventDto, ...contract },
+        { ...restUpdateOpportunityUserEventDto, ...contractObject },
         {
           where: { id },
           individualHooks: true,
+          transaction: t,
         }
       );
 
