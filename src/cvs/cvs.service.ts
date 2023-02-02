@@ -448,14 +448,14 @@ export class CVsService {
       const { employed, ...restOptions } = options;
       const dbQuery = escapedQuery
         ? `
-      with publishedCVs as (${getPublishedCVQuery(employed)})
-      SELECT cvSearches."CVId" as id
-      FROM "CV_Searches" cvSearches
-        INNER JOIN publishedCVs on cvSearches."CVId" = publishedCVs."id"
-        WHERE ${escapeColumnRaw(
-          'cvSearches."searchString"'
-        )} like '%${escapedQuery}%'
-    `
+                  with publishedCVs as (${getPublishedCVQuery(employed)})
+                  SELECT cvSearches."CVId" as id
+                  FROM "CV_Searches" cvSearches
+                           INNER JOIN publishedCVs on cvSearches."CVId" = publishedCVs."id"
+                  WHERE ${escapeColumnRaw(
+                    'cvSearches."searchString"'
+                  )} like '%${escapedQuery}%'
+        `
         : undefined;
       modelCVs = await this.findAndCacheAll(
         dbQuery,
@@ -500,10 +500,11 @@ export class CVsService {
     const totalSharesPerUser: { CandidatId: string; totalshares: number }[] =
       await this.cvModel.sequelize.query(
         `
-      select shares."CandidatId", (SUM(facebook) + SUM(linkedin) + SUM(twitter) + SUM(whatsapp) + SUM(other)) as totalshares
-      from "Shares" shares
-      GROUP BY shares."CandidatId";
-    `,
+            select shares."CandidatId",
+                   (SUM(facebook) + SUM(linkedin) + SUM(twitter) + SUM(whatsapp) + SUM(other)) as totalshares
+            from "Shares" shares
+            GROUP BY shares."CandidatId";
+        `,
         {
           type: QueryTypes.SELECT,
         }
@@ -835,8 +836,8 @@ export class CVsService {
     return searchString;
   }
 
-  async sendMailsAfterSubmitting(user: User, cv: Partial<CV>) {
-    await this.mailsService.sendCVSubmittedMail(user, cv);
+  async sendMailsAfterSubmitting(coach: User, cv: Partial<CV>) {
+    await this.mailsService.sendCVSubmittedMail(coach, cv);
   }
 
   async sendMailsAfterPublishing(candidateId: string) {
@@ -939,7 +940,7 @@ export class CVsService {
   async sendReminderAboutInterviewTraining(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
 
-    return await this.mailsService.sendInterviewTrainingReminderMail(
+    return this.mailsService.sendInterviewTrainingReminderMail(
       candidate.toJSON()
     );
   }

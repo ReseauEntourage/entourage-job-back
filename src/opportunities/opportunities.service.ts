@@ -713,18 +713,20 @@ export class OpportunitiesService {
             },
             transaction: t,
           });
-        await opportunitiesUsersToDestroy.map((oppUs) => {
-          this.opportunityUserStatusChangeModel.create(
-            {
-              oldStatus: oppUs.status,
-              newStatus: null,
-              OpportunityUserId: oppUs.id,
-              UserId: oppUs.UserId,
-              OpportunityId: opportunity.id,
-            },
-            { transaction: t }
-          );
-        });
+        await Promise.all(
+          opportunitiesUsersToDestroy.map((oppUs) => {
+            return this.opportunityUserStatusChangeModel.create(
+              {
+                oldStatus: oppUs.status,
+                newStatus: null,
+                OpportunityUserId: oppUs.id,
+                UserId: oppUs.UserId,
+                OpportunityId: opportunity.id,
+              },
+              { transaction: t }
+            );
+          })
+        );
         await this.opportunityUserModel.destroy({
           where: {
             OpportunityId: opportunity.id,
@@ -785,17 +787,15 @@ export class OpportunitiesService {
     shouldSendNotifications = true,
     pleziTrackingData?: PleziTrackingData
   ) {
-    if (candidates && candidates.length > 0) {
-      if (!isAdmin) {
-        await this.mailsService.sendOnCreatedOfferMail(opportunity);
-      } else {
-        await this.sendOnValidatedOfferMail(opportunity);
-
-        if (shouldSendNotifications) {
-          await this.sendCandidateOfferMessages(candidates, opportunity);
-        }
+    if (!isAdmin) {
+      await this.mailsService.sendOnCreatedOfferMail(opportunity);
+    } else {
+      await this.sendOnValidatedOfferMail(opportunity);
+      if (candidates && candidates.length > 0 && shouldSendNotifications) {
+        await this.sendCandidateOfferMessages(candidates, opportunity);
       }
     }
+
     try {
       await this.pleziService.sendContactToPlezi(
         opportunity.contactMail || opportunity.recruiterMail,
