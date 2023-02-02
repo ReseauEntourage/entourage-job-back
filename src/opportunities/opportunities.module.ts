@@ -12,11 +12,12 @@ import {
   Opportunity,
   OpportunityBusinessLine,
   OpportunityUser,
-  OpportunityUserStatusChange
+  OpportunityUserStatusChange,
 } from './models';
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
+
 @Module({
   imports: [
     SequelizeModule.forFeature([
