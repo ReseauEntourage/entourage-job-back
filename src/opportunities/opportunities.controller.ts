@@ -531,6 +531,10 @@ export class OpportunitiesController {
     @Body(new UpdateOpportunityUserPipe())
     updateOpportunityUserDto: UpdateOpportunityUserDto
   ) {
+    if (Object.keys(updateOpportunityUserDto).length === 0) {
+      throw new BadRequestException('status expected');
+    }
+
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
