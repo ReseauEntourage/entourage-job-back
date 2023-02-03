@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
+import { MailsService } from 'src/mails/mails.service';
 import { UsersService } from 'src/users/users.service';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { OpportunityUser } from './models';
 import { OpportunityCandidateInclude } from './models/opportunity.include';
+
 @Injectable()
 export class OpportunityUsersService {
   constructor(
     @InjectModel(OpportunityUser)
     private opportunityUserModel: typeof OpportunityUser,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private mailsService: MailsService
   ) {}
 
   async create(createOpportunityUserDto: Partial<OpportunityUser>) {

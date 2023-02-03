@@ -22,7 +22,6 @@ import {
   OfferAdminTabs,
   OfferStatus,
   OfferStatuses,
-  OfferStatus,
 } from 'src/opportunities/opportunities.types';
 import { Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models/user.model';
@@ -266,6 +265,9 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
             businessLines: [{ name: 'id', order: 0 }],
           };
           const response: APIResponse<
@@ -287,6 +289,9 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
           delete newOpportunity.title;
 
@@ -311,13 +316,16 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
           > = await request(app.getHttpServer())
             .post(`${route}/external`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({ candidateId, ...newOpportunity });
+            .send({ candidateId, coachNotification: true, ...newOpportunity });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -344,6 +352,9 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
             businessLines: [{ name: 'id', order: 0 }],
           };
           const response: APIResponse<
@@ -366,6 +377,9 @@ describe('Opportunities', () => {
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
             isPublic: opportunity.isPublic,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
           delete newOpportunity.title;
 
@@ -390,13 +404,16 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
           > = await request(app.getHttpServer())
             .post(`${route}/external`)
             .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({ candidateId, ...newOpportunity });
+            .send({ candidateId, coachNotification: true, ...newOpportunity });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -424,6 +441,9 @@ describe('Opportunities', () => {
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
             isPublic: opportunity.isPublic,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
           delete newOpportunity.title;
 
@@ -448,6 +468,9 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
 
           const response: APIResponse<
@@ -483,6 +506,9 @@ describe('Opportunities', () => {
             endOfContract: opportunity.endOfContract,
             isPartTime: opportunity.isPartTime,
             department: opportunity.department,
+            recruiterMail: opportunity.recruiterMail,
+            recruiterFirstName: opportunity.recruiterFirstName,
+            recruiterName: opportunity.recruiterName,
           };
 
           delete newOpportunity.title;
@@ -2951,6 +2977,81 @@ describe('Opportunities', () => {
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(update);
+          expect(response.status).toBe(403);
+        });
+      });
+    });
+
+    describe('P - Post Contact Employer', () => {
+      describe('/contactEmployer — Contact Employer', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let opportunity: Opportunity;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          opportunity = await opportunityFactory.create({
+            isValidated: true,
+          });
+
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+
+        it('Should return 200 if candidates uses the route', async () => {
+          const response: APIResponse<
+            OpportunitiesController['contactEmployer']
+          > = await request(app.getHttpServer())
+            .post(`${route}/contactEmployer`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              candidateId: loggedInCandidate.user.id,
+              opportunityId: opportunity.id,
+              type: 'relance',
+              description: '',
+            });
+          expect(response.status).toBe(201);
+        });
+        it('Should return 200 if coach uses the route', async () => {
+          const response: APIResponse<
+            OpportunitiesController['contactEmployer']
+          > = await request(app.getHttpServer())
+            .post(`${route}/contactEmployer`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              candidateId: loggedInCoach.user.id,
+              opportunityId: opportunity.id,
+              type: 'relance',
+              description: '',
+            });
+          expect(response.status).toBe(201);
+        });
+        it('Should return 403 if admin uses the route', async () => {
+          const response: APIResponse<
+            OpportunitiesController['contactEmployer']
+          > = await request(app.getHttpServer())
+            .post(`${route}/contactEmployer`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              candidateId: loggedInCoach.user.id,
+              opportunityId: opportunity.id,
+              type: 'relance',
+              description: '',
+            });
           expect(response.status).toBe(403);
         });
       });

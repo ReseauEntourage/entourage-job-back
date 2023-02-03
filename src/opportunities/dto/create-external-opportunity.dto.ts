@@ -31,5 +31,6 @@ export class CreateExternalOpportunityDto extends PickType(Opportunity, [
 
   @ApiProperty()
   @IsBoolean()
+  @IsOptional()
   coachNotification: boolean;
 }
