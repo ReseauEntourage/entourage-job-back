@@ -113,12 +113,18 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
                   }
                 : {}),
             }),
-        // for "à traiter", specify bookmarked and recommended
+        // for "à traiter", specify : bookmarked and recommended if public, all if private
         ...(statusParams?.map((status) => status.value).includes(-1)
           ? {
               [Op.or]: {
-                bookmarked: true,
-                recommended: true,
+                [Op.and]: {
+                  [Op.or]: {
+                    bookmarked: true,
+                    recommended: true,
+                  },
+                  '$Opportunity.isPublic$': true,
+                },
+                '$Opportunity.isPublic$': false,
               },
             }
           : {}),

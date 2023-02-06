@@ -285,11 +285,12 @@ export class OpportunityUsersService {
        FROM "Opportunity_Users"
                 LEFT JOIN "Opportunities" ON "Opportunities"."id" = "Opportunity_Users"."OpportunityId"
        WHERE "Opportunity_Users"."UserId" = :candidateId
-         AND (("status" = -1 AND ("recommended" = true OR "bookmarked" = true))
+         AND (("status" = -1 AND (("Opportunities"."isPublic" = false) OR ("recommended" = true OR "bookmarked" = true)))
            OR status IN (0, 1, 2, 3, 4))
          AND "Opportunities"."isValidated" = true
          AND "Opportunities"."isArchived" = false
          AND "Opportunity_Users"."archived" = false
+         AND "Opportunity_Users"."deletedAt" is null
        GROUP BY "status";`,
       {
         replacements: { candidateId },

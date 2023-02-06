@@ -269,18 +269,19 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    if (
-      (!opportunity.isPublic || !opportunity.isValidated) &&
-      role !== UserRoles.ADMIN
-    ) {
-      throw new ForbiddenException();
-    }
-
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
         opportunityId
       );
+
+    if (
+      ((!opportunity.isPublic && !opportunityUser) ||
+        !opportunity.isValidated) &&
+      role !== UserRoles.ADMIN
+    ) {
+      throw new ForbiddenException();
+    }
 
     const createdOrUpdatedOpportunityUser = opportunityUser
       ? await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
@@ -419,13 +420,6 @@ export class OpportunitiesController {
       limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
-    const opportunityUsers =
-      await this.opportunityUsersService.findAllByCandidateId(candidateId);
-
-    if (!opportunityUsers) {
-      throw new NotFoundException();
-    }
-
     const { type, status } = query;
     if (type !== 'public' && !status) {
       throw new BadRequestException('status expected');
@@ -435,6 +429,10 @@ export class OpportunitiesController {
       candidateId,
       query
     );
+
+    if (!opportunities) {
+      throw new NotFoundException();
+    }
 
     return {
       offers: opportunities,
@@ -745,14 +743,14 @@ export class OpportunitiesController {
       throw new ForbiddenException();
     }
 
-    this.opportunitiesService.sendContactEmployer(
+    await this.opportunitiesService.sendContactEmployer(
       type,
       candidateId,
       opportunity.recruiterMail,
       description
     );
     if (type === 'contact') {
-      this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+      await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
         candidateId,
         opportunityId,
         {

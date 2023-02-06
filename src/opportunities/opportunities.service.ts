@@ -270,6 +270,12 @@ export class OpportunitiesService {
       limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    if (!candidate) {
+      return null;
+    }
+
     const { includeOptions, whereOptions } = renderOffersQuery(
       candidateId,
       query
@@ -1014,7 +1020,7 @@ export class OpportunitiesService {
   ) {
     const user = await this.usersService.findOne(candidateId);
     const relatedUser = getRelatedUser(user);
-    this.mailsService.sendMailContactEmployer(
+    await this.mailsService.sendMailContactEmployer(
       type,
       user,
       relatedUser.email,

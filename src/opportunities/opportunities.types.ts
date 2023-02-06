@@ -156,31 +156,31 @@ export type EventType =
 
 export const EventTypeFilters: FilterConstant<EventType>[] = [
   {
-    label: 'Contact',
+    label: 'Contacté le',
     value: 'contact',
   },
   {
-    label: 'Relance',
+    label: 'Relancé le',
     value: 'followup',
   },
   {
-    label: 'Entretien',
+    label: 'Entretien le',
     value: 'interview',
   },
   {
-    label: "Période d'essaie",
+    label: "Période d'essai le",
     value: 'trial',
   },
   {
-    label: 'PMSMP',
+    label: 'PMSMP le',
     value: 'pmsmp',
   },
   {
-    label: 'Embauche',
+    label: 'Embauche le',
     value: 'hiring',
   },
   {
-    label: 'Arrêt de contrat',
+    label: 'Arrêt de contrat le',
     value: 'end',
   },
 ];

@@ -279,7 +279,7 @@ export function mapSalesforceProcessFields({
 export function mapSalesforceLeadFields<T extends LeadRecordType>(
   leadProps: LeadProp<T>,
   recordType: T
-) {
+): SalesforceLead<T> {
   const { firstName, lastName, email, phone, zone } = leadProps;
 
   const commonFields = {
