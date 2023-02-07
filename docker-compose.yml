@@ -97,6 +97,12 @@ services:
     volumes:
       - db_new:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    command: 
+      - "postgres"
+      - "-c"
+      - "log_temp_files=10240"
+      - "-c"
+      - "shared_buffers=3GB"
   #  db_test:
   #   container_name: db_test
   #   image: postgres:14.1-alpine

@@ -8,6 +8,7 @@ import {
   CustomMailParams,
   MailjetTemplate,
   MailjetTemplates,
+  MailjetTemplateKey,
 } from 'src/external-services/mailjet/mailjet.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
@@ -481,5 +482,38 @@ export class MailsService {
         };
       })
     );
+  }
+
+  async sendMailContactEmployer(
+    type: string,
+    user: User,
+    relateduserMail: string,
+    employerMail: string,
+    description: string
+  ) {
+    const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
+      user.zone
+    );
+    const types: { [K in string]: MailjetTemplateKey } = {
+      contact: 'CONTACT_EMPLOYER',
+      relance: 'RELANCE_EMPLOYER',
+    };
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: {
+        to: employerMail,
+        cc: [
+          user.email,
+          relateduserMail,
+          candidatesAdminMail,
+          companiesAdminMail,
+        ],
+      },
+      templateId: MailjetTemplates[types[type]],
+      replyTo: user.email,
+      variables: {
+        description,
+        zone: user.zone,
+      },
+    });
   }
 }
