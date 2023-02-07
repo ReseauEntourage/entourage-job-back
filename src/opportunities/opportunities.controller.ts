@@ -15,7 +15,6 @@ import {
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from 'src/auth/auth.types';
 import { Public, UserPayload } from 'src/auth/guards';
-import { DepartmentFilters } from 'src/common/locations/locations.types';
 import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 import {
   LinkedUser,
@@ -44,7 +43,6 @@ import { OpportunitiesService } from './opportunities.service';
 import {
   OfferAdminTab,
   OfferCandidateTab,
-  OfferCandidateTabs,
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
@@ -531,10 +529,6 @@ export class OpportunitiesController {
     @Body(new UpdateOpportunityUserPipe())
     updateOpportunityUserDto: UpdateOpportunityUserDto
   ) {
-    if (Object.keys(updateOpportunityUserDto).length === 0) {
-      throw new BadRequestException('status expected');
-    }
-
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
@@ -642,12 +636,28 @@ export class OpportunitiesController {
     @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
     @Body('description') description: string
   ) {
-    if (!type && !candidateId && !!opportunityId) {
-      throw new BadRequestException();
+    if (!type) {
+      throw new BadRequestException('type of contact is missing');
     }
+
     const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
     if (!opportunity.recruiterMail) {
-      throw new BadRequestException();
+      throw new BadRequestException('no recruiter email');
+    }
+
+    const opportunityUser =
+      this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    if (!opportunityUser) {
+      throw new ForbiddenException();
     }
 
     this.opportunitiesService.sendContactEmployer(

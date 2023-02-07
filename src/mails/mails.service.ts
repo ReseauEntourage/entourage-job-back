@@ -498,24 +498,6 @@ export class MailsService {
       contact: 'CONTACT_EMPLOYER',
       relance: 'RELANCE_EMPLOYER',
     };
-    console.log({
-      toEmail: {
-        to: employerMail,
-        cc: [
-          user.email,
-          relateduserMail,
-          candidatesAdminMail,
-          companiesAdminMail,
-        ],
-      },
-      templateId: MailjetTemplates[types[type]],
-      replyTo: user.email,
-      variables: {
-        description,
-        zone: user.zone,
-      }
-    })
-    return;
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
         to: employerMail,
