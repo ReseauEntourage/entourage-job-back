@@ -54,6 +54,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   upsertRecord: jest.fn(),
   createOrUpdateProcess: jest.fn(),
   createOrUpdateOffer: jest.fn(),
+  createOrUpdateOfferWithRecruiter: jest.fn(),
   searchAccountByName: jest.fn(),
   findBinomeByCandidateEmail: jest.fn(),
   findContact: jest.fn(),
