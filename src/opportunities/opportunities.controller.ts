@@ -15,7 +15,6 @@ import {
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from 'src/auth/auth.types';
 import { Public, UserPayload } from 'src/auth/guards';
-import { DepartmentFilters } from 'src/common/locations/locations.types';
 import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 import {
   LinkedUser,
@@ -44,7 +43,6 @@ import { OpportunitiesService } from './opportunities.service';
 import {
   OfferAdminTab,
   OfferCandidateTab,
-  OfferCandidateTabs,
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
@@ -194,7 +192,6 @@ export class OpportunitiesController {
       | CreateExternalOpportunityDto
       | CreateExternalOpportunityRestrictedDto,
     @UserPayload('id') userId?: string
-
   ) {
     if (userId && !uuidValidate(userId)) {
       throw new BadRequestException();
@@ -202,7 +199,8 @@ export class OpportunitiesController {
 
     const isAdmin = role === UserRoles.ADMIN;
 
-    const { candidateId, coachNotification, ...restParams } = createExternalOpportunityDto;
+    const { candidateId, coachNotification, ...restParams } =
+      createExternalOpportunityDto;
 
     const candidate = await this.opportunitiesService.findOneCandidate(
       candidateId
@@ -238,16 +236,12 @@ export class OpportunitiesController {
       createdOpportunity.id,
       candidateId
     );
-
-
     await this.opportunitiesService.sendMailAfterExternalCreation(
       finalOpportunity,
       isAdmin,
       coachNotification,
-      candidateId,
+      candidateId
     );
-
-
     await this.opportunitiesService.createExternalDBOpportunity(
       finalOpportunity.id
     );
@@ -629,5 +623,57 @@ export class OpportunitiesController {
         return id;
       })
     );
+  }
+
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @LinkedUser('body.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Post('contactEmployer')
+  async contactEmployer(
+    @Body('type') type: string,
+    @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
+    @Body('description') description: string
+  ) {
+    if (!type) {
+      throw new BadRequestException('type of contact is missing');
+    }
+
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
+    if (!opportunity.recruiterMail) {
+      throw new BadRequestException('no recruiter email');
+    }
+
+    const opportunityUser =
+      this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    if (!opportunityUser) {
+      throw new ForbiddenException();
+    }
+
+    this.opportunitiesService.sendContactEmployer(
+      type,
+      candidateId,
+      opportunity.recruiterMail,
+      description
+    );
+    if (type === 'contact') {
+      this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId,
+        {
+          status: 0,
+        }
+      );
+    }
   }
 }

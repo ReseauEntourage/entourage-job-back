@@ -780,13 +780,13 @@ export class OpportunitiesService {
   async sendMailAfterExternalCreation(
     opportunity: OpportunityRestricted,
     isAdmin = false,
-    coachNotification = true,
+    coachNotification: boolean,
     candidateId: string
   ) {
     if (!isAdmin) {
       this.mailsService.sendOnCreatedExternalOfferMailToAdmin(opportunity);
     }
-    if (coachNotification) {
+    if (coachNotification && !isAdmin) {
       const candidate = await this.usersService.findOne(candidateId);
       const coach = getRelatedUser(candidate);
       if (coach) {
@@ -1009,6 +1009,23 @@ export class OpportunitiesService {
   async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
     return this.externalDatabasesService.refreshSalesforceOpportunities(
       opportunitiesIds
+    );
+  }
+
+  async sendContactEmployer(
+    type: string,
+    candidateId: string,
+    recruiterMail: string,
+    description: string
+  ) {
+    const user = await this.usersService.findOne(candidateId);
+    const relatedUser = getRelatedUser(user);
+    this.mailsService.sendMailContactEmployer(
+      type,
+      user,
+      relatedUser.email,
+      recruiterMail,
+      description
     );
   }
 }
