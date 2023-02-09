@@ -1,10 +1,23 @@
 import { Includeable, Op } from 'sequelize';
 import { OfferStatus } from '../opportunities.types';
 import { BusinessLine } from 'src/common/businessLines/models';
+import { Contract } from 'src/common/contracts/models';
 import { User, UserCandidat } from 'src/users/models';
 import { FilterConstant } from 'src/utils/types';
+import { OpportunityUserEvent } from './opportunity-user-event.model';
 import { OpportunityUser } from './opportunity-user.model';
+
 export const OpportunityCandidateInclude: Includeable[] = [
+  {
+    model: OpportunityUserEvent,
+    as: 'events',
+    include: [
+      {
+        model: Contract,
+        as: 'contract',
+      },
+    ],
+  },
   {
     model: User,
     as: 'user',
@@ -48,6 +61,7 @@ export const OpportunityCompleteWithoutBusinessLinesInclude: Includeable[] = [
       'archived',
       'note',
       'updatedAt',
+      'createdAt',
       'recommended',
     ],
     include: OpportunityCandidateInclude,
@@ -72,10 +86,11 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
         'archived',
         'note',
         'updatedAt',
+        'createdAt',
         'recommended',
       ],
       include: OpportunityCandidateInclude,
-      required: statusParams ? true : false,
+      required: !!statusParams,
       where: {
         UserId: { [Op.eq]: candidateId },
         ...(statusParams &&
@@ -98,12 +113,18 @@ export function renderOpportunityCompleteWithoutBusinessLinesInclude(
                   }
                 : {}),
             }),
-        // for "à traiter", specify bookmarked and recommended
+        // for "à traiter", specify : bookmarked and recommended if public, all if private
         ...(statusParams?.map((status) => status.value).includes(-1)
           ? {
               [Op.or]: {
-                bookmarked: true,
-                recommended: true,
+                [Op.and]: {
+                  [Op.or]: {
+                    bookmarked: true,
+                    recommended: true,
+                  },
+                  '$Opportunity.isPublic$': true,
+                },
+                '$Opportunity.isPublic$': false,
               },
             }
           : {}),

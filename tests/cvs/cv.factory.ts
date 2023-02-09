@@ -3,6 +3,7 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
+import moment from 'moment/moment';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { Contract } from 'src/common/contracts/models';
@@ -71,12 +72,15 @@ export class CVFactory implements Factory<CV> {
     const fakeData = {
       urlImg: `images/${props.UserId}.Progress.jpg`,
       story: faker.lorem.text(),
+      intro: faker.lorem.text(),
       location: faker.address.city(),
       availability: faker.lorem.sentence(),
       transport: faker.lorem.sentence(),
       catchphrase: faker.lorem.sentence(),
       status: CVStatuses.NEW.value,
       version: 1,
+      createdAt: moment().toDate(),
+      updatedAt: moment().toDate(),
     };
 
     return {

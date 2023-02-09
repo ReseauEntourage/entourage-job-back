@@ -44,7 +44,6 @@ import {
   OpportunityCompleteInclude,
   OpportunityCompleteWithoutBusinessLinesInclude,
   OpportunityCompleteWithoutOpportunityUsersInclude,
-  renderOpportunityCompleteWithoutBusinessLinesInclude,
 } from './models/opportunity.include';
 import {
   OfferAdminTab,
@@ -271,6 +270,12 @@ export class OpportunitiesService {
       limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
+    const candidate = await this.usersService.findOne(candidateId);
+
+    if (!candidate) {
+      return null;
+    }
+
     const { includeOptions, whereOptions } = renderOffersQuery(
       candidateId,
       query
@@ -563,7 +568,7 @@ export class OpportunitiesService {
 
       await Promise.all(
         uniqueCandidatesIds.map((candidateId) => {
-          return this.opportunityUsersService.create({
+          return this.opportunityUsersService.createOrRestore({
             OpportunityId: opportunity.id,
             UserId: candidateId,
             recommended: opportunity.isPublic,
@@ -604,19 +609,14 @@ export class OpportunitiesService {
     const t = await this.opportunityUserModel.sequelize.transaction();
     try {
       const opportunityUsers = await Promise.all(
-        uniqueCandidatesIds.map((candidateId) => {
-          return this.opportunityUserModel
-            .findOrCreate({
-              where: {
-                OpportunityId: opportunity.id,
-                UserId: candidateId,
-              },
-              hooks: true,
-              transaction: t,
-            })
-            .then((model) => {
-              return model[0];
-            });
+        uniqueCandidatesIds.map(async (candidateId) => {
+          return this.opportunityUsersService.createOrRestore(
+            {
+              OpportunityId: opportunity.id,
+              UserId: candidateId,
+            },
+            t
+          );
         })
       );
 
@@ -1020,7 +1020,7 @@ export class OpportunitiesService {
   ) {
     const user = await this.usersService.findOne(candidateId);
     const relatedUser = getRelatedUser(user);
-    this.mailsService.sendMailContactEmployer(
+    await this.mailsService.sendMailContactEmployer(
       type,
       user,
       relatedUser.email,

@@ -144,3 +144,43 @@ export const OfferFilters: Filters<OfferFilterKey> = [
 export type OpportunityRestricted = Opportunity & {
   opportunityUsers: OpportunityUser;
 };
+
+export type EventType =
+  | 'contact'
+  | 'followup'
+  | 'interview'
+  | 'trial'
+  | 'pmsmp'
+  | 'hiring'
+  | 'end';
+
+export const EventTypeFilters: FilterConstant<EventType>[] = [
+  {
+    label: 'Contacté le',
+    value: 'contact',
+  },
+  {
+    label: 'Relancé le',
+    value: 'followup',
+  },
+  {
+    label: 'Entretien le',
+    value: 'interview',
+  },
+  {
+    label: "Période d'essai le",
+    value: 'trial',
+  },
+  {
+    label: 'PMSMP le',
+    value: 'pmsmp',
+  },
+  {
+    label: 'Embauche le',
+    value: 'hiring',
+  },
+  {
+    label: 'Arrêt de contrat le',
+    value: 'end',
+  },
+];

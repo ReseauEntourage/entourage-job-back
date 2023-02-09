@@ -1,22 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  AfterCreate,
+  AfterUpdate,
   AllowNull,
   BelongsTo,
   Column,
+  CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   ForeignKey,
+  HasMany,
   IsUUID,
   PrimaryKey,
   Table,
-  AfterCreate,
-  AfterUpdate,
-  // AfterDestroy,
+  UpdatedAt,
 } from 'sequelize-typescript';
 import { Transaction } from 'sequelize/types';
 import { OfferStatus, OfferStatuses } from '../opportunities.types';
 import { User } from 'src/users/models';
 import { HistorizedModel } from 'src/utils/types';
+import { OpportunityUserEvent } from './opportunity-user-event.model';
 import { OpportunityUserStatusChange } from './opportunity-user-status-change.model';
 import { Opportunity } from './opportunity.model';
 
@@ -80,6 +84,18 @@ export class OpportunityUser extends HistorizedModel {
 
   @BelongsTo(() => Opportunity, 'OpportunityId')
   opportunity: Opportunity;
+
+  @HasMany(() => OpportunityUserEvent, 'OpportunityUserId')
+  events: OpportunityUserEvent[];
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
+
+  @DeletedAt
+  deletedAt?: Date;
 
   @AfterCreate
   static async createAssociations(
