@@ -734,7 +734,7 @@ export class OpportunitiesController {
     }
 
     const opportunityUser =
-      this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
         opportunityId
       );
@@ -749,6 +749,7 @@ export class OpportunitiesController {
       opportunity.recruiterMail,
       description
     );
+
     if (type === 'contact') {
       await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
         candidateId,

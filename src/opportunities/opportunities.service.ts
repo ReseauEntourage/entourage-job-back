@@ -784,13 +784,15 @@ export class OpportunitiesService {
     candidateId: string
   ) {
     if (!isAdmin) {
-      this.mailsService.sendOnCreatedExternalOfferMailToAdmin(opportunity);
+      await this.mailsService.sendOnCreatedExternalOfferMailToAdmin(
+        opportunity
+      );
     }
     if (coachNotification && !isAdmin) {
       const candidate = await this.usersService.findOne(candidateId);
       const coach = getRelatedUser(candidate);
       if (coach) {
-        return this.mailsService.sendOnCreatedExternalOfferMailToCoach(
+        await this.mailsService.sendOnCreatedExternalOfferMailToCoach(
           opportunity,
           coach
         );
@@ -1020,7 +1022,7 @@ export class OpportunitiesService {
   ) {
     const user = await this.usersService.findOne(candidateId);
     const relatedUser = getRelatedUser(user);
-    await this.mailsService.sendMailContactEmployer(
+    return this.mailsService.sendMailContactEmployer(
       type,
       user,
       relatedUser.email,

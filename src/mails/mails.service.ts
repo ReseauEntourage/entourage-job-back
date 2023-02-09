@@ -498,6 +498,7 @@ export class MailsService {
       contact: 'CONTACT_EMPLOYER',
       relance: 'RELANCE_EMPLOYER',
     };
+
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
         to: employerMail,
