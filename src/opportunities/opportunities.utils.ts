@@ -14,10 +14,7 @@ import {
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { getZoneFromDepartment } from 'src/utils/misc/getZoneFromDepartment';
 import { FilterConstant, FilterObject, FilterParams } from 'src/utils/types';
-import {
-  OpportunityCompleteWithoutBusinessLinesInclude,
-  renderOpportunityCompleteWithoutBusinessLinesInclude,
-} from './models/opportunity.include';
+import { renderOpportunityCompleteWithoutBusinessLinesInclude } from './models/opportunity.include';
 import {
   OfferAdminTab,
   OfferAdminTabs,
@@ -316,7 +313,6 @@ export function filterCandidateOffersByType(
   offers: OpportunityRestricted[],
   type: OfferCandidateTab
 ) {
-  console.log(type);
   let filteredList = offers;
   if (offers) {
     filteredList = filteredList.filter((offer) => {
