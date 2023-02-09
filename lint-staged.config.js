@@ -1,3 +1,3 @@
 module.exports = {
-  '**/*.ts?(x)': [() => 'yarn test:ts-check', 'yarn test:eslint'],
+  'src/**/*.ts?(x) tests/**/*.ts?(x)': [() => 'yarn test:ts-check', 'yarn test:eslint'],
 };
