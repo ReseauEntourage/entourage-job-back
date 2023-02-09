@@ -3836,7 +3836,7 @@ describe('Opportunities', () => {
             .post(`${route}/contactEmployer`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send({
-              candidateId: loggedInCoach.user.id,
+              candidateId: loggedInCandidate.user.id,
               opportunityId: opportunity.id,
               type: 'relance',
               description: '',
