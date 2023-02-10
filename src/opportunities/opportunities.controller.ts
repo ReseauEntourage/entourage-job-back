@@ -729,18 +729,22 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    if (!opportunity.recruiterMail) {
-      throw new BadRequestException('no recruiter email');
-    }
-
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
         opportunityId
       );
 
-    if (!opportunityUser) {
+    if (
+      !opportunityUser ||
+      !opportunity.isValidated ||
+      opportunity.isExternal
+    ) {
       throw new ForbiddenException();
+    }
+
+    if (!opportunity.recruiterMail) {
+      throw new BadRequestException('no recruiter email');
     }
 
     await this.opportunitiesService.sendContactEmployer(

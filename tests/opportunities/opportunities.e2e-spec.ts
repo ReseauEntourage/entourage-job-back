@@ -3783,10 +3783,12 @@ describe('Opportunities', () => {
 
           opportunity = await opportunityFactory.create({
             isValidated: true,
+            isExternal: false,
           });
 
           otherOpportunity = await opportunityFactory.create({
             isValidated: true,
+            isExternal: false,
           });
 
           ({ loggedInCandidate, loggedInCoach } =
@@ -3850,7 +3852,7 @@ describe('Opportunities', () => {
             .post(`${route}/contactEmployer`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
-              candidateId: loggedInCoach.user.id,
+              candidateId: loggedInCandidate.user.id,
               opportunityId: opportunity.id,
               type: 'relance',
               description: '',
@@ -3864,7 +3866,7 @@ describe('Opportunities', () => {
             .post(`${route}/contactEmployer`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
-              candidateId: loggedInCoach.user.id,
+              candidateId: loggedInCandidate.user.id,
               opportunityId: otherOpportunity.id,
               type: 'relance',
             });
@@ -3877,21 +3879,84 @@ describe('Opportunities', () => {
             .post(`${route}/contactEmployer`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
-              candidateId: loggedInCoach.user.id,
+              candidateId: loggedInCandidate.user.id,
               opportunityId: otherOpportunity.id,
               type: 'relance',
             });
           expect(response.status).toBe(403);
         });
-        it('Should return 404 if  opportunity doesnt exist', async () => {
+
+        it("Should return 403 if coach's candidate is not associated to the opportunity", async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
           > = await request(app.getHttpServer())
             .post(`${route}/contactEmployer`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
-              candidateId: loggedInCoach.user.id,
-              opportunityId: '5fc222a0-a644-11ed-afa1-0242ac120002',
+              candidateId: loggedInCandidate.user.id,
+              opportunityId: otherOpportunity.id,
+              type: 'relance',
+            });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 403 if candidate contacts recruitor of external opportunity', async () => {
+          const externalOpportunity = await opportunityFactory.create({
+            isValidated: true,
+            isExternal: true,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            externalOpportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const response: APIResponse<
+            OpportunitiesController['contactEmployer']
+          > = await request(app.getHttpServer())
+            .post(`${route}/contactEmployer`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              candidateId: loggedInCandidate.user.id,
+              opportunityId: externalOpportunity.id,
+              type: 'relance',
+            });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 403 if candidate contacts recruitor of not validated opportunity', async () => {
+          const notValidatedOpportunity = await opportunityFactory.create({
+            isValidated: false,
+            isExternal: false,
+          });
+
+          await opportunityUsersHelper.associateOpportunityUser(
+            notValidatedOpportunity.id,
+            loggedInCandidate.user.id
+          );
+
+          const response: APIResponse<
+            OpportunitiesController['contactEmployer']
+          > = await request(app.getHttpServer())
+            .post(`${route}/contactEmployer`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              candidateId: loggedInCandidate.user.id,
+              opportunityId: notValidatedOpportunity.id,
+              type: 'relance',
+            });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 404 if opportunity doesnt exist', async () => {
+          const response: APIResponse<
+            OpportunitiesController['contactEmployer']
+          > = await request(app.getHttpServer())
+            .post(`${route}/contactEmployer`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              candidateId: loggedInCandidate.user.id,
+              opportunityId: uuid(),
               type: 'relance',
             });
           expect(response.status).toBe(403);
