@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
-import { getZoneFromDepartment } from '../../utils/misc';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
+import { getZoneFromDepartment } from 'src/utils/misc';
 import {
   AccountProps,
   AccountRecordType,
