@@ -287,19 +287,27 @@ export class OpportunitiesService {
     const opportunities = await this.opportunityModel.findAll({
       ...options,
       where: {
-        [Op.or]: [
-          { isPublic: true, isValidated: true, isArchived: false },
-          opportunitiesIds.length > 0
-            ? {
-                id: opportunitiesIds,
-                isPublic: false,
-                isValidated: true,
-                isArchived: false,
-              }
-            : {},
+        [Op.and]: [
+          {
+            [Op.or]: [
+              { isPublic: true, isValidated: true, isArchived: false },
+              opportunitiesIds.length > 0
+                ? {
+                    id: opportunitiesIds,
+                    isPublic: false,
+                    isValidated: true,
+                    isArchived: false,
+                  }
+                : {},
+            ],
+          },
+          {
+            ...searchOptions,
+          },
+          {
+            ...filterOptions,
+          },
         ],
-        ...searchOptions,
-        ...filterOptions,
       },
     });
 
