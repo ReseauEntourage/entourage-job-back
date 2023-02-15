@@ -21,6 +21,7 @@ import {
   ObjectNames,
   OfferAndProcessProps,
   OfferProps,
+  OfferPropsWithRecruiterId,
   ProcessProps,
   SalesforceAccount,
   SalesforceBinome,
@@ -295,6 +296,56 @@ export class SalesforceService {
     );
   }
 
+  async createOrUpdateOfferWithRecruiter(
+    offerToCreate: OfferPropsWithRecruiterId | OfferPropsWithRecruiterId[]
+  ) {
+    let offerWithRecruiterAsContact;
+    let offerWithRecruiterAsProspect;
+    if (Array.isArray(offerToCreate)) {
+      offerWithRecruiterAsContact = offerToCreate.map((singleOffer) => {
+        const { recruiterSfId, ...restOffer } = singleOffer;
+        return {
+          ...restOffer,
+          recruiterSfIdAsContact: recruiterSfId,
+        };
+      });
+      offerWithRecruiterAsProspect = offerToCreate.map((singleOffer) => {
+        const { recruiterSfId, ...restOffer } = singleOffer;
+        return {
+          ...restOffer,
+          recruiterSfIdAsProspect: recruiterSfId,
+        };
+      });
+    } else {
+      const { recruiterSfId, ...restOffer } = offerToCreate;
+      offerWithRecruiterAsContact = {
+        ...restOffer,
+        recruiterSfIdAsContact: recruiterSfId,
+      };
+      offerWithRecruiterAsProspect = {
+        ...restOffer,
+        recruiterSfIdAsProspect: recruiterSfId,
+      };
+    }
+
+    try {
+      return (await this.createOrUpdateOffer(
+        offerWithRecruiterAsContact
+      )) as string;
+    } catch (err) {
+      if (
+        (err as SalesforceError).errorCode ===
+        ErrorCodes.FIELD_INTEGRITY_EXCEPTION
+      ) {
+        return (await this.createOrUpdateOffer(
+          offerWithRecruiterAsProspect
+        )) as string;
+      }
+      console.error(err);
+      throw err;
+    }
+  }
+
   async searchAccountByName(search: string, recordType: AccountRecordType) {
     const escapedSearch = search.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
     await this.refreshSalesforceInstance();
@@ -384,7 +435,7 @@ export class SalesforceService {
       );
     return {
       companySfId: records[0]?.Entreprise_Recruteuse__c,
-      contactSfId: records[0]?.Prenom_Nom_du_recruteur__c,
+      recruiterSfId: records[0]?.Prenom_Nom_du_recruteur__c,
     };
   }
 
@@ -525,10 +576,13 @@ export class SalesforceService {
     }: ContactProps & { contactMail: string; mainCompanySfId: string },
     recordType: ContactRecordType
   ) {
-    let contactSfId = await this.findContact(contactMail || email, recordType);
+    let recruiterSfId = await this.findContact(
+      contactMail || email,
+      recordType
+    );
 
-    if (!contactSfId) {
-      contactSfId = (await this.createContact(
+    if (!recruiterSfId) {
+      recruiterSfId = (await this.createContact(
         contactMail
           ? {
               email: contactMail,
@@ -547,7 +601,7 @@ export class SalesforceService {
         recordType
       )) as string;
     }
-    return contactSfId;
+    return recruiterSfId;
   }
 
   async findOrCreateLead<T extends LeadRecordType>(
@@ -596,7 +650,7 @@ export class SalesforceService {
       address,
     } = offer;
 
-    let { companySfId, contactSfId } = await this.findOfferRelationsById(
+    let { companySfId, recruiterSfId } = await this.findOfferRelationsById(
       offer.id
     );
 
@@ -617,9 +671,9 @@ export class SalesforceService {
     console.log('Created Salesforce Company', companySfId);
 
     if (mainContactSfId) {
-      contactSfId = mainContactSfId;
-    } else if (!contactSfId) {
-      contactSfId = (await this.findOrCreateContact(
+      recruiterSfId = mainContactSfId;
+    } else if (!recruiterSfId) {
+      recruiterSfId = (await this.findOrCreateContact(
         {
           firstName: recruiterFirstName,
           lastName: recruiterName,
@@ -636,9 +690,9 @@ export class SalesforceService {
     }
 
     // eslint-disable-next-line no-console
-    console.log('Created Salesforce Contact', contactSfId);
+    console.log('Created Salesforce Contact', recruiterSfId);
 
-    return { contactSfId, companySfId };
+    return { recruiterSfId, companySfId };
   }
 
   async findOrCreateLeadFromCompanyForm({
@@ -856,7 +910,7 @@ export class SalesforceService {
           businessLines,
         } = offerAndProcess[0].offer;
 
-        ({ companySfId: mainCompanySfId, contactSfId: mainContactSfId } =
+        ({ companySfId: mainCompanySfId, recruiterSfId: mainContactSfId } =
           await this.findOrCreateCompanyAndContactFromOffer({
             recruiterFirstName,
             recruiterName,
@@ -880,10 +934,10 @@ export class SalesforceService {
         { offers: [], processes: [] }
       );
 
-      let offersToCreate: OfferProps[] = [];
+      let offersToCreate: OfferPropsWithRecruiterId[] = [];
       for (let i = 0; i < offersAndProcessesToCreate.offers.length; i += 1) {
         const offer = offersAndProcessesToCreate.offers[i];
-        const { contactSfId, companySfId } =
+        const { recruiterSfId, companySfId } =
           await this.findOrCreateCompanyAndContactFromOffer(
             offer,
             mainCompanySfId,
@@ -894,13 +948,13 @@ export class SalesforceService {
           ...offersToCreate,
           {
             ...offer,
-            contactSfId,
+            recruiterSfId,
             companySfId,
           },
         ];
       }
 
-      await this.createOrUpdateOffer(offersToCreate);
+      await this.createOrUpdateOfferWithRecruiter(offersToCreate);
 
       if (
         offersAndProcessesToCreate.processes &&
@@ -915,12 +969,12 @@ export class SalesforceService {
       }
     } else {
       const { offer, process } = offerAndProcess;
-      const { contactSfId, companySfId } =
+      const { recruiterSfId, companySfId } =
         await this.findOrCreateCompanyAndContactFromOffer(offer);
 
-      const offerSfId = (await this.createOrUpdateOffer({
+      const offerSfId = (await this.createOrUpdateOfferWithRecruiter({
         ...offer,
-        contactSfId,
+        recruiterSfId,
         companySfId,
       })) as string;
 
