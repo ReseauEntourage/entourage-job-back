@@ -172,7 +172,8 @@ export function mapSalesforceOfferFields({
   contactMail,
   date,
   companySfId,
-  contactSfId,
+  recruiterSfIdAsContact,
+  recruiterSfIdAsProspect,
 }: OfferProps): SalesforceOffer {
   const externalOriginConstant = externalOrigin
     ? findConstantFromValue(externalOrigin, ExternalOfferOriginFilters)
@@ -234,7 +235,8 @@ export function mapSalesforceOfferFields({
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, ''),
     Date_de_cr_ation__c: date,
-    Prenom_Nom_du_recruteur__c: contactSfId,
+    Prenom_Nom_du_recruteur__c: recruiterSfIdAsContact,
+    Prenom_Nom_du_recruteur_Prospect__c: recruiterSfIdAsProspect,
     Contact_cree_existant__c: true,
     Antenne__c: _.capitalize(
       AdminZones[getZoneSuffixFromDepartment(department)]

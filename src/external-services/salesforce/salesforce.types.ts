@@ -284,6 +284,8 @@ export interface SalesforceProcess {
   Offre_d_emploi__c: string;
 }
 
+export type OfferPropsWithRecruiterId = OfferProps & { recruiterSfId: string };
+
 export interface OfferProps {
   id: string;
   company: string;
@@ -314,7 +316,8 @@ export interface OfferProps {
   contactMail: string;
   date: Date;
   companySfId?: string;
-  contactSfId?: string;
+  recruiterSfIdAsProspect?: string;
+  recruiterSfIdAsContact?: string;
 }
 
 export interface SalesforceOffer {
@@ -349,7 +352,8 @@ export interface SalesforceOffer {
   Fonction_du_recruteur__c: string;
   Mail_de_contact__c: string;
   Date_de_cr_ation__c: Date;
-  Prenom_Nom_du_recruteur__c: string;
+  Prenom_Nom_du_recruteur__c?: string;
+  Prenom_Nom_du_recruteur_Prospect__c?: string;
   Contact_cree_existant__c: true;
   Antenne__c: string;
 }
