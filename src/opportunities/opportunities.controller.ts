@@ -402,7 +402,7 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    return await this.opportunityUsersService.countOffersByStatus(candidateId);
+    return this.opportunityUsersService.countOffersByStatus(candidateId);
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)

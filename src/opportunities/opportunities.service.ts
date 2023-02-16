@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
@@ -26,7 +26,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
-import { AdminZone, FilterObject, FilterParams } from 'src/utils/types';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
@@ -42,7 +42,6 @@ import { OpportunityCandidateAttributes } from './models/opportunity.attributes'
 import {
   OpportunityCompleteAdminWithoutBusinessLinesInclude,
   OpportunityCompleteInclude,
-  OpportunityCompleteWithoutBusinessLinesInclude,
   OpportunityCompleteWithoutOpportunityUsersInclude,
 } from './models/opportunity.include';
 import {
@@ -50,7 +49,6 @@ import {
   OfferAdminTabs,
   OfferCandidateTab,
   OfferFilterKey,
-  OfferOptions,
   OfferStatuses,
   OpportunityRestricted,
 } from './opportunities.types';
@@ -466,81 +464,31 @@ export class OpportunitiesService {
 
   async countUnseen(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
-    const cv = await this.cvsService.findOneByCandidateId(candidateId);
 
-    const locationFilters = DepartmentFilters.filter((dept) => {
-      return cv?.locations?.length > 0
-        ? cv.locations.map((location) => location.name).includes(dept.value)
-        : candidate.zone === dept.zone;
-    });
-
-    const filters = {} as FilterObject<OfferFilterKey>;
-    if (locationFilters.length > 0) {
-      filters.department = locationFilters;
+    if (!candidate) {
+      throw new NotFoundException();
     }
-
-    const filterOptions =
-      Object.keys(filters).length > 0
-        ? getOfferOptions(filters)
-        : ({} as OfferOptions);
-
-    const { businessLines: businessLinesOptions, ...restFilterOptions } =
-      filterOptions;
 
     const opportunityUsers =
       await this.opportunityUsersService.findAllByCandidateId(candidateId);
 
-    const opportunities = await Opportunity.findAll({
-      include: [
-        ...OpportunityCompleteWithoutBusinessLinesInclude,
-        {
-          model: BusinessLine,
-          as: 'businessLines',
-          attributes: ['name', 'order'],
-          through: { attributes: [] },
-          ...(businessLinesOptions
-            ? {
-                where: {
-                  name: businessLinesOptions,
-                },
-              }
-            : {}),
-        },
-      ],
+    const unseenOpportunities = await Opportunity.count({
       where: {
-        [Op.or]: [
-          { isPublic: true, isValidated: true },
-          {
-            id: opportunityUsers.map((model) => {
-              return model.OpportunityId;
-            }),
-            isPublic: false,
-            isValidated: true,
-          },
-        ],
-        ...restFilterOptions,
+        id: opportunityUsers
+          .filter(({ seen, archived }) => {
+            return !seen && !archived;
+          })
+          .map((model) => {
+            return model.OpportunityId;
+          }),
+        isPublic: false,
+        isValidated: true,
+        isArchived: false,
       },
     });
 
-    const filteredOpportunities = opportunities
-      .map((opportunity) => {
-        return opportunity.toJSON();
-      })
-      .filter((opportunity: Opportunity) => {
-        return (
-          !opportunity.opportunityUsers ||
-          opportunity.opportunityUsers.length === 0 ||
-          !opportunity.opportunityUsers.find((opp) => {
-            return opp.UserId === candidateId;
-          }) ||
-          opportunity.opportunityUsers.find((opp) => {
-            return opp.UserId === candidateId;
-          }).seen === false
-        );
-      });
-
     return {
-      unseenOpportunities: filteredOpportunities.length,
+      unseenOpportunities,
     };
   }
 

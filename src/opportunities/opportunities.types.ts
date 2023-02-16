@@ -4,6 +4,10 @@ import {
   BusinessLineValue,
 } from 'src/common/businessLines/businessLines.types';
 import {
+  ContractFilters,
+  ContractValue,
+} from 'src/common/contracts/contracts.types';
+import {
   Department,
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
@@ -76,6 +80,7 @@ export interface OfferOptions {
   status: { [Op.or]: OfferStatus[] };
   businessLines: { [Op.or]: BusinessLineValue[] };
   department: { [Op.or]: Department[] };
+  contracts: { [Op.or]: ContractValue[] };
 }
 
 export type OfferFilterKey = keyof OfferOptions;
@@ -138,6 +143,11 @@ export const OfferFilters: Filters<OfferFilterKey> = [
     key: 'businessLines',
     constants: BusinessLineFilters,
     title: 'Métiers',
+  },
+  {
+    key: 'contracts',
+    constants: ContractFilters,
+    title: 'Type de contrat',
   },
 ];
 
