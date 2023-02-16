@@ -176,7 +176,7 @@ export const LeadProfessionalSituation: {
   [CandidateProfessionalSituations.INTE]: 'Intérim',
   [CandidateProfessionalSituations.FORM]: 'En formation',
   [CandidateProfessionalSituations.OTHER]: 'Autre',
-  [CandidateProfessionalSituations.STUDENT]: 'Etudiant.e',
+  [CandidateProfessionalSituations.STUDENT]: 'Etudiant',
 } as const;
 
 export const LeadAdministrativeSituations: {
