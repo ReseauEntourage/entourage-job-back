@@ -187,7 +187,7 @@ export function renderOffersQuery(
 
   const filtersObj = getFiltersObjectsFromQueryParams(restParams, OfferFilters);
 
-  const { department, status: statusParams } = filtersObj;
+  const { department, status: statusParams, contracts } = filtersObj;
 
   const businessLinesInclude = {
     model: BusinessLine,
@@ -216,6 +216,13 @@ export function renderOffersQuery(
         isPublic: true,
         ...(department
           ? { department: { [Op.or]: department.map((dep) => dep.value) } }
+          : {}),
+        ...(contracts
+          ? {
+              contract: {
+                [Op.or]: contracts.map((contract) => contract.value),
+              },
+            }
           : {}),
         ...searchOptions,
         ...basicParams,
