@@ -4438,6 +4438,83 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
       });
+    describe('P - send emails archive reminders', () => {
+      let loggedInAdmin: LoggedUser;
+      let loggedInCandidate: LoggedUser;
+      let loggedInCoach: LoggedUser;
+
+      beforeEach(async () => {
+        loggedInAdmin = await usersHelper.createLoggedInUser({
+          role: UserRoles.ADMIN,
+        });
+        loggedInCandidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+        });
+        loggedInCoach = await usersHelper.createLoggedInUser({
+          role: UserRoles.COACH,
+        });
+      });
+
+      it('Should respond 200 and send 5 email when logged as admin', async () => {
+        const originalOpportunities = await databaseHelper.createEntities(
+          opportunityFactory,
+          5,
+          {},
+          {},
+          true
+        );
+        const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
+          return id;
+        });
+        console.log({ ids: originalOpportunitiesIds });
+        const response: APIResponse<
+          OpportunitiesController['postSendReminderArchive']
+        > = await request(app.getHttpServer())
+          .put(`${route}/sendReminderArchive`)
+          .set('authorization', `Token ${loggedInAdmin.token}`)
+          .send({ ids: originalOpportunitiesIds });
+        expect(response.status).toBe(200);
+      });
+
+      it('Should respond 403 when logged as coach', async () => {
+        const originalOpportunities = await databaseHelper.createEntities(
+          opportunityFactory,
+          5,
+          {},
+          {},
+          true
+        );
+        const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
+          return id;
+        });
+        const response: APIResponse<
+          OpportunitiesController['postSendReminderArchive']
+        > = await request(app.getHttpServer())
+          .put(`${route}/sendReminderArchive`)
+          .set('authorization', `Token ${loggedInCoach.token}`)
+          .send({ ids: originalOpportunitiesIds });
+        expect(response.status).toBe(403);
+      });
+
+      it('Should respond 403 when logged as candidate', async () => {
+        const originalOpportunities = await databaseHelper.createEntities(
+          opportunityFactory,
+          5,
+          {},
+          {},
+          true
+        );
+        const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
+          return id;
+        });
+        const response: APIResponse<
+          OpportunitiesController['postSendReminderArchive']
+        > = await request(app.getHttpServer())
+          .put(`${route}/sendReminderArchive`)
+          .set('authorization', `Token ${loggedInCandidate.token}`)
+          .send({ ids: originalOpportunitiesIds });
+        expect(response.status).toBe(403);
+      });
     });
   });
 });
