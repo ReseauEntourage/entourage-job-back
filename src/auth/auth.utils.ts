@@ -30,7 +30,7 @@ export function getPartialUserForPayload(user: User): PayloadUser {
     lastConnection,
     coach,
     candidat,
-  } = user.toJSON();
+  } = user;
 
   const commonAttributes = {
     id: id,
