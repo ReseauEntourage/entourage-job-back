@@ -234,6 +234,11 @@ describe('Auth', () => {
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
           ...candidateResponse,
+          coach: null,
+          candidat: {
+            ...candidateResponse.candidat,
+            note: null,
+          },
           lastConnection: response.body.lastConnection,
         });
       });
@@ -293,7 +298,7 @@ describe('Auth', () => {
         role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
-      const candidatResponse = getPartialUserForPayload(loggedInCandidat.user);
+      const candidateResponse = getPartialUserForPayload(loggedInCandidat.user);
 
       const response: APIResponse<AuthController['getCurrent']> = await request(
         app.getHttpServer()
@@ -302,7 +307,12 @@ describe('Auth', () => {
         .set('authorization', `Token ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
-        ...candidatResponse,
+        ...candidateResponse,
+        coach: null,
+        candidat: {
+          ...candidateResponse.candidat,
+          note: null,
+        },
         lastConnection: response.body.lastConnection,
       });
     });
