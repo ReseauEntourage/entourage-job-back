@@ -786,8 +786,8 @@ export class OpportunitiesService {
     );
   }
 
-  async sendArchiveOfferReminder(opportunity: Opportunity) {
-    return await this.mailsService.sendArchiveOfferReminderMail(opportunity);
+  sendArchiveOfferReminder(opportunity: Opportunity) {
+    return this.mailsService.sendArchiveOfferReminderMail(opportunity);
   }
 
   // check and execute if the email should be sent and if should be rescheduled

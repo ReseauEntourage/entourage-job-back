@@ -4455,7 +4455,7 @@ describe('Opportunities', () => {
         });
       });
 
-      it('Should respond 200 and send 5 email when logged as admin', async () => {
+      it('Should respond 201 and send 5 email when logged as admin', async () => {
         const originalOpportunities = await databaseHelper.createEntities(
           opportunityFactory,
           5,
@@ -4466,14 +4466,13 @@ describe('Opportunities', () => {
         const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
           return id;
         });
-        console.log({ ids: originalOpportunitiesIds });
         const response: APIResponse<
           OpportunitiesController['postSendReminderArchive']
         > = await request(app.getHttpServer())
-          .put(`${route}/sendReminderArchive`)
+          .post(`${route}/sendReminderArchive`)
           .set('authorization', `Token ${loggedInAdmin.token}`)
           .send({ ids: originalOpportunitiesIds });
-        expect(response.status).toBe(200);
+        expect(response.status).toBe(201);
       });
 
       it('Should respond 403 when logged as coach', async () => {
@@ -4490,7 +4489,7 @@ describe('Opportunities', () => {
         const response: APIResponse<
           OpportunitiesController['postSendReminderArchive']
         > = await request(app.getHttpServer())
-          .put(`${route}/sendReminderArchive`)
+          .post(`${route}/sendReminderArchive`)
           .set('authorization', `Token ${loggedInCoach.token}`)
           .send({ ids: originalOpportunitiesIds });
         expect(response.status).toBe(403);
@@ -4510,7 +4509,7 @@ describe('Opportunities', () => {
         const response: APIResponse<
           OpportunitiesController['postSendReminderArchive']
         > = await request(app.getHttpServer())
-          .put(`${route}/sendReminderArchive`)
+          .post(`${route}/sendReminderArchive`)
           .set('authorization', `Token ${loggedInCandidate.token}`)
           .send({ ids: originalOpportunitiesIds });
         expect(response.status).toBe(403);
