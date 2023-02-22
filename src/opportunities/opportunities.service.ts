@@ -965,7 +965,7 @@ export class OpportunitiesService {
   async sendContactEmployer(
     type: string,
     candidateId: string,
-    recruiterMail: string,
+    opportunity: Opportunity,
     description: string
   ) {
     const user = await this.usersService.findOne(candidateId);
@@ -974,7 +974,7 @@ export class OpportunitiesService {
       type,
       user,
       relatedUser.email,
-      recruiterMail,
+      opportunity,
       description
     );
   }

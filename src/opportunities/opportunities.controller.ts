@@ -750,7 +750,7 @@ export class OpportunitiesController {
     await this.opportunitiesService.sendContactEmployer(
       type,
       candidateId,
-      opportunity.recruiterMail,
+      opportunity,
       description
     );
 

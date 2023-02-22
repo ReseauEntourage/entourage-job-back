@@ -488,7 +488,7 @@ export class MailsService {
     type: string,
     user: User,
     relateduserMail: string,
-    employerMail: string,
+    opportunity: Opportunity,
     description: string
   ) {
     const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
@@ -501,7 +501,7 @@ export class MailsService {
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
-        to: employerMail,
+        to: opportunity.recruiterMail,
         cc: [
           user.email,
           relateduserMail,
@@ -514,6 +514,15 @@ export class MailsService {
       variables: {
         description,
         zone: user.zone,
+        gender: user.gender,
+        offerId: opportunity.id,
+        offerTitle: opportunity.title,
+        candidateEmail: user.email,
+        candidatePhone: user.phone,
+        cvUrl: user.candidat.url,
+        candidatFirstName: user.firstName,
+        recruiterFirtName: opportunity.recruiterFirstName,
+        company: opportunity.company,
       },
     });
   }

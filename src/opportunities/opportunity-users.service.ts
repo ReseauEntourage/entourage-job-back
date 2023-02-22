@@ -297,17 +297,26 @@ export class OpportunityUsersService {
         type: QueryTypes.SELECT,
       }
     );
-    const archivedOppUs = await this.opportunityUserModel.findAll({
-      where: {
-        UserId: candidateId,
-        archived: true,
-      },
-    });
+    const archivedOppUsCount: { count: number }[] =
+      await this.opportunityUserModel.sequelize.query(
+        `SELECT count(*)
+        FROM "Opportunity_Users"
+          LEFT JOIN "Opportunities" ON "Opportunities"."id" = "Opportunity_Users"."OpportunityId"
+        WHERE "Opportunity_Users"."UserId" = :candidateId
+          AND "Opportunities"."isValidated" = true
+          AND "Opportunities"."isArchived" = false
+          AND "Opportunity_Users"."archived" = true
+          AND "Opportunity_Users"."deletedAt" is null`,
+        {
+          replacements: { candidateId },
+          type: QueryTypes.SELECT,
+        }
+      );
 
     return [
       {
         status: 'archived',
-        count: archivedOppUs.length,
+        count: archivedOppUsCount[0].count,
       },
       ...statusCounts,
     ];
