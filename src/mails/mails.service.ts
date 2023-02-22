@@ -7,8 +7,8 @@ import { CV } from 'src/cvs/models';
 import {
   CustomMailParams,
   MailjetTemplate,
-  MailjetTemplates,
   MailjetTemplateKey,
+  MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
@@ -520,8 +520,8 @@ export class MailsService {
         candidateEmail: user.email,
         candidatePhone: user.phone,
         cvUrl: user.candidat.url,
-        candidatFirstName: user.firstName,
-        recruiterFirtName: opportunity.recruiterFirstName,
+        candidateFirstName: user.firstName,
+        recruiterFirstName: opportunity.recruiterFirstName,
         company: opportunity.company,
       },
     });
