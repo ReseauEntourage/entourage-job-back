@@ -970,10 +970,11 @@ export class OpportunitiesService {
   ) {
     const user = await this.usersService.findOne(candidateId);
     const relatedUser = getRelatedUser(user);
+    const emailCoach = relatedUser ? relatedUser.email : '';
     return this.mailsService.sendMailContactEmployer(
       type,
       user,
-      relatedUser.email,
+      emailCoach,
       opportunity,
       description
     );
