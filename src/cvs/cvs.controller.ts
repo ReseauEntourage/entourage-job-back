@@ -1,20 +1,21 @@
 import {
+  Body,
   Controller,
   Get,
   NotFoundException,
   Param,
   ParseUUIDPipe,
+  Post,
   Put,
   Query,
-  UseGuards,
   Req,
-  Post,
-  Body,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as _ from 'lodash';
+import { User } from '../users/models';
 import { AdminZone, FilterParams } from '../utils/types';
 import {
   PayloadUser,
@@ -23,12 +24,11 @@ import {
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import {
-  LinkedUserGuard,
   LinkedUser,
+  LinkedUserGuard,
   Roles,
   RolesGuard,
 } from 'src/users/guards';
-import { User } from 'src/users/models';
 import { CVStatuses, UserRole, UserRoles } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { CVsService } from './cvs.service';
@@ -48,7 +48,7 @@ export class CVsController {
   @Post(':candidateId')
   async createCV(
     @Req() req: RequestWithAuthorizationHeader,
-    @UserPayload() user: User,
+    @UserPayload() user: PayloadUser,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UserPayload('role') role: UserRole,
     @UserPayload('zone') zone: AdminZone,
@@ -97,7 +97,7 @@ export class CVsController {
     const { status } = createdCV;
 
     if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
-      await this.cvsService.sendMailsAfterSubmitting(user, createdCV);
+      await this.cvsService.sendMailsAfterSubmitting(user as User, createdCV);
     }
 
     if (!autoSave) {

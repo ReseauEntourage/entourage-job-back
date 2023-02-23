@@ -24,12 +24,6 @@
     "db:seed": "sequelize db:seed:all",
     "prepare": "husky install"
   },
-  "lint-staged": {
-    "*.ts": [
-      "bash -c yarn test:ts-check",
-      "bash -c yarn test:eslint"
-    ]
-  },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.142.0",
     "@aws-sdk/client-s3": "^3.142.0",
