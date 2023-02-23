@@ -86,18 +86,4 @@ export class UserCandidatsService {
       updatedUserCandidats: updatedUserCandidats,
     };
   }
-
-  async checkNoteHasBeenModified(candidateId: string, userId: string) {
-    const userCandidat = await this.userCandidatModel.findOne({
-      where: { candidatId: candidateId },
-      attributes: ['lastModifiedBy'],
-    });
-
-    return {
-      noteHasBeenModified: userCandidat
-        ? !!userCandidat.lastModifiedBy &&
-          userCandidat.lastModifiedBy !== userId
-        : false,
-    };
-  }
 }

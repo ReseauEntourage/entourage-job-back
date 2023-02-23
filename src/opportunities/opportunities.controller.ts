@@ -1,21 +1,20 @@
 import {
-  Controller,
-  Post,
-  Body,
   BadRequestException,
-  UseGuards,
+  Body,
+  Controller,
   ForbiddenException,
   Get,
-  Query,
+  NotFoundException,
   Param,
   ParseUUIDPipe,
-  NotFoundException,
+  Post,
   Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
 import { PayloadUser } from 'src/auth/auth.types';
 import { Public, UserPayload } from 'src/auth/guards';
-import { DepartmentFilters } from 'src/common/locations/locations.types';
 import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 import {
   LinkedUser,
@@ -30,11 +29,15 @@ import { AdminZone, FilterParams } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
 import { CreateExternalOpportunityPipe } from './dto/create-external-opportunity.pipe';
+import { CreateOpportunityUserEventDto } from './dto/create-opportunity-user-event.dto';
+import { CreateOpportunityUserEventPipe } from './dto/create-opportunity-user-event.pipe';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
 import { CreateOpportunityPipe } from './dto/create-opportunity.pipe';
 import { UpdateExternalOpportunityRestrictedDto } from './dto/update-external-opportunity-restricted.dto';
 import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
 import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity.pipe';
+import { UpdateOpportunityUserEventDto } from './dto/update-opportunity-user-event.dto';
+import { UpdateOpportunityUserEventPipe } from './dto/update-opportunity-user-event.pipe';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
 import { UpdateOpportunityUserPipe } from './dto/update-opportunity-user.pipe';
 import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
@@ -44,7 +47,6 @@ import { OpportunitiesService } from './opportunities.service';
 import {
   OfferAdminTab,
   OfferCandidateTab,
-  OfferCandidateTabs,
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
@@ -201,7 +203,8 @@ export class OpportunitiesController {
 
     const isAdmin = role === UserRoles.ADMIN;
 
-    const { candidateId, ...restParams } = createExternalOpportunityDto;
+    const { candidateId, coachNotification, ...restParams } =
+      createExternalOpportunityDto;
 
     const candidate = await this.opportunitiesService.findOneCandidate(
       candidateId
@@ -222,7 +225,7 @@ export class OpportunitiesController {
       userId
     );
 
-    await this.opportunityUsersService.create({
+    await this.opportunityUsersService.createOrRestore({
       OpportunityId: createdOpportunity.id,
       UserId: candidateId,
       status:
@@ -240,7 +243,9 @@ export class OpportunitiesController {
 
     await this.opportunitiesService.sendMailAfterExternalCreation(
       finalOpportunity,
-      isAdmin
+      isAdmin,
+      coachNotification,
+      candidateId
     );
 
     await this.opportunitiesService.createExternalDBOpportunity(
@@ -258,58 +263,83 @@ export class OpportunitiesController {
     @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
     @UserPayload('role') role: UserRole
   ) {
-    const opportunity = await this.opportunitiesService.findOneAsCandidate(
-      opportunityId,
-      candidateId
-    );
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
 
-    if (opportunity && opportunity.opportunityUsers) {
-      if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
-        throw new ForbiddenException();
-      }
-
-      const updatedOpportunityUser =
-        await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
-          candidateId,
-          opportunityId,
-          {
-            seen: true,
-          }
-        );
-
-      await this.opportunitiesService.updateExternalDBOpportunity(
-        updatedOpportunityUser.OpportunityId
-      );
-
-      return updatedOpportunityUser.toJSON();
-    }
-
-    const existingOpportunity = await this.opportunitiesService.findOne(
-      opportunityId
-    );
-
-    if (!existingOpportunity) {
+    if (!opportunity) {
       throw new NotFoundException();
     }
 
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
     if (
-      (!existingOpportunity.isPublic || !existingOpportunity.isValidated) &&
+      ((!opportunity.isPublic && !opportunityUser) ||
+        !opportunity.isValidated) &&
       role !== UserRoles.ADMIN
     ) {
       throw new ForbiddenException();
     }
 
-    const updatedOpportunityUser = await this.opportunityUsersService.create({
-      OpportunityId: opportunityId,
-      UserId: candidateId,
-      seen: true,
-    });
+    const createdOrUpdatedOpportunityUser = opportunityUser
+      ? await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+          candidateId,
+          opportunityId,
+          {
+            seen: true,
+          }
+        )
+      : await this.opportunityUsersService.createOrRestore({
+          OpportunityId: opportunityId,
+          UserId: candidateId,
+          seen: true,
+        });
 
     await this.opportunitiesService.updateExternalDBOpportunity(
-      updatedOpportunityUser.OpportunityId
+      createdOrUpdatedOpportunityUser.OpportunityId
     );
 
-    return updatedOpportunityUser.toJSON();
+    return createdOrUpdatedOpportunityUser.toJSON();
+  }
+
+  @LinkedUser('body.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Post('event')
+  async createOpportunityUserEvent(
+    @Body(new CreateOpportunityUserEventPipe())
+    createOpportunityUserEventDto: CreateOpportunityUserEventDto,
+    @UserPayload('role') role: UserRole
+  ) {
+    const { opportunityId, candidateId, ...restCreateOpportunityUserEventDto } =
+      createOpportunityUserEventDto;
+
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    if (!opportunityUser) {
+      throw new NotFoundException();
+    }
+
+    if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    return this.opportunityUsersService.createOpportunityUserEvent(
+      candidateId,
+      opportunityId,
+      restCreateOpportunityUserEventDto
+    );
   }
 
   @Roles(UserRoles.ADMIN)
@@ -361,14 +391,9 @@ export class OpportunitiesController {
   @UseGuards(RolesGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Get('/candidate/all/:candidateId')
-  async findAllAsCandidate(
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @Query()
-    query: {
-      type: OfferCandidateTab;
-      search: string;
-    } & FilterParams<OfferFilterKey>
+  @Get('/candidate/tabCount/:candidateId')
+  async countOffersByStatus(
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
     const opportunityUsers =
       await this.opportunityUsersService.findAllByCandidateId(candidateId);
@@ -377,45 +402,41 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    const opportunitiesIds = opportunityUsers.map((opportunityUser) => {
-      return opportunityUser.OpportunityId;
-    });
+    return this.opportunityUsersService.countOffersByStatus(candidateId);
+  }
+
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Get('/candidate/all/:candidateId')
+  async findAllAsCandidate(
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @Query()
+    query: {
+      type: OfferCandidateTab;
+      search: string;
+      offset: number;
+      limit: number;
+    } & FilterParams<OfferFilterKey>
+  ) {
+    const { type, status } = query;
+    if (type !== 'public' && !status) {
+      throw new BadRequestException('status expected');
+    }
 
     const opportunities = await this.opportunitiesService.findAllAsCandidate(
       candidateId,
-      opportunitiesIds,
       query
     );
 
-    const { department, type, ...restQuery } = query;
-
-    if (!department || type !== OfferCandidateTabs.PRIVATE) {
-      return {
-        offers: opportunities,
-        otherOffers: [],
-      };
-    } else {
-      const otherDepartments = DepartmentFilters.filter((dept) => {
-        return !department.includes(dept.value);
-      });
-      const otherOpportunities =
-        await this.opportunitiesService.findAllAsCandidate(
-          candidateId,
-          opportunitiesIds,
-          {
-            department: otherDepartments.map((dept) => {
-              return dept.value;
-            }),
-            type: type,
-            ...restQuery,
-          }
-        );
-
-      return {
-        offers: opportunities,
-        otherOffers: otherOpportunities,
-      };
+    if (!opportunities) {
+      throw new NotFoundException();
     }
+
+    return {
+      offers: opportunities,
+    };
   }
 
   @Roles(UserRoles.ADMIN)
@@ -529,9 +550,16 @@ export class OpportunitiesController {
   async updateOpportunityUser(
     @Param('opportunityId', new ParseUUIDPipe()) opportunityId: string,
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @UserPayload('role') role: UserRole,
     @Body(new UpdateOpportunityUserPipe())
     updateOpportunityUserDto: UpdateOpportunityUserDto
   ) {
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
     const opportunityUser =
       await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
         candidateId,
@@ -540,6 +568,10 @@ export class OpportunitiesController {
 
     if (!opportunityUser) {
       throw new NotFoundException();
+    }
+
+    if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+      throw new ForbiddenException();
     }
 
     const updatedOpportunityUser =
@@ -559,6 +591,54 @@ export class OpportunitiesController {
     );
 
     return updatedOpportunityUser;
+  }
+
+  @Put('event/:id')
+  async updateOpportunityUserEvent(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @UserPayload('role') role: UserRole,
+    @UserPayload() user: PayloadUser,
+    @Body(new UpdateOpportunityUserEventPipe())
+    updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
+  ) {
+    const opportunityUserEvent =
+      await this.opportunityUsersService.findOneOpportunityUserEvent(id);
+
+    if (!opportunityUserEvent) {
+      throw new NotFoundException();
+    }
+
+    const opportunityUser = await this.opportunityUsersService.findOne(
+      opportunityUserEvent.OpportunityUserId
+    );
+
+    if (!opportunityUser) {
+      throw new NotFoundException();
+    }
+
+    if (
+      opportunityUser.UserId !== getCandidateIdFromCoachOrCandidate(user) &&
+      role !== UserRoles.ADMIN
+    ) {
+      throw new ForbiddenException();
+    }
+
+    const opportunity = await this.opportunitiesService.findOne(
+      opportunityUser.OpportunityId
+    );
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
+    if (!opportunity.isValidated && role !== UserRoles.ADMIN) {
+      throw new ForbiddenException();
+    }
+
+    return this.opportunityUsersService.updateOpportunityUserEvent(
+      id,
+      updateOpportunityUserEventDto
+    );
   }
 
   @Roles(UserRoles.ADMIN)
@@ -626,5 +706,62 @@ export class OpportunitiesController {
         return id;
       })
     );
+  }
+
+  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UseGuards(RolesGuard)
+  @LinkedUser('body.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Post('contactEmployer')
+  async contactEmployer(
+    @Body('type') type: string,
+    @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
+    @Body('description') description: string
+  ) {
+    if (!type) {
+      throw new BadRequestException('type of contact is missing');
+    }
+
+    const opportunity = await this.opportunitiesService.findOne(opportunityId);
+
+    if (!opportunity) {
+      throw new NotFoundException();
+    }
+
+    const opportunityUser =
+      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId
+      );
+
+    if (
+      !opportunityUser ||
+      !opportunity.isValidated ||
+      opportunity.isExternal
+    ) {
+      throw new ForbiddenException();
+    }
+
+    if (!opportunity.recruiterMail) {
+      throw new BadRequestException('no recruiter email');
+    }
+
+    await this.opportunitiesService.sendContactEmployer(
+      type,
+      candidateId,
+      opportunity,
+      description
+    );
+
+    if (type === 'contact') {
+      await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
+        candidateId,
+        opportunityId,
+        {
+          status: 0,
+        }
+      );
+    }
   }
 }

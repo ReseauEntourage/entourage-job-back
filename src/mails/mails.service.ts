@@ -7,6 +7,7 @@ import { CV } from 'src/cvs/models';
 import {
   CustomMailParams,
   MailjetTemplate,
+  MailjetTemplateKey,
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
@@ -243,13 +244,33 @@ export class MailsService {
     });
   }
 
-  async sendOnCreatedExternalOfferMail(opportunity: OpportunityRestricted) {
+  async sendOnCreatedExternalOfferMailToAdmin(
+    opportunity: OpportunityRestricted
+  ) {
     const { companiesAdminMail } = getAdminMailsFromDepartment(
       opportunity.department
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: companiesAdminMail,
-      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED,
+      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED_ADMIN,
+      variables: {
+        offer: getMailjetVariablesForPrivateOrPublicOffer(
+          opportunity,
+          opportunity.opportunityUsers.status,
+          false
+        ),
+        candidat: _.omitBy(opportunity.opportunityUsers.user, _.isNil),
+      },
+    });
+  }
+
+  async sendOnCreatedExternalOfferMailToCoach(
+    opportunity: OpportunityRestricted,
+    coach: User
+  ) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: coach.email,
+      templateId: MailjetTemplates.OFFER_EXTERNAL_RECEIVED_COACH,
       variables: {
         offer: getMailjetVariablesForPrivateOrPublicOffer(
           opportunity,
@@ -461,5 +482,48 @@ export class MailsService {
         };
       })
     );
+  }
+
+  async sendMailContactEmployer(
+    type: string,
+    user: User,
+    relateduserMail: string,
+    opportunity: Opportunity,
+    description: string
+  ) {
+    const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
+      user.zone
+    );
+    const types: { [K in string]: MailjetTemplateKey } = {
+      contact: 'CONTACT_EMPLOYER',
+      relance: 'RELANCE_EMPLOYER',
+    };
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: {
+        to: opportunity.recruiterMail,
+        cc: [
+          user.email,
+          relateduserMail,
+          candidatesAdminMail,
+          companiesAdminMail,
+        ],
+      },
+      templateId: MailjetTemplates[types[type]],
+      replyTo: user.email,
+      variables: {
+        description,
+        zone: user.zone,
+        gender: user.gender,
+        offerId: opportunity.id,
+        offerTitle: opportunity.title,
+        candidateEmail: user.email,
+        candidatePhone: user.phone,
+        cvUrl: user.candidat.url,
+        candidateFirstName: user.firstName,
+        recruiterFirstName: opportunity.recruiterFirstName,
+        company: opportunity.company,
+      },
+    });
   }
 }

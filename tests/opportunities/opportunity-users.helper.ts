@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { OpportunityUserEvent } from '../../src/opportunities/models/opportunity-user-event.model';
 import { OpportunityUser } from 'src/opportunities/models';
 
 @Injectable()
 export class OpportunityUsersHelper {
   constructor(
     @InjectModel(OpportunityUser)
-    private opportunityUserModel: typeof OpportunityUser
+    private opportunityUserModel: typeof OpportunityUser,
+    @InjectModel(OpportunityUserEvent)
+    private opportunityUserEventModel: typeof OpportunityUserEvent
   ) {}
 
   async associateOpportunityUser(
@@ -35,5 +38,19 @@ export class OpportunityUsersHelper {
         return this.associateOpportunityUser(opportunityId, candidateId, props);
       })
     );
+  }
+
+  async createOpportunityUserEvent(
+    opportunityUserId: string,
+    props: Partial<OpportunityUserEvent> = {}
+  ): Promise<OpportunityUser> {
+    const opportunityUserEvent = await this.opportunityUserEventModel.create(
+      {
+        OpportunityUserId: opportunityUserId,
+        ...props,
+      },
+      { hooks: true }
+    );
+    return opportunityUserEvent.toJSON();
   }
 }

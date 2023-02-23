@@ -14,6 +14,7 @@ import {
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { getZoneFromDepartment } from 'src/utils/misc/getZoneFromDepartment';
 import { FilterConstant, FilterObject, FilterParams } from 'src/utils/types';
+import { renderOpportunityCompleteWithoutBusinessLinesInclude } from './models/opportunity.include';
 import {
   OfferAdminTab,
   OfferAdminTabs,
@@ -165,6 +166,85 @@ export function getOfferOptions(
   }
 
   return whereOptions;
+}
+
+export function renderOffersQuery(
+  candidateId: string,
+  params: {
+    type?: OfferAdminTab | OfferCandidateTab;
+    search: string;
+  } & FilterParams<OfferFilterKey>
+): {
+  includeOptions: Includeable[];
+  whereOptions: WhereOptions;
+} {
+  const basicParams = {
+    isValidated: true,
+    isArchived: false,
+  };
+
+  const { type, search, businessLines, ...restParams } = params;
+
+  const filtersObj = getFiltersObjectsFromQueryParams(restParams, OfferFilters);
+
+  const { department, status: statusParams, contracts } = filtersObj;
+
+  const businessLinesInclude = {
+    model: BusinessLine,
+    as: 'businessLines',
+    attributes: ['name', 'order'],
+    ...(businessLines
+      ? {
+          where: {
+            name: { [Op.or]: businessLines },
+          },
+        }
+      : {}),
+  };
+  if (type && type === 'public') {
+    const searchOptions = getOfferSearchOptions(search);
+
+    return {
+      includeOptions: [
+        ...renderOpportunityCompleteWithoutBusinessLinesInclude(
+          null,
+          candidateId
+        ),
+        businessLinesInclude,
+      ],
+      whereOptions: {
+        isPublic: true,
+        ...(department
+          ? { department: { [Op.or]: department.map((dep) => dep.value) } }
+          : {}),
+        ...(contracts
+          ? {
+              contract: {
+                [Op.or]: contracts.map((contract) => contract.value),
+              },
+            }
+          : {}),
+        ...searchOptions,
+        ...basicParams,
+      },
+    };
+  } else {
+    return {
+      includeOptions: [
+        businessLinesInclude,
+        ...renderOpportunityCompleteWithoutBusinessLinesInclude(
+          statusParams,
+          candidateId
+        ),
+      ],
+      whereOptions: {
+        // OpportunityUsers: {
+        //   UserId: candidateId,
+        // },
+        ...basicParams,
+      },
+    };
+  }
 }
 
 export function destructureOptionsAndParams(

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { ContractsModule } from '../common/contracts/contracts.module';
 import { PleziModule } from '../external-services/plezi/plezi.module';
 import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
 import { CVsModule } from 'src/cvs/cvs.module';
@@ -14,6 +15,7 @@ import {
   OpportunityUser,
   OpportunityUserStatusChange,
 } from './models';
+import { OpportunityUserEvent } from './models/opportunity-user-event.model';
 import { OpportunitiesController } from './opportunities.controller';
 import { OpportunitiesService } from './opportunities.service';
 import { OpportunityUsersService } from './opportunity-users.service';
@@ -25,8 +27,10 @@ import { OpportunityUsersService } from './opportunity-users.service';
       OpportunityUser,
       OpportunityBusinessLine,
       OpportunityUserStatusChange,
+      OpportunityUserEvent,
     ]),
     UsersModule,
+    ContractsModule,
     CVsModule,
     BusinessLinesModule,
     MailsModule,

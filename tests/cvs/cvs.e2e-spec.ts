@@ -17,7 +17,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { Queues } from 'src/queues/queues.types';
 import { SharesController } from 'src/shares/shares.controller';
 import { User } from 'src/users/models';
-import { UserRoles, CVStatuses } from 'src/users/users.types';
+import { CVStatuses, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { SharesHelper } from 'tests/common/shares/shares.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
@@ -99,13 +99,14 @@ describe('CVs', () => {
         });
 
         it('Should return 201 and CV with cv status set as progress if logged in user', async () => {
-          const cv = await cvFactory.create(
-            {
-              UserId: loggedInCandidate.user.id,
-            },
-            {},
-            false
-          );
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              {
+                UserId: loggedInCandidate.user.id,
+              },
+              {},
+              false
+            );
           const cvResponse = {
             ...cv,
             status: CVStatuses.PROGRESS.value,
@@ -118,24 +119,31 @@ describe('CVs', () => {
               .field('cv', JSON.stringify(cv))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
-          expect(response.body).toMatchObject(cvResponse);
+          expect(response.body).toEqual(expect.objectContaining(cvResponse));
         });
-        it("Should return 200 and CV with cv status set as progress, if logged in user is coach of CV's owner", async () => {
+        it("Should return 201 and CV with cv status set as progress, if logged in user is coach of CV's owner", async () => {
           ({ loggedInCoach, loggedInCandidate: loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
               loggedInCandidate,
               true
             ));
-          const cv = await cvFactory.create(
-            {
-              UserId: loggedInCandidate.user.id,
-              urlImg: null,
-            },
-            {},
-            false
-          );
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              {
+                UserId: loggedInCandidate.user.id,
+                urlImg: null,
+              },
+              {},
+              false
+            );
           cv.status = undefined;
+
+          const cvResponse = {
+            ...cv,
+            status: CVStatuses.PROGRESS.value,
+          };
+
           const response: APIResponse<CVsController['createCV']> =
             await request(app.getHttpServer())
               .post(`${route}/${loggedInCandidate.user.id}`)
@@ -143,7 +151,7 @@ describe('CVs', () => {
               .field('cv', JSON.stringify(cv))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
-          expect(response.body.status).toMatch(CVStatuses.PROGRESS.value);
+          expect(response.body).toEqual(expect.objectContaining(cvResponse));
         });
         it("Should return 201 and CV with cv status set as pending if CV submitted, if logged in user is coach of CV's owner", async () => {
           ({ loggedInCoach, loggedInCandidate: loggedInCandidate } =
@@ -152,33 +160,38 @@ describe('CVs', () => {
               loggedInCandidate,
               true
             ));
-          const cv = await cvFactory.create(
-            {
-              UserId: loggedInCandidate.user.id,
-              urlImg: null,
-            },
-            {},
-            false
-          );
-          cv.status = CVStatuses.PENDING.value;
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              {
+                UserId: loggedInCandidate.user.id,
+                urlImg: null,
+              },
+              {},
+              false
+            );
+          const cvResponse = {
+            ...cv,
+            status: CVStatuses.PENDING.value,
+          };
           const response: APIResponse<CVsController['createCV']> =
             await request(app.getHttpServer())
               .post(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`)
-              .field('cv', JSON.stringify(cv))
+              .field('cv', JSON.stringify(cvResponse))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
-          expect(response.body.status).toMatch(CVStatuses.PENDING.value);
+          expect(response.body).toEqual(expect.objectContaining(cvResponse));
         });
         it('Should return 201 and CV with cv status set as published, if logged in admin', async () => {
-          const cv = await cvFactory.create(
-            {
-              UserId: loggedInCandidate.user.id,
-              urlImg: null,
-            },
-            {},
-            false
-          );
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              {
+                UserId: loggedInCandidate.user.id,
+                urlImg: null,
+              },
+              {},
+              false
+            );
           cv.status = undefined;
           const cvResponse = {
             ...cv,
@@ -190,18 +203,19 @@ describe('CVs', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({ cv });
           expect(response.status).toBe(201);
-          expect(response.body).toMatchObject(cvResponse);
+          expect(response.body).toEqual(expect.objectContaining(cvResponse));
         });
         it('Should return 201 and CV with cv status set as draft, if logged in admin', async () => {
-          const cv = await cvFactory.create(
-            {
-              UserId: loggedInCandidate.user.id,
-              status: CVStatuses.DRAFT.value,
-              urlImg: null,
-            },
-            {},
-            false
-          );
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              {
+                UserId: loggedInCandidate.user.id,
+                status: CVStatuses.DRAFT.value,
+                urlImg: null,
+              },
+              {},
+              false
+            );
           const cvResponse = {
             ...cv,
           };
@@ -211,14 +225,15 @@ describe('CVs', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({ cv });
           expect(response.status).toBe(201);
-          expect(response.body).toMatchObject(cvResponse);
+          expect(response.body).toEqual(expect.objectContaining(cvResponse));
         });
         it('Should return 401 if not logged in user', async () => {
-          const cv = await cvFactory.create(
-            { UserId: loggedInCandidate.user.id },
-            {},
-            false
-          );
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              { UserId: loggedInCandidate.user.id },
+              {},
+              false
+            );
           const response: APIResponse<CVsController['createCV']> =
             await request(app.getHttpServer())
               .post(`${route}/${loggedInCandidate.user.id}`)
