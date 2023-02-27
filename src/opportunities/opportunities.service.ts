@@ -791,7 +791,9 @@ export class OpportunitiesService {
   }
 
   // check and execute if the email should be sent and if should be rescheduled
-  async validateAndExecuteArchiveReminder(opportunityId: string) {
+  async validateAndExecuteArchiveReminder(
+    opportunityId: string
+  ): Promise<string> {
     let shouldSend = true;
     let shouldReschedule = true;
 
