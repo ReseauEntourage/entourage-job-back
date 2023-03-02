@@ -28,7 +28,7 @@ import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models/review.model';
 import { Skill } from 'src/common/skills/models';
 import { UserCandidat } from 'src/users/models';
-import { CVStatuses, CVStatus } from 'src/users/users.types';
+import { CVStatus, CVStatuses } from 'src/users/users.types';
 import { CVAmbition } from './cv-ambition.model';
 import { CVBusinessLine } from './cv-businessLine.model';
 import { CVContract } from './cv-contract.model';
@@ -121,7 +121,7 @@ export class CV extends Model {
   updatedAt: Date;
 
   @DeletedAt
-  deletedAt: Date;
+  deletedAt?: Date;
 
   @BelongsTo(() => UserCandidat, {
     foreignKey: 'UserId',

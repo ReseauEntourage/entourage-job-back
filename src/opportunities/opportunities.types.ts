@@ -4,6 +4,10 @@ import {
   BusinessLineValue,
 } from 'src/common/businessLines/businessLines.types';
 import {
+  ContractFilters,
+  ContractValue,
+} from 'src/common/contracts/contracts.types';
+import {
   Department,
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
@@ -76,6 +80,7 @@ export interface OfferOptions {
   status: { [Op.or]: OfferStatus[] };
   businessLines: { [Op.or]: BusinessLineValue[] };
   department: { [Op.or]: Department[] };
+  contracts: { [Op.or]: ContractValue[] };
 }
 
 export type OfferFilterKey = keyof OfferOptions;
@@ -139,8 +144,53 @@ export const OfferFilters: Filters<OfferFilterKey> = [
     constants: BusinessLineFilters,
     title: 'Métiers',
   },
+  {
+    key: 'contracts',
+    constants: ContractFilters,
+    title: 'Type de contrat',
+  },
 ];
 
 export type OpportunityRestricted = Opportunity & {
   opportunityUsers: OpportunityUser;
 };
+
+export type EventType =
+  | 'contact'
+  | 'followup'
+  | 'interview'
+  | 'trial'
+  | 'pmsmp'
+  | 'hiring'
+  | 'end';
+
+export const EventTypeFilters: FilterConstant<EventType>[] = [
+  {
+    label: 'Contacté le',
+    value: 'contact',
+  },
+  {
+    label: 'Relancé le',
+    value: 'followup',
+  },
+  {
+    label: 'Entretien le',
+    value: 'interview',
+  },
+  {
+    label: "Période d'essai le",
+    value: 'trial',
+  },
+  {
+    label: 'PMSMP le',
+    value: 'pmsmp',
+  },
+  {
+    label: 'Embauche le',
+    value: 'hiring',
+  },
+  {
+    label: 'Arrêt de contrat le',
+    value: 'end',
+  },
+];
