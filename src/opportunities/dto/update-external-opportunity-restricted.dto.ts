@@ -1,5 +1,4 @@
-import { PartialType, ApiProperty } from '@nestjs/swagger';
-import { IsUUID } from 'class-validator';
+import { PartialType } from '@nestjs/swagger';
 import { CreateExternalOpportunityRestrictedDto } from './create-external-opportunity-restricted.dto';
 
 export class UpdateExternalOpportunityRestrictedDto extends PartialType(

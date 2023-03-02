@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import phone from 'phone';
+import { ExternalOfferOriginFilters } from '../../src/opportunities/opportunities.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Departments } from 'src/common/locations/locations.types';
@@ -37,7 +38,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
     private opportunitiesService: OpportunitiesService
   ) {}
 
-  generateOpportunity(props: Partial<Opportunity>) {
+  generateOpportunity(props: Partial<Opportunity>): Partial<Opportunity> {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
     const fakeData = {
@@ -55,25 +56,30 @@ export class OpportunityFactory implements Factory<Opportunity> {
       recruiterPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       recruiterPosition: faker.lorem.words(2),
       department: faker.random.arrayElement(Departments).name,
-      date: new Date(),
+      date: moment().toDate(),
       description: faker.lorem.paragraphs(3),
       prerequisites: faker.lorem.paragraphs(3),
       skills: faker.lorem.paragraphs(3),
       contract: faker.random.arrayElement(ContractFilters).value,
-      endOfContract: moment().format('YYYY-MM-DD'),
-      startOfContract: moment().format('YYYY-MM-DD'),
+      endOfContract: moment().toDate(),
+      startOfContract: moment().toDate(),
       isPartTime: faker.datatype.boolean(),
       beContacted: faker.datatype.boolean(),
       numberOfPositions: faker.datatype.number(),
       message: faker.lorem.paragraphs(3),
       link: faker.lorem.words(2),
-      externalOrigin: faker.lorem.words(2),
+      externalOrigin: faker.random.arrayElement(ExternalOfferOriginFilters)
+        .value,
       address: faker.address.city(),
       driversLicense: faker.datatype.boolean(),
       workingHours: faker.lorem.words(2),
       salary: faker.lorem.words(2),
       otherInfo: faker.lorem.words(2),
+      createdAt: moment().toDate(),
+      updatedAt: moment().toDate(),
+      createdBy: faker.datatype.uuid(),
     };
+
     return {
       ...fakeData,
       ...props,

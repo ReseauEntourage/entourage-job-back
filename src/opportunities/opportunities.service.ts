@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
@@ -26,7 +26,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
-import { AdminZone, FilterObject, FilterParams } from 'src/utils/types';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
 import { CreateOpportunityDto } from './dto/create-opportunity.dto';
@@ -42,28 +42,27 @@ import { OpportunityCandidateAttributes } from './models/opportunity.attributes'
 import {
   OpportunityCompleteAdminWithoutBusinessLinesInclude,
   OpportunityCompleteInclude,
-  OpportunityCompleteWithoutBusinessLinesInclude,
   OpportunityCompleteWithoutOpportunityUsersInclude,
 } from './models/opportunity.include';
 import {
   OfferAdminTab,
   OfferAdminTabs,
   OfferCandidateTab,
-  OfferCandidateTabs,
   OfferFilterKey,
-  OfferOptions,
   OfferStatuses,
   OpportunityRestricted,
 } from './opportunities.types';
 import {
   destructureOptionsAndParams,
   filterAdminOffersByType,
-  filterCandidateOffersByType,
   filterOffersByStatus,
   getOfferOptions,
+  renderOffersQuery,
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
+
+const LIMIT = 25;
 
 @Injectable()
 export class OpportunitiesService {
@@ -262,73 +261,38 @@ export class OpportunitiesService {
 
   async findAllAsCandidate(
     candidateId: string,
-    opportunitiesIds: string[],
     query: {
       type: OfferCandidateTab;
       search: string;
+      offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
-    const {
-      typeParams,
-      statusParams,
-      searchOptions,
-      businessLinesOptions,
-      filterOptions,
-    } = destructureOptionsAndParams(query);
+    const candidate = await this.usersService.findOne(candidateId);
 
-    const options = {
-      attributes: [...OpportunityCandidateAttributes],
-      include: [
-        ...OpportunityCompleteWithoutBusinessLinesInclude,
-        businessLinesOptions,
-      ],
-    };
+    if (!candidate) {
+      return null;
+    }
+
+    const { includeOptions, whereOptions } = renderOffersQuery(
+      candidateId,
+      query
+    );
+
+    const limit = query.limit || LIMIT;
 
     const opportunities = await this.opportunityModel.findAll({
-      ...options,
-      where: {
-        [Op.and]: [
-          {
-            [Op.or]: [
-              { isPublic: true, isValidated: true, isArchived: false },
-              opportunitiesIds.length > 0
-                ? {
-                    id: opportunitiesIds,
-                    isPublic: false,
-                    isValidated: true,
-                    isArchived: false,
-                  }
-                : {},
-            ],
-          },
-          {
-            ...searchOptions,
-          },
-          {
-            ...filterOptions,
-          },
-        ],
-      },
+      attributes: [...OpportunityCandidateAttributes],
+      include: includeOptions,
+      where: whereOptions,
+      offset: query.offset ? query.offset * limit : 0,
+      limit,
+      order: [['createdAt', 'DESC']],
     });
 
-    const finalOpportunities = opportunities.map((opportunity) => {
+    return opportunities.map((opportunity) => {
       const cleanedOpportunity = opportunity.toJSON();
-      if (
-        opportunity.opportunityUsers &&
-        opportunity.opportunityUsers.length > 0
-      ) {
-        opportunity.opportunityUsers.sort(
-          (a: OpportunityUser, b: OpportunityUser) => {
-            return b.updatedAt - a.updatedAt;
-          }
-        );
-      }
-      const opportunityUser = opportunity.opportunityUsers.find(
-        (opportunityUser) => {
-          return opportunityUser.UserId === candidateId;
-        }
-      );
-
+      const opportunityUser = opportunity.opportunityUsers[0];
       const { opportunityUsers, ...opportunityWithoutOpportunityUsers } =
         cleanedOpportunity;
       return {
@@ -336,23 +300,6 @@ export class OpportunitiesService {
         opportunityUsers: opportunityUser,
       } as OpportunityRestricted;
     });
-
-    const sortedOpportunities = sortOpportunities(
-      finalOpportunities,
-      candidateId,
-      typeParams === OfferCandidateTabs.PRIVATE
-    );
-
-    const filteredTypeOpportunities = filterCandidateOffersByType(
-      sortedOpportunities as OpportunityRestricted[],
-      typeParams as OfferCandidateTab
-    );
-
-    return filterOffersByStatus(
-      filteredTypeOpportunities,
-      statusParams,
-      candidateId
-    );
   }
 
   async findOne(id: string) {
@@ -517,81 +464,31 @@ export class OpportunitiesService {
 
   async countUnseen(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
-    const cv = await this.cvsService.findOneByCandidateId(candidateId);
 
-    const locationFilters = DepartmentFilters.filter((dept) => {
-      return cv?.locations?.length > 0
-        ? cv.locations.map((location) => location.name).includes(dept.value)
-        : candidate.zone === dept.zone;
-    });
-
-    const filters = {} as FilterObject<OfferFilterKey>;
-    if (locationFilters.length > 0) {
-      filters.department = locationFilters;
+    if (!candidate) {
+      throw new NotFoundException();
     }
-
-    const filterOptions =
-      Object.keys(filters).length > 0
-        ? getOfferOptions(filters)
-        : ({} as OfferOptions);
-
-    const { businessLines: businessLinesOptions, ...restFilterOptions } =
-      filterOptions;
 
     const opportunityUsers =
       await this.opportunityUsersService.findAllByCandidateId(candidateId);
 
-    const opportunities = await Opportunity.findAll({
-      include: [
-        ...OpportunityCompleteWithoutBusinessLinesInclude,
-        {
-          model: BusinessLine,
-          as: 'businessLines',
-          attributes: ['name', 'order'],
-          through: { attributes: [] },
-          ...(businessLinesOptions
-            ? {
-                where: {
-                  name: businessLinesOptions,
-                },
-              }
-            : {}),
-        },
-      ],
+    const unseenOpportunities = await Opportunity.count({
       where: {
-        [Op.or]: [
-          { isPublic: true, isValidated: true },
-          {
-            id: opportunityUsers.map((model) => {
-              return model.OpportunityId;
-            }),
-            isPublic: false,
-            isValidated: true,
-          },
-        ],
-        ...restFilterOptions,
+        id: opportunityUsers
+          .filter(({ seen, archived }) => {
+            return !seen && !archived;
+          })
+          .map((model) => {
+            return model.OpportunityId;
+          }),
+        isPublic: false,
+        isValidated: true,
+        isArchived: false,
       },
     });
 
-    const filteredOpportunities = opportunities
-      .map((opportunity) => {
-        return opportunity.toJSON();
-      })
-      .filter((opportunity: Opportunity) => {
-        return (
-          !opportunity.opportunityUsers ||
-          opportunity.opportunityUsers.length === 0 ||
-          !opportunity.opportunityUsers.find((opp) => {
-            return opp.UserId === candidateId;
-          }) ||
-          opportunity.opportunityUsers.find((opp) => {
-            return opp.UserId === candidateId;
-          }).seen === false
-        );
-      });
-
     return {
-      unseenOpportunities: filteredOpportunities.length,
+      unseenOpportunities,
     };
   }
 
@@ -619,7 +516,7 @@ export class OpportunitiesService {
 
       await Promise.all(
         uniqueCandidatesIds.map((candidateId) => {
-          return this.opportunityUsersService.create({
+          return this.opportunityUsersService.createOrRestore({
             OpportunityId: opportunity.id,
             UserId: candidateId,
             recommended: opportunity.isPublic,
@@ -660,19 +557,14 @@ export class OpportunitiesService {
     const t = await this.opportunityUserModel.sequelize.transaction();
     try {
       const opportunityUsers = await Promise.all(
-        uniqueCandidatesIds.map((candidateId) => {
-          return this.opportunityUserModel
-            .findOrCreate({
-              where: {
-                OpportunityId: opportunity.id,
-                UserId: candidateId,
-              },
-              hooks: true,
-              transaction: t,
-            })
-            .then((model) => {
-              return model[0];
-            });
+        uniqueCandidatesIds.map(async (candidateId) => {
+          return this.opportunityUsersService.createOrRestore(
+            {
+              OpportunityId: opportunity.id,
+              UserId: candidateId,
+            },
+            t
+          );
         })
       );
 
@@ -835,10 +727,24 @@ export class OpportunitiesService {
 
   async sendMailAfterExternalCreation(
     opportunity: OpportunityRestricted,
-    isAdmin = false
+    isAdmin = false,
+    coachNotification: boolean,
+    candidateId: string
   ) {
     if (!isAdmin) {
-      return this.mailsService.sendOnCreatedExternalOfferMail(opportunity);
+      await this.mailsService.sendOnCreatedExternalOfferMailToAdmin(
+        opportunity
+      );
+    }
+    if (coachNotification && !isAdmin) {
+      const candidate = await this.usersService.findOne(candidateId);
+      const coach = getRelatedUser(candidate);
+      if (coach) {
+        await this.mailsService.sendOnCreatedExternalOfferMailToCoach(
+          opportunity,
+          coach
+        );
+      }
     }
   }
 
@@ -1053,6 +959,24 @@ export class OpportunitiesService {
   async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
     return this.externalDatabasesService.refreshSalesforceOpportunities(
       opportunitiesIds
+    );
+  }
+
+  async sendContactEmployer(
+    type: string,
+    candidateId: string,
+    opportunity: Opportunity,
+    description: string
+  ) {
+    const user = await this.usersService.findOne(candidateId);
+    const relatedUser = getRelatedUser(user);
+    const emailCoach = relatedUser ? relatedUser.email : '';
+    return this.mailsService.sendMailContactEmployer(
+      type,
+      user,
+      emailCoach,
+      opportunity,
+      description
     );
   }
 }

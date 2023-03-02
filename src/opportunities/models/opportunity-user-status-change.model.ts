@@ -42,7 +42,7 @@ export class OpportunityUserStatusChange extends Model {
   @IsNumber()
   @Column
   oldStatus: number;
-  
+
   @ApiProperty()
   @AllowNull(true)
   @IsNumber()

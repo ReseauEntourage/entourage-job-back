@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "license": "ISC",
   "engines": {
     "node": "16.x"
@@ -23,12 +23,6 @@
     "db:migrate": "sequelize db:migrate",
     "db:seed": "sequelize db:seed:all",
     "prepare": "husky install"
-  },
-  "lint-staged": {
-    "*.ts": [
-      "bash -c yarn test:ts-check",
-      "bash -c yarn test:eslint"
-    ]
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.142.0",

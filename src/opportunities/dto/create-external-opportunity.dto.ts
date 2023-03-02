@@ -1,5 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsUUID } from 'class-validator';
 import { Opportunity } from '../models';
 import { OfferStatus } from 'src/opportunities/opportunities.types';
 
@@ -16,6 +16,9 @@ export class CreateExternalOpportunityDto extends PickType(Opportunity, [
   'description',
   'externalOrigin',
   'date',
+  'recruiterMail',
+  'recruiterFirstName',
+  'recruiterName',
 ] as const) {
   @ApiProperty()
   @IsUUID()
@@ -25,4 +28,9 @@ export class CreateExternalOpportunityDto extends PickType(Opportunity, [
   @IsOptional()
   @IsNumber()
   status: OfferStatus;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  coachNotification: boolean;
 }
