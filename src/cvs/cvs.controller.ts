@@ -154,7 +154,7 @@ export class CVsController {
       search: string;
     } & FilterParams<CVFilterKey>
   ) {
-    return this.cvsService.findAllPublished({ ...query });
+    return this.cvsService.findAllPublished(query);
   }
 
   @LinkedUser('params.candidateId')
