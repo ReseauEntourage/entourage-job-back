@@ -767,7 +767,7 @@ describe('CVs', () => {
           expect(response.body.cvs.length).toBe(3);
         });
       });
-      describe('/cards/random/?locations[]=&employed[]=&businessLine[]= - Get a list of CVs matching specific filters', () => {
+      describe('/cards/random/?locations[]=&employed[]=&businessLine[]=&gender[]= - Get a list of CVs matching specific filters', () => {
         it('Should return 200, and all the CVs that matches the location filters', async () => {
           const newUser1 = await userFactory.create({
             role: UserRoles.CANDIDATE,
@@ -965,6 +965,53 @@ describe('CVs', () => {
           expect(response.body.cvs.length).toBe(3);
           expect(response.body.suggestions).toBe(true);
 
+          expect(expectedCVsIds).toEqual(
+            expect.arrayContaining(response.body.cvs.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200, and all the CVs that matches the gender filters', async () => {
+          const newUser1 = await userFactory.create({
+            role: UserRoles.CANDIDATE,
+            gender: 1,
+          });
+          const newCV1 = await cvFactory.create(
+            {
+              status: CVStatuses.PUBLISHED.value,
+              UserId: newUser1.id,
+            },
+            {}
+          );
+          const newUser2 = await userFactory.create({
+            role: UserRoles.CANDIDATE,
+            gender: 0,
+          });
+          await cvFactory.create(
+            {
+              status: CVStatuses.PUBLISHED.value,
+              UserId: newUser2.id,
+            },
+            {}
+          );
+          const newUser3 = await userFactory.create({
+            role: UserRoles.CANDIDATE,
+            gender: 1,
+          });
+          const newCV3 = await cvFactory.create(
+            {
+              status: CVStatuses.PUBLISHED.value,
+              UserId: newUser3.id,
+            },
+            {}
+          );
+          const expectedCVsIds = [newCV1.id, newCV3.id];
+
+          const response: APIResponse<CVsController['findAllPublishedCVs']> =
+            await request(app.getHttpServer()).get(
+              `${route}/cards/random/?gender[]=1`
+            );
+          expect(response.status).toBe(200);
+          expect(response.body.cvs.length).toBe(2);
           expect(expectedCVsIds).toEqual(
             expect.arrayContaining(response.body.cvs.map(({ id }) => id))
           );
