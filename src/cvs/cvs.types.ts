@@ -9,13 +9,25 @@ import {
   DepartmentFilters,
   RegionFilters,
 } from 'src/common/locations/locations.types';
-import { EmployedFilters } from 'src/users/users.types';
-import { AdminZones, Filters } from 'src/utils/types';
+import { EmployedFilters, Gender } from 'src/users/users.types';
+import { AdminZones, FilterConstant, Filters } from 'src/utils/types';
+
+export const GenderFilters: FilterConstant<Gender>[] = [
+  {
+    label: 'Homme',
+    value: 0,
+  },
+  {
+    label: 'Femme',
+    value: 1,
+  },
+];
 
 export interface CVOptions {
   employed: { [Op.or]: boolean[] };
   locations: { [Op.or]: Department[] };
   businessLines: { [Op.or]: BusinessLineValue[] };
+  gender: { [Op.or]: Gender[] };
 }
 
 export type CVFilterKey = keyof CVOptions;
@@ -47,5 +59,10 @@ export const CVFilters: Filters<CVFilterKey> = [
     key: 'businessLines',
     constants: BusinessLineFilters,
     title: 'Métiers',
+  },
+  {
+    key: 'gender',
+    constants: GenderFilters,
+    title: 'Genre',
   },
 ];
