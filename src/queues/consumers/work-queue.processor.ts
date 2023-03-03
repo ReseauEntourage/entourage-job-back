@@ -41,6 +41,7 @@ import {
   SendReminderOfferJob,
   SendSMSJob,
   SendOffersEmailAfterCVPublishJob,
+  CreateOrUpdateSalesforceEventJob,
   SendOfferArchiveReminder,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
@@ -399,6 +400,22 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT)
+  async processCreateOrUpdateSalesforceEvent(
+    job: Job<CreateOrUpdateSalesforceEventJob>
+  ) {
+    const { data } = job;
+
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceOpportunityUserEvent(
+        data.opportunityUserEventId
+      );
+      return `Salesforce : created or updated event '${data.opportunityUserEventId}'`;
+    }
+
+    return `Salesforce job ignored : creation or update of event '${data.opportunityUserEventId}'`;
   }
 
   @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)

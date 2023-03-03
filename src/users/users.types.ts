@@ -16,6 +16,7 @@ export const UserRoles = {
   COACH: 'Coach',
   ADMIN: 'Admin',
 } as const;
+
 export type UserRole = typeof UserRoles[keyof typeof UserRoles];
 
 export const AdminRoles = {

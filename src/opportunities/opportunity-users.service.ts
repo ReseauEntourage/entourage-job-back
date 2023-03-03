@@ -1,15 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
-import { QueryTypes, Transaction } from 'sequelize';
+import { Op, QueryTypes, Transaction } from 'sequelize';
+import { ExternalDatabasesService } from '../external-databases/external-databases.service';
+import { User } from '../users/models';
 import { Contract } from 'src/common/contracts/models';
-import { MailsService } from 'src/mails/mails.service';
 import { UsersService } from 'src/users/users.service';
 import { UpdateOpportunityUserEventDto } from './dto/update-opportunity-user-event.dto';
 import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
-import { OpportunityUser } from './models';
+import { Opportunity, OpportunityUser } from './models';
 import { OpportunityUserEvent } from './models/opportunity-user-event.model';
 import { OpportunityCandidateInclude } from './models/opportunity.include';
+import { EventTypes } from './opportunities.types';
 
 @Injectable()
 export class OpportunityUsersService {
@@ -21,7 +23,7 @@ export class OpportunityUsersService {
     @InjectModel(Contract)
     private contractModel: typeof Contract,
     private usersService: UsersService,
-    private mailsService: MailsService
+    private externalDatabasesService: ExternalDatabasesService
   ) {}
 
   async createOrRestore(
@@ -104,12 +106,28 @@ export class OpportunityUsersService {
     }
   }
 
+  async createOrUpdateExternalDBEvent(opportunityUserEventId: string) {
+    return this.externalDatabasesService.createOrUpdateExternalDBEvent(
+      opportunityUserEventId
+    );
+  }
+
   async findOneOpportunityUserEvent(id: string) {
     return this.opportunityUserEventModel.findByPk(id, {
-      include: {
-        model: Contract,
-        as: 'contract',
-      },
+      include: [
+        {
+          model: Contract,
+          as: 'contract',
+        },
+        {
+          model: OpportunityUser,
+          as: 'opportunityUser',
+          include: [
+            { model: Opportunity, as: 'opportunity' },
+            { model: User, as: 'user' },
+          ],
+        },
+      ],
     });
   }
 
@@ -192,6 +210,17 @@ export class OpportunityUsersService {
     });
 
     return this.findAllByCandidateId(candidateId);
+  }
+
+  async findAllOpportunityUserEventIds() {
+    return this.opportunityUserEventModel.findAll({
+      attributes: ['id'],
+      where: {
+        type: {
+          [Op.or]: [EventTypes.INTERVIEW, EventTypes.HIRING],
+        },
+      },
+    });
   }
 
   async updateByCandidateIdAndOpportunityId(
@@ -285,7 +314,8 @@ export class OpportunityUsersService {
        FROM "Opportunity_Users"
                 LEFT JOIN "Opportunities" ON "Opportunities"."id" = "Opportunity_Users"."OpportunityId"
        WHERE "Opportunity_Users"."UserId" = :candidateId
-         AND (("status" = -1 AND (("Opportunities"."isPublic" = false) OR ("recommended" = true OR "bookmarked" = true)))
+         AND (("status" = -1 AND
+               (("Opportunities"."isPublic" = false) OR ("recommended" = true OR "bookmarked" = true)))
            OR status IN (0, 1, 2, 3, 4))
          AND "Opportunities"."isValidated" = true
          AND "Opportunities"."isArchived" = false
@@ -300,13 +330,13 @@ export class OpportunityUsersService {
     const archivedOppUsCount: { count: number }[] =
       await this.opportunityUserModel.sequelize.query(
         `SELECT count(*)
-        FROM "Opportunity_Users"
-          LEFT JOIN "Opportunities" ON "Opportunities"."id" = "Opportunity_Users"."OpportunityId"
-        WHERE "Opportunity_Users"."UserId" = :candidateId
-          AND "Opportunities"."isValidated" = true
-          AND "Opportunities"."isArchived" = false
-          AND "Opportunity_Users"."archived" = true
-          AND "Opportunity_Users"."deletedAt" is null`,
+         FROM "Opportunity_Users"
+                  LEFT JOIN "Opportunities" ON "Opportunities"."id" = "Opportunity_Users"."OpportunityId"
+         WHERE "Opportunity_Users"."UserId" = :candidateId
+           AND "Opportunities"."isValidated" = true
+           AND "Opportunities"."isArchived" = false
+           AND "Opportunity_Users"."archived" = true
+           AND "Opportunity_Users"."deletedAt" is null`,
         {
           replacements: { candidateId },
           type: QueryTypes.SELECT,
@@ -320,5 +350,11 @@ export class OpportunityUsersService {
       },
       ...statusCounts,
     ];
+  }
+
+  async refreshSalesforceEvents(opportunityUserEventsIds: string[]) {
+    return this.externalDatabasesService.refreshSalesforceEvents(
+      opportunityUserEventsIds
+    );
   }
 }

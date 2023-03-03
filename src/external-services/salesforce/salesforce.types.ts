@@ -28,6 +28,7 @@ import {
 } from 'src/contacts/contacts.types';
 
 import {
+  EventType,
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
@@ -65,6 +66,7 @@ export const ObjectNames = {
   OFFER: 'Offre_d_emploi__c',
   CONTACT: 'Contact',
   BINOME: 'Binome__c',
+  EVENT: 'Event',
 } as const;
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
@@ -76,6 +78,7 @@ type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.OFFER]: SalesforceOffer;
   [ObjectNames.CONTACT]: SalesforceContact;
   [ObjectNames.BINOME]: SalesforceBinome;
+  [ObjectNames.EVENT]: SalesforceEvent;
 };
 
 export type SalesforceObject<
@@ -111,6 +114,13 @@ export const AccountRecordTypesIds = {
 export type AccountRecordType =
   typeof AccountRecordTypesIds[keyof typeof AccountRecordTypesIds];
 
+export const EventRecordTypesIds = {
+  BINOME: '0127Q000000UhqeQAC',
+} as const;
+
+export type EventRecordType =
+  typeof EventRecordTypesIds[keyof typeof EventRecordTypesIds];
+
 type LeadsProps = {
   [LeadRecordTypesIds.CANDIDATE]: CandidateLeadProps;
   [LeadRecordTypesIds.COACH]: CoachLeadProps;
@@ -120,7 +130,7 @@ type LeadsProps = {
 
 export type LeadProp<T extends LeadRecordType> = LeadsProps[T];
 
-type SalesforceLeads = {
+export type SalesforceLeads = {
   [LeadRecordTypesIds.CANDIDATE]: CandidateSalesforceLead;
   [LeadRecordTypesIds.COACH]: CoachSalesforceLead;
   [LeadRecordTypesIds.ASSOCIATION]: WorkerSalesforceLead;
@@ -356,6 +366,38 @@ export interface SalesforceOffer {
   Prenom_Nom_du_recruteur_Prospect__c?: string;
   Contact_cree_existant__c: true;
   Antenne__c: string;
+}
+
+export interface EventProps {
+  id: string;
+  department: Department;
+  type: EventType;
+  startDate: Date;
+  endDate: Date;
+  offerTitle: string;
+  candidateFirstName: string;
+  candidateMail?: string;
+  processId?: string;
+  recruiterMail?: string;
+}
+
+export type EventPropsWithProcessAndBinomeAndRecruiterId = EventProps & {
+  processSfId: string;
+  binomeSfId: string;
+  recruiterSfId: string;
+};
+
+export interface SalesforceEvent {
+  Id?: string;
+  WhoId: string;
+  WhatId: string;
+  ID_Externe__c: string;
+  Processus_d_offre__c: string;
+  Subject: string;
+  StartDateTime: Date;
+  IsAllDayEvent: boolean;
+  Antenne__c: string;
+  RecordTypeId: EventRecordType;
 }
 
 export interface AccountProps {
