@@ -119,6 +119,17 @@ export class OpportunityUsersService {
           model: Contract,
           as: 'contract',
         },
+      ],
+    });
+  }
+
+  async findOneOpportunityUserEventComplete(id: string) {
+    return this.opportunityUserEventModel.findByPk(id, {
+      include: [
+        {
+          model: Contract,
+          as: 'contract',
+        },
         {
           model: OpportunityUser,
           as: 'opportunityUser',

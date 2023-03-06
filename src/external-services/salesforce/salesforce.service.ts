@@ -1100,7 +1100,7 @@ export class SalesforceService {
     opportunityUserEventId: string
   ): Promise<EventProps> {
     const opportunityUserEventDb =
-      await this.opportunityUsersService.findOneOpportunityUserEvent(
+      await this.opportunityUsersService.findOneOpportunityUserEventComplete(
         opportunityUserEventId
       );
 
