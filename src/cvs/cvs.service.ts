@@ -34,10 +34,10 @@ import { CustomMailParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
-import { User } from 'src/users/models';
+import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatus, CVStatuses } from 'src/users/users.types';
+import { CVStatus, CVStatuses, Gender } from 'src/users/users.types';
 import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -58,7 +58,6 @@ import {
   CVCompleteWithAllUserInclude,
   CVCompleteWithAllUserPrivateInclude,
   CVCompleteWithoutUserInclude,
-  UserAllInclude,
 } from './models/cv.include';
 
 @Injectable()
@@ -951,9 +950,10 @@ export class CVsService {
       employed?: { [Op.or]: boolean[] };
       locations?: { [Op.or]: Department[] };
       businessLines?: { [Op.or]: BusinessLineValue[] };
+      gender?: { [Op.or]: Gender[] };
     } = {}
   ) {
-    const { employed, ...restOptions } = options;
+    const { employed, locations, businessLines, gender } = options;
 
     const cvs: CV[] = await this.cvModel.sequelize.query(
       dbQuery || getPublishedCVQuery(employed),
@@ -987,9 +987,9 @@ export class CVsService {
           as: 'businessLines',
           through: { attributes: [] },
           attributes: ['name', 'order'],
-          where: restOptions.businessLines
+          where: businessLines
             ? {
-                name: restOptions.businessLines,
+                name: businessLines,
               }
             : undefined,
         },
@@ -998,13 +998,31 @@ export class CVsService {
           as: 'locations',
           through: { attributes: [] },
           attributes: ['name'],
-          where: restOptions.locations
+          where: locations
             ? {
-                name: restOptions.locations,
+                name: locations,
               }
             : undefined,
         },
-        UserAllInclude,
+        {
+          model: UserCandidat,
+          as: 'user',
+          attributes: ['employed', 'hidden', 'url', 'endOfContract'],
+          required: true,
+          include: [
+            {
+              model: User,
+              as: 'coach',
+              attributes: ['id', 'firstName', 'lastName', 'gender'],
+            },
+            {
+              model: User,
+              as: 'candidat',
+              attributes: ['id', 'firstName', 'lastName', 'gender'],
+              where: gender ? { gender } : undefined,
+            },
+          ],
+        },
       ],
     });
 
