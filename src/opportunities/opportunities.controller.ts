@@ -26,22 +26,24 @@ import { UserRole, UserRoles } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
-import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
-import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
-import { CreateExternalOpportunityPipe } from './dto/create-external-opportunity.pipe';
-import { CreateOpportunityUserEventDto } from './dto/create-opportunity-user-event.dto';
-import { CreateOpportunityUserEventPipe } from './dto/create-opportunity-user-event.pipe';
-import { CreateOpportunityDto } from './dto/create-opportunity.dto';
-import { CreateOpportunityPipe } from './dto/create-opportunity.pipe';
-import { UpdateExternalOpportunityRestrictedDto } from './dto/update-external-opportunity-restricted.dto';
-import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
-import { UpdateExternalOpportunityPipe } from './dto/update-external-opportunity.pipe';
-import { UpdateOpportunityUserEventDto } from './dto/update-opportunity-user-event.dto';
-import { UpdateOpportunityUserEventPipe } from './dto/update-opportunity-user-event.pipe';
-import { UpdateOpportunityUserDto } from './dto/update-opportunity-user.dto';
-import { UpdateOpportunityUserPipe } from './dto/update-opportunity-user.pipe';
-import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
-import { UpdateOpportunityPipe } from './dto/update-opportunity.pipe';
+import {
+  CreateExternalOpportunityDto,
+  CreateExternalOpportunityPipe,
+  CreateExternalOpportunityRestrictedDto,
+  CreateOpportunityDto,
+  CreateOpportunityPipe,
+  CreateOpportunityUserEventDto,
+  CreateOpportunityUserEventPipe,
+  UpdateExternalOpportunityDto,
+  UpdateExternalOpportunityPipe,
+  UpdateExternalOpportunityRestrictedDto,
+  UpdateOpportunityDto,
+  UpdateOpportunityPipe,
+  UpdateOpportunityUserDto,
+  UpdateOpportunityUserEventDto,
+  UpdateOpportunityUserEventPipe,
+  UpdateOpportunityUserPipe,
+} from './dto';
 import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import {

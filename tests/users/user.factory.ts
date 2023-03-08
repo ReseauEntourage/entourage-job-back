@@ -26,7 +26,7 @@ export class UserFactory implements Factory<User> {
 
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
-    const fakeData = {
+    const fakeData: Partial<User> = {
       email: faker.internet.email().toLowerCase(),
       firstName: faker.name.firstName(),
       lastName: faker.name.lastName(),

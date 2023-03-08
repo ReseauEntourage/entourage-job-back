@@ -31,6 +31,7 @@ import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
 
@@ -119,6 +120,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     BitlyModule,
     ContactsModule,
     PleziModule,
+    OrganizationsModule,
   ],
   providers: [
     {
