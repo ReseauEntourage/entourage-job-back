@@ -43,12 +43,12 @@ export class UserCandidatsHelper {
     if (isLogged) {
       return {
         loggedInCoach: await this.userHelper.createLoggedInUser(
-          (coach as LoggedUser).user,
+          (coach as LoggedUser).user as User,
           {},
           false
         ),
         loggedInCandidate: await this.userHelper.createLoggedInUser(
-          (candidate as LoggedUser).user,
+          (candidate as LoggedUser).user as User,
           {},
           false
         ),
