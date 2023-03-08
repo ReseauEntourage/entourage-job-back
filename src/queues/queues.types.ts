@@ -26,6 +26,7 @@ export const Jobs = {
   REMINDER_ACTIONS: 'reminder_actions',
   REMINDER_EXTERNAL_OFFERS: 'reminder_external_offers',
   NO_RESPONSE_OFFER: 'no_response_offer',
+  OFFER_ARCHIVE_REMINDER: 'offerarchive_reminder',
   SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH: 'send_offers_email_after_cv_publish',
 } as const;
 
@@ -50,6 +51,7 @@ type JobsData = {
   [Jobs.REMINDER_ACTIONS]: SendReminderActionsJob;
   [Jobs.REMINDER_EXTERNAL_OFFERS]: SendReminderExternalOffersJob;
   [Jobs.NO_RESPONSE_OFFER]: SendNoResponseOfferJob;
+  [Jobs.OFFER_ARCHIVE_REMINDER]: SendOfferArchiveReminder;
   [Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH]: SendOffersEmailAfterCVPublishJob;
 };
 
@@ -68,6 +70,10 @@ export interface SendReminderOfferJob {
 }
 
 export interface SendNoResponseOfferJob {
+  opportunityId: string;
+}
+
+export interface SendOfferArchiveReminder {
   opportunityId: string;
 }
 

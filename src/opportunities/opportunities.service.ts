@@ -722,6 +722,8 @@ export class OpportunitiesService {
 
     if (!oldOpportunity.isValidated && opportunity.isValidated) {
       await this.sendOnValidatedOfferMail(opportunity);
+      // email à prévoir chaque mois pour rappeler le potentiel archivage de l'offre
+      await this.createArchiveOfferReminderJob(opportunity);
     }
   }
 
@@ -765,6 +767,88 @@ export class OpportunitiesService {
           24,
       }
     );
+  }
+
+  async createArchiveOfferReminderJob(opportunity: Opportunity) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.OFFER_ARCHIVE_REMINDER,
+      {
+        opportunityId: opportunity.id,
+      },
+      {
+        delay:
+          (process.env.OFFER_ARCHIVE_REMINDER_DELAY
+            ? parseFloat(process.env.OFFER_ARCHIVE_REMINDER_DELAY)
+            : 30) *
+          3600000 *
+          24,
+      }
+    );
+  }
+
+  sendArchiveOfferReminder(opportunity: Opportunity) {
+    return this.mailsService.sendArchiveOfferReminderMail(opportunity);
+  }
+
+  // check and execute if the email should be sent and if should be rescheduled
+  async validateAndExecuteArchiveReminder(
+    opportunityId: string
+  ): Promise<string> {
+    let shouldSend = true;
+    let shouldReschedule = true;
+
+    const opportunity = await this.findOne(opportunityId);
+
+    // si archivée, ne pas envoyer ni reprogrammer
+    if (opportunity.isArchived) {
+      shouldSend = false;
+      shouldReschedule = false;
+    } else {
+      const oppUsers =
+        await this.opportunityUsersService.findAllByOpportunityId(
+          opportunityId
+        );
+      if (oppUsers.length > 0) {
+        // s'il existe un process en cours, ne pas envoyer mais reprogrammer
+        const existingProcess = oppUsers.find((oppUser) => {
+          return !oppUser.archived && ![2, 3, 4].includes(oppUser.status);
+        });
+        if (existingProcess) {
+          shouldSend = false;
+        }
+      }
+    }
+
+    let log =
+      'Archive mail reminder to recruiter for opportunity ' +
+      opportunityId +
+      ' : ';
+    if (shouldSend) {
+      await this.sendArchiveOfferReminder(opportunity);
+      log += 'mail send; ';
+    } else {
+      log += 'no mail sent; ';
+    }
+    if (shouldReschedule) {
+      await this.queuesService.addToWorkQueue(
+        Jobs.OFFER_ARCHIVE_REMINDER,
+        {
+          opportunityId: opportunity.id,
+        },
+        {
+          delay:
+            (process.env.OFFER_ARCHIVE_REMINDER_DELAY
+              ? parseFloat(process.env.OFFER_ARCHIVE_REMINDER_DELAY)
+              : 30) *
+            3600000 *
+            24,
+        }
+      );
+      log += 'rescheduling after 30 days.';
+    } else {
+      log += 'no rescheduling.';
+    }
+    return log;
   }
 
   async sendCandidateOfferMessages(

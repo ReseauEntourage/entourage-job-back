@@ -764,4 +764,24 @@ export class OpportunitiesController {
       );
     }
   }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Post('sendReminderArchive')
+  async postSendReminderArchive(@Body('ids') opportunitiesIds: string[]) {
+    let count = 0;
+    let failed = 0;
+    Promise.all(
+      opportunitiesIds.map(async (id) => {
+        const opportunity = await this.opportunitiesService.findOne(id);
+        if (!opportunity || !opportunity.recruiterMail) {
+          failed += 1;
+          return;
+        }
+        await this.opportunitiesService.sendArchiveOfferReminder(opportunity);
+        count += 1;
+      })
+    );
+    return 'Emails envoyés: ' + count + ', emails non envoyés: ' + failed;
+  }
 }
