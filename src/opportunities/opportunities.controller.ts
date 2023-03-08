@@ -763,6 +763,8 @@ export class OpportunitiesController {
         }
       );
     }
+  }
+
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
   @Post('sendReminderArchive')

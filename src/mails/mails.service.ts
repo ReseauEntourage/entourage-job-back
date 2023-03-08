@@ -523,6 +523,10 @@ export class MailsService {
         candidateFirstName: user.firstName,
         recruiterFirstName: opportunity.recruiterFirstName,
         company: opportunity.company,
+      },
+    });
+  }
+
   async sendArchiveOfferReminderMail(opportunity: Opportunity) {
     const zone = getZoneFromDepartment(opportunity.department);
     const { companiesAdminMail } = getAdminMailsFromZone(zone);
