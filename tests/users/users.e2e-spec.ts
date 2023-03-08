@@ -173,6 +173,7 @@ describe('Users', () => {
               lastConnection: candidate.lastConnection.toISOString(),
             })
           );
+          expect(response.body).toEqual(expect.objectContaining(candidate));
         });
         it('Should return 400 when user data has invalid phone', async () => {
           const candidate = await userFactory.create({}, {}, false);
