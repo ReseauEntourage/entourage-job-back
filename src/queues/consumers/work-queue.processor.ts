@@ -41,6 +41,7 @@ import {
   SendReminderOfferJob,
   SendSMSJob,
   SendOffersEmailAfterCVPublishJob,
+  SendOfferArchiveReminder,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -172,6 +173,18 @@ export class WorkQueueProcessor {
           data.opportunityId
         }' (${JSON.stringify(sentToNoResponseOffer)})`
       : `No mail sent to recruiter because no response on opportunity '${data.opportunityId}'`;
+  }
+
+  @Process(Jobs.OFFER_ARCHIVE_REMINDER)
+  async processArchiveReminder(job: Job<SendOfferArchiveReminder>) {
+    const { data } = job;
+
+    const jobLog =
+      await this.opportunitiesService.validateAndExecuteArchiveReminder(
+        data.opportunityId
+      );
+
+    return jobLog;
   }
 
   @Process(Jobs.REMINDER_CV_10)
