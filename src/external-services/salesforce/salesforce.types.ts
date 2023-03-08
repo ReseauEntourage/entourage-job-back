@@ -116,6 +116,7 @@ export type AccountRecordType =
 
 export const EventRecordTypesIds = {
   BINOME: '0127Q000000UhqeQAC',
+  EVENT: '0127Q000000UhpqQAC',
 } as const;
 
 export type EventRecordType =

@@ -214,7 +214,7 @@ export class SalesforceService {
     name: T,
     params: SalesforceObject<T> | SalesforceObject<T>[],
     extIdField: keyof SalesforceObject<T>,
-    findIdFunction: 'findProcessById' | 'findOfferById' | 'findBinomeEventById'
+    findIdFunction: 'findProcessById' | 'findOfferById' | 'findEventById'
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
 
@@ -374,7 +374,7 @@ export class SalesforceService {
       ObjectNames.EVENT,
       records,
       'ID_Externe__c',
-      'findBinomeEventById'
+      'findEventById'
     );
   }
 
@@ -457,14 +457,14 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findBinomeEventById<T>(id: T): Promise<string> {
+  async findEventById<T>(id: T): Promise<string> {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceOffer>[] } =
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.EVENT}
          WHERE ID_Externe__c = '${id}'
-          AND RecordTypeId = '${EventRecordTypesIds.BINOME}' LIMIT 1`
+          AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
       );
     return records[0]?.Id;
   }

@@ -300,7 +300,7 @@ export function mapSalesforceEventFields({
     ),
     ID_Externe__c: id,
     Processus_d_offre__c: processSfId,
-    RecordTypeId: EventRecordTypesIds.BINOME,
+    RecordTypeId: EventRecordTypesIds.EVENT,
     Subject: `${
       findConstantFromValue(type, EventTypeFilters).label
     } ${candidateFirstName} x ${offerTitle}`,

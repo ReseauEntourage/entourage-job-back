@@ -61,7 +61,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findContact: jest.fn(),
   findLead: jest.fn(),
   findBinomeByCandidateSfId: jest.fn(),
-  findBinomeEventById: jest.fn(),
+  findEventById: jest.fn(),
   findOfferById: jest.fn(),
   findOfferRelationsById: jest.fn(),
   findProcessById: jest.fn(),
