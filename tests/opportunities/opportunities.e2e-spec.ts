@@ -3728,7 +3728,6 @@ describe('Opportunities', () => {
         });
       });
     });
-
     describe('P - Post Contact Employer', () => {
       describe('/contactEmployer — Contact Employer', () => {
         let loggedInAdmin: LoggedUser;
@@ -3930,7 +3929,6 @@ describe('Opportunities', () => {
         });
       });
     });
-
     describe('U - Update many Opportunities', () => {
       describe('/bulk - Bulk update opportunities', () => {
         let loggedInAdmin: LoggedUser;
@@ -4438,6 +4436,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
       });
+    });
     describe('P - send emails archive reminders', () => {
       let loggedInAdmin: LoggedUser;
       let loggedInCandidate: LoggedUser;
