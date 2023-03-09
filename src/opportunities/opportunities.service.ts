@@ -811,7 +811,10 @@ export class OpportunitiesService {
       if (oppUsers.length > 0) {
         // s'il existe un process en cours, ne pas envoyer mais reprogrammer
         const existingProcess = oppUsers.find((oppUser) => {
-          return !oppUser.archived && ![2, 3, 4].includes(oppUser.status);
+          return (
+            !oppUser.archived &&
+            oppUser.status === OfferStatuses.INTERVIEW.value
+          );
         });
         if (existingProcess) {
           shouldSend = false;

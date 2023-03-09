@@ -536,7 +536,10 @@ export class MailsService {
       replyTo: companiesAdminMail,
       variables: {
         zone,
-        offer_id: opportunity.id,
+        company: opportunity.company,
+        offerId: opportunity.id,
+        offerTitle: opportunity.title,
+        recruiterFirstName: opportunity.recruiterFirstName,
       },
     });
   }
