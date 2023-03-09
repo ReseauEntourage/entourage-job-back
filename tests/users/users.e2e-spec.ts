@@ -147,7 +147,16 @@ describe('Users', () => {
         });
 
         it('Should return 200 and a created user', async () => {
-          const candidate = await userFactory.create(
+          const {
+            password,
+            hashReset,
+            salt,
+            saltReset,
+            revision,
+            updatedAt,
+            createdAt,
+            ...candidate
+          } = await userFactory.create(
             { role: UserRoles.CANDIDATE },
             {},
             false
@@ -158,7 +167,12 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send(candidate);
           expect(response.status).toBe(201);
-          expect(response.body).toEqual(expect.objectContaining(candidate));
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...candidate,
+              lastConnection: candidate.lastConnection.toISOString(),
+            })
+          );
         });
         it('Should return 400 when user data has invalid phone', async () => {
           const candidate = await userFactory.create({}, {}, false);
