@@ -691,6 +691,7 @@ export class OpportunitiesService {
       await this.mailsService.sendOnCreatedOfferMail(opportunity);
     } else {
       await this.sendOnValidatedOfferMail(opportunity);
+      await this.createArchiveOfferReminderJob(opportunity);
       if (candidates && candidates.length > 0 && shouldSendNotifications) {
         await this.sendCandidateOfferMessages(candidates, opportunity);
       }
@@ -800,7 +801,7 @@ export class OpportunitiesService {
     const opportunity = await this.findOne(opportunityId);
 
     // si archivée, ne pas envoyer ni reprogrammer
-    if (opportunity.isArchived) {
+    if (opportunity.isArchived || !opportunity.isValidated) {
       shouldSend = false;
       shouldReschedule = false;
     } else {
