@@ -18,6 +18,7 @@ import {
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,
+  CandidateYesNoNSPPValue,
 } from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import {
@@ -53,6 +54,8 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  WorkerLeadProps,
+  LeadYesNoNSPP,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
@@ -460,7 +463,10 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         LeadAccomodations
       ),
       Droit_de_travailler_en_France__c:
-        formatSalesforceValue<CandidateYesNoValue>(workingRight, LeadYesNo),
+        formatSalesforceValue<CandidateYesNoNSPPValue>(
+          workingRight,
+          LeadYesNoNSPP
+        ),
       Inscrit_au_Pole_Emploi__c: formatSalesforceValue<CandidateYesNoValue>(
         registeredUnemploymentOffice,
         LeadYesNo

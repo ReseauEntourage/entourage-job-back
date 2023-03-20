@@ -37,6 +37,8 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  SalesforceCampaign,
+  CandidateInscriptionLeadProps,
 } from './salesforce.types';
 
 import {
@@ -766,7 +768,7 @@ export class SalesforceService {
     )) as string;
   }
 
-  async findOrCreateLeadFromCandidateForm({
+  async findOrCreateLeadFromContactCandidateForm({
     workerFirstName,
     workerLastName,
     structure,
@@ -876,13 +878,48 @@ export class SalesforceService {
     }
   }
 
+  async findOrCreateLeadFromInscriptionCandidateForm({
+    birthdate,
+    email,
+    firstName,
+    heardAbout,
+    infoCo,
+    lastName,
+    postalCode,
+    phone,
+    workingRight,
+  }: CandidateInscriptionLeadProps) {
+    const department = getDepartmentFromPostalCode(postalCode);
+    const zone = getZoneFromDepartment(department);
+
+    const leadToCreate = {
+      firstName,
+      lastName,
+      birthDate: birthdate,
+      email,
+      phone,
+      workingRight,
+      heardAbout,
+      infoCo,
+      zone,
+    };
+    try {
+      return (await this.createCandidateLead(leadToCreate)) as string;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
   async createCandidateLead(
     leadToCreate: LeadProp<typeof LeadRecordTypesIds.CANDIDATE>,
-    workerSfId: string
+    workerSfId?: string
   ) {
+    if (workerSfId)
+      leadToCreate = { ...leadToCreate, workerSfIdAsProspect: workerSfId };
     try {
       return (await this.findOrCreateLead(
-        { ...leadToCreate, workerSfIdAsProspect: workerSfId },
+        leadToCreate,
         LeadRecordTypesIds.CANDIDATE
       )) as string;
     } catch (err) {
@@ -891,7 +928,7 @@ export class SalesforceService {
         ErrorCodes.FIELD_INTEGRITY_EXCEPTION
       ) {
         return (await this.findOrCreateLead(
-          { ...leadToCreate, workerSfIdAsContact: workerSfId },
+          leadToCreate,
           LeadRecordTypesIds.CANDIDATE
         )) as string;
       }
@@ -1174,10 +1211,44 @@ export class SalesforceService {
     return this.findOrCreateLeadFromCompanyForm(lead);
   }
 
-  async createOrUpdateCandidateSalesforceLead(
+  async createOrUpdateContactCandidateSalesforceLead(
     lead: CandidateAndWorkerLeadProps
   ) {
     this.setIsWorker(false);
-    return this.findOrCreateLeadFromCandidateForm(lead);
+    return this.findOrCreateLeadFromContactCandidateForm(lead);
+  }
+
+  async createOrUpdateInscriptionCandidateSalesforceLead(
+    lead: CandidateInscriptionLeadProps
+  ) {
+    this.setIsWorker(false);
+    return this.findOrCreateLeadFromInscriptionCandidateForm(lead);
+  }
+
+  async getCampaigns(antenne: string) {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: SalesforceCampaign[] } =
+      await this.salesforce.query(
+        `SELECT 
+        Id,
+        Code_postal__c,
+        Adresse_de_l_v_nement__c,
+        Antenne__c, 
+        StartDate, 
+        Heure_de_d_but__c
+      FROM ${ObjectNames.CAMPAIGN}
+      WHERE 
+        ParentId = '701Aa000005lMv3IAE' 
+        AND StartDate > TODAY
+        AND Antenne__c = '${antenne}'`
+      );
+    return records.map((record) => {
+      return {
+        id: record.Id,
+        antenne: record.Antenne__c,
+        address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
+        time: `${record.StartDate} ${record.Heure_de_d_but__c}`,
+      };
+    });
   }
 }
