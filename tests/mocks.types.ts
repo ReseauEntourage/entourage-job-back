@@ -1,6 +1,5 @@
 import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
-import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
@@ -87,11 +86,6 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createOrUpdateCandidateSalesforceLead: jest.fn(),
   setIsWorker: jest.fn(),
   updateLead: jest.fn(),
-} as const;
-
-export const AirtableMocks: ProviderMock<AirtableService> = {
-  insertOpportunityAirtable: jest.fn(),
-  updateOpportunityAirtable: jest.fn(),
 } as const;
 
 export const PleziMocks: ProviderMock<PleziService> = {

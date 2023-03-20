@@ -10,23 +10,6 @@ export class ExternalDatabasesService {
     opportunityId: string | string[],
     isSameOpportunity = false
   ) {
-    // TODO remove after removing Airtable
-    if (Array.isArray(opportunityId)) {
-      await Promise.all([
-        opportunityId.map(async (singleOpportunityId) => {
-          return this.queuesService.addToWorkQueue(Jobs.UPDATE_AIRTABLE, {
-            tableName: process.env.AIRTABLE_OFFERS,
-            opportunityId: singleOpportunityId,
-          });
-        }),
-      ]);
-    } else {
-      await this.queuesService.addToWorkQueue(Jobs.UPDATE_AIRTABLE, {
-        tableName: process.env.AIRTABLE_OFFERS,
-        opportunityId,
-      });
-    }
-
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
       {
@@ -40,23 +23,6 @@ export class ExternalDatabasesService {
     opportunityId: string | string[],
     isSameOpportunity = false
   ) {
-    // TODO remove after removing Airtable
-    if (Array.isArray(opportunityId)) {
-      await Promise.all([
-        opportunityId.map(async (singleOpportunityId) => {
-          return this.queuesService.addToWorkQueue(Jobs.INSERT_AIRTABLE, {
-            tableName: process.env.AIRTABLE_OFFERS,
-            opportunityId: singleOpportunityId,
-          });
-        }),
-      ]);
-    } else {
-      await this.queuesService.addToWorkQueue(Jobs.INSERT_AIRTABLE, {
-        tableName: process.env.AIRTABLE_OFFERS,
-        opportunityId,
-      });
-    }
-
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
       {
@@ -84,6 +50,7 @@ export class ExternalDatabasesService {
       }
     );
   }
+
   async refreshSalesforceEvents(opportunityUserEventsIds: string[]) {
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT,
