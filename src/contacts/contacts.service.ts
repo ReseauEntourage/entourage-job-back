@@ -10,6 +10,7 @@ import { SalesforceService } from 'src/external-services/salesforce/salesforce.s
 import { MailsService } from 'src/mails/mails.service';
 import { AdminZone } from 'src/utils/types';
 import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
+import { InscriptionCandidateFormDto } from './dto/inscription-candidate-form.dto';
 
 @Injectable()
 export class ContactsService {
@@ -48,12 +49,24 @@ export class ContactsService {
   async sendCandidateContactToSalesforce(
     contactCandidateFormDto: ContactCandidateFormDto
   ) {
-    return this.salesforceService.createOrUpdateCandidateSalesforceLead(
+    return this.salesforceService.createOrUpdateContactCandidateSalesforceLead(
       contactCandidateFormDto
+    );
+  }
+
+  async sendCandidateInscriptionToSalesforce(
+    InscriptionCandidateFormDto: InscriptionCandidateFormDto
+  ) {
+    return this.salesforceService.createOrUpdateInscriptionCandidateSalesforceLead(
+      InscriptionCandidateFormDto
     );
   }
 
   async sendContactUsMail(contactUsFormDto: ContactUsFormDto) {
     return this.mailsService.sendContactUsMail(contactUsFormDto);
+  }
+
+  async getCampaignsFromSF(antenne: string) {
+    return this.salesforceService.getCampaigns(antenne);
   }
 }
