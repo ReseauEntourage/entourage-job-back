@@ -2762,7 +2762,7 @@ describe('Opportunities', () => {
             );
           });
         });
-        describe('/candidate/all/:id?limit=&offset= - Get paginated opportunities and sorted by date', () => {
+        describe('/candidate/all/:candidateId?limit=&offset= - Get paginated opportunities and sorted by date', () => {
           beforeEach(async () => {
             const firstOpportunity = await opportunityFactory.create({
               isArchived: false,
@@ -3866,7 +3866,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
 
-        it('Should return 403 if candidate contacts recruitor of external opportunity', async () => {
+        it('Should return 403 if candidate contacts recruiter of external opportunity', async () => {
           const externalOpportunity = await opportunityFactory.create({
             isValidated: true,
             isExternal: true,
@@ -3890,7 +3890,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
 
-        it('Should return 403 if candidate contacts recruitor of not validated opportunity', async () => {
+        it('Should return 403 if candidate contacts recruiter of not validated opportunity', async () => {
           const notValidatedOpportunity = await opportunityFactory.create({
             isValidated: false,
             isExternal: false,
