@@ -18,6 +18,7 @@ export const Jobs = {
   UPDATE_AIRTABLE: 'update_airtable',
   CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY:
     'create_or_update_salesforce_opportunity',
+  CREATE_OR_UPDATE_SALESFORCE_EVENT: 'create_or_update_salesforce_event',
   REMINDER_OFFER: 'reminder_offer',
   REMINDER_CV_10: 'reminder_cv_10',
   REMINDER_CV_20: 'reminder_cv_20',
@@ -43,6 +44,7 @@ type JobsData = {
   [Jobs.INSERT_AIRTABLE]: InsertAirtableJob;
   [Jobs.UPDATE_AIRTABLE]: UpdateAirtableJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
+  [Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT]: CreateOrUpdateSalesforceEventJob;
   [Jobs.REMINDER_OFFER]: SendReminderOfferJob;
   [Jobs.REMINDER_CV_10]: SendReminderCVJob;
   [Jobs.REMINDER_CV_20]: SendReminderCVJob;
@@ -133,6 +135,10 @@ export interface UpdateAirtableJob {
 export interface CreateOrUpdateSalesforceOpportunityJob {
   opportunityId: string | string[];
   isSameOpportunity: boolean;
+}
+
+export interface CreateOrUpdateSalesforceEventJob {
+  opportunityUserEventId: string | string[];
 }
 
 export interface SendOffersEmailAfterCVPublishJob {

@@ -66,12 +66,29 @@ export class ExternalDatabasesService {
     );
   }
 
+  async createOrUpdateExternalDBEvent(opportunityUserEventId: string) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT,
+      {
+        opportunityUserEventId,
+      }
+    );
+  }
+
   async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
       {
         opportunityId: opportunitiesIds,
         isSameOpportunity: false,
+      }
+    );
+  }
+  async refreshSalesforceEvents(opportunityUserEventsIds: string[]) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT,
+      {
+        opportunityUserEventId: opportunityUserEventsIds,
       }
     );
   }

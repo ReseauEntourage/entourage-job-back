@@ -155,42 +155,45 @@ export type OpportunityRestricted = Opportunity & {
   opportunityUsers: OpportunityUser;
 };
 
-export type EventType =
-  | 'contact'
-  | 'followup'
-  | 'interview'
-  | 'trial'
-  | 'pmsmp'
-  | 'hiring'
-  | 'end';
+export const EventTypes = {
+  CONTACT: 'contact',
+  FOLLOWUP: 'followup',
+  INTERVIEW: 'interview',
+  TRIAL: 'trial',
+  PMSMP: 'pmsmp',
+  HIRING: 'hiring',
+  END: 'end',
+} as const;
+
+export type EventType = typeof EventTypes[keyof typeof EventTypes];
 
 export const EventTypeFilters: FilterConstant<EventType>[] = [
   {
-    label: 'Contacté le',
+    label: 'Contacte',
     value: 'contact',
   },
   {
-    label: 'Relancé le',
+    label: 'Relance',
     value: 'followup',
   },
   {
-    label: 'Entretien le',
+    label: 'Entretien',
     value: 'interview',
   },
   {
-    label: "Période d'essai le",
+    label: "Période d'essai ",
     value: 'trial',
   },
   {
-    label: 'PMSMP le',
+    label: 'PMSMP',
     value: 'pmsmp',
   },
   {
-    label: 'Embauche le',
+    label: 'Embauche',
     value: 'hiring',
   },
   {
-    label: 'Arrêt de contrat le',
+    label: 'Arrêt de contrat',
     value: 'end',
   },
 ];
