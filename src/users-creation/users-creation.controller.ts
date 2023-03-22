@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { CreateUserDto } from 'src/users/dto';
-import { Roles, RolesGuard } from 'src/users/guards';
+import { Roles, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
@@ -28,7 +28,7 @@ export class UsersCreationController {
   constructor(private readonly usersCreationService: UsersCreationService) {}
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Post()
   async createUser(@Body() createUserDto: CreateUserDto) {
     if (createUserDto.phone && !isValidPhone(createUserDto.phone)) {

@@ -20,7 +20,7 @@ import {
   LinkedUser,
   LinkedUserGuard,
   Roles,
-  RolesGuard,
+  UserPermissionsGuard,
 } from 'src/users/guards';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
@@ -358,7 +358,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('admin')
   async findAll(
     @Query()
@@ -371,7 +371,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('/candidate/private/:candidateId')
   async findAllUserOpportunitiesAsAdmin(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
@@ -403,7 +403,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/candidate/tabCount/:candidateId')
@@ -421,7 +421,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/candidate/all/:candidateId')
@@ -455,14 +455,14 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('admin/count')
   async countPending(@UserPayload('zone') zone: AdminZone) {
     return this.opportunitiesService.countPending(zone);
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('candidate/count/:candidateId')
@@ -483,9 +483,11 @@ export class OpportunitiesController {
     if (role === UserRoles.ADMIN) {
       opportunity = await this.opportunitiesService.findOne(id);
     } else {
+      const candidateId = getCandidateIdFromCoachOrCandidate(user);
+
       opportunity = await this.opportunitiesService.findOneAsCandidate(
         id,
-        getCandidateIdFromCoachOrCandidate(user)
+        candidateId
       );
     }
 
@@ -497,7 +499,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Put('bulk')
   async updateAll(
     // Do not instantiate UpdateOpportunityPipe so that Request can be injected
@@ -631,9 +633,12 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
+    const candidateId = getCandidateIdFromCoachOrCandidate(user);
+
     if (
-      opportunityUser.UserId !== getCandidateIdFromCoachOrCandidate(user) &&
-      role !== UserRoles.ADMIN
+      Array.isArray(candidateId)
+        ? !candidateId.includes(opportunityUser.UserId)
+        : opportunityUser.UserId !== candidateId && role !== UserRoles.ADMIN
     ) {
       throw new ForbiddenException();
     }
@@ -669,7 +674,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Put(':id')
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -724,7 +729,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Post('refreshSalesforce/opportunities')
   async refreshSalesforceOpportunities() {
     const opportunities = await this.opportunitiesService.findAllIds();
@@ -736,7 +741,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Post('refreshSalesforce/events')
   async refreshSalesforceEvents() {
     const events =
@@ -749,7 +754,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('body.candidateId')
   @UseGuards(LinkedUserGuard)
   @Post('contactEmployer')
@@ -806,7 +811,7 @@ export class OpportunitiesController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Post('sendReminderArchive')
   async postSendReminderArchive(@Body('ids') opportunitiesIds: string[]) {
     let count = 0;

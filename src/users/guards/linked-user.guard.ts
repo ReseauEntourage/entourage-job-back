@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as _ from 'lodash';
 import { UserRoles } from '../users.types';
@@ -24,7 +24,9 @@ export class LinkedUserGuard implements CanActivate {
     const requestId = _.get(request, linkedUserIdKey);
     const candidateId = getCandidateIdFromCoachOrCandidate(user);
     return (
-      candidateId === requestId ||
+      (Array.isArray(candidateId)
+        ? candidateId.includes(requestId)
+        : candidateId === requestId) ||
       user.id === requestId ||
       user.role === UserRoles.ADMIN
     );

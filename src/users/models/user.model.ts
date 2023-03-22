@@ -6,12 +6,15 @@ import {
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
+  BelongsTo,
   BelongsToMany,
   Column,
   CreatedAt,
   DataType,
   Default,
   DeletedAt,
+  ForeignKey,
+  HasMany,
   HasOne,
   IsEmail,
   IsUUID,
@@ -30,6 +33,7 @@ import {
 } from '../users.types';
 import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import { Organization } from 'src/organizations/models';
 import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
@@ -41,6 +45,13 @@ export class User extends HistorizedModel {
   @Default(DataType.UUIDV4)
   @Column
   id: string;
+
+  @ApiProperty()
+  @IsUUID(4)
+  @ForeignKey(() => Organization)
+  @AllowNull(true)
+  @Column
+  OrganizationId: string;
 
   @ApiProperty()
   @AllowNull(false)
@@ -147,8 +158,11 @@ export class User extends HistorizedModel {
   candidat?: UserCandidat;
 
   // si coach regarder coach
-  @HasOne(() => UserCandidat, 'coachId')
-  coach?: UserCandidat;
+  @HasMany(() => UserCandidat, 'coachId')
+  coaches: UserCandidat[];
+
+  @BelongsTo(() => Organization, 'OrganizationId')
+  organization?: Organization;
 
   @BeforeCreate
   @BeforeUpdate

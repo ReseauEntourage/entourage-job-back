@@ -1,7 +1,10 @@
 import { User, UserAttribute, UserCandidatAttribute } from 'src/users/models';
 
 type PayloadCandidateOrCoach = {
-  coach?: Omit<Pick<User['coach'], UserCandidatAttribute | 'candidat'>, 'note'>;
+  coaches?: Omit<
+    Pick<User['coaches'][number], UserCandidatAttribute | 'candidat'>,
+    'note'
+  >[];
   candidat?: Omit<
     Pick<User['candidat'], UserCandidatAttribute | 'coach'>,
     'note'

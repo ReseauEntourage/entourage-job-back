@@ -14,20 +14,20 @@ import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
-  UserAttributes,
+  PublicUserAttributes,
   User,
+  UserAttributes,
   UserCandidat,
   UserCandidatAttributes,
-  PublicUserAttributes,
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
   CVStatuses,
+  MemberConstantType,
+  MemberFilterKey,
+  MemberFilters,
   UserRole,
   UserRoles,
-  MemberFilters,
-  MemberFilterKey,
-  MemberConstantType,
 } from './users.types';
 
 import {
@@ -193,7 +193,7 @@ export class UsersService {
       },
       {
         model: UserCandidat,
-        as: 'coach',
+        as: 'coaches',
         attributes: ['candidatId', ...UserCandidatAttributes],
         include: [
           {

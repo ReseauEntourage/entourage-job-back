@@ -30,9 +30,9 @@ import {
   LinkedUser,
   LinkedUserGuard,
   Roles,
-  RolesGuard,
   Self,
   SelfGuard,
+  UserPermissionsGuard,
 } from './guards';
 import { User } from './models';
 
@@ -49,7 +49,7 @@ export class UsersController {
   ) {}
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('members')
   async findMembers(
     @Query('limit', new ParseIntPipe())
@@ -76,7 +76,7 @@ export class UsersController {
 
   // TODO divide service
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('members/count')
   async countSubmittedCVMembers(@UserPayload('zone') zone: AdminZone) {
     return this.usersService.countSubmittedCVMembers(zone);
@@ -91,7 +91,7 @@ export class UsersController {
 
   // TODO divide service
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('search')
   async findUsers(
     @Query('query') search: string,
@@ -101,7 +101,7 @@ export class UsersController {
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('candidate')
   async findRelatedUser(
     @UserPayload('id') userId: string,
@@ -146,7 +146,7 @@ export class UsersController {
   }
 
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get('candidate/checkUpdate')
   async checkNoteHasBeenModified(
     @UserPayload('role') role: UserRole,
@@ -211,7 +211,7 @@ export class UsersController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Put('candidate/bulk')
   async updateAll(
     @Body('attributes', UpdateUserRestrictedPipe)
@@ -283,7 +283,7 @@ export class UsersController {
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Put('candidate/read/:candidateId')
   async setNoteHasBeenRead(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,

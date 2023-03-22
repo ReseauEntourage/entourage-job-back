@@ -234,7 +234,7 @@ describe('Auth', () => {
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
           ...candidateResponse,
-          coach: null,
+          coaches: [],
           candidat: {
             ...candidateResponse.candidat,
             note: null,
@@ -308,7 +308,7 @@ describe('Auth', () => {
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
         ...candidateResponse,
-        coach: null,
+        coaches: [],
         candidat: {
           ...candidateResponse.candidat,
           note: null,

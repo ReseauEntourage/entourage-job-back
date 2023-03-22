@@ -13,11 +13,29 @@ import {
 
 export const UserRoles = {
   CANDIDATE: 'Candidat',
+  CANDIDATE_EXTERNAL: 'Candidat externe',
   COACH: 'Coach',
+  COACH_EXTERNAL: 'Coach externe',
   ADMIN: 'Admin',
 } as const;
 
 export type UserRole = typeof UserRoles[keyof typeof UserRoles];
+
+export const Permissions = {
+  CANDIDATE: 'Candidat',
+  COACH: 'Coach',
+  ADMIN: 'Admin',
+} as const;
+
+export type Permission = typeof Permissions[keyof typeof Permissions];
+
+export const UserPermissions: { [K in UserRole]: Permission } = {
+  [UserRoles.CANDIDATE]: Permissions.CANDIDATE,
+  [UserRoles.CANDIDATE_EXTERNAL]: Permissions.CANDIDATE,
+  [UserRoles.COACH]: Permissions.COACH,
+  [UserRoles.COACH_EXTERNAL]: Permissions.COACH,
+  [UserRoles.ADMIN]: Permissions.ADMIN,
+} as const;
 
 export const AdminRoles = {
   CANDIDATES: 'Candidats',

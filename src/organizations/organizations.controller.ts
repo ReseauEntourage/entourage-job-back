@@ -1,22 +1,22 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-  BadRequestException,
-  Put,
-  ParseUUIDPipe,
   NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  UseGuards,
 } from '@nestjs/common';
-import { Roles, RolesGuard } from 'src/users/guards';
-import { UserRoles } from 'src/users/users.types';
-import { isValidPhone } from 'src/utils/misc';
+import { Roles, UserPermissionsGuard } from '../users/guards';
+import { UserRoles } from '../users/users.types';
+import { isValidPhone } from '../utils/misc';
 import {
   CreateOrganizationDto,
-  UpdateOrganizationDto,
   CreateOrganizationPipe,
+  UpdateOrganizationDto,
   UpdateOrganizationPipe,
 } from './dto';
 import { OrganizationReferentsService } from './organization-referents.service';
@@ -30,7 +30,7 @@ export class OrganizationsController {
   ) {}
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     const organization = await this.organizationsService.findOne(id);
@@ -41,7 +41,7 @@ export class OrganizationsController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Post()
   async create(
     @Body(new CreateOrganizationPipe())
@@ -77,8 +77,9 @@ export class OrganizationsController {
 
     return updatedOrganization.toJSON();
   }
+
   @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(UserPermissionsGuard)
   @Put(':id')
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,

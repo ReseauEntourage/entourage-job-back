@@ -20,7 +20,7 @@ export const UserCandidatInclude: Includeable[] = [
   },
   {
     model: UserCandidat,
-    as: 'coach',
+    as: 'coaches',
     attributes: [...UserCandidatAttributes],
     include: [
       {

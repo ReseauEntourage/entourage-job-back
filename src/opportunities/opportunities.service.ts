@@ -5,7 +5,7 @@ import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
 import { PleziService } from '../external-services/plezi/plezi.service';
-import { getRelatedUser } from '../users/users.utils';
+import { getCoachFromCandidate } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
@@ -310,7 +310,7 @@ export class OpportunitiesService {
 
   async findOneAsCandidate(
     id: string,
-    candidateId: string
+    candidateId: string | string[]
   ): Promise<OpportunityRestricted> {
     const opportunity = await this.opportunityModel.findOne({
       where: {
@@ -327,19 +327,33 @@ export class OpportunitiesService {
       return null;
     }
 
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        candidateId,
-        id
-      );
+    const opportunityUser = Array.isArray(candidateId)
+      ? (
+          await Promise.all(
+            candidateId.map((singleCandidateId) => {
+              return this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+                singleCandidateId,
+                id
+              );
+            })
+          )
+        ).filter((opportunityUser) => !!opportunityUser)
+      : await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+          candidateId,
+          id
+        );
 
-    if (!opportunityUser && !opportunity.isPublic) {
+    if (_.isEmpty(opportunityUser) && !opportunity.isPublic) {
       return null;
     }
 
     return {
       ...opportunity.toJSON(),
-      opportunityUsers: opportunityUser?.toJSON(),
+      opportunityUsers: Array.isArray(opportunityUser)
+        ? opportunityUser.map((singleOpportunityUser) =>
+            singleOpportunityUser?.toJSON()
+          )
+        : opportunityUser?.toJSON(),
     } as OpportunityRestricted;
   }
 
@@ -741,7 +755,7 @@ export class OpportunitiesService {
     }
     if (coachNotification && !isAdmin) {
       const candidate = await this.usersService.findOne(candidateId);
-      const coach = getRelatedUser(candidate);
+      const coach = getCoachFromCandidate(candidate);
       if (coach) {
         await this.mailsService.sendOnCreatedExternalOfferMailToCoach(
           opportunity,
@@ -941,7 +955,7 @@ export class OpportunitiesService {
     let opportunitiesCreatedByCandidateOrCoach =
       await this.countExternalOpportunitiesCreatedByUser(candidateId);
 
-    const coach = getRelatedUser(candidate);
+    const coach = getCoachFromCandidate(candidate);
     if (coach) {
       opportunitiesCreatedByCandidateOrCoach +=
         await this.countExternalOpportunitiesCreatedByUser(coach.id);
@@ -1056,12 +1070,12 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     description: string
   ) {
-    const user = await this.usersService.findOne(candidateId);
-    const relatedUser = getRelatedUser(user);
-    const emailCoach = relatedUser ? relatedUser.email : '';
+    const candidate = await this.usersService.findOne(candidateId);
+    const coach = getCoachFromCandidate(candidate);
+    const emailCoach = coach ? coach.email : '';
     return this.mailsService.sendMailContactEmployer(
       type,
-      user,
+      candidate,
       emailCoach,
       opportunity,
       description
