@@ -73,34 +73,81 @@ export class UsersCreationController {
       jwtToken
     );
 
-    if (userToCreate.userToCoach) {
-      let candidateId: string;
+    if (userToCreate.linkedUser) {
+      let candidateId: string | string[];
       let coachId: string;
 
       if (createdUser.role === UserRoles.COACH) {
-        candidateId = userToCreate.userToCoach;
+        const id = userToCreate.linkedUser;
+
+        const candidate = Array.isArray(id)
+          ? await Promise.all(
+              id.map((singleCandidateId) => {
+                return this.usersCreationService.findOneUser(singleCandidateId);
+              })
+            )
+          : await this.usersCreationService.findOneUser(id);
+
+        if (
+          Array.isArray(candidate)
+            ? candidate.some(({ role }) => role !== UserRoles.CANDIDATE)
+            : candidate.role !== UserRoles.CANDIDATE
+        ) {
+          throw new BadRequestException();
+        }
+        candidateId = id;
         coachId = createdUser.id;
       }
       if (createdUser.role === UserRoles.CANDIDATE) {
+        const id = userToCreate.linkedUser;
+        if (Array.isArray(id)) {
+          throw new BadRequestException();
+        }
+        const coach = await this.usersCreationService.findOneUser(id);
+        if (coach.role !== UserRoles.COACH) {
+          throw new BadRequestException();
+        }
+        coachId = id;
         candidateId = createdUser.id;
-        coachId = userToCreate.userToCoach;
       }
 
-      const updatedUserCandidat =
-        await this.usersCreationService.updateUserCandidatByCandidateId(
-          candidateId,
-          {
-            candidatId: candidateId,
-            coachId,
-          }
+      if (Array.isArray(candidateId)) {
+        await Promise.all(
+          candidateId.map(async (singleCandidateId) => {
+            const updatedUserCandidat =
+              await this.usersCreationService.updateUserCandidatByCandidateId(
+                singleCandidateId,
+                {
+                  candidatId: singleCandidateId,
+                  coachId,
+                }
+              );
+
+            if (!updatedUserCandidat) {
+              throw new NotFoundException();
+            }
+            await this.usersCreationService.sendMailsAfterMatching(
+              singleCandidateId
+            );
+          })
         );
+      } else {
+        const updatedUserCandidat =
+          await this.usersCreationService.updateUserCandidatByCandidateId(
+            candidateId,
+            {
+              candidatId: candidateId,
+              coachId,
+            }
+          );
 
-      if (!updatedUserCandidat) {
-        throw new NotFoundException();
+        if (!updatedUserCandidat) {
+          throw new NotFoundException();
+        }
+        await this.usersCreationService.sendMailsAfterMatching(candidateId);
       }
-      await this.usersCreationService.sendMailsAfterMatching(candidateId);
     }
 
-    return createdUser;
+    return this.usersCreationService.findOneUser(createdUser.id);
   }
 }

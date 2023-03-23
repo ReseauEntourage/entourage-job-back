@@ -19,6 +19,10 @@ export class UsersCreationService {
     return this.usersService.create(createUserDto);
   }
 
+  async findOneUser(id: string) {
+    return this.usersService.findOne(id);
+  }
+
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
     return this.authService.generateRandomPasswordInJWT(expiration);
   }
