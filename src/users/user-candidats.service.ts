@@ -59,7 +59,7 @@ export class UserCandidatsService {
 
   async updateByCandidateId(
     candidateId: string,
-    updateUserCandidatDto: UpdateUserCandidatDto
+    updateUserCandidatDto: Partial<UserCandidat>
   ): Promise<UserCandidat> {
     await this.userCandidatModel.update(updateUserCandidatDto, {
       where: { candidatId: candidateId },

@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { passwordStrength } from 'check-password-strength';
+import _ from 'lodash';
 import { Order } from 'sequelize/types/model';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
@@ -26,6 +27,7 @@ import {
   UpdateUserRestrictedDto,
   UpdateUserRestrictedPipe,
 } from './dto';
+import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
   LinkedUserGuard,
@@ -244,7 +246,8 @@ export class UsersController {
   async updateUserCandidat(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @Body() updateUserCandidatDto: UpdateUserCandidatDto
+    @Body(new UpdateUserCandidatPipe())
+    updateUserCandidatDto: UpdateUserCandidatDto
   ) {
     const userCandidat = await this.userCandidatsService.findOneByCandidateId(
       candidateId
@@ -276,6 +279,91 @@ export class UsersController {
     }
 
     await this.usersService.cacheAllCVs();
+
+    return updatedUserCandidat;
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Put('linkedUser/:userId')
+  async linkUser(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Body('userToLinkId') userToLinkId: string /* | string[]*/
+  ) {
+    if (
+      Array.isArray(userToLinkId)
+        ? !userToLinkId.every((id) => uuidValidate(id))
+        : !uuidValidate(userId)
+    ) {
+      throw new BadRequestException();
+    }
+
+    const user = await this.usersService.findOne(userId);
+
+    /*  if (user.role === UserRoles.COACH_EXTERNAL) {
+        if (!Array.isArray(userToLinkId)) {
+          throw new BadRequestException();
+        }
+      }
+      else  if (Array.isArray(userToCreate.linkedUser)) {
+        throw new BadRequestException();
+      }*/
+
+    const userToLink = await this.usersService.findOne(userToLinkId);
+
+    if (!user || !userToLink) {
+      throw new NotFoundException();
+    }
+
+    const normalRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
+    const externalRoles = [
+      UserRoles.CANDIDATE_EXTERNAL,
+      UserRoles.COACH_EXTERNAL,
+    ];
+
+    let candidateId;
+    let coachId;
+
+    if (
+      _.difference([user.role, userToLink.role], normalRoles).length === 0 &&
+      user.role !== userToLink.role
+    ) {
+      candidateId = user.role === UserRoles.CANDIDATE ? user.id : userToLink.id;
+      coachId = user.role === UserRoles.COACH ? user.id : userToLink.id;
+    } else if (
+      _.difference([user.role, userToLink.role], externalRoles).length === 0 &&
+      user.role !== userToLink.role
+    ) {
+      candidateId =
+        user.role === UserRoles.CANDIDATE_EXTERNAL ? user.id : userToLink.id;
+      coachId =
+        user.role === UserRoles.COACH_EXTERNAL ? user.id : userToLink.id;
+    } else {
+      throw new BadRequestException();
+    }
+
+    const userCandidate = await this.userCandidatsService.findOneByCandidateId(
+      candidateId
+    );
+
+    if (!userCandidate) {
+      throw new NotFoundException();
+    }
+
+    const updatedUserCandidat =
+      await this.userCandidatsService.updateByCandidateId(candidateId, {
+        candidatId: candidateId,
+        coachId: coachId,
+      });
+
+    if (
+      updatedUserCandidat.coach &&
+      updatedUserCandidat.coach.id !== userCandidate.coach?.id
+    ) {
+      await this.usersService.sendMailsAfterMatching(
+        updatedUserCandidat.candidat.id
+      );
+    }
 
     return updatedUserCandidat;
   }

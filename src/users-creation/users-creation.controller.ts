@@ -94,6 +94,9 @@ export class UsersCreationController {
             return this.usersCreationService.findOneUser(singleCandidateId);
           })
         );
+        if (candidates.includes(null)) {
+          throw new NotFoundException();
+        }
         if (candidates.some(({ role }) => role !== UserRoles.CANDIDATE)) {
           throw new BadRequestException();
         }
@@ -131,6 +134,10 @@ export class UsersCreationController {
             candidateId
           );
 
+          if (!candidate) {
+            throw new NotFoundException();
+          }
+
           if (candidate.role !== UserRoles.CANDIDATE) {
             throw new BadRequestException();
           }
@@ -142,6 +149,11 @@ export class UsersCreationController {
           candidateId = createdUser.id;
 
           const coach = await this.usersCreationService.findOneUser(coachId);
+
+          if (!coach) {
+            throw new NotFoundException();
+          }
+
           if (coach.role !== UserRoles.COACH) {
             throw new BadRequestException();
           }

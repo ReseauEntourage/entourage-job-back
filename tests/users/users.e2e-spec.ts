@@ -3,6 +3,7 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
+import { Organization } from '../../src/organizations/models';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
@@ -368,6 +369,30 @@ describe('Users', () => {
               })
             );
           });
+          it('Should return 404 if create candidate with unexisting coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, linkedUser: uuid() });
+            expect(response.status).toBe(404);
+          });
 
           it('Should return 200 and a created coach without candidate', async () => {
             const {
@@ -443,6 +468,27 @@ describe('Users', () => {
                 ],
               })
             );
+          });
+          it('Should return 404 if created coach with unexisting candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, linkedUser: uuid() });
+
+            expect(response.status).toBe(404);
           });
 
           it('Should return 400 if candidate with another candidate as coach', async () => {
@@ -639,7 +685,6 @@ describe('Users', () => {
           // TODO Same with update
         });
       });
-      // TODO TEST LINKED USER UPDATE
     });
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {
@@ -1732,6 +1777,7 @@ describe('Users', () => {
             role: UserRoles.COACH,
           });
         });
+
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
@@ -1767,6 +1813,26 @@ describe('Users', () => {
               });
           expect(response.status).toBe(403);
         });
+        it('Should return 400, if candidate updates associated coach id', async () => {
+          const response: APIResponse<UsersController['updateUserCandidat']> =
+            await request(app.getHttpServer())
+              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send({
+                coachId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400, if coach updates associated candidate id', async () => {
+          const response: APIResponse<UsersController['updateUserCandidat']> =
+            await request(app.getHttpServer())
+              .put(`${route}/candidate/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`)
+              .send({
+                candidatId: loggedInCandidate.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
         it('Should return 200 and updated userCandidat, if logged in admin', async () => {
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -1787,7 +1853,7 @@ describe('Users', () => {
           expect(response.body.note).toMatch(updatedNote);
           expect(response.body.lastModifiedBy).toBe(loggedInAdmin.user.id);
         });
-        it('Should return 200 and updated userCandidat, if candidat updates himself', async () => {
+        it('Should return 200 and updated userCandidat, if candidate updates himself', async () => {
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
@@ -1826,6 +1892,391 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body.note).toMatch(updatedNote);
           expect(response.body.lastModifiedBy).toBe(loggedInCoach.user.id);
+        });
+      });
+      describe('/linkedUser/:userId - Link a user', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let externalCoach: User;
+        let externalCandidate: User;
+        let organization: Organization;
+
+        //TODO External with non external
+        // TODO Non existing coach or candidate
+        // TODO 400 External Candidate without Organization
+        // TODO 400 External Coach without Organization
+        // TODO 400 External Candidate with Coach of other organization
+        // TODO 400 External Coach with Candidate of other organization
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          organization = await organizationFactory.create({}, true);
+
+          externalCoach = await userFactory.create(
+            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            {},
+            true
+          );
+
+          externalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+        });
+
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if user is not admin', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 404 if admin updates candidate with unexisting coach', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: uuid(),
+              });
+          expect(response.status).toBe(404);
+        });
+        it('Should return 404 if admin updates coach with unexisting candidate', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: uuid(),
+              });
+          expect(response.status).toBe(404);
+        });
+
+        it('Should return 200 if admin updates linked coach for candidate', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...loggedInCandidate.user.candidat,
+              coach: expect.objectContaining({
+                ...loggedInCoach.user,
+              }),
+            })
+          );
+        });
+        it('Should return 200 if admin updates linked candidate for coach', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCandidate.user.id,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...loggedInCandidate.user.candidat,
+              coach: expect.objectContaining({
+                ...loggedInCoach.user,
+              }),
+            })
+          );
+        });
+
+        it('Should return 400 if admin updates linked multiple coaches for candidate', async () => {
+          const otherCoach = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [loggedInCoach.user.id, otherCoach.id],
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates linked multiple candidates for coach', async () => {
+          const otherCandidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            true
+          );
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [loggedInCandidate.user.id, otherCandidate.id],
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 200 if admin updates linked external coach for external candidate with same organization', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: externalCoach.id,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...loggedInCandidate.user.candidat,
+              coach: expect.objectContaining({
+                ...loggedInCoach.user,
+              }),
+            })
+          );
+        });
+        it('Should return 200 if admin updates linked multiple external candidate for external coach with same organization', async () => {
+          const otherExternalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [externalCandidate.id, otherExternalCandidate.id],
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...loggedInCandidate.user.candidat,
+              coach: expect.objectContaining({
+                ...loggedInCoach.user,
+              }),
+            })
+          );
+        });
+
+        it('Should return 400 if admin updates linked external multiple coaches for candidate', async () => {
+          const otherExternalCoach = await userFactory.create(
+            { role: UserRoles.COACH, OrganizationId: organization.id },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [loggedInCoach.user.id, otherExternalCoach.id],
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates normal candidate with another normal candidate as coach', async () => {
+          const otherCandidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates normal coach with another normal coach as candidate', async () => {
+          const otherCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${otherCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates external candidate with another external candidate as coach', async () => {
+          const otherExternalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates external coach with another external coach as candidate', async () => {
+          const otherExternalCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates normal candidate with external coach', async () => {
+          const externalCoach = await userFactory.create(
+            { role: UserRoles.COACH_EXTERNAL },
+            {},
+            true
+          );
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: externalCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates normal coach with external candidate', async () => {
+          const externalCandidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE_EXTERNAL },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: externalCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates external candidate with normal coach', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates external coach with normal candidate', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCandidate.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates external candidate with external coach from another organization', async () => {
+          const otherOrganization = await organizationFactory.create({}, true);
+
+          const otherExternalCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates external coach with external candidate from another organization', async () => {
+          const otherOrganization = await organizationFactory.create({}, true);
+
+          const otherExternalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCandidate.id,
+              });
+          expect(response.status).toBe(400);
         });
       });
       describe('/candidate/checkUpdate - Check if update has been made on userCandidat note', () => {
