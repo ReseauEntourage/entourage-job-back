@@ -149,7 +149,7 @@ describe('Users', () => {
           });
         });
 
-        it('Should return 200 and a created candidate without coach', async () => {
+        it('Should return 200 and a created user if valid data', async () => {
           const {
             password,
             hashReset,
@@ -158,27 +158,23 @@ describe('Users', () => {
             revision,
             updatedAt,
             createdAt,
-            ...candidate
-          } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            false
-          );
+            lastConnection,
+            ...user
+          } = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send(candidate);
+              .send(user);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...candidate,
-              lastConnection: candidate.lastConnection.toISOString(),
+              ...user,
             })
           );
           expect(response.body).toEqual(expect.objectContaining(candidate));
         });
-        it('Should return 200 and a created candidate with coach', async () => {
+        it('Should return 200 and a created user if missing optional fields', async () => {
           const {
             password,
             hashReset,
@@ -187,214 +183,39 @@ describe('Users', () => {
             revision,
             updatedAt,
             createdAt,
-            ...candidate
-          } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            false
-          );
-
-          const {
-            password: coachPassword,
-            hashReset: coachHashReset,
-            salt: coachSalt,
-            saltReset: coachSaltReset,
-            revision: coachRevision,
-            updatedAt: coachUpdatedAt,
-            createdAt: coachCreatedAt,
-            candidat,
-            coaches,
-            ...coach
-          } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
-
+            lastConnection,
+            address,
+            ...user
+          } = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send({ ...candidate, linkedUser: coach.id });
+              .send(user);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...candidate,
-              lastConnection: candidate.lastConnection.toISOString(),
-              candidat: expect.objectContaining({
-                coach: expect.objectContaining({
-                  ...coach,
-                  lastConnection: coach.lastConnection.toISOString(),
-                }),
-              }),
+              ...user,
             })
           );
         });
-
-        it('Should return 200 and a created coach without candidate', async () => {
-          const {
-            password,
-            hashReset,
-            salt,
-            saltReset,
-            revision,
-            updatedAt,
-            createdAt,
-            ...coach
-          } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+        it('Should return 400 when user data has missing mandatory fields', async () => {
+          const user = await userFactory.create({}, {}, false);
+          const wrongData = {
+            lastName: user.lastName,
+            email: user.email,
+            zone: user.zone,
+            role: user.role,
+            gender: user.gender,
+            phone: user.phone,
+          };
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send(coach);
-          expect(response.status).toBe(201);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...coach,
-              lastConnection: coach.lastConnection.toISOString(),
-            })
-          );
-        });
-        it('Should return 200 and a created coach with candidate', async () => {
-          const {
-            password,
-            hashReset,
-            salt,
-            saltReset,
-            revision,
-            updatedAt,
-            createdAt,
-            ...coach
-          } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-          const {
-            password: candidatePassword,
-            hashReset: candidateHashReset,
-            salt: candidateSalt,
-            saltReset: candidateSaltReset,
-            revision: candidateRevision,
-            updatedAt: candidateUpdatedAt,
-            createdAt: candidateCreatedAt,
-            candidat,
-            coaches,
-            ...candidate
-          } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, true);
-
-          const response: APIResponse<UsersCreationController['createUser']> =
-            await request(app.getHttpServer())
-              .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send({ ...coach, linkedUser: candidate.id });
-          expect(response.status).toBe(201);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...coach,
-              lastConnection: coach.lastConnection.toISOString(),
-              coaches: [
-                expect.objectContaining({
-                  candidat: expect.objectContaining({
-                    ...candidate,
-                    lastConnection: candidate.lastConnection.toISOString(),
-                  }),
-                }),
-              ],
-            })
-          );
-        });
-
-        it('Should return 400 if candidate with another candidate as coach', async () => {
-          const {
-            password,
-            hashReset,
-            salt,
-            saltReset,
-            revision,
-            updatedAt,
-            createdAt,
-            ...candidate
-          } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            false
-          );
-
-          const { id } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersCreationController['createUser']> =
-            await request(app.getHttpServer())
-              .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send({ ...candidate, linkedUser: id });
+              .send(wrongData);
           expect(response.status).toBe(400);
         });
-        it('Should return 400 if coach with another coach as candidate', async () => {
-          const {
-            password,
-            hashReset,
-            salt,
-            saltReset,
-            revision,
-            updatedAt,
-            createdAt,
-            ...coach
-          } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-          const { id } = await userFactory.create(
-            { role: UserRoles.COACH },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersCreationController['createUser']> =
-            await request(app.getHttpServer())
-              .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send({ ...coach, linkedUser: id });
-          expect(response.status).toBe(400);
-        });
-
-        it('Should return 400 if coach with multiple candidates', async () => {
-          const {
-            password,
-            hashReset,
-            salt,
-            saltReset,
-            revision,
-            updatedAt,
-            createdAt,
-            ...coach
-          } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-          const { id: candidate1Id } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            true
-          );
-          const { id: candidate2Id } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersCreationController['createUser']> =
-            await request(app.getHttpServer())
-              .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send({
-                ...coach,
-                linkedUser: [candidate1Id, candidate2Id],
-              });
-          expect(response.status).toBe(400);
-        });
-
-        // TODO Non existing coach or candidate
-        // TODO 400 Normal coach with multiple candidates
-        // TODO 400 External Candidate without Organization
-        // TODO 400 External Coach without Organization
-        // TODO 400 External Candidate with Coach of other organization
-        // TODO 400 External Coach with Candidate of other organization
-        // TODO Same with update
-
         it('Should return 400 when user data has invalid phone', async () => {
           const candidate = await userFactory.create({}, {}, false);
           const wrongData = {
@@ -436,12 +257,31 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 409 when the email already exist', async () => {
-          const candidate = await userFactory.create(
+          const existingCandidate = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
             },
             {},
             true
+          );
+
+          const {
+            password,
+            hashReset,
+            salt,
+            saltReset,
+            revision,
+            updatedAt,
+            createdAt,
+            lastConnection,
+            ...candidate
+          } = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              email: existingCandidate.email,
+            },
+            {},
+            false
           );
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
@@ -450,7 +290,356 @@ describe('Users', () => {
               .send(candidate);
           expect(response.status).toBe(409);
         });
+
+        describe('/ - Create normal candidate or coach', () => {
+          it('Should return 200 and a created candidate without coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send(candidate);
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...candidate,
+              })
+            );
+          });
+          it('Should return 200 and a created candidate with coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const {
+              password: coachPassword,
+              hashReset: coachHashReset,
+              salt: coachSalt,
+              saltReset: coachSaltReset,
+              revision: coachRevision,
+              updatedAt: coachUpdatedAt,
+              createdAt: coachCreatedAt,
+              lastConnection: coachLastConnection,
+              candidat,
+              coaches,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, linkedUser: coach.id });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...candidate,
+                candidat: expect.objectContaining({
+                  coach: expect.objectContaining({
+                    ...coach,
+                  }),
+                }),
+              })
+            );
+          });
+
+          it('Should return 200 and a created coach without candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send(coach);
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...coach,
+              })
+            );
+          });
+          it('Should return 200 and a created coach with candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const {
+              password: candidatePassword,
+              hashReset: candidateHashReset,
+              salt: candidateSalt,
+              saltReset: candidateSaltReset,
+              revision: candidateRevision,
+              updatedAt: candidateUpdatedAt,
+              createdAt: candidateCreatedAt,
+              lastConnection: candidateLastConnection,
+              candidat,
+              coaches,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, linkedUser: candidate.id });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...coach,
+                coaches: [
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      ...candidate,
+                    }),
+                  }),
+                ],
+              })
+            );
+          });
+
+          it('Should return 400 if candidate with another candidate as coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const { id } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, linkedUser: id });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with another coach as candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const { id } = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, linkedUser: id });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if candidate with multiple coaches', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const { id: coach1Id } = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+            const { id: coach2Id } = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  linkedUser: [coach1Id, coach2Id],
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with multiple candidates', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const { id: candidate1Id } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+            const { id: candidate2Id } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  linkedUser: [candidate1Id, candidate2Id],
+                });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if candidate with organization', async () => {
+            const organization = await organizationFactory.create({}, true);
+
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with organization', async () => {
+            const organization = await organizationFactory.create({}, true);
+
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                });
+            expect(response.status).toBe(400);
+          });
+        });
+        describe('/ - Create external candidate or coach', () => {
+          // TODO Non existing coach or candidate
+          // TODO 400 External Candidate without Organization
+          // TODO 400 External Coach without Organization
+          // TODO 400 External Candidate with Coach of other organization
+          // TODO 400 External Coach with Candidate of other organization
+          // TODO Same with update
+        });
       });
+      // TODO TEST LINKED USER UPDATE
     });
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {

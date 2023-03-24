@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail as IsEmailClassValidator, IsString } from 'class-validator';
+import {
+  IsEmail as IsEmailClassValidator,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   AfterCreate,
   AfterDestroy,
@@ -47,6 +52,8 @@ export class User extends HistorizedModel {
   id: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @IsUUID(4)
   @ForeignKey(() => Organization)
   @AllowNull(true)
@@ -54,12 +61,14 @@ export class User extends HistorizedModel {
   OrganizationId: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(false)
   @Length({ min: 1, max: 40 })
   @Column
   firstName: string;
 
   @ApiProperty()
+  @IsString()
   @Length({ min: 1, max: 40 })
   @AllowNull(false)
   @Column
@@ -74,12 +83,15 @@ export class User extends HistorizedModel {
   email: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(false)
   @Default(UserRoles.CANDIDATE)
   @Column
   role: UserRole;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   adminRole: AdminRole;
@@ -95,6 +107,7 @@ export class User extends HistorizedModel {
   salt: string;
 
   @ApiProperty()
+  @IsNumber()
   @AllowNull(false)
   @Default(Genders.MALE)
   @Column
@@ -109,6 +122,7 @@ export class User extends HistorizedModel {
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   address: string;
@@ -129,6 +143,7 @@ export class User extends HistorizedModel {
   saltReset: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Column
   zone: AdminZone;
