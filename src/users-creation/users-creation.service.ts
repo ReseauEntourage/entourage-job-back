@@ -23,6 +23,10 @@ export class UsersCreationService {
     return this.usersService.findOne(id);
   }
 
+  async findOneUserCandidatByCandidateId(candidateId: string) {
+    return this.userCandidatsService.findOneByCandidateId(candidateId);
+  }
+
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
     return this.authService.generateRandomPasswordInJWT(expiration);
   }
@@ -45,6 +49,14 @@ export class UsersCreationService {
     return this.userCandidatsService.updateByCandidateId(
       candidateId,
       updateUserCandidatDto
+    );
+  }
+
+  async updateAllUserCandidatLinkedUserByCandidateId(
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
+  ): Promise<UserCandidat[]> {
+    return this.userCandidatsService.updateAllLinkedUserByCandidateId(
+      candidatesAndCoachesIds
     );
   }
 }

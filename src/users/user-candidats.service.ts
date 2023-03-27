@@ -74,6 +74,48 @@ export class UserCandidatsService {
     return updatedUserCandidat.toJSON();
   }
 
+  async updateAllLinkedUserByCandidateId(
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
+  ): Promise<UserCandidat[]> {
+    const t = await this.userCandidatModel.sequelize.transaction();
+
+    try {
+      const updatedUserCandidates = await Promise.all(
+        candidatesAndCoachesIds.map(async ({ candidateId, coachId }) => {
+          await this.userCandidatModel.update(
+            {
+              candidatId: candidateId,
+              coachId: coachId,
+            },
+            {
+              where: { candidatId: candidateId },
+              individualHooks: true,
+              transaction: t,
+            }
+          );
+
+          const updatedUserCandidat = await this.findOneByCandidateId(
+            candidateId
+          );
+
+          if (!updatedUserCandidat) {
+            return null;
+          }
+          return updatedUserCandidat;
+        })
+      );
+      if (updatedUserCandidates.includes(null)) {
+        await t.rollback();
+        return null;
+      }
+      await t.commit();
+      return updatedUserCandidates;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
+  }
+
   async updateAll(usersIds: string[], attributes: UpdateUserCandidatDto) {
     const [nbUpdated, updatedUserCandidats] =
       await this.userCandidatModel.update(attributes, {

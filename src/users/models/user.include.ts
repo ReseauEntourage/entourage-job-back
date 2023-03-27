@@ -1,4 +1,5 @@
 import { Includeable } from 'sequelize';
+import { Organization } from '../../organizations/models';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';
@@ -30,5 +31,10 @@ export const UserCandidatInclude: Includeable[] = [
         paranoid: false,
       },
     ],
+  },
+  {
+    model: Organization,
+    as: 'organization',
+    attributes: ['name', 'address', 'zone', 'id'],
   },
 ];

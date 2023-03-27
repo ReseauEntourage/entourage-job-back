@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
 import { col, Op, where } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
@@ -251,4 +252,36 @@ export function generateImageNamesToDelete(prefix: string) {
   return imageNames.reduce((acc, curr) => {
     return [...acc, ...curr];
   }, []);
+}
+
+export function getCandidateAndCoachIdDependingOnRoles(
+  user: User,
+  userToLink: User
+) {
+  const normalRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
+  const externalRoles = [
+    UserRoles.CANDIDATE_EXTERNAL,
+    UserRoles.COACH_EXTERNAL,
+  ];
+
+  if (
+    _.difference([user.role, userToLink.role], normalRoles).length === 0 &&
+    user.role !== userToLink.role
+  ) {
+    return {
+      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
+      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
+    };
+  } else if (
+    _.difference([user.role, userToLink.role], externalRoles).length === 0 &&
+    user.role !== userToLink.role
+  ) {
+    return {
+      candidateId:
+        user.role === UserRoles.CANDIDATE_EXTERNAL ? user.id : userToLink.id,
+      coachId: user.role === UserRoles.COACH_EXTERNAL ? user.id : userToLink.id,
+    };
+  } else {
+    throw new BadRequestException();
+  }
 }

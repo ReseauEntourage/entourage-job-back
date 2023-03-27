@@ -16,5 +16,5 @@ export class CreateUserDto extends PickType(User, [
 ] as const) {
   @ApiProperty()
   @IsOptional()
-  linkedUser?: string | string[];
+  userToLinkId?: string | string[];
 }

@@ -8,12 +8,13 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { CreateUserPipe } from '../users/dto/create-user.pipe';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { CreateUserDto } from 'src/users/dto';
+import { CreateUserPipe } from 'src/users/dto/create-user.pipe';
 import { Roles, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
+import { getCandidateAndCoachIdDependingOnRoles } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { UsersCreationService } from './users-creation.service';
 
@@ -33,9 +34,12 @@ export class UsersCreationController {
   @Post()
   async createUser(@Body(new CreateUserPipe()) createUserDto: CreateUserDto) {
     if (
-      createUserDto.OrganizationId &&
-      createUserDto.role !== UserRoles.CANDIDATE_EXTERNAL &&
-      createUserDto.role !== UserRoles.COACH_EXTERNAL
+      (createUserDto.OrganizationId &&
+        createUserDto.role !== UserRoles.CANDIDATE_EXTERNAL &&
+        createUserDto.role !== UserRoles.COACH_EXTERNAL) ||
+      (!createUserDto.OrganizationId &&
+        (createUserDto.role === UserRoles.CANDIDATE_EXTERNAL ||
+          createUserDto.role === UserRoles.COACH_EXTERNAL))
     ) {
       throw new BadRequestException();
     }
@@ -82,97 +86,69 @@ export class UsersCreationController {
       jwtToken
     );
 
-    if (userToCreate.linkedUser) {
-      if (createdUser.role === UserRoles.COACH_EXTERNAL) {
-        if (!Array.isArray(userToCreate.linkedUser)) {
-          throw new BadRequestException();
-        }
-        const candidatesIds = userToCreate.linkedUser;
-
-        const candidates = await Promise.all(
-          candidatesIds.map((singleCandidateId) => {
-            return this.usersCreationService.findOneUser(singleCandidateId);
-          })
-        );
-        if (candidates.includes(null)) {
-          throw new NotFoundException();
-        }
-        if (candidates.some(({ role }) => role !== UserRoles.CANDIDATE)) {
-          throw new BadRequestException();
-        }
-
-        await Promise.all(
-          candidatesIds.map(async (candidateId) => {
-            const updatedUserCandidat =
-              await this.usersCreationService.updateUserCandidatByCandidateId(
-                candidateId,
-                {
-                  candidatId: candidateId,
-                  coachId: createdUser.id,
-                }
-              );
-
-            if (!updatedUserCandidat) {
-              throw new NotFoundException();
-            }
-            await this.usersCreationService.sendMailsAfterMatching(candidateId);
-          })
-        );
-      } else {
-        if (Array.isArray(userToCreate.linkedUser)) {
-          throw new BadRequestException();
-        }
-
-        let candidateId: string;
-        let coachId: string;
-
-        if (createdUser.role === UserRoles.COACH) {
-          candidateId = userToCreate.linkedUser;
-          coachId = createdUser.id;
-
-          const candidate = await this.usersCreationService.findOneUser(
-            candidateId
-          );
-
-          if (!candidate) {
-            throw new NotFoundException();
-          }
-
-          if (candidate.role !== UserRoles.CANDIDATE) {
-            throw new BadRequestException();
-          }
-        } else if (
-          createdUser.role === UserRoles.CANDIDATE ||
-          createdUser.role === UserRoles.CANDIDATE_EXTERNAL
-        ) {
-          coachId = userToCreate.linkedUser;
-          candidateId = createdUser.id;
-
-          const coach = await this.usersCreationService.findOneUser(coachId);
-
-          if (!coach) {
-            throw new NotFoundException();
-          }
-
-          if (coach.role !== UserRoles.COACH) {
-            throw new BadRequestException();
-          }
-        }
-
-        const updatedUserCandidat =
-          await this.usersCreationService.updateUserCandidatByCandidateId(
-            candidateId,
-            {
-              candidatId: candidateId,
-              coachId,
-            }
-          );
-
-        if (!updatedUserCandidat) {
-          throw new NotFoundException();
-        }
-        await this.usersCreationService.sendMailsAfterMatching(candidateId);
+    if (userToCreate.userToLinkId) {
+      if (
+        (createdUser.role !== UserRoles.COACH_EXTERNAL &&
+          Array.isArray(userToCreate.userToLinkId)) ||
+        (createdUser.role === UserRoles.COACH_EXTERNAL &&
+          !Array.isArray(userToCreate.userToLinkId))
+      ) {
+        throw new BadRequestException();
       }
+
+      const usersToLinkIds = Array.isArray(userToCreate.userToLinkId)
+        ? userToCreate.userToLinkId
+        : [userToCreate.userToLinkId];
+
+      const userCandidatesToUpdate = await Promise.all(
+        usersToLinkIds.map(async (userToLinkId) => {
+          const userToLink = await this.usersCreationService.findOneUser(
+            userToLinkId
+          );
+
+          if (!userToLink) {
+            throw new NotFoundException();
+          }
+
+          const { candidateId, coachId } =
+            getCandidateAndCoachIdDependingOnRoles(createdUser, userToLink);
+
+          const userCandidate =
+            await this.usersCreationService.findOneUserCandidatByCandidateId(
+              candidateId
+            );
+
+          if (!userCandidate) {
+            throw new NotFoundException();
+          }
+
+          return { candidateId: candidateId, coachId: coachId };
+        })
+      );
+
+      const updatedUserCandidates =
+        await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
+          userCandidatesToUpdate
+        );
+
+      if (!updatedUserCandidates) {
+        throw new NotFoundException();
+      }
+
+      await Promise.all(
+        updatedUserCandidates.map((updatedUserCandidate) => {
+          const previousCoach = updatedUserCandidate.previous('coach');
+          if (
+            updatedUserCandidate.coach &&
+            updatedUserCandidate.coach.id !== previousCoach?.id
+          ) {
+            return this.usersCreationService.sendMailsAfterMatching(
+              updatedUserCandidate.candidat.id
+            );
+          }
+          return updatedUserCandidate.toJSON();
+        })
+      );
     }
 
     return this.usersCreationService.findOneUser(createdUser.id);
