@@ -5,7 +5,6 @@ import moment from 'moment';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import {
-  AirtableMocks,
   BitlyMocks,
   CacheMocks,
   PleziMocks,
@@ -13,7 +12,6 @@ import {
   SalesforceMocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
 import { PleziService } from 'src/external-services/plezi/plezi.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -67,8 +65,6 @@ describe('Opportunities', () => {
       .useValue(CacheMocks)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
-      .overrideProvider(AirtableService)
-      .useValue(AirtableMocks)
       .overrideProvider(PleziService)
       .useValue(PleziMocks)
       .compile();
