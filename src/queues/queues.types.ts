@@ -14,8 +14,6 @@ export const Jobs = {
   CACHE_ALL_CVS: 'cache_all_cvs',
   SEND_MAIL: 'send_mail',
   SEND_SMS: 'send_sms',
-  INSERT_AIRTABLE: 'insert_airtable',
-  UPDATE_AIRTABLE: 'update_airtable',
   CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY:
     'create_or_update_salesforce_opportunity',
   CREATE_OR_UPDATE_SALESFORCE_EVENT: 'create_or_update_salesforce_event',
@@ -41,8 +39,6 @@ type JobsData = {
   [Jobs.CACHE_ALL_CVS]: CacheAllCVJob;
   [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
   [Jobs.SEND_SMS]: SendSMSJob | SendSMSJob[];
-  [Jobs.INSERT_AIRTABLE]: InsertAirtableJob;
-  [Jobs.UPDATE_AIRTABLE]: UpdateAirtableJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT]: CreateOrUpdateSalesforceEventJob;
   [Jobs.REMINDER_OFFER]: SendReminderOfferJob;
@@ -120,16 +116,6 @@ export interface GenerateCVPreviewJob {
 
 export interface GenerateCVSearchStringJob {
   candidateId: string;
-}
-
-export interface InsertAirtableJob {
-  tableName: string;
-  opportunityId: string;
-}
-
-export interface UpdateAirtableJob {
-  tableName: string;
-  opportunityId: string;
 }
 
 export interface CreateOrUpdateSalesforceOpportunityJob {

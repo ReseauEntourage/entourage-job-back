@@ -2,7 +2,6 @@ import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 
 import { CVsModule } from 'src/cvs/cvs.module';
-import { AirtableModule } from 'src/external-services/airtable/airtable.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
@@ -18,7 +17,6 @@ import { WorkQueueProcessor } from './work-queue.processor';
     OpportunitiesModule,
     MailjetModule,
     VonageModule,
-    AirtableModule,
     SalesforceModule,
   ],
   providers: [WorkQueueProcessor, PusherService],
