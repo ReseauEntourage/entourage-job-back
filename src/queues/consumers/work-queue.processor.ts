@@ -1,46 +1,45 @@
 /* eslint-disable no-console */
 import {
-  Processor,
-  Process,
   OnQueueActive,
   OnQueueCompleted,
+  OnQueueError,
   OnQueueFailed,
   OnQueueWaiting,
-  OnQueueError,
+  Process,
+  Processor,
 } from '@nestjs/bull';
 import { Job } from 'bull';
+import { CVsService } from 'src/cvs/cvs.service';
+import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
+import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
   PusherChannels,
   PusherEvents,
-} from '../../external-services/pusher/pusher.types';
-import { CVsService } from 'src/cvs/cvs.service';
-import { AirtableService } from 'src/external-services/airtable/airtable.service';
-import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
-import { PusherService } from 'src/external-services/pusher/pusher.service';
+} from 'src/external-services/pusher/pusher.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { VonageService } from 'src/external-services/vonage/vonage.service';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
+  CacheAllCVJob,
   CacheCVJob,
-  GenerateCVSearchStringJob,
+  CreateOrUpdateSalesforceEventJob,
+  CreateOrUpdateSalesforceOpportunityJob,
   GenerateCVPDFJob,
+  GenerateCVPreviewJob,
+  GenerateCVSearchStringJob,
   Jobs,
   Queues,
   SendMailJob,
-  SendReminderCVJob,
-  GenerateCVPreviewJob,
-  CacheAllCVJob,
-  SendReminderVideoJob,
-  SendReminderInterviewTrainingJob,
-  SendReminderActionsJob,
-  SendReminderExternalOffersJob,
-  CreateOrUpdateSalesforceOpportunityJob,
-  UpdateAirtableJob,
-  InsertAirtableJob,
   SendNoResponseOfferJob,
-  SendReminderOfferJob,
-  SendSMSJob,
+  SendOfferArchiveReminder,
   SendOffersEmailAfterCVPublishJob,
+  SendReminderActionsJob,
+  SendReminderCVJob,
+  SendReminderExternalOffersJob,
+  SendReminderInterviewTrainingJob,
+  SendReminderOfferJob,
+  SendReminderVideoJob,
+  SendSMSJob,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -52,7 +51,6 @@ export class WorkQueueProcessor {
     private pusherService: PusherService,
     private cvsService: CVsService,
     private opportunitiesService: OpportunitiesService,
-    private airtableService: AirtableService,
     private salesforceService: SalesforceService
   ) {}
 
@@ -172,6 +170,18 @@ export class WorkQueueProcessor {
           data.opportunityId
         }' (${JSON.stringify(sentToNoResponseOffer)})`
       : `No mail sent to recruiter because no response on opportunity '${data.opportunityId}'`;
+  }
+
+  @Process(Jobs.OFFER_ARCHIVE_REMINDER)
+  async processArchiveReminder(job: Job<SendOfferArchiveReminder>) {
+    const { data } = job;
+
+    const jobLog =
+      await this.opportunitiesService.validateAndExecuteArchiveReminder(
+        data.opportunityId
+      );
+
+    return jobLog;
   }
 
   @Process(Jobs.REMINDER_CV_10)
@@ -347,30 +357,6 @@ export class WorkQueueProcessor {
     return `CV search string created for User ${data.candidateId}`;
   }
 
-  @Process(Jobs.INSERT_AIRTABLE)
-  async processInsertAirtable(job: Job<InsertAirtableJob>) {
-    const { data } = job;
-
-    await this.airtableService.insertOpportunityAirtable(
-      data.tableName,
-      data.opportunityId
-    );
-
-    return `Airtable : insertion in '${data.tableName}'`;
-  }
-
-  @Process(Jobs.UPDATE_AIRTABLE)
-  async processUpdateAirtable(job: Job<UpdateAirtableJob>) {
-    const { data } = job;
-
-    await this.airtableService.updateOpportunityAirtable(
-      data.tableName,
-      data.opportunityId
-    );
-
-    return `Airtable : update in '${data.tableName}'`;
-  }
-
   @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY)
   async processCreateOrUpdateSalesforceOpportunity(
     job: Job<CreateOrUpdateSalesforceOpportunityJob>
@@ -386,6 +372,22 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT)
+  async processCreateOrUpdateSalesforceEvent(
+    job: Job<CreateOrUpdateSalesforceEventJob>
+  ) {
+    const { data } = job;
+
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceOpportunityUserEvent(
+        data.opportunityUserEventId
+      );
+      return `Salesforce : created or updated event '${data.opportunityUserEventId}'`;
+    }
+
+    return `Salesforce job ignored : creation or update of event '${data.opportunityUserEventId}'`;
   }
 
   @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)

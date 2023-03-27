@@ -144,11 +144,11 @@ export class User extends HistorizedModel {
     foreignKey: 'candidatId',
     hooks: true,
   })
-  candidat: UserCandidat;
+  candidat?: UserCandidat;
 
   // si coach regarder coach
   @HasOne(() => UserCandidat, 'coachId')
-  coach: UserCandidat;
+  coach?: UserCandidat;
 
   @BeforeCreate
   @BeforeUpdate

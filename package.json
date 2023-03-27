@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "license": "ISC",
   "engines": {
     "node": "16.x"
@@ -42,7 +42,6 @@
     "@nestjs/swagger": "^6.1.0",
     "@nestjs/throttler": "^2.0.0",
     "@vonage/server-sdk": "^2.11.2",
-    "airtable": "^0.11.4",
     "bitly": "^7.1.2",
     "bull": "^4.7.0",
     "cache-manager": "^4.1.0",

@@ -526,4 +526,21 @@ export class MailsService {
       },
     });
   }
+
+  async sendArchiveOfferReminderMail(opportunity: Opportunity) {
+    const zone = getZoneFromDepartment(opportunity.department);
+    const { companiesAdminMail } = getAdminMailsFromZone(zone);
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: opportunity.recruiterMail,
+      templateId: MailjetTemplates.ARCHIVE_REMINDER,
+      replyTo: companiesAdminMail,
+      variables: {
+        zone,
+        company: opportunity.company,
+        offerId: opportunity.id,
+        offerTitle: opportunity.title,
+        recruiterFirstName: opportunity.recruiterFirstName,
+      },
+    });
+  }
 }

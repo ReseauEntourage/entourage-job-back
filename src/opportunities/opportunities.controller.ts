@@ -45,6 +45,7 @@ import { UpdateOpportunityPipe } from './dto/update-opportunity.pipe';
 import { Opportunity } from './models';
 import { OpportunitiesService } from './opportunities.service';
 import {
+  EventTypes,
   OfferAdminTab,
   OfferCandidateTab,
   OfferFilterKey,
@@ -335,11 +336,23 @@ export class OpportunitiesController {
       throw new ForbiddenException();
     }
 
-    return this.opportunityUsersService.createOpportunityUserEvent(
-      candidateId,
-      opportunityId,
-      restCreateOpportunityUserEventDto
-    );
+    const createdOpportunityUserEvent =
+      await this.opportunityUsersService.createOpportunityUserEvent(
+        candidateId,
+        opportunityId,
+        restCreateOpportunityUserEventDto
+      );
+
+    if (
+      createdOpportunityUserEvent.type === EventTypes.INTERVIEW ||
+      createdOpportunityUserEvent.type === EventTypes.HIRING
+    ) {
+      await this.opportunityUsersService.createOrUpdateExternalDBEvent(
+        createdOpportunityUserEvent.id
+      );
+    }
+
+    return createdOpportunityUserEvent;
   }
 
   @Roles(UserRoles.ADMIN)
@@ -635,10 +648,22 @@ export class OpportunitiesController {
       throw new ForbiddenException();
     }
 
-    return this.opportunityUsersService.updateOpportunityUserEvent(
-      id,
-      updateOpportunityUserEventDto
-    );
+    const updatedOpportunityUserEvent =
+      await this.opportunityUsersService.updateOpportunityUserEvent(
+        id,
+        updateOpportunityUserEventDto
+      );
+
+    if (
+      updatedOpportunityUserEvent.type === EventTypes.INTERVIEW ||
+      updatedOpportunityUserEvent.type === EventTypes.HIRING
+    ) {
+      await this.opportunityUsersService.createOrUpdateExternalDBEvent(
+        updatedOpportunityUserEvent.id
+      );
+    }
+
+    return updatedOpportunityUserEvent;
   }
 
   @Roles(UserRoles.ADMIN)
@@ -698,11 +723,24 @@ export class OpportunitiesController {
 
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @Post('refreshSalesforce')
+  @Post('refreshSalesforce/opportunities')
   async refreshSalesforceOpportunities() {
     const opportunities = await this.opportunitiesService.findAllIds();
     return this.opportunitiesService.refreshSalesforceOpportunities(
       opportunities.map(({ id }) => {
+        return id;
+      })
+    );
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Post('refreshSalesforce/events')
+  async refreshSalesforceEvents() {
+    const events =
+      await this.opportunityUsersService.findAllOpportunityUserEventIds();
+    return this.opportunityUsersService.refreshSalesforceEvents(
+      events.map(({ id }) => {
         return id;
       })
     );
@@ -763,5 +801,25 @@ export class OpportunitiesController {
         }
       );
     }
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @Post('sendReminderArchive')
+  async postSendReminderArchive(@Body('ids') opportunitiesIds: string[]) {
+    let count = 0;
+    let failed = 0;
+    Promise.all(
+      opportunitiesIds.map(async (id) => {
+        const opportunity = await this.opportunitiesService.findOne(id);
+        if (!opportunity || !opportunity.recruiterMail) {
+          failed += 1;
+          return;
+        }
+        await this.opportunitiesService.sendArchiveOfferReminder(opportunity);
+        count += 1;
+      })
+    );
+    return 'Emails envoyés: ' + count + ', emails non envoyés: ' + failed;
   }
 }

@@ -1,6 +1,14 @@
-import { User, UserAttribute } from 'src/users/models';
+import { User, UserAttribute, UserCandidatAttribute } from 'src/users/models';
 
-export type PayloadUser = Pick<User, UserAttribute | 'candidat' | 'coach'>;
+type PayloadCandidateOrCoach = {
+  coach?: Omit<Pick<User['coach'], UserCandidatAttribute | 'candidat'>, 'note'>;
+  candidat?: Omit<
+    Pick<User['candidat'], UserCandidatAttribute | 'coach'>,
+    'note'
+  >;
+};
+
+export type PayloadUser = Pick<User, UserAttribute> & PayloadCandidateOrCoach;
 
 export interface LoggedUser {
   user: PayloadUser;
