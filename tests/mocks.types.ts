@@ -1,6 +1,5 @@
 import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
-import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
@@ -55,11 +54,13 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createOrUpdateProcess: jest.fn(),
   createOrUpdateOffer: jest.fn(),
   createOrUpdateOfferWithRecruiter: jest.fn(),
+  createOrUpdateEvent: jest.fn(),
   searchAccountByName: jest.fn(),
   findBinomeByCandidateEmail: jest.fn(),
   findContact: jest.fn(),
   findLead: jest.fn(),
   findBinomeByCandidateSfId: jest.fn(),
+  findEventById: jest.fn(),
   findOfferById: jest.fn(),
   findOfferRelationsById: jest.fn(),
   findProcessById: jest.fn(),
@@ -76,17 +77,15 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   getProcessToCreate: jest.fn(),
   createOrUpdateSalesforceProcess: jest.fn(),
   createOrUpdateSalesforceOffer: jest.fn(),
+  createOrUpdateSalesforceEvent: jest.fn(),
+  createOrUpdateSalesforceOpportunityUserEvent: jest.fn(),
   findOfferFromOpportunityId: jest.fn(),
+  findEventFromOpportunityUserEventId: jest.fn(),
   createOrUpdateSalesforceOpportunity: jest.fn(),
   createOrUpdateCompanySalesforceLead: jest.fn(),
   createOrUpdateCandidateSalesforceLead: jest.fn(),
   setIsWorker: jest.fn(),
   updateLead: jest.fn(),
-} as const;
-
-export const AirtableMocks: ProviderMock<AirtableService> = {
-  insertOpportunityAirtable: jest.fn(),
-  updateOpportunityAirtable: jest.fn(),
 } as const;
 
 export const PleziMocks: ProviderMock<PleziService> = {

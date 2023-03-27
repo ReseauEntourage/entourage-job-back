@@ -15,7 +15,6 @@ import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
-import { PayloadUser } from './auth.types';
 import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
@@ -27,8 +26,8 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@UserPayload() user: PayloadUser) {
-    return this.authService.login(user as User);
+  async login(@UserPayload() user: User) {
+    return this.authService.login(user.toJSON());
   }
 
   @Redirect(`${process.env.FRONT_URL}`, 302)

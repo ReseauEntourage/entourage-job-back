@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
+import { OpportunityUserEvent } from '../../opportunities/models/opportunity-user-event.model';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
+import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import {
   AccountProps,
@@ -14,6 +16,9 @@ import {
   ContactRecordType,
   ContactRecordTypesIds,
   ErrorCodes,
+  EventProps,
+  EventPropsWithProcessAndBinomeAndRecruiterId,
+  EventRecordTypesIds,
   LeadProp,
   LeadRecordType,
   LeadRecordTypesIds,
@@ -27,6 +32,7 @@ import {
   SalesforceBinome,
   SalesforceContact,
   SalesforceError,
+  SalesforceEvent,
   SalesforceLead,
   SalesforceObject,
   SalesforceOffer,
@@ -40,6 +46,7 @@ import {
   formatDepartment,
   getDepartmentFromPostalCode,
   mapProcessFromOpportunityUser,
+  mapSalesforceEventFields,
   mapSalesforceLeadFields,
   mapSalesforceOfferFields,
   mapSalesforceProcessFields,
@@ -61,7 +68,10 @@ export class SalesforceService {
   private salesforce: Connection;
   private isWorker = true;
 
-  constructor(private opportunitiesService: OpportunitiesService) {}
+  constructor(
+    private opportunitiesService: OpportunitiesService,
+    private opportunityUsersService: OpportunityUsersService
+  ) {}
 
   setIsWorker(isWorker: boolean) {
     this.isWorker = isWorker;
@@ -204,7 +214,7 @@ export class SalesforceService {
     name: T,
     params: SalesforceObject<T> | SalesforceObject<T>[],
     extIdField: keyof SalesforceObject<T>,
-    findIdFunction: 'findProcessById' | 'findOfferById'
+    findIdFunction: 'findProcessById' | 'findOfferById' | 'findEventById'
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
 
@@ -346,6 +356,28 @@ export class SalesforceService {
     }
   }
 
+  async createOrUpdateEvent(
+    params:
+      | EventPropsWithProcessAndBinomeAndRecruiterId
+      | EventPropsWithProcessAndBinomeAndRecruiterId[]
+  ) {
+    let records: SalesforceEvent | SalesforceEvent[];
+    if (Array.isArray(params)) {
+      records = params.map((singleParams) => {
+        return mapSalesforceEventFields(singleParams);
+      });
+    } else {
+      records = mapSalesforceEventFields(params);
+    }
+
+    return this.upsertRecord(
+      ObjectNames.EVENT,
+      records,
+      'ID_Externe__c',
+      'findEventById'
+    );
+  }
+
   async searchAccountByName(search: string, recordType: AccountRecordType) {
     const escapedSearch = search.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
     await this.refreshSalesforceInstance();
@@ -421,6 +453,18 @@ export class SalesforceService {
         `SELECT Id
          FROM ${ObjectNames.OFFER}
          WHERE ID__c = '${id}' LIMIT 1`
+      );
+    return records[0]?.Id;
+  }
+
+  async findEventById<T>(id: T): Promise<string> {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceOffer>[] } =
+      await this.salesforce.query(
+        `SELECT Id
+         FROM ${ObjectNames.EVENT}
+         WHERE ID_Externe__c = '${id}'
+          AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
       );
     return records[0]?.Id;
   }
@@ -985,6 +1029,52 @@ export class SalesforceService {
     }
   }
 
+  async createOrUpdateSalesforceEvent(event: EventProps | EventProps[]) {
+    if (Array.isArray(event)) {
+      let eventsToCreate: EventPropsWithProcessAndBinomeAndRecruiterId[] = [];
+
+      for (let i = 0; i < event.length; i += 1) {
+        const { processId, candidateMail, recruiterMail, ...restEvent } =
+          event[i];
+
+        const processSfId = await this.findProcessById(processId);
+        const binomeSfId = await this.findBinomeByCandidateEmail(candidateMail);
+        const recruiterSfId = await this.findContact(
+          recruiterMail,
+          ContactRecordTypesIds.COMPANY
+        );
+
+        eventsToCreate = [
+          ...eventsToCreate,
+          {
+            ...restEvent,
+            processSfId,
+            binomeSfId,
+            recruiterSfId,
+          },
+        ];
+      }
+
+      return (await this.createOrUpdateEvent(eventsToCreate)) as string;
+    } else {
+      const { processId, candidateMail, recruiterMail, ...restEvent } = event;
+
+      const processSfId = await this.findProcessById(processId);
+      const binomeSfId = await this.findBinomeByCandidateEmail(candidateMail);
+      const recruiterSfId = await this.findContact(
+        recruiterMail,
+        ContactRecordTypesIds.COMPANY
+      );
+
+      return (await this.createOrUpdateEvent({
+        ...restEvent,
+        processSfId,
+        binomeSfId,
+        recruiterSfId,
+      })) as string;
+    }
+  }
+
   async findOfferFromOpportunityId(
     opportunityId: string
   ): Promise<OfferAndProcessProps> {
@@ -1003,6 +1093,33 @@ export class SalesforceService {
         opportunity.company,
         opportunity.isPublic
       ),
+    };
+  }
+
+  async findEventFromOpportunityUserEventId(
+    opportunityUserEventId: string
+  ): Promise<EventProps> {
+    const opportunityUserEventDb =
+      await this.opportunityUsersService.findOneOpportunityUserEventComplete(
+        opportunityUserEventId
+      );
+
+    const {
+      contract,
+      opportunityUser,
+      ...opportunityUserEvent
+    }: OpportunityUserEvent = opportunityUserEventDb.toJSON();
+
+    return {
+      ...opportunityUserEvent,
+      processId: opportunityUser.id,
+      candidateFirstName: opportunityUser.user.firstName,
+      candidateMail: opportunityUser.user.email,
+      recruiterMail:
+        opportunityUser.opportunity.contactMail ||
+        opportunityUser.opportunity.recruiterMail,
+      offerTitle: opportunityUser.opportunity.title,
+      department: opportunityUser.opportunity.department,
     };
   }
 
@@ -1027,6 +1144,28 @@ export class SalesforceService {
         opportunityId
       );
       return this.createOrUpdateSalesforceOffer(offerToCreate);
+    }
+  }
+
+  async createOrUpdateSalesforceOpportunityUserEvent(
+    opportunityUserEventId: string | string[]
+  ) {
+    this.setIsWorker(true);
+
+    if (Array.isArray(opportunityUserEventId)) {
+      const offersToCreate = await Promise.all(
+        opportunityUserEventId.map((singleOpportunityUserEventId) => {
+          return this.findEventFromOpportunityUserEventId(
+            singleOpportunityUserEventId
+          );
+        })
+      );
+      return this.createOrUpdateSalesforceEvent(offersToCreate);
+    } else {
+      const eventToCreate = await this.findEventFromOpportunityUserEventId(
+        opportunityUserEventId
+      );
+      return this.createOrUpdateSalesforceEvent(eventToCreate);
     }
   }
 

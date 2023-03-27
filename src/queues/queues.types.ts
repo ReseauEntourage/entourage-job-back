@@ -14,10 +14,9 @@ export const Jobs = {
   CACHE_ALL_CVS: 'cache_all_cvs',
   SEND_MAIL: 'send_mail',
   SEND_SMS: 'send_sms',
-  INSERT_AIRTABLE: 'insert_airtable',
-  UPDATE_AIRTABLE: 'update_airtable',
   CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY:
     'create_or_update_salesforce_opportunity',
+  CREATE_OR_UPDATE_SALESFORCE_EVENT: 'create_or_update_salesforce_event',
   REMINDER_OFFER: 'reminder_offer',
   REMINDER_CV_10: 'reminder_cv_10',
   REMINDER_CV_20: 'reminder_cv_20',
@@ -26,6 +25,7 @@ export const Jobs = {
   REMINDER_ACTIONS: 'reminder_actions',
   REMINDER_EXTERNAL_OFFERS: 'reminder_external_offers',
   NO_RESPONSE_OFFER: 'no_response_offer',
+  OFFER_ARCHIVE_REMINDER: 'offer_archive_reminder',
   SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH: 'send_offers_email_after_cv_publish',
 } as const;
 
@@ -39,9 +39,8 @@ type JobsData = {
   [Jobs.CACHE_ALL_CVS]: CacheAllCVJob;
   [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
   [Jobs.SEND_SMS]: SendSMSJob | SendSMSJob[];
-  [Jobs.INSERT_AIRTABLE]: InsertAirtableJob;
-  [Jobs.UPDATE_AIRTABLE]: UpdateAirtableJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
+  [Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT]: CreateOrUpdateSalesforceEventJob;
   [Jobs.REMINDER_OFFER]: SendReminderOfferJob;
   [Jobs.REMINDER_CV_10]: SendReminderCVJob;
   [Jobs.REMINDER_CV_20]: SendReminderCVJob;
@@ -50,6 +49,7 @@ type JobsData = {
   [Jobs.REMINDER_ACTIONS]: SendReminderActionsJob;
   [Jobs.REMINDER_EXTERNAL_OFFERS]: SendReminderExternalOffersJob;
   [Jobs.NO_RESPONSE_OFFER]: SendNoResponseOfferJob;
+  [Jobs.OFFER_ARCHIVE_REMINDER]: SendOfferArchiveReminder;
   [Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH]: SendOffersEmailAfterCVPublishJob;
 };
 
@@ -68,6 +68,10 @@ export interface SendReminderOfferJob {
 }
 
 export interface SendNoResponseOfferJob {
+  opportunityId: string;
+}
+
+export interface SendOfferArchiveReminder {
   opportunityId: string;
 }
 
@@ -114,19 +118,13 @@ export interface GenerateCVSearchStringJob {
   candidateId: string;
 }
 
-export interface InsertAirtableJob {
-  tableName: string;
-  opportunityId: string;
-}
-
-export interface UpdateAirtableJob {
-  tableName: string;
-  opportunityId: string;
-}
-
 export interface CreateOrUpdateSalesforceOpportunityJob {
   opportunityId: string | string[];
   isSameOpportunity: boolean;
+}
+
+export interface CreateOrUpdateSalesforceEventJob {
+  opportunityUserEventId: string | string[];
 }
 
 export interface SendOffersEmailAfterCVPublishJob {

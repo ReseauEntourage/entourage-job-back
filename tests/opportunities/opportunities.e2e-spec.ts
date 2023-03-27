@@ -5,7 +5,6 @@ import moment from 'moment';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import {
-  AirtableMocks,
   BitlyMocks,
   CacheMocks,
   PleziMocks,
@@ -13,7 +12,6 @@ import {
   SalesforceMocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { AirtableService } from 'src/external-services/airtable/airtable.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
 import { PleziService } from 'src/external-services/plezi/plezi.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -67,8 +65,6 @@ describe('Opportunities', () => {
       .useValue(CacheMocks)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
-      .overrideProvider(AirtableService)
-      .useValue(AirtableMocks)
       .overrideProvider(PleziService)
       .useValue(PleziMocks)
       .compile();
@@ -2762,7 +2758,7 @@ describe('Opportunities', () => {
             );
           });
         });
-        describe('/candidate/all/:id?limit=&offset= - Get paginated opportunities and sorted by date', () => {
+        describe('/candidate/all/:candidateId?limit=&offset= - Get paginated opportunities and sorted by date', () => {
           beforeEach(async () => {
             const firstOpportunity = await opportunityFactory.create({
               isArchived: false,
@@ -3728,7 +3724,6 @@ describe('Opportunities', () => {
         });
       });
     });
-
     describe('P - Post Contact Employer', () => {
       describe('/contactEmployer — Contact Employer', () => {
         let loggedInAdmin: LoggedUser;
@@ -3867,7 +3862,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
 
-        it('Should return 403 if candidate contacts recruitor of external opportunity', async () => {
+        it('Should return 403 if candidate contacts recruiter of external opportunity', async () => {
           const externalOpportunity = await opportunityFactory.create({
             isValidated: true,
             isExternal: true,
@@ -3891,7 +3886,7 @@ describe('Opportunities', () => {
           expect(response.status).toBe(403);
         });
 
-        it('Should return 403 if candidate contacts recruitor of not validated opportunity', async () => {
+        it('Should return 403 if candidate contacts recruiter of not validated opportunity', async () => {
           const notValidatedOpportunity = await opportunityFactory.create({
             isValidated: false,
             isExternal: false,
@@ -3930,7 +3925,6 @@ describe('Opportunities', () => {
         });
       });
     });
-
     describe('U - Update many Opportunities', () => {
       describe('/bulk - Bulk update opportunities', () => {
         let loggedInAdmin: LoggedUser;
@@ -4437,6 +4431,83 @@ describe('Opportunities', () => {
 
           expect(response.status).toBe(403);
         });
+      });
+    });
+    describe('P - send emails archive reminders', () => {
+      let loggedInAdmin: LoggedUser;
+      let loggedInCandidate: LoggedUser;
+      let loggedInCoach: LoggedUser;
+
+      beforeEach(async () => {
+        loggedInAdmin = await usersHelper.createLoggedInUser({
+          role: UserRoles.ADMIN,
+        });
+        loggedInCandidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+        });
+        loggedInCoach = await usersHelper.createLoggedInUser({
+          role: UserRoles.COACH,
+        });
+      });
+
+      it('Should respond 201 and send 5 email when logged as admin', async () => {
+        const originalOpportunities = await databaseHelper.createEntities(
+          opportunityFactory,
+          5,
+          {},
+          {},
+          true
+        );
+        const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
+          return id;
+        });
+        const response: APIResponse<
+          OpportunitiesController['postSendReminderArchive']
+        > = await request(app.getHttpServer())
+          .post(`${route}/sendReminderArchive`)
+          .set('authorization', `Token ${loggedInAdmin.token}`)
+          .send({ ids: originalOpportunitiesIds });
+        expect(response.status).toBe(201);
+      });
+
+      it('Should respond 403 when logged as coach', async () => {
+        const originalOpportunities = await databaseHelper.createEntities(
+          opportunityFactory,
+          5,
+          {},
+          {},
+          true
+        );
+        const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
+          return id;
+        });
+        const response: APIResponse<
+          OpportunitiesController['postSendReminderArchive']
+        > = await request(app.getHttpServer())
+          .post(`${route}/sendReminderArchive`)
+          .set('authorization', `Token ${loggedInCoach.token}`)
+          .send({ ids: originalOpportunitiesIds });
+        expect(response.status).toBe(403);
+      });
+
+      it('Should respond 403 when logged as candidate', async () => {
+        const originalOpportunities = await databaseHelper.createEntities(
+          opportunityFactory,
+          5,
+          {},
+          {},
+          true
+        );
+        const originalOpportunitiesIds = originalOpportunities.map(({ id }) => {
+          return id;
+        });
+        const response: APIResponse<
+          OpportunitiesController['postSendReminderArchive']
+        > = await request(app.getHttpServer())
+          .post(`${route}/sendReminderArchive`)
+          .set('authorization', `Token ${loggedInCandidate.token}`)
+          .send({ ids: originalOpportunitiesIds });
+        expect(response.status).toBe(403);
       });
     });
   });

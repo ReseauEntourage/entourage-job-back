@@ -20,15 +20,17 @@ import {
   HeardAboutValue,
 } from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
-import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
+import {
+  EventTypeFilters,
+  ExternalOfferOriginFilters,
+} from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones } from 'src/utils/types';
+import { AdminZones, AnyCantFix } from 'src/utils/types';
 import {
-  CandidateLeadProps,
-  CoachLeadProps,
-  CompanyLeadProps,
+  EventPropsWithProcessAndBinomeAndRecruiterId,
+  EventRecordTypesIds,
   LeadAccomodations,
   LeadAdministrativeSituations,
   LeadApproaches,
@@ -45,11 +47,12 @@ import {
   ObjectName,
   OfferProps,
   ProcessProps,
+  SalesforceEvent,
   SalesforceLead,
+  SalesforceLeads,
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  WorkerLeadProps,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
@@ -278,10 +281,53 @@ export function mapSalesforceProcessFields({
   };
 }
 
+export function mapSalesforceEventFields({
+  id,
+  processSfId,
+  binomeSfId,
+  recruiterSfId,
+  type,
+  department,
+  offerTitle,
+  candidateFirstName,
+  startDate,
+}: EventPropsWithProcessAndBinomeAndRecruiterId): SalesforceEvent {
+  return {
+    WhatId: binomeSfId,
+    WhoId: recruiterSfId,
+    Antenne__c: _.capitalize(
+      AdminZones[getZoneSuffixFromDepartment(department)]
+    ),
+    ID_Externe__c: id,
+    Processus_d_offre__c: processSfId,
+    RecordTypeId: EventRecordTypesIds.EVENT,
+    Subject: `${
+      findConstantFromValue(type, EventTypeFilters).label
+    } ${candidateFirstName} x ${offerTitle}`,
+    StartDateTime: startDate,
+    IsAllDayEvent: true,
+  };
+}
+
+function isLeadRecordTypeProps<T extends LeadRecordType>(
+  recordType: LeadRecordType,
+  expectedValue: T,
+  props: AnyCantFix
+): props is LeadProp<T> {
+  return recordType === expectedValue;
+}
+
+function isLeadRecordType<T extends LeadRecordType>(
+  recordType: LeadRecordType,
+  expectedValue: T
+): recordType is T {
+  return recordType === expectedValue;
+}
+
 export function mapSalesforceLeadFields<T extends LeadRecordType>(
   leadProps: LeadProp<T>,
   recordType: T
-): SalesforceLead<T> {
+): SalesforceLeads[T] {
   const { firstName, lastName, email, phone, zone } = leadProps;
 
   const commonFields = {
@@ -309,9 +355,11 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     | 'Source__c'
   >;
 
-  if (recordType === LeadRecordTypesIds.COMPANY) {
-    const { company, position, approach, heardAbout } =
-      leadProps as CompanyLeadProps;
+  if (
+    isLeadRecordTypeProps(recordType, LeadRecordTypesIds.COMPANY, leadProps) &&
+    isLeadRecordType(recordType, LeadRecordTypesIds.COMPANY)
+  ) {
+    const { company, position, approach, heardAbout } = leadProps;
 
     return {
       ...commonFields,
@@ -328,9 +376,15 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     } as SalesforceLead<T>;
   }
 
-  if (recordType === LeadRecordTypesIds.ASSOCIATION) {
-    const { company, heardAbout, contactWithCoach, position } =
-      leadProps as WorkerLeadProps;
+  if (
+    isLeadRecordTypeProps(
+      recordType,
+      LeadRecordTypesIds.ASSOCIATION,
+      leadProps
+    ) &&
+    isLeadRecordType(recordType, LeadRecordTypesIds.ASSOCIATION)
+  ) {
+    const { company, heardAbout, contactWithCoach, position } = leadProps;
 
     return {
       ...commonFields,
@@ -344,7 +398,14 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     } as SalesforceLead<T>;
   }
 
-  if (recordType === LeadRecordTypesIds.CANDIDATE) {
+  if (
+    isLeadRecordTypeProps(
+      recordType,
+      LeadRecordTypesIds.CANDIDATE,
+      leadProps
+    ) &&
+    isLeadRecordType(recordType, LeadRecordTypesIds.CANDIDATE)
+  ) {
     const {
       helpWith,
       gender,
@@ -366,7 +427,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       workerSfIdAsProspect,
       workerSfIdAsContact,
       associationSfId,
-    } = leadProps as CandidateLeadProps;
+    } = leadProps;
 
     const parsedAddress = parseAddress(address);
 
@@ -437,8 +498,11 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     } as SalesforceLead<T>;
   }
 
-  if (recordType === LeadRecordTypesIds.COACH) {
-    const { company, position } = leadProps as CoachLeadProps;
+  if (
+    isLeadRecordTypeProps(recordType, LeadRecordTypesIds.COACH, leadProps) &&
+    isLeadRecordType(recordType, LeadRecordTypesIds.COACH)
+  ) {
+    const { company, position } = leadProps;
 
     return {
       ...commonFields,
