@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WhereOptions } from 'sequelize';
+import Transaction from 'sequelize/types/transaction';
 import { UpdateUserCandidatDto } from 'src/users/dto';
 import { UserCandidat, UserCandidatAttributes } from './models';
 import { UserInclude } from './models/user-candidat.include';
@@ -18,11 +19,13 @@ export class UserCandidatsService {
     });
   }
 
-  async findOneByCandidateId(candidateId: string) {
+  async findOneByCandidateId(candidateId: string, transaction?: Transaction) {
+    const transactionOption = transaction ? { transaction } : {};
     return this.userCandidatModel.findOne({
       where: { candidatId: candidateId },
       attributes: [...UserCandidatAttributes],
       include: UserInclude,
+      ...transactionOption,
     });
   }
 
@@ -95,7 +98,8 @@ export class UserCandidatsService {
           );
 
           const updatedUserCandidat = await this.findOneByCandidateId(
-            candidateId
+            candidateId,
+            t
           );
 
           if (!updatedUserCandidat) {

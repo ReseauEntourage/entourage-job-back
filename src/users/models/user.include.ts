@@ -1,5 +1,5 @@
 import { Includeable } from 'sequelize';
-import { Organization } from '../../organizations/models';
+import { Organization } from 'src/organizations/models';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';

@@ -136,13 +136,13 @@ export class UsersCreationController {
       }
 
       await Promise.all(
-        updatedUserCandidates.map((updatedUserCandidate) => {
+        updatedUserCandidates.map(async (updatedUserCandidate) => {
           const previousCoach = updatedUserCandidate.previous('coach');
           if (
             updatedUserCandidate.coach &&
             updatedUserCandidate.coach.id !== previousCoach?.id
           ) {
-            return this.usersCreationService.sendMailsAfterMatching(
+            await this.usersCreationService.sendMailsAfterMatching(
               updatedUserCandidate.candidat.id
             );
           }

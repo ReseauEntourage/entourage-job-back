@@ -191,7 +191,10 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (createdUser.role === UserRoles.CANDIDATE) {
+    if (
+      createdUser.role === UserRoles.CANDIDATE ||
+      createdUser.role === UserRoles.CANDIDATE_EXTERNAL
+    ) {
       await UserCandidat.create(
         {
           candidatId: createdUser.id,
@@ -215,8 +218,10 @@ export class User extends HistorizedModel {
       previousUserValues.role !== userToUpdate.role
     ) {
       if (
-        previousUserValues.role === UserRoles.CANDIDATE &&
-        userToUpdate.role !== UserRoles.CANDIDATE
+        (previousUserValues.role === UserRoles.CANDIDATE ||
+          previousUserValues.role === UserRoles.CANDIDATE_EXTERNAL) &&
+        userToUpdate.role !== UserRoles.CANDIDATE &&
+        userToUpdate.role !== UserRoles.CANDIDATE_EXTERNAL
       ) {
         await UserCandidat.destroy({
           where: {
@@ -225,9 +230,14 @@ export class User extends HistorizedModel {
         });
       } else if (
         previousUserValues.role !== UserRoles.CANDIDATE &&
-        userToUpdate.role === UserRoles.CANDIDATE
+        previousUserValues.role !== UserRoles.CANDIDATE_EXTERNAL &&
+        (userToUpdate.role === UserRoles.CANDIDATE ||
+          userToUpdate.role === UserRoles.CANDIDATE_EXTERNAL)
       ) {
-        if (previousUserValues.role === UserRoles.COACH) {
+        if (
+          previousUserValues.role === UserRoles.COACH ||
+          previousUserValues.role === UserRoles.COACH_EXTERNAL
+        ) {
           await UserCandidat.update(
             {
               coachId: null,
@@ -262,7 +272,8 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
-      userToUpdate.role === UserRoles.CANDIDATE &&
+      (userToUpdate.role === UserRoles.CANDIDATE ||
+        userToUpdate.role === UserRoles.CANDIDATE_EXTERNAL) &&
       previousUserValues &&
       previousUserValues.firstName != undefined &&
       previousUserValues.firstName !== userToUpdate.firstName
@@ -288,8 +299,10 @@ export class User extends HistorizedModel {
       },
       {
         where: {
-          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
-            destroyedUser.id,
+          [destroyedUser.role === UserRoles.COACH ||
+          destroyedUser.role === UserRoles.COACH_EXTERNAL
+            ? 'coachId'
+            : 'candidatId']: destroyedUser.id,
         },
       }
     );

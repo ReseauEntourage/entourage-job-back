@@ -1,3 +1,4 @@
+import { Organization } from 'src/organizations/models';
 import { User, UserAttribute, UserCandidatAttribute } from 'src/users/models';
 
 type PayloadCandidateOrCoach = {
@@ -11,7 +12,8 @@ type PayloadCandidateOrCoach = {
   >;
 };
 
-export type PayloadUser = Pick<User, UserAttribute> & PayloadCandidateOrCoach;
+export type PayloadUser = Pick<User, UserAttribute> &
+  PayloadCandidateOrCoach & { organization?: Organization };
 
 export interface LoggedUser {
   user: PayloadUser;

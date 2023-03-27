@@ -13,11 +13,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { passwordStrength } from 'check-password-strength';
-import _ from 'lodash';
 import { Order } from 'sequelize/types/model';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 
+import { assertCondition } from '../utils/misc/asserts';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { isValidPhone } from 'src/utils/misc';
@@ -36,7 +36,7 @@ import {
   SelfGuard,
   UserPermissionsGuard,
 } from './guards';
-import { User } from './models';
+import { User, UserCandidat } from './models';
 
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
@@ -350,24 +350,22 @@ export class UsersController {
     }
 
     const finalUpdatedUserCandidates = await Promise.all(
-      updatedUserCandidates.map((updatedUserCandidate) => {
+      updatedUserCandidates.map(async (updatedUserCandidate) => {
         const previousCoach = updatedUserCandidate.previous('coach');
         if (
           updatedUserCandidate.coach &&
           updatedUserCandidate.coach.id !== previousCoach?.id
         ) {
-          return this.usersService.sendMailsAfterMatching(
+          await this.usersService.sendMailsAfterMatching(
             updatedUserCandidate.candidat.id
           );
         }
-        return updatedUserCandidate.toJSON();
+        return updatedUserCandidate.toJSON() as UserCandidat;
       })
     );
 
-    if (
-      user.role === UserRoles.COACH_EXTERNAL &&
-      finalUpdatedUserCandidates.length === 1
-    ) {
+    if (user.role !== UserRoles.COACH_EXTERNAL) {
+      assertCondition(finalUpdatedUserCandidates.length === 1);
       return finalUpdatedUserCandidates[0];
     }
     return finalUpdatedUserCandidates;

@@ -18,6 +18,7 @@ export function getTokenFromHeaders(
 export function getPartialUserForPayload(user: User): PayloadUser {
   const {
     id,
+    OrganizationId,
     email,
     firstName,
     lastName,
@@ -34,6 +35,7 @@ export function getPartialUserForPayload(user: User): PayloadUser {
 
   const commonAttributes = {
     id: id,
+    OrganizationId: OrganizationId,
     email: email,
     firstName: firstName,
     lastName: lastName,

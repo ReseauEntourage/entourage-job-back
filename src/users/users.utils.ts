@@ -274,7 +274,8 @@ export function getCandidateAndCoachIdDependingOnRoles(
     };
   } else if (
     _.difference([user.role, userToLink.role], externalRoles).length === 0 &&
-    user.role !== userToLink.role
+    user.role !== userToLink.role &&
+    user.OrganizationId === userToLink.OrganizationId
   ) {
     return {
       candidateId:

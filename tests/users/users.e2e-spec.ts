@@ -350,6 +350,7 @@ describe('Users', () => {
               updatedAt: coachUpdatedAt,
               createdAt: coachCreatedAt,
               lastConnection: coachLastConnection,
+              organization,
               candidat,
               coaches,
               ...coach
@@ -444,6 +445,7 @@ describe('Users', () => {
               updatedAt: candidateUpdatedAt,
               createdAt: candidateCreatedAt,
               lastConnection: candidateLastConnection,
+              organization,
               candidat,
               coaches,
               ...candidate
@@ -755,22 +757,31 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
             );
 
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              referentFirstName,
+              referentLastName,
+              referentMail,
+              referentPhone,
+              ...restOrganization
+            } = await organization;
+
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send(candidate);
+                .send({ ...candidate, OrganizationId: organization.id });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
               expect.objectContaining({
                 ...candidate,
-                organization: expect.objectContaining({ ...organization }),
+                organization: expect.objectContaining({ ...restOrganization }),
               })
             );
           });
@@ -788,7 +799,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -805,6 +815,7 @@ describe('Users', () => {
               lastConnection: coachLastConnection,
               candidat,
               coaches,
+              organization: coachOrganization,
               ...coach
             } = await userFactory.create(
               {
@@ -815,11 +826,25 @@ describe('Users', () => {
               true
             );
 
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              referentFirstName,
+              referentLastName,
+              referentMail,
+              referentPhone,
+              ...restOrganization
+            } = await organization;
+
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send({ ...candidate, userToLinkId: coach.id });
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: coach.id,
+                });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
               expect.objectContaining({
@@ -828,6 +853,9 @@ describe('Users', () => {
                   coach: expect.objectContaining({
                     ...coach,
                   }),
+                }),
+                organization: expect.objectContaining({
+                  ...restOrganization,
                 }),
               })
             );
@@ -846,7 +874,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -856,7 +883,11 @@ describe('Users', () => {
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send({ ...candidate, userToLinkId: uuid() });
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: uuid(),
+                });
             expect(response.status).toBe(404);
           });
 
@@ -874,21 +905,33 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
             );
 
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              referentFirstName,
+              referentLastName,
+              referentMail,
+              referentPhone,
+              ...restOrganization
+            } = await organization;
+
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send(coach);
+                .send({ ...coach, OrganizationId: organization.id });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
               expect.objectContaining({
                 ...coach,
+                organization: expect.objectContaining({
+                  ...restOrganization,
+                }),
               })
             );
           });
@@ -906,7 +949,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -923,18 +965,36 @@ describe('Users', () => {
               lastConnection: candidateLastConnection,
               candidat,
               coaches,
+              organization: candidateOrganization,
               ...candidate
             } = await userFactory.create(
-              { role: UserRoles.CANDIDATE_EXTERNAL },
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                OrganizationId: organization.id,
+              },
               {},
               true
             );
+
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              referentFirstName,
+              referentLastName,
+              referentMail,
+              referentPhone,
+              ...restOrganization
+            } = await organization;
 
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send({ ...coach, userToLinkId: [candidate.id] });
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: [candidate.id],
+                });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
               expect.objectContaining({
@@ -946,6 +1006,9 @@ describe('Users', () => {
                     }),
                   }),
                 ],
+                organization: expect.objectContaining({
+                  ...restOrganization,
+                }),
               })
             );
           });
@@ -963,7 +1026,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -973,7 +1035,11 @@ describe('Users', () => {
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send({ ...coach, userToLinkId: uuid() });
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: [uuid()],
+                });
 
             expect(response.status).toBe(404);
           });
@@ -992,7 +1058,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1011,7 +1076,11 @@ describe('Users', () => {
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send({ ...candidate, userToLinkId: id });
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: id,
+                });
             expect(response.status).toBe(400);
           });
           it('Should return 400 if external coach with another external coach as candidate', async () => {
@@ -1028,7 +1097,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1047,7 +1115,11 @@ describe('Users', () => {
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
-                .send({ ...coach, userToLinkId: id });
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: id,
+                });
             expect(response.status).toBe(400);
           });
 
@@ -1065,7 +1137,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1094,6 +1165,7 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
+                  OrganizationId: organization.id,
                   userToLinkId: [coach1Id, coach2Id],
                 });
             expect(response.status).toBe(400);
@@ -1171,7 +1243,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1204,6 +1275,7 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
+                  OrganizationId: organization.id,
                   userToLinkId: coach.id,
                 });
             expect(response.status).toBe(400);
@@ -1227,7 +1299,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1260,6 +1331,7 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
+                  OrganizationId: organization.id,
                   userToLinkId: candidate.id,
                 });
             expect(response.status).toBe(400);
@@ -1279,7 +1351,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1297,6 +1368,7 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInAdmin.token}`)
                 .send({
                   ...externalCandidate,
+                  OrganizationId: organization.id,
                   userToLinkId: normalCoach.id,
                 });
             expect(response.status).toBe(400);
@@ -1315,7 +1387,6 @@ describe('Users', () => {
             } = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
               },
               {},
               false
@@ -1333,6 +1404,7 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInAdmin.token}`)
                 .send({
                   ...externalCoach,
+                  OrganizationId: organization.id,
                   userToLinkId: normalCandidate.id,
                 });
             expect(response.status).toBe(400);
@@ -1538,6 +1610,7 @@ describe('Users', () => {
           const privateCandidateInfo = [
             {
               id: loggedInCandidate.user.id,
+              OrganizationId: loggedInCandidate.user.OrganizationId,
               firstName: loggedInCandidate.user.firstName,
               lastName: loggedInCandidate.user.lastName,
               role: loggedInCandidate.user.role,
@@ -2627,6 +2700,22 @@ describe('Users', () => {
         });
 
         it('Should return 200 if admin updates linked coach for candidate', async () => {
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization,
+            ...restCandidate
+          } = loggedInCandidate.user;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restCoach
+          } = loggedInCoach.user;
+
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
               .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
@@ -2635,16 +2724,35 @@ describe('Users', () => {
                 userToLinkId: loggedInCoach.user.id,
               });
           expect(response.status).toBe(200);
-          expect(response.body).toEqual([
+          expect(response.body).toEqual(
             expect.objectContaining({
               ...loggedInCandidate.user.candidat,
-              coach: expect.objectContaining({
-                ...loggedInCoach.user,
+              candidat: expect.objectContaining({
+                ...restCandidate,
               }),
-            }),
-          ]);
+              coach: expect.objectContaining({
+                ...restCoach,
+              }),
+            })
+          );
         });
         it('Should return 200 if admin updates linked candidate for coach', async () => {
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization,
+            ...restCandidate
+          } = loggedInCandidate.user;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restCoach
+          } = loggedInCoach.user;
+
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
               .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
@@ -2654,12 +2762,15 @@ describe('Users', () => {
               });
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
-         [   expect.objectContaining({
+            expect.objectContaining({
               ...loggedInCandidate.user.candidat,
-              coach: expect.objectContaining({
-                ...loggedInCoach.user,
+              candidat: expect.objectContaining({
+                ...restCandidate,
               }),
-            })]
+              coach: expect.objectContaining({
+                ...restCoach,
+              }),
+            })
           );
         });
 
@@ -2696,6 +2807,22 @@ describe('Users', () => {
         });
 
         it('Should return 200 if admin updates linked external coach for external candidate with same organization', async () => {
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization: candidateOrganization,
+            ...restExternalCandidate
+          } = externalCandidate;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restExternalCoach
+          } = externalCoach;
+
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
               .put(`${route}/linkedUser/${externalCandidate.id}`)
@@ -2703,18 +2830,28 @@ describe('Users', () => {
               .send({
                 userToLinkId: externalCoach.id,
               });
+
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
-           [ expect.objectContaining({
-              ...loggedInCandidate.user.candidat,
-              coach: expect.objectContaining({
-                ...loggedInCoach.user,
+            expect.objectContaining({
+              ...candidat,
+              candidat: expect.objectContaining({
+                ...restExternalCandidate,
               }),
-            })]
+              coach: expect.objectContaining({
+                ...restExternalCoach,
+              }),
+            })
           );
         });
         it('Should return 200 if admin updates linked multiple external candidate for external coach with same organization', async () => {
-          const otherExternalCandidate = await userFactory.create(
+          const {
+            candidat: otherCandidateCandidat,
+            coaches: otherCandidateCoaches,
+            lastConnection: otherCandidateLastConnection,
+            organization: otherCandidateOrganization,
+            ...restOtherExternalCandidate
+          } = await userFactory.create(
             {
               role: UserRoles.CANDIDATE_EXTERNAL,
               OrganizationId: organization.id,
@@ -2723,21 +2860,54 @@ describe('Users', () => {
             true
           );
 
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization: candidateOrganization,
+            ...restExternalCandidate
+          } = externalCandidate;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restExternalCoach
+          } = externalCoach;
+
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
               .put(`${route}/linkedUser/${externalCoach.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
-                userToLinkId: [externalCandidate.id, otherExternalCandidate.id],
+                userToLinkId: [
+                  externalCandidate.id,
+                  restOtherExternalCandidate.id,
+                ],
               });
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
-            [expect.objectContaining({
-              ...loggedInCandidate.user.candidat,
-              coach: expect.objectContaining({
-                ...loggedInCoach.user,
+            expect.arrayContaining([
+              expect.objectContaining({
+                ...candidat,
+                candidat: expect.objectContaining({
+                  ...restExternalCandidate,
+                }),
+                coach: expect.objectContaining({
+                  ...restExternalCoach,
+                }),
               }),
-            })]
+              expect.objectContaining({
+                ...otherCandidateCandidat,
+                candidat: expect.objectContaining({
+                  ...restOtherExternalCandidate,
+                }),
+                coach: expect.objectContaining({
+                  ...restExternalCoach,
+                }),
+              }),
+            ])
           );
         });
 
