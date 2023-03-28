@@ -11,10 +11,17 @@ import {
 import { encryptPassword } from 'src/auth/auth.utils';
 import { CreateUserDto } from 'src/users/dto';
 import { CreateUserPipe } from 'src/users/dto/create-user.pipe';
-import { Roles, UserPermissionsGuard } from 'src/users/guards';
+import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
-import { UserRoles } from 'src/users/users.types';
-import { getCandidateAndCoachIdDependingOnRoles } from 'src/users/users.utils';
+import {
+  ExternalUserRoles,
+  UserRoles,
+  Permissions,
+} from 'src/users/users.types';
+import {
+  areRolesIncluded,
+  getCandidateAndCoachIdDependingOnRoles,
+} from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { UsersCreationService } from './users-creation.service';
 
@@ -29,17 +36,15 @@ const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
 export class UsersCreationController {
   constructor(private readonly usersCreationService: UsersCreationService) {}
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Post()
   async createUser(@Body(new CreateUserPipe()) createUserDto: CreateUserDto) {
     if (
       (createUserDto.OrganizationId &&
-        createUserDto.role !== UserRoles.CANDIDATE_EXTERNAL &&
-        createUserDto.role !== UserRoles.COACH_EXTERNAL) ||
+        !areRolesIncluded(ExternalUserRoles, [createUserDto.role])) ||
       (!createUserDto.OrganizationId &&
-        (createUserDto.role === UserRoles.CANDIDATE_EXTERNAL ||
-          createUserDto.role === UserRoles.COACH_EXTERNAL))
+        areRolesIncluded(ExternalUserRoles, [createUserDto.role]))
     ) {
       throw new BadRequestException();
     }

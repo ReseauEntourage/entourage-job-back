@@ -10,9 +10,9 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { Roles, UserPermissionsGuard } from '../users/guards';
-import { UserRoles } from '../users/users.types';
-import { isValidPhone } from '../utils/misc';
+import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
+import { Permissions } from 'src/users/users.types';
+import { isValidPhone } from 'src/utils/misc';
 import {
   CreateOrganizationDto,
   CreateOrganizationPipe,
@@ -29,7 +29,7 @@ export class OrganizationsController {
     private readonly organizationReferentsService: OrganizationReferentsService
   ) {}
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
@@ -40,7 +40,7 @@ export class OrganizationsController {
     return organization;
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Post()
   async create(
@@ -78,7 +78,7 @@ export class OrganizationsController {
     return updatedOrganization.toJSON();
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put(':id')
   async update(

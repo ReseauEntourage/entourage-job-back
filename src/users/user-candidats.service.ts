@@ -44,6 +44,14 @@ export class UserCandidatsService {
     });
   }
 
+  async findAllByCoachId(coachId?: string) {
+    return this.userCandidatModel.findAll({
+      where: { coachId },
+      attributes: [...UserCandidatAttributes],
+      include: UserInclude,
+    });
+  }
+
   async findOneByUrl(url: string) {
     return this.userCandidatModel.findOne({
       where: {

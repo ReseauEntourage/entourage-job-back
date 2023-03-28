@@ -7,8 +7,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
-import { Roles, UserPermissionsGuard } from 'src/users/guards';
-import { UserRoles } from 'src/users/users.types';
+import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
+import { Permissions } from 'src/users/users.types';
 import { UsersDeletionService } from './users-deletion.service';
 
 // TODO change to users
@@ -16,7 +16,7 @@ import { UsersDeletionService } from './users-deletion.service';
 export class UsersDeletionController {
   constructor(private readonly usersDeletionService: UsersDeletionService) {}
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Delete(':id')
   async removeUser(@Param('id', new ParseUUIDPipe()) userId: string) {

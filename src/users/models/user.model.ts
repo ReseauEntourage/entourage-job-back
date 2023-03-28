@@ -31,12 +31,18 @@ import {
 } from 'sequelize-typescript';
 import {
   AdminRole,
+  CandidateUserRoles,
+  CoachUserRoles,
   Gender,
   Genders,
   UserRole,
   UserRoles,
 } from '../users.types';
-import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
+import {
+  areRolesIncluded,
+  capitalizeNameAndTrim,
+  generateUrl,
+} from '../users.utils';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
 import { Share } from 'src/shares/models';
@@ -191,10 +197,7 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (
-      createdUser.role === UserRoles.CANDIDATE ||
-      createdUser.role === UserRoles.CANDIDATE_EXTERNAL
-    ) {
+    if (areRolesIncluded(CandidateUserRoles, [createdUser.role])) {
       await UserCandidat.create(
         {
           candidatId: createdUser.id,
@@ -218,10 +221,8 @@ export class User extends HistorizedModel {
       previousUserValues.role !== userToUpdate.role
     ) {
       if (
-        (previousUserValues.role === UserRoles.CANDIDATE ||
-          previousUserValues.role === UserRoles.CANDIDATE_EXTERNAL) &&
-        userToUpdate.role !== UserRoles.CANDIDATE &&
-        userToUpdate.role !== UserRoles.CANDIDATE_EXTERNAL
+        areRolesIncluded(CandidateUserRoles, [previousUserValues.role]) &&
+        !areRolesIncluded(CandidateUserRoles, [userToUpdate.role])
       ) {
         await UserCandidat.destroy({
           where: {
@@ -229,15 +230,10 @@ export class User extends HistorizedModel {
           },
         });
       } else if (
-        previousUserValues.role !== UserRoles.CANDIDATE &&
-        previousUserValues.role !== UserRoles.CANDIDATE_EXTERNAL &&
-        (userToUpdate.role === UserRoles.CANDIDATE ||
-          userToUpdate.role === UserRoles.CANDIDATE_EXTERNAL)
+        !areRolesIncluded(CandidateUserRoles, [previousUserValues.role]) &&
+        areRolesIncluded(CandidateUserRoles, [userToUpdate.role])
       ) {
-        if (
-          previousUserValues.role === UserRoles.COACH ||
-          previousUserValues.role === UserRoles.COACH_EXTERNAL
-        ) {
+        if (areRolesIncluded(CoachUserRoles, [previousUserValues.role])) {
           await UserCandidat.update(
             {
               coachId: null,
@@ -272,8 +268,7 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
-      (userToUpdate.role === UserRoles.CANDIDATE ||
-        userToUpdate.role === UserRoles.CANDIDATE_EXTERNAL) &&
+      areRolesIncluded(CandidateUserRoles, [userToUpdate.role]) &&
       previousUserValues &&
       previousUserValues.firstName != undefined &&
       previousUserValues.firstName !== userToUpdate.firstName
@@ -299,8 +294,7 @@ export class User extends HistorizedModel {
       },
       {
         where: {
-          [destroyedUser.role === UserRoles.COACH ||
-          destroyedUser.role === UserRoles.COACH_EXTERNAL
+          [areRolesIncluded(CoachUserRoles, [destroyedUser.role])
             ? 'coachId'
             : 'candidatId']: destroyedUser.id,
         },

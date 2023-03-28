@@ -31,7 +31,7 @@ import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
+  UserPermissions,
   Self,
   SelfGuard,
   UserPermissionsGuard,
@@ -40,8 +40,18 @@ import { User, UserCandidat } from './models';
 
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
-import { MemberFilterKey, UserRole, UserRoles } from './users.types';
-import { getCandidateAndCoachIdDependingOnRoles } from './users.utils';
+import {
+  CandidateUserRoles,
+  CoachUserRoles,
+  MemberFilterKey,
+  UserRole,
+  UserRoles,
+  Permissions,
+} from './users.types';
+import {
+  areRolesIncluded,
+  getCandidateAndCoachIdDependingOnRoles,
+} from './users.utils';
 
 // TODO change to /users
 @Controller('user')
@@ -51,7 +61,7 @@ export class UsersController {
     private readonly userCandidatsService: UserCandidatsService
   ) {}
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('members')
   async findMembers(
@@ -78,7 +88,7 @@ export class UsersController {
   }
 
   // TODO divide service
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('members/count')
   async countSubmittedCVMembers(@UserPayload('zone') zone: AdminZone) {
@@ -93,7 +103,7 @@ export class UsersController {
   }
 
   // TODO divide service
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('search')
   async findUsers(
@@ -103,7 +113,7 @@ export class UsersController {
     return this.usersService.findAllUsers(search, role);
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @Get('candidate')
   async findRelatedUser(
@@ -111,21 +121,37 @@ export class UsersController {
     @UserPayload('role') role: UserRole
   ) {
     const ids = {
-      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
-      coachId: role === UserRoles.COACH ? userId : undefined,
+      candidateId: areRolesIncluded(CandidateUserRoles, [role])
+        ? userId
+        : undefined,
+      coachId: areRolesIncluded(CoachUserRoles, [role]) ? userId : undefined,
     };
 
-    const userCandidat =
+    if (role === UserRoles.COACH_EXTERNAL) {
+      const userCandidates = await this.userCandidatsService.findAllByCoachId(
+        ids.coachId
+      );
+
+      if (!userCandidates || userCandidates.length === 0) {
+        throw new NotFoundException();
+      }
+
+      return userCandidates.map((userCandidate) => {
+        return userCandidate.toJSON() as UserCandidat;
+      });
+    }
+
+    const userCandidate =
       await this.userCandidatsService.findOneByCandidateOrCoachId(
         ids.candidateId,
         ids.coachId
       );
 
-    if (!userCandidat) {
+    if (!userCandidate) {
       throw new NotFoundException();
     }
 
-    return userCandidat;
+    return userCandidate;
   }
 
   @Self('params.id')
@@ -148,7 +174,7 @@ export class UsersController {
     return user;
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @Get('candidate/checkUpdate')
   async checkNoteHasBeenModified(
@@ -156,8 +182,10 @@ export class UsersController {
     @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {
     const ids = {
-      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
-      coachId: role === UserRoles.COACH ? userId : undefined,
+      candidateId: areRolesIncluded(CandidateUserRoles, [role])
+        ? userId
+        : undefined,
+      coachId: areRolesIncluded(CoachUserRoles, [role]) ? userId : undefined,
     };
 
     const userCandidat =
@@ -213,7 +241,7 @@ export class UsersController {
     return updatedUser;
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('candidate/bulk')
   async updateAll(
@@ -284,7 +312,7 @@ export class UsersController {
     return updatedUserCandidat;
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('linkedUser/:userId')
   async linkUser(
@@ -373,7 +401,7 @@ export class UsersController {
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @Put('candidate/read/:candidateId')
   async setNoteHasBeenRead(

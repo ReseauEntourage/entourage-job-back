@@ -490,7 +490,7 @@ export class MailsService {
   async sendMailContactEmployer(
     type: string,
     user: User,
-    relateduserMail: string,
+    relatedUserMail: string,
     opportunity: Opportunity,
     description: string
   ) {
@@ -507,7 +507,7 @@ export class MailsService {
         to: opportunity.recruiterMail,
         cc: [
           user.email,
-          relateduserMail,
+          relatedUserMail,
           candidatesAdminMail,
           companiesAdminMail,
         ],

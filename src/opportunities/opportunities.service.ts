@@ -5,7 +5,7 @@ import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
 import { PleziService } from '../external-services/plezi/plezi.service';
-import { getCoachFromCandidate } from '../users/users.utils';
+import { areRolesIncluded, getCoachFromCandidate } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
@@ -24,14 +24,16 @@ import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/users/users.types';
+import { CandidateUserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
-import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
-import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
-import { CreateOpportunityDto } from './dto/create-opportunity.dto';
-import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
-import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import {
+  CreateExternalOpportunityRestrictedDto,
+  CreateExternalOpportunityDto,
+  CreateOpportunityDto,
+  UpdateExternalOpportunityDto,
+  UpdateOpportunityDto,
+} from './dto';
 import {
   Opportunity,
   OpportunityBusinessLine,
@@ -359,7 +361,7 @@ export class OpportunitiesService {
 
   async findOneCandidate(candidateId: string) {
     const user = await this.usersService.findOne(candidateId);
-    if (!user || user.role !== UserRoles.CANDIDATE) {
+    if (!user || !areRolesIncluded(CandidateUserRoles, [user.role])) {
       return null;
     }
     return user;

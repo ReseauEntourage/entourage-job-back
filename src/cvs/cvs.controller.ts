@@ -15,8 +15,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as _ from 'lodash';
-import { User } from '../users/models';
-import { AdminZone, FilterParams } from '../utils/types';
 import {
   PayloadUser,
   RequestWithAuthorizationHeader,
@@ -26,10 +24,19 @@ import { Public, UserPayload } from 'src/auth/guards';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
+  UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { CVStatuses, UserRole, UserRoles } from 'src/users/users.types';
+import { User } from 'src/users/models';
+import {
+  CoachUserRoles,
+  CVStatuses,
+  UserRole,
+  UserRoles,
+  Permissions,
+} from 'src/users/users.types';
+import { areRolesIncluded } from 'src/users/users.utils';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { CVsService } from './cvs.service';
 import { CVFilterKey } from './cvs.types';
 import { getPDFPaths } from './cvs.utils';
@@ -95,7 +102,10 @@ export class CVsController {
 
     const { status } = createdCV;
 
-    if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
+    if (
+      areRolesIncluded(CoachUserRoles, [role]) &&
+      status === CVStatuses.PENDING.value
+    ) {
       await this.cvsService.sendMailsAfterSubmitting(
         user as User,
         candidateId,
@@ -213,7 +223,7 @@ export class CVsController {
     return { nbPublishedCVs };
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
@@ -235,7 +245,7 @@ export class CVsController {
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @Put('read/:candidateId')
   async setCVHasBeenRead(

@@ -3,6 +3,7 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
+import { assertCondition } from '../../src/utils/misc/asserts';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
@@ -1533,6 +1534,8 @@ describe('Users', () => {
               });
 
           expect(response.status).toBe(200);
+          expect(!Array.isArray(response.body)).toBeTruthy();
+          assertCondition(!Array.isArray(response.body));
           expect(response.body.coach).toBeFalsy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
@@ -1553,6 +1556,8 @@ describe('Users', () => {
               });
 
           expect(response.status).toBe(200);
+          expect(!Array.isArray(response.body)).toBeTruthy();
+          assertCondition(!Array.isArray(response.body));
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
@@ -1574,10 +1579,142 @@ describe('Users', () => {
               });
 
           expect(response.status).toBe(200);
+          expect(!Array.isArray(response.body)).toBeTruthy();
+          assertCondition(!Array.isArray(response.body));
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
           expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
+        });
+        it('Should return 200 and related user candidates if external coach is associated to multiple candidate', async () => {
+          const organization = await organizationFactory.create({}, true);
+
+          let externalLoggedInCoach = await usersHelper.createLoggedInUser(
+            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            {},
+            true
+          );
+
+          let externalLoggedInCandidate1 = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          let externalLoggedInCandidate2 = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          ({
+            loggedInCoach: externalLoggedInCoach,
+            loggedInCandidate: externalLoggedInCandidate1,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            externalLoggedInCoach,
+            externalLoggedInCandidate1,
+            true
+          ));
+
+          ({
+            loggedInCoach: externalLoggedInCoach,
+            loggedInCandidate: externalLoggedInCandidate2,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            externalLoggedInCoach,
+            externalLoggedInCandidate2,
+            true
+          ));
+
+          const {
+            user: {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              candidat,
+              coaches,
+              organization: coachOrganization,
+              ...restExternalLoggedInCoach
+            },
+          } = externalLoggedInCoach;
+
+          const {
+            user: {
+              password: candidate1Password,
+              hashReset: candidate1HashReset,
+              salt: candidate1Salt,
+              saltReset: candidate1SaltReset,
+              revision: candidate1Revision,
+              updatedAt: candidate1UpdatedAt,
+              createdAt: candidate1CreatedAt,
+              lastConnection: candidate1LastConnection,
+              candidat: candidate1Candidat,
+              coaches: candidate1Coaches,
+              organization: candidate1Organization,
+              ...restExternalLoggedInCandidate1
+            },
+          } = externalLoggedInCandidate1;
+
+          const {
+            user: {
+              password: candidate2Password,
+              hashReset: candidate2HashReset,
+              salt: candidate2Salt,
+              saltReset: candidate2SaltReset,
+              revision: candidate2Revision,
+              updatedAt: candidate2UpdatedAt,
+              createdAt: candidate2CreatedAt,
+              lastConnection: candidate2LastConnection,
+              candidat: candidate2Candidat,
+              coaches: candidate2Coaches,
+              organization: candidate2Organization,
+              ...restExternalLoggedInCandidate2
+            },
+          } = externalLoggedInCandidate2;
+
+          const response: APIResponse<UsersController['findRelatedUser']> =
+            await request(app.getHttpServer())
+              .get(`${route}/candidate`)
+              .set('authorization', `Token ${externalLoggedInCoach.token}`)
+              .query({
+                coachId: externalLoggedInCoach.user.id,
+              });
+
+          expect(response.status).toBe(200);
+          expect(Array.isArray(response.body)).toBeTruthy();
+          assertCondition(Array.isArray(response.body));
+          expect(response.body).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                ...candidate1Candidat,
+                coach: expect.objectContaining({
+                  ...restExternalLoggedInCoach,
+                }),
+                candidat: expect.objectContaining({
+                  ...restExternalLoggedInCandidate1,
+                }),
+              }),
+              expect.objectContaining({
+                ...candidate2Candidat,
+                coach: expect.objectContaining({
+                  ...restExternalLoggedInCoach,
+                }),
+                candidat: expect.objectContaining({
+                  ...restExternalLoggedInCandidate2,
+                }),
+              }),
+            ])
+          );
         });
         it('Should return 403 if logged in user is admin ', async () => {
           const response: APIResponse<UsersController['findRelatedUser']> =

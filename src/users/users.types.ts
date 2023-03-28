@@ -37,6 +37,18 @@ export const UserPermissions: { [K in UserRole]: Permission } = {
   [UserRoles.ADMIN]: Permissions.ADMIN,
 } as const;
 
+export const NormalUserRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
+export const ExternalUserRoles = [
+  UserRoles.CANDIDATE_EXTERNAL,
+  UserRoles.COACH_EXTERNAL,
+];
+
+export const CandidateUserRoles = [
+  UserRoles.CANDIDATE,
+  UserRoles.CANDIDATE_EXTERNAL,
+];
+export const CoachUserRoles = [UserRoles.COACH, UserRoles.COACH_EXTERNAL];
+
 export const AdminRoles = {
   CANDIDATES: 'Candidats',
   ENTREPRISES: 'Entreprises',

@@ -22,6 +22,8 @@ import {
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
+  CandidateUserRoles,
+  CoachUserRoles,
   CVStatuses,
   MemberConstantType,
   MemberFilterKey,
@@ -31,6 +33,7 @@ import {
 } from './users.types';
 
 import {
+  areRolesIncluded,
   filterMembersByAssociatedUser,
   filterMembersByBusinessLines,
   filterMembersByCVStatus,
@@ -125,7 +128,10 @@ export class UsersService {
     }
 
     // filtre par role
-    if (role === UserRoles.CANDIDATE || role === UserRoles.COACH) {
+    if (
+      areRolesIncluded(CandidateUserRoles, [role as UserRole]) ||
+      areRolesIncluded(CoachUserRoles, [role as UserRole])
+    ) {
       options.where = {
         ...options.where,
         role,
@@ -134,7 +140,8 @@ export class UsersService {
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
-      (role === UserRoles.CANDIDATE || role === 'All') &&
+      (role === 'All' ||
+        areRolesIncluded(CandidateUserRoles, [role as UserRole])) &&
       (filterOptions.hidden || filterOptions.employed)
     ) {
       userCandidatOptions.where = {};
@@ -231,7 +238,10 @@ export class UsersService {
 
     let finalFilteredMembers = membersWithLastCV;
 
-    if (role === UserRoles.CANDIDATE || role === 'All') {
+    if (
+      role === 'All' ||
+      areRolesIncluded(CandidateUserRoles, [role as UserRole])
+    ) {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,
         cvStatus

@@ -19,10 +19,10 @@ import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
+  UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import { UserRole, UserRoles, Permissions } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
@@ -357,7 +357,7 @@ export class OpportunitiesController {
     return createdOpportunityUserEvent;
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('admin')
   async findAll(
@@ -370,7 +370,7 @@ export class OpportunitiesController {
     return this.opportunitiesService.findAll(query);
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('/candidate/private/:candidateId')
   async findAllUserOpportunitiesAsAdmin(
@@ -402,7 +402,7 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
@@ -420,7 +420,7 @@ export class OpportunitiesController {
     return this.opportunityUsersService.countOffersByStatus(candidateId);
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
@@ -454,14 +454,14 @@ export class OpportunitiesController {
     };
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('admin/count')
   async countPending(@UserPayload('zone') zone: AdminZone) {
     return this.opportunitiesService.countPending(zone);
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
@@ -498,7 +498,7 @@ export class OpportunitiesController {
     return opportunity;
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('bulk')
   async updateAll(
@@ -673,7 +673,7 @@ export class OpportunitiesController {
     return updatedOpportunityUserEvent;
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put(':id')
   async update(
@@ -728,7 +728,7 @@ export class OpportunitiesController {
     return finalOpportunity.toJSON();
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Post('refreshSalesforce/opportunities')
   async refreshSalesforceOpportunities() {
@@ -740,7 +740,7 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Post('refreshSalesforce/events')
   async refreshSalesforceEvents() {
@@ -753,7 +753,7 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('body.candidateId')
   @UseGuards(LinkedUserGuard)
@@ -810,7 +810,7 @@ export class OpportunitiesController {
     }
   }
 
-  @Roles(UserRoles.ADMIN)
+  @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Post('sendReminderArchive')
   async postSendReminderArchive(@Body('ids') opportunitiesIds: string[]) {
