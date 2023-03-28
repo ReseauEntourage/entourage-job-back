@@ -4,7 +4,6 @@ import {
   Controller,
   Get,
   Post,
-  Query,
 } from '@nestjs/common';
 import { Public } from 'src/auth/guards';
 import {
