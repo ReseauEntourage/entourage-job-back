@@ -108,9 +108,13 @@ export class UsersController {
   @Get('search')
   async findUsers(
     @Query('query') search: string,
-    @Query('role') role: UserRole
+    @Query('role') role: UserRole,
+    @Query('organizationId') organizationId?: string
   ) {
-    return this.usersService.findAllUsers(search, role);
+    if (organizationId && !uuidValidate(organizationId)) {
+      throw new BadRequestException();
+    }
+    return this.usersService.findAllUsers(search, role, organizationId);
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)

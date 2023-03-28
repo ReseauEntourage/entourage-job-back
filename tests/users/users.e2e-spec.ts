@@ -1727,10 +1727,16 @@ describe('Users', () => {
       });
     });
     describe('R - Read many Users', () => {
-      describe('/search?query=&role= - Search a user where query string in email, first name or last name', () => {
+      describe('/search?query=&role=&organizationId= - Search a user where query string in email, first name or last name', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+
+        let candidates: User[];
+        let externalCandidates: User[];
+        let coaches: User[];
+        let externalCoaches: User[];
+        let organization: Organization;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -1742,8 +1748,76 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
+          organization = await organizationFactory.create({}, true);
+
+          candidates = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE,
+            },
+            {},
+            true
+          );
+
+          coaches = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH,
+            },
+            {},
+            true
+          );
+
+          externalCandidates = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          externalCoaches = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const otherOrganization = await organizationFactory.create({}, true);
+
+          await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
+
+          await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
         });
-        it('Should return 200 and part of candidates if user is logged in as admin', async () => {
+
+        it('Should return 200 and part of candidates if user is logged in as admin and filters by candidates and searches by first name', async () => {
           const privateCandidateInfo = [
             {
               id: loggedInCandidate.user.id,
@@ -1772,14 +1846,79 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual(privateCandidateInfo);
         });
-        it('Should return 403 if user is not logged in as candidate', async () => {
+        it('Should return 200 and candidates if user is logged in as admin and filters by candidates', async () => {
+          const expectedUsersId = [
+            ...candidates.map(({ id }) => id),
+            loggedInCandidate.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.CANDIDATE}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and part of coaches if user is logged in as admin and filters by coaches', async () => {
+          const expectedUsersId = [
+            ...coaches.map(({ id }) => id),
+            loggedInCoach.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.COACH}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and part of external candidates from specific organization if user is logged in as admin and filters by candidates from an organization', async () => {
+          const expectedUsersId = externalCandidates.map(({ id }) => id);
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and part of external coaches from specific organization if user is logged in as admin and filters by candidates from an organization', async () => {
+          const expectedUsersId = externalCoaches.map(({ id }) => id);
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 403 if user is logged in as candidate', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        it('Should return 403 if user is not logged in as candidate', async () => {
+        it('Should return 403 if user is logged in as coach', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)

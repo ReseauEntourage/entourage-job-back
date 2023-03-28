@@ -266,7 +266,7 @@ export class UsersService {
     return finalFilteredMembers;
   }
 
-  async findAllUsers(search: string, role: UserRole) {
+  async findAllUsers(search: string, role: UserRole, organizationId: string) {
     const options: FindOptions<User> = {
       attributes: [...UserAttributes],
       where: {
@@ -274,7 +274,11 @@ export class UsersService {
       },
     };
     if (role) {
-      options.where = { ...options.where, role };
+      options.where = {
+        ...options.where,
+        role,
+        OrganizationId: organizationId || null,
+      };
     }
     return this.userModel.findAll(options);
   }
