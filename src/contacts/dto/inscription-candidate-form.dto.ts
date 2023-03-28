@@ -32,8 +32,8 @@ export class InscriptionCandidateFormDto {
   lastName: string;
 
   @ApiProperty()
-  @IsPostalCode('FR')
-  postalCode: string;
+  @IsString()
+  location: string;
 
   @ApiProperty()
   @IsString()

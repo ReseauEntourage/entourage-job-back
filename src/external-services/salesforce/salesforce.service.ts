@@ -39,6 +39,7 @@ import {
   SalesforceProcess,
   SalesforceCampaign,
   CandidateInscriptionLeadProps,
+  SalesforceCampaignMember,
 } from './salesforce.types';
 
 import {
@@ -433,6 +434,19 @@ export class SalesforceService {
          WHERE Email = '${email}'
            AND RecordTypeId = '${recordType}' LIMIT 1
         `
+      );
+    return records[0]?.Id;
+  }
+
+  async findCampaignMember(leadId: string, infoCoId: string) {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceCampaignMember>[] } =
+      await this.salesforce.query(
+        `SELECT Id
+        FROM ${ObjectNames.CAMPAIGN_MEMBER}
+        WHERE LeadId = '${leadId}'
+          AND CampaignId = '${infoCoId}'
+        Limit 1`
       );
     return records[0]?.Id;
   }
@@ -885,11 +899,11 @@ export class SalesforceService {
     heardAbout,
     infoCo,
     lastName,
-    postalCode,
+    location,
     phone,
     workingRight,
   }: CandidateInscriptionLeadProps) {
-    const department = getDepartmentFromPostalCode(postalCode);
+    const department = getDepartmentFromPostalCode(location);
     const zone = getZoneFromDepartment(department);
 
     const leadToCreate = {
@@ -900,15 +914,38 @@ export class SalesforceService {
       phone,
       workingRight,
       heardAbout,
-      infoCo,
       zone,
     };
     try {
-      return (await this.createCandidateLead(leadToCreate)) as string;
+      const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+      if (infoCo) {
+        await this.createCampaignMemberInfoCo(leadId, infoCo);
+      }
     } catch (err) {
+      if (
+        (err as SalesforceError).errorCode ===
+        ErrorCodes.FIELD_FILTER_VALIDATION_EXCEPTION
+      ) {
+        const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+        if (infoCo) {
+          await this.createCampaignMemberInfoCo(leadId, infoCo);
+        }
+      }
       console.error(err);
       throw err;
     }
+  }
+
+  async createCampaignMemberInfoCo(leadId: string, infoCoId: string) {
+    const CampaignMemberId = await this.findCampaignMember(leadId, infoCoId);
+    if (!CampaignMemberId) {
+      return await this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
+        LeadId: leadId,
+        CampaignId: infoCoId,
+        Status: 'Inscrit',
+      });
+    }
+    return CampaignMemberId;
   }
 
   async createCandidateLead(
@@ -1225,7 +1262,7 @@ export class SalesforceService {
     return this.findOrCreateLeadFromInscriptionCandidateForm(lead);
   }
 
-  async getCampaigns(antenne: string) {
+  async getCampaigns() {
     await this.refreshSalesforceInstance();
     const { records }: { records: SalesforceCampaign[] } =
       await this.salesforce.query(
@@ -1239,8 +1276,7 @@ export class SalesforceService {
       FROM ${ObjectNames.CAMPAIGN}
       WHERE 
         ParentId = '701Aa000005lMv3IAE' 
-        AND StartDate > TODAY
-        AND Antenne__c = '${antenne}'`
+        AND StartDate > TODAY`
       );
     return records.map((record) => {
       return {
