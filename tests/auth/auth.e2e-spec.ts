@@ -239,6 +239,7 @@ describe('Auth', () => {
             ...candidateResponse.candidat,
             note: null,
           },
+          organization: null,
           lastConnection: response.body.lastConnection,
         });
       });
@@ -313,6 +314,7 @@ describe('Auth', () => {
           ...candidateResponse.candidat,
           note: null,
         },
+        organization: null,
         lastConnection: response.body.lastConnection,
       });
     });
