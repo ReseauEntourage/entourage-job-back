@@ -70,6 +70,7 @@ export const ObjectNames = {
   BINOME: 'Binome__c',
   EVENT: 'Event',
   CAMPAIGN: 'Campaign',
+  CAMPAIGN_MEMBER: 'CampaignMember',
 } as const;
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
@@ -81,11 +82,9 @@ type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.OFFER]: SalesforceOffer;
   [ObjectNames.CONTACT]: SalesforceContact;
   [ObjectNames.BINOME]: SalesforceBinome;
-<<<<<<< HEAD
   [ObjectNames.EVENT]: SalesforceEvent;
-=======
   [ObjectNames.CAMPAIGN]: SalesforceCampaign;
->>>>>>> 9c5e783 (in progress)
+  [ObjectNames.CAMPAIGN_MEMBER]: SalesforceCampaignMember;
 };
 
 export type SalesforceObject<
@@ -438,6 +437,13 @@ export interface SalesforceCampaign {
   };
 }
 
+export interface SalesforceCampaignMember {
+  Id?: string; // never used, only for TS purpose
+  LeadId: string;
+  CampaignId: string;
+  Status: string; // Inscrit
+}
+
 export interface SalesforceAccount {
   Id?: string;
   Name: string;
@@ -533,7 +539,7 @@ export interface CandidateLeadProps {
   workerSfIdAsContact?: string;
   associationSfId?: string;
   heardAbout?: string;
-  infoCo?: string;
+  location?: string;
 }
 
 export interface CoachLeadProps {
@@ -565,7 +571,7 @@ export interface CandidateInscriptionLeadProps {
   heardAbout: HeardAboutValue;
   infoCo: string;
   lastName: string;
-  postalCode: string;
+  location: string;
   phone: string;
   workingRight: CandidateYesNoNSPPValue;
 }

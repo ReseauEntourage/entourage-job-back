@@ -105,8 +105,8 @@ export class ContactsController {
 
   @Public()
   @Get('campaigns')
-  async getCampaigns(@Query('antenne') antenne: string) {
-    return this.contactsService.getCampaignsFromSF(antenne);
+  async getCampaigns() {
+    return this.contactsService.getCampaignsFromSF();
   }
 
   @Public()

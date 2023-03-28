@@ -66,7 +66,7 @@ export class ContactsService {
     return this.mailsService.sendContactUsMail(contactUsFormDto);
   }
 
-  async getCampaignsFromSF(antenne: string) {
-    return this.salesforceService.getCampaigns(antenne);
+  async getCampaignsFromSF() {
+    return this.salesforceService.getCampaigns();
   }
 }
