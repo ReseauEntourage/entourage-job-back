@@ -10,20 +10,24 @@ import {
   ParseUUIDPipe,
   NotFoundException,
 } from '@nestjs/common';
-import { Roles, RolesGuard } from '../users/guards';
-import { UserRoles } from '../users/users.types';
-import { isValidPhone } from '../utils/misc';
+import { Roles, RolesGuard } from 'src/users/guards';
+import { UserRoles } from 'src/users/users.types';
+import { isValidPhone } from 'src/utils/misc';
 import {
   CreateOrganizationDto,
   UpdateOrganizationDto,
   CreateOrganizationPipe,
   UpdateOrganizationPipe,
 } from './dto';
+import { OrganizationReferentsService } from './organization-referents.service';
 import { OrganizationsService } from './organizations.service';
 
 @Controller('organization')
 export class OrganizationsController {
-  constructor(private readonly organizationsService: OrganizationsService) {}
+  constructor(
+    private readonly organizationsService: OrganizationsService,
+    private readonly organizationReferentsService: OrganizationReferentsService
+  ) {}
 
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
@@ -43,14 +47,35 @@ export class OrganizationsController {
     @Body(new CreateOrganizationPipe())
     createOrganizationDto: CreateOrganizationDto
   ) {
-    if (
-      createOrganizationDto.referentPhone &&
-      !isValidPhone(createOrganizationDto.referentPhone)
-    ) {
+    const {
+      referentFirstName,
+      referentLastName,
+      referentMail,
+      referentPhone,
+      ...restCreateOrganizationDto
+    } = createOrganizationDto;
+
+    if (referentPhone && !isValidPhone(referentPhone)) {
       throw new BadRequestException();
     }
 
-    return this.organizationsService.create(createOrganizationDto);
+    const createdOrganization = await this.organizationsService.create(
+      restCreateOrganizationDto
+    );
+
+    await this.organizationReferentsService.create({
+      referentFirstName,
+      referentLastName,
+      referentMail,
+      referentPhone,
+      OrganizationId: createdOrganization.id,
+    });
+
+    const updatedOrganization = await this.organizationsService.findOne(
+      createdOrganization.id
+    );
+
+    return updatedOrganization.toJSON();
   }
   @Roles(UserRoles.ADMIN)
   @UseGuards(RolesGuard)
@@ -65,13 +90,31 @@ export class OrganizationsController {
     if (!organization) {
       throw new NotFoundException();
     }
+
+    const {
+      referentFirstName,
+      referentLastName,
+      referentMail,
+      referentPhone,
+      ...restUpdateOrganizationDto
+    } = updateOrganizationDto;
+
     if (
-      updateOrganizationDto.referentPhone &&
-      !isValidPhone(updateOrganizationDto.referentPhone)
+      referentFirstName ||
+      referentLastName ||
+      referentMail ||
+      referentPhone
     ) {
-      throw new BadRequestException();
+      if (referentPhone && !isValidPhone(referentPhone)) {
+        throw new BadRequestException();
+      }
+
+      await this.organizationReferentsService.update(
+        organization.organizationReferent.id,
+        { referentFirstName, referentLastName, referentMail, referentPhone }
+      );
     }
 
-    return this.organizationsService.update(id, updateOrganizationDto);
+    return this.organizationsService.update(id, restUpdateOrganizationDto);
   }
 }

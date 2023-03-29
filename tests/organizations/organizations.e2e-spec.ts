@@ -15,6 +15,7 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UsersHelper } from 'tests/users/users.helper';
 import { OrganizationFactory } from './organization.factory';
+import { OrganizationsHelper } from './organizations.helper';
 
 describe('Organizations', () => {
   let app: INestApplication;
@@ -22,6 +23,7 @@ describe('Organizations', () => {
   let databaseHelper: DatabaseHelper;
   let usersHelper: UsersHelper;
   let organizationFactory: OrganizationFactory;
+  let organizationsHelper: OrganizationsHelper;
 
   const route = '/organization';
 
@@ -43,6 +45,8 @@ describe('Organizations', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    organizationsHelper =
+      moduleFixture.get<OrganizationsHelper>(OrganizationsHelper);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
   });
@@ -76,20 +80,33 @@ describe('Organizations', () => {
         });
 
         it('Should return 200 when admin creates an organization', async () => {
-          const organization = await organizationFactory.create({}, false);
+          const organization = await organizationFactory.create({}, {}, false);
+
+          const organizationToCreate =
+            await organizationsHelper.mapOrganizationProps(organization);
+
           const response: APIResponse<OrganizationsController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send(organization);
+              .send(organizationToCreate);
           expect(response.status).toBe(201);
-          expect(response.body).toEqual(expect.objectContaining(organization));
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...organization,
+              organizationReferent: expect.objectContaining(
+                organization.organizationReferent
+              ),
+            })
+          );
         });
         it('Should return 400 when organization has missing fields', async () => {
-          const organization = await organizationFactory.create({}, false);
+          const organization = await organizationFactory.create({}, {}, false);
+
           const wrongData = {
             name: organization.name,
           };
+
           const response: APIResponse<OrganizationsController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
@@ -98,11 +115,16 @@ describe('Organizations', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 401 when organization has invalid phone number', async () => {
-          const organization = await organizationFactory.create({}, false);
+          const organization = await organizationFactory.create({}, {}, false);
+
+          const organizationToCreate =
+            await organizationsHelper.mapOrganizationProps(organization);
+
           const wrongData = {
-            ...organization,
+            ...organizationToCreate,
             phone: '1234',
           };
+
           const response: APIResponse<OrganizationsController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
@@ -111,32 +133,41 @@ describe('Organizations', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 401 when the user is not logged in', async () => {
-          const organization = await organizationFactory.create({}, false);
+          const organization = await organizationFactory.create({}, {}, false);
+
+          const organizationToCreate =
+            await organizationsHelper.mapOrganizationProps(organization);
 
           const response: APIResponse<OrganizationsController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
-              .send(organization);
+              .send(organizationToCreate);
           expect(response.status).toBe(401);
         });
         it('Should return 403 when the user is not a candidate', async () => {
-          const organization = await organizationFactory.create({}, false);
+          const organization = await organizationFactory.create({}, {}, false);
+
+          const organizationToCreate =
+            await organizationsHelper.mapOrganizationProps(organization);
 
           const response: APIResponse<OrganizationsController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInCandidate.token}`)
-              .send(organization);
+              .send(organizationToCreate);
           expect(response.status).toBe(403);
         });
         it('Should return 403 when the user is a coach', async () => {
-          const organization = await organizationFactory.create({}, false);
+          const organization = await organizationFactory.create({}, {}, false);
+
+          const organizationToCreate =
+            await organizationsHelper.mapOrganizationProps(organization);
 
           const response: APIResponse<OrganizationsController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInCoach.token}`)
-              .send(organization);
+              .send(organizationToCreate);
           expect(response.status).toBe(403);
         });
       });
@@ -159,7 +190,7 @@ describe('Organizations', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-          organization = await organizationFactory.create({}, true);
+          organization = await organizationFactory.create({}, {}, true);
         });
 
         it('Should return 200 when admin gets an organization', async () => {
@@ -173,6 +204,13 @@ describe('Organizations', () => {
               ...organization,
               createdAt: organization.createdAt.toISOString(),
               updatedAt: organization.updatedAt.toISOString(),
+              organizationReferent: {
+                ...organization.organizationReferent,
+                createdAt:
+                  organization.organizationReferent.createdAt.toISOString(),
+                updatedAt:
+                  organization.organizationReferent.updatedAt.toISOString(),
+              },
             })
           );
         });
@@ -225,11 +263,11 @@ describe('Organizations', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-          organization = await organizationFactory.create({}, true);
+          organization = await organizationFactory.create({}, {}, true);
         });
 
         it('Should return 200 when admin updates an organization', async () => {
-          const updates = await organizationFactory.create({}, false);
+          const updates = await organizationFactory.create({}, {}, false);
           const response: APIResponse<OrganizationsController['update']> =
             await request(app.getHttpServer())
               .put(`${route}/${organization.id}`)
@@ -237,13 +275,14 @@ describe('Organizations', () => {
               .send({
                 name: updates.name,
                 address: updates.address,
-                referentFirstName: updates.referentFirstName,
+                referentFirstName:
+                  updates.organizationReferent.referentFirstName,
               });
           expect(response.status).toBe(200);
           expect(response.body.address).toEqual(updates.address);
           expect(response.body.name).toEqual(updates.name);
-          expect(response.body.referentFirstName).toEqual(
-            updates.referentFirstName
+          expect(response.body.organizationReferent.referentFirstName).toEqual(
+            updates.organizationReferent.referentFirstName
           );
         });
         it('Should return 400 when organization has invalid phone number', async () => {
@@ -257,7 +296,7 @@ describe('Organizations', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 404 when organization does not exist', async () => {
-          const updates = await organizationFactory.create({}, false);
+          const updates = await organizationFactory.create({}, {}, false);
           const response: APIResponse<OrganizationsController['update']> =
             await request(app.getHttpServer())
               .put(`${route}/${uuid()}`)
@@ -265,24 +304,26 @@ describe('Organizations', () => {
               .send({
                 name: updates.name,
                 address: updates.address,
-                referentFirstName: updates.referentFirstName,
+                referentFirstName:
+                  updates.organizationReferent.referentFirstName,
               });
           expect(response.status).toBe(404);
         });
         it('Should return 401 when user is not logged in', async () => {
-          const updates = await organizationFactory.create({}, false);
+          const updates = await organizationFactory.create({}, {}, false);
           const response: APIResponse<OrganizationsController['update']> =
             await request(app.getHttpServer())
               .put(`${route}/${organization.id}`)
               .send({
                 name: updates.name,
                 address: updates.address,
-                referentFirstName: updates.referentFirstName,
+                referentFirstName:
+                  updates.organizationReferent.referentFirstName,
               });
           expect(response.status).toBe(401);
         });
         it('Should return 403 when the user is not a candidate', async () => {
-          const updates = await organizationFactory.create({}, false);
+          const updates = await organizationFactory.create({}, {}, false);
           const response: APIResponse<OrganizationsController['update']> =
             await request(app.getHttpServer())
               .put(`${route}/${organization.id}`)
@@ -290,12 +331,13 @@ describe('Organizations', () => {
               .send({
                 name: updates.name,
                 address: updates.address,
-                referentFirstName: updates.referentFirstName,
+                referentFirstName:
+                  updates.organizationReferent.referentFirstName,
               });
           expect(response.status).toBe(403);
         });
         it('Should return 403 when the user is not a coach', async () => {
-          const updates = await organizationFactory.create({}, false);
+          const updates = await organizationFactory.create({}, {}, false);
           const response: APIResponse<OrganizationsController['update']> =
             await request(app.getHttpServer())
               .put(`${route}/${organization.id}`)
@@ -303,7 +345,8 @@ describe('Organizations', () => {
               .send({
                 name: updates.name,
                 address: updates.address,
-                referentFirstName: updates.referentFirstName,
+                referentFirstName:
+                  updates.organizationReferent.referentFirstName,
               });
           expect(response.status).toBe(403);
         });

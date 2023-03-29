@@ -1,20 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsEmail as IsEmailClassValidator } from 'class-validator';
+import { IsString } from 'class-validator';
 import {
   AllowNull,
   Column,
   CreatedAt,
   DataType,
   Default,
-  IsEmail,
+  HasOne,
   IsUUID,
-  Length,
   Model,
   PrimaryKey,
+  Table,
   UpdatedAt,
 } from 'sequelize-typescript';
 import { AdminZone } from 'src/utils/types';
+import { OrganizationReferent } from './organization-referent.model';
 
+@Table({ tableName: 'Organizations' })
 export class Organization extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -36,35 +38,12 @@ export class Organization extends Model {
 
   @ApiProperty()
   @IsString()
-  @AllowNull(false)
-  @Column
-  referentFirstName: string;
-
-  @ApiProperty()
-  @IsString()
-  @AllowNull(false)
-  @Column
-  referentLastName: string;
-
-  @ApiProperty()
-  @IsEmailClassValidator()
-  @IsEmail
-  @AllowNull(false)
-  @Column
-  referentMail: string;
-
-  @ApiProperty()
-  @IsString()
-  @AllowNull(false)
-  @Length({ min: 0, max: 30 })
-  @Column
-  referentPhone: string;
-
-  @ApiProperty()
-  @IsString()
   @AllowNull(true)
   @Column
   zone: AdminZone;
+
+  @HasOne(() => OrganizationReferent, 'OrganizationId')
+  organizationReferent: OrganizationReferent;
 
   @CreatedAt
   createdAt: Date;

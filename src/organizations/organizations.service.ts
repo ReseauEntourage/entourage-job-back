@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UpdateOrganizationDto } from './dto';
 import { Organization } from './models';
+import { OrganizationReferent } from './models/organization-referent.model';
 
 @Injectable()
 export class OrganizationsService {
@@ -17,12 +18,20 @@ export class OrganizationsService {
   }
 
   async findOne(id: string) {
-    return this.organizationModel.findByPk(id);
+    return this.organizationModel.findByPk(id, {
+      include: {
+        model: OrganizationReferent,
+        as: 'organizationReferent',
+      },
+    });
   }
 
   async update(
     id: string,
-    updateOrganizationDto: UpdateOrganizationDto
+    updateOrganizationDto: Pick<
+      UpdateOrganizationDto,
+      'name' | 'address' | 'zone'
+    >
   ): Promise<Organization> {
     await this.organizationModel.update(updateOrganizationDto, {
       where: { id },
