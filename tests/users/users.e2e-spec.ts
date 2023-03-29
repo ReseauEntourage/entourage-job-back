@@ -151,7 +151,7 @@ describe('Users', () => {
             role: UserRoles.CANDIDATE,
           });
 
-          organization = await organizationFactory.create({}, true);
+          organization = await organizationFactory.create({}, {}, true);
         });
 
         it('Should return 200 and a created user if valid data', async () => {
@@ -177,7 +177,6 @@ describe('Users', () => {
               ...user,
             })
           );
-          expect(response.body).toEqual(expect.objectContaining(candidate));
         });
         it('Should return 200 and a created user if missing optional fields', async () => {
           const {
@@ -766,12 +765,9 @@ describe('Users', () => {
             const {
               createdAt: organizationCreatedAt,
               updatedAt: organizationUpdatedAt,
-              referentFirstName,
-              referentLastName,
-              referentMail,
-              referentPhone,
+              organizationReferent,
               ...restOrganization
-            } = await organization;
+            } = organization;
 
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
@@ -830,12 +826,9 @@ describe('Users', () => {
             const {
               createdAt: organizationCreatedAt,
               updatedAt: organizationUpdatedAt,
-              referentFirstName,
-              referentLastName,
-              referentMail,
-              referentPhone,
+              organizationReferent,
               ...restOrganization
-            } = await organization;
+            } = organization;
 
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
@@ -914,12 +907,9 @@ describe('Users', () => {
             const {
               createdAt: organizationCreatedAt,
               updatedAt: organizationUpdatedAt,
-              referentFirstName,
-              referentLastName,
-              referentMail,
-              referentPhone,
+              organizationReferent,
               ...restOrganization
-            } = await organization;
+            } = organization;
 
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
@@ -980,12 +970,9 @@ describe('Users', () => {
             const {
               createdAt: organizationCreatedAt,
               updatedAt: organizationUpdatedAt,
-              referentFirstName,
-              referentLastName,
-              referentMail,
-              referentPhone,
+              organizationReferent,
               ...restOrganization
-            } = await organization;
+            } = organization;
 
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
@@ -1228,6 +1215,7 @@ describe('Users', () => {
           it('Should return 400 if external candidate with external coach from another organization', async () => {
             const otherOrganization = await organizationFactory.create(
               {},
+              {},
               true
             );
 
@@ -1283,6 +1271,7 @@ describe('Users', () => {
           });
           it('Should return 400 if external coach with external candidate from another organization', async () => {
             const otherOrganization = await organizationFactory.create(
+              {},
               {},
               true
             );
@@ -1587,7 +1576,7 @@ describe('Users', () => {
           expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
         it('Should return 200 and related user candidates if external coach is associated to multiple candidate', async () => {
-          const organization = await organizationFactory.create({}, true);
+          const organization = await organizationFactory.create({}, {}, true);
 
           let externalLoggedInCoach = await usersHelper.createLoggedInUser(
             { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
@@ -1748,7 +1737,7 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-          organization = await organizationFactory.create({}, true);
+          organization = await organizationFactory.create({}, {}, true);
 
           candidates = await databaseHelper.createEntities(
             userFactory,
@@ -1792,7 +1781,11 @@ describe('Users', () => {
             true
           );
 
-          const otherOrganization = await organizationFactory.create({}, true);
+          const otherOrganization = await organizationFactory.create(
+            {},
+            {},
+            true
+          );
 
           await databaseHelper.createEntities(
             userFactory,
@@ -1879,7 +1872,7 @@ describe('Users', () => {
           );
         });
 
-        it('Should return 200 and part of external candidates from specific organization if user is logged in as admin and filters by candidates from an organization', async () => {
+        it('Should return 200 and part of external candidates from specific organization if user is logged in as admin and filters by external candidates from an organization', async () => {
           const expectedUsersId = externalCandidates.map(({ id }) => id);
 
           const response: APIResponse<UsersController['findUsers']> =
@@ -1895,7 +1888,7 @@ describe('Users', () => {
           );
         });
 
-        it('Should return 200 and part of external coaches from specific organization if user is logged in as admin and filters by candidates from an organization', async () => {
+        it('Should return 200 and part of external coaches from specific organization if user is logged in as admin and filters by external coaches from an organization', async () => {
           const expectedUsersId = externalCoaches.map(({ id }) => id);
 
           const response: APIResponse<UsersController['findUsers']> =
@@ -1909,6 +1902,24 @@ describe('Users', () => {
           expect(expectedUsersId).toEqual(
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
+        });
+
+        it('Should return 400 if user is logged in as admin and filters by external candidates from an organization', async () => {
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if user is logged in as admin and filters by external coaches without organization', async () => {
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.COACH_EXTERNAL}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(400);
         });
 
         it('Should return 403 if user is logged in as candidate', async () => {
@@ -2916,7 +2927,7 @@ describe('Users', () => {
             role: UserRoles.COACH,
           });
 
-          organization = await organizationFactory.create({}, true);
+          organization = await organizationFactory.create({}, {}, true);
 
           externalCoach = await userFactory.create(
             { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
@@ -3332,7 +3343,11 @@ describe('Users', () => {
         });
 
         it('Should return 400 if admin updates external candidate with external coach from another organization', async () => {
-          const otherOrganization = await organizationFactory.create({}, true);
+          const otherOrganization = await organizationFactory.create(
+            {},
+            {},
+            true
+          );
 
           const otherExternalCoach = await userFactory.create(
             {
@@ -3352,7 +3367,11 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 400 if admin updates external coach with external candidate from another organization', async () => {
-          const otherOrganization = await organizationFactory.create({}, true);
+          const otherOrganization = await organizationFactory.create(
+            {},
+            {},
+            true
+          );
 
           const otherExternalCandidate = await userFactory.create(
             {

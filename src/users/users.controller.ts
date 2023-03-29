@@ -47,6 +47,7 @@ import {
   UserRole,
   UserRoles,
   Permissions,
+  ExternalUserRoles,
 } from './users.types';
 import {
   areRolesIncluded,
@@ -112,6 +113,10 @@ export class UsersController {
     @Query('organizationId') organizationId?: string
   ) {
     if (organizationId && !uuidValidate(organizationId)) {
+      throw new BadRequestException();
+    }
+
+    if (areRolesIncluded(ExternalUserRoles, [role]) && !organizationId) {
       throw new BadRequestException();
     }
     return this.usersService.findAllUsers(search, role, organizationId);
