@@ -61,6 +61,7 @@ describe('Organizations', () => {
       describe('/ - Create organization', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -68,6 +69,9 @@ describe('Organizations', () => {
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
           });
         });
 
@@ -115,7 +119,7 @@ describe('Organizations', () => {
               .send(organization);
           expect(response.status).toBe(401);
         });
-        it('Should return 403 when the user is not an administrator', async () => {
+        it('Should return 403 when the user is not a candidate', async () => {
           const organization = await organizationFactory.create({}, false);
 
           const response: APIResponse<OrganizationsController['create']> =
@@ -125,12 +129,24 @@ describe('Organizations', () => {
               .send(organization);
           expect(response.status).toBe(403);
         });
+        it('Should return 403 when the user is a coach', async () => {
+          const organization = await organizationFactory.create({}, false);
+
+          const response: APIResponse<OrganizationsController['create']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInCoach.token}`)
+              .send(organization);
+          expect(response.status).toBe(403);
+        });
       });
     });
     describe('R - Read 1 Organization', () => {
       describe('/:id - Get an organization by id', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
         let organization: Organization;
 
         beforeEach(async () => {
@@ -139,6 +155,9 @@ describe('Organizations', () => {
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
           });
           organization = await organizationFactory.create({}, true);
         });
@@ -172,11 +191,18 @@ describe('Organizations', () => {
             );
           expect(response.status).toBe(401);
         });
-        it('Should return 403 when the user is not an administrator', async () => {
+        it('Should return 403 when the user is a candidate', async () => {
           const response: APIResponse<OrganizationsController['findOne']> =
             await request(app.getHttpServer())
               .get(`${route}/${organization.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403 when the user is a coach', async () => {
+          const response: APIResponse<OrganizationsController['findOne']> =
+            await request(app.getHttpServer())
+              .get(`${route}/${organization.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -185,6 +211,8 @@ describe('Organizations', () => {
       describe('/:id - Update organization', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
         let organization: Organization;
 
         beforeEach(async () => {
@@ -193,6 +221,9 @@ describe('Organizations', () => {
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
           });
           organization = await organizationFactory.create({}, true);
         });
@@ -250,12 +281,25 @@ describe('Organizations', () => {
               });
           expect(response.status).toBe(401);
         });
-        it('Should return 403 when the user is not an administrator', async () => {
+        it('Should return 403 when the user is not a candidate', async () => {
           const updates = await organizationFactory.create({}, false);
           const response: APIResponse<OrganizationsController['update']> =
             await request(app.getHttpServer())
               .put(`${route}/${organization.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send({
+                name: updates.name,
+                address: updates.address,
+                referentFirstName: updates.referentFirstName,
+              });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403 when the user is not a coach', async () => {
+          const updates = await organizationFactory.create({}, false);
+          const response: APIResponse<OrganizationsController['update']> =
+            await request(app.getHttpServer())
+              .put(`${route}/${organization.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`)
               .send({
                 name: updates.name,
                 address: updates.address,
