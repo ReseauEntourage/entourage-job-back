@@ -809,7 +809,7 @@ export class OpportunitiesController {
   async postSendReminderArchive(@Body('ids') opportunitiesIds: string[]) {
     let count = 0;
     let failed = 0;
-    Promise.all(
+    await Promise.all(
       opportunitiesIds.map(async (id) => {
         const opportunity = await this.opportunitiesService.findOne(id);
         if (!opportunity || !opportunity.recruiterMail) {
