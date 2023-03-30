@@ -16,6 +16,7 @@ import { ContactsTestingModule } from './contacts/contacts-testing.module';
 import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
 import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
+import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     SharesTestingModule,
     ContactsTestingModule,
     OpportunitiesTestingModule,
+    OrganizationsTestingModule,
   ],
   providers: [DatabaseHelper],
 })
