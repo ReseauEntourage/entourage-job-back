@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
@@ -28,6 +29,17 @@ export class OrganizationsController {
     private readonly organizationsService: OrganizationsService,
     private readonly organizationReferentsService: OrganizationReferentsService
   ) {}
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get()
+  async findAll(@Query('search') search: string) {
+    const organizations = await this.organizationsService.findAll(search);
+
+    return organizations.map((organization) => {
+      return organization.toJSON();
+    });
+  }
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
