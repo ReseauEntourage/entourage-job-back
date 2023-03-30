@@ -535,11 +535,11 @@ export class MailsService {
       templateId: MailjetTemplates.ARCHIVE_REMINDER,
       replyTo: companiesAdminMail,
       variables: {
-        zone,
-        company: opportunity.company,
-        offerId: opportunity.id,
-        offerTitle: opportunity.title,
-        recruiterFirstName: opportunity.recruiterFirstName,
+        zone: zone || '',
+        company: opportunity.company || '',
+        offerId: opportunity.id || '',
+        offerTitle: opportunity.title || '',
+        recruiterFirstName: opportunity.recruiterFirstName || '',
       },
     });
   }
