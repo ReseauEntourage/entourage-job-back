@@ -54,7 +54,6 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  WorkerLeadProps,
   LeadYesNoNSPP,
 } from './salesforce.types';
 

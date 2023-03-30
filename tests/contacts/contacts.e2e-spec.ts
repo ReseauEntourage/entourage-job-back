@@ -292,43 +292,42 @@ describe('Contacts', () => {
           .send(shortData);
       expect(response.status).toBe(201);
     });
-  });
+    it('should return 201 on route call without infoCo', async () => {
+      const formAnswers = await InscriptionCandidateFormFactory.create({});
 
-  it('should return 201 on route call without infoCo', async () => {
-    const formAnswers = await InscriptionCandidateFormFactory.create({});
+      const shortData = {
+        firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
+        email: formAnswers.email,
+        birthdate: formAnswers.birthdate,
+        workingRight: formAnswers.workingRight,
+        heardAbout: formAnswers.heardAbout,
+        // infoCo: formAnswers.infoCo,
+      };
 
-    const shortData = {
-      firstName: formAnswers.firstName,
-      lastName: formAnswers.lastName,
-      email: formAnswers.email,
-      birthdate: formAnswers.birthdate,
-      workingRight: formAnswers.workingRight,
-      heardAbout: formAnswers.heardAbout,
-      // infoCo: formAnswers.infoCo,
-    };
+      const response: APIResponse<ContactsController['candidateInscription']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidateInscription`)
+          .send(shortData);
+      expect(response.status).toBe(201);
+    });
 
-    const response: APIResponse<ContactsController['candidateInscription']> =
-      await request(app.getHttpServer())
-        .post(`${route}/candidateInscription`)
-        .send(shortData);
-    expect(response.status).toBe(201);
-  });
+    it('should return 400 with missing property', async () => {
+      const formAnswers = await InscriptionCandidateFormFactory.create({});
 
-  it('should return 400 with missing property', async () => {
-    const formAnswers = await InscriptionCandidateFormFactory.create({});
+      const shortData = {
+        firstName: formAnswers.firstName,
+        email: formAnswers.email,
+        birthdate: formAnswers.birthdate,
+        workingRight: formAnswers.workingRight,
+        heardAbout: formAnswers.heardAbout,
+      };
 
-    const shortData = {
-      firstName: formAnswers.firstName,
-      email: formAnswers.email,
-      birthdate: formAnswers.birthdate,
-      workingRight: formAnswers.workingRight,
-      heardAbout: formAnswers.heardAbout,
-    };
-
-    const response: APIResponse<ContactsController['candidateInscription']> =
-      await request(app.getHttpServer())
-        .post(`${route}/candidateInscription`)
-        .send(shortData);
-    expect(response.status).toBe(201);
+      const response: APIResponse<ContactsController['candidateInscription']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidateInscription`)
+          .send(shortData);
+      expect(response.status).toBe(201);
+    });
   });
 });
