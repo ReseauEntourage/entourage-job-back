@@ -147,7 +147,16 @@ describe('Users', () => {
         });
 
         it('Should return 200 and a created user', async () => {
-          const candidate = await userFactory.create(
+          const {
+            password,
+            hashReset,
+            salt,
+            saltReset,
+            revision,
+            updatedAt,
+            createdAt,
+            ...candidate
+          } = await userFactory.create(
             { role: UserRoles.CANDIDATE },
             {},
             false
@@ -158,8 +167,14 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send(candidate);
           expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...candidate,
+              lastConnection: candidate.lastConnection.toISOString(),
+            })
+          );
         });
-        it('Should return 401 when user data has invalid phone', async () => {
+        it('Should return 400 when user data has invalid phone', async () => {
           const candidate = await userFactory.create({}, {}, false);
           const wrongData = {
             ...candidate,
@@ -172,7 +187,7 @@ describe('Users', () => {
               .send(wrongData);
           expect(response.status).toBe(400);
         });
-        it('Should return 401 when the user is not logged in.', async () => {
+        it('Should return 401 when the user is not logged in', async () => {
           const candidate = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
@@ -184,7 +199,7 @@ describe('Users', () => {
             await request(app.getHttpServer()).post(`${route}`).send(candidate);
           expect(response.status).toBe(401);
         });
-        it('Should return 403 when the user is not an administrator.', async () => {
+        it('Should return 403 when the user is not an administrator', async () => {
           const candidate = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
@@ -199,7 +214,7 @@ describe('Users', () => {
               .send(candidate);
           expect(response.status).toBe(403);
         });
-        it('Should return 409 when the email already exist.', async () => {
+        it('Should return 409 when the email already exist', async () => {
           const candidate = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
@@ -233,7 +248,7 @@ describe('Users', () => {
             role: UserRoles.COACH,
           });
         });
-        it('Should return 401 when the user is not logged in.', async () => {
+        it('Should return 401 when the user is not logged in', async () => {
           const candidate = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
@@ -1615,7 +1630,6 @@ describe('Users', () => {
         });
       });
     });
-    // TODO put in unit tests
     describe('U - Update many Users', () => {
       describe('/bulk - Bulk update users', () => {
         let loggedInAdmin: LoggedUser;
@@ -1730,6 +1744,7 @@ describe('Users', () => {
         });
       });
     });
+    // TODO put in unit tests
     describe('D - Delete 1 User', () => {
       describe('/:id - Delete user and all associated models', () => {
         let loggedInAdmin: LoggedUser;
