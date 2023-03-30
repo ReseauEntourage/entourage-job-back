@@ -47,7 +47,6 @@ import {
   UserRole,
   UserRoles,
   Permissions,
-  ExternalUserRoles,
 } from './users.types';
 import {
   areRolesIncluded,
@@ -109,16 +108,13 @@ export class UsersController {
   @Get('search')
   async findUsers(
     @Query('query') search: string,
-    @Query('role') role: UserRole,
+    @Query('role') role: UserRole | UserRole[],
     @Query('organizationId') organizationId?: string
   ) {
     if (organizationId && !uuidValidate(organizationId)) {
       throw new BadRequestException();
     }
 
-    if (areRolesIncluded(ExternalUserRoles, [role]) && !organizationId) {
-      throw new BadRequestException();
-    }
     return this.usersService.findAllUsers(search, role, organizationId);
   }
 
@@ -185,23 +181,15 @@ export class UsersController {
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
-  @Get('candidate/checkUpdate')
+  @Get('candidate/checkUpdate/:candidateId')
   async checkNoteHasBeenModified(
     @UserPayload('role') role: UserRole,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
-    const ids = {
-      candidateId: areRolesIncluded(CandidateUserRoles, [role])
-        ? userId
-        : undefined,
-      coachId: areRolesIncluded(CoachUserRoles, [role]) ? userId : undefined,
-    };
-
-    const userCandidat =
-      await this.userCandidatsService.findOneByCandidateOrCoachId(
-        ids.candidateId,
-        ids.coachId
-      );
+    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
+      candidateId
+    );
 
     if (!userCandidat) {
       throw new NotFoundException();

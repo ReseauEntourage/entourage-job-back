@@ -266,7 +266,11 @@ export class UsersService {
     return finalFilteredMembers;
   }
 
-  async findAllUsers(search: string, role: UserRole, organizationId: string) {
+  async findAllUsers(
+    search: string,
+    role: UserRole | UserRole[],
+    organizationId: string
+  ) {
     const options: FindOptions<User> = {
       attributes: [...UserAttributes],
       where: {
@@ -276,7 +280,7 @@ export class UsersService {
     if (role) {
       options.where = {
         ...options.where,
-        role,
+        role: role,
         OrganizationId: organizationId || null,
       };
     }

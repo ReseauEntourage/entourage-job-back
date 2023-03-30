@@ -1839,7 +1839,8 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual(privateCandidateInfo);
         });
-        it('Should return 200 and candidates if user is logged in as admin and filters by candidates', async () => {
+
+        it('Should return 200 and normal candidates if user is logged in as admin and filters by normal candidates', async () => {
           const expectedUsersId = [
             ...candidates.map(({ id }) => id),
             loggedInCandidate.user.id,
@@ -1855,7 +1856,40 @@ describe('Users', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and part of coaches if user is logged in as admin and filters by coaches', async () => {
+        it('Should return 200 and external candidates if user is logged in as admin and filters by external candidates', async () => {
+          const expectedUsersId = [...externalCandidates.map(({ id }) => id)];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and all candidates if user is logged in as admin and filters by all candidates', async () => {
+          const expectedUsersId = [
+            ...candidates.map(({ id }) => id),
+            ...externalCandidates.map(({ id }) => id),
+            loggedInCandidate.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and normal coaches if user is logged in as admin and filters by normal coaches', async () => {
           const expectedUsersId = [
             ...coaches.map(({ id }) => id),
             loggedInCoach.user.id,
@@ -1864,6 +1898,38 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(`${route}/search?&role=${UserRoles.COACH}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and external coaches if user is logged in as admin and filters by external coaches', async () => {
+          const expectedUsersId = [...externalCoaches.map(({ id }) => id)];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.COACH_EXTERNAL}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and all coaches if user is logged in as admin and filters by all coaches', async () => {
+          const expectedUsersId = [
+            ...coaches.map(({ id }) => id),
+            ...externalCoaches.map(({ id }) => id),
+            loggedInCoach.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
+              )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1887,7 +1953,6 @@ describe('Users', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-
         it('Should return 200 and part of external coaches from specific organization if user is logged in as admin and filters by external coaches from an organization', async () => {
           const expectedUsersId = externalCoaches.map(({ id }) => id);
 
@@ -1904,22 +1969,27 @@ describe('Users', () => {
           );
         });
 
-        it('Should return 400 if user is logged in as admin and filters by external candidates from an organization', async () => {
+        it('Should return 200 and empty users if user is logged in as admin and filters by normal candidates from an organization', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}`)
+              .get(
+                `${route}/search?&role=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
+              )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
-          expect(response.status).toBe(400);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(0);
         });
-
-        it('Should return 400 if user is logged in as admin and filters by external coaches without organization', async () => {
+        it('Should return 200 and empty users if user is logged in as admin and filters by normal coaches from an organization', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.COACH_EXTERNAL}`)
+              .get(
+                `${route}/search?&role=${UserRoles.COACH}&organizationId=${organization.id}`
+              )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
-          expect(response.status).toBe(400);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(0);
         });
 
         it('Should return 403 if user is logged in as candidate', async () => {
@@ -3423,7 +3493,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer()).get(
-            `${route}/candidate/checkUpdate`
+            `${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`
           );
 
           expect(response.status).toBe(401);
@@ -3432,7 +3502,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
@@ -3444,7 +3514,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
@@ -3458,7 +3528,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
@@ -3472,7 +3542,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
@@ -3486,7 +3556,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
@@ -3500,7 +3570,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
@@ -3514,7 +3584,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
