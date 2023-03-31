@@ -22,7 +22,6 @@ export class InscriptionCandidateFormFactory
       email: faker.internet.email(),
       location: '93',
       workingRight: faker.random.objectElement(CandidateYesNoNSPP),
-      message: faker.lorem.paragraphs(3, '\n'),
       heardAbout: faker.random.objectElement(HeardAbout),
       birthdate: faker.date.past(40),
       infoCo: '',

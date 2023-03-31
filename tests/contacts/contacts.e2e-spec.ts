@@ -29,7 +29,7 @@ describe('Contacts', () => {
   let contactUsFormFactory: ContactUsFormFactory;
   let contactCompanyFormFactory: ContactCompanyFormFactory;
   let contactCandidateFormFactory: ContactCandidateFormFactory;
-  let InscriptionCandidateFormFactory: InscriptionCandidateFormFactory;
+  let inscriptionCandidateFormFactory: InscriptionCandidateFormFactory;
 
   const route = '/contact';
 
@@ -59,6 +59,10 @@ describe('Contacts', () => {
     contactCandidateFormFactory =
       moduleFixture.get<ContactCandidateFormFactory>(
         ContactCandidateFormFactory
+      );
+    inscriptionCandidateFormFactory =
+      moduleFixture.get<InscriptionCandidateFormFactory>(
+        InscriptionCandidateFormFactory
       );
   });
 
@@ -267,14 +271,14 @@ describe('Contacts', () => {
   describe('/campaigns - Get all the campaigns in the future', () => {
     it('should return 201 on route call', async () => {
       const response: APIResponse<ContactsController['getCampaigns']> =
-        await request(app.getHttpServer()).post(`${route}/campaigns`).send();
-      expect(response.status).toBe(201);
+        await request(app.getHttpServer()).get(`${route}/campaigns`).send();
+      expect(response.status).toBe(200);
     });
   });
 
   describe('/candidateInscription - Post candidate inscription form', () => {
     it('should return 201 on route call with complete data', async () => {
-      const formAnswers = await InscriptionCandidateFormFactory.create({});
+      const formAnswers = await inscriptionCandidateFormFactory.create({});
 
       const shortData = {
         firstName: formAnswers.firstName,
@@ -283,6 +287,8 @@ describe('Contacts', () => {
         birthdate: formAnswers.birthdate,
         workingRight: formAnswers.workingRight,
         heardAbout: formAnswers.heardAbout,
+        phone: formAnswers.phone,
+        location: formAnswers.location,
         infoCo: formAnswers.infoCo,
       };
 
@@ -293,7 +299,7 @@ describe('Contacts', () => {
       expect(response.status).toBe(201);
     });
     it('should return 201 on route call without infoCo', async () => {
-      const formAnswers = await InscriptionCandidateFormFactory.create({});
+      const formAnswers = await inscriptionCandidateFormFactory.create({});
 
       const shortData = {
         firstName: formAnswers.firstName,
@@ -302,7 +308,8 @@ describe('Contacts', () => {
         birthdate: formAnswers.birthdate,
         workingRight: formAnswers.workingRight,
         heardAbout: formAnswers.heardAbout,
-        // infoCo: formAnswers.infoCo,
+        phone: formAnswers.phone,
+        location: formAnswers.location,
       };
 
       const response: APIResponse<ContactsController['candidateInscription']> =
@@ -313,21 +320,24 @@ describe('Contacts', () => {
     });
 
     it('should return 400 with missing property', async () => {
-      const formAnswers = await InscriptionCandidateFormFactory.create({});
+      const formAnswers = await inscriptionCandidateFormFactory.create({});
 
       const shortData = {
         firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
         email: formAnswers.email,
         birthdate: formAnswers.birthdate,
         workingRight: formAnswers.workingRight,
         heardAbout: formAnswers.heardAbout,
+        // phone: formAnswers.phone,
+        location: formAnswers.location,
       };
 
       const response: APIResponse<ContactsController['candidateInscription']> =
         await request(app.getHttpServer())
           .post(`${route}/candidateInscription`)
           .send(shortData);
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(400);
     });
   });
 });
