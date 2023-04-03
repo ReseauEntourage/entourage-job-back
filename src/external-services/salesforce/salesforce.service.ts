@@ -916,45 +916,32 @@ export class SalesforceService {
       heardAbout,
       zone,
     };
-    try {
-      const leadId = (await this.createCandidateLead(leadToCreate)) as string;
-      if (infoCo) {
-        await this.createCampaignMemberInfoCo(leadId, infoCo);
-      }
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-        ErrorCodes.FIELD_FILTER_VALIDATION_EXCEPTION
-      ) {
-        const leadId = (await this.createCandidateLead(leadToCreate)) as string;
-        if (infoCo) {
-          await this.createCampaignMemberInfoCo(leadId, infoCo);
-        }
-      }
-      console.error(err);
-      throw err;
+    const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+    if (infoCo) {
+      await this.createCampaignMemberInfoCo(leadId, infoCo);
     }
+    return leadId;
   }
 
   async createCampaignMemberInfoCo(leadId: string, infoCoId: string) {
-    const CampaignMemberId = await this.findCampaignMember(leadId, infoCoId);
-    if (!CampaignMemberId) {
-      return await this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
+    const campaignMemberId = await this.findCampaignMember(leadId, infoCoId);
+    if (!campaignMemberId) {
+      return this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
         LeadId: leadId,
         CampaignId: infoCoId,
         Status: 'Inscrit',
       });
     }
-    return CampaignMemberId;
+    return campaignMemberId;
   }
 
   async createCandidateLead(
     leadToCreate: LeadProp<typeof LeadRecordTypesIds.CANDIDATE>,
     workerSfId?: string
   ) {
-    if (workerSfId)
-      leadToCreate = { ...leadToCreate, workerSfIdAsProspect: workerSfId };
     try {
+      if (workerSfId)
+        leadToCreate = { ...leadToCreate, workerSfIdAsProspect: workerSfId };
       return (await this.findOrCreateLead(
         leadToCreate,
         LeadRecordTypesIds.CANDIDATE
@@ -964,6 +951,10 @@ export class SalesforceService {
         (err as SalesforceError).errorCode ===
         ErrorCodes.FIELD_INTEGRITY_EXCEPTION
       ) {
+        if (workerSfId) {
+          delete leadToCreate.workerSfIdAsProspect;
+          leadToCreate = { ...leadToCreate, workerSfIdAsContact: workerSfId };
+        }
         return (await this.findOrCreateLead(
           leadToCreate,
           LeadRecordTypesIds.CANDIDATE
