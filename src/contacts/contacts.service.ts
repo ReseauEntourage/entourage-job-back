@@ -55,10 +55,10 @@ export class ContactsService {
   }
 
   async sendCandidateInscriptionToSalesforce(
-    InscriptionCandidateFormDto: InscriptionCandidateFormDto
+    inscriptionCandidateFormDto: InscriptionCandidateFormDto
   ) {
     return this.salesforceService.createOrUpdateInscriptionCandidateSalesforceLead(
-      InscriptionCandidateFormDto
+      inscriptionCandidateFormDto
     );
   }
 

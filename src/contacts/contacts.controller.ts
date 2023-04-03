@@ -112,13 +112,13 @@ export class ContactsController {
   @Post('candidateInscription')
   async candidateInscription(
     @Body(new InscriptionCandidateFormPipe())
-    InscriptionCandidateFormDto: InscriptionCandidateFormDto
+    inscriptionCandidateFormDto: InscriptionCandidateFormDto
   ) {
-    if (!isValidPhone(InscriptionCandidateFormDto.phone)) {
+    if (!isValidPhone(inscriptionCandidateFormDto.phone)) {
       throw new BadRequestException('invalid phone');
     }
     return this.contactsService.sendCandidateInscriptionToSalesforce(
-      InscriptionCandidateFormDto
+      inscriptionCandidateFormDto
     );
   }
 }
