@@ -25,6 +25,8 @@ import {
   CompanyZone,
   HeardAbout,
   HeardAboutValue,
+  CandidateYesNoNSPPValue,
+  CandidateYesNoNSPP,
 } from 'src/contacts/contacts.types';
 
 import {
@@ -67,6 +69,8 @@ export const ObjectNames = {
   CONTACT: 'Contact',
   BINOME: 'Binome__c',
   EVENT: 'Event',
+  CAMPAIGN: 'Campaign',
+  CAMPAIGN_MEMBER: 'CampaignMember',
 } as const;
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
@@ -79,6 +83,8 @@ type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.CONTACT]: SalesforceContact;
   [ObjectNames.BINOME]: SalesforceBinome;
   [ObjectNames.EVENT]: SalesforceEvent;
+  [ObjectNames.CAMPAIGN]: SalesforceCampaign;
+  [ObjectNames.CAMPAIGN_MEMBER]: SalesforceCampaignMember;
 };
 
 export type SalesforceObject<
@@ -231,6 +237,14 @@ export const LeadYesNo: {
 } = {
   [CandidateYesNo.YES]: 'Oui',
   [CandidateYesNo.NO]: 'Non',
+} as const;
+
+export const LeadYesNoNSPP: {
+  [K in CandidateYesNoNSPPValue]: string;
+} = {
+  [CandidateYesNoNSPP.YES]: 'Oui',
+  [CandidateYesNoNSPP.NO]: 'Non',
+  [CandidateYesNoNSPP.NSPP]: 'Je ne sais pas',
 } as const;
 
 export const LeadBusinessLines: {
@@ -409,6 +423,27 @@ export interface AccountProps {
   mainAccountSfId?: string;
 }
 
+export interface SalesforceCampaign {
+  Id?: string;
+  Name?: string;
+  Antenne__c: string;
+  StartDate: Date;
+  Heure_de_d_but__c: string;
+  Adresse_de_l_v_nement__c: string;
+  Code_postal__c: string;
+  attributes: {
+    type: string;
+    url: string;
+  };
+}
+
+export interface SalesforceCampaignMember {
+  Id?: string; // never used, only for TS purpose
+  LeadId: string;
+  CampaignId: string;
+  Status: string; // Inscrit
+}
+
 export interface SalesforceAccount {
   Id?: string;
   Name: string;
@@ -478,31 +513,33 @@ export interface CompanySalesforceLead {
 export interface CandidateLeadProps {
   firstName: string;
   lastName: string;
-  helpWith: CandidateHelpWithValue[];
-  gender: CandidateGender;
+  helpWith?: CandidateHelpWithValue[];
+  gender?: CandidateGender;
   birthDate?: Date;
   address?: string;
   postalCode?: string;
   city?: string;
   phone: string;
   email?: string;
-  registeredUnemploymentOffice: CandidateYesNoValue;
+  registeredUnemploymentOffice?: CandidateYesNoValue;
   administrativeSituation?: CandidateAdministrativeSituation;
-  workingRight: CandidateYesNoValue;
-  accommodation: CandidateAccommodation;
-  professionalSituation: CandidateProfessionalSituation;
+  workingRight?: CandidateYesNoNSPPValue;
+  accommodation?: CandidateAccommodation;
+  professionalSituation?: CandidateProfessionalSituation;
   resources?: CandidateResource;
-  domiciliation: CandidateYesNoValue;
-  socialSecurity: CandidateYesNoValue;
+  domiciliation?: CandidateYesNoValue;
+  socialSecurity?: CandidateYesNoValue;
   handicapped?: CandidateYesNoValue;
-  bankAccount: CandidateYesNoValue;
+  bankAccount?: CandidateYesNoValue;
   businessLines?: BusinessLineValue[];
-  description: string;
+  description?: string;
   diagnostic?: string;
   zone: CompanyZone;
   workerSfIdAsProspect?: string;
   workerSfIdAsContact?: string;
   associationSfId?: string;
+  heardAbout?: string;
+  location?: string;
 }
 
 export interface CoachLeadProps {
@@ -527,6 +564,18 @@ export interface WorkerLeadProps {
   zone: CompanyZone;
 }
 
+export interface CandidateInscriptionLeadProps {
+  birthdate: Date;
+  email: string;
+  firstName: string;
+  heardAbout: HeardAboutValue;
+  infoCo: string;
+  lastName: string;
+  location: string;
+  phone: string;
+  workingRight: CandidateYesNoNSPPValue;
+}
+
 export interface CandidateAndWorkerLeadProps {
   workerFirstName: string;
   workerLastName: string;
@@ -546,7 +595,7 @@ export interface CandidateAndWorkerLeadProps {
   email?: string;
   registeredUnemploymentOffice: CandidateYesNoValue;
   administrativeSituation?: CandidateAdministrativeSituation;
-  workingRight: CandidateYesNoValue;
+  workingRight: CandidateYesNoNSPPValue;
   accommodation: CandidateAccommodation;
   professionalSituation: CandidateProfessionalSituation;
   resources?: CandidateResource;

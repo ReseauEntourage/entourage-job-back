@@ -1,4 +1,10 @@
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+} from '@nestjs/common';
 import { Public } from 'src/auth/guards';
 import {
   ContactCompanyFormDto,
@@ -15,6 +21,8 @@ import { AdminZone } from 'src/utils/types';
 import { ContactsService } from './contacts.service';
 import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
 import { ContactCandidateFormPipe } from './dto/contact-candidate-form.pipe';
+import { InscriptionCandidateFormDto } from './dto/inscription-candidate-form.dto';
+import { InscriptionCandidateFormPipe } from './dto/inscription-candidate-form.pipe';
 
 // TODO change to /contacts
 @Controller('contact')
@@ -91,6 +99,26 @@ export class ContactsController {
       visit,
       visitor,
       urlParams
+    );
+  }
+
+  @Public()
+  @Get('campaigns')
+  async getCampaigns() {
+    return this.contactsService.getCampaignsFromSF();
+  }
+
+  @Public()
+  @Post('candidateInscription')
+  async candidateInscription(
+    @Body(new InscriptionCandidateFormPipe())
+    inscriptionCandidateFormDto: InscriptionCandidateFormDto
+  ) {
+    if (!isValidPhone(inscriptionCandidateFormDto.phone)) {
+      throw new BadRequestException('invalid phone');
+    }
+    return this.contactsService.sendCandidateInscriptionToSalesforce(
+      inscriptionCandidateFormDto
     );
   }
 }
