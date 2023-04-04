@@ -37,6 +37,9 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  SalesforceCampaign,
+  CandidateInscriptionLeadProps,
+  SalesforceCampaignMember,
 } from './salesforce.types';
 
 import {
@@ -435,6 +438,19 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
+  async findCampaignMember(leadId: string, infoCoId: string) {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceCampaignMember>[] } =
+      await this.salesforce.query(
+        `SELECT Id
+        FROM ${ObjectNames.CAMPAIGN_MEMBER}
+        WHERE LeadId = '${leadId}'
+          AND CampaignId = '${infoCoId}'
+        Limit 1`
+      );
+    return records[0]?.Id;
+  }
+
   async findBinomeByCandidateSfId<T>(id: T) {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceBinome>[] } =
@@ -766,7 +782,7 @@ export class SalesforceService {
     )) as string;
   }
 
-  async findOrCreateLeadFromCandidateForm({
+  async findOrCreateLeadFromContactCandidateForm({
     workerFirstName,
     workerLastName,
     structure,
@@ -876,13 +892,58 @@ export class SalesforceService {
     }
   }
 
+  async findOrCreateLeadFromInscriptionCandidateForm({
+    birthdate,
+    email,
+    firstName,
+    heardAbout,
+    infoCo,
+    lastName,
+    location,
+    phone,
+    workingRight,
+  }: CandidateInscriptionLeadProps) {
+    const department = getDepartmentFromPostalCode(location);
+    const zone = getZoneFromDepartment(department);
+
+    const leadToCreate = {
+      firstName,
+      lastName,
+      birthDate: birthdate,
+      email,
+      phone,
+      workingRight,
+      heardAbout,
+      zone,
+    };
+    const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+    if (infoCo) {
+      await this.createCampaignMemberInfoCo(leadId, infoCo);
+    }
+    return leadId;
+  }
+
+  async createCampaignMemberInfoCo(leadId: string, infoCoId: string) {
+    const campaignMemberId = await this.findCampaignMember(leadId, infoCoId);
+    if (!campaignMemberId) {
+      return this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
+        LeadId: leadId,
+        CampaignId: infoCoId,
+        Status: 'Inscrit',
+      });
+    }
+    return campaignMemberId;
+  }
+
   async createCandidateLead(
     leadToCreate: LeadProp<typeof LeadRecordTypesIds.CANDIDATE>,
-    workerSfId: string
+    workerSfId?: string
   ) {
     try {
+      if (workerSfId)
+        leadToCreate = { ...leadToCreate, workerSfIdAsProspect: workerSfId };
       return (await this.findOrCreateLead(
-        { ...leadToCreate, workerSfIdAsProspect: workerSfId },
+        leadToCreate,
         LeadRecordTypesIds.CANDIDATE
       )) as string;
     } catch (err) {
@@ -890,8 +951,12 @@ export class SalesforceService {
         (err as SalesforceError).errorCode ===
         ErrorCodes.FIELD_INTEGRITY_EXCEPTION
       ) {
+        if (workerSfId) {
+          delete leadToCreate.workerSfIdAsProspect;
+          leadToCreate = { ...leadToCreate, workerSfIdAsContact: workerSfId };
+        }
         return (await this.findOrCreateLead(
-          { ...leadToCreate, workerSfIdAsContact: workerSfId },
+          leadToCreate,
           LeadRecordTypesIds.CANDIDATE
         )) as string;
       }
@@ -1174,10 +1239,43 @@ export class SalesforceService {
     return this.findOrCreateLeadFromCompanyForm(lead);
   }
 
-  async createOrUpdateCandidateSalesforceLead(
+  async createOrUpdateContactCandidateSalesforceLead(
     lead: CandidateAndWorkerLeadProps
   ) {
     this.setIsWorker(false);
-    return this.findOrCreateLeadFromCandidateForm(lead);
+    return this.findOrCreateLeadFromContactCandidateForm(lead);
+  }
+
+  async createOrUpdateInscriptionCandidateSalesforceLead(
+    lead: CandidateInscriptionLeadProps
+  ) {
+    this.setIsWorker(false);
+    return this.findOrCreateLeadFromInscriptionCandidateForm(lead);
+  }
+
+  async getCampaigns() {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: SalesforceCampaign[] } =
+      await this.salesforce.query(
+        `SELECT 
+        Id,
+        Code_postal__c,
+        Adresse_de_l_v_nement__c,
+        Antenne__c, 
+        StartDate, 
+        Heure_de_d_but__c
+      FROM ${ObjectNames.CAMPAIGN}
+      WHERE 
+        ParentId = '701Aa000005lMv3IAE' 
+        AND StartDate > TODAY`
+      );
+    return records.map((record) => {
+      return {
+        id: record.Id,
+        antenne: record.Antenne__c,
+        address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
+        time: `${record.StartDate} ${record.Heure_de_d_but__c}`,
+      };
+    });
   }
 }

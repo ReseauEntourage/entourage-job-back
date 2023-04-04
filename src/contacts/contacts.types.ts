@@ -144,3 +144,12 @@ export const CandidateYesNo = {
 
 export type CandidateYesNoValue =
   typeof CandidateYesNo[keyof typeof CandidateYesNo];
+
+export const CandidateYesNoNSPP = {
+  YES: 'yes',
+  NO: 'no',
+  NSPP: 'dont_know',
+} as const;
+
+export type CandidateYesNoNSPPValue =
+  typeof CandidateYesNoNSPP[keyof typeof CandidateYesNoNSPP];
