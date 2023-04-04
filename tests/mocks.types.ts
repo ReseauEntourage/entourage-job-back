@@ -73,7 +73,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findOrCreateLead: jest.fn(),
   findOrCreateCompanyAndContactFromOffer: jest.fn(),
   findOrCreateLeadFromCompanyForm: jest.fn(),
-  findOrCreateLeadFromCandidateForm: jest.fn(),
+  findOrCreateLeadFromContactCandidateForm: jest.fn(),
   getProcessToCreate: jest.fn(),
   createOrUpdateSalesforceProcess: jest.fn(),
   createOrUpdateSalesforceOffer: jest.fn(),
@@ -83,9 +83,14 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findEventFromOpportunityUserEventId: jest.fn(),
   createOrUpdateSalesforceOpportunity: jest.fn(),
   createOrUpdateCompanySalesforceLead: jest.fn(),
-  createOrUpdateCandidateSalesforceLead: jest.fn(),
+  createOrUpdateContactCandidateSalesforceLead: jest.fn(),
   setIsWorker: jest.fn(),
   updateLead: jest.fn(),
+  findCampaignMember: jest.fn(),
+  findOrCreateLeadFromInscriptionCandidateForm: jest.fn(),
+  createCampaignMemberInfoCo: jest.fn(),
+  createOrUpdateInscriptionCandidateSalesforceLead: jest.fn(),
+  getCampaigns: jest.fn(),
 } as const;
 
 export const PleziMocks: ProviderMock<PleziService> = {
