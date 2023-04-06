@@ -33,6 +33,7 @@ import {
   AdminRole,
   CandidateUserRoles,
   CoachUserRoles,
+  ExternalUserRoles,
   Gender,
   Genders,
   UserRole,
@@ -259,6 +260,22 @@ export class User extends HistorizedModel {
           },
           hooks: true,
         });
+      }
+
+      if (
+        areRolesIncluded(ExternalUserRoles, [previousUserValues.role]) &&
+        !areRolesIncluded(ExternalUserRoles, [userToUpdate.role])
+      ) {
+        await User.update(
+          {
+            OrganizationId: null,
+          },
+          {
+            where: {
+              id: userToUpdate.id,
+            },
+          }
+        );
       }
     }
   }
