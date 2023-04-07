@@ -1266,7 +1266,7 @@ export class SalesforceService {
         Heure_de_d_but__c
       FROM ${ObjectNames.CAMPAIGN}
       WHERE 
-        ParentId = '701Aa000005lMv3IAE' 
+        ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}' 
         AND StartDate > TODAY`
       );
     return records.map((record) => {
