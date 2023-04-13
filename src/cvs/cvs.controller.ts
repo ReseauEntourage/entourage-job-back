@@ -31,11 +31,11 @@ import { User } from 'src/users/models';
 import {
   CoachUserRoles,
   CVStatuses,
+  Permissions,
   UserRole,
   UserRoles,
-  Permissions,
 } from 'src/users/users.types';
-import { areRolesIncluded } from 'src/users/users.utils';
+import { isRoleIncluded } from 'src/users/users.utils';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import { CVsService } from './cvs.service';
 import { CVFilterKey } from './cvs.types';
@@ -103,7 +103,7 @@ export class CVsController {
     const { status } = createdCV;
 
     if (
-      areRolesIncluded(CoachUserRoles, [role]) &&
+      isRoleIncluded(CoachUserRoles, role) &&
       status === CVStatuses.PENDING.value
     ) {
       await this.cvsService.sendMailsAfterSubmitting(

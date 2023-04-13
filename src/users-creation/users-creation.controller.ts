@@ -15,12 +15,12 @@ import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
   ExternalUserRoles,
-  UserRoles,
   Permissions,
+  UserRoles,
 } from 'src/users/users.types';
 import {
-  areRolesIncluded,
   getCandidateAndCoachIdDependingOnRoles,
+  isRoleIncluded,
 } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { UsersCreationService } from './users-creation.service';
@@ -42,9 +42,9 @@ export class UsersCreationController {
   async createUser(@Body(new CreateUserPipe()) createUserDto: CreateUserDto) {
     if (
       (createUserDto.OrganizationId &&
-        !areRolesIncluded(ExternalUserRoles, [createUserDto.role])) ||
+        !isRoleIncluded(ExternalUserRoles, createUserDto.role)) ||
       (!createUserDto.OrganizationId &&
-        areRolesIncluded(ExternalUserRoles, [createUserDto.role]))
+        isRoleIncluded(ExternalUserRoles, createUserDto.role))
     ) {
       throw new BadRequestException();
     }

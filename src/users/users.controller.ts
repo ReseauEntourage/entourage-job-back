@@ -31,9 +31,9 @@ import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
   LinkedUserGuard,
-  UserPermissions,
   Self,
   SelfGuard,
+  UserPermissions,
   UserPermissionsGuard,
 } from './guards';
 import { User, UserCandidat } from './models';
@@ -44,13 +44,13 @@ import {
   CandidateUserRoles,
   CoachUserRoles,
   MemberFilterKey,
+  Permissions,
   UserRole,
   UserRoles,
-  Permissions,
 } from './users.types';
 import {
-  areRolesIncluded,
   getCandidateAndCoachIdDependingOnRoles,
+  isRoleIncluded,
 } from './users.utils';
 
 // TODO change to /users
@@ -126,10 +126,10 @@ export class UsersController {
     @UserPayload('role') role: UserRole
   ) {
     const ids = {
-      candidateId: areRolesIncluded(CandidateUserRoles, [role])
+      candidateId: isRoleIncluded(CandidateUserRoles, role)
         ? userId
         : undefined,
-      coachId: areRolesIncluded(CoachUserRoles, [role]) ? userId : undefined,
+      coachId: isRoleIncluded(CoachUserRoles, role) ? userId : undefined,
     };
 
     if (role === UserRoles.COACH_EXTERNAL) {
@@ -311,7 +311,7 @@ export class UsersController {
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
-  @Put('linkedUser/:userId')
+  @Put('linkUser/:userId')
   async linkUser(
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body('userToLinkId') userToLinkId: string | string[]

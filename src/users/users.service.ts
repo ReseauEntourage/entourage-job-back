@@ -33,11 +33,11 @@ import {
 } from './users.types';
 
 import {
-  areRolesIncluded,
   filterMembersByAssociatedUser,
   filterMembersByBusinessLines,
   filterMembersByCVStatus,
   getMemberOptions,
+  isRoleIncluded,
   userSearchQuery,
 } from './users.utils';
 
@@ -129,8 +129,8 @@ export class UsersService {
 
     // filtre par role
     if (
-      areRolesIncluded(CandidateUserRoles, [role as UserRole]) ||
-      areRolesIncluded(CoachUserRoles, [role as UserRole])
+      isRoleIncluded(CandidateUserRoles, role as UserRole) ||
+      isRoleIncluded(CoachUserRoles, role as UserRole)
     ) {
       options.where = {
         ...options.where,
@@ -141,7 +141,7 @@ export class UsersService {
     const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
       (role === 'All' ||
-        areRolesIncluded(CandidateUserRoles, [role as UserRole])) &&
+        isRoleIncluded(CandidateUserRoles, role as UserRole)) &&
       (filterOptions.hidden || filterOptions.employed)
     ) {
       userCandidatOptions.where = {};
@@ -240,7 +240,7 @@ export class UsersService {
 
     if (
       role === 'All' ||
-      areRolesIncluded(CandidateUserRoles, [role as UserRole])
+      isRoleIncluded(CandidateUserRoles, role as UserRole)
     ) {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,

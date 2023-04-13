@@ -2978,7 +2978,7 @@ describe('Users', () => {
           expect(response.body.lastModifiedBy).toBe(loggedInCoach.user.id);
         });
       });
-      describe('/linkedUser/:userId - Link a user', () => {
+      describe('/linkUser/:userId - Link a user', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -3018,7 +3018,7 @@ describe('Users', () => {
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
               });
@@ -3027,7 +3027,7 @@ describe('Users', () => {
         it('Should return 403, if user is not admin', async () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
@@ -3038,7 +3038,7 @@ describe('Users', () => {
         it('Should return 404 if admin updates candidate with unexisting coach', async () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: uuid(),
@@ -3048,7 +3048,7 @@ describe('Users', () => {
         it('Should return 404 if admin updates coach with unexisting candidate', async () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: uuid(),
@@ -3075,7 +3075,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
@@ -3112,7 +3112,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCandidate.user.id,
@@ -3140,7 +3140,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [loggedInCoach.user.id, otherCoach.id],
@@ -3155,7 +3155,7 @@ describe('Users', () => {
           );
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [loggedInCandidate.user.id, otherCandidate.id],
@@ -3182,7 +3182,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .put(`${route}/linkUser/${externalCandidate.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: externalCoach.id,
@@ -3235,7 +3235,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .put(`${route}/linkUser/${externalCoach.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [
@@ -3277,7 +3277,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .put(`${route}/linkUser/${externalCandidate.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [externalCoach.id, otherExternalCoach.id],
@@ -3294,7 +3294,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherCandidate.id,
@@ -3312,7 +3312,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${otherCoach.id}`)
+              .put(`${route}/linkUser/${otherCoach.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherCoach.id,
@@ -3332,7 +3332,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .put(`${route}/linkUser/${externalCandidate.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCandidate.id,
@@ -3351,7 +3351,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .put(`${route}/linkUser/${externalCoach.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCoach.id,
@@ -3367,7 +3367,7 @@ describe('Users', () => {
           );
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCandidate.user.id}`)
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: externalCoach.id,
@@ -3383,7 +3383,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${loggedInCoach.user.id}`)
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: externalCandidate.id,
@@ -3394,7 +3394,7 @@ describe('Users', () => {
         it('Should return 400 if admin updates external candidate with normal coach', async () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .put(`${route}/linkUser/${externalCandidate.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
@@ -3404,7 +3404,7 @@ describe('Users', () => {
         it('Should return 400 if admin updates external coach with normal candidate', async () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .put(`${route}/linkUser/${externalCoach.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCandidate.user.id,
@@ -3429,7 +3429,7 @@ describe('Users', () => {
           );
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCandidate.id}`)
+              .put(`${route}/linkUser/${externalCandidate.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCoach.id,
@@ -3454,7 +3454,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['linkUser']> =
             await request(app.getHttpServer())
-              .put(`${route}/linkedUser/${externalCoach.id}`)
+              .put(`${route}/linkUser/${externalCoach.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCandidate.id,

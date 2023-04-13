@@ -5,7 +5,7 @@ import moment from 'moment';
 import { Op } from 'sequelize';
 import { CVsService } from '../cvs/cvs.service';
 import { PleziService } from '../external-services/plezi/plezi.service';
-import { areRolesIncluded, getCoachFromCandidate } from '../users/users.utils';
+import { getCoachFromCandidate, isRoleIncluded } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
@@ -28,8 +28,8 @@ import { CandidateUserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import {
-  CreateExternalOpportunityRestrictedDto,
   CreateExternalOpportunityDto,
+  CreateExternalOpportunityRestrictedDto,
   CreateOpportunityDto,
   UpdateExternalOpportunityDto,
   UpdateOpportunityDto,
@@ -361,7 +361,7 @@ export class OpportunitiesService {
 
   async findOneCandidate(candidateId: string) {
     const user = await this.usersService.findOne(candidateId);
-    if (!user || !areRolesIncluded(CandidateUserRoles, [user.role])) {
+    if (!user || !isRoleIncluded(CandidateUserRoles, user.role)) {
       return null;
     }
     return user;

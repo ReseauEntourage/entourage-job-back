@@ -19,10 +19,13 @@ import {
   UserRoles,
 } from './users.types';
 
-export function areRolesIncluded(
+export function isRoleIncluded(
   superset: Array<UserRole>,
-  subset: Array<UserRole>
+  subset: UserRole | Array<UserRole>
 ) {
+  if (!Array.isArray(subset)) {
+    return _.difference([subset], superset).length === 0;
+  }
   return _.difference(subset, superset).length === 0;
 }
 
@@ -71,7 +74,7 @@ export function getRelatedUser(member: User) {
 }
 
 export function getCoachFromCandidate(candidate: User) {
-  if (candidate && areRolesIncluded(CandidateUserRoles, [candidate.role])) {
+  if (candidate && isRoleIncluded(CandidateUserRoles, candidate.role)) {
     if (candidate.candidat && candidate.candidat.coach) {
       return candidate.candidat.coach;
     }
@@ -81,7 +84,7 @@ export function getCoachFromCandidate(candidate: User) {
 }
 
 export function getCandidateFromCoach(coach: User, candidateId: string) {
-  if (coach && areRolesIncluded(CoachUserRoles, [coach.role])) {
+  if (coach && isRoleIncluded(CoachUserRoles, coach.role)) {
     if (coach.coaches && coach.coaches.length > 0) {
       return coach.coaches.find(({ candidat }) => {
         return candidat.id === candidateId;
@@ -94,12 +97,12 @@ export function getCandidateFromCoach(coach: User, candidateId: string) {
 
 export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
   if (member) {
-    if (areRolesIncluded(CandidateUserRoles, [member.role])) {
+    if (isRoleIncluded(CandidateUserRoles, member.role)) {
       return member.id;
     }
 
     if (
-      areRolesIncluded(CoachUserRoles, [member.role]) &&
+      isRoleIncluded(CoachUserRoles, member.role) &&
       member.coaches &&
       member.coaches.length > 0
     ) {
@@ -271,7 +274,7 @@ export function getCandidateAndCoachIdDependingOnRoles(
   userToLink: User
 ) {
   if (
-    areRolesIncluded(NormalUserRoles, [user.role, userToLink.role]) &&
+    isRoleIncluded(NormalUserRoles, [user.role, userToLink.role]) &&
     user.role !== userToLink.role
   ) {
     return {
@@ -279,7 +282,7 @@ export function getCandidateAndCoachIdDependingOnRoles(
       coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
     };
   } else if (
-    areRolesIncluded(ExternalUserRoles, [user.role, userToLink.role]) &&
+    isRoleIncluded(ExternalUserRoles, [user.role, userToLink.role]) &&
     user.role !== userToLink.role &&
     user.OrganizationId === userToLink.OrganizationId
   ) {
