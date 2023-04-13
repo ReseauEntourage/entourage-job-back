@@ -85,7 +85,7 @@ export class UserCandidatsService {
     return updatedUserCandidat.toJSON();
   }
 
-  async updateAllLinkedUserByCandidateId(
+  async updateAllLinkedCoachesByCandidatesIds(
     candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
   ): Promise<UserCandidat[]> {
     const t = await this.userCandidatModel.sequelize.transaction();
@@ -95,7 +95,6 @@ export class UserCandidatsService {
         candidatesAndCoachesIds.map(async ({ candidateId, coachId }) => {
           await this.userCandidatModel.update(
             {
-              candidatId: candidateId,
               coachId: coachId,
             },
             {

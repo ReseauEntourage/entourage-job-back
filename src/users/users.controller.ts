@@ -366,7 +366,7 @@ export class UsersController {
     );
 
     const updatedUserCandidates =
-      await this.userCandidatsService.updateAllLinkedUserByCandidateId(
+      await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
         userCandidatesToUpdate
       );
 

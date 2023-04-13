@@ -55,7 +55,7 @@ export class UsersCreationService {
   async updateAllUserCandidatLinkedUserByCandidateId(
     candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
   ): Promise<UserCandidat[]> {
-    return this.userCandidatsService.updateAllLinkedUserByCandidateId(
+    return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
       candidatesAndCoachesIds
     );
   }
