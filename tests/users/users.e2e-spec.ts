@@ -1811,23 +1811,20 @@ describe('Users', () => {
         });
 
         it('Should return 200 and part of candidates if user is logged in as admin and filters by candidates and searches by first name', async () => {
-          const privateCandidateInfo = [
-            {
-              id: loggedInCandidate.user.id,
-              OrganizationId: loggedInCandidate.user.OrganizationId,
-              firstName: loggedInCandidate.user.firstName,
-              lastName: loggedInCandidate.user.lastName,
-              role: loggedInCandidate.user.role,
-              adminRole: loggedInCandidate.user.adminRole,
-              address: loggedInCandidate.user.address,
-              email: loggedInCandidate.user.email,
-              gender: loggedInCandidate.user.gender,
-              lastConnection:
-                loggedInCandidate.user.lastConnection?.toISOString(),
-              phone: loggedInCandidate.user.phone,
-              zone: loggedInCandidate.user.zone,
-            },
-          ];
+          const privateCandidateInfo: Partial<User> = {
+            id: loggedInCandidate.user.id,
+            OrganizationId: loggedInCandidate.user.OrganizationId,
+            firstName: loggedInCandidate.user.firstName,
+            lastName: loggedInCandidate.user.lastName,
+            role: loggedInCandidate.user.role,
+            adminRole: loggedInCandidate.user.adminRole,
+            address: loggedInCandidate.user.address,
+            email: loggedInCandidate.user.email,
+            gender: loggedInCandidate.user.gender,
+            phone: loggedInCandidate.user.phone,
+            zone: loggedInCandidate.user.zone,
+            organization: null,
+          };
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
@@ -1837,7 +1834,13 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
-          expect(response.body).toStrictEqual(privateCandidateInfo);
+          expect(response.body).toStrictEqual([
+            {
+              ...privateCandidateInfo,
+              lastConnection:
+                loggedInCandidate.user.lastConnection?.toISOString(),
+            },
+          ]);
         });
 
         it('Should return 200 and normal candidates if user is logged in as admin and filters by normal candidates', async () => {

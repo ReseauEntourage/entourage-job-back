@@ -3,11 +3,12 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
-import { Department } from '../common/locations/locations.types';
 import { getPublishedCVQuery } from '../cvs/cvs.utils';
 import { BusinessLine } from 'src/common/businessLines/models';
+import { Department } from 'src/common/locations/locations.types';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
+import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
@@ -22,8 +23,8 @@ import {
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
+  AllUserRoles,
   CandidateUserRoles,
-  CoachUserRoles,
   CVStatuses,
   MemberConstantType,
   MemberFilterKey,
@@ -82,7 +83,7 @@ export class UsersService {
       offset: number;
       search: string;
       order: Order;
-      role: UserRole | 'All';
+      role: UserRole;
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, role, search, order, ...restParams } = params;
@@ -104,7 +105,6 @@ export class UsersService {
         role: { [Op.not]: UserRoles.ADMIN },
       },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
     };
 
     const hasFilterOptions = Object.keys(filtersObj).length > 0;
@@ -117,7 +117,7 @@ export class UsersService {
     if (search) {
       options.where = {
         ...options.where,
-        [Op.or]: userSearchQuery(search),
+        [Op.or]: userSearchQuery(search, true),
       };
     }
     if (filterOptions.zone) {
@@ -128,10 +128,7 @@ export class UsersService {
     }
 
     // filtre par role
-    if (
-      isRoleIncluded(CandidateUserRoles, role as UserRole) ||
-      isRoleIncluded(CoachUserRoles, role as UserRole)
-    ) {
+    if (isRoleIncluded(AllUserRoles, role as UserRole)) {
       options.where = {
         ...options.where,
         role,
@@ -140,8 +137,7 @@ export class UsersService {
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
-      (role === 'All' ||
-        isRoleIncluded(CandidateUserRoles, role as UserRole)) &&
+      isRoleIncluded(CandidateUserRoles, role as UserRole) &&
       (filterOptions.hidden || filterOptions.employed)
     ) {
       userCandidatOptions.where = {};
@@ -194,6 +190,13 @@ export class UsersService {
             model: User,
             as: 'coach',
             attributes: [...UserAttributes],
+            include: [
+              {
+                model: Organization,
+                as: 'organization',
+                attributes: ['name', 'address', 'zone', 'id'],
+              },
+            ],
           },
         ],
         order: [['cvs.version', 'DESC']],
@@ -207,8 +210,20 @@ export class UsersService {
             model: User,
             as: 'candidat',
             attributes: [...UserAttributes],
+            include: [
+              {
+                model: Organization,
+                as: 'organization',
+                attributes: ['name', 'address', 'zone', 'id'],
+              },
+            ],
           },
         ],
+      },
+      {
+        model: Organization,
+        as: 'organization',
+        attributes: ['name', 'address', 'zone', 'id'],
       },
     ];
 
@@ -238,10 +253,7 @@ export class UsersService {
 
     let finalFilteredMembers = membersWithLastCV;
 
-    if (
-      role === 'All' ||
-      isRoleIncluded(CandidateUserRoles, role as UserRole)
-    ) {
+    if (isRoleIncluded(CandidateUserRoles, role as UserRole)) {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,
         cvStatus
@@ -274,8 +286,15 @@ export class UsersService {
     const options: FindOptions<User> = {
       attributes: [...UserAttributes],
       where: {
-        [Op.or]: userSearchQuery(search),
+        [Op.or]: userSearchQuery(search, true),
       },
+      include: [
+        {
+          model: Organization,
+          as: 'organization',
+          attributes: ['name', 'address', 'zone', 'id'],
+        },
+      ],
     };
     if (role) {
       options.where = {
@@ -359,30 +378,28 @@ export class UsersService {
         role: UserRoles.CANDIDATE,
       } as WhereOptions<User>,
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
+      // recuperer la derniere version de cv
+      include: [
+        {
+          model: UserCandidat,
+          as: 'candidat',
+          attributes: ['coachId', ...UserCandidatAttributes],
+          include: [
+            {
+              model: CV,
+              as: 'cvs',
+              attributes: ['version', 'status', 'urlImg'],
+            },
+            {
+              model: User,
+              as: 'coach',
+              attributes: [...UserAttributes],
+            },
+          ],
+          order: [['cvs.version', 'DESC']],
+        },
+      ],
     };
-
-    // recuperer la derniere version de cv
-    options.include = [
-      {
-        model: UserCandidat,
-        as: 'candidat',
-        attributes: ['coachId', ...UserCandidatAttributes],
-        include: [
-          {
-            model: CV,
-            as: 'cvs',
-            attributes: ['version', 'status', 'urlImg'],
-          },
-          {
-            model: User,
-            as: 'coach',
-            attributes: [...UserAttributes],
-          },
-        ],
-        order: [['cvs.version', 'DESC']],
-      },
-    ];
 
     const members = await this.userModel.findAll(options);
 
