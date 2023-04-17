@@ -1,22 +1,23 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
-  UseGuards,
-  BadRequestException,
-  Put,
-  ParseUUIDPipe,
   NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { Roles, RolesGuard } from 'src/users/guards';
-import { UserRoles } from 'src/users/users.types';
+import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
+import { Permissions } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
 import {
   CreateOrganizationDto,
-  UpdateOrganizationDto,
   CreateOrganizationPipe,
+  UpdateOrganizationDto,
   UpdateOrganizationPipe,
 } from './dto';
 import { OrganizationReferentsService } from './organization-referents.service';
@@ -29,8 +30,19 @@ export class OrganizationsController {
     private readonly organizationReferentsService: OrganizationReferentsService
   ) {}
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get()
+  async findAll(@Query('search') search: string) {
+    const organizations = await this.organizationsService.findAll(search);
+
+    return organizations.map((organization) => {
+      return organization.toJSON();
+    });
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     const organization = await this.organizationsService.findOne(id);
@@ -40,8 +52,8 @@ export class OrganizationsController {
     return organization;
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Post()
   async create(
     @Body(new CreateOrganizationPipe())
@@ -77,8 +89,9 @@ export class OrganizationsController {
 
     return updatedOrganization.toJSON();
   }
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Put(':id')
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,

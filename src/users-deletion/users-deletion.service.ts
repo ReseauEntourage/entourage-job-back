@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { UserCandidat } from '../users/models';
 import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { UpdateOpportunityUserDto } from 'src/opportunities/dto/update-opportunity-user.dto';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { RevisionChangesService } from 'src/revisions/revision-changes.service';
 import { RevisionsService } from 'src/revisions/revisions.service';
-import { UpdateUserCandidatDto, UpdateUserDto } from 'src/users/dto';
+import { UpdateUserDto } from 'src/users/dto';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { generateImageNamesToDelete } from 'src/users/users.utils';
@@ -46,7 +47,7 @@ export class UsersDeletionService {
 
   async updateUserCandidatByCandidatId(
     candidateId: string,
-    updateUserCandidatDto: UpdateUserCandidatDto
+    updateUserCandidatDto: Partial<UserCandidat>
   ) {
     return this.userCandidatsService.updateByCandidateId(
       candidateId,

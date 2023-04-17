@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { MailsService } from 'src/mails/mails.service';
-import { CreateUserDto, UpdateUserCandidatDto } from 'src/users/dto';
-import { User } from 'src/users/models';
+import { CreateUserDto } from 'src/users/dto';
+import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 
@@ -17,6 +17,14 @@ export class UsersCreationService {
 
   async createUser(createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
+  }
+
+  async findOneUser(id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  async findOneUserCandidatByCandidateId(candidateId: string) {
+    return this.userCandidatsService.findOneByCandidateId(candidateId);
   }
 
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
@@ -36,11 +44,19 @@ export class UsersCreationService {
 
   async updateUserCandidatByCandidateId(
     candidateId: string,
-    updateUserCandidatDto: UpdateUserCandidatDto
+    updateUserCandidatDto: Partial<UserCandidat>
   ) {
     return this.userCandidatsService.updateByCandidateId(
       candidateId,
       updateUserCandidatDto
+    );
+  }
+
+  async updateAllUserCandidatLinkedUserByCandidateId(
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
+  ): Promise<UserCandidat[]> {
+    return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
+      candidatesAndCoachesIds
     );
   }
 }
