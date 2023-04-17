@@ -3,7 +3,6 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { assertCondition } from '../../src/utils/misc/asserts';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
@@ -19,6 +18,7 @@ import { UsersDeletionController } from 'src/users-deletion/users-deletion.contr
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { CVStatuses, UserRoles } from 'src/users/users.types';
+import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
 import { BusinessLinesHelper } from 'tests/common/businessLines/businessLines.helper';
