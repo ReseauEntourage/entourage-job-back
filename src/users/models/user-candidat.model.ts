@@ -17,6 +17,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 
+import { UserRoles } from '../users.types';
 import { CV } from 'src/cvs/models';
 import { User } from './user.model';
 
@@ -107,12 +108,16 @@ export class UserCandidat extends Model {
   @BeforeUpdate
   static async clearCoachBindings(userCandidatToUpdate: UserCandidat) {
     const previousUserCandidatValues = userCandidatToUpdate.previous();
+    const coach = await User.findByPk(userCandidatToUpdate.coachId, {
+      attributes: ['role'],
+    });
     if (
       userCandidatToUpdate &&
       userCandidatToUpdate.coachId &&
       previousUserCandidatValues &&
       previousUserCandidatValues.coachId !== undefined &&
-      previousUserCandidatValues.coachId !== userCandidatToUpdate.coachId
+      previousUserCandidatValues.coachId !== userCandidatToUpdate.coachId &&
+      coach.role !== UserRoles.COACH_EXTERNAL
     ) {
       await UserCandidat.update(
         { coachId: null },

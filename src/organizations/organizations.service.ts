@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UpdateOrganizationDto } from './dto';
 import { Organization } from './models';
 import { OrganizationReferent } from './models/organization-referent.model';
@@ -19,6 +20,16 @@ export class OrganizationsService {
 
   async findOne(id: string) {
     return this.organizationModel.findByPk(id, {
+      include: {
+        model: OrganizationReferent,
+        as: 'organizationReferent',
+      },
+    });
+  }
+
+  async findAll(search = '') {
+    return this.organizationModel.findAll({
+      where: searchInColumnWhereOption('Organization.name', search),
       include: {
         model: OrganizationReferent,
         as: 'organizationReferent',

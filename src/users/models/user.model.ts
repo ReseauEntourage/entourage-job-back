@@ -1,17 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail as IsEmailClassValidator, IsString } from 'class-validator';
+import {
+  IsEmail as IsEmailClassValidator,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   AfterCreate,
   AfterDestroy,
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
+  BelongsTo,
   BelongsToMany,
   Column,
   CreatedAt,
   DataType,
   Default,
   DeletedAt,
+  ForeignKey,
+  HasMany,
   HasOne,
   IsEmail,
   IsUUID,
@@ -23,13 +31,21 @@ import {
 } from 'sequelize-typescript';
 import {
   AdminRole,
+  CandidateUserRoles,
+  CoachUserRoles,
+  ExternalUserRoles,
   Gender,
   Genders,
   UserRole,
   UserRoles,
 } from '../users.types';
-import { capitalizeNameAndTrim, generateUrl } from '../users.utils';
+import {
+  capitalizeNameAndTrim,
+  generateUrl,
+  isRoleIncluded,
+} from '../users.utils';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import { Organization } from 'src/organizations/models';
 import { Share } from 'src/shares/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
@@ -43,12 +59,23 @@ export class User extends HistorizedModel {
   id: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
+  @IsUUID(4)
+  @ForeignKey(() => Organization)
+  @AllowNull(true)
+  @Column
+  OrganizationId: string;
+
+  @ApiProperty()
+  @IsString()
   @AllowNull(false)
   @Length({ min: 1, max: 40 })
   @Column
   firstName: string;
 
   @ApiProperty()
+  @IsString()
   @Length({ min: 1, max: 40 })
   @AllowNull(false)
   @Column
@@ -63,12 +90,15 @@ export class User extends HistorizedModel {
   email: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(false)
   @Default(UserRoles.CANDIDATE)
   @Column
   role: UserRole;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   adminRole: AdminRole;
@@ -84,6 +114,7 @@ export class User extends HistorizedModel {
   salt: string;
 
   @ApiProperty()
+  @IsNumber()
   @AllowNull(false)
   @Default(Genders.MALE)
   @Column
@@ -98,6 +129,7 @@ export class User extends HistorizedModel {
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   @AllowNull(true)
   @Column
   address: string;
@@ -118,6 +150,7 @@ export class User extends HistorizedModel {
   saltReset: string;
 
   @ApiProperty()
+  @IsString()
   @AllowNull(true)
   @Column
   zone: AdminZone;
@@ -147,8 +180,11 @@ export class User extends HistorizedModel {
   candidat?: UserCandidat;
 
   // si coach regarder coach
-  @HasOne(() => UserCandidat, 'coachId')
-  coach?: UserCandidat;
+  @HasMany(() => UserCandidat, 'coachId')
+  coaches: UserCandidat[];
+
+  @BelongsTo(() => Organization, 'OrganizationId')
+  organization?: Organization;
 
   @BeforeCreate
   @BeforeUpdate
@@ -162,7 +198,7 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (createdUser.role === UserRoles.CANDIDATE) {
+    if (isRoleIncluded(CandidateUserRoles, createdUser.role)) {
       await UserCandidat.create(
         {
           candidatId: createdUser.id,
@@ -186,8 +222,8 @@ export class User extends HistorizedModel {
       previousUserValues.role !== userToUpdate.role
     ) {
       if (
-        previousUserValues.role === UserRoles.CANDIDATE &&
-        userToUpdate.role !== UserRoles.CANDIDATE
+        isRoleIncluded(CandidateUserRoles, previousUserValues.role) &&
+        !isRoleIncluded(CandidateUserRoles, userToUpdate.role)
       ) {
         await UserCandidat.destroy({
           where: {
@@ -195,10 +231,10 @@ export class User extends HistorizedModel {
           },
         });
       } else if (
-        previousUserValues.role !== UserRoles.CANDIDATE &&
-        userToUpdate.role === UserRoles.CANDIDATE
+        !isRoleIncluded(CandidateUserRoles, previousUserValues.role) &&
+        isRoleIncluded(CandidateUserRoles, userToUpdate.role)
       ) {
-        if (previousUserValues.role === UserRoles.COACH) {
+        if (isRoleIncluded(CoachUserRoles, previousUserValues.role)) {
           await UserCandidat.update(
             {
               coachId: null,
@@ -225,6 +261,22 @@ export class User extends HistorizedModel {
           hooks: true,
         });
       }
+
+      if (
+        isRoleIncluded(ExternalUserRoles, previousUserValues.role) &&
+        !isRoleIncluded(ExternalUserRoles, userToUpdate.role)
+      ) {
+        await User.update(
+          {
+            OrganizationId: null,
+          },
+          {
+            where: {
+              id: userToUpdate.id,
+            },
+          }
+        );
+      }
     }
   }
 
@@ -233,7 +285,7 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
-      userToUpdate.role === UserRoles.CANDIDATE &&
+      isRoleIncluded(CandidateUserRoles, userToUpdate.role) &&
       previousUserValues &&
       previousUserValues.firstName != undefined &&
       previousUserValues.firstName !== userToUpdate.firstName
@@ -259,8 +311,9 @@ export class User extends HistorizedModel {
       },
       {
         where: {
-          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
-            destroyedUser.id,
+          [isRoleIncluded(CoachUserRoles, destroyedUser.role)
+            ? 'coachId'
+            : 'candidatId']: destroyedUser.id,
         },
       }
     );

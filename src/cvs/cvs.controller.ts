@@ -15,8 +15,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as _ from 'lodash';
-import { User } from '../users/models';
-import { AdminZone, FilterParams } from '../utils/types';
 import {
   PayloadUser,
   RequestWithAuthorizationHeader,
@@ -26,11 +24,19 @@ import { Public, UserPayload } from 'src/auth/guards';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
-  RolesGuard,
+  UserPermissions,
+  UserPermissionsGuard,
 } from 'src/users/guards';
-import { CVStatuses, UserRole, UserRoles } from 'src/users/users.types';
-import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
+import { User } from 'src/users/models';
+import {
+  CoachUserRoles,
+  CVStatuses,
+  Permissions,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
+import { isRoleIncluded } from 'src/users/users.utils';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { CVsService } from './cvs.service';
 import { CVFilterKey } from './cvs.types';
 import { getPDFPaths } from './cvs.utils';
@@ -96,8 +102,15 @@ export class CVsController {
 
     const { status } = createdCV;
 
-    if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
-      await this.cvsService.sendMailsAfterSubmitting(user as User, createdCV);
+    if (
+      isRoleIncluded(CoachUserRoles, role) &&
+      status === CVStatuses.PENDING.value
+    ) {
+      await this.cvsService.sendMailsAfterSubmitting(
+        user as User,
+        candidateId,
+        createdCV
+      );
     }
 
     if (!autoSave) {
@@ -210,15 +223,15 @@ export class CVsController {
     return { nbPublishedCVs };
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
-  @Get('checkUpdate')
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Get('checkUpdate/:candidateId')
   async checkCVHasBeenModified(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @UserPayload() user: PayloadUser
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
-    const candidateId = getCandidateIdFromCoachOrCandidate(user);
-
     const cv = await this.cvsService.findOneByCandidateId(candidateId);
 
     const { lastModifiedBy } = cv;
@@ -232,8 +245,8 @@ export class CVsController {
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @Put('read/:candidateId')
   async setCVHasBeenRead(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,

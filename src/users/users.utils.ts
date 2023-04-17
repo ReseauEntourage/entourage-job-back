@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+import _ from 'lodash';
 import { col, Op, where } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
@@ -5,12 +7,27 @@ import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
 import { User } from './models';
 import {
+  CandidateUserRoles,
+  CoachUserRoles,
+  CVStatuses,
+  ExternalUserRoles,
   MemberFilterKey,
   MemberFilters,
   MemberOptions,
+  NormalUserRoles,
+  UserRole,
   UserRoles,
-  CVStatuses,
 } from './users.types';
+
+export function isRoleIncluded(
+  superset: Array<UserRole>,
+  subset: UserRole | Array<UserRole>
+) {
+  if (!Array.isArray(subset)) {
+    return _.difference([subset], superset).length === 0;
+  }
+  return _.difference(subset, superset).length === 0;
+}
 
 export function generateUrl(user: User) {
   return `${user.firstName.toLowerCase()}-${user.id.substring(0, 8)}`;
@@ -46,39 +63,52 @@ export function getRelatedUser(member: User) {
     if (member.candidat && member.candidat.coach) {
       return member.candidat.coach;
     }
-    if (member.coach && member.coach.candidat) {
-      return member.coach.candidat;
+    if (member.coaches && member.coaches.length > 0) {
+      return member.coaches.map(({ candidat }) => {
+        return candidat;
+      });
     }
   }
 
   return null;
 }
 
-export function getUserCandidateFromCoachOrCandidate(member: User) {
-  if (member) {
-    if (member.role === UserRoles.CANDIDATE) {
-      return member.candidat;
-    }
-
-    if (member.role === UserRoles.COACH) {
-      return member.coach;
+export function getCoachFromCandidate(candidate: User) {
+  if (candidate && isRoleIncluded(CandidateUserRoles, candidate.role)) {
+    if (candidate.candidat && candidate.candidat.coach) {
+      return candidate.candidat.coach;
     }
   }
+
+  return null;
+}
+
+export function getCandidateFromCoach(coach: User, candidateId: string) {
+  if (coach && isRoleIncluded(CoachUserRoles, coach.role)) {
+    if (coach.coaches && coach.coaches.length > 0) {
+      return coach.coaches.find(({ candidat }) => {
+        return candidat.id === candidateId;
+      })?.candidat;
+    }
+  }
+
   return null;
 }
 
 export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
   if (member) {
-    if (member.role === UserRoles.CANDIDATE) {
+    if (isRoleIncluded(CandidateUserRoles, member.role)) {
       return member.id;
     }
 
     if (
-      member.role === UserRoles.COACH &&
-      member.coach &&
-      member.coach.candidat
+      isRoleIncluded(CoachUserRoles, member.role) &&
+      member.coaches &&
+      member.coaches.length > 0
     ) {
-      return member.coach.candidat.id;
+      return member.coaches.map(({ candidat }) => {
+        return candidat.id;
+      });
     }
   }
   return null;
@@ -212,12 +242,8 @@ export function filterMembersByAssociatedUser(
   if (members && associatedUsers && associatedUsers.length > 0) {
     filteredList = members.filter((member) => {
       return associatedUsers.some((currentFilter) => {
-        const candidate = getUserCandidateFromCoachOrCandidate(member);
         const relatedUser = getRelatedUser(member);
-        if (!candidate) {
-          return !currentFilter.value;
-        }
-        return !!relatedUser === currentFilter.value;
+        return !_.isEmpty(relatedUser) === currentFilter.value;
       });
     });
   }
@@ -241,4 +267,31 @@ export function generateImageNamesToDelete(prefix: string) {
   return imageNames.reduce((acc, curr) => {
     return [...acc, ...curr];
   }, []);
+}
+
+export function getCandidateAndCoachIdDependingOnRoles(
+  user: User,
+  userToLink: User
+) {
+  if (
+    isRoleIncluded(NormalUserRoles, [user.role, userToLink.role]) &&
+    user.role !== userToLink.role
+  ) {
+    return {
+      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
+      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
+    };
+  } else if (
+    isRoleIncluded(ExternalUserRoles, [user.role, userToLink.role]) &&
+    user.role !== userToLink.role &&
+    user.OrganizationId === userToLink.OrganizationId
+  ) {
+    return {
+      candidateId:
+        user.role === UserRoles.CANDIDATE_EXTERNAL ? user.id : userToLink.id,
+      coachId: user.role === UserRoles.COACH_EXTERNAL ? user.id : userToLink.id,
+    };
+  } else {
+    throw new BadRequestException();
+  }
 }

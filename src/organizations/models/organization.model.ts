@@ -6,6 +6,7 @@ import {
   CreatedAt,
   DataType,
   Default,
+  HasMany,
   HasOne,
   IsUUID,
   Model,
@@ -13,6 +14,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { User } from 'src/users/models';
 import { AdminZone } from 'src/utils/types';
 import { OrganizationReferent } from './organization-referent.model';
 
@@ -50,4 +52,7 @@ export class Organization extends Model {
 
   @UpdatedAt
   updatedAt: Date;
+
+  @HasMany(() => User, 'OrganizationId')
+  users: User[];
 }

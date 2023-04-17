@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { OpportunityUserEvent } from '../src/opportunities/models/opportunity-user-event.model';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { Contract } from 'src/common/contracts/models';
@@ -28,6 +27,9 @@ import {
   OpportunityUser,
   OpportunityUserStatusChange,
 } from 'src/opportunities/models';
+import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
+import { Organization } from 'src/organizations/models';
+import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import { Share } from 'src/shares/models';
 import { UserCandidat, User } from 'src/users/models';
@@ -90,6 +92,10 @@ export class DatabaseHelper {
     private cvSearchModel: typeof CVSearch,
     @InjectModel(Share)
     private shareModel: typeof Share,
+    @InjectModel(Organization)
+    private organizationModel: typeof Organization,
+    @InjectModel(OrganizationReferent)
+    private organizationReferentModel: typeof OrganizationReferent,
     @InjectModel(Revision)
     private revisionModel: typeof Revision,
     @InjectModel(RevisionChange)
@@ -130,6 +136,8 @@ export class DatabaseHelper {
       await this.opportunityUserModel.truncate(destroyOptions);
       await this.opportunityModel.truncate(destroyOptions);
       await this.cvModel.truncate(destroyOptions);
+      await this.organizationModel.truncate(destroyOptions);
+      await this.organizationReferentModel.truncate(destroyOptions);
       await this.userCandidatModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
     } catch (err) {

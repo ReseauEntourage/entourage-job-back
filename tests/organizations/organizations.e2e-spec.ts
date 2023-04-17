@@ -245,6 +245,92 @@ describe('Organizations', () => {
         });
       });
     });
+    describe('R - Read many Organizations', () => {
+      describe('/?search= - Read all organizations matching search query', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        let organizations: Organization[];
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          organizations = await databaseHelper.createEntities(
+            organizationFactory,
+            5,
+            { name: 'XXX' },
+            {},
+            true
+          );
+          await databaseHelper.createEntities(
+            organizationFactory,
+            5,
+            { name: 'YYY' },
+            {},
+            true
+          );
+        });
+
+        it('Should return 200 and matching organizations when admin gets an organization with search query', async () => {
+          const expectedOrganizationsId = [
+            ...organizations.map(({ id }) => id),
+          ];
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}?search=X`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(5);
+          expect(expectedOrganizationsId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and all organizations when admin gets an organization without search query', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(10);
+        });
+        it('Should return 200 and empty array when no matching organizations', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?search=Z`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(0);
+        });
+        it('Should return 401 when the user is not logged in', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer()).get(`${route}/?search=X`);
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403 when the user is a candidate', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?search=X`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403 when the user is a coach', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?search=X`)
+              .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+      });
+    });
     describe('U - Update 1 Organization', () => {
       describe('/:id - Update organization', () => {
         let loggedInAdmin: LoggedUser;

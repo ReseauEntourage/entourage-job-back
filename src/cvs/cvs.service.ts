@@ -38,7 +38,7 @@ import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { CVStatus, CVStatuses, Gender } from 'src/users/users.types';
-import { getRelatedUser } from 'src/users/users.utils';
+import { getCoachFromCandidate } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
   escapeQuery,
@@ -790,8 +790,12 @@ export class CVsService {
     return searchString;
   }
 
-  async sendMailsAfterSubmitting(coach: User, cv: Partial<CV>) {
-    await this.mailsService.sendCVSubmittedMail(coach, cv);
+  async sendMailsAfterSubmitting(
+    coach: User,
+    candidateId: string,
+    cv: Partial<CV>
+  ) {
+    await this.mailsService.sendCVSubmittedMail(coach, candidateId, cv);
   }
 
   async sendMailsAfterPublishing(candidateId: string) {
@@ -875,7 +879,7 @@ export class CVsService {
         const toEmail: CustomMailParams['toEmail'] = {
           to: candidate.email,
         };
-        const coach = getRelatedUser(candidate);
+        const coach = getCoachFromCandidate(candidate);
         if (coach) {
           toEmail.cc = coach.email;
         }
