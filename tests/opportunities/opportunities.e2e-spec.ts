@@ -1427,30 +1427,33 @@ describe('Opportunities', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...restPrivateOpportunity,
-              opportunityUsers: expect.objectContaining({
-                ...privateOpportunityUser,
-                createdAt: privateOpportunityUser.createdAt.toISOString(),
-                updatedAt: privateOpportunityUser.updatedAt.toISOString(),
-                events: expect.arrayContaining([
-                  expect.objectContaining({
-                    ...privateOpportunityUserEvent,
-                    startDate:
-                      privateOpportunityUserEvent.startDate.toISOString(),
-                    endDate: privateOpportunityUserEvent.endDate.toISOString(),
-                    createdAt:
-                      privateOpportunityUserEvent.createdAt.toISOString(),
-                    updatedAt:
-                      privateOpportunityUserEvent.updatedAt.toISOString(),
-                    contract: expect.objectContaining({
-                      ...privateOpportunityUserEvent.contract,
+              opportunityUsers: [
+                expect.objectContaining({
+                  ...privateOpportunityUser,
+                  createdAt: privateOpportunityUser.createdAt.toISOString(),
+                  updatedAt: privateOpportunityUser.updatedAt.toISOString(),
+                  events: expect.arrayContaining([
+                    expect.objectContaining({
+                      ...privateOpportunityUserEvent,
+                      startDate:
+                        privateOpportunityUserEvent.startDate.toISOString(),
+                      endDate:
+                        privateOpportunityUserEvent.endDate.toISOString(),
                       createdAt:
-                        privateOpportunityUserEvent.contract.createdAt.toISOString(),
+                        privateOpportunityUserEvent.createdAt.toISOString(),
                       updatedAt:
-                        privateOpportunityUserEvent.contract.updatedAt.toISOString(),
+                        privateOpportunityUserEvent.updatedAt.toISOString(),
+                      contract: expect.objectContaining({
+                        ...privateOpportunityUserEvent.contract,
+                        createdAt:
+                          privateOpportunityUserEvent.contract.createdAt.toISOString(),
+                        updatedAt:
+                          privateOpportunityUserEvent.contract.updatedAt.toISOString(),
+                      }),
                     }),
-                  }),
-                ]),
-              }),
+                  ]),
+                }),
+              ],
               createdAt: restPrivateOpportunity.createdAt.toISOString(),
               updatedAt: restPrivateOpportunity.updatedAt.toISOString(),
               date: restPrivateOpportunity.date.toISOString(),
@@ -4433,7 +4436,7 @@ describe('Opportunities', () => {
         });
       });
     });
-    describe('P - send emails archive reminders', () => {
+    describe('P - Send emails archive reminders', () => {
       let loggedInAdmin: LoggedUser;
       let loggedInCandidate: LoggedUser;
       let loggedInCoach: LoggedUser;

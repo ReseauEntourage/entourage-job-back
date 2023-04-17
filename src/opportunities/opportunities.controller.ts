@@ -19,10 +19,10 @@ import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
-  RolesGuard,
+  UserPermissions,
+  UserPermissionsGuard,
 } from 'src/users/guards';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import { UserRole, UserRoles, Permissions } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
@@ -357,8 +357,8 @@ export class OpportunitiesController {
     return createdOpportunityUserEvent;
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get('admin')
   async findAll(
     @Query()
@@ -370,8 +370,8 @@ export class OpportunitiesController {
     return this.opportunitiesService.findAll(query);
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get('/candidate/private/:candidateId')
   async findAllUserOpportunitiesAsAdmin(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
@@ -402,8 +402,8 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/candidate/tabCount/:candidateId')
@@ -420,8 +420,8 @@ export class OpportunitiesController {
     return this.opportunityUsersService.countOffersByStatus(candidateId);
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/candidate/all/:candidateId')
@@ -454,15 +454,15 @@ export class OpportunitiesController {
     };
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get('admin/count')
   async countPending(@UserPayload('zone') zone: AdminZone) {
     return this.opportunitiesService.countPending(zone);
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('candidate/count/:candidateId')
@@ -483,9 +483,11 @@ export class OpportunitiesController {
     if (role === UserRoles.ADMIN) {
       opportunity = await this.opportunitiesService.findOne(id);
     } else {
+      const candidateId = getCandidateIdFromCoachOrCandidate(user);
+
       opportunity = await this.opportunitiesService.findOneAsCandidate(
         id,
-        getCandidateIdFromCoachOrCandidate(user)
+        candidateId
       );
     }
 
@@ -496,8 +498,8 @@ export class OpportunitiesController {
     return opportunity;
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Put('bulk')
   async updateAll(
     // Do not instantiate UpdateOpportunityPipe so that Request can be injected
@@ -631,9 +633,12 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
+    const candidateId = getCandidateIdFromCoachOrCandidate(user);
+
     if (
-      opportunityUser.UserId !== getCandidateIdFromCoachOrCandidate(user) &&
-      role !== UserRoles.ADMIN
+      Array.isArray(candidateId)
+        ? !candidateId.includes(opportunityUser.UserId)
+        : opportunityUser.UserId !== candidateId && role !== UserRoles.ADMIN
     ) {
       throw new ForbiddenException();
     }
@@ -668,8 +673,8 @@ export class OpportunitiesController {
     return updatedOpportunityUserEvent;
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Put(':id')
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -723,8 +728,8 @@ export class OpportunitiesController {
     return finalOpportunity.toJSON();
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Post('refreshSalesforce/opportunities')
   async refreshSalesforceOpportunities() {
     const opportunities = await this.opportunitiesService.findAllIds();
@@ -735,8 +740,8 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Post('refreshSalesforce/events')
   async refreshSalesforceEvents() {
     const events =
@@ -748,8 +753,8 @@ export class OpportunitiesController {
     );
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @LinkedUser('body.candidateId')
   @UseGuards(LinkedUserGuard)
   @Post('contactEmployer')
@@ -805,8 +810,8 @@ export class OpportunitiesController {
     }
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Post('sendReminderArchive')
   async postSendReminderArchive(@Body('ids') opportunitiesIds: string[]) {
     let count = 0;

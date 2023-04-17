@@ -3,6 +3,7 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
+import { assertCondition } from '../../src/utils/misc/asserts';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
@@ -11,12 +12,13 @@ import { Experience } from 'src/common/experiences/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
-import { UserRoles, CVStatuses } from 'src/users/users.types';
+import { CVStatuses, UserRoles } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
 import { BusinessLinesHelper } from 'tests/common/businessLines/businessLines.helper';
@@ -40,6 +42,7 @@ import { CVSkillsHelper } from 'tests/cvs/cv-skills.helper';
 import { CVFactory } from 'tests/cvs/cv.factory';
 import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
+import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
@@ -71,6 +74,7 @@ describe('Users', () => {
   let skillsHelper: SkillsHelper;
   let experiencesSkillsHelper: ExperiencesSkillsHelper;
   let reviewsHelper: ReviewsHelper;
+  let organizationFactory: OrganizationFactory;
 
   const route = '/user';
 
@@ -78,7 +82,6 @@ describe('Users', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
       .overrideProvider(CACHE_MANAGER)
@@ -120,6 +123,8 @@ describe('Users', () => {
       ExperiencesSkillsHelper
     );
     reviewsHelper = moduleFixture.get<ReviewsHelper>(ReviewsHelper);
+    organizationFactory =
+      moduleFixture.get<OrganizationFactory>(OrganizationFactory);
   });
 
   afterAll(async () => {
@@ -136,6 +141,7 @@ describe('Users', () => {
       describe('/ - Create user', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
+        let organization: Organization;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -144,9 +150,11 @@ describe('Users', () => {
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
           });
+
+          organization = await organizationFactory.create({}, {}, true);
         });
 
-        it('Should return 200 and a created user', async () => {
+        it('Should return 200 and a created user if valid data', async () => {
           const {
             password,
             hashReset,
@@ -155,24 +163,62 @@ describe('Users', () => {
             revision,
             updatedAt,
             createdAt,
-            ...candidate
-          } = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            false
-          );
+            lastConnection,
+            ...user
+          } = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .set('authorization', `Token ${loggedInAdmin.token}`)
-              .send(candidate);
+              .send(user);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...candidate,
-              lastConnection: candidate.lastConnection.toISOString(),
+              ...user,
             })
           );
+        });
+        it('Should return 200 and a created user if missing optional fields', async () => {
+          const {
+            password,
+            hashReset,
+            salt,
+            saltReset,
+            revision,
+            updatedAt,
+            createdAt,
+            lastConnection,
+            address,
+            ...user
+          } = await userFactory.create({}, {}, false);
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(user);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...user,
+            })
+          );
+        });
+        it('Should return 400 when user data has missing mandatory fields', async () => {
+          const user = await userFactory.create({}, {}, false);
+          const wrongData = {
+            lastName: user.lastName,
+            email: user.email,
+            zone: user.zone,
+            role: user.role,
+            gender: user.gender,
+            phone: user.phone,
+          };
+          const response: APIResponse<UsersCreationController['createUser']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(wrongData);
+          expect(response.status).toBe(400);
         });
         it('Should return 400 when user data has invalid phone', async () => {
           const candidate = await userFactory.create({}, {}, false);
@@ -215,12 +261,31 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 409 when the email already exist', async () => {
-          const candidate = await userFactory.create(
+          const existingCandidate = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
             },
             {},
             true
+          );
+
+          const {
+            password,
+            hashReset,
+            salt,
+            saltReset,
+            revision,
+            updatedAt,
+            createdAt,
+            lastConnection,
+            ...candidate
+          } = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              email: existingCandidate.email,
+            },
+            {},
+            false
           );
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(app.getHttpServer())
@@ -228,6 +293,1112 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInAdmin.token}`)
               .send(candidate);
           expect(response.status).toBe(409);
+        });
+
+        describe('/ - Create normal candidate or coach', () => {
+          it('Should return 200 and a created candidate without coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send(candidate);
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...candidate,
+              })
+            );
+          });
+          it('Should return 200 and a created candidate with coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const {
+              password: coachPassword,
+              hashReset: coachHashReset,
+              salt: coachSalt,
+              saltReset: coachSaltReset,
+              revision: coachRevision,
+              updatedAt: coachUpdatedAt,
+              createdAt: coachCreatedAt,
+              lastConnection: coachLastConnection,
+              organization,
+              candidat,
+              coaches,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, userToLinkId: coach.id });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...candidate,
+                candidat: expect.objectContaining({
+                  coach: expect.objectContaining({
+                    ...coach,
+                  }),
+                }),
+              })
+            );
+          });
+          it('Should return 404 if create candidate with unexisting coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, userToLinkId: uuid() });
+            expect(response.status).toBe(404);
+          });
+
+          it('Should return 200 and a created coach without candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send(coach);
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...coach,
+              })
+            );
+          });
+          it('Should return 200 and a created coach with candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const {
+              password: candidatePassword,
+              hashReset: candidateHashReset,
+              salt: candidateSalt,
+              saltReset: candidateSaltReset,
+              revision: candidateRevision,
+              updatedAt: candidateUpdatedAt,
+              createdAt: candidateCreatedAt,
+              lastConnection: candidateLastConnection,
+              organization,
+              candidat,
+              coaches,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, userToLinkId: candidate.id });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...coach,
+                coaches: [
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      ...candidate,
+                    }),
+                  }),
+                ],
+              })
+            );
+          });
+          it('Should return 404 if created coach with unexisting candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, userToLinkId: uuid() });
+
+            expect(response.status).toBe(404);
+          });
+
+          it('Should return 400 if candidate with another candidate as coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const { id } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, userToLinkId: id });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with another coach as candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const { id } = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, userToLinkId: id });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if candidate with multiple coaches', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const { id: coach1Id } = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+            const { id: coach2Id } = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  userToLinkId: [coach1Id, coach2Id],
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with multiple candidates', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const { id: candidate1Id } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+            const { id: candidate2Id } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  userToLinkId: [candidate1Id, candidate2Id],
+                });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if candidate with organization', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with organization', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                });
+
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if candidate with external coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              false
+            );
+
+            const externalCoach = await userFactory.create(
+              { role: UserRoles.COACH_EXTERNAL },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  userToLinkId: externalCoach.id,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if coach with external candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
+
+            const externalCandidate = await userFactory.create(
+              { role: UserRoles.CANDIDATE_EXTERNAL },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  userToLinkId: externalCandidate.id,
+                });
+            expect(response.status).toBe(400);
+          });
+        });
+        describe('/ - Create external candidate or coach', () => {
+          it('Should return 200 and a created external candidate without external coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              OrganizationId,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              organizationReferent,
+              ...restOrganization
+            } = organization;
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...candidate, OrganizationId: organization.id });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...candidate,
+                organization: expect.objectContaining({ ...restOrganization }),
+              })
+            );
+          });
+          it('Should return 200 and a created external candidate with external coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const {
+              password: coachPassword,
+              hashReset: coachHashReset,
+              salt: coachSalt,
+              saltReset: coachSaltReset,
+              revision: coachRevision,
+              updatedAt: coachUpdatedAt,
+              createdAt: coachCreatedAt,
+              lastConnection: coachLastConnection,
+              candidat,
+              coaches,
+              organization: coachOrganization,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              organizationReferent,
+              ...restOrganization
+            } = organization;
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: coach.id,
+                });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...candidate,
+                candidat: expect.objectContaining({
+                  coach: expect.objectContaining({
+                    ...coach,
+                  }),
+                }),
+                organization: expect.objectContaining({
+                  ...restOrganization,
+                }),
+              })
+            );
+          });
+          it('Should return 404 if create external candidate with unexisting coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: uuid(),
+                });
+            expect(response.status).toBe(404);
+          });
+
+          it('Should return 200 and a created external coach without external candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              organizationReferent,
+              ...restOrganization
+            } = organization;
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({ ...coach, OrganizationId: organization.id });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...coach,
+                organization: expect.objectContaining({
+                  ...restOrganization,
+                }),
+              })
+            );
+          });
+          it('Should return 200 and a created external coach with external candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const {
+              password: candidatePassword,
+              hashReset: candidateHashReset,
+              salt: candidateSalt,
+              saltReset: candidateSaltReset,
+              revision: candidateRevision,
+              updatedAt: candidateUpdatedAt,
+              createdAt: candidateCreatedAt,
+              lastConnection: candidateLastConnection,
+              candidat,
+              coaches,
+              organization: candidateOrganization,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+
+            const {
+              createdAt: organizationCreatedAt,
+              updatedAt: organizationUpdatedAt,
+              organizationReferent,
+              ...restOrganization
+            } = organization;
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: [candidate.id],
+                });
+            expect(response.status).toBe(201);
+            expect(response.body).toEqual(
+              expect.objectContaining({
+                ...coach,
+                coaches: [
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      ...candidate,
+                    }),
+                  }),
+                ],
+                organization: expect.objectContaining({
+                  ...restOrganization,
+                }),
+              })
+            );
+          });
+          it('Should return 404 if created external coach with unexisting candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: [uuid()],
+                });
+
+            expect(response.status).toBe(404);
+          });
+
+          it('Should return 400 if external candidate with another external candidate as coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const { id } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: id,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if external coach with another external coach as candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const { id } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: id,
+                });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if external candidate with multiple external coaches', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const { id: coach1Id } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+            const { id: coach2Id } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: [coach1Id, coach2Id],
+                });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if external candidate without organization', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create(
+              { role: UserRoles.COACH_EXTERNAL },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if external coach without organization', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              { role: UserRoles.CANDIDATE_EXTERNAL },
+              {},
+              false
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if external candidate with external coach from another organization', async () => {
+            const otherOrganization = await organizationFactory.create(
+              {},
+              {},
+              true
+            );
+
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const {
+              password: coachPassword,
+              hashReset: coachHashReset,
+              salt: coachSalt,
+              saltReset: coachSaltReset,
+              revision: coachRevision,
+              updatedAt: coachUpdatedAt,
+              createdAt: coachCreatedAt,
+              lastConnection: coachLastConnection,
+              candidat,
+              coaches,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+                OrganizationId: otherOrganization.id,
+              },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...candidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: coach.id,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if external coach with external candidate from another organization', async () => {
+            const otherOrganization = await organizationFactory.create(
+              {},
+              {},
+              true
+            );
+
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...coach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const {
+              password: candidatePassword,
+              hashReset: candidateHashReset,
+              salt: candidateSalt,
+              saltReset: candidateSaltReset,
+              revision: candidateRevision,
+              updatedAt: candidateUpdatedAt,
+              createdAt: candidateCreatedAt,
+              lastConnection: candidateLastConnection,
+              candidat,
+              coaches,
+              ...candidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                OrganizationId: otherOrganization.id,
+              },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...coach,
+                  OrganizationId: organization.id,
+                  userToLinkId: candidate.id,
+                });
+            expect(response.status).toBe(400);
+          });
+
+          it('Should return 400 if external candidate with normal coach', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...externalCandidate
+            } = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const normalCoach = await userFactory.create(
+              { role: UserRoles.COACH },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...externalCandidate,
+                  OrganizationId: organization.id,
+                  userToLinkId: normalCoach.id,
+                });
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if external coach with normal candidate', async () => {
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              ...externalCoach
+            } = await userFactory.create(
+              {
+                role: UserRoles.COACH_EXTERNAL,
+              },
+              {},
+              false
+            );
+
+            const normalCandidate = await userFactory.create(
+              { role: UserRoles.CANDIDATE },
+              {},
+              true
+            );
+
+            const response: APIResponse<UsersCreationController['createUser']> =
+              await request(app.getHttpServer())
+                .post(`${route}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .send({
+                  ...externalCoach,
+                  OrganizationId: organization.id,
+                  userToLinkId: normalCandidate.id,
+                });
+            expect(response.status).toBe(400);
+          });
         });
       });
     });
@@ -352,6 +1523,8 @@ describe('Users', () => {
               });
 
           expect(response.status).toBe(200);
+          expect(!Array.isArray(response.body)).toBeTruthy();
+          assertCondition(!Array.isArray(response.body));
           expect(response.body.coach).toBeFalsy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
@@ -372,6 +1545,8 @@ describe('Users', () => {
               });
 
           expect(response.status).toBe(200);
+          expect(!Array.isArray(response.body)).toBeTruthy();
+          assertCondition(!Array.isArray(response.body));
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
@@ -393,10 +1568,142 @@ describe('Users', () => {
               });
 
           expect(response.status).toBe(200);
+          expect(!Array.isArray(response.body)).toBeTruthy();
+          assertCondition(!Array.isArray(response.body));
           expect(response.body.coach).toBeTruthy();
           expect(response.body.candidat).toBeTruthy();
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
           expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
+        });
+        it('Should return 200 and related user candidates if external coach is associated to multiple candidate', async () => {
+          const organization = await organizationFactory.create({}, {}, true);
+
+          let externalLoggedInCoach = await usersHelper.createLoggedInUser(
+            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            {},
+            true
+          );
+
+          let externalLoggedInCandidate1 = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          let externalLoggedInCandidate2 = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          ({
+            loggedInCoach: externalLoggedInCoach,
+            loggedInCandidate: externalLoggedInCandidate1,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            externalLoggedInCoach,
+            externalLoggedInCandidate1,
+            true
+          ));
+
+          ({
+            loggedInCoach: externalLoggedInCoach,
+            loggedInCandidate: externalLoggedInCandidate2,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            externalLoggedInCoach,
+            externalLoggedInCandidate2,
+            true
+          ));
+
+          const {
+            user: {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              candidat,
+              coaches,
+              organization: coachOrganization,
+              ...restExternalLoggedInCoach
+            },
+          } = externalLoggedInCoach;
+
+          const {
+            user: {
+              password: candidate1Password,
+              hashReset: candidate1HashReset,
+              salt: candidate1Salt,
+              saltReset: candidate1SaltReset,
+              revision: candidate1Revision,
+              updatedAt: candidate1UpdatedAt,
+              createdAt: candidate1CreatedAt,
+              lastConnection: candidate1LastConnection,
+              candidat: candidate1Candidat,
+              coaches: candidate1Coaches,
+              organization: candidate1Organization,
+              ...restExternalLoggedInCandidate1
+            },
+          } = externalLoggedInCandidate1;
+
+          const {
+            user: {
+              password: candidate2Password,
+              hashReset: candidate2HashReset,
+              salt: candidate2Salt,
+              saltReset: candidate2SaltReset,
+              revision: candidate2Revision,
+              updatedAt: candidate2UpdatedAt,
+              createdAt: candidate2CreatedAt,
+              lastConnection: candidate2LastConnection,
+              candidat: candidate2Candidat,
+              coaches: candidate2Coaches,
+              organization: candidate2Organization,
+              ...restExternalLoggedInCandidate2
+            },
+          } = externalLoggedInCandidate2;
+
+          const response: APIResponse<UsersController['findRelatedUser']> =
+            await request(app.getHttpServer())
+              .get(`${route}/candidate`)
+              .set('authorization', `Token ${externalLoggedInCoach.token}`)
+              .query({
+                coachId: externalLoggedInCoach.user.id,
+              });
+
+          expect(response.status).toBe(200);
+          expect(Array.isArray(response.body)).toBeTruthy();
+          assertCondition(Array.isArray(response.body));
+          expect(response.body).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                ...candidate1Candidat,
+                coach: expect.objectContaining({
+                  ...restExternalLoggedInCoach,
+                }),
+                candidat: expect.objectContaining({
+                  ...restExternalLoggedInCandidate1,
+                }),
+              }),
+              expect.objectContaining({
+                ...candidate2Candidat,
+                coach: expect.objectContaining({
+                  ...restExternalLoggedInCoach,
+                }),
+                candidat: expect.objectContaining({
+                  ...restExternalLoggedInCandidate2,
+                }),
+              }),
+            ])
+          );
         });
         it('Should return 403 if logged in user is admin ', async () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
@@ -409,10 +1716,16 @@ describe('Users', () => {
       });
     });
     describe('R - Read many Users', () => {
-      describe('/search?query=&role= - Search a user where query string in email, first name or last name', () => {
+      describe('/search?query=&role=&organizationId= - Search a user where query string in email, first name or last name', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+
+        let candidates: User[];
+        let externalCandidates: User[];
+        let coaches: User[];
+        let externalCoaches: User[];
+        let organization: Organization;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -424,11 +1737,84 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
+          organization = await organizationFactory.create({}, {}, true);
+
+          candidates = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE,
+            },
+            {},
+            true
+          );
+
+          coaches = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH,
+            },
+            {},
+            true
+          );
+
+          externalCandidates = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          externalCoaches = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const otherOrganization = await organizationFactory.create(
+            {},
+            {},
+            true
+          );
+
+          await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
+
+          await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
         });
-        it('Should return 200 and part of candidates if user is logged in as admin', async () => {
+
+        it('Should return 200 and part of candidates if user is logged in as admin and filters by candidates and searches by first name', async () => {
           const privateCandidateInfo = [
             {
               id: loggedInCandidate.user.id,
+              OrganizationId: loggedInCandidate.user.OrganizationId,
               firstName: loggedInCandidate.user.firstName,
               lastName: loggedInCandidate.user.lastName,
               role: loggedInCandidate.user.role,
@@ -453,14 +1839,167 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual(privateCandidateInfo);
         });
-        it('Should return 403 if user is not logged in as candidate', async () => {
+
+        it('Should return 200 and normal candidates if user is logged in as admin and filters by normal candidates', async () => {
+          const expectedUsersId = [
+            ...candidates.map(({ id }) => id),
+            loggedInCandidate.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.CANDIDATE}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and external candidates if user is logged in as admin and filters by external candidates', async () => {
+          const expectedUsersId = [...externalCandidates.map(({ id }) => id)];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and all candidates if user is logged in as admin and filters by all candidates', async () => {
+          const expectedUsersId = [
+            ...candidates.map(({ id }) => id),
+            ...externalCandidates.map(({ id }) => id),
+            loggedInCandidate.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and normal coaches if user is logged in as admin and filters by normal coaches', async () => {
+          const expectedUsersId = [
+            ...coaches.map(({ id }) => id),
+            loggedInCoach.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.COACH}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and external coaches if user is logged in as admin and filters by external coaches', async () => {
+          const expectedUsersId = [...externalCoaches.map(({ id }) => id)];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(`${route}/search?&role=${UserRoles.COACH_EXTERNAL}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and all coaches if user is logged in as admin and filters by all coaches', async () => {
+          const expectedUsersId = [
+            ...coaches.map(({ id }) => id),
+            ...externalCoaches.map(({ id }) => id),
+            loggedInCoach.user.id,
+          ];
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and part of external candidates from specific organization if user is logged in as admin and filters by external candidates from an organization', async () => {
+          const expectedUsersId = externalCandidates.map(({ id }) => id);
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and part of external coaches from specific organization if user is logged in as admin and filters by external coaches from an organization', async () => {
+          const expectedUsersId = externalCoaches.map(({ id }) => id);
+
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(expectedUsersId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and empty users if user is logged in as admin and filters by normal candidates from an organization', async () => {
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(0);
+        });
+        it('Should return 200 and empty users if user is logged in as admin and filters by normal coaches from an organization', async () => {
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/search?&role=${UserRoles.COACH}&organizationId=${organization.id}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(0);
+        });
+
+        it('Should return 403 if user is logged in as candidate', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        it('Should return 403 if user is not logged in as candidate', async () => {
+        it('Should return 403 if user is logged in as coach', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
@@ -1322,6 +2861,7 @@ describe('Users', () => {
             role: UserRoles.COACH,
           });
         });
+
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(app.getHttpServer())
@@ -1357,6 +2897,26 @@ describe('Users', () => {
               });
           expect(response.status).toBe(403);
         });
+        it('Should return 400, if candidate updates associated coach id', async () => {
+          const response: APIResponse<UsersController['updateUserCandidat']> =
+            await request(app.getHttpServer())
+              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send({
+                coachId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400, if coach updates associated candidate id', async () => {
+          const response: APIResponse<UsersController['updateUserCandidat']> =
+            await request(app.getHttpServer())
+              .put(`${route}/candidate/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInCoach.token}`)
+              .send({
+                candidatId: loggedInCandidate.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
         it('Should return 200 and updated userCandidat, if logged in admin', async () => {
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -1377,7 +2937,7 @@ describe('Users', () => {
           expect(response.body.note).toMatch(updatedNote);
           expect(response.body.lastModifiedBy).toBe(loggedInAdmin.user.id);
         });
-        it('Should return 200 and updated userCandidat, if candidat updates himself', async () => {
+        it('Should return 200 and updated userCandidat, if candidate updates himself', async () => {
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
@@ -1418,6 +2978,490 @@ describe('Users', () => {
           expect(response.body.lastModifiedBy).toBe(loggedInCoach.user.id);
         });
       });
+      describe('/linkUser/:userId - Link a user', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let externalCoach: User;
+        let externalCandidate: User;
+        let organization: Organization;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          organization = await organizationFactory.create({}, {}, true);
+
+          externalCoach = await userFactory.create(
+            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            {},
+            true
+          );
+
+          externalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+        });
+
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if user is not admin', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 404 if admin updates candidate with unexisting coach', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: uuid(),
+              });
+          expect(response.status).toBe(404);
+        });
+        it('Should return 404 if admin updates coach with unexisting candidate', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: uuid(),
+              });
+          expect(response.status).toBe(404);
+        });
+
+        it('Should return 200 if admin updates linked coach for candidate', async () => {
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization,
+            ...restCandidate
+          } = loggedInCandidate.user;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restCoach
+          } = loggedInCoach.user;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...loggedInCandidate.user.candidat,
+              candidat: expect.objectContaining({
+                ...restCandidate,
+              }),
+              coach: expect.objectContaining({
+                ...restCoach,
+              }),
+            })
+          );
+        });
+        it('Should return 200 if admin updates linked candidate for coach', async () => {
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization,
+            ...restCandidate
+          } = loggedInCandidate.user;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restCoach
+          } = loggedInCoach.user;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCandidate.user.id,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...loggedInCandidate.user.candidat,
+              candidat: expect.objectContaining({
+                ...restCandidate,
+              }),
+              coach: expect.objectContaining({
+                ...restCoach,
+              }),
+            })
+          );
+        });
+
+        it('Should return 400 if admin updates linked multiple coaches for candidate', async () => {
+          const otherCoach = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [loggedInCoach.user.id, otherCoach.id],
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates linked multiple candidates for coach', async () => {
+          const otherCandidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            true
+          );
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [loggedInCandidate.user.id, otherCandidate.id],
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 200 if admin updates linked external coach for external candidate with same organization', async () => {
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization: candidateOrganization,
+            ...restExternalCandidate
+          } = externalCandidate;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restExternalCoach
+          } = externalCoach;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: externalCoach.id,
+              });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...candidat,
+              candidat: expect.objectContaining({
+                ...restExternalCandidate,
+              }),
+              coach: expect.objectContaining({
+                ...restExternalCoach,
+              }),
+            })
+          );
+        });
+        it('Should return 200 if admin updates linked multiple external candidate for external coach with same organization', async () => {
+          const {
+            candidat: otherCandidateCandidat,
+            coaches: otherCandidateCoaches,
+            lastConnection: otherCandidateLastConnection,
+            organization: otherCandidateOrganization,
+            ...restOtherExternalCandidate
+          } = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization: candidateOrganization,
+            ...restExternalCandidate
+          } = externalCandidate;
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restExternalCoach
+          } = externalCoach;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [
+                  externalCandidate.id,
+                  restOtherExternalCandidate.id,
+                ],
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                ...candidat,
+                candidat: expect.objectContaining({
+                  ...restExternalCandidate,
+                }),
+                coach: expect.objectContaining({
+                  ...restExternalCoach,
+                }),
+              }),
+              expect.objectContaining({
+                ...otherCandidateCandidat,
+                candidat: expect.objectContaining({
+                  ...restOtherExternalCandidate,
+                }),
+                coach: expect.objectContaining({
+                  ...restExternalCoach,
+                }),
+              }),
+            ])
+          );
+        });
+
+        it('Should return 400 if admin updates linked external multiple coaches for candidate', async () => {
+          const otherExternalCoach = await userFactory.create(
+            { role: UserRoles.COACH, OrganizationId: organization.id },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: [externalCoach.id, otherExternalCoach.id],
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates normal candidate with another normal candidate as coach', async () => {
+          const otherCandidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates normal coach with another normal coach as candidate', async () => {
+          const otherCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${otherCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates external candidate with another external candidate as coach', async () => {
+          const otherExternalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates external coach with another external coach as candidate', async () => {
+          const otherExternalCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates normal candidate with external coach', async () => {
+          const externalCoach = await userFactory.create(
+            { role: UserRoles.COACH_EXTERNAL },
+            {},
+            true
+          );
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: externalCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates normal coach with external candidate', async () => {
+          const externalCandidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE_EXTERNAL },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: externalCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates external candidate with normal coach', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCoach.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates external coach with normal candidate', async () => {
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: loggedInCandidate.user.id,
+              });
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 if admin updates external candidate with external coach from another organization', async () => {
+          const otherOrganization = await organizationFactory.create(
+            {},
+            {},
+            true
+          );
+
+          const otherExternalCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCoach.id,
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if admin updates external coach with external candidate from another organization', async () => {
+          const otherOrganization = await organizationFactory.create(
+            {},
+            {},
+            true
+          );
+
+          const otherExternalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: otherOrganization.id,
+            },
+            {},
+            true
+          );
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: otherExternalCandidate.id,
+              });
+          expect(response.status).toBe(400);
+        });
+      });
       describe('/candidate/checkUpdate - Check if update has been made on userCandidat note', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
@@ -1449,7 +3493,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer()).get(
-            `${route}/candidate/checkUpdate`
+            `${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`
           );
 
           expect(response.status).toBe(401);
@@ -1458,7 +3502,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
@@ -1470,7 +3514,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
@@ -1484,7 +3528,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
@@ -1498,7 +3542,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
@@ -1512,7 +3556,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
@@ -1526,7 +3570,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
@@ -1540,7 +3584,7 @@ describe('Users', () => {
           const response: APIResponse<
             UsersController['checkNoteHasBeenModified']
           > = await request(app.getHttpServer())
-            .get(`${route}/candidate/checkUpdate`)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);

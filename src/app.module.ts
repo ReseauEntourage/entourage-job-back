@@ -151,6 +151,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     SkillsModule,
     ExperiencesModule,
     ReviewsModule,
+    OrganizationsModule,
   ],
 })
 export class AppModule {}

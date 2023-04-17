@@ -14,20 +14,22 @@ import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
-  UserAttributes,
+  PublicUserAttributes,
   User,
+  UserAttributes,
   UserCandidat,
   UserCandidatAttributes,
-  PublicUserAttributes,
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
+  CandidateUserRoles,
+  CoachUserRoles,
   CVStatuses,
+  MemberConstantType,
+  MemberFilterKey,
+  MemberFilters,
   UserRole,
   UserRoles,
-  MemberFilters,
-  MemberFilterKey,
-  MemberConstantType,
 } from './users.types';
 
 import {
@@ -35,6 +37,7 @@ import {
   filterMembersByBusinessLines,
   filterMembersByCVStatus,
   getMemberOptions,
+  isRoleIncluded,
   userSearchQuery,
 } from './users.utils';
 
@@ -125,7 +128,10 @@ export class UsersService {
     }
 
     // filtre par role
-    if (role === UserRoles.CANDIDATE || role === UserRoles.COACH) {
+    if (
+      isRoleIncluded(CandidateUserRoles, role as UserRole) ||
+      isRoleIncluded(CoachUserRoles, role as UserRole)
+    ) {
       options.where = {
         ...options.where,
         role,
@@ -134,7 +140,8 @@ export class UsersService {
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
-      (role === UserRoles.CANDIDATE || role === 'All') &&
+      (role === 'All' ||
+        isRoleIncluded(CandidateUserRoles, role as UserRole)) &&
       (filterOptions.hidden || filterOptions.employed)
     ) {
       userCandidatOptions.where = {};
@@ -193,7 +200,7 @@ export class UsersService {
       },
       {
         model: UserCandidat,
-        as: 'coach',
+        as: 'coaches',
         attributes: ['candidatId', ...UserCandidatAttributes],
         include: [
           {
@@ -231,7 +238,10 @@ export class UsersService {
 
     let finalFilteredMembers = membersWithLastCV;
 
-    if (role === UserRoles.CANDIDATE || role === 'All') {
+    if (
+      role === 'All' ||
+      isRoleIncluded(CandidateUserRoles, role as UserRole)
+    ) {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,
         cvStatus
@@ -256,7 +266,11 @@ export class UsersService {
     return finalFilteredMembers;
   }
 
-  async findAllUsers(search: string, role: UserRole) {
+  async findAllUsers(
+    search: string,
+    role: UserRole | UserRole[],
+    organizationId: string
+  ) {
     const options: FindOptions<User> = {
       attributes: [...UserAttributes],
       where: {
@@ -264,7 +278,11 @@ export class UsersService {
       },
     };
     if (role) {
-      options.where = { ...options.where, role };
+      options.where = {
+        ...options.where,
+        role: role,
+        OrganizationId: organizationId || null,
+      };
     }
     return this.userModel.findAll(options);
   }
