@@ -100,6 +100,7 @@ export class UsersService {
     const filterOptions = getMemberOptions(restFilters);
 
     const options: FindOptions<User> = {
+      subQuery: false,
       order,
       where: {
         role: { [Op.not]: UserRoles.ADMIN },
@@ -126,7 +127,6 @@ export class UsersService {
         zone: filterOptions.zone,
       };
     }
-
     // filtre par role
     if (isRoleIncluded(AllUserRoles, role as UserRole)) {
       options.where = {
