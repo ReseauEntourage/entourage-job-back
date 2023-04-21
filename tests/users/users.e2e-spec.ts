@@ -3086,19 +3086,19 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...loggedInCandidate.user.candidat,
+              ...restCandidate,
               candidat: expect.objectContaining({
-                ...restCandidate,
-              }),
-              coach: expect.objectContaining({
-                ...restCoach,
+                ...candidat,
+                coach: expect.objectContaining({
+                  ...restCoach,
+                }),
               }),
             })
           );
         });
         it('Should return 200 if admin updates linked candidate for coach', async () => {
           const {
-            candidat,
+            candidat: { coach, ...restCandidateCandidat },
             coaches,
             lastConnection,
             organization,
@@ -3123,13 +3123,81 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...loggedInCandidate.user.candidat,
+              ...restCoach,
+              coaches: [
+                expect.objectContaining({
+                  ...restCandidateCandidat,
+                  candidat: expect.objectContaining({
+                    ...restCandidate,
+                  }),
+                }),
+              ],
+            })
+          );
+        });
+
+        it('Should return 200 if admin removes linked coach for candidate', async () => {
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization,
+            ...restCandidate
+          } = loggedInCandidate.user;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: null,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...restCandidate,
               candidat: expect.objectContaining({
-                ...restCandidate,
+                ...candidat,
+                coach: null,
               }),
-              coach: expect.objectContaining({
-                ...restCoach,
-              }),
+            })
+          );
+        });
+        it('Should return 200 if admin removes linked candidate for coach', async () => {
+          ({ loggedInCandidate, loggedInCoach } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restCoach
+          } = loggedInCoach.user;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: null,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...restCoach,
+              coaches: [],
             })
           );
         });
@@ -3194,19 +3262,22 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...candidat,
+              ...restExternalCandidate,
               candidat: expect.objectContaining({
-                ...restExternalCandidate,
-              }),
-              coach: expect.objectContaining({
-                ...restExternalCoach,
+                ...candidat,
+                coach: expect.objectContaining({
+                  ...restExternalCoach,
+                }),
               }),
             })
           );
         });
         it('Should return 200 if admin updates linked multiple external candidate for external coach with same organization', async () => {
           const {
-            candidat: otherCandidateCandidat,
+            candidat: {
+              coach: otherExternalCandidateCoach,
+              ...restOtherExternalCandidateCandidat
+            },
             coaches: otherCandidateCoaches,
             lastConnection: otherCandidateLastConnection,
             organization: otherCandidateOrganization,
@@ -3221,7 +3292,7 @@ describe('Users', () => {
           );
 
           const {
-            candidat,
+            candidat: { coach, ...restExternalCandidateCandidat },
             coaches,
             lastConnection,
             organization: candidateOrganization,
@@ -3248,26 +3319,90 @@ describe('Users', () => {
               });
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
+            expect.objectContaining({
+              ...restExternalCoach,
+              coaches: expect.arrayContaining([
+                expect.objectContaining({
+                  ...restExternalCandidateCandidat,
+                  candidat: expect.objectContaining({
+                    ...restExternalCandidate,
+                  }),
+                }),
+                expect.objectContaining({
+                  ...restOtherExternalCandidateCandidat,
+                  candidat: expect.objectContaining({
+                    ...restOtherExternalCandidate,
+                  }),
+                }),
+              ]),
+            })
+          );
+        });
+
+        it('Should return 200 if admin removes linked external coach for external candidate', async () => {
+          ({ coach: externalCoach, candidate: externalCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              externalCoach,
+              externalCandidate,
+              false
+            ));
+
+          const {
+            candidat,
+            coaches,
+            lastConnection,
+            organization: candidateOrganization,
+            ...restExternalCandidate
+          } = externalCandidate;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCandidate.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: null,
+              });
+
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...restExternalCandidate,
+              candidat: expect.objectContaining({
                 ...candidat,
-                candidat: expect.objectContaining({
-                  ...restExternalCandidate,
-                }),
-                coach: expect.objectContaining({
-                  ...restExternalCoach,
-                }),
+                coach: null,
               }),
-              expect.objectContaining({
-                ...otherCandidateCandidat,
-                candidat: expect.objectContaining({
-                  ...restOtherExternalCandidate,
-                }),
-                coach: expect.objectContaining({
-                  ...restExternalCoach,
-                }),
-              }),
-            ])
+            })
+          );
+        });
+        it('Should return 200 if admin removes linked multiple external candidate for external coach', async () => {
+          ({ coach: externalCoach, candidate: externalCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              externalCoach,
+              externalCandidate,
+              false
+            ));
+
+          const {
+            candidat: coachCandidat,
+            coaches: coachCoaches,
+            lastConnection: lastConnectionCoach,
+            organization: coachOrganization,
+            ...restExternalCoach
+          } = externalCoach;
+
+          const response: APIResponse<UsersController['linkUser']> =
+            await request(app.getHttpServer())
+              .put(`${route}/linkUser/${externalCoach.id}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send({
+                userToLinkId: null,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...restExternalCoach,
+              coaches: [],
+            })
           );
         });
 

@@ -16,8 +16,6 @@ import { passwordStrength } from 'check-password-strength';
 import { Order } from 'sequelize/types/model';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
-
-import { assertCondition } from '../utils/misc/asserts';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { isValidPhone } from 'src/utils/misc';
@@ -50,6 +48,7 @@ import {
 } from './users.types';
 import {
   getCandidateAndCoachIdDependingOnRoles,
+  getRelatedUser,
   isRoleIncluded,
 } from './users.utils';
 
@@ -289,15 +288,6 @@ export class UsersController {
         lastModifiedBy: userId,
       });
 
-    if (
-      updatedUserCandidat.coach &&
-      updatedUserCandidat.coach.id !== userCandidat.coach?.id
-    ) {
-      await this.usersService.sendMailsAfterMatching(
-        updatedUserCandidat.candidat.id
-      );
-    }
-
     if (updatedUserCandidat.hidden) {
       await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
     } else {
@@ -316,10 +306,15 @@ export class UsersController {
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body('userToLinkId') userToLinkId: string | string[]
   ) {
+    const shouldRemoveLinkedUser =
+      (Array.isArray(userToLinkId) && userToLinkId.length === 0) ||
+      (!Array.isArray(userToLinkId) && userToLinkId === null);
+
     if (
-      Array.isArray(userToLinkId)
+      !shouldRemoveLinkedUser &&
+      (Array.isArray(userToLinkId)
         ? !userToLinkId.every((id) => uuidValidate(id))
-        : !uuidValidate(userId)
+        : !uuidValidate(userId))
     ) {
       throw new BadRequestException();
     }
@@ -331,8 +326,11 @@ export class UsersController {
     }
 
     if (
-      (user.role !== UserRoles.COACH_EXTERNAL && Array.isArray(userToLinkId)) ||
-      (user.role === UserRoles.COACH_EXTERNAL && !Array.isArray(userToLinkId))
+      !shouldRemoveLinkedUser &&
+      ((user.role !== UserRoles.COACH_EXTERNAL &&
+        Array.isArray(userToLinkId)) ||
+        (user.role === UserRoles.COACH_EXTERNAL &&
+          !Array.isArray(userToLinkId)))
     ) {
       throw new BadRequestException();
     }
@@ -341,9 +339,15 @@ export class UsersController {
       ? userToLinkId
       : [userToLinkId];
 
+    const usersToLinkOrToRemoveIds = shouldRemoveLinkedUser
+      ? getRelatedUser(user).map(({ id }) => id)
+      : usersToLinkIds;
+
     const userCandidatesToUpdate = await Promise.all(
-      usersToLinkIds.map(async (userToLinkId) => {
-        const userToLink = await this.usersService.findOne(userToLinkId);
+      usersToLinkOrToRemoveIds.map(async (userToLinkOrToRemoveId) => {
+        const userToLink = await this.usersService.findOne(
+          userToLinkOrToRemoveId
+        );
 
         if (!userToLink) {
           throw new NotFoundException();
@@ -367,33 +371,29 @@ export class UsersController {
 
     const updatedUserCandidates =
       await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
-        userCandidatesToUpdate
+        userCandidatesToUpdate,
+        shouldRemoveLinkedUser
       );
 
     if (!updatedUserCandidates) {
       throw new NotFoundException();
     }
 
-    const finalUpdatedUserCandidates = await Promise.all(
-      updatedUserCandidates.map(async (updatedUserCandidate) => {
+    await Promise.all(
+      updatedUserCandidates.map((updatedUserCandidate) => {
         const previousCoach = updatedUserCandidate.previous('coach');
         if (
           updatedUserCandidate.coach &&
           updatedUserCandidate.coach.id !== previousCoach?.id
         ) {
-          await this.usersService.sendMailsAfterMatching(
+          return this.usersService.sendMailsAfterMatching(
             updatedUserCandidate.candidat.id
           );
         }
-        return updatedUserCandidate.toJSON() as UserCandidat;
       })
     );
 
-    if (user.role !== UserRoles.COACH_EXTERNAL) {
-      assertCondition(finalUpdatedUserCandidates.length === 1);
-      return finalUpdatedUserCandidates[0];
-    }
-    return finalUpdatedUserCandidates;
+    return this.usersService.findOne(userId);
   }
 
   @LinkedUser('params.candidateId')

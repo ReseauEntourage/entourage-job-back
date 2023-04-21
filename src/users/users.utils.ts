@@ -61,7 +61,7 @@ export function capitalizeNameAndTrim(name: string) {
 export function getRelatedUser(member: User) {
   if (member) {
     if (member.candidat && member.candidat.coach) {
-      return member.candidat.coach;
+      return [member.candidat.coach];
     }
     if (member.coaches && member.coaches.length > 0) {
       return member.coaches.map(({ candidat }) => {
