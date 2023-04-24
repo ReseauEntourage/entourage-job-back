@@ -72,7 +72,7 @@ export class UsersController {
     @Query()
     query: {
       query: string;
-      role: UserRole | 'All';
+      role: UserRole;
     } & FilterParams<MemberFilterKey>
   ) {
     const order = [['firstName', 'ASC']] as Order;

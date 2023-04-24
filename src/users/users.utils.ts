@@ -251,11 +251,16 @@ export function filterMembersByAssociatedUser(
   return filteredList;
 }
 
-export function userSearchQuery(query = '') {
+export function userSearchQuery(query = '', withOrganizationName = false) {
+  const organizationSearchOption = withOrganizationName
+    ? [searchInColumnWhereOption('organization.name', query)]
+    : [];
+
   return [
     searchInColumnWhereOption('User.email', query),
     searchInColumnWhereOption('User.firstName', query),
     searchInColumnWhereOption('User.lastName', query),
+    ...organizationSearchOption,
   ];
 }
 
