@@ -48,6 +48,7 @@ export const CandidateUserRoles = [
   UserRoles.CANDIDATE_EXTERNAL,
 ];
 export const CoachUserRoles = [UserRoles.COACH, UserRoles.COACH_EXTERNAL];
+export const AllUserRoles = [...CandidateUserRoles, ...CoachUserRoles];
 
 export const AdminRoles = {
   CANDIDATES: 'Candidats',
