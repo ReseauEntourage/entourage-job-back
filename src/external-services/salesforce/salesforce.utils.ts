@@ -14,11 +14,11 @@ import {
   CandidateHelpWithValue,
   CandidateProfessionalSituation,
   CandidateResource,
+  CandidateYesNoNSPPValue,
   CandidateYesNoValue,
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,
-  CandidateYesNoNSPPValue,
 } from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import {
@@ -45,6 +45,7 @@ import {
   LeadRecordTypesIds,
   LeadResources,
   LeadYesNo,
+  LeadYesNoNSPP,
   ObjectName,
   OfferProps,
   ProcessProps,
@@ -54,7 +55,6 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  LeadYesNoNSPP,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
@@ -328,7 +328,7 @@ function isLeadRecordType<T extends LeadRecordType>(
 
 export function mapSalesforceLeadFields<T extends LeadRecordType>(
   leadProps: LeadProp<T>,
-  recordType: T
+  recordType: AnyCantFix
 ): SalesforceLeads[T] {
   const { firstName, lastName, email, phone, zone } = leadProps;
 
