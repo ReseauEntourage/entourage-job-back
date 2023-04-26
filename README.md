@@ -56,13 +56,26 @@ yarn
 
 ### Initialisation des modules avec Docker
 
+Attention: il faut bien ajouter le fichier .env avec les variables d'environnement avant de lancer le build sur docker.
+
 ```
+yarn
 docker-compose up --build
+```
+
+Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein du container:
+
+```
+docker exec -it api_new bash
+rm -r node_modules/sharp/
+npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 ```
 
 ### Initialisation de la BDD
 
 #### Sans Docker
+
+Pour créer la DB:
 
 ```
 yarn db:create
