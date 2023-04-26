@@ -276,7 +276,8 @@ export function generateImageNamesToDelete(prefix: string) {
 
 export function getCandidateAndCoachIdDependingOnRoles(
   user: User,
-  userToLink: User
+  userToLink: User,
+  shouldRemoveLinkedUser = false
 ) {
   if (
     isRoleIncluded(NormalUserRoles, [user.role, userToLink.role]) &&
@@ -295,6 +296,15 @@ export function getCandidateAndCoachIdDependingOnRoles(
       candidateId:
         user.role === UserRoles.CANDIDATE_EXTERNAL ? user.id : userToLink.id,
       coachId: user.role === UserRoles.COACH_EXTERNAL ? user.id : userToLink.id,
+    };
+  } else if (shouldRemoveLinkedUser) {
+    return {
+      candidateId: isRoleIncluded(CandidateUserRoles, user.role)
+        ? user.id
+        : userToLink.id,
+      coachId: isRoleIncluded(CoachUserRoles, user.role)
+        ? user.id
+        : userToLink.id,
     };
   } else {
     throw new BadRequestException();

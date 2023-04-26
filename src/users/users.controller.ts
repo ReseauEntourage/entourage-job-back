@@ -340,58 +340,63 @@ export class UsersController {
       : [userToLinkId];
 
     const usersToLinkOrToRemoveIds = shouldRemoveLinkedUser
-      ? getRelatedUser(user).map(({ id }) => id)
+      ? getRelatedUser(user)?.map(({ id }) => id)
       : usersToLinkIds;
 
-    const userCandidatesToUpdate = await Promise.all(
-      usersToLinkOrToRemoveIds.map(async (userToLinkOrToRemoveId) => {
-        const userToLink = await this.usersService.findOne(
-          userToLinkOrToRemoveId
-        );
+    if (usersToLinkOrToRemoveIds) {
+      const userCandidatesToUpdate = await Promise.all(
+        usersToLinkOrToRemoveIds.map(async (userToLinkOrToRemoveId) => {
+          const userToLink = await this.usersService.findOne(
+            userToLinkOrToRemoveId
+          );
 
-        if (!userToLink) {
-          throw new NotFoundException();
-        }
+          if (!userToLink) {
+            throw new NotFoundException();
+          }
 
-        const { candidateId, coachId } = getCandidateAndCoachIdDependingOnRoles(
-          user,
-          userToLink
-        );
+          const { candidateId, coachId } =
+            getCandidateAndCoachIdDependingOnRoles(
+              user,
+              userToLink,
+              shouldRemoveLinkedUser
+            );
 
-        const userCandidate =
-          await this.userCandidatsService.findOneByCandidateId(candidateId);
+          const userCandidate =
+            await this.userCandidatsService.findOneByCandidateId(candidateId);
 
-        if (!userCandidate) {
-          throw new NotFoundException();
-        }
+          if (!userCandidate) {
+            throw new NotFoundException();
+          }
 
-        return { candidateId: candidateId, coachId: coachId };
-      })
-    );
-
-    const updatedUserCandidates =
-      await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
-        userCandidatesToUpdate,
-        shouldRemoveLinkedUser
+          return { candidateId: candidateId, coachId: coachId };
+        })
       );
 
-    if (!updatedUserCandidates) {
-      throw new NotFoundException();
-    }
+      const updatedUserCandidates =
+        await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
+          userCandidatesToUpdate,
+          user.role === UserRoles.CANDIDATE_EXTERNAL,
+          shouldRemoveLinkedUser
+        );
 
-    await Promise.all(
-      updatedUserCandidates.map((updatedUserCandidate) => {
-        const previousCoach = updatedUserCandidate.previous('coach');
-        if (
-          updatedUserCandidate.coach &&
-          updatedUserCandidate.coach.id !== previousCoach?.id
-        ) {
-          return this.usersService.sendMailsAfterMatching(
-            updatedUserCandidate.candidat.id
-          );
-        }
-      })
-    );
+      if (!updatedUserCandidates) {
+        throw new NotFoundException();
+      }
+
+      await Promise.all(
+        updatedUserCandidates.map((updatedUserCandidate) => {
+          const previousCoach = updatedUserCandidate.previous('coach');
+          if (
+            updatedUserCandidate.coach &&
+            updatedUserCandidate.coach.id !== previousCoach?.id
+          ) {
+            return this.usersService.sendMailsAfterMatching(
+              updatedUserCandidate.candidat.id
+            );
+          }
+        })
+      );
+    }
 
     return this.usersService.findOne(userId);
   }

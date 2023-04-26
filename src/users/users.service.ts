@@ -375,7 +375,7 @@ export class UsersService {
     const options: FindOptions<User> = {
       where: {
         ...whereOptions,
-        role: UserRoles.CANDIDATE,
+        role: CandidateUserRoles,
       } as WhereOptions<User>,
       attributes: [...UserAttributes],
       // recuperer la derniere version de cv

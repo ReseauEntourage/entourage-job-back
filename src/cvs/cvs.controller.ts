@@ -29,6 +29,7 @@ import {
 } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
+  CandidateUserRoles,
   CoachUserRoles,
   CVStatuses,
   Permissions,
@@ -63,27 +64,22 @@ export class CVsController {
     @Body('autoSave') autoSave: boolean,
     @UploadedFile() file: Express.Multer.File
   ) {
-    switch (role) {
-      case UserRoles.CANDIDATE:
+    if (isRoleIncluded(CandidateUserRoles, role)) {
+      createCVDto.status = CVStatuses.PROGRESS.value;
+    } else if (isRoleIncluded(CoachUserRoles, role)) {
+      if (
+        createCVDto.status !== CVStatuses.PROGRESS.value &&
+        createCVDto.status !== CVStatuses.PENDING.value
+      ) {
         createCVDto.status = CVStatuses.PROGRESS.value;
-        break;
-      case UserRoles.COACH:
-        if (
-          createCVDto.status !== CVStatuses.PROGRESS.value &&
-          createCVDto.status !== CVStatuses.PENDING.value
-        ) {
-          createCVDto.status = CVStatuses.PROGRESS.value;
-        }
-        break;
-      case UserRoles.ADMIN:
-        // on laisse la permission à l'admin de choisir le statut à enregistrer
-        if (!createCVDto.status) {
-          createCVDto.status = CVStatuses.PUBLISHED.value;
-        }
-        break;
-      default:
-        createCVDto.status = CVStatuses.UNKNOWN.value;
-        break;
+      }
+    } else if (role === UserRoles.ADMIN) {
+      // on laisse la permission à l'admin de choisir le statut à enregistrer
+      if (!createCVDto.status) {
+        createCVDto.status = CVStatuses.PUBLISHED.value;
+      }
+    } else {
+      createCVDto.status = CVStatuses.UNKNOWN.value;
     }
 
     const urlImg = `images/${candidateId}.${createCVDto.status}.jpg`;

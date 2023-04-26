@@ -737,40 +737,53 @@ export class CVsService {
       cv.user.candidat.firstName,
       cv.user.candidat.lastName,
       cv.businessLines
-        .map((businessLine) => {
-          return findConstantFromValue(businessLine.name, BusinessLineFilters)
-            .label;
+        .map(({ name }) => {
+          return findConstantFromValue(name, BusinessLineFilters).label;
         })
         .join(' '),
       cv.contracts
-        .map((contract) => {
-          return findConstantFromValue(contract.name, ContractFilters).label;
+        .map(({ name }) => {
+          return findConstantFromValue(name, ContractFilters).label;
         })
         .join(' '),
       cv.ambitions
-        .map((ambition) => {
-          return ambition.name;
+        .map(({ name }) => {
+          return name;
         })
         .join(' '),
       cv.locations
-        .map((location) => {
-          return findConstantFromValue(location.name, DepartmentFilters).label;
+        .map(({ name }) => {
+          return findConstantFromValue(name, DepartmentFilters).label;
         })
         .join(' '),
       cv.experiences
-        .map((exp) => {
-          return [exp.description, exp.skills.join(' ')].join(' ');
+        .map(({ description, skills }) => {
+          return [description, skills.map(({ name }) => name).join(' ')].join(
+            ' '
+          );
         })
         .join(' '),
       cv.reviews
-        .map((reviews) => {
-          return [reviews.text, reviews.status, reviews.name].join(' ');
+        .map(({ text, status, name }) => {
+          return [text, status, name].join(' ');
         })
         .join(' '),
-      cv.skills.join(' '),
-      cv.languages.join(' '),
+      cv.skills
+        .map(({ name }) => {
+          return name;
+        })
+        .join(' '),
+      cv.languages
+        .map(({ name }) => {
+          return name;
+        })
+        .join(' '),
       cv.availability,
-      cv.passions.join(' '),
+      cv.passions
+        .map(({ name }) => {
+          return name;
+        })
+        .join(' '),
       cv.transport,
       cv.story,
       cv.catchphrase,

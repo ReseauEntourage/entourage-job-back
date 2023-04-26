@@ -87,6 +87,7 @@ export class UserCandidatsService {
 
   async updateAllLinkedCoachesByCandidatesIds(
     candidatesAndCoachesIds: { candidateId: string; coachId: string }[],
+    isExternalCandidate = false,
     shouldRemove = false
   ): Promise<UserCandidat[]> {
     const t = await this.userCandidatModel.sequelize.transaction();
@@ -94,18 +95,20 @@ export class UserCandidatsService {
     try {
       const updatedUserCandidates = await Promise.all(
         candidatesAndCoachesIds.map(async ({ candidateId, coachId }) => {
-          await this.userCandidatModel.update(
-            {
-              coachId: null,
-            },
-            {
-              where: {
-                coachId,
+          if (shouldRemove || !isExternalCandidate) {
+            await this.userCandidatModel.update(
+              {
+                coachId: null,
               },
-              individualHooks: true,
-              transaction: t,
-            }
-          );
+              {
+                where: {
+                  coachId,
+                },
+                individualHooks: true,
+                transaction: t,
+              }
+            );
+          }
 
           if (!shouldRemove) {
             await this.userCandidatModel.update(

@@ -3236,12 +3236,39 @@ describe('Users', () => {
 
         it('Should return 200 if admin updates linked external coach for external candidate with same organization', async () => {
           const {
-            candidat,
+            candidat: { coach, ...restExternalCandidateCandidat },
             coaches,
             lastConnection,
             organization: candidateOrganization,
             ...restExternalCandidate
           } = externalCandidate;
+
+          let otherExternalCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          ({ coach: externalCoach, candidate: otherExternalCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              externalCoach,
+              otherExternalCandidate,
+              false
+            ));
+
+          const {
+            candidat: {
+              coach: otherExternalCandidateCoach,
+              ...restOtherExternalCandidateCandidat
+            },
+            coaches: otherCandidateCoaches,
+            lastConnection: otherCandidateLastConnection,
+            organization: otherCandidateOrganization,
+            ...restOtherExternalCandidate
+          } = otherExternalCandidate;
 
           const {
             candidat: coachCandidat,
@@ -3259,16 +3286,37 @@ describe('Users', () => {
                 userToLinkId: externalCoach.id,
               });
 
+          const coachFromDB = await usersHelper.findUser(externalCoach.id);
+
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
               ...restExternalCandidate,
               candidat: expect.objectContaining({
-                ...candidat,
+                ...restExternalCandidateCandidat,
                 coach: expect.objectContaining({
                   ...restExternalCoach,
                 }),
               }),
+            })
+          );
+          expect(coachFromDB).toEqual(
+            expect.objectContaining({
+              ...restExternalCoach,
+              coaches: expect.arrayContaining([
+                expect.objectContaining({
+                  ...restExternalCandidateCandidat,
+                  candidat: expect.objectContaining({
+                    ...restExternalCandidate,
+                  }),
+                }),
+                expect.objectContaining({
+                  ...restOtherExternalCandidateCandidat,
+                  candidat: expect.objectContaining({
+                    ...restOtherExternalCandidate,
+                  }),
+                }),
+              ]),
             })
           );
         });
