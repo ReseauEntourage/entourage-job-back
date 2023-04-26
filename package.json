@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --detectOpenHandles --forceExit",
     "db:create": "sequelize db:create",
     "db:migrate": "sequelize db:migrate",
+    "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "prepare": "husky install"
   },
