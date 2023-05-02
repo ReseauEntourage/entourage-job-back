@@ -915,7 +915,8 @@ export class SalesforceService {
       workingRight,
       heardAbout,
       zone,
-    };
+      autreSource: 'Formulaire_Sourcing_Page_Travailler',
+    } as const;
     const leadId = (await this.createCandidateLead(leadToCreate)) as string;
     if (infoCo) {
       await this.createCampaignMemberInfoCo(leadId, infoCo);
