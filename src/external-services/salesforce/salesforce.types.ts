@@ -540,6 +540,7 @@ export interface CandidateLeadProps {
   associationSfId?: string;
   heardAbout?: string;
   location?: string;
+  autreSource?: string;
 }
 
 export interface CoachLeadProps {
@@ -643,6 +644,7 @@ export interface CandidateSalesforceLead {
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
+  Autre_source_LinkedOut__c: string;
 }
 
 export interface WorkerSalesforceLead {
