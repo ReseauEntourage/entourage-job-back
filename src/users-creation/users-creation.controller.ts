@@ -133,7 +133,8 @@ export class UsersCreationController {
 
       const updatedUserCandidates =
         await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
-          userCandidatesToUpdate
+          userCandidatesToUpdate,
+          createdUser.role === UserRoles.CANDIDATE_EXTERNAL
         );
 
       if (!updatedUserCandidates) {

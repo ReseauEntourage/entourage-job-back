@@ -87,7 +87,7 @@ export class UserCandidatsService {
 
   async updateAllLinkedCoachesByCandidatesIds(
     candidatesAndCoachesIds: { candidateId: string; coachId: string }[],
-    isExternalCandidate = false,
+    isExternalCandidate: boolean,
     shouldRemove = false
   ): Promise<UserCandidat[]> {
     const t = await this.userCandidatModel.sequelize.transaction();

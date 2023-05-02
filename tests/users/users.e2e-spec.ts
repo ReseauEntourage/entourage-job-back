@@ -783,17 +783,7 @@ describe('Users', () => {
             );
           });
           it('Should return 200 and a created external candidate with external coach', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...candidate
-            } = await userFactory.create(
+            const candidate = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE_EXTERNAL,
               },
@@ -801,20 +791,7 @@ describe('Users', () => {
               false
             );
 
-            const {
-              password: coachPassword,
-              hashReset: coachHashReset,
-              salt: coachSalt,
-              saltReset: coachSaltReset,
-              revision: coachRevision,
-              updatedAt: coachUpdatedAt,
-              createdAt: coachCreatedAt,
-              lastConnection: coachLastConnection,
-              candidat,
-              coaches,
-              organization: coachOrganization,
-              ...coach
-            } = await userFactory.create(
+            let coach = await userFactory.create(
               {
                 role: UserRoles.COACH_EXTERNAL,
                 OrganizationId: organization.id,
@@ -830,27 +807,109 @@ describe('Users', () => {
               ...restOrganization
             } = organization;
 
+            let otherExternalCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                OrganizationId: organization.id,
+              },
+              {},
+              true
+            );
+
+            ({ coach: coach, candidate: otherExternalCandidate } =
+              await userCandidatsHelper.associateCoachAndCandidate(
+                coach,
+                otherExternalCandidate,
+                false
+              ));
+
+            const {
+              password: coachPassword,
+              hashReset: coachHashReset,
+              salt: coachSalt,
+              saltReset: coachSaltReset,
+              revision: coachRevision,
+              updatedAt: coachUpdatedAt,
+              createdAt: coachCreatedAt,
+              lastConnection: coachLastConnection,
+              candidat,
+              coaches,
+              organization: coachOrganization,
+              ...restCoach
+            } = coach;
+
+            const {
+              password,
+              hashReset,
+              salt,
+              saltReset,
+              revision,
+              updatedAt,
+              createdAt,
+              lastConnection,
+              candidat: candidateCandidat,
+              ...restCandidate
+            } = candidate;
+
+            const {
+              candidat: {
+                coach: otherExternalCandidateCoach,
+                ...restOtherExternalCandidateCandidat
+              },
+              coaches: otherExternalCandidateCoaches,
+              lastConnection: otherCandidateLastConnection,
+              organization: otherCandidateOrganization,
+              ...restOtherExternalCandidate
+            } = otherExternalCandidate;
+
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(app.getHttpServer())
                 .post(`${route}`)
                 .set('authorization', `Token ${loggedInAdmin.token}`)
                 .send({
-                  ...candidate,
+                  ...restCandidate,
                   OrganizationId: organization.id,
                   userToLinkId: coach.id,
                 });
+
+            const coachFromDB = await usersHelper.findUser(coach.id);
+
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
               expect.objectContaining({
-                ...candidate,
+                ...restCandidate,
                 candidat: expect.objectContaining({
                   coach: expect.objectContaining({
-                    ...coach,
+                    ...restCoach,
                   }),
                 }),
                 organization: expect.objectContaining({
                   ...restOrganization,
                 }),
+              })
+            );
+
+            const {
+              candidat: { coach: candidateCoach, ...restCandidateCandidat },
+            } = response.body;
+
+            expect(coachFromDB).toEqual(
+              expect.objectContaining({
+                ...restCoach,
+                coaches: expect.arrayContaining([
+                  expect.objectContaining({
+                    ...restCandidateCandidat,
+                    candidat: expect.objectContaining({
+                      ...restCandidate,
+                    }),
+                  }),
+                  expect.objectContaining({
+                    ...restOtherExternalCandidateCandidat,
+                    candidat: expect.objectContaining({
+                      ...restOtherExternalCandidate,
+                    }),
+                  }),
+                ]),
               })
             );
           });
