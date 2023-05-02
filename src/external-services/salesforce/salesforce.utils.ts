@@ -429,6 +429,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       workerSfIdAsProspect,
       workerSfIdAsContact,
       associationSfId,
+      autreSource,
     } = leadProps;
 
     const parsedAddress = parseAddress(address);
@@ -443,6 +444,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       PostalCode: parsedAddress?.postalCode,
       Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
       Date_de_naissance__c: birthDate,
+      Autre_source_LinkedOut__c: autreSource,
       Accompagnement_social__c: formatSalesforceValue<CandidateHelpWithValue>(
         helpWith,
         LeadHelpWith
