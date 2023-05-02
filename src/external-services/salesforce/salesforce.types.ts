@@ -540,7 +540,7 @@ export interface CandidateLeadProps {
   associationSfId?: string;
   heardAbout?: string;
   location?: string;
-  autreSource?: string;
+  autreSource?: 'Formulaire_Sourcing_Page_Travailler';
 }
 
 export interface CoachLeadProps {
