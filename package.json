@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.8.2",
+  "version": "2.9.0",
   "license": "ISC",
   "engines": {
     "node": "16.x"
@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --detectOpenHandles --forceExit",
     "db:create": "sequelize db:create",
     "db:migrate": "sequelize db:migrate",
+    "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "prepare": "husky install"
   },
