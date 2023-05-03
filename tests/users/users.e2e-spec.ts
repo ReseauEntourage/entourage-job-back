@@ -2184,7 +2184,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=2&offset=0&role=${UserRoles.CANDIDATE}`
+                  `${route}/members?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2200,7 +2200,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=3&offset=0&role=${UserRoles.COACH}`
+                  `${route}/members?limit=3&offset=0&role[]=${UserRoles.COACH}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2218,7 +2218,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=2&offset=2&role=${UserRoles.CANDIDATE}`
+                  `${route}/members?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2234,7 +2234,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=2&offset=2&role=${UserRoles.COACH}`
+                  `${route}/members?limit=2&offset=2&role[]=${UserRoles.COACH}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2289,7 +2289,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2333,7 +2333,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2363,7 +2363,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&hidden[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&hidden[]=true`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2392,7 +2392,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&employed[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&employed[]=true`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2459,7 +2459,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2533,7 +2533,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2573,7 +2573,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&associatedUser[]=false`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&associatedUser[]=false`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2615,7 +2615,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
                 .get(
-                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&associatedUser[]=false`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&associatedUser[]=false`
                 )
                 .set('authorization', `Token ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);

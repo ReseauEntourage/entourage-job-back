@@ -71,18 +71,17 @@ export class UsersController {
     @Query()
     query: {
       query: string;
-      role: UserRole;
+      role: UserRole[];
     } & FilterParams<MemberFilterKey>
   ) {
     const order = [['firstName', 'ASC']] as Order;
-    const { role, query: search, ...restParams } = query;
+    const { query: search, ...restParams } = query;
     return this.usersService.findAllMembers({
       ...restParams,
       limit,
       order,
       offset,
       search,
-      role,
     });
   }
 
