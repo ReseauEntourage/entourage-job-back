@@ -20,6 +20,7 @@ import {
 import { ContactCandidateFormFactory } from './contact-candidate-form.factory';
 import { ContactCompanyFormFactory } from './contact-company-form.factory';
 import { ContactUsFormFactory } from './contact-us-form.factory';
+import { InscriptionCandidateFormFactory } from './inscription-candiate-form.factory';
 
 describe('Contacts', () => {
   let app: INestApplication;
@@ -28,6 +29,7 @@ describe('Contacts', () => {
   let contactUsFormFactory: ContactUsFormFactory;
   let contactCompanyFormFactory: ContactCompanyFormFactory;
   let contactCandidateFormFactory: ContactCandidateFormFactory;
+  let inscriptionCandidateFormFactory: InscriptionCandidateFormFactory;
 
   const route = '/contact';
 
@@ -57,6 +59,10 @@ describe('Contacts', () => {
     contactCandidateFormFactory =
       moduleFixture.get<ContactCandidateFormFactory>(
         ContactCandidateFormFactory
+      );
+    inscriptionCandidateFormFactory =
+      moduleFixture.get<InscriptionCandidateFormFactory>(
+        InscriptionCandidateFormFactory
       );
   });
 
@@ -258,6 +264,79 @@ describe('Contacts', () => {
           zone: AdminZones.LYON,
           status: 'PARTICULIER' as ContactStatus,
         });
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('/campaigns - Get all the campaigns in the future', () => {
+    it('should return 201 on route call', async () => {
+      const response: APIResponse<ContactsController['getCampaigns']> =
+        await request(app.getHttpServer()).get(`${route}/campaigns`).send();
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('/candidateInscription - Post candidate inscription form', () => {
+    it('should return 201 on route call with complete data', async () => {
+      const formAnswers = await inscriptionCandidateFormFactory.create({});
+
+      const shortData = {
+        firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
+        email: formAnswers.email,
+        birthdate: formAnswers.birthdate,
+        workingRight: formAnswers.workingRight,
+        heardAbout: formAnswers.heardAbout,
+        phone: formAnswers.phone,
+        location: formAnswers.location,
+        infoCo: formAnswers.infoCo,
+      };
+
+      const response: APIResponse<ContactsController['candidateInscription']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidateInscription`)
+          .send(shortData);
+      expect(response.status).toBe(201);
+    });
+    it('should return 201 on route call without infoCo', async () => {
+      const formAnswers = await inscriptionCandidateFormFactory.create({});
+
+      const shortData = {
+        firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
+        email: formAnswers.email,
+        birthdate: formAnswers.birthdate,
+        workingRight: formAnswers.workingRight,
+        heardAbout: formAnswers.heardAbout,
+        phone: formAnswers.phone,
+        location: formAnswers.location,
+      };
+
+      const response: APIResponse<ContactsController['candidateInscription']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidateInscription`)
+          .send(shortData);
+      expect(response.status).toBe(201);
+    });
+
+    it('should return 400 with missing property', async () => {
+      const formAnswers = await inscriptionCandidateFormFactory.create({});
+
+      const shortData = {
+        firstName: formAnswers.firstName,
+        lastName: formAnswers.lastName,
+        email: formAnswers.email,
+        birthdate: formAnswers.birthdate,
+        workingRight: formAnswers.workingRight,
+        heardAbout: formAnswers.heardAbout,
+        // phone: formAnswers.phone,
+        location: formAnswers.location,
+      };
+
+      const response: APIResponse<ContactsController['candidateInscription']> =
+        await request(app.getHttpServer())
+          .post(`${route}/candidateInscription`)
+          .send(shortData);
       expect(response.status).toBe(400);
     });
   });
