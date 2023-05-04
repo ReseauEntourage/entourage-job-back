@@ -70,6 +70,8 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   };
 }
 
+const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -83,16 +85,14 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
     }),
     BullModule.forRoot({
       redis:
-        ENV === 'dev-test' || ENV === 'test'
-          ? {}
-          : getRedisOptions(process.env.REDIS_URL),
+        ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(redisUrl),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
       ...(ENV === 'dev-test' || ENV === 'test'
         ? {}
-        : getRedisOptions(process.env.REDIS_URL)),
+        : getRedisOptions(redisUrl)),
     }),
     RevisionsModule,
     SharesModule,
