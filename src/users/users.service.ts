@@ -83,15 +83,15 @@ export class UsersService {
       offset: number;
       search: string;
       order: Order;
-      role: UserRole;
+      role: UserRole[];
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
-    const { limit, offset, role, search, order, ...restParams } = params;
+    const { limit, offset, search, order, role, ...restParams } = params;
 
     const filtersObj = getFiltersObjectsFromQueryParams<
       MemberFilterKey,
       MemberConstantType
-    >(restParams, MemberFilters);
+    >({ ...restParams, role }, MemberFilters);
 
     const { businessLines, cvStatus, associatedUser, ...restFilters } =
       filtersObj;
@@ -128,16 +128,16 @@ export class UsersService {
       };
     }
     // filtre par role
-    if (isRoleIncluded(AllUserRoles, role as UserRole)) {
+    if (filterOptions.role && isRoleIncluded(AllUserRoles, role)) {
       options.where = {
         ...options.where,
-        role,
+        role: filterOptions.role,
       };
     }
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
     if (
-      isRoleIncluded(CandidateUserRoles, role as UserRole) &&
+      isRoleIncluded(CandidateUserRoles, role) &&
       (filterOptions.hidden || filterOptions.employed)
     ) {
       userCandidatOptions.where = {};
@@ -253,7 +253,7 @@ export class UsersService {
 
     let finalFilteredMembers = membersWithLastCV;
 
-    if (isRoleIncluded(CandidateUserRoles, role as UserRole)) {
+    if (isRoleIncluded(CandidateUserRoles, role)) {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,
         cvStatus
@@ -266,7 +266,7 @@ export class UsersService {
 
     if (hasFilterOptions && (offset || limit)) {
       if (offset && limit) {
-        return finalFilteredMembers.slice(offset, limit + limit);
+        return finalFilteredMembers.slice(offset, offset + limit);
       }
       if (offset) {
         return finalFilteredMembers.slice(offset);

@@ -57,6 +57,17 @@ export const AdminRoles = {
 
 export type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
 
+export const UserRolesFilters = [
+  { value: UserRoles.CANDIDATE, label: `${UserRoles.CANDIDATE} LKO` },
+  {
+    value: UserRoles.CANDIDATE_EXTERNAL,
+    label: UserRoles.CANDIDATE_EXTERNAL,
+  },
+  { value: UserRoles.COACH, label: `${UserRoles.COACH} LKO` },
+  { value: UserRoles.COACH_EXTERNAL, label: UserRoles.COACH_EXTERNAL },
+  { value: UserRoles.ADMIN, label: UserRoles.ADMIN },
+];
+
 export const Genders = {
   MALE: 0,
   FEMALE: 1,
@@ -108,6 +119,7 @@ export const CVStatusFilters: FilterConstant<CVStatus>[] = [
 ];
 
 export interface MemberOptions {
+  role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: AdminZone[] };
   businessLines: { [Op.or]: BusinessLineValue[] };
   associatedUser: { [Op.or]: boolean[] };
@@ -142,6 +154,11 @@ export type MemberConstantType =
   | typeof CVStatusFilters[number]['value'];
 
 export const MemberFilters: Filters<MemberFilterKey> = [
+  {
+    key: 'role',
+    constants: UserRolesFilters,
+    title: 'Type',
+  },
   {
     key: 'zone',
     constants: AdminZoneFilters,
