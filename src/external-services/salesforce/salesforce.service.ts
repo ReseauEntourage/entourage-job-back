@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
+import moment from 'moment';
 import { OpportunityUserEvent } from '../../opportunities/models/opportunity-user-event.model';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
@@ -11,6 +12,7 @@ import {
   AccountRecordType,
   AccountRecordTypesIds,
   CandidateAndWorkerLeadProps,
+  CandidateInscriptionLeadProps,
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
@@ -30,6 +32,8 @@ import {
   ProcessProps,
   SalesforceAccount,
   SalesforceBinome,
+  SalesforceCampaign,
+  SalesforceCampaignMember,
   SalesforceContact,
   SalesforceError,
   SalesforceEvent,
@@ -37,9 +41,6 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  SalesforceCampaign,
-  CandidateInscriptionLeadProps,
-  SalesforceCampaignMember,
 } from './salesforce.types';
 
 import {
@@ -443,10 +444,9 @@ export class SalesforceService {
     const { records }: { records: Partial<SalesforceCampaignMember>[] } =
       await this.salesforce.query(
         `SELECT Id
-        FROM ${ObjectNames.CAMPAIGN_MEMBER}
-        WHERE LeadId = '${leadId}'
-          AND CampaignId = '${infoCoId}'
-        Limit 1`
+         FROM ${ObjectNames.CAMPAIGN_MEMBER}
+         WHERE LeadId = '${leadId}'
+           AND CampaignId = '${infoCoId}' Limit 1`
       );
     return records[0]?.Id;
   }
@@ -480,7 +480,7 @@ export class SalesforceService {
         `SELECT Id
          FROM ${ObjectNames.EVENT}
          WHERE ID_Externe__c = '${id}'
-          AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
+           AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
       );
     return records[0]?.Id;
   }
@@ -1258,25 +1258,28 @@ export class SalesforceService {
     await this.refreshSalesforceInstance();
     const { records }: { records: SalesforceCampaign[] } =
       await this.salesforce.query(
-        `SELECT 
-        Id,
-        Code_postal__c,
-        Adresse_de_l_v_nement__c,
-        Antenne__c, 
-        StartDate, 
-        Heure_de_d_but__c
-      FROM ${ObjectNames.CAMPAIGN}
-      WHERE 
-        ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}' 
-        AND StartDate > TODAY`
+        `SELECT Id,
+                Code_postal__c,
+                Adresse_de_l_v_nement__c,
+                Antenne__c,
+                StartDate,
+                Heure_de_d_but__c
+         FROM ${ObjectNames.CAMPAIGN}
+         WHERE ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}'
+           AND StartDate > TODAY`
       );
-    return records.map((record) => {
-      return {
-        id: record.Id,
-        antenne: record.Antenne__c,
-        address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
-        time: `${record.StartDate} ${record.Heure_de_d_but__c}`,
-      };
-    });
+    return records
+      .sort((recordA, recordB) => {
+        return moment(recordA.StartDate).diff(recordB.StartDate);
+      })
+      .slice(0, 7)
+      .map((record) => {
+        return {
+          id: record.Id,
+          antenne: record.Antenne__c,
+          address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
+          time: `${record.StartDate} ${record.Heure_de_d_but__c}`,
+        };
+      });
   }
 }
