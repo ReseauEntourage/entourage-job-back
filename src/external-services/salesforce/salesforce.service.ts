@@ -1289,6 +1289,7 @@ export class SalesforceService {
   }
 
   async getCampaigns() {
+    this.setIsWorker(false);
     await this.refreshSalesforceInstance();
     const { records }: { records: SalesforceCampaign[] } =
       await this.salesforce.query(
@@ -1312,7 +1313,10 @@ export class SalesforceService {
           id: record.Id,
           antenne: record.Antenne__c,
           address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
-          time: `${record.StartDate} ${record.Heure_de_d_but__c}`,
+          time: moment(
+            `${record.StartDate} ${record.Heure_de_d_but__c}`,
+            'YYYY-MM-DD HH:mm:ss'
+          ),
         };
       });
   }
