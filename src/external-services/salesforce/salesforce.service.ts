@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
+import moment from 'moment';
 import { OpportunityUserEvent } from '../../opportunities/models/opportunity-user-event.model';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
@@ -11,6 +12,7 @@ import {
   AccountRecordType,
   AccountRecordTypesIds,
   CandidateAndWorkerLeadProps,
+  CandidateInscriptionLeadProps,
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
@@ -30,6 +32,8 @@ import {
   ProcessProps,
   SalesforceAccount,
   SalesforceBinome,
+  SalesforceCampaign,
+  SalesforceCampaignMember,
   SalesforceContact,
   SalesforceError,
   SalesforceEvent,
@@ -37,9 +41,6 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
-  SalesforceCampaign,
-  CandidateInscriptionLeadProps,
-  SalesforceCampaignMember,
 } from './salesforce.types';
 
 import {
@@ -413,14 +414,15 @@ export class SalesforceService {
     return this.findBinomeByCandidateSfId(candidateSfId);
   }
 
-  async findContact(email: string, recordType: ContactRecordType) {
+  async findContact(email: string, recordType?: ContactRecordType) {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceContact>[] } =
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.CONTACT}
-         WHERE Email = '${email}'
-           AND RecordTypeId = '${recordType}' LIMIT 1`
+         WHERE Email = '${email}' ${
+          recordType ? `AND RecordTypeId = '${recordType}'` : ''
+        } LIMIT 1`
       );
     return records[0]?.Id;
   }
@@ -438,15 +440,17 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findCampaignMember(leadId: string, infoCoId: string) {
+  async findCampaignMember(
+    { leadId, contactId }: { leadId?: string; contactId?: string },
+    infoCoId: string
+  ) {
     await this.refreshSalesforceInstance();
     const { records }: { records: Partial<SalesforceCampaignMember>[] } =
       await this.salesforce.query(
         `SELECT Id
-        FROM ${ObjectNames.CAMPAIGN_MEMBER}
-        WHERE LeadId = '${leadId}'
-          AND CampaignId = '${infoCoId}'
-        Limit 1`
+         FROM ${ObjectNames.CAMPAIGN_MEMBER}
+         WHERE ${leadId ? `LeadId = '${leadId}'` : `ContactId = '${contactId}'`}
+           AND CampaignId = '${infoCoId}' Limit 1`
       );
     return records[0]?.Id;
   }
@@ -480,7 +484,7 @@ export class SalesforceService {
         `SELECT Id
          FROM ${ObjectNames.EVENT}
          WHERE ID_Externe__c = '${id}'
-          AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
+           AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
       );
     return records[0]?.Id;
   }
@@ -918,17 +922,47 @@ export class SalesforceService {
       autreSource: 'Formulaire_Sourcing_Page_Travailler',
     } as const;
     const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+
     if (infoCo) {
-      await this.createCampaignMemberInfoCo(leadId, infoCo);
+      try {
+        await this.createCampaignMemberInfoCo({ leadId }, infoCo);
+        return leadId;
+      } catch (err) {
+        if (
+          (err as SalesforceError).errorCode ===
+            ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD ||
+          (err as SalesforceError).errorCode ===
+            ErrorCodes.FIELD_INTEGRITY_EXCEPTION
+        ) {
+          const contactId = await this.findContact(email);
+          await this.createCampaignMemberInfoCo(
+            { contactId: contactId },
+            infoCo
+          );
+          return leadId;
+        }
+        console.error(err);
+        throw err;
+      }
     }
-    return leadId;
   }
 
-  async createCampaignMemberInfoCo(leadId: string, infoCoId: string) {
-    const campaignMemberId = await this.findCampaignMember(leadId, infoCoId);
+  async createCampaignMemberInfoCo(
+    leadOrContactId: { leadId?: string; contactId?: string },
+    infoCoId: string
+  ) {
+    const campaignMemberId = await this.findCampaignMember(
+      leadOrContactId,
+      infoCoId
+    );
+    const { leadId, contactId } = leadOrContactId;
     if (!campaignMemberId) {
       return this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
-        LeadId: leadId,
+        ...(leadId
+          ? {
+              LeadId: leadId,
+            }
+          : { ContactId: contactId }),
         CampaignId: infoCoId,
         Status: 'Inscrit',
       });
@@ -1255,27 +1289,30 @@ export class SalesforceService {
   }
 
   async getCampaigns() {
+    this.setIsWorker(false);
     await this.refreshSalesforceInstance();
     const { records }: { records: SalesforceCampaign[] } =
       await this.salesforce.query(
-        `SELECT 
-        Id,
-        Code_postal__c,
-        Adresse_de_l_v_nement__c,
-        Antenne__c, 
-        StartDate, 
-        Heure_de_d_but__c
-      FROM ${ObjectNames.CAMPAIGN}
-      WHERE 
-        ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}' 
-        AND StartDate > TODAY`
+        `SELECT Id,
+                Code_postal__c,
+                Adresse_de_l_v_nement__c,
+                Antenne__c,
+                StartDate,
+                Heure_de_d_but__c
+         FROM ${ObjectNames.CAMPAIGN}
+         WHERE ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}'
+           AND StartDate > TODAY
+         ORDER BY StartDate asc LIMIT 7`
       );
     return records.map((record) => {
       return {
         id: record.Id,
         antenne: record.Antenne__c,
         address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
-        time: `${record.StartDate} ${record.Heure_de_d_but__c}`,
+        time: moment(
+          `${record.StartDate} ${record.Heure_de_d_but__c}`,
+          'YYYY-MM-DD HH:mm:ss'
+        ),
       };
     });
   }
