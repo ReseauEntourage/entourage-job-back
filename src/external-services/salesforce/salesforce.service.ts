@@ -1301,23 +1301,19 @@ export class SalesforceService {
                 Heure_de_d_but__c
          FROM ${ObjectNames.CAMPAIGN}
          WHERE ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}'
-           AND StartDate > TODAY`
+           AND StartDate > TODAY
+         ORDER BY StartDate asc LIMIT 7`
       );
-    return records
-      .sort((recordA, recordB) => {
-        return moment(recordA.StartDate).diff(recordB.StartDate);
-      })
-      .slice(0, 7)
-      .map((record) => {
-        return {
-          id: record.Id,
-          antenne: record.Antenne__c,
-          address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
-          time: moment(
-            `${record.StartDate} ${record.Heure_de_d_but__c}`,
-            'YYYY-MM-DD HH:mm:ss'
-          ),
-        };
-      });
+    return records.map((record) => {
+      return {
+        id: record.Id,
+        antenne: record.Antenne__c,
+        address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
+        time: moment(
+          `${record.StartDate} ${record.Heure_de_d_but__c}`,
+          'YYYY-MM-DD HH:mm:ss'
+        ),
+      };
+    });
   }
 }
