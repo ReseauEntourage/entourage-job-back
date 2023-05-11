@@ -30,7 +30,6 @@ import {
   OfferAndProcessProps,
   OfferProps,
   OfferPropsWithRecruiterId,
-  OrganizationId,
   ProcessProps,
   SalesforceAccount,
   SalesforceBinome,
@@ -1307,8 +1306,11 @@ export class SalesforceService {
       records: timeZoneRecords,
     }: { records: { TimeZoneSidKey: string }[] } = await this.salesforce.query(
       `SELECT TimeZoneSidKey
-       FROM Organization
-       WHERE Id = '${OrganizationId}' LIMIT 1`
+       FROM Organization ${
+         process.env.SF_ORGANIZATION_ID
+           ? `WHERE Id = '${process.env.SF_ORGANIZATION_ID}'`
+           : ''
+       } LIMIT 1`
     );
 
     const timeZone = timeZoneRecords[0]?.TimeZoneSidKey;

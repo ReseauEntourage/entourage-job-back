@@ -61,7 +61,6 @@ export interface SalesforceError {
   };
 }
 
-export const OrganizationId = '00DAa000000EvRRMA0' as const;
 export const ObjectNames = {
   ACCOUNT: 'Account',
   LEAD: 'Lead',
