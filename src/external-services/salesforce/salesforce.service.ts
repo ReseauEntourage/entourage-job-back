@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
-import moment from 'moment';
-import { OpportunityUserEvent } from '../../opportunities/models/opportunity-user-event.model';
+import moment from 'moment-timezone';
+
 import { Opportunity } from 'src/opportunities/models';
+import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { getZoneFromDepartment } from 'src/utils/misc';
@@ -29,6 +30,7 @@ import {
   OfferAndProcessProps,
   OfferProps,
   OfferPropsWithRecruiterId,
+  OrganizationId,
   ProcessProps,
   SalesforceAccount,
   SalesforceBinome,
@@ -91,6 +93,7 @@ export class SalesforceService {
         redirectUri: process.env.SALESFORCE_REDIRECT_URI,
       },
       maxRequest: 10000,
+      version: '43.0',
     });
     return this.salesforce.login(
       process.env.SALESFORCE_USERNAME,
@@ -409,9 +412,17 @@ export class SalesforceService {
       ContactRecordTypesIds.CANDIDATE
     );
     if (!candidateSfId) {
+      console.error('Error finding Salesforce candidate by mail : ' + email);
       return null;
     }
-    return this.findBinomeByCandidateSfId(candidateSfId);
+
+    const binomeSfId = await this.findBinomeByCandidateSfId(candidateSfId);
+    if (!binomeSfId) {
+      console.error('Error finding Salesforce binome by mail : ' + email);
+      return null;
+    }
+
+    return binomeSfId;
   }
 
   async findContact(email: string, recordType?: ContactRecordType) {
@@ -1291,6 +1302,17 @@ export class SalesforceService {
   async getCampaigns() {
     this.setIsWorker(false);
     await this.refreshSalesforceInstance();
+
+    const {
+      records: timeZoneRecords,
+    }: { records: { TimeZoneSidKey: string }[] } = await this.salesforce.query(
+      `SELECT TimeZoneSidKey
+       FROM Organization
+       WHERE Id = '${OrganizationId}' LIMIT 1`
+    );
+
+    const timeZone = timeZoneRecords[0]?.TimeZoneSidKey;
+
     const { records }: { records: SalesforceCampaign[] } =
       await this.salesforce.query(
         `SELECT Id,
@@ -1304,15 +1326,21 @@ export class SalesforceService {
            AND StartDate > TODAY
          ORDER BY StartDate asc LIMIT 7`
       );
+
+    // Remove the "Z" behind the time fetched from Salesforce to use it as is and not as UTC
+    // Parse it using the timezone from Salesforce to manage DST
+
     return records.map((record) => {
       return {
         id: record.Id,
         antenne: record.Antenne__c,
         address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
-        time: moment(
-          `${record.StartDate} ${record.Heure_de_d_but__c}`,
-          'YYYY-MM-DD HH:mm:ss'
-        ),
+        time: moment
+          .tz(
+            `${record.StartDate} ${record.Heure_de_d_but__c.replace('Z', '')}`,
+            timeZone
+          )
+          .format(),
       };
     });
   }
