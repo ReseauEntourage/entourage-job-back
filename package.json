@@ -57,6 +57,7 @@
     "jsforce": "^1.11.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43",
     "node-fetch": "^2.6.7",
     "node-mailjet": "^3.3.7",
     "passport": "^0.5.2",
