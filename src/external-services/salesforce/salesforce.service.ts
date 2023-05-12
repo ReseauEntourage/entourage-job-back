@@ -1336,7 +1336,11 @@ export class SalesforceService {
       return {
         id: record.Id,
         antenne: record.Antenne__c,
-        address: `${record.Adresse_de_l_v_nement__c} ${record.Code_postal__c}`,
+        address: record.Adresse_de_l_v_nement__c
+          ? `${record.Adresse_de_l_v_nement__c}${
+              record.Code_postal__c ? ` ${record.Code_postal__c}` : ''
+            }`
+          : null,
         time: moment
           .tz(
             `${record.StartDate} ${record.Heure_de_d_but__c.replace('Z', '')}`,
