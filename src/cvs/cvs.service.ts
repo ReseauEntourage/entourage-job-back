@@ -228,7 +228,7 @@ export class CVsService {
             const modelExperience = await this.experienceModel.create(
               {
                 CVId: createdCV.id,
-                description: experience.description,
+                description: experience.description || '',
                 order: experience.order,
               },
               {

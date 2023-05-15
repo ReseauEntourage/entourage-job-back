@@ -19,14 +19,14 @@ import {
   CandidateResource,
   CandidateResources,
   CandidateYesNo,
+  CandidateYesNoNSPP,
+  CandidateYesNoNSPPValue,
   CandidateYesNoValue,
   CompanyApproach,
   CompanyApproaches,
   CompanyZone,
   HeardAbout,
   HeardAboutValue,
-  CandidateYesNoNSPPValue,
-  CandidateYesNoNSPP,
 } from 'src/contacts/contacts.types';
 
 import {
@@ -439,7 +439,8 @@ export interface SalesforceCampaign {
 
 export interface SalesforceCampaignMember {
   Id?: string; // never used, only for TS purpose
-  LeadId: string;
+  LeadId?: string;
+  ContactId?: string;
   CampaignId: string;
   Status: string; // Inscrit
 }
