@@ -24,7 +24,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { CandidateUserRoles } from 'src/users/users.types';
+import { CandidateUserRoles, UserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import {
@@ -1074,7 +1074,8 @@ export class OpportunitiesService {
   ) {
     const candidate = await this.usersService.findOne(candidateId);
     const coach = getCoachFromCandidate(candidate);
-    const emailCoach = coach ? coach.email : '';
+    const emailCoach =
+      coach && coach.role !== UserRoles.COACH_EXTERNAL ? coach.email : null;
     return this.mailsService.sendMailContactEmployer(
       type,
       candidate,

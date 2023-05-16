@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as _ from 'lodash';
 
+import { UserRoles } from '../users/users.types';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
@@ -72,7 +73,7 @@ export class MailsService {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 
     const coach = getCoachFromCandidate(candidate);
-    if (coach) {
+    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
       toEmail.cc = coach.email;
     }
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -101,9 +102,10 @@ export class MailsService {
   async sendCVPublishedMail(candidate: User) {
     const coach = getCoachFromCandidate(candidate);
 
-    const toEmail: CustomMailParams['toEmail'] = coach
-      ? { to: candidate.email, cc: coach.email }
-      : { to: candidate.email };
+    const toEmail: CustomMailParams['toEmail'] =
+      coach && coach.role !== UserRoles.COACH_EXTERNAL
+        ? { to: candidate.email, cc: coach.email }
+        : { to: candidate.email };
 
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
@@ -159,7 +161,7 @@ export class MailsService {
         to: candidate.email,
       };
       const coach = getCoachFromCandidate(candidate);
-      if (coach) {
+      if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
         toEmail.cc = coach.email;
       }
       const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -323,7 +325,7 @@ export class MailsService {
       to: opportunityUser.user.email,
     };
 
-    if (coach) {
+    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
       toEmail.cc = coach.email;
     }
 
@@ -490,7 +492,7 @@ export class MailsService {
   async sendMailContactEmployer(
     type: string,
     user: User,
-    relatedUserMail: string,
+    coachMail: string | null,
     opportunity: Opportunity,
     description: string
   ) {
@@ -507,7 +509,7 @@ export class MailsService {
         to: opportunity.recruiterMail,
         cc: [
           user.email,
-          relatedUserMail,
+          ...(coachMail ? [coachMail] : []),
           candidatesAdminMail,
           companiesAdminMail,
         ],

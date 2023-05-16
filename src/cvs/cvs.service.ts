@@ -37,7 +37,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CVStatus, CVStatuses, Gender } from 'src/users/users.types';
+import { CVStatus, CVStatuses, Gender, UserRoles } from 'src/users/users.types';
 import { getCoachFromCandidate } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
@@ -893,7 +893,7 @@ export class CVsService {
           to: candidate.email,
         };
         const coach = getCoachFromCandidate(candidate);
-        if (coach) {
+        if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
           toEmail.cc = coach.email;
         }
 
