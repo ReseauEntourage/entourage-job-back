@@ -4,9 +4,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
-import { UserCandidat, User } from 'src/users/models';
+import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Gender, UserRoles } from 'src/users/users.types';
+import { capitalizeNameAndTrim } from 'src/users/users.utils';
 import { AdminZones, Factory } from 'src/utils/types';
 
 @Injectable()
@@ -28,8 +29,8 @@ export class UserFactory implements Factory<User> {
 
     const fakeData = {
       email: faker.internet.email().toLowerCase(),
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
+      firstName: capitalizeNameAndTrim(faker.name.firstName()),
+      lastName: capitalizeNameAndTrim(faker.name.lastName()),
       role: UserRoles.CANDIDATE,
       gender: faker.random.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
