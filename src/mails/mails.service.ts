@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as _ from 'lodash';
 
-import { UserRoles } from '../users/users.types';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
@@ -20,6 +19,7 @@ import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/op
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
+import { UserRoles } from 'src/users/users.types';
 import {
   getCandidateFromCoach,
   getCoachFromCandidate,
@@ -325,7 +325,7 @@ export class MailsService {
       to: opportunityUser.user.email,
     };
 
-    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
+    if (coach) {
       toEmail.cc = coach.email;
     }
 
