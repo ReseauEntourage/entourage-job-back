@@ -133,12 +133,17 @@ export class MailsService {
     });
   }
 
-  async sendCVReminderMail(
-    candidate: User,
-    is20Days = false,
-    toEmail: CustomMailParams['toEmail']
-  ) {
+  async sendCVReminderMail(candidate: User, is20Days = false) {
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+
+    const toEmail: CustomMailParams['toEmail'] = {
+      to: candidate.email,
+    };
+
+    const coach = getCoachFromCandidate(candidate);
+    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
+      toEmail.cc = coach.email;
+    }
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail,
@@ -150,6 +155,8 @@ export class MailsService {
         ..._.omitBy(candidate, _.isNil),
       },
     });
+
+    return toEmail;
   }
 
   async sendReminderIfNotEmployed(
@@ -491,41 +498,42 @@ export class MailsService {
 
   async sendMailContactEmployer(
     type: string,
-    user: User,
-    coachMail: string | null,
+    candidate: User,
     opportunity: Opportunity,
     description: string
   ) {
     const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
-      user.zone
+      candidate.zone
     );
     const types: { [K in string]: MailjetTemplateKey } = {
       contact: 'CONTACT_EMPLOYER',
       relance: 'RELANCE_EMPLOYER',
     };
+    const coach = getCoachFromCandidate(candidate);
+    const emailCoach = coach?.email ? [coach?.email] : [];
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
         to: opportunity.recruiterMail,
         cc: [
-          user.email,
-          ...(coachMail ? [coachMail] : []),
+          candidate.email,
+          ...emailCoach,
           candidatesAdminMail,
           companiesAdminMail,
         ],
       },
       templateId: MailjetTemplates[types[type]],
-      replyTo: user.email,
+      replyTo: candidate.email,
       variables: {
         description,
-        zone: user.zone,
-        gender: user.gender,
+        zone: candidate.zone,
+        gender: candidate.gender,
         offerId: opportunity.id,
         offerTitle: opportunity.title,
-        candidateEmail: user.email,
-        candidatePhone: user.phone,
-        cvUrl: user.candidat.url,
-        candidateFirstName: user.firstName,
+        candidateEmail: candidate.email,
+        candidatePhone: candidate.phone,
+        cvUrl: candidate.candidat.url,
+        candidateFirstName: candidate.firstName,
         recruiterFirstName: opportunity.recruiterFirstName,
         company: opportunity.company,
       },
