@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { and } from 'sequelize';
+import { AdminZone } from '../utils/types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UpdateOrganizationDto } from './dto';
 import { Organization } from './models';
@@ -27,9 +29,12 @@ export class OrganizationsService {
     });
   }
 
-  async findAll(search = '') {
+  async findAll(search = '', zone: AdminZone | AdminZone[]) {
+    const searchQuery = searchInColumnWhereOption('Organization.name', search);
+    const whereQuery = zone ? and(searchQuery, { zone: zone }) : searchQuery;
+
     return this.organizationModel.findAll({
-      where: searchInColumnWhereOption('Organization.name', search),
+      where: whereQuery,
       include: {
         model: OrganizationReferent,
         as: 'organizationReferent',

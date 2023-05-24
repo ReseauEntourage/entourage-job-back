@@ -10,7 +10,7 @@ import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
 import { Queues } from 'src/queues/queues.types';
 import { UserRoles } from 'src/users/users.types';
-import { APIResponse } from 'src/utils/types';
+import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UsersHelper } from 'tests/users/users.helper';
@@ -246,7 +246,7 @@ describe('Organizations', () => {
       });
     });
     describe('R - Read many Organizations', () => {
-      describe('/?search= - Read all organizations matching search query', () => {
+      describe('/?search=&zone= - Read all organizations matching search query', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -267,14 +267,14 @@ describe('Organizations', () => {
           organizations = await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'XXX' },
+            { name: 'XXX', zone: AdminZones.PARIS },
             {},
             true
           );
           await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'YYY' },
+            { name: 'YYY', zone: AdminZones.LYON },
             {},
             true
           );
@@ -287,6 +287,21 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(app.getHttpServer())
               .get(`${route}?search=X`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(5);
+          expect(expectedOrganizationsId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+
+        it('Should return 200 and matching organizations when admin gets an organization with zone', async () => {
+          const expectedOrganizationsId = [
+            ...organizations.map(({ id }) => id),
+          ];
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}?zone[]=${AdminZones.PARIS}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);

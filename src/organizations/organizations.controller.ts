@@ -14,6 +14,7 @@ import {
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
+import { AdminZone } from 'src/utils/types';
 import {
   CreateOrganizationDto,
   CreateOrganizationPipe,
@@ -33,8 +34,11 @@ export class OrganizationsController {
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get()
-  async findAll(@Query('search') search: string) {
-    const organizations = await this.organizationsService.findAll(search);
+  async findAll(
+    @Query('search') search: string,
+    @Query('zone') zone?: AdminZone | AdminZone[]
+  ) {
+    const organizations = await this.organizationsService.findAll(search, zone);
 
     return organizations.map((organization) => {
       return organization.toJSON();
