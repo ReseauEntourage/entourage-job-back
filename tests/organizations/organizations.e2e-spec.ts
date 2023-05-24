@@ -13,6 +13,7 @@ import { UserRoles } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { OrganizationFactory } from './organization.factory';
 import { OrganizationsHelper } from './organizations.helper';
@@ -24,6 +25,7 @@ describe('Organizations', () => {
   let usersHelper: UsersHelper;
   let organizationFactory: OrganizationFactory;
   let organizationsHelper: OrganizationsHelper;
+  let userFactory: UserFactory;
 
   const route = '/organization';
 
@@ -45,6 +47,7 @@ describe('Organizations', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationsHelper =
       moduleFixture.get<OrganizationsHelper>(OrganizationsHelper);
     organizationFactory =
@@ -251,18 +254,47 @@ describe('Organizations', () => {
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
 
+        let organization: Organization;
+
         let organizations: Organization[];
 
         beforeEach(async () => {
+          organization = await organizationFactory.create(
+            { name: 'GGG', zone: AdminZones.LILLE },
+            {},
+            true
+          );
+
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
+            OrganizationId: organization.id,
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+            OrganizationId: organization.id,
           });
+
+          await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          await databaseHelper.createEntities(
+            userFactory,
+            7,
+            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            {},
+            true
+          );
 
           organizations = await databaseHelper.createEntities(
             organizationFactory,
@@ -280,7 +312,7 @@ describe('Organizations', () => {
           );
         });
 
-        it('Should return 200 and matching organizations when admin gets an organization with search query', async () => {
+        it('Should return 200 and matching organizations when admin gets organizations with search query', async () => {
           const expectedOrganizationsId = [
             ...organizations.map(({ id }) => id),
           ];
@@ -295,7 +327,7 @@ describe('Organizations', () => {
           );
         });
 
-        it('Should return 200 and matching organizations when admin gets an organization with zone', async () => {
+        it('Should return 200 and matching organizations when admin gets organizations with zone', async () => {
           const expectedOrganizationsId = [
             ...organizations.map(({ id }) => id),
           ];
@@ -309,13 +341,28 @@ describe('Organizations', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and all organizations when admin gets an organization without search query', async () => {
+        it('Should return 200 and all organizations candidates and coaches count when admin gets organizations ', async () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(app.getHttpServer())
               .get(`${route}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
-          expect(response.body.length).toBe(10);
+          expect(response.body).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                coachesCount: 7,
+                candidatesCount: 3,
+              }),
+            ])
+          );
+        });
+        it('Should return 200 and all organizations when admin gets organizations without search query or filters', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(11);
         });
         it('Should return 200 and empty array when no matching organizations', async () => {
           const response: APIResponse<OrganizationsController['findAll']> =

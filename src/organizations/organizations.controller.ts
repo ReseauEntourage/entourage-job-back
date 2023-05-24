@@ -40,9 +40,18 @@ export class OrganizationsController {
   ) {
     const organizations = await this.organizationsService.findAll(search, zone);
 
-    return organizations.map((organization) => {
-      return organization.toJSON();
-    });
+    return Promise.all(
+      organizations.map(async (organization) => {
+        const { candidatesCount, coachesCount } =
+          await this.organizationsService.countAssociatedUsers(organization.id);
+
+        return {
+          ...organization.toJSON(),
+          candidatesCount,
+          coachesCount,
+        };
+      })
+    );
   }
 
   @UserPermissions(Permissions.ADMIN)

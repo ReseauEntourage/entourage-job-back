@@ -39,8 +39,9 @@ const ENV = `${process.env.NODE_ENV}`;
 
 const getParsedURI = (uri: string) => new URL(uri);
 
-export function getRedisOptions(uri: string) {
-  const { port, hostname, password } = getParsedURI(uri);
+export function getRedisOptions() {
+  const redisUri = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
+  const { port, hostname, password } = getParsedURI(redisUri);
   return {
     port: parseInt(port),
     host: hostname,
@@ -54,8 +55,10 @@ export function getRedisOptions(uri: string) {
   };
 }
 
-export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
-  const { hostname, port, username, password, pathname } = getParsedURI(uri);
+export function getSequelizeOptions(): SequelizeModuleOptions {
+  const dbUri = process.env.DATABASE_URL;
+
+  const { hostname, port, username, password, pathname } = getParsedURI(dbUri);
 
   return {
     dialect: 'postgres',
@@ -70,30 +73,24 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   };
 }
 
-// Redis URL condition has to be inside the module to have the env variables on initialization
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ENV === 'dev-test' || ENV === 'test' ? '.env.test' : '.env',
     }),
-    SequelizeModule.forRoot(getSequelizeOptions(process.env.DATABASE_URL)),
+    SequelizeModule.forRoot(getSequelizeOptions()),
     ThrottlerModule.forRoot({
       ttl: 60,
       limit: 100,
     }),
     BullModule.forRoot({
-      redis:
-        ENV === 'dev-test' || ENV === 'test'
-          ? {}
-          : getRedisOptions(process.env.REDIS_TLS_URL || process.env.REDIS_URL),
+      redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...(ENV === 'dev-test' || ENV === 'test'
-        ? {}
-        : getRedisOptions(process.env.REDIS_TLS_URL || process.env.REDIS_URL)),
+      ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
     }),
     RevisionsModule,
     SharesModule,
