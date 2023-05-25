@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Put,
@@ -21,6 +22,7 @@ import {
   UpdateOrganizationDto,
   UpdateOrganizationPipe,
 } from './dto';
+import { Organization } from './models';
 import { OrganizationReferentsService } from './organization-referents.service';
 import { OrganizationsService } from './organizations.service';
 
@@ -35,10 +37,17 @@ export class OrganizationsController {
   @UseGuards(UserPermissionsGuard)
   @Get()
   async findAll(
-    @Query('search') search: string,
+    @Query('limit', new ParseIntPipe()) limit: number,
+    @Query('offset', new ParseIntPipe()) offset: number,
+    @Query('search') search?: string,
     @Query('zone') zone?: AdminZone | AdminZone[]
   ) {
-    const organizations = await this.organizationsService.findAll(search, zone);
+    const organizations = await this.organizationsService.findAll(
+      limit,
+      offset,
+      search,
+      zone
+    );
 
     return Promise.all(
       organizations.map(async (organization) => {
@@ -46,10 +55,10 @@ export class OrganizationsController {
           await this.organizationsService.countAssociatedUsers(organization.id);
 
         return {
-          ...organization.toJSON(),
+          ...(organization.toJSON() as Organization),
           candidatesCount,
           coachesCount,
-        };
+        } as Organization & { candidatesCount: number; coachesCount: number };
       })
     );
   }

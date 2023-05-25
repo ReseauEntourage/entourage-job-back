@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import {
   AllowNull,
   Column,
@@ -34,7 +34,8 @@ export class Organization extends Model {
 
   @ApiProperty()
   @IsString()
-  @AllowNull(false)
+  @IsOptional()
+  @AllowNull(true)
   @Column
   address: string;
 

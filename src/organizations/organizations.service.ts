@@ -31,12 +31,20 @@ export class OrganizationsService {
     });
   }
 
-  async findAll(search = '', zone: AdminZone | AdminZone[]) {
+  async findAll(
+    limit: number,
+    offset: number,
+    search = '',
+    zone?: AdminZone | AdminZone[]
+  ) {
     const searchQuery = searchInColumnWhereOption('Organization.name', search);
     const whereQuery = zone ? and(searchQuery, { zone: zone }) : searchQuery;
 
     return this.organizationModel.findAll({
       where: whereQuery,
+      ...(limit ? { limit } : {}),
+      ...(offset ? { offset } : {}),
+      order: [['name', 'ASC']],
       include: {
         model: OrganizationReferent,
         as: 'organizationReferent',
