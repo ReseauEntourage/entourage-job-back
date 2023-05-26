@@ -30,7 +30,6 @@ import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { CustomMailParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -38,7 +37,6 @@ import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { CVStatus, CVStatuses, Gender } from 'src/users/users.types';
-import { getCoachFromCandidate } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
   escapeQuery,
@@ -889,20 +887,7 @@ export class CVsService {
       });
 
       if (!hasSubmittedAtLeastOnce) {
-        const toEmail: CustomMailParams['toEmail'] = {
-          to: candidate.email,
-        };
-        const coach = getCoachFromCandidate(candidate);
-        if (coach) {
-          toEmail.cc = coach.email;
-        }
-
-        await this.mailsService.sendCVReminderMail(
-          candidate,
-          is20Days,
-          toEmail
-        );
-        return toEmail;
+        return this.mailsService.sendCVReminderMail(candidate, is20Days);
       }
     }
     return false;

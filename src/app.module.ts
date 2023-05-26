@@ -70,8 +70,7 @@ export function getSequelizeOptions(uri: string): SequelizeModuleOptions {
   };
 }
 
-const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
-
+// Redis URL condition has to be inside the module to have the env variables on initialization
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -85,14 +84,16 @@ const redisUrl = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
     }),
     BullModule.forRoot({
       redis:
-        ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(redisUrl),
+        ENV === 'dev-test' || ENV === 'test'
+          ? {}
+          : getRedisOptions(process.env.REDIS_TLS_URL || process.env.REDIS_URL),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
       ...(ENV === 'dev-test' || ENV === 'test'
         ? {}
-        : getRedisOptions(redisUrl)),
+        : getRedisOptions(process.env.REDIS_TLS_URL || process.env.REDIS_URL)),
     }),
     RevisionsModule,
     SharesModule,

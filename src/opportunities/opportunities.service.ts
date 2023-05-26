@@ -3,9 +3,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
-import { CVsService } from '../cvs/cvs.service';
-import { PleziService } from '../external-services/plezi/plezi.service';
-import { getCoachFromCandidate, isRoleIncluded } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
@@ -13,7 +10,9 @@ import {
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
+import { CVsService } from 'src/cvs/cvs.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import { PleziService } from 'src/external-services/plezi/plezi.service';
 import {
   ContactStatuses,
   PleziTrackingData,
@@ -25,6 +24,7 @@ import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { CandidateUserRoles } from 'src/users/users.types';
+import { getCoachFromCandidate, isRoleIncluded } from 'src/users/users.utils';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import {
@@ -1073,12 +1073,9 @@ export class OpportunitiesService {
     description: string
   ) {
     const candidate = await this.usersService.findOne(candidateId);
-    const coach = getCoachFromCandidate(candidate);
-    const emailCoach = coach ? coach.email : '';
     return this.mailsService.sendMailContactEmployer(
       type,
       candidate,
-      emailCoach,
       opportunity,
       description
     );

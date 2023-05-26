@@ -230,11 +230,9 @@ export class CVsController {
   ) {
     const cv = await this.cvsService.findOneByCandidateId(candidateId);
 
-    const { lastModifiedBy } = cv;
-
     return {
       cvHasBeenModified: cv
-        ? !!lastModifiedBy && lastModifiedBy !== userId
+        ? !!cv.lastModifiedBy && cv.lastModifiedBy !== userId
         : false,
     };
   }
