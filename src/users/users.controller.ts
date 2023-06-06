@@ -16,7 +16,6 @@ import { passwordStrength } from 'check-password-strength';
 import { Order } from 'sequelize/types/model';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
-
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import { isValidPhone } from 'src/utils/misc';
@@ -26,19 +25,32 @@ import {
   UpdateUserRestrictedDto,
   UpdateUserRestrictedPipe,
 } from './dto';
+import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
-  RolesGuard,
   Self,
   SelfGuard,
+  UserPermissions,
+  UserPermissionsGuard,
 } from './guards';
-import { User } from './models';
+import { User, UserCandidat } from './models';
 
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
-import { MemberFilterKey, UserRole, UserRoles } from './users.types';
+import {
+  CandidateUserRoles,
+  CoachUserRoles,
+  MemberFilterKey,
+  Permissions,
+  UserRole,
+  UserRoles,
+} from './users.types';
+import {
+  getCandidateAndCoachIdDependingOnRoles,
+  getRelatedUser,
+  isRoleIncluded,
+} from './users.utils';
 
 // TODO change to /users
 @Controller('user')
@@ -48,8 +60,8 @@ export class UsersController {
     private readonly userCandidatsService: UserCandidatsService
   ) {}
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get('members')
   async findMembers(
     @Query('limit', new ParseIntPipe())
@@ -59,24 +71,23 @@ export class UsersController {
     @Query()
     query: {
       query: string;
-      role: UserRole | 'All';
+      role: UserRole[];
     } & FilterParams<MemberFilterKey>
   ) {
     const order = [['firstName', 'ASC']] as Order;
-    const { role, query: search, ...restParams } = query;
+    const { query: search, ...restParams } = query;
     return this.usersService.findAllMembers({
       ...restParams,
       limit,
       order,
       offset,
       search,
-      role,
     });
   }
 
   // TODO divide service
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get('members/count')
   async countSubmittedCVMembers(@UserPayload('zone') zone: AdminZone) {
     return this.usersService.countSubmittedCVMembers(zone);
@@ -90,39 +101,60 @@ export class UsersController {
   }
 
   // TODO divide service
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Get('search')
   async findUsers(
     @Query('query') search: string,
-    @Query('role') role: UserRole
+    @Query('role') role: UserRole | UserRole[],
+    @Query('organizationId') organizationId?: string
   ) {
-    return this.usersService.findAllUsers(search, role);
+    if (organizationId && !uuidValidate(organizationId)) {
+      throw new BadRequestException();
+    }
+
+    return this.usersService.findAllUsers(search, role, organizationId);
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @Get('candidate')
   async findRelatedUser(
     @UserPayload('id') userId: string,
     @UserPayload('role') role: UserRole
   ) {
     const ids = {
-      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
-      coachId: role === UserRoles.COACH ? userId : undefined,
+      candidateId: isRoleIncluded(CandidateUserRoles, role)
+        ? userId
+        : undefined,
+      coachId: isRoleIncluded(CoachUserRoles, role) ? userId : undefined,
     };
 
-    const userCandidat =
+    if (role === UserRoles.COACH_EXTERNAL) {
+      const userCandidates = await this.userCandidatsService.findAllByCoachId(
+        ids.coachId
+      );
+
+      if (!userCandidates || userCandidates.length === 0) {
+        throw new NotFoundException();
+      }
+
+      return userCandidates.map((userCandidate) => {
+        return userCandidate.toJSON() as UserCandidat;
+      });
+    }
+
+    const userCandidate =
       await this.userCandidatsService.findOneByCandidateOrCoachId(
         ids.candidateId,
         ids.coachId
       );
 
-    if (!userCandidat) {
+    if (!userCandidate) {
       throw new NotFoundException();
     }
 
-    return userCandidat;
+    return userCandidate;
   }
 
   @Self('params.id')
@@ -145,23 +177,17 @@ export class UsersController {
     return user;
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
-  @Get('candidate/checkUpdate')
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
+  @Get('candidate/checkUpdate/:candidateId')
   async checkNoteHasBeenModified(
     @UserPayload('role') role: UserRole,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
-    const ids = {
-      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
-      coachId: role === UserRoles.COACH ? userId : undefined,
-    };
-
-    const userCandidat =
-      await this.userCandidatsService.findOneByCandidateOrCoachId(
-        ids.candidateId,
-        ids.coachId
-      );
+    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
+      candidateId
+    );
 
     if (!userCandidat) {
       throw new NotFoundException();
@@ -210,8 +236,8 @@ export class UsersController {
     return updatedUser;
   }
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Put('candidate/bulk')
   async updateAll(
     @Body('attributes', UpdateUserRestrictedPipe)
@@ -244,7 +270,8 @@ export class UsersController {
   async updateUserCandidat(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @Body() updateUserCandidatDto: UpdateUserCandidatDto
+    @Body(new UpdateUserCandidatPipe())
+    updateUserCandidatDto: UpdateUserCandidatDto
   ) {
     const userCandidat = await this.userCandidatsService.findOneByCandidateId(
       candidateId
@@ -260,15 +287,6 @@ export class UsersController {
         lastModifiedBy: userId,
       });
 
-    if (
-      updatedUserCandidat.coach &&
-      updatedUserCandidat.coach.id !== userCandidat.coach?.id
-    ) {
-      await this.usersService.sendMailsAfterMatching(
-        updatedUserCandidat.candidat.id
-      );
-    }
-
     if (updatedUserCandidat.hidden) {
       await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
     } else {
@@ -280,10 +298,112 @@ export class UsersController {
     return updatedUserCandidat;
   }
 
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Put('linkUser/:userId')
+  async linkUser(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Body('userToLinkId') userToLinkId: string | string[]
+  ) {
+    const shouldRemoveLinkedUser =
+      (Array.isArray(userToLinkId) && userToLinkId.length === 0) ||
+      (!Array.isArray(userToLinkId) && userToLinkId === null);
+
+    if (
+      !shouldRemoveLinkedUser &&
+      (Array.isArray(userToLinkId)
+        ? !userToLinkId.every((id) => uuidValidate(id))
+        : !uuidValidate(userId))
+    ) {
+      throw new BadRequestException();
+    }
+
+    const user = await this.usersService.findOne(userId);
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    if (
+      !shouldRemoveLinkedUser &&
+      ((user.role !== UserRoles.COACH_EXTERNAL &&
+        Array.isArray(userToLinkId)) ||
+        (user.role === UserRoles.COACH_EXTERNAL &&
+          !Array.isArray(userToLinkId)))
+    ) {
+      throw new BadRequestException();
+    }
+
+    const usersToLinkIds = Array.isArray(userToLinkId)
+      ? userToLinkId
+      : [userToLinkId];
+
+    const usersToLinkOrToRemoveIds = shouldRemoveLinkedUser
+      ? getRelatedUser(user)?.map(({ id }) => id)
+      : usersToLinkIds;
+
+    if (usersToLinkOrToRemoveIds) {
+      const userCandidatesToUpdate = await Promise.all(
+        usersToLinkOrToRemoveIds.map(async (userToLinkOrToRemoveId) => {
+          const userToLink = await this.usersService.findOne(
+            userToLinkOrToRemoveId
+          );
+
+          if (!userToLink) {
+            throw new NotFoundException();
+          }
+
+          const { candidateId, coachId } =
+            getCandidateAndCoachIdDependingOnRoles(
+              user,
+              userToLink,
+              shouldRemoveLinkedUser
+            );
+
+          const userCandidate =
+            await this.userCandidatsService.findOneByCandidateId(candidateId);
+
+          if (!userCandidate) {
+            throw new NotFoundException();
+          }
+
+          return { candidateId: candidateId, coachId: coachId };
+        })
+      );
+
+      const updatedUserCandidates =
+        await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
+          userCandidatesToUpdate,
+          user.role === UserRoles.CANDIDATE_EXTERNAL,
+          shouldRemoveLinkedUser
+        );
+
+      if (!updatedUserCandidates) {
+        throw new NotFoundException();
+      }
+
+      await Promise.all(
+        updatedUserCandidates.map((updatedUserCandidate) => {
+          const previousCoach = updatedUserCandidate.previous('coach');
+          if (
+            updatedUserCandidate.coach &&
+            updatedUserCandidate.coach.id !== previousCoach?.id
+          ) {
+            return this.usersService.sendMailsAfterMatching(
+              updatedUserCandidate.candidat.id
+            );
+          }
+        })
+      );
+    }
+
+    return this.usersService.findOne(userId);
+  }
+
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @Put('candidate/read/:candidateId')
   async setNoteHasBeenRead(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
