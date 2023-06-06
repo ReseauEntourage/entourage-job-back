@@ -10,9 +10,10 @@ import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
 import { Queues } from 'src/queues/queues.types';
 import { UserRoles } from 'src/users/users.types';
-import { APIResponse } from 'src/utils/types';
+import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { OrganizationFactory } from './organization.factory';
 import { OrganizationsHelper } from './organizations.helper';
@@ -24,6 +25,7 @@ describe('Organizations', () => {
   let usersHelper: UsersHelper;
   let organizationFactory: OrganizationFactory;
   let organizationsHelper: OrganizationsHelper;
+  let userFactory: UserFactory;
 
   const route = '/organization';
 
@@ -45,6 +47,7 @@ describe('Organizations', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
+    userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationsHelper =
       moduleFixture.get<OrganizationsHelper>(OrganizationsHelper);
     organizationFactory =
@@ -97,6 +100,28 @@ describe('Organizations', () => {
               organizationReferent: expect.objectContaining(
                 organization.organizationReferent
               ),
+            })
+          );
+        });
+        it('Should return 200 when admin creates an organization with missing optional fields', async () => {
+          const organization = await organizationFactory.create({}, {}, false);
+
+          const { address, ...organizationToCreate } =
+            await organizationsHelper.mapOrganizationProps(organization);
+
+          const response: APIResponse<OrganizationsController['create']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .send(organizationToCreate);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...organization,
+              organizationReferent: expect.objectContaining(
+                organization.organizationReferent
+              ),
+              address: null,
             })
           );
         });
@@ -246,47 +271,170 @@ describe('Organizations', () => {
       });
     });
     describe('R - Read many Organizations', () => {
-      describe('/?search= - Read all organizations matching search query', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
+      it('Should return 401 when the user is not logged in', async () => {
+        const response: APIResponse<OrganizationsController['findAll']> =
+          await request(app.getHttpServer()).get(`${route}/?search=X`);
+        expect(response.status).toBe(401);
+      });
+      it('Should return 403 when the user is a candidate', async () => {
+        const organization = await organizationFactory.create(
+          { name: 'GGG', zone: AdminZones.LILLE },
+          {},
+          true
+        );
+        const loggedInCandidate = await usersHelper.createLoggedInUser({
+          role: UserRoles.CANDIDATE,
+          OrganizationId: organization.id,
+        });
 
-        let organizations: Organization[];
+        const response: APIResponse<OrganizationsController['findAll']> =
+          await request(app.getHttpServer())
+            .get(`${route}/?search=X`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+        expect(response.status).toBe(403);
+      });
+      it('Should return 403 when the user is a coach', async () => {
+        const organization = await organizationFactory.create(
+          { name: 'GGG', zone: AdminZones.LILLE },
+          {},
+          true
+        );
+        const loggedInCoach = await usersHelper.createLoggedInUser({
+          role: UserRoles.COACH,
+          OrganizationId: organization.id,
+        });
+        const response: APIResponse<OrganizationsController['findAll']> =
+          await request(app.getHttpServer())
+            .get(`${route}/?search=X`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+        expect(response.status).toBe(403);
+      });
+
+      describe('/?limit=&offset= - Get paginated and alphabetically sorted organizations', () => {
+        let loggedInAdmin: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+          await organizationFactory.create({
+            name: 'A',
           });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
+          await organizationFactory.create({
+            name: 'B',
           });
+          await organizationFactory.create({
+            name: 'C',
+          });
+          await organizationFactory.create({
+            name: 'D',
+          });
+          await organizationFactory.create({
+            name: 'E',
+          });
+        });
+        it('Should return 200 and 2 first organizations', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?limit=2&offset=0`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body[0].name).toMatch('A');
+          expect(response.body[1].name).toMatch('B');
+        });
+        it('Should return 200 and 3 first organizations', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?limit=3&offset=0`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(3);
+          expect(response.body[0].name).toMatch('A');
+          expect(response.body[1].name).toMatch('B');
+          expect(response.body[2].name).toMatch('C');
+        });
+        it('Should return 200 and the 3rd and 4th organization', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?limit=2&offset=2`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body[0].name).toMatch('C');
+          expect(response.body[1].name).toMatch('D');
+        });
+        it('Should return 200 and the 3rd and 4th organization', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?limit=2&offset=2`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(response.body[0].name).toMatch('C');
+          expect(response.body[1].name).toMatch('D');
+        });
+      });
+      describe('/?search=&zone= - Read all organizations matching search query and filters', () => {
+        let loggedInAdmin: LoggedUser;
+
+        let organization: Organization;
+
+        let organizations: Organization[];
+
+        beforeEach(async () => {
+          organization = await organizationFactory.create(
+            { name: 'GGG', zone: AdminZones.LILLE },
+            {},
+            true
+          );
+
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+
+          await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              OrganizationId: organization.id,
+            },
+            {},
+            true
+          );
+
+          await databaseHelper.createEntities(
+            userFactory,
+            7,
+            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            {},
+            true
+          );
 
           organizations = await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'XXX' },
+            { name: 'XXX', zone: AdminZones.PARIS },
             {},
             true
           );
           await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'YYY' },
+            { name: 'YYY', zone: AdminZones.LYON },
             {},
             true
           );
         });
 
-        it('Should return 200 and matching organizations when admin gets an organization with search query', async () => {
+        it('Should return 200 and matching organizations when admin gets organizations with search query', async () => {
           const expectedOrganizationsId = [
             ...organizations.map(({ id }) => id),
           ];
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(app.getHttpServer())
-              .get(`${route}?search=X`)
+              .get(`${route}?limit=50&offset=0&search=X`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);
@@ -294,40 +442,51 @@ describe('Organizations', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and all organizations when admin gets an organization without search query', async () => {
+
+        it('Should return 200 and matching organizations when admin gets organizations with zone', async () => {
+          const expectedOrganizationsId = [
+            ...organizations.map(({ id }) => id),
+          ];
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(app.getHttpServer())
-              .get(`${route}`)
+              .get(`${route}?limit=50&offset=0&zone[]=${AdminZones.PARIS}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
-          expect(response.body.length).toBe(10);
+          expect(response.body.length).toBe(5);
+          expect(expectedOrganizationsId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and all organizations candidates and coaches count when admin gets organizations ', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?limit=50&offset=0`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                coachesCount: 7,
+                candidatesCount: 3,
+              }),
+            ])
+          );
+        });
+        it('Should return 200 and all organizations when admin gets organizations without search query or filters', async () => {
+          const response: APIResponse<OrganizationsController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/?limit=50&offset=0`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(11);
         });
         it('Should return 200 and empty array when no matching organizations', async () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(app.getHttpServer())
-              .get(`${route}/?search=Z`)
+              .get(`${route}/?limit=50&offset=0&search=Z`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(0);
-        });
-        it('Should return 401 when the user is not logged in', async () => {
-          const response: APIResponse<OrganizationsController['findAll']> =
-            await request(app.getHttpServer()).get(`${route}/?search=X`);
-          expect(response.status).toBe(401);
-        });
-        it('Should return 403 when the user is a candidate', async () => {
-          const response: APIResponse<OrganizationsController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/?search=X`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403 when the user is a coach', async () => {
-          const response: APIResponse<OrganizationsController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/?search=X`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
-          expect(response.status).toBe(403);
         });
       });
     });

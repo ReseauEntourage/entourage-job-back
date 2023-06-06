@@ -427,6 +427,27 @@ export class UsersService {
     };
   }
 
+  async countOrganizationAssociatedUsers(organizationId: string) {
+    const { count: candidatesCount } = await this.userModel.findAndCountAll({
+      where: {
+        OrganizationId: organizationId,
+        role: UserRoles.CANDIDATE_EXTERNAL,
+      },
+    });
+
+    const { count: coachesCount } = await this.userModel.findAndCountAll({
+      where: {
+        OrganizationId: organizationId,
+        role: UserRoles.COACH_EXTERNAL,
+      },
+    });
+
+    return {
+      candidatesCount,
+      coachesCount,
+    };
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     await this.userModel.update(updateUserDto, {
       where: { id },

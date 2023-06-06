@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { and } from 'sequelize';
+import { AdminZone } from '../utils/types';
+import { UsersService } from 'src/users/users.service';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UpdateOrganizationDto } from './dto';
 import { Organization } from './models';
@@ -9,7 +12,8 @@ import { OrganizationReferent } from './models/organization-referent.model';
 export class OrganizationsService {
   constructor(
     @InjectModel(Organization)
-    private organizationModel: typeof Organization
+    private organizationModel: typeof Organization,
+    private usersService: UsersService
   ) {}
 
   async create(createOrganizationDto: Partial<Organization>) {
@@ -27,14 +31,29 @@ export class OrganizationsService {
     });
   }
 
-  async findAll(search = '') {
+  async findAll(
+    limit: number,
+    offset: number,
+    search = '',
+    zone?: AdminZone | AdminZone[]
+  ) {
+    const searchQuery = searchInColumnWhereOption('Organization.name', search);
+    const whereQuery = zone ? and(searchQuery, { zone: zone }) : searchQuery;
+
     return this.organizationModel.findAll({
-      where: searchInColumnWhereOption('Organization.name', search),
+      where: whereQuery,
+      ...(limit ? { limit } : {}),
+      ...(offset ? { offset } : {}),
+      order: [['name', 'ASC']],
       include: {
         model: OrganizationReferent,
         as: 'organizationReferent',
       },
     });
+  }
+
+  async countAssociatedUsers(organizationId: string) {
+    return this.usersService.countOrganizationAssociatedUsers(organizationId);
   }
 
   async update(
