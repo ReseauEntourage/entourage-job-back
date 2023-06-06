@@ -1,5 +1,6 @@
 export const UserAttributes = [
   'id',
+  'OrganizationId',
   'firstName',
   'lastName',
   'email',

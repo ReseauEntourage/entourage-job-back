@@ -30,7 +30,6 @@ import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { CustomMailParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -38,7 +37,6 @@ import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { CVStatus, CVStatuses, Gender } from 'src/users/users.types';
-import { getRelatedUser } from 'src/users/users.utils';
 import {
   escapeColumnRaw,
   escapeQuery,
@@ -737,40 +735,53 @@ export class CVsService {
       cv.user.candidat.firstName,
       cv.user.candidat.lastName,
       cv.businessLines
-        .map((businessLine) => {
-          return findConstantFromValue(businessLine.name, BusinessLineFilters)
-            .label;
+        .map(({ name }) => {
+          return findConstantFromValue(name, BusinessLineFilters).label;
         })
         .join(' '),
       cv.contracts
-        .map((contract) => {
-          return findConstantFromValue(contract.name, ContractFilters).label;
+        .map(({ name }) => {
+          return findConstantFromValue(name, ContractFilters).label;
         })
         .join(' '),
       cv.ambitions
-        .map((ambition) => {
-          return ambition.name;
+        .map(({ name }) => {
+          return name;
         })
         .join(' '),
       cv.locations
-        .map((location) => {
-          return findConstantFromValue(location.name, DepartmentFilters).label;
+        .map(({ name }) => {
+          return findConstantFromValue(name, DepartmentFilters).label;
         })
         .join(' '),
       cv.experiences
-        .map((exp) => {
-          return [exp.description, exp.skills.join(' ')].join(' ');
+        .map(({ description, skills }) => {
+          return [description, skills.map(({ name }) => name).join(' ')].join(
+            ' '
+          );
         })
         .join(' '),
       cv.reviews
-        .map((reviews) => {
-          return [reviews.text, reviews.status, reviews.name].join(' ');
+        .map(({ text, status, name }) => {
+          return [text, status, name].join(' ');
         })
         .join(' '),
-      cv.skills.join(' '),
-      cv.languages.join(' '),
+      cv.skills
+        .map(({ name }) => {
+          return name;
+        })
+        .join(' '),
+      cv.languages
+        .map(({ name }) => {
+          return name;
+        })
+        .join(' '),
       cv.availability,
-      cv.passions.join(' '),
+      cv.passions
+        .map(({ name }) => {
+          return name;
+        })
+        .join(' '),
       cv.transport,
       cv.story,
       cv.catchphrase,
@@ -790,8 +801,12 @@ export class CVsService {
     return searchString;
   }
 
-  async sendMailsAfterSubmitting(coach: User, cv: Partial<CV>) {
-    await this.mailsService.sendCVSubmittedMail(coach, cv);
+  async sendMailsAfterSubmitting(
+    coach: User,
+    candidateId: string,
+    cv: Partial<CV>
+  ) {
+    await this.mailsService.sendCVSubmittedMail(coach, candidateId, cv);
   }
 
   async sendMailsAfterPublishing(candidateId: string) {
@@ -872,20 +887,7 @@ export class CVsService {
       });
 
       if (!hasSubmittedAtLeastOnce) {
-        const toEmail: CustomMailParams['toEmail'] = {
-          to: candidate.email,
-        };
-        const coach = getRelatedUser(candidate);
-        if (coach) {
-          toEmail.cc = coach.email;
-        }
-
-        await this.mailsService.sendCVReminderMail(
-          candidate,
-          is20Days,
-          toEmail
-        );
-        return toEmail;
+        return this.mailsService.sendCVReminderMail(candidate, is20Days);
       }
     }
     return false;

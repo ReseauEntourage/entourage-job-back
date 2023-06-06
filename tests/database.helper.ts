@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import {
-  Opportunity,
-  OpportunityBusinessLine,
-  OpportunityUser,
-} from '../src/opportunities/models';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/businessLines/models';
 import { Contract } from 'src/common/contracts/models';
@@ -26,6 +21,15 @@ import {
   CVSearch,
   CVSkill,
 } from 'src/cvs/models';
+import {
+  Opportunity,
+  OpportunityBusinessLine,
+  OpportunityUser,
+  OpportunityUserStatusChange,
+} from 'src/opportunities/models';
+import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
+import { Organization } from 'src/organizations/models';
+import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import { Share } from 'src/shares/models';
 import { UserCandidat, User } from 'src/users/models';
@@ -54,6 +58,10 @@ export class DatabaseHelper {
     private opportunityModel: typeof Opportunity,
     @InjectModel(OpportunityUser)
     private opportunityUserModel: typeof OpportunityUser,
+    @InjectModel(OpportunityUserEvent)
+    private opportunityUserEventModel: typeof OpportunityUserEvent,
+    @InjectModel(OpportunityUserStatusChange)
+    private opportunityUserStatusChangeModel: typeof OpportunityUserStatusChange,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
     @InjectModel(CVSkill)
@@ -84,6 +92,10 @@ export class DatabaseHelper {
     private cvSearchModel: typeof CVSearch,
     @InjectModel(Share)
     private shareModel: typeof Share,
+    @InjectModel(Organization)
+    private organizationModel: typeof Organization,
+    @InjectModel(OrganizationReferent)
+    private organizationReferentModel: typeof OrganizationReferent,
     @InjectModel(Revision)
     private revisionModel: typeof Revision,
     @InjectModel(RevisionChange)
@@ -119,9 +131,13 @@ export class DatabaseHelper {
       await this.cvSearchModel.truncate(destroyOptions);
       await this.reviewModel.truncate(destroyOptions);
       await this.shareModel.truncate(destroyOptions);
+      await this.opportunityUserEventModel.truncate(destroyOptions);
+      await this.opportunityUserStatusChangeModel.truncate(destroyOptions);
       await this.opportunityUserModel.truncate(destroyOptions);
       await this.opportunityModel.truncate(destroyOptions);
       await this.cvModel.truncate(destroyOptions);
+      await this.organizationModel.truncate(destroyOptions);
+      await this.organizationReferentModel.truncate(destroyOptions);
       await this.userCandidatModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
     } catch (err) {

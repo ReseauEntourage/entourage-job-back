@@ -19,7 +19,11 @@ import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/op
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
-import { getRelatedUser } from 'src/users/users.utils';
+import { UserRoles } from 'src/users/users.types';
+import {
+  getCandidateFromCoach,
+  getCoachFromCandidate,
+} from 'src/users/users.utils';
 import {
   getAdminMailsFromDepartment,
   getAdminMailsFromZone,
@@ -68,8 +72,8 @@ export class MailsService {
   async sendCVPreparationMail(candidate: User) {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 
-    const coach = getRelatedUser(candidate);
-    if (coach) {
+    const coach = getCoachFromCandidate(candidate);
+    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
       toEmail.cc = coach.email;
     }
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -96,11 +100,12 @@ export class MailsService {
   }
 
   async sendCVPublishedMail(candidate: User) {
-    const coach = getRelatedUser(candidate);
+    const coach = getCoachFromCandidate(candidate);
 
-    const toEmail: CustomMailParams['toEmail'] = coach
-      ? { to: candidate.email, cc: coach.email }
-      : { to: candidate.email };
+    const toEmail: CustomMailParams['toEmail'] =
+      coach && coach.role !== UserRoles.COACH_EXTERNAL
+        ? { to: candidate.email, cc: coach.email }
+        : { to: candidate.email };
 
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
@@ -114,8 +119,8 @@ export class MailsService {
     });
   }
 
-  async sendCVSubmittedMail(coach: User, cv: Partial<CV>) {
-    const candidate = getRelatedUser(coach);
+  async sendCVSubmittedMail(coach: User, candidateId: string, cv: Partial<CV>) {
+    const candidate = getCandidateFromCoach(coach, candidateId);
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
@@ -128,12 +133,17 @@ export class MailsService {
     });
   }
 
-  async sendCVReminderMail(
-    candidate: User,
-    is20Days = false,
-    toEmail: CustomMailParams['toEmail']
-  ) {
+  async sendCVReminderMail(candidate: User, is20Days = false) {
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+
+    const toEmail: CustomMailParams['toEmail'] = {
+      to: candidate.email,
+    };
+
+    const coach = getCoachFromCandidate(candidate);
+    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
+      toEmail.cc = coach.email;
+    }
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail,
@@ -145,6 +155,8 @@ export class MailsService {
         ..._.omitBy(candidate, _.isNil),
       },
     });
+
+    return toEmail;
   }
 
   async sendReminderIfNotEmployed(
@@ -155,8 +167,8 @@ export class MailsService {
       const toEmail: CustomMailParams['toEmail'] = {
         to: candidate.email,
       };
-      const coach = getRelatedUser(candidate);
-      if (coach) {
+      const coach = getCoachFromCandidate(candidate);
+      if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
         toEmail.cc = coach.email;
       }
       const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -309,7 +321,7 @@ export class MailsService {
     opportunity: Opportunity
   ) {
     const coach = opportunityUser.user
-      ? getRelatedUser(opportunityUser.user)
+      ? getCoachFromCandidate(opportunityUser.user)
       : null;
 
     const { candidatesAdminMail } = getAdminMailsFromZone(
@@ -349,18 +361,18 @@ export class MailsService {
       (!opportunity.opportunityUsers.seen ||
         opportunity.opportunityUsers.status < 0)
     ) {
-      const candidatData = opportunity.opportunityUsers.user;
+      const candidateData = opportunity.opportunityUsers.user;
 
       const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
-        candidatData.zone
+        candidateData.zone
       );
 
       const toEmail: CustomMailParams['toEmail'] = {
-        to: candidatData.email,
+        to: candidateData.email,
         bcc: [candidatesAdminMail, companiesAdminMail],
       };
 
-      const coach = getRelatedUser(candidatData);
+      const coach = getCoachFromCandidate(candidateData);
       if (coach) {
         toEmail.cc = coach.email;
       }
@@ -371,7 +383,7 @@ export class MailsService {
         replyTo: candidatesAdminMail,
         variables: {
           offer: _.omitBy(opportunity, _.isNil),
-          candidat: _.omitBy(candidatData, _.isNil),
+          candidat: _.omitBy(candidateData, _.isNil),
         },
       });
 
@@ -486,41 +498,42 @@ export class MailsService {
 
   async sendMailContactEmployer(
     type: string,
-    user: User,
-    relateduserMail: string,
+    candidate: User,
     opportunity: Opportunity,
     description: string
   ) {
     const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
-      user.zone
+      candidate.zone
     );
     const types: { [K in string]: MailjetTemplateKey } = {
       contact: 'CONTACT_EMPLOYER',
       relance: 'RELANCE_EMPLOYER',
     };
+    const coach = getCoachFromCandidate(candidate);
+    const emailCoach = coach?.email ? [coach?.email] : [];
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
         to: opportunity.recruiterMail,
         cc: [
-          user.email,
-          relateduserMail,
+          candidate.email,
+          ...emailCoach,
           candidatesAdminMail,
           companiesAdminMail,
         ],
       },
       templateId: MailjetTemplates[types[type]],
-      replyTo: user.email,
+      replyTo: candidate.email,
       variables: {
         description,
-        zone: user.zone,
-        gender: user.gender,
+        zone: candidate.zone,
+        gender: candidate.gender,
         offerId: opportunity.id,
         offerTitle: opportunity.title,
-        candidateEmail: user.email,
-        candidatePhone: user.phone,
-        cvUrl: user.candidat.url,
-        candidateFirstName: user.firstName,
+        candidateEmail: candidate.email,
+        candidatePhone: candidate.phone,
+        cvUrl: candidate.candidat.url,
+        candidateFirstName: candidate.firstName,
         recruiterFirstName: opportunity.recruiterFirstName,
         company: opportunity.company,
       },

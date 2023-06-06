@@ -1138,7 +1138,7 @@ describe('CVs', () => {
       });
     });
     describe('R - Read if CV has been updated', () => {
-      describe('/checkUpdate - Check if CV has been updated by coach or admin', () => {
+      describe('/checkUpdate/:candidateId - Check if CV has been updated by coach or admin', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -1164,7 +1164,7 @@ describe('CVs', () => {
         it('Should return 403 if admin checks if CV has been updated', async () => {
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(app.getHttpServer())
-              .get(`${route}/checkUpdate`)
+              .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
@@ -1175,7 +1175,7 @@ describe('CVs', () => {
           });
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(app.getHttpServer())
-              .get(`${route}/checkUpdate`)
+              .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(true);
@@ -1187,7 +1187,7 @@ describe('CVs', () => {
           });
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(app.getHttpServer())
-              .get(`${route}/checkUpdate`)
+              .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(false);
@@ -1199,7 +1199,7 @@ describe('CVs', () => {
           });
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(app.getHttpServer())
-              .get(`${route}/checkUpdate`)
+              .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(true);
@@ -1211,7 +1211,7 @@ describe('CVs', () => {
           });
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(app.getHttpServer())
-              .get(`${route}/checkUpdate`)
+              .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(false);

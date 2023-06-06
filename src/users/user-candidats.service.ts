@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { WhereOptions } from 'sequelize';
+import Transaction from 'sequelize/types/transaction';
 import { UpdateUserCandidatDto } from 'src/users/dto';
 import { UserCandidat, UserCandidatAttributes } from './models';
 import { UserInclude } from './models/user-candidat.include';
@@ -18,11 +19,13 @@ export class UserCandidatsService {
     });
   }
 
-  async findOneByCandidateId(candidateId: string) {
+  async findOneByCandidateId(candidateId: string, transaction?: Transaction) {
+    const transactionOption = transaction ? { transaction } : {};
     return this.userCandidatModel.findOne({
       where: { candidatId: candidateId },
       attributes: [...UserCandidatAttributes],
       include: UserInclude,
+      ...transactionOption,
     });
   }
 
@@ -36,6 +39,14 @@ export class UserCandidatsService {
     }
     return this.userCandidatModel.findOne({
       where: findWhere,
+      attributes: [...UserCandidatAttributes],
+      include: UserInclude,
+    });
+  }
+
+  async findAllByCoachId(coachId?: string) {
+    return this.userCandidatModel.findAll({
+      where: { coachId },
       attributes: [...UserCandidatAttributes],
       include: UserInclude,
     });
@@ -59,7 +70,7 @@ export class UserCandidatsService {
 
   async updateByCandidateId(
     candidateId: string,
-    updateUserCandidatDto: UpdateUserCandidatDto
+    updateUserCandidatDto: Partial<UserCandidat>
   ): Promise<UserCandidat> {
     await this.userCandidatModel.update(updateUserCandidatDto, {
       where: { candidatId: candidateId },
@@ -72,6 +83,67 @@ export class UserCandidatsService {
       return null;
     }
     return updatedUserCandidat.toJSON();
+  }
+
+  async updateAllLinkedCoachesByCandidatesIds(
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[],
+    isExternalCandidate: boolean,
+    shouldRemove = false
+  ): Promise<UserCandidat[]> {
+    const t = await this.userCandidatModel.sequelize.transaction();
+
+    try {
+      const updatedUserCandidates = await Promise.all(
+        candidatesAndCoachesIds.map(async ({ candidateId, coachId }) => {
+          if (shouldRemove || !isExternalCandidate) {
+            await this.userCandidatModel.update(
+              {
+                coachId: null,
+              },
+              {
+                where: {
+                  coachId,
+                },
+                individualHooks: true,
+                transaction: t,
+              }
+            );
+          }
+
+          if (!shouldRemove) {
+            await this.userCandidatModel.update(
+              {
+                coachId: coachId,
+              },
+              {
+                where: { candidatId: candidateId },
+                individualHooks: true,
+                transaction: t,
+              }
+            );
+          }
+
+          const updatedUserCandidat = await this.findOneByCandidateId(
+            candidateId,
+            t
+          );
+
+          if (!updatedUserCandidat) {
+            return null;
+          }
+          return updatedUserCandidat;
+        })
+      );
+      if (updatedUserCandidates.includes(null)) {
+        await t.rollback();
+        return null;
+      }
+      await t.commit();
+      return updatedUserCandidates;
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
   }
 
   async updateAll(usersIds: string[], attributes: UpdateUserCandidatDto) {

@@ -1,14 +1,19 @@
+import { Organization } from 'src/organizations/models';
 import { User, UserAttribute, UserCandidatAttribute } from 'src/users/models';
 
 type PayloadCandidateOrCoach = {
-  coach?: Omit<Pick<User['coach'], UserCandidatAttribute | 'candidat'>, 'note'>;
+  coaches?: Omit<
+    Pick<User['coaches'][number], UserCandidatAttribute | 'candidat'>,
+    'note'
+  >[];
   candidat?: Omit<
     Pick<User['candidat'], UserCandidatAttribute | 'coach'>,
     'note'
   >;
 };
 
-export type PayloadUser = Pick<User, UserAttribute> & PayloadCandidateOrCoach;
+export type PayloadUser = Pick<User, UserAttribute> &
+  PayloadCandidateOrCoach & { organization?: Organization };
 
 export interface LoggedUser {
   user: PayloadUser;
