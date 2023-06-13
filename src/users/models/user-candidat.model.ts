@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transaction } from 'sequelize';
 import {
   AllowNull,
   BeforeCreate,
@@ -95,9 +96,13 @@ export class UserCandidat extends Model {
 
   @BeforeCreate
   @BeforeUpdate
-  static async generateUrl(userCandidat: UserCandidat) {
+  static async generateUrl(
+    userCandidat: UserCandidat,
+    options: { transaction: Transaction }
+  ) {
     const user = await User.findByPk(userCandidat.candidatId, {
       attributes: ['id', 'firstName'],
+      ...(options?.transaction ? { transaction: options.transaction } : {}),
     });
     userCandidat.url = `${user.firstName.toLowerCase()}-${user.id.substring(
       0,
@@ -106,10 +111,14 @@ export class UserCandidat extends Model {
   }
 
   @BeforeUpdate
-  static async clearCoachBindings(userCandidatToUpdate: UserCandidat) {
+  static async clearCoachBindings(
+    userCandidatToUpdate: UserCandidat,
+    options: { transaction: Transaction }
+  ) {
     const previousUserCandidatValues = userCandidatToUpdate.previous();
     const coach = await User.findByPk(userCandidatToUpdate.coachId, {
       attributes: ['role'],
+      ...(options?.transaction ? { transaction: options.transaction } : {}),
     });
     if (
       userCandidatToUpdate &&
@@ -123,6 +132,7 @@ export class UserCandidat extends Model {
         { coachId: null },
         {
           where: { coachId: userCandidatToUpdate.coachId },
+          ...(options?.transaction ? { transaction: options.transaction } : {}),
         }
       );
     }

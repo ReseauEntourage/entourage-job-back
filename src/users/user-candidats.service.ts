@@ -90,58 +90,55 @@ export class UserCandidatsService {
     isExternalCandidate: boolean,
     shouldRemove = false
   ): Promise<UserCandidat[]> {
-    const t = await this.userCandidatModel.sequelize.transaction();
-
     try {
-      const updatedUserCandidates = await Promise.all(
-        candidatesAndCoachesIds.map(async ({ candidateId, coachId }) => {
-          if (shouldRemove || !isExternalCandidate) {
-            await this.userCandidatModel.update(
-              {
-                coachId: null,
-              },
-              {
-                where: {
-                  coachId,
+      return this.userCandidatModel.sequelize.transaction(async (t) => {
+        const updatedUserCandidates = await Promise.all(
+          candidatesAndCoachesIds.map(async ({ candidateId, coachId }) => {
+            if (shouldRemove || !isExternalCandidate) {
+              await this.userCandidatModel.update(
+                {
+                  coachId: null,
                 },
-                individualHooks: true,
-                transaction: t,
-              }
+                {
+                  where: {
+                    coachId,
+                  },
+                  individualHooks: true,
+                  transaction: t,
+                }
+              );
+            }
+
+            if (!shouldRemove) {
+              await this.userCandidatModel.update(
+                {
+                  coachId: coachId,
+                },
+                {
+                  where: { candidatId: candidateId },
+                  individualHooks: true,
+                  transaction: t,
+                }
+              );
+            }
+
+            const updatedUserCandidat = await this.findOneByCandidateId(
+              candidateId,
+              t
             );
-          }
 
-          if (!shouldRemove) {
-            await this.userCandidatModel.update(
-              {
-                coachId: coachId,
-              },
-              {
-                where: { candidatId: candidateId },
-                individualHooks: true,
-                transaction: t,
-              }
-            );
-          }
-
-          const updatedUserCandidat = await this.findOneByCandidateId(
-            candidateId,
-            t
-          );
-
-          if (!updatedUserCandidat) {
-            return null;
-          }
-          return updatedUserCandidat;
-        })
-      );
-      if (updatedUserCandidates.includes(null)) {
-        await t.rollback();
-        return null;
-      }
-      await t.commit();
-      return updatedUserCandidates;
+            if (!updatedUserCandidat) {
+              return null;
+            }
+            return updatedUserCandidat;
+          })
+        );
+        if (updatedUserCandidates.includes(null)) {
+          throw new Error();
+        }
+        return updatedUserCandidates;
+      });
     } catch (error) {
-      await t.rollback();
       throw error;
     }
   }
