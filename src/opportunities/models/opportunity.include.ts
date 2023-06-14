@@ -29,6 +29,7 @@ export const OpportunityCandidateInclude: Includeable[] = [
       'gender',
       'zone',
       'phone',
+      'role',
     ],
     include: [
       {
@@ -39,7 +40,14 @@ export const OpportunityCandidateInclude: Includeable[] = [
           {
             model: User,
             as: 'coach',
-            attributes: ['id', 'email', 'firstName', 'lastName', 'zone'],
+            attributes: [
+              'id',
+              'email',
+              'firstName',
+              'lastName',
+              'zone',
+              'role',
+            ],
           },
         ],
       },
