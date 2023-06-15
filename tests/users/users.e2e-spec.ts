@@ -1785,6 +1785,9 @@ describe('Users', () => {
         let coaches: User[];
         let externalCoaches: User[];
         let organization: Organization;
+        let otherOrganization: Organization;
+        let otherExternalCandidates: User[];
+        let otherExternalCoaches: User[];
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -1840,13 +1843,9 @@ describe('Users', () => {
             true
           );
 
-          const otherOrganization = await organizationFactory.create(
-            {},
-            {},
-            true
-          );
+          otherOrganization = await organizationFactory.create({}, {}, true);
 
-          await databaseHelper.createEntities(
+          otherExternalCandidates = await databaseHelper.createEntities(
             userFactory,
             3,
             {
@@ -1857,7 +1856,7 @@ describe('Users', () => {
             true
           );
 
-          await databaseHelper.createEntities(
+          otherExternalCoaches = await databaseHelper.createEntities(
             userFactory,
             3,
             {
@@ -1919,7 +1918,10 @@ describe('Users', () => {
           );
         });
         it('Should return 200 and external candidates if user is logged in as admin and filters by external candidates', async () => {
-          const expectedUsersId = [...externalCandidates.map(({ id }) => id)];
+          const expectedUsersId = [
+            ...externalCandidates.map(({ id }) => id),
+            ...otherExternalCandidates.map(({ id }) => id),
+          ];
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
@@ -1935,6 +1937,7 @@ describe('Users', () => {
           const expectedUsersId = [
             ...candidates.map(({ id }) => id),
             ...externalCandidates.map(({ id }) => id),
+            ...otherExternalCandidates.map(({ id }) => id),
             loggedInCandidate.user.id,
           ];
 
@@ -1968,7 +1971,10 @@ describe('Users', () => {
           );
         });
         it('Should return 200 and external coaches if user is logged in as admin and filters by external coaches', async () => {
-          const expectedUsersId = [...externalCoaches.map(({ id }) => id)];
+          const expectedUsersId = [
+            ...externalCoaches.map(({ id }) => id),
+            ...otherExternalCoaches.map(({ id }) => id),
+          ];
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
@@ -1984,6 +1990,7 @@ describe('Users', () => {
           const expectedUsersId = [
             ...coaches.map(({ id }) => id),
             ...externalCoaches.map(({ id }) => id),
+            ...otherExternalCoaches.map(({ id }) => id),
             loggedInCoach.user.id,
           ];
 
