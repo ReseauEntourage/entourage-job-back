@@ -300,7 +300,12 @@ export class UsersService {
       options.where = {
         ...options.where,
         role: role,
-        OrganizationId: organizationId || null,
+      };
+    }
+    if (organizationId) {
+      options.where = {
+        ...options.where,
+        OrganizationId: organizationId,
       };
     }
     return this.userModel.findAll(options);
