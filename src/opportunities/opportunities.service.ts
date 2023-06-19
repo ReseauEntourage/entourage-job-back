@@ -3,9 +3,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
-import { CVsService } from '../cvs/cvs.service';
-import { PleziService } from '../external-services/plezi/plezi.service';
-import { getRelatedUser } from '../users/users.utils';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { BusinessLine } from 'src/common/businessLines/models';
 import {
@@ -13,7 +10,9 @@ import {
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
+import { CVsService } from 'src/cvs/cvs.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import { PleziService } from 'src/external-services/plezi/plezi.service';
 import {
   ContactStatuses,
   PleziTrackingData,
@@ -24,14 +23,17 @@ import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/users/users.types';
+import { CandidateUserRoles } from 'src/users/users.types';
+import { getCoachFromCandidate, isRoleIncluded } from 'src/users/users.utils';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
-import { CreateExternalOpportunityRestrictedDto } from './dto/create-external-opportunity-restricted.dto';
-import { CreateExternalOpportunityDto } from './dto/create-external-opportunity.dto';
-import { CreateOpportunityDto } from './dto/create-opportunity.dto';
-import { UpdateExternalOpportunityDto } from './dto/update-external-opportunity.dto';
-import { UpdateOpportunityDto } from './dto/update-opportunity.dto';
+import {
+  CreateExternalOpportunityDto,
+  CreateExternalOpportunityRestrictedDto,
+  CreateOpportunityDto,
+  UpdateExternalOpportunityDto,
+  UpdateOpportunityDto,
+} from './dto';
 import {
   Opportunity,
   OpportunityBusinessLine,
@@ -310,7 +312,7 @@ export class OpportunitiesService {
 
   async findOneAsCandidate(
     id: string,
-    candidateId: string
+    candidateId: string | string[]
   ): Promise<OpportunityRestricted> {
     const opportunity = await this.opportunityModel.findOne({
       where: {
@@ -327,25 +329,39 @@ export class OpportunitiesService {
       return null;
     }
 
-    const opportunityUser =
-      await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
-        candidateId,
-        id
-      );
+    const opportunityUser = Array.isArray(candidateId)
+      ? (
+          await Promise.all(
+            candidateId.map((singleCandidateId) => {
+              return this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+                singleCandidateId,
+                id
+              );
+            })
+          )
+        ).filter((opportunityUser) => !!opportunityUser)
+      : await this.opportunityUsersService.findOneByCandidateIdAndOpportunityId(
+          candidateId,
+          id
+        );
 
-    if (!opportunityUser && !opportunity.isPublic) {
+    if (_.isEmpty(opportunityUser) && !opportunity.isPublic) {
       return null;
     }
 
     return {
       ...opportunity.toJSON(),
-      opportunityUsers: opportunityUser?.toJSON(),
+      opportunityUsers: Array.isArray(opportunityUser)
+        ? opportunityUser.map((singleOpportunityUser) =>
+            singleOpportunityUser?.toJSON()
+          )
+        : opportunityUser?.toJSON(),
     } as OpportunityRestricted;
   }
 
   async findOneCandidate(candidateId: string) {
     const user = await this.usersService.findOne(candidateId);
-    if (!user || user.role !== UserRoles.CANDIDATE) {
+    if (!user || !isRoleIncluded(CandidateUserRoles, user.role)) {
       return null;
     }
     return user;
@@ -741,7 +757,7 @@ export class OpportunitiesService {
     }
     if (coachNotification && !isAdmin) {
       const candidate = await this.usersService.findOne(candidateId);
-      const coach = getRelatedUser(candidate);
+      const coach = getCoachFromCandidate(candidate);
       if (coach) {
         await this.mailsService.sendOnCreatedExternalOfferMailToCoach(
           opportunity,
@@ -941,7 +957,7 @@ export class OpportunitiesService {
     let opportunitiesCreatedByCandidateOrCoach =
       await this.countExternalOpportunitiesCreatedByUser(candidateId);
 
-    const coach = getRelatedUser(candidate);
+    const coach = getCoachFromCandidate(candidate);
     if (coach) {
       opportunitiesCreatedByCandidateOrCoach +=
         await this.countExternalOpportunitiesCreatedByUser(coach.id);
@@ -1056,13 +1072,10 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     description: string
   ) {
-    const user = await this.usersService.findOne(candidateId);
-    const relatedUser = getRelatedUser(user);
-    const emailCoach = relatedUser ? relatedUser.email : '';
+    const candidate = await this.usersService.findOne(candidateId);
     return this.mailsService.sendMailContactEmployer(
       type,
-      user,
-      emailCoach,
+      candidate,
       opportunity,
       description
     );

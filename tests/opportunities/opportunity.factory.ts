@@ -41,7 +41,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
   generateOpportunity(props: Partial<Opportunity>): Partial<Opportunity> {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
-    const fakeData = {
+    const fakeData: Partial<Opportunity> = {
       title: faker.lorem.words(2),
       isPublic: faker.datatype.boolean(),
       isExternal: faker.datatype.boolean(),

@@ -2,11 +2,13 @@
 import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import moment from 'moment/moment';
 import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
-import { UserCandidat, User } from 'src/users/models';
+import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Gender, UserRoles } from 'src/users/users.types';
+import { capitalizeNameAndTrim } from 'src/users/users.utils';
 import { AdminZones, Factory } from 'src/utils/types';
 
 @Injectable()
@@ -26,10 +28,10 @@ export class UserFactory implements Factory<User> {
 
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
-    const fakeData = {
+    const fakeData: Partial<User> = {
       email: faker.internet.email().toLowerCase(),
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
+      firstName: capitalizeNameAndTrim(faker.name.firstName()),
+      lastName: capitalizeNameAndTrim(faker.name.lastName()),
       role: UserRoles.CANDIDATE,
       gender: faker.random.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
@@ -38,6 +40,8 @@ export class UserFactory implements Factory<User> {
       zone: AdminZones.PARIS,
       hashReset: faker.datatype.uuid(),
       saltReset: faker.datatype.uuid(),
+      createdAt: moment().toDate(),
+      updatedAt: moment().toDate(),
     };
 
     return {

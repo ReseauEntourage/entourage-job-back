@@ -15,8 +15,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as _ from 'lodash';
-import { User } from '../users/models';
-import { AdminZone, FilterParams } from '../utils/types';
 import {
   PayloadUser,
   RequestWithAuthorizationHeader,
@@ -26,11 +24,20 @@ import { Public, UserPayload } from 'src/auth/guards';
 import {
   LinkedUser,
   LinkedUserGuard,
-  Roles,
-  RolesGuard,
+  UserPermissions,
+  UserPermissionsGuard,
 } from 'src/users/guards';
-import { CVStatuses, UserRole, UserRoles } from 'src/users/users.types';
-import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
+import { User } from 'src/users/models';
+import {
+  CandidateUserRoles,
+  CoachUserRoles,
+  CVStatuses,
+  Permissions,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
+import { isRoleIncluded } from 'src/users/users.utils';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { CVsService } from './cvs.service';
 import { CVFilterKey } from './cvs.types';
 import { getPDFPaths } from './cvs.utils';
@@ -57,27 +64,22 @@ export class CVsController {
     @Body('autoSave') autoSave: boolean,
     @UploadedFile() file: Express.Multer.File
   ) {
-    switch (role) {
-      case UserRoles.CANDIDATE:
+    if (isRoleIncluded(CandidateUserRoles, role)) {
+      createCVDto.status = CVStatuses.PROGRESS.value;
+    } else if (isRoleIncluded(CoachUserRoles, role)) {
+      if (
+        createCVDto.status !== CVStatuses.PROGRESS.value &&
+        createCVDto.status !== CVStatuses.PENDING.value
+      ) {
         createCVDto.status = CVStatuses.PROGRESS.value;
-        break;
-      case UserRoles.COACH:
-        if (
-          createCVDto.status !== CVStatuses.PROGRESS.value &&
-          createCVDto.status !== CVStatuses.PENDING.value
-        ) {
-          createCVDto.status = CVStatuses.PROGRESS.value;
-        }
-        break;
-      case UserRoles.ADMIN:
-        // on laisse la permission à l'admin de choisir le statut à enregistrer
-        if (!createCVDto.status) {
-          createCVDto.status = CVStatuses.PUBLISHED.value;
-        }
-        break;
-      default:
-        createCVDto.status = CVStatuses.UNKNOWN.value;
-        break;
+      }
+    } else if (role === UserRoles.ADMIN) {
+      // on laisse la permission à l'admin de choisir le statut à enregistrer
+      if (!createCVDto.status) {
+        createCVDto.status = CVStatuses.PUBLISHED.value;
+      }
+    } else {
+      createCVDto.status = CVStatuses.UNKNOWN.value;
     }
 
     const urlImg = `images/${candidateId}.${createCVDto.status}.jpg`;
@@ -96,8 +98,15 @@ export class CVsController {
 
     const { status } = createdCV;
 
-    if (role === UserRoles.COACH && status === CVStatuses.PENDING.value) {
-      await this.cvsService.sendMailsAfterSubmitting(user as User, createdCV);
+    if (
+      isRoleIncluded(CoachUserRoles, role) &&
+      status === CVStatuses.PENDING.value
+    ) {
+      await this.cvsService.sendMailsAfterSubmitting(
+        user as User,
+        candidateId,
+        createdCV
+      );
     }
 
     if (!autoSave) {
@@ -210,30 +219,28 @@ export class CVsController {
     return { nbPublishedCVs };
   }
 
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
-  @Get('checkUpdate')
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
+  @LinkedUser('params.candidateId')
+  @UseGuards(LinkedUserGuard)
+  @Get('checkUpdate/:candidateId')
   async checkCVHasBeenModified(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @UserPayload() user: PayloadUser
+    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
-    const candidateId = getCandidateIdFromCoachOrCandidate(user);
-
     const cv = await this.cvsService.findOneByCandidateId(candidateId);
-
-    const { lastModifiedBy } = cv;
 
     return {
       cvHasBeenModified: cv
-        ? !!lastModifiedBy && lastModifiedBy !== userId
+        ? !!cv.lastModifiedBy && cv.lastModifiedBy !== userId
         : false,
     };
   }
 
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
-  @Roles(UserRoles.CANDIDATE, UserRoles.COACH)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
   @Put('read/:candidateId')
   async setCVHasBeenRead(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,

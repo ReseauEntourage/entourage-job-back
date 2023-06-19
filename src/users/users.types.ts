@@ -13,11 +13,42 @@ import {
 
 export const UserRoles = {
   CANDIDATE: 'Candidat',
+  CANDIDATE_EXTERNAL: 'Candidat externe',
   COACH: 'Coach',
+  COACH_EXTERNAL: 'Coach externe',
   ADMIN: 'Admin',
 } as const;
 
 export type UserRole = typeof UserRoles[keyof typeof UserRoles];
+
+export const Permissions = {
+  CANDIDATE: 'Candidat',
+  COACH: 'Coach',
+  ADMIN: 'Admin',
+} as const;
+
+export type Permission = typeof Permissions[keyof typeof Permissions];
+
+export const UserPermissions: { [K in UserRole]: Permission } = {
+  [UserRoles.CANDIDATE]: Permissions.CANDIDATE,
+  [UserRoles.CANDIDATE_EXTERNAL]: Permissions.CANDIDATE,
+  [UserRoles.COACH]: Permissions.COACH,
+  [UserRoles.COACH_EXTERNAL]: Permissions.COACH,
+  [UserRoles.ADMIN]: Permissions.ADMIN,
+} as const;
+
+export const NormalUserRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
+export const ExternalUserRoles = [
+  UserRoles.CANDIDATE_EXTERNAL,
+  UserRoles.COACH_EXTERNAL,
+];
+
+export const CandidateUserRoles = [
+  UserRoles.CANDIDATE,
+  UserRoles.CANDIDATE_EXTERNAL,
+];
+export const CoachUserRoles = [UserRoles.COACH, UserRoles.COACH_EXTERNAL];
+export const AllUserRoles = [...CandidateUserRoles, ...CoachUserRoles];
 
 export const AdminRoles = {
   CANDIDATES: 'Candidats',
@@ -25,6 +56,17 @@ export const AdminRoles = {
 } as const;
 
 export type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
+
+export const UserRolesFilters = [
+  { value: UserRoles.CANDIDATE, label: `${UserRoles.CANDIDATE} LKO` },
+  {
+    value: UserRoles.CANDIDATE_EXTERNAL,
+    label: UserRoles.CANDIDATE_EXTERNAL,
+  },
+  { value: UserRoles.COACH, label: `${UserRoles.COACH} LKO` },
+  { value: UserRoles.COACH_EXTERNAL, label: UserRoles.COACH_EXTERNAL },
+  { value: UserRoles.ADMIN, label: UserRoles.ADMIN },
+];
 
 export const Genders = {
   MALE: 0,
@@ -77,6 +119,7 @@ export const CVStatusFilters: FilterConstant<CVStatus>[] = [
 ];
 
 export interface MemberOptions {
+  role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: AdminZone[] };
   businessLines: { [Op.or]: BusinessLineValue[] };
   associatedUser: { [Op.or]: boolean[] };
@@ -111,6 +154,11 @@ export type MemberConstantType =
   | typeof CVStatusFilters[number]['value'];
 
 export const MemberFilters: Filters<MemberFilterKey> = [
+  {
+    key: 'role',
+    constants: UserRolesFilters,
+    title: 'Type',
+  },
   {
     key: 'zone',
     constants: AdminZoneFilters,

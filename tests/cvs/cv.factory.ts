@@ -69,11 +69,10 @@ export class CVFactory implements Factory<CV> {
   ) {}
 
   generateCV(props: Partial<CV> = {}): Partial<CV> {
-    const fakeData = {
+    const fakeData: Partial<CV> = {
       urlImg: `images/${props.UserId}.Progress.jpg`,
       story: faker.lorem.text(),
       intro: faker.lorem.text(),
-      location: faker.address.city(),
       availability: faker.lorem.sentence(),
       transport: faker.lorem.sentence(),
       catchphrase: faker.lorem.sentence(),
