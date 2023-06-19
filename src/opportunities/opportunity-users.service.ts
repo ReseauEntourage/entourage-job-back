@@ -69,41 +69,46 @@ export class OpportunityUsersService {
       opportunityId
     );
 
-    const t = await this.opportunityUserEventModel.sequelize.transaction();
+    let createdOpportunityUserEventId: string;
 
     try {
-      const createdOpportunityUserEvent =
-        await this.opportunityUserEventModel.create(
-          {
-            ...createOpportunityUserEventDto,
-            OpportunityUserId: opportunityUser.id,
-          },
-          {
-            hooks: true,
-            transaction: t,
+      ({ id: createdOpportunityUserEventId } =
+        await this.opportunityUserEventModel.sequelize.transaction(
+          async (t) => {
+            const createdOpportunityUserEvent =
+              await this.opportunityUserEventModel.create(
+                {
+                  ...createOpportunityUserEventDto,
+                  OpportunityUserId: opportunityUser.id,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+
+            if (createOpportunityUserEventDto.contract) {
+              const contract = await this.contractModel.create(
+                { name: createOpportunityUserEventDto.contract.name },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+
+              await createdOpportunityUserEvent.$set('contract', contract, {
+                transaction: t,
+              });
+            }
+
+            return createdOpportunityUserEvent;
           }
-        );
-
-      if (createOpportunityUserEventDto.contract) {
-        const contract = await this.contractModel.create(
-          { name: createOpportunityUserEventDto.contract.name },
-          {
-            hooks: true,
-            transaction: t,
-          }
-        );
-
-        await createdOpportunityUserEvent.$set('contract', contract, {
-          transaction: t,
-        });
-      }
-
-      await t.commit();
-      return this.findOneOpportunityUserEvent(createdOpportunityUserEvent.id);
+        ));
     } catch (error) {
-      await t.rollback();
       throw error;
     }
+
+    return this.findOneOpportunityUserEvent(createdOpportunityUserEventId);
   }
 
   async createOrUpdateExternalDBEvent(opportunityUserEventId: string) {
@@ -263,44 +268,42 @@ export class OpportunityUsersService {
     id: string,
     updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
   ) {
-    const t = await this.opportunityUserEventModel.sequelize.transaction();
     try {
-      const { contract: contractDto, ...restUpdateOpportunityUserEventDto } =
-        updateOpportunityUserEventDto;
+      await this.opportunityUserEventModel.sequelize.transaction(async (t) => {
+        const { contract: contractDto, ...restUpdateOpportunityUserEventDto } =
+          updateOpportunityUserEventDto;
 
-      let contractObject = {};
-      if (_.isNull(contractDto)) {
-        contractObject = { ContractId: null };
-      } else if (contractDto) {
-        const { id: contractId } = await this.contractModel.create(
+        let contractObject = {};
+        if (_.isNull(contractDto)) {
+          contractObject = { ContractId: null };
+        } else if (contractDto) {
+          const { id: contractId } = await this.contractModel.create(
+            {
+              name: contractDto.name,
+              OpportunityUserId: id,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+          contractObject = { ContractId: contractId };
+        }
+
+        await this.opportunityUserEventModel.update(
+          { ...restUpdateOpportunityUserEventDto, ...contractObject },
           {
-            name: contractDto.name,
-            OpportunityUserId: id,
-          },
-          {
-            hooks: true,
+            where: { id },
+            individualHooks: true,
             transaction: t,
           }
         );
-        contractObject = { ContractId: contractId };
-      }
-
-      await this.opportunityUserEventModel.update(
-        { ...restUpdateOpportunityUserEventDto, ...contractObject },
-        {
-          where: { id },
-          individualHooks: true,
-          transaction: t,
-        }
-      );
-
-      await t.commit();
-
-      return this.findOneOpportunityUserEvent(id);
+      });
     } catch (error) {
-      await t.rollback();
       throw error;
     }
+
+    return this.findOneOpportunityUserEvent(id);
   }
 
   async findOrCreateByCandidateIdAndOpportunityId(
