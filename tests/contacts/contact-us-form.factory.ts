@@ -13,7 +13,7 @@ export class ContactUsFormFactory implements Factory<ContactUsFormDto> {
   ): ContactUsFormDto {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
-    const fakeData = {
+    const fakeData: ContactUsFormDto = {
       firstName: faker.name.firstName(),
       lastName: faker.name.lastName(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { UserCandidat, User } from 'src/users/models';
+import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserFactory } from './user.factory';
 
@@ -32,6 +32,7 @@ export class UsersHelper {
   }
 
   async findUser(userId: string) {
-    return this.usersService.findOne(userId);
+    const user = await this.usersService.findOne(userId);
+    return user?.toJSON();
   }
 }

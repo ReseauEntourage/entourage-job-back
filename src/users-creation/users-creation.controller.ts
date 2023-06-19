@@ -10,9 +10,18 @@ import {
 } from '@nestjs/common';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { CreateUserDto } from 'src/users/dto';
-import { Roles, RolesGuard } from 'src/users/guards';
+import { CreateUserPipe } from 'src/users/dto/create-user.pipe';
+import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
-import { UserRoles } from 'src/users/users.types';
+import {
+  ExternalUserRoles,
+  Permissions,
+  UserRoles,
+} from 'src/users/users.types';
+import {
+  getCandidateAndCoachIdDependingOnRoles,
+  isRoleIncluded,
+} from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { UsersCreationService } from './users-creation.service';
 
@@ -27,10 +36,19 @@ const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
 export class UsersCreationController {
   constructor(private readonly usersCreationService: UsersCreationService) {}
 
-  @Roles(UserRoles.ADMIN)
-  @UseGuards(RolesGuard)
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
   @Post()
-  async createUser(@Body() createUserDto: CreateUserDto) {
+  async createUser(@Body(new CreateUserPipe()) createUserDto: CreateUserDto) {
+    if (
+      (createUserDto.OrganizationId &&
+        !isRoleIncluded(ExternalUserRoles, createUserDto.role)) ||
+      (!createUserDto.OrganizationId &&
+        isRoleIncluded(ExternalUserRoles, createUserDto.role))
+    ) {
+      throw new BadRequestException();
+    }
+
     if (createUserDto.phone && !isValidPhone(createUserDto.phone)) {
       throw new BadRequestException();
     }
@@ -73,34 +91,72 @@ export class UsersCreationController {
       jwtToken
     );
 
-    if (userToCreate.userToCoach) {
-      let candidateId: string;
-      let coachId: string;
-
-      if (createdUser.role === UserRoles.COACH) {
-        candidateId = userToCreate.userToCoach;
-        coachId = createdUser.id;
-      }
-      if (createdUser.role === UserRoles.CANDIDATE) {
-        candidateId = createdUser.id;
-        coachId = userToCreate.userToCoach;
+    if (userToCreate.userToLinkId) {
+      if (
+        (createdUser.role !== UserRoles.COACH_EXTERNAL &&
+          Array.isArray(userToCreate.userToLinkId)) ||
+        (createdUser.role === UserRoles.COACH_EXTERNAL &&
+          !Array.isArray(userToCreate.userToLinkId))
+      ) {
+        throw new BadRequestException();
       }
 
-      const updatedUserCandidat =
-        await this.usersCreationService.updateUserCandidatByCandidateId(
-          candidateId,
-          {
-            candidatId: candidateId,
-            coachId,
+      const usersToLinkIds = Array.isArray(userToCreate.userToLinkId)
+        ? userToCreate.userToLinkId
+        : [userToCreate.userToLinkId];
+
+      const userCandidatesToUpdate = await Promise.all(
+        usersToLinkIds.map(async (userToLinkId) => {
+          const userToLink = await this.usersCreationService.findOneUser(
+            userToLinkId
+          );
+
+          if (!userToLink) {
+            throw new NotFoundException();
           }
+
+          const { candidateId, coachId } =
+            getCandidateAndCoachIdDependingOnRoles(createdUser, userToLink);
+
+          const userCandidate =
+            await this.usersCreationService.findOneUserCandidatByCandidateId(
+              candidateId
+            );
+
+          if (!userCandidate) {
+            throw new NotFoundException();
+          }
+
+          return { candidateId: candidateId, coachId: coachId };
+        })
+      );
+
+      const updatedUserCandidates =
+        await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
+          userCandidatesToUpdate,
+          createdUser.role === UserRoles.CANDIDATE_EXTERNAL
         );
 
-      if (!updatedUserCandidat) {
+      if (!updatedUserCandidates) {
         throw new NotFoundException();
       }
-      await this.usersCreationService.sendMailsAfterMatching(candidateId);
+
+      await Promise.all(
+        updatedUserCandidates.map(async (updatedUserCandidate) => {
+          const previousCoach = updatedUserCandidate.previous('coach');
+          if (
+            updatedUserCandidate.coach &&
+            updatedUserCandidate.coach.id !== previousCoach?.id
+          ) {
+            await this.usersCreationService.sendMailsAfterMatching(
+              updatedUserCandidate.candidat.id
+            );
+          }
+          return updatedUserCandidate.toJSON();
+        })
+      );
     }
 
-    return createdUser;
+    return this.usersCreationService.findOneUser(createdUser.id);
   }
 }

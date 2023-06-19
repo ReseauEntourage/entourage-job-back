@@ -18,6 +18,7 @@ export function getTokenFromHeaders(
 export function getPartialUserForPayload(user: User): PayloadUser {
   const {
     id,
+    OrganizationId,
     email,
     firstName,
     lastName,
@@ -28,12 +29,13 @@ export function getPartialUserForPayload(user: User): PayloadUser {
     role,
     adminRole,
     lastConnection,
-    coach,
+    coaches,
     candidat,
   } = user;
 
   const commonAttributes = {
     id: id,
+    OrganizationId: OrganizationId,
     email: email,
     firstName: firstName,
     lastName: lastName,
@@ -46,11 +48,14 @@ export function getPartialUserForPayload(user: User): PayloadUser {
     lastConnection: lastConnection,
   };
 
-  if (coach) {
-    const { note, ...restCoach } = coach;
+  if (coaches && coaches.length > 0) {
+    const restCoaches = coaches.map((coach) => {
+      const { note, ...restCoach } = coach;
+      return restCoach;
+    });
     return {
       ...commonAttributes,
-      coach: restCoach,
+      coaches: restCoaches,
     };
   }
   if (candidat) {
