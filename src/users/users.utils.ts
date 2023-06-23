@@ -12,7 +12,6 @@ import {
   CVStatuses,
   ExternalUserRoles,
   MemberFilterKey,
-  MemberFilters,
   MemberOptions,
   NormalUserRoles,
   UserRole,
@@ -132,37 +131,29 @@ export function getMemberOptions(
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
-            if (
-              keys[i] === MemberFilters[3].key ||
-              keys[i] === MemberFilters[4].key
-            ) {
-              whereOptions = {
-                ...whereOptions,
-                [keys[i]]: {
-                  [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                    return currentFilter.value;
-                  }),
-                },
-              };
-            } else if (keys[i] === MemberFilters[2].key) {
+            if (keys[i] === 'associatedUser') {
               // These options don't work
               whereOptions = {
                 ...whereOptions,
                 [keys[i]]: {
-                  coach: filtersObj[keys[i]].map((currentFilter) => {
-                    return where(
-                      col(`coach.candidatId`),
-                      currentFilter.value ? Op.is : Op.not,
-                      null
-                    );
-                  }),
-                  candidat: filtersObj[keys[i]].map((currentFilter) => {
-                    return where(
-                      col(`candidat.coachId`),
-                      currentFilter.value ? Op.is : Op.not,
-                      null
-                    );
-                  }),
+                  coach: {
+                    [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
+                      return where(
+                        col(`coaches.candidatId`),
+                        currentFilter.value ? Op.not : Op.is,
+                        null
+                      );
+                    }),
+                  },
+                  candidate: {
+                    [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
+                      return where(
+                        col(`candidat.coachId`),
+                        currentFilter.value ? Op.not : Op.is,
+                        null
+                      );
+                    }),
+                  },
                 },
               };
             } else {

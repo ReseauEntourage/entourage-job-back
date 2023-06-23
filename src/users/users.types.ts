@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import { Where } from 'sequelize/types/utils';
 import {
   BusinessLineFilters,
   BusinessLineValue,
@@ -122,7 +123,7 @@ export interface MemberOptions {
   role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: AdminZone[] };
   businessLines: { [Op.or]: BusinessLineValue[] };
-  associatedUser: { [Op.or]: boolean[] };
+  associatedUser: { candidate: Where[]; coach: Where[] };
   hidden: { [Op.or]: boolean[] };
   employed: { [Op.or]: boolean[] };
   cvStatus: { [Op.or]: CVStatus[] };

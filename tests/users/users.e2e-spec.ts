@@ -2437,7 +2437,27 @@ describe('Users', () => {
               publishedCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
+                  status: CVStatuses.PROGRESS.value,
+                  version: 1,
+                });
+              })
+            );
+            await Promise.all(
+              publishedCandidates.map(async ({ id }) => {
+                return cvFactory.create({
+                  UserId: id,
                   status: CVStatuses.PUBLISHED.value,
+                  version: 3,
+                });
+              })
+            );
+
+            await Promise.all(
+              pendingCandidates.map(async ({ id }) => {
+                return cvFactory.create({
+                  UserId: id,
+                  status: CVStatuses.PROGRESS.value,
+                  version: 3,
                 });
               })
             );
@@ -2446,6 +2466,16 @@ describe('Users', () => {
                 return cvFactory.create({
                   UserId: id,
                   status: CVStatuses.PENDING.value,
+                  version: 6,
+                });
+              })
+            );
+            await Promise.all(
+              progressCandidates.map(async ({ id }) => {
+                return cvFactory.create({
+                  UserId: id,
+                  status: CVStatuses.PUBLISHED.value,
+                  version: 7,
                 });
               })
             );
@@ -2454,6 +2484,7 @@ describe('Users', () => {
                 return cvFactory.create({
                   UserId: id,
                   status: CVStatuses.PROGRESS.value,
+                  version: 10,
                 });
               })
             );
@@ -2505,6 +2536,18 @@ describe('Users', () => {
                 return cvFactory.create(
                   {
                     UserId: id,
+                    version: 1,
+                  },
+                  { businessLines: ['id'] }
+                );
+              })
+            );
+            await Promise.all(
+              rhCandidates.map(async ({ id }) => {
+                return cvFactory.create(
+                  {
+                    UserId: id,
+                    version: 4,
                   },
                   { businessLines: ['rh', 'aa'] }
                 );
@@ -2516,6 +2559,18 @@ describe('Users', () => {
                 return cvFactory.create(
                   {
                     UserId: id,
+                    version: 2,
+                  },
+                  { businessLines: ['id'] }
+                );
+              })
+            );
+            await Promise.all(
+              batCandidates.map(async ({ id }) => {
+                return cvFactory.create(
+                  {
+                    UserId: id,
+                    version: 7,
                   },
                   { businessLines: ['bat', 'asp'] }
                 );
@@ -2526,6 +2581,19 @@ describe('Users', () => {
                 return cvFactory.create(
                   {
                     UserId: id,
+                    version: 5,
+                  },
+                  { businessLines: ['id'] }
+                );
+              })
+            );
+
+            await Promise.all(
+              aaCandidates.map(async ({ id }) => {
+                return cvFactory.create(
+                  {
+                    UserId: id,
+                    version: 6,
                   },
                   { businessLines: ['aa', 'pr'] }
                 );

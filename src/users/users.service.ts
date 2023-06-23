@@ -25,6 +25,7 @@ import { UserCandidatInclude } from './models/user.include';
 import {
   AllUserRoles,
   CandidateUserRoles,
+  CoachUserRoles,
   CVStatuses,
   MemberConstantType,
   MemberFilterKey,
@@ -34,8 +35,6 @@ import {
 } from './users.types';
 
 import {
-  filterMembersByAssociatedUser,
-  filterMembersByBusinessLines,
   filterMembersByCVStatus,
   getMemberOptions,
   isRoleIncluded,
@@ -93,27 +92,29 @@ export class UsersService {
       MemberConstantType
     >({ ...restParams, role }, MemberFilters);
 
-    const { businessLines, cvStatus, associatedUser, ...restFilters } =
-      filtersObj;
+    // const { associatedUser, ...restFilters } = filtersObj;
 
     // The associatedUser options don't work that's why we take it out of the filters
-    const filterOptions = getMemberOptions(restFilters);
+    const filterOptions = getMemberOptions(filtersObj);
 
     const options: FindOptions<User> = {
       subQuery: false,
       order,
+      offset,
+      limit,
       where: {
         role: { [Op.not]: UserRoles.ADMIN },
       },
       attributes: [...UserAttributes],
     };
 
-    const hasFilterOptions = Object.keys(filtersObj).length > 0;
-
-    if (!hasFilterOptions) {
-      options.offset = offset;
-      options.limit = limit;
-    }
+    //const hasFilterOptions = Object.keys(filtersObj).length > 0;
+    /*
+      if (!hasFilterOptions) {
+        options.offset = offset;
+        options.limit = limit;
+      }
+    */
     // recherche de l'utilisateur
     if (search) {
       options.where = {
@@ -133,6 +134,22 @@ export class UsersService {
         ...options.where,
         role: filterOptions.role,
       };
+
+      // TODO filter associated users in query
+      if (filterOptions.associatedUser) {
+        if (isRoleIncluded(CandidateUserRoles, role)) {
+          options.where = {
+            ...(options.where || {}),
+            ...filterOptions.associatedUser.candidate,
+          };
+        }
+        if (isRoleIncluded(CoachUserRoles, role)) {
+          options.where = {
+            ...(options.where || {}),
+            ...filterOptions.associatedUser.coach,
+          };
+        }
+      }
     }
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
@@ -155,15 +172,19 @@ export class UsersService {
       }
     }
 
-    // TODO filter associated users in query
-    /*
-      if (filterOptions.associatedUser) {
-        userCandidatOptions.where = {
-          ...(userCandidatOptions.where || {}),
-          ...filterOptions.associatedUser.candidat,
-        };
-      }
-    */
+    if (filterOptions.cvStatus) {
+      options.where = {
+        ...(options.where || {}),
+        '$candidat.cvs.status$': filterOptions.cvStatus,
+      };
+    }
+
+    if (filterOptions.businessLines) {
+      options.where = {
+        ...(options.where || {}),
+        '$candidat.cvs.businessLines.name$': filterOptions.businessLines,
+      };
+    }
 
     // recuperer la derniere version de cv
     options.include = [
@@ -177,12 +198,20 @@ export class UsersService {
             model: CV,
             as: 'cvs',
             attributes: ['version', 'status', 'urlImg'],
+            /*  required: !!filterOptions.cvStatus,
+            ...(filterOptions.cvStatus
+              ? { where: { status: filterOptions.cvStatus } }
+              : {}),*/
             include: [
               {
                 model: BusinessLine,
                 as: 'businessLines',
                 attributes: ['name', 'order'],
                 through: { attributes: [] },
+                /*  required: !!filterOptions.businessLines,
+                ...(filterOptions.businessLines
+                  ? { where: { name: filterOptions.businessLines } }
+                  : {}),*/
               },
             ],
           },
@@ -229,12 +258,14 @@ export class UsersService {
 
     const members = await this.userModel.findAll(options);
 
+    /*
     const filteredMembersByAssociatedUser = filterMembersByAssociatedUser(
       members,
       associatedUser
     );
+*/
 
-    const membersWithLastCV = filteredMembersByAssociatedUser.map((member) => {
+    return members.map((member) => {
       const user = member.toJSON();
       if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
         const sortedCVs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
@@ -251,9 +282,7 @@ export class UsersService {
       return user;
     });
 
-    let finalFilteredMembers = membersWithLastCV;
-
-    if (isRoleIncluded(CandidateUserRoles, role)) {
+    /*    if (isRoleIncluded(CandidateUserRoles, role)) {
       const filteredMembersByCVStatus = filterMembersByCVStatus(
         membersWithLastCV,
         cvStatus
@@ -274,8 +303,7 @@ export class UsersService {
       if (limit) {
         return finalFilteredMembers.slice(0, limit);
       }
-    }
-    return finalFilteredMembers;
+    }*/
   }
 
   async findAllUsers(
