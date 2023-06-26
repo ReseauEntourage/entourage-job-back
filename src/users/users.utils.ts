@@ -1,11 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { col, Op, where } from 'sequelize';
+import { col, literal, Op, where, WhereOptions } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
-import { User } from './models';
+import { User, UserCandidat } from './models';
 import {
   CandidateUserRoles,
   CoachUserRoles,
@@ -154,7 +154,7 @@ export function getMemberOptions(
                       );
                     }),
                   },
-                },
+                } as MemberOptions['associatedUser'],
               };
             } else {
               whereOptions = {
@@ -255,6 +255,25 @@ export function userSearchQuery(query = '', withOrganizationName = false) {
   ];
 }
 
+export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
+  version: {
+    [Op.in]: [
+      literal(`
+        SELECT MAX("CVs"."version")
+        FROM "CVs"
+        WHERE "candidat"."candidatId" = "CVs"."UserId"
+        GROUP BY "CVs"."UserId"
+      `),
+    ],
+  },
+};
+
+export const lastCVVersionQuery = `
+  SELECT MAX("CVs"."version")
+  FROM "CVs"
+  WHERE "candidat"."candidatId" = "CVs"."UserId"
+  GROUP BY "CVs"."UserId"
+`;
 export function generateImageNamesToDelete(prefix: string) {
   const imageNames = Object.keys(CVStatuses).map((status) => {
     return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];

@@ -2437,12 +2437,12 @@ describe('Users', () => {
               publishedCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
-                  status: CVStatuses.PROGRESS.value,
+                  status: CVStatuses.PENDING.value,
                   version: 1,
                 });
               })
             );
-            await Promise.all(
+            const publishedLatestCVs = await Promise.all(
               publishedCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
@@ -2456,12 +2456,12 @@ describe('Users', () => {
               pendingCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
-                  status: CVStatuses.PROGRESS.value,
+                  status: CVStatuses.PUBLISHED.value,
                   version: 3,
                 });
               })
             );
-            await Promise.all(
+            const pendingLatestCVs = await Promise.all(
               pendingCandidates.map(async ({ id }) => {
                 return cvFactory.create({
                   UserId: id,
@@ -2470,6 +2470,7 @@ describe('Users', () => {
                 });
               })
             );
+
             await Promise.all(
               progressCandidates.map(async ({ id }) => {
                 return cvFactory.create({
@@ -2504,6 +2505,36 @@ describe('Users', () => {
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+            expect(response.body).toEqual(
+              expect.arrayContaining([
+                ...pendingLatestCVs.map((cv) =>
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      cvs: [
+                        expect.objectContaining({
+                          status: cv.status,
+                          urlImg: cv.urlImg,
+                          version: cv.version,
+                        }),
+                      ],
+                    }),
+                  })
+                ),
+                ...publishedLatestCVs.map((cv) =>
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      cvs: [
+                        expect.objectContaining({
+                          status: cv.status,
+                          urlImg: cv.urlImg,
+                          version: cv.version,
+                        }),
+                      ],
+                    }),
+                  })
+                ),
+              ])
             );
           });
           it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
@@ -2542,7 +2573,7 @@ describe('Users', () => {
                 );
               })
             );
-            await Promise.all(
+            const rhLatestCVs = await Promise.all(
               rhCandidates.map(async ({ id }) => {
                 return cvFactory.create(
                   {
@@ -2565,7 +2596,7 @@ describe('Users', () => {
                 );
               })
             );
-            await Promise.all(
+            const batLatestCVs = await Promise.all(
               batCandidates.map(async ({ id }) => {
                 return cvFactory.create(
                   {
@@ -2615,6 +2646,46 @@ describe('Users', () => {
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+            expect(response.body).toEqual(
+              expect.arrayContaining([
+                ...rhLatestCVs.map((cv) =>
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      cvs: [
+                        expect.objectContaining({
+                          businessLines: expect.arrayContaining([
+                            expect.objectContaining({
+                              name: 'rh',
+                            }),
+                          ]),
+                          status: cv.status,
+                          urlImg: cv.urlImg,
+                          version: cv.version,
+                        }),
+                      ],
+                    }),
+                  })
+                ),
+                ...batLatestCVs.map((cv) =>
+                  expect.objectContaining({
+                    candidat: expect.objectContaining({
+                      cvs: [
+                        expect.objectContaining({
+                          businessLines: expect.arrayContaining([
+                            expect.objectContaining({
+                              name: 'bat',
+                            }),
+                          ]),
+                          status: cv.status,
+                          urlImg: cv.urlImg,
+                          version: cv.version,
+                        }),
+                      ],
+                    }),
+                  })
+                ),
+              ])
             );
           });
           it('Should return 200, and all the candidates that matches the associatedUser filters', async () => {
