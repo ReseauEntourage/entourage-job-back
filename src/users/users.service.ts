@@ -25,6 +25,7 @@ import { UserCandidatInclude } from './models/user.include';
 import {
   AllUserRoles,
   CandidateUserRoles,
+  CoachUserRoles,
   CVStatuses,
   MemberConstantType,
   MemberFilterKey,
@@ -34,11 +35,9 @@ import {
 } from './users.types';
 
 import {
-  filterMembersByAssociatedUser,
-  filterMembersByBusinessLines,
-  filterMembersByCVStatus,
   getMemberOptions,
   isRoleIncluded,
+  lastCVVersionWhereOptions,
   userSearchQuery,
 } from './users.utils';
 
@@ -93,46 +92,53 @@ export class UsersService {
       MemberConstantType
     >({ ...restParams, role }, MemberFilters);
 
-    const { businessLines, cvStatus, associatedUser, ...restFilters } =
-      filtersObj;
-
-    // The associatedUser options don't work that's why we take it out of the filters
-    const filterOptions = getMemberOptions(restFilters);
+    const filterOptions = getMemberOptions(filtersObj);
 
     const options: FindOptions<User> = {
       subQuery: false,
       order,
+      offset,
+      limit,
       where: {
         role: { [Op.not]: UserRoles.ADMIN },
       },
       attributes: [...UserAttributes],
     };
 
-    const hasFilterOptions = Object.keys(filtersObj).length > 0;
-
-    if (!hasFilterOptions) {
-      options.offset = offset;
-      options.limit = limit;
-    }
-    // recherche de l'utilisateur
     if (search) {
       options.where = {
         ...options.where,
         [Op.or]: userSearchQuery(search, true),
       };
     }
+
     if (filterOptions.zone) {
       options.where = {
         ...options.where,
         zone: filterOptions.zone,
       };
     }
-    // filtre par role
+
     if (filterOptions.role && isRoleIncluded(AllUserRoles, role)) {
       options.where = {
         ...options.where,
         role: filterOptions.role,
       };
+
+      if (filterOptions.associatedUser) {
+        if (isRoleIncluded(CandidateUserRoles, role)) {
+          options.where = {
+            ...(options.where || {}),
+            ...filterOptions.associatedUser.candidate,
+          };
+        }
+        if (isRoleIncluded(CoachUserRoles, role)) {
+          options.where = {
+            ...(options.where || {}),
+            ...filterOptions.associatedUser.coach,
+          };
+        }
+      }
     }
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
@@ -155,17 +161,20 @@ export class UsersService {
       }
     }
 
-    // TODO filter associated users in query
-    /*
-      if (filterOptions.associatedUser) {
-        userCandidatOptions.where = {
-          ...(userCandidatOptions.where || {}),
-          ...filterOptions.associatedUser.candidat,
-        };
-      }
-    */
+    if (filterOptions.cvStatus) {
+      options.where = {
+        ...(options.where || {}),
+        '$candidat.cvs.status$': filterOptions.cvStatus,
+      };
+    }
 
-    // recuperer la derniere version de cv
+    if (filterOptions.businessLines) {
+      options.where = {
+        ...(options.where || {}),
+        '$candidat.cvs.businessLines.name$': filterOptions.businessLines,
+      };
+    }
+
     options.include = [
       {
         model: UserCandidat,
@@ -177,12 +186,14 @@ export class UsersService {
             model: CV,
             as: 'cvs',
             attributes: ['version', 'status', 'urlImg'],
+            required: !!filterOptions.cvStatus || !!filterOptions.businessLines,
+            where: lastCVVersionWhereOptions,
             include: [
               {
                 model: BusinessLine,
                 as: 'businessLines',
                 attributes: ['name', 'order'],
-                through: { attributes: [] },
+                required: !!filterOptions.businessLines,
               },
             ],
           },
@@ -199,7 +210,6 @@ export class UsersService {
             ],
           },
         ],
-        order: [['cvs.version', 'DESC']],
       },
       {
         model: UserCandidat,
@@ -227,55 +237,7 @@ export class UsersService {
       },
     ];
 
-    const members = await this.userModel.findAll(options);
-
-    const filteredMembersByAssociatedUser = filterMembersByAssociatedUser(
-      members,
-      associatedUser
-    );
-
-    const membersWithLastCV = filteredMembersByAssociatedUser.map((member) => {
-      const user = member.toJSON();
-      if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
-        const sortedCVs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
-          return cv2.version - cv1.version;
-        });
-        return {
-          ...user,
-          candidat: {
-            ...user.candidat,
-            cvs: [sortedCVs[0]],
-          },
-        };
-      }
-      return user;
-    });
-
-    let finalFilteredMembers = membersWithLastCV;
-
-    if (isRoleIncluded(CandidateUserRoles, role)) {
-      const filteredMembersByCVStatus = filterMembersByCVStatus(
-        membersWithLastCV,
-        cvStatus
-      );
-      finalFilteredMembers = filterMembersByBusinessLines(
-        filteredMembersByCVStatus,
-        businessLines
-      );
-    }
-
-    if (hasFilterOptions && (offset || limit)) {
-      if (offset && limit) {
-        return finalFilteredMembers.slice(offset, offset + limit);
-      }
-      if (offset) {
-        return finalFilteredMembers.slice(offset);
-      }
-      if (limit) {
-        return finalFilteredMembers.slice(0, limit);
-      }
-    }
-    return finalFilteredMembers;
+    return this.userModel.findAll(options);
   }
 
   async findAllUsers(
@@ -380,55 +342,32 @@ export class UsersService {
     const options: FindOptions<User> = {
       where: {
         ...whereOptions,
+        '$candidat.cvs.status$': CVStatuses.PENDING.value,
         role: CandidateUserRoles,
       } as WhereOptions<User>,
-      attributes: [...UserAttributes],
-      // recuperer la derniere version de cv
+      attributes: [],
       include: [
         {
           model: UserCandidat,
           as: 'candidat',
-          attributes: ['coachId', ...UserCandidatAttributes],
+          attributes: [],
+          required: true,
           include: [
             {
               model: CV,
               as: 'cvs',
-              attributes: ['version', 'status', 'urlImg'],
-            },
-            {
-              model: User,
-              as: 'coach',
-              attributes: [...UserAttributes],
+              attributes: [],
+              where: lastCVVersionWhereOptions,
             },
           ],
-          order: [['cvs.version', 'DESC']],
         },
       ],
     };
 
-    const members = await this.userModel.findAll(options);
-
-    const membersWithLastCV = members.map((member) => {
-      const user = member.toJSON();
-      if (user.candidat && user.candidat.cvs && user.candidat.cvs.length > 0) {
-        const sortedCVs = user.candidat.cvs.sort((cv1: CV, cv2: CV) => {
-          return cv2.version - cv1.version;
-        });
-        return {
-          ...user,
-          candidat: {
-            ...user.candidat,
-            cvs: [sortedCVs[0]],
-          },
-        };
-      }
-      return user;
-    });
+    const { count: pendingCVs } = await this.userModel.findAndCountAll(options);
 
     return {
-      pendingCVs: filterMembersByCVStatus(membersWithLastCV, [
-        CVStatuses.PENDING,
-      ]).length,
+      pendingCVs,
     };
   }
 

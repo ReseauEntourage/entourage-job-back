@@ -422,32 +422,27 @@ export class CVsService {
       if (modelCVs.length <= 0) {
         if (
           filtersObj &&
-          filtersObj[CVFilters[1].key] &&
-          filtersObj[CVFilters[1].key].length > 0
+          filtersObj['locations']?.length > 0 &&
+          filtersObj['businessLines']?.length > 0
         ) {
-          if (
-            filtersObj[CVFilters[2].key] &&
-            filtersObj[CVFilters[2].key].length > 0
-          ) {
-            const newFiltersObj: ReturnType<
-              typeof getFiltersObjectsFromQueryParams
-            > = {
-              ...filtersObj,
-              [CVFilters[2].key]: [],
-            };
-            const newOptions = getCVOptions(newFiltersObj);
+          const newFiltersObj: ReturnType<
+            typeof getFiltersObjectsFromQueryParams
+          > = {
+            ...filtersObj,
+            ['businessLines']: [],
+          };
+          const newOptions = getCVOptions(newFiltersObj);
 
-            const { employed: newEmployed, ...newRestOptions } = newOptions;
+          const { employed: newEmployed, ...newRestOptions } = newOptions;
 
-            const filteredOtherCvs = await this.findAndCacheAll(
-              dbQuery,
-              false,
-              dbQuery ? newRestOptions : newOptions
-            );
-            if (filteredOtherCvs && filteredOtherCvs.length > 0) {
-              modelCVs = filteredOtherCvs;
-              hasSuggestions = true;
-            }
+          const filteredOtherCvs = await this.findAndCacheAll(
+            dbQuery,
+            false,
+            dbQuery ? newRestOptions : newOptions
+          );
+          if (filteredOtherCvs && filteredOtherCvs.length > 0) {
+            modelCVs = filteredOtherCvs;
+            hasSuggestions = true;
           }
         }
       }

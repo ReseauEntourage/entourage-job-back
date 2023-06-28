@@ -1,18 +1,17 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { col, Op, where } from 'sequelize';
+import { col, literal, Op, where, WhereOptions } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
-import { User } from './models';
+import { User, UserCandidat } from './models';
 import {
   CandidateUserRoles,
   CoachUserRoles,
   CVStatuses,
   ExternalUserRoles,
   MemberFilterKey,
-  MemberFilters,
   MemberOptions,
   NormalUserRoles,
   UserRole,
@@ -132,38 +131,30 @@ export function getMemberOptions(
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
-            if (
-              keys[i] === MemberFilters[3].key ||
-              keys[i] === MemberFilters[4].key
-            ) {
-              whereOptions = {
-                ...whereOptions,
-                [keys[i]]: {
-                  [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                    return currentFilter.value;
-                  }),
-                },
-              };
-            } else if (keys[i] === MemberFilters[2].key) {
+            if (keys[i] === 'associatedUser') {
               // These options don't work
               whereOptions = {
                 ...whereOptions,
                 [keys[i]]: {
-                  coach: filtersObj[keys[i]].map((currentFilter) => {
-                    return where(
-                      col(`coach.candidatId`),
-                      currentFilter.value ? Op.is : Op.not,
-                      null
-                    );
-                  }),
-                  candidat: filtersObj[keys[i]].map((currentFilter) => {
-                    return where(
-                      col(`candidat.coachId`),
-                      currentFilter.value ? Op.is : Op.not,
-                      null
-                    );
-                  }),
-                },
+                  coach: {
+                    [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
+                      return where(
+                        col(`coaches.candidatId`),
+                        currentFilter.value ? Op.not : Op.is,
+                        null
+                      );
+                    }),
+                  },
+                  candidate: {
+                    [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
+                      return where(
+                        col(`candidat.coachId`),
+                        currentFilter.value ? Op.not : Op.is,
+                        null
+                      );
+                    }),
+                  },
+                } as MemberOptions['associatedUser'],
               };
             } else {
               whereOptions = {
@@ -264,6 +255,25 @@ export function userSearchQuery(query = '', withOrganizationName = false) {
   ];
 }
 
+export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
+  version: {
+    [Op.in]: [
+      literal(`
+        SELECT MAX("CVs"."version")
+        FROM "CVs"
+        WHERE "candidat"."candidatId" = "CVs"."UserId"
+        GROUP BY "CVs"."UserId"
+      `),
+    ],
+  },
+};
+
+export const lastCVVersionQuery = `
+  SELECT MAX("CVs"."version")
+  FROM "CVs"
+  WHERE "candidat"."candidatId" = "CVs"."UserId"
+  GROUP BY "CVs"."UserId"
+`;
 export function generateImageNamesToDelete(prefix: string) {
   const imageNames = Object.keys(CVStatuses).map((status) => {
     return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];
