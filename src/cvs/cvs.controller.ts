@@ -148,8 +148,11 @@ export class CVsController {
       const { firstName, lastName } = createdCV.user.candidat;
 
       const token = getTokenFromHeaders(req);
-      const paths = getPDFPaths(candidateId, `${firstName}_${lastName}`);
-      await this.cvsService.sendGenerateCVPDF(candidateId, token, paths);
+      await this.cvsService.sendGenerateCVPDF(
+        candidateId,
+        token,
+        `${firstName}_${lastName}`
+      );
     }
     return createdCV;
   }
@@ -201,7 +204,7 @@ export class CVsController {
       const createdPdfUrl = await this.cvsService.generatePDFFromCV(
         candidateId,
         getTokenFromHeaders(req),
-        paths
+        fileName
       );
       return {
         pdfUrl: createdPdfUrl,
