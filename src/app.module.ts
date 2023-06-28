@@ -34,6 +34,7 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
+import { MessagesModule } from './messages/messages.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -119,6 +120,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ContactsModule,
     PleziModule,
     OrganizationsModule,
+    MessagesModule,
   ],
   providers: [
     {
