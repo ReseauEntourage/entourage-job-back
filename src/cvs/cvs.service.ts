@@ -209,9 +209,9 @@ export class CVsService {
 
           if (cvData.locations) {
             const locations = await Promise.all(
-              cvData.locations.map(({ name }) => {
+              cvData.locations.map(({ name, order }) => {
                 return this.locationModel.create(
-                  { name },
+                  { name, order },
                   {
                     hooks: true,
                     transaction: t,
@@ -224,21 +224,21 @@ export class CVsService {
 
           if (cvData.experiences) {
             await Promise.all(
-              cvData.experiences.map(async (experience) => {
+              cvData.experiences.map(async ({ description, order, skills }) => {
                 const modelExperience = await this.experienceModel.create(
                   {
                     CVId: createdCV.id,
-                    description: experience.description || '',
-                    order: experience.order,
+                    description: description || '',
+                    order: order,
                   },
                   {
                     hooks: true,
                     transaction: t,
                   }
                 );
-                if (experience.skills) {
-                  const skills = await Promise.all(
-                    experience.skills.map(({ name }) => {
+                if (skills) {
+                  const experienceSkills = await Promise.all(
+                    skills.map(({ name }) => {
                       return this.skillModel.create(
                         { name },
                         {
@@ -248,7 +248,7 @@ export class CVsService {
                       );
                     })
                   );
-                  await modelExperience.$add('skills', skills, {
+                  await modelExperience.$add('skills', experienceSkills, {
                     transaction: t,
                   });
                 }
@@ -1003,7 +1003,8 @@ export class CVsService {
           model: Location,
           as: 'locations',
           through: { attributes: [] },
-          attributes: ['name'],
+          attributes: ['name', 'order'],
+          order: [['locations.order', 'ASC']],
           where: locations
             ? {
                 name: locations,

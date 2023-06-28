@@ -94,7 +94,8 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
   {
     model: Location,
     as: 'locations',
-    attributes: ['id', 'name'],
+    attributes: ['id', 'name', 'order'],
+    order: [['locations.order', 'ASC']],
   },
   {
     model: Experience,
