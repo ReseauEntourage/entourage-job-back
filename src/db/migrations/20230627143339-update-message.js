@@ -26,7 +26,6 @@ module.exports = {
       type: Sequelize.STRING,
       allowNull: false,
     });
-    Messages;
     await queryInterface.addColumn('Messages', 'businessLine', {
       type: Sequelize.STRING,
       allowNull: false,
