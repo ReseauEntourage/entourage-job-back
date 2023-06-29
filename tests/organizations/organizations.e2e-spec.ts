@@ -1,11 +1,10 @@
 import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
+import { QueueMocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
 import { Queues } from 'src/queues/queues.types';
@@ -36,10 +35,6 @@ describe('Organizations', () => {
 
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
-      .overrideProvider(S3Service)
-      .useValue(S3Mocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -82,7 +77,7 @@ describe('Organizations', () => {
           });
         });
 
-        it('Should return 200 when admin creates an organization', async () => {
+        it('Should return 201 when admin creates an organization', async () => {
           const organization = await organizationFactory.create({}, {}, false);
 
           const organizationToCreate =
@@ -103,7 +98,7 @@ describe('Organizations', () => {
             })
           );
         });
-        it('Should return 200 when admin creates an organization with missing optional fields', async () => {
+        it('Should return 201 when admin creates an organization with missing optional fields', async () => {
           const organization = await organizationFactory.create({}, {}, false);
 
           const { address, ...organizationToCreate } =
@@ -139,7 +134,7 @@ describe('Organizations', () => {
               .send(wrongData);
           expect(response.status).toBe(400);
         });
-        it('Should return 401 when organization has invalid phone number', async () => {
+        it('Should return 400 when organization has invalid phone number', async () => {
           const organization = await organizationFactory.create({}, {}, false);
 
           const organizationToCreate =

@@ -30,11 +30,11 @@ import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
+import { MessagesModule } from './messages/messages.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
-import { MessagesModule } from './messages/messages.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -152,6 +152,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ExperiencesModule,
     ReviewsModule,
     OrganizationsModule,
+    MessagesModule,
   ],
 })
 export class AppModule {}

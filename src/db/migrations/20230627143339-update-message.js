@@ -3,7 +3,13 @@ module.exports = {
     await queryInterface.removeColumn('Messages', 'job');
     await queryInterface.removeColumn('Messages', 'businessLine');
     await queryInterface.removeColumn('Messages', 'company');
-    await queryInterface.renameColumn('Messages', 'localization', 'zone');
+    await queryInterface.removeColumn('Messages', 'localization');
+
+    await queryInterface.changeColumn('Messages', 'phone', {
+      type: Sequelize.STRING,
+      allowNull: true,
+    });
+
     await queryInterface.addColumn('Messages', 'UserId', {
       type: Sequelize.UUID,
       allowNull: false,
@@ -24,18 +30,25 @@ module.exports = {
   down: async (queryInterface, Sequelize) => {
     await queryInterface.addColumn('Messages', 'job', {
       type: Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     });
     await queryInterface.addColumn('Messages', 'businessLine', {
       type: Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     });
     await queryInterface.addColumn('Messages', 'company', {
       type: Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
+    });
+    await queryInterface.addColumn('Messages', 'localization', {
+      type: Sequelize.STRING,
+      allowNull: true,
     });
 
-    await queryInterface.renameColumn('Messages', 'zone', 'localization');
+    await queryInterface.changeColumn('Messages', 'phone', {
+      type: Sequelize.STRING,
+      allowNull: false,
+    });
 
     await queryInterface.removeColumn('Messages', 'UserId');
     await queryInterface.removeColumn('Messages', 'subject');

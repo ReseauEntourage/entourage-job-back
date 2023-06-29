@@ -1,26 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
+import { InjectModel } from '@nestjs/sequelize';
+import { User } from '../users/models';
+import { MailsService } from 'src/mails/mails.service';
+import { UsersService } from 'src/users/users.service';
+import { Message } from './models';
 
 @Injectable()
 export class MessagesService {
-  create(createMessageDto: CreateMessageDto) {
-    return 'This action adds a new message';
+  constructor(
+    @InjectModel(Message)
+    private messageModel: typeof Message,
+    private mailsService: MailsService,
+    private usersService: UsersService
+  ) {}
+
+  async create(createMessageDto: Partial<Message>) {
+    return this.messageModel.create(createMessageDto, {
+      hooks: true,
+    });
   }
 
-  findAll() {
-    return `This action returns all messages`;
+  async findOne(id: string) {
+    return this.messageModel.findByPk(id);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} message`;
+  async findOneUser(id: string) {
+    return this.usersService.findOne(id);
   }
 
-  update(id: number, updateMessageDto: UpdateMessageDto) {
-    return `This action updates a #${id} message`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} message`;
+  async sendMessageMail(candidate: User, message: Message) {
+    return this.mailsService.sendMessageMail(candidate, message);
   }
 }

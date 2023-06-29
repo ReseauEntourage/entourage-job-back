@@ -1,34 +1,47 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  NotFoundException,
+  Post,
+} from '@nestjs/common';
+import { isValidPhone } from '../utils/misc';
+import { Public } from 'src/auth/guards';
+import { CandidateUserRoles } from 'src/users/users.types';
+import { isRoleIncluded } from 'src/users/users.utils';
+import { CreateMessageDto, CreateMessagePipe } from './dto';
 import { MessagesService } from './messages.service';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
 
-@Controller('messages')
+@Controller('message')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
+  @Public()
   @Post()
-  create(@Body() createMessageDto: CreateMessageDto) {
-    return this.messagesService.create(createMessageDto);
-  }
+  async create(
+    @Body(new CreateMessagePipe()) createMessageDto: CreateMessageDto
+  ) {
+    const candidate = await this.messagesService.findOneUser(
+      createMessageDto.UserId
+    );
 
-  @Get()
-  findAll() {
-    return this.messagesService.findAll();
-  }
+    if (!candidate) {
+      throw new NotFoundException();
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.messagesService.findOne(+id);
-  }
+    if (
+      (createMessageDto.phone && !isValidPhone(createMessageDto.phone)) ||
+      !isRoleIncluded(CandidateUserRoles, candidate.role)
+    ) {
+      throw new BadRequestException();
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMessageDto: UpdateMessageDto) {
-    return this.messagesService.update(+id, updateMessageDto);
-  }
+    const createdMessage = await this.messagesService.create(createMessageDto);
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.messagesService.remove(+id);
+    await this.messagesService.sendMessageMail(candidate, createdMessage);
+
+    //TODO send in salesforce
+
+    return createdMessage;
   }
 }

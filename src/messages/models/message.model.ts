@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
-import { IsEmail as IsEmailClassValidator } from 'class-validator/types/decorator/string/IsEmail';
+import {
+  IsEmail as IsEmailClassValidator,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -14,11 +17,13 @@ import {
   Length,
   Model,
   PrimaryKey,
+  Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { ContactType } from '../messages.types';
 import { User } from 'src/users/models';
-import { AdminZone } from 'src/utils/types';
 
+@Table({ tableName: 'Messages' })
 export class Message extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -26,6 +31,8 @@ export class Message extends Model {
   @Column
   id: string;
 
+  @ApiProperty()
+  @IsString()
   @IsUUID(4)
   @ForeignKey(() => User)
   @AllowNull(false)
@@ -61,13 +68,6 @@ export class Message extends Model {
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
-  @AllowNull(true)
-  @Column
-  zone: AdminZone;
-
-  @ApiProperty()
-  @IsString()
   @AllowNull(false)
   @Column
   subject: string;
@@ -78,13 +78,12 @@ export class Message extends Model {
   @Column
   message: string;
 
-  // TODO create Type for type
   @ApiProperty()
   @IsString()
   @IsOptional()
   @AllowNull(true)
   @Column
-  type: string;
+  type: ContactType;
 
   @BelongsTo(() => User, 'UserId')
   user: User;
