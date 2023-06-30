@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import * as _ from 'lodash';
-import { ContactTypeFilters } from '../messages/messages.types';
+import {
+  MessageSubjectFilters,
+  MessageContactTypeFilters,
+} from '../messages/messages.types';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
@@ -579,14 +582,15 @@ export class MailsService {
       variables: {
         candidateFirstName: candidate.firstName,
         zone: candidate.zone,
-        subject: message.subject,
+        subject: findConstantFromValue(message.subject, MessageSubjectFilters)
+          .label,
         message: message.message,
         firstName: message.firstName,
         lastName: message.lastName,
         email: message.email,
         phone: message.phone || '',
         type: message.type
-          ? findConstantFromValue(message.type, ContactTypeFilters)
+          ? findConstantFromValue(message.type, MessageContactTypeFilters).label
           : '',
       },
     });

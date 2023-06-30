@@ -20,7 +20,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { ContactType } from '../messages.types';
+import { MessageSubject, MessageContactType } from '../messages.types';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'Messages' })
@@ -70,7 +70,7 @@ export class Message extends Model {
   @IsString()
   @AllowNull(false)
   @Column
-  subject: string;
+  subject: MessageSubject;
 
   @ApiProperty()
   @IsString()
@@ -83,7 +83,7 @@ export class Message extends Model {
   @IsOptional()
   @AllowNull(true)
   @Column
-  type: ContactType;
+  type: MessageContactType;
 
   @BelongsTo(() => User, 'UserId')
   user: User;

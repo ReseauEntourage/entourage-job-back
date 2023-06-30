@@ -4,7 +4,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
 import { MessagesService } from 'src/messages/messages.service';
-import { ContactTypes } from 'src/messages/messages.types';
+import {
+  MessageSubjectFilters,
+  MessageContactTypeFilters,
+} from 'src/messages/messages.types';
 import { Message } from 'src/messages/models';
 import { Factory } from 'src/utils/types';
 
@@ -24,9 +27,13 @@ export class MessageFactory implements Factory<Message> {
       lastName: faker.name.lastName(),
       email: faker.internet.email(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
-      subject: faker.lorem.lines(1),
+      subject: faker.random.arrayElement(
+        MessageSubjectFilters.map(({ value }) => value)
+      ),
       message: faker.lorem.lines(3),
-      type: ContactTypes.CONNECTOR,
+      type: faker.random.arrayElement(
+        MessageContactTypeFilters.map(({ value }) => value)
+      ),
     };
 
     return {
