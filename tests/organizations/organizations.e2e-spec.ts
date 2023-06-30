@@ -1,9 +1,9 @@
 import { getQueueToken } from '@nestjs/bull';
-import { INestApplication } from '@nestjs/common';
+import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { QueueMocks } from '../mocks.types';
+import { CacheMocks, QueueMocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
@@ -32,9 +32,10 @@ describe('Organizations', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
+      .overrideProvider(CACHE_MANAGER)
+      .useValue(CacheMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();

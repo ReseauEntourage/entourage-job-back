@@ -40,7 +40,13 @@ export class MessagesController {
 
     await this.messagesService.sendMessageMail(candidate, createdMessage);
 
-    //TODO send in salesforce
+    /*
+      TODO later
+      await this.messagesService.sendMessageToSalesforce(
+        candidate,
+        createdMessage
+      );
+    */
 
     return createdMessage;
   }

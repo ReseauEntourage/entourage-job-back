@@ -1,8 +1,9 @@
 import { getQueueToken } from '@nestjs/bull';
-import { INestApplication } from '@nestjs/common';
+import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { QueueMocks } from '../mocks.types';
+import { CacheMocks, QueueMocks, SalesforceMocks } from '../mocks.types';
+import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { MessagesController } from 'src/messages/messages.controller';
 import { Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
@@ -28,9 +29,12 @@ describe('Messages', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-
       .overrideProvider(getQueueToken(Queues.WORK))
       .useValue(QueueMocks)
+      .overrideProvider(CACHE_MANAGER)
+      .useValue(CacheMocks)
+      .overrideProvider(SalesforceService)
+      .useValue(SalesforceMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();

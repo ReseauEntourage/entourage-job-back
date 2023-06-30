@@ -839,7 +839,7 @@ export class OpportunitiesService {
       ' : ';
     if (shouldSend) {
       await this.sendArchiveOfferReminder(opportunity);
-      log += 'mail send; ';
+      log += 'mail sent; ';
     } else {
       log += 'no mail sent; ';
     }
