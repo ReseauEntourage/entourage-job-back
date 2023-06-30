@@ -1326,6 +1326,7 @@ export class SalesforceService {
          FROM ${ObjectNames.CAMPAIGN}
          WHERE ParentId = '${process.env.SF_INFOCO_CAMPAIGN_ID}'
            AND StartDate > TODAY
+           AND IsActive = true
          ORDER BY StartDate asc LIMIT 7`
       );
 
