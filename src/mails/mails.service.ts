@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import * as _ from 'lodash';
-
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
+import {
+  ExternalMessageSubjectFilters,
+  ExternalMessageContactTypeFilters,
+} from 'src/external-messages/external-messages.types';
+import { Message } from 'src/external-messages/models/external-message.model';
 import {
   CustomMailParams,
   MailjetTemplate,
@@ -553,6 +557,46 @@ export class MailsService {
         offerId: opportunity.id || '',
         offerTitle: opportunity.title || '',
         recruiterFirstName: opportunity.recruiterFirstName || '',
+      },
+    });
+  }
+
+  async sendExternalMessageReceivedMail(candidate: User, message: Message) {
+    const coach = getCoachFromCandidate(candidate);
+
+    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+
+    const toEmail: CustomMailParams['toEmail'] = {
+      to: candidate.email,
+      cc: [candidatesAdminMail],
+    };
+
+    if (coach) {
+      toEmail.cc = [...toEmail.cc, coach.email];
+    }
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail,
+      templateId: MailjetTemplates.MESSAGE_RECEIVED,
+      replyTo: message.senderEmail,
+      variables: {
+        candidateFirstName: candidate.firstName,
+        zone: candidate.zone,
+        subject: findConstantFromValue(
+          message.subject,
+          ExternalMessageSubjectFilters
+        ).label,
+        message: message.message,
+        firstName: message.senderFirstName,
+        lastName: message.senderLastName,
+        email: message.senderEmail,
+        phone: message.senderPhone || '',
+        type: message.type
+          ? findConstantFromValue(
+              message.type,
+              ExternalMessageContactTypeFilters
+            ).label
+          : '',
       },
     });
   }

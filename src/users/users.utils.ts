@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
 import { col, literal, Op, where, WhereOptions } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
-import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
+import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { FilterObject } from 'src/utils/types';
 import { User, UserCandidat } from './models';

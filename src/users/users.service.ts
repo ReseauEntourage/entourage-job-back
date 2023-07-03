@@ -4,7 +4,7 @@ import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
 import { getPublishedCVQuery } from '../cvs/cvs.utils';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
 import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';

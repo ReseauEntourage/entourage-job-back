@@ -3,7 +3,7 @@ import { Where } from 'sequelize/types/utils';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/common/businessLines/businessLines.types';
+} from 'src/common/business-lines/business-lines.types';
 
 import {
   AdminZone,

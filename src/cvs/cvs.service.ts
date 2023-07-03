@@ -13,9 +13,9 @@ import { Ambition } from 'src/common/ambitions/models';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/common/businessLines/businessLines.types';
-import { buildBusinessLineForSentence } from 'src/common/businessLines/businessLines.utils';
-import { BusinessLine } from 'src/common/businessLines/models';
+} from 'src/common/business-lines/business-lines.types';
+import { buildBusinessLineForSentence } from 'src/common/business-lines/business-lines.utils';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';

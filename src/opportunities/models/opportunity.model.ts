@@ -21,11 +21,11 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { ExternalOfferOrigin } from '../opportunities.types';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractValue } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
 import { User } from 'src/users/models';
-import { OpportunityBusinessLine } from './opportunity-businessLine.model';
+import { OpportunityBusinessLine } from './opportunity-business-line.model';
 import { OpportunityUser } from './opportunity-user.model';
 
 @Table({ tableName: 'Opportunities' })

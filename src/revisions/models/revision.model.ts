@@ -10,7 +10,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { RevisionChange } from './revisionChange.model';
+import { RevisionChange } from './revision-change.model';
 
 @Table({ tableName: 'Revisions' })
 export class Revision extends Model {

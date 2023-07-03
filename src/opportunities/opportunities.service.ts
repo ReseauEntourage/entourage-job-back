@@ -3,8 +3,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
-import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { BusinessLine } from 'src/common/business-lines/models';
 import {
   Department,
   DepartmentFilters,
@@ -839,7 +839,7 @@ export class OpportunitiesService {
       ' : ';
     if (shouldSend) {
       await this.sendArchiveOfferReminder(opportunity);
-      log += 'mail send; ';
+      log += 'mail sent; ';
     } else {
       log += 'no mail sent; ';
     }

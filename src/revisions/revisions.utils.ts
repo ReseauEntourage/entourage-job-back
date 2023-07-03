@@ -82,7 +82,7 @@ export async function createBeforeHook(
   let previousVersion: Partial<HistorizedModel> = instance.previous();
   let currentVersion: Partial<HistorizedModel> = instance.toJSON();
 
-  // Supported nested models.
+  // Supported nested dto.
   previousVersion = _.omitBy(
     previousVersion,
     (i) => i != null && typeof i === 'object' && !(i instanceof Date)

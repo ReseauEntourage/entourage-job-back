@@ -1,5 +1,5 @@
 export { CV } from './cv.model';
-export { CVBusinessLine } from './cv-businessLine.model';
+export { CVBusinessLine } from './cv-business-line.model';
 export { CVLocation } from './cv-location.model';
 export { CVAmbition } from './cv-ambition.model';
 export { CVContract } from './cv-contract.model';

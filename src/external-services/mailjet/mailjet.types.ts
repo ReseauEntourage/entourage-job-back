@@ -46,6 +46,7 @@ export const MailjetTemplates = {
   CONTACT_EMPLOYER: 4550570,
   RELANCE_EMPLOYER: 4550652,
   ARCHIVE_REMINDER: 4593081,
+  MESSAGE_RECEIVED: 4918707,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

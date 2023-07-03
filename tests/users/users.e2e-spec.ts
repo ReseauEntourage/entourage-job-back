@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { Experience } from 'src/common/experiences/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
@@ -21,7 +21,7 @@ import { CVStatuses, UserRoles } from 'src/users/users.types';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
-import { BusinessLinesHelper } from 'tests/common/businessLines/businessLines.helper';
+import { BusinessLinesHelper } from 'tests/common/business-lines/business-lines.helper';
 import { ContractsHelper } from 'tests/common/contracts/contracts.helper';
 import { ExperiencesSkillsHelper } from 'tests/common/experiences/experiences-skills.helper';
 import { ExperiencesHelper } from 'tests/common/experiences/experiences.helper';
@@ -32,7 +32,7 @@ import { ReviewsHelper } from 'tests/common/reviews/reviews.helper';
 import { SkillsHelper } from 'tests/common/skills/skills.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { CVAmbitionsHelper } from 'tests/cvs/cv-ambitions.helper';
-import { CVBusinessLinesHelper } from 'tests/cvs/cv-businessLines.helper';
+import { CVBusinessLinesHelper } from 'tests/cvs/cv-business-lines.helper';
 import { CVContractsHelper } from 'tests/cvs/cv-contracts.helper';
 import { CVLanguagesHelper } from 'tests/cvs/cv-languages.helper';
 import { CVLocationsHelper } from 'tests/cvs/cv-locations.helper';
@@ -4181,7 +4181,7 @@ describe('Users', () => {
     });
     // TODO put in unit tests
     describe('D - Delete 1 User', () => {
-      describe('/:id - Delete user and all associated models', () => {
+      describe('/:id - Delete user and all associated dto', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCoach: LoggedUser;
         let candidate: User;
