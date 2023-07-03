@@ -3,36 +3,36 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
-import { MessagesService } from 'src/messages/messages.service';
+import { ExternalMessagesService } from 'src/external-messages/external-messages.service';
 import {
-  MessageSubjectFilters,
-  MessageContactTypeFilters,
-} from 'src/messages/messages.types';
-import { Message } from 'src/messages/models';
+  ExternalMessageSubjectFilters,
+  ExternalMessageContactTypeFilters,
+} from 'src/external-messages/external-messages.types';
+import { Message } from 'src/external-messages/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
-export class MessageFactory implements Factory<Message> {
+export class ExternalMessageFactory implements Factory<Message> {
   constructor(
     @InjectModel(Message)
     private messageModel: typeof Message,
-    private messagesService: MessagesService
+    private messagesService: ExternalMessagesService
   ) {}
 
   generateMessage(props: Partial<Message>): Partial<Message> {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
     const fakeData: Partial<Message> = {
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
+      senderFirstName: faker.name.firstName(),
+      senderLastName: faker.name.lastName(),
+      senderEmail: faker.internet.email(),
+      senderPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       subject: faker.random.arrayElement(
-        MessageSubjectFilters.map(({ value }) => value)
+        ExternalMessageSubjectFilters.map(({ value }) => value)
       ),
       message: faker.lorem.lines(3),
       type: faker.random.arrayElement(
-        MessageContactTypeFilters.map(({ value }) => value)
+        ExternalMessageContactTypeFilters.map(({ value }) => value)
       ),
     };
 

@@ -7,7 +7,7 @@ import { UsersService } from 'src/users/users.service';
 import { Message } from './models';
 
 @Injectable()
-export class MessagesService {
+export class ExternalMessagesService {
   constructor(
     @InjectModel(Message)
     private messageModel: typeof Message,
@@ -30,8 +30,11 @@ export class MessagesService {
     return this.usersService.findOne(id);
   }
 
-  async sendMessageMail(candidate: User, message: Message) {
-    return this.mailsService.sendMessageMail(candidate, message);
+  async sendExternalMessageReceivedMail(candidate: User, message: Message) {
+    return this.mailsService.sendExternalMessageReceivedMail(
+      candidate,
+      message
+    );
   }
 
   async sendMessageToSalesforce(/* candidate: User, message: Message */) {

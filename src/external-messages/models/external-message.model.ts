@@ -20,10 +20,13 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { MessageSubject, MessageContactType } from '../messages.types';
+import {
+  ExternalMessageSubject,
+  ExternalMessageContactType,
+} from '../external-messages.types';
 import { User } from 'src/users/models';
 
-@Table({ tableName: 'Messages' })
+@Table({ tableName: 'ExternalMessages' })
 export class Message extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -43,20 +46,20 @@ export class Message extends Model {
   @IsString()
   @AllowNull(false)
   @Column
-  firstName: string;
+  senderFirstName: string;
 
   @ApiProperty()
   @IsString()
   @AllowNull(false)
   @Column
-  lastName: string;
+  senderLastName: string;
 
   @ApiProperty()
   @IsEmailClassValidator()
   @IsEmail
   @AllowNull(false)
   @Column
-  email: string;
+  senderEmail: string;
 
   @ApiProperty()
   @IsString()
@@ -64,13 +67,13 @@ export class Message extends Model {
   @AllowNull(true)
   @Length({ min: 0, max: 30 })
   @Column
-  phone: string;
+  senderPhone: string;
 
   @ApiProperty()
   @IsString()
   @AllowNull(false)
   @Column
-  subject: MessageSubject;
+  subject: ExternalMessageSubject;
 
   @ApiProperty()
   @IsString()
@@ -83,7 +86,7 @@ export class Message extends Model {
   @IsOptional()
   @AllowNull(true)
   @Column
-  type: MessageContactType;
+  type: ExternalMessageContactType;
 
   @BelongsTo(() => User, 'UserId')
   user: User;

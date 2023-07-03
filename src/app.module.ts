@@ -10,7 +10,7 @@ import type { ClientOpts } from 'redis';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
-import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
+import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
 import { ContractsModule } from 'src/common/contracts/contracts.module';
 import { ExperiencesModule } from 'src/common/experiences/experiences.module';
 import { LanguagesModule } from 'src/common/languages/languages.module';
@@ -25,12 +25,12 @@ import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
+import { ExternalMessagesModule } from './external-messages/external-messages.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
-import { MessagesModule } from './messages/messages.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
@@ -120,7 +120,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ContactsModule,
     PleziModule,
     OrganizationsModule,
-    MessagesModule,
+    ExternalMessagesModule,
   ],
   providers: [
     {
@@ -152,7 +152,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ExperiencesModule,
     ReviewsModule,
     OrganizationsModule,
-    MessagesModule,
+    ExternalMessagesModule,
   ],
 })
 export class AppModule {}

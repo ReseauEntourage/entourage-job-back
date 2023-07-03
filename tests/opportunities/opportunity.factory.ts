@@ -5,12 +5,12 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import phone from 'phone';
-import { ExternalOfferOriginFilters } from '../../src/opportunities/opportunities.types';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Departments } from 'src/common/locations/locations.types';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
+import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { Factory, WrapperModel } from 'src/utils/types';
 
 type ComponentKeys = 'businessLine';

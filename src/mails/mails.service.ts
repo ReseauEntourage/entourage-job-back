@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import * as _ from 'lodash';
-import {
-  MessageSubjectFilters,
-  MessageContactTypeFilters,
-} from '../messages/messages.types';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
+import {
+  ExternalMessageSubjectFilters,
+  ExternalMessageContactTypeFilters,
+} from 'src/external-messages/external-messages.types';
+import { Message } from 'src/external-messages/models/external-message.model';
 import {
   CustomMailParams,
   MailjetTemplate,
   MailjetTemplateKey,
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
-import { Message } from 'src/messages/models/message.model';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
   OfferStatuses,
@@ -561,7 +561,7 @@ export class MailsService {
     });
   }
 
-  async sendMessageMail(candidate: User, message: Message) {
+  async sendExternalMessageReceivedMail(candidate: User, message: Message) {
     const coach = getCoachFromCandidate(candidate);
 
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -578,19 +578,24 @@ export class MailsService {
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail,
       templateId: MailjetTemplates.MESSAGE_RECEIVED,
-      replyTo: message.email,
+      replyTo: message.senderEmail,
       variables: {
         candidateFirstName: candidate.firstName,
         zone: candidate.zone,
-        subject: findConstantFromValue(message.subject, MessageSubjectFilters)
-          .label,
+        subject: findConstantFromValue(
+          message.subject,
+          ExternalMessageSubjectFilters
+        ).label,
         message: message.message,
-        firstName: message.firstName,
-        lastName: message.lastName,
-        email: message.email,
-        phone: message.phone || '',
+        firstName: message.senderFirstName,
+        lastName: message.senderLastName,
+        email: message.senderEmail,
+        phone: message.senderPhone || '',
         type: message.type
-          ? findConstantFromValue(message.type, MessageContactTypeFilters).label
+          ? findConstantFromValue(
+              message.type,
+              ExternalMessageContactTypeFilters
+            ).label
           : '',
       },
     });

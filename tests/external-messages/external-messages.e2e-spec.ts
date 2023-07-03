@@ -3,8 +3,8 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { CacheMocks, QueueMocks, SalesforceMocks } from '../mocks.types';
+import { ExternalMessagesController } from 'src/external-messages/external-messages.controller';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
-import { MessagesController } from 'src/messages/messages.controller';
 import { Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -12,18 +12,18 @@ import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { UserFactory } from 'tests/users/user.factory';
-import { MessageFactory } from './message.factory';
-import { MessagesHelper } from './messages.helper';
+import { ExternalMessageFactory } from './external-message.factory';
+import { ExternalMessagesHelper } from './external-messages.helper';
 
-describe('Messages', () => {
+describe('External Messages', () => {
   let app: INestApplication;
 
   let databaseHelper: DatabaseHelper;
-  let messageFactory: MessageFactory;
-  let messagesHelper: MessagesHelper;
+  let messageFactory: ExternalMessageFactory;
+  let messagesHelper: ExternalMessagesHelper;
   let userFactory: UserFactory;
 
-  const route = '/message';
+  const route = '/externalMessage';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -42,8 +42,12 @@ describe('Messages', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    messagesHelper = moduleFixture.get<MessagesHelper>(MessagesHelper);
-    messageFactory = moduleFixture.get<MessageFactory>(MessageFactory);
+    messagesHelper = moduleFixture.get<ExternalMessagesHelper>(
+      ExternalMessagesHelper
+    );
+    messageFactory = moduleFixture.get<ExternalMessageFactory>(
+      ExternalMessageFactory
+    );
   });
 
   afterAll(async () => {
@@ -82,7 +86,7 @@ describe('Messages', () => {
 
           const messageToCreate = await messagesHelper.mapMessageProps(message);
 
-          const response: APIResponse<MessagesController['create']> =
+          const response: APIResponse<ExternalMessagesController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .send(messageToCreate);
@@ -95,10 +99,10 @@ describe('Messages', () => {
             false
           );
 
-          const { phone, type, ...messageToCreate } =
+          const { senderPhone, type, ...messageToCreate } =
             await messagesHelper.mapMessageProps(message);
 
-          const response: APIResponse<MessagesController['create']> =
+          const response: APIResponse<ExternalMessagesController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .send(messageToCreate);
@@ -106,7 +110,7 @@ describe('Messages', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...message,
-              phone: null,
+              senderPhone: null,
               type: null,
             })
           );
@@ -117,10 +121,10 @@ describe('Messages', () => {
             false
           );
 
-          const { firstName, lastName, ...messageToCreate } =
+          const { senderFirstName, senderLastName, ...messageToCreate } =
             await messagesHelper.mapMessageProps(message);
 
-          const response: APIResponse<MessagesController['create']> =
+          const response: APIResponse<ExternalMessagesController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .send(messageToCreate);
@@ -134,10 +138,10 @@ describe('Messages', () => {
 
           const messageToCreate = await messagesHelper.mapMessageProps(message);
 
-          const response: APIResponse<MessagesController['create']> =
+          const response: APIResponse<ExternalMessagesController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
-              .send({ ...messageToCreate, phone: '1234' });
+              .send({ ...messageToCreate, senderPhone: '1234' });
           expect(response.status).toBe(400);
         });
         it('Should return 400 when message is for coach', async () => {
@@ -148,7 +152,7 @@ describe('Messages', () => {
 
           const messageToCreate = await messagesHelper.mapMessageProps(message);
 
-          const response: APIResponse<MessagesController['create']> =
+          const response: APIResponse<ExternalMessagesController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .send(messageToCreate);
@@ -162,7 +166,7 @@ describe('Messages', () => {
 
           const messageToCreate = await messagesHelper.mapMessageProps(message);
 
-          const response: APIResponse<MessagesController['create']> =
+          const response: APIResponse<ExternalMessagesController['create']> =
             await request(app.getHttpServer())
               .post(`${route}`)
               .send(messageToCreate);

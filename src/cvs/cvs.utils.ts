@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { BusinessLineFilters } from 'src/common/businessLines/businessLines.types';
+import { BusinessLineFilters } from 'src/common/business-lines/business-lines.types';
 import { DepartmentFilters } from 'src/common/locations/locations.types';
 import { CVStatuses, EmployedFilters } from 'src/users/users.types';
 import { FilterObject } from 'src/utils/types';

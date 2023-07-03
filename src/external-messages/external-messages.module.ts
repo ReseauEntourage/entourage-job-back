@@ -3,8 +3,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
-import { MessagesController } from './messages.controller';
-import { MessagesService } from './messages.service';
+import { ExternalMessagesController } from './external-messages.controller';
+import { ExternalMessagesService } from './external-messages.service';
 import { Message } from './models';
 
 @Module({
@@ -14,8 +14,8 @@ import { Message } from './models';
     UsersModule,
     SalesforceModule,
   ],
-  controllers: [MessagesController],
-  providers: [MessagesService],
-  exports: [SequelizeModule, MessagesService],
+  controllers: [ExternalMessagesController],
+  providers: [ExternalMessagesService],
+  exports: [SequelizeModule, ExternalMessagesService],
 })
-export class MessagesModule {}
+export class ExternalMessagesModule {}

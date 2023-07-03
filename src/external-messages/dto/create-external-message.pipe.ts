@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateMessageDto } from './create-message.dto';
+import { CreateExternalMessageDto } from './create-external-message.dto';
 
-export class CreateMessagePipe
-  implements PipeTransform<CreateMessageDto, Promise<CreateMessageDto>>
+export class CreateExternalMessagePipe
+  implements
+    PipeTransform<CreateExternalMessageDto, Promise<CreateExternalMessageDto>>
 {
   private static toValidate(metatype: Function): boolean {
     const types: Function[] = [String, Boolean, Number, Array, Object];
@@ -17,10 +18,10 @@ export class CreateMessagePipe
   }
 
   async transform(
-    value: CreateMessageDto,
+    value: CreateExternalMessageDto,
     { metatype }: ArgumentMetadata
-  ): Promise<CreateMessageDto> {
-    if (!metatype || !CreateMessagePipe.toValidate(metatype)) {
+  ): Promise<CreateExternalMessageDto> {
+    if (!metatype || !CreateExternalMessagePipe.toValidate(metatype)) {
       return value;
     }
     const object = plainToInstance(metatype, value);
