@@ -9,11 +9,11 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { BusinessLine } from 'src/common/businessLines/models';
-import { CV } from './cv.model';
+import { BusinessLine } from 'src/common/business-lines/models';
+import { Opportunity } from './opportunity.model';
 
-@Table({ tableName: 'CV_BusinessLines' })
-export class CVBusinessLine extends Model {
+@Table({ tableName: 'Opportunity_BusinessLines' })
+export class OpportunityBusinessLine extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -21,10 +21,10 @@ export class CVBusinessLine extends Model {
   id: string;
 
   @IsUUID(4)
-  @ForeignKey(() => CV)
+  @ForeignKey(() => Opportunity)
   @AllowNull(false)
   @Column
-  CVId: string;
+  OpportunityId: string;
 
   @IsUUID(4)
   @ForeignKey(() => BusinessLine)

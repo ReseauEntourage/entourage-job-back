@@ -1,8 +1,8 @@
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/common/businessLines/businessLines.types';
-import { BusinessLine } from 'src/common/businessLines/models';
+} from 'src/common/business-lines/business-lines.types';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractValue } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
