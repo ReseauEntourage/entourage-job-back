@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { CreateExternalMessageDto } from 'src/external-messages/dto';
-import { Message } from 'src/external-messages/models';
+import { ExternalMessage } from 'src/external-messages/models';
 
 @Injectable()
 export class ExternalMessagesHelper {
-  mapMessageProps(message: Message): CreateExternalMessageDto {
+  mapMessageProps(message: ExternalMessage): CreateExternalMessageDto {
     return {
       UserId: message.UserId,
       senderFirstName: message.senderFirstName,

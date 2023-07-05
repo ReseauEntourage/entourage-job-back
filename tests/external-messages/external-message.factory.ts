@@ -8,21 +8,21 @@ import {
   ExternalMessageSubjectFilters,
   ExternalMessageContactTypeFilters,
 } from 'src/external-messages/external-messages.types';
-import { Message } from 'src/external-messages/models';
+import { ExternalMessage } from 'src/external-messages/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
-export class ExternalMessageFactory implements Factory<Message> {
+export class ExternalMessageFactory implements Factory<ExternalMessage> {
   constructor(
-    @InjectModel(Message)
-    private messageModel: typeof Message,
+    @InjectModel(ExternalMessage)
+    private messageModel: typeof ExternalMessage,
     private messagesService: ExternalMessagesService
   ) {}
 
-  generateMessage(props: Partial<Message>): Partial<Message> {
+  generateMessage(props: Partial<ExternalMessage>): Partial<ExternalMessage> {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
-    const fakeData: Partial<Message> = {
+    const fakeData: Partial<ExternalMessage> = {
       senderFirstName: faker.name.firstName(),
       senderLastName: faker.name.lastName(),
       senderEmail: faker.internet.email(),
@@ -43,9 +43,9 @@ export class ExternalMessageFactory implements Factory<Message> {
   }
 
   async create(
-    props: Partial<Message> = {},
+    props: Partial<ExternalMessage> = {},
     insertInDB = true
-  ): Promise<Message> {
+  ): Promise<ExternalMessage> {
     const messageData = this.generateMessage(props);
 
     const messageId = faker.datatype.uuid();
@@ -67,6 +67,6 @@ export class ExternalMessageFactory implements Factory<Message> {
 
     return {
       ...builtMessageWithoutId,
-    } as Message;
+    } as ExternalMessage;
   }
 }

@@ -1,1 +1,1 @@
-export { Message } from './external-message.model';
+export { ExternalMessage } from './external-message.model';

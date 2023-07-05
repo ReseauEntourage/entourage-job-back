@@ -71,6 +71,7 @@ export const ObjectNames = {
   EVENT: 'Event',
   CAMPAIGN: 'Campaign',
   CAMPAIGN_MEMBER: 'CampaignMember',
+  TASK: 'Task',
 } as const;
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
@@ -85,6 +86,7 @@ type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.EVENT]: SalesforceEvent;
   [ObjectNames.CAMPAIGN]: SalesforceCampaign;
   [ObjectNames.CAMPAIGN_MEMBER]: SalesforceCampaignMember;
+  [ObjectNames.TASK]: SalesforceTask;
 };
 
 export type SalesforceObject<
@@ -423,6 +425,19 @@ export interface AccountProps {
   mainAccountSfId?: string;
 }
 
+export interface SalesforceAccount {
+  Id?: string;
+  Name: string;
+  M_tiers_LinkedOut__c: string;
+  BillingStreet: string;
+  BillingCity: string;
+  BillingPostalCode: string;
+  RecordTypeId: AccountRecordType;
+  Reseaux__c: 'LinkedOut';
+  Antenne__c: string;
+  ParentId: string;
+}
+
 export interface SalesforceCampaign {
   Id?: string;
   Name?: string;
@@ -445,17 +460,36 @@ export interface SalesforceCampaignMember {
   Status: string; // Inscrit
 }
 
-export interface SalesforceAccount {
+export interface ExternalMessageProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  zone: CompanyZone;
+  externalMessageId: string;
+  subject: string;
+  candidateFirstName: string;
+  candidateLastName: string;
+  candidateEmail: string;
+}
+
+export interface TaskProps {
+  externalMessageId: string;
+  subject: string;
+  ownerSfId: string;
+  leadSfId: string;
+  binomeSfId: string;
+}
+
+export interface SalesforceTask {
   Id?: string;
-  Name: string;
-  M_tiers_LinkedOut__c: string;
-  BillingStreet: string;
-  BillingCity: string;
-  BillingPostalCode: string;
-  RecordTypeId: AccountRecordType;
-  Reseaux__c: 'LinkedOut';
-  Antenne__c: string;
-  ParentId: string;
+  ActivityDate: Date;
+  Status: 'Completed' | 'Open';
+  WhoId: string;
+  WhatId: string;
+  Subject: string;
+  OwnerId: string;
+  ID_Externe__c: string;
 }
 
 export interface ContactProps {
@@ -487,16 +521,20 @@ export interface CompanyLeadProps {
   firstName: string;
   lastName: string;
   company: string;
-  position: string;
+  position?: string;
   email: string;
   phone?: string;
-  approach: CompanyApproach;
+  approach?: CompanyApproach;
   zone: CompanyZone;
   heardAbout?: HeardAboutValue;
+  autreSource?: 'Formulaire_Contact_Candidat';
+  message?: string;
+  newsletter?: 'Newsletter LinkedOut';
 }
 
 export interface CompanySalesforceLead {
   Id?: string;
+  OwnerId?: string;
   LastName: string;
   FirstName: string;
   Company: string;
@@ -509,6 +547,9 @@ export interface CompanySalesforceLead {
   Votre_demarche__c: string;
   Comment_vous_nous_avez_connu__c: string;
   Source__c: 'Lead entrant';
+  Autre_source_LinkedOut__c?: 'Formulaire_Contact_Candidat';
+  Message_For__c?: string;
+  Abonnements_Plezi__c?: 'Newsletter LinkedOut';
 }
 
 export interface CandidateLeadProps {
@@ -614,6 +655,7 @@ export interface CandidateAndWorkerLeadProps {
 
 export interface CandidateSalesforceLead {
   Id?: string;
+  OwnerId?: string;
   LastName: string;
   FirstName: string;
   Email?: string;
@@ -650,6 +692,7 @@ export interface CandidateSalesforceLead {
 
 export interface WorkerSalesforceLead {
   Id?: string;
+  OwnerId?: string;
   LastName: string;
   FirstName: string;
   Title?: string;
@@ -666,6 +709,7 @@ export interface WorkerSalesforceLead {
 
 export interface CoachSalesforceLead {
   Id?: string;
+  OwnerId?: string;
   LastName: string;
   FirstName: string;
   Company: string;

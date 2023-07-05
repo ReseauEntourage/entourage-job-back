@@ -1,7 +1,7 @@
 import { PickType } from '@nestjs/swagger';
-import { Message } from '../models';
+import { ExternalMessage } from '../models';
 
-export class CreateExternalMessageDto extends PickType(Message, [
+export class CreateExternalMessageDto extends PickType(ExternalMessage, [
   'UserId',
   'senderFirstName',
   'senderLastName',

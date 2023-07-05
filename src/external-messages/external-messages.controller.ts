@@ -49,13 +49,9 @@ export class ExternalMessagesController {
       createdMessage
     );
 
-    /*
-      TODO later
-      await this.externalMessagesService.sendMessageToSalesforce(
-        candidate,
-        createdMessage
-      );
-    */
+    await this.externalMessagesService.createOrUpdateExternalDBTask(
+      createdMessage.id
+    );
 
     return createdMessage;
   }

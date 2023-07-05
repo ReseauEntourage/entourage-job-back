@@ -55,6 +55,8 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  SalesforceTask,
+  TaskProps,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
@@ -308,6 +310,24 @@ export function mapSalesforceEventFields({
     } ${candidateFirstName} x ${offerTitle}`,
     StartDateTime: startDate,
     IsAllDayEvent: true,
+  };
+}
+
+export function mapSalesforceTaskFields({
+  externalMessageId,
+  binomeSfId,
+  subject,
+  ownerSfId,
+  leadSfId,
+}: TaskProps): SalesforceTask {
+  return {
+    ID_Externe__c: externalMessageId,
+    ActivityDate: new Date(),
+    OwnerId: ownerSfId,
+    Status: 'Completed',
+    Subject: subject,
+    WhoId: leadSfId,
+    WhatId: binomeSfId,
   };
 }
 

@@ -27,7 +27,7 @@ import {
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'ExternalMessages' })
-export class Message extends Model {
+export class ExternalMessage extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

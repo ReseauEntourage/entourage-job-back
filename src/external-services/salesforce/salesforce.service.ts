@@ -3,6 +3,8 @@ import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import moment from 'moment-timezone';
 
+import { ExternalMessagesService } from 'src/external-messages/external-messages.service';
+import { ExternalMessage } from 'src/external-messages/models';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
@@ -42,6 +44,9 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  SalesforceTask,
+  ExternalMessageProps,
+  TaskProps,
 } from './salesforce.types';
 
 import {
@@ -55,6 +60,7 @@ import {
   mapSalesforceLeadFields,
   mapSalesforceOfferFields,
   mapSalesforceProcessFields,
+  mapSalesforceTaskFields,
   parseAddress,
 } from './salesforce.utils';
 
@@ -75,7 +81,8 @@ export class SalesforceService {
 
   constructor(
     private opportunitiesService: OpportunitiesService,
-    private opportunityUsersService: OpportunityUsersService
+    private opportunityUsersService: OpportunityUsersService,
+    private externalMessagesService: ExternalMessagesService
   ) {}
 
   setIsWorker(isWorker: boolean) {
@@ -220,7 +227,11 @@ export class SalesforceService {
     name: T,
     params: SalesforceObject<T> | SalesforceObject<T>[],
     extIdField: keyof SalesforceObject<T>,
-    findIdFunction: 'findProcessById' | 'findOfferById' | 'findEventById'
+    findIdFunction:
+      | 'findProcessById'
+      | 'findOfferById'
+      | 'findEventById'
+      | 'findTaskById'
   ): Promise<string | string[]> {
     await this.refreshSalesforceInstance();
 
@@ -384,6 +395,24 @@ export class SalesforceService {
     );
   }
 
+  async createOrUpdateTask(params: TaskProps | TaskProps[]) {
+    let records: SalesforceTask | SalesforceTask[];
+    if (Array.isArray(params)) {
+      records = params.map((singleParams) => {
+        return mapSalesforceTaskFields(singleParams);
+      });
+    } else {
+      records = mapSalesforceTaskFields(params);
+    }
+
+    return this.upsertRecord(
+      ObjectNames.TASK,
+      records,
+      'ID_Externe__c',
+      'findTaskById'
+    );
+  }
+
   async searchAccountByName(search: string, recordType: AccountRecordType) {
     const escapedSearch = search.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
     await this.refreshSalesforceInstance();
@@ -450,6 +479,18 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
+  async findOwnerByLeadSfId<T extends LeadRecordType>(id: string) {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceLead<T>>[] } =
+      await this.salesforce.query(
+        `SELECT OwnerId
+         FROM ${ObjectNames.LEAD}
+         WHERE Id = '${id}' LIMIT 1
+        `
+      );
+    return records[0]?.OwnerId;
+  }
+
   async findCampaignMember(
     { leadId, contactId }: { leadId?: string; contactId?: string },
     infoCoId: string
@@ -489,12 +530,23 @@ export class SalesforceService {
 
   async findEventById<T>(id: T): Promise<string> {
     await this.refreshSalesforceInstance();
-    const { records }: { records: Partial<SalesforceOffer>[] } =
+    const { records }: { records: Partial<SalesforceEvent>[] } =
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.EVENT}
          WHERE ID_Externe__c = '${id}'
            AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
+      );
+    return records[0]?.Id;
+  }
+
+  async findTaskById<T>(id: T): Promise<string> {
+    await this.refreshSalesforceInstance();
+    const { records }: { records: Partial<SalesforceTask>[] } =
+      await this.salesforce.query(
+        `SELECT Id
+         FROM ${ObjectNames.TASK}
+         WHERE ID_Externe__c = '${id}' LIMIT 1`
       );
     return records[0]?.Id;
   }
@@ -1185,6 +1237,67 @@ export class SalesforceService {
     }
   }
 
+  async findOrCreateLeadFromExternalMessage({
+    firstName,
+    lastName,
+    email,
+    phone,
+    zone,
+    subject,
+    candidateFirstName,
+    candidateLastName,
+    candidateEmail,
+    externalMessageId,
+  }: ExternalMessageProps): Promise<TaskProps> {
+    const leadSfId = (await this.findOrCreateLead(
+      {
+        firstName,
+        lastName,
+        company: 'NA - Formulaire Contact Candidat',
+        email,
+        phone,
+        zone,
+        autreSource: 'Formulaire_Contact_Candidat',
+        message: subject,
+        newsletter: 'Newsletter LinkedOut',
+      },
+      LeadRecordTypesIds.COMPANY
+    )) as string;
+
+    const binomeSfId = await this.findBinomeByCandidateEmail(candidateEmail);
+
+    const ownerSfId = await this.findOwnerByLeadSfId(leadSfId);
+
+    return {
+      binomeSfId: binomeSfId,
+      externalMessageId,
+      ownerSfId,
+      leadSfId,
+      subject: `Message envoyé à ${candidateFirstName} ${candidateLastName} LinkedOut via le site`,
+    };
+  }
+
+  async createOrUpdateSalesforceTask(
+    task: ExternalMessageProps | ExternalMessageProps[]
+  ) {
+    if (Array.isArray(task)) {
+      let tasksToCreate: TaskProps[] = [];
+
+      for (let i = 0; i < task.length; i += 1) {
+        tasksToCreate = [
+          ...tasksToCreate,
+          await this.findOrCreateLeadFromExternalMessage(task[i]),
+        ];
+      }
+
+      return (await this.createOrUpdateTask(tasksToCreate)) as string;
+    } else {
+      const taskToCreate = await this.findOrCreateLeadFromExternalMessage(task);
+
+      return (await this.createOrUpdateTask(taskToCreate)) as string;
+    }
+  }
+
   async findOfferFromOpportunityId(
     opportunityId: string
   ): Promise<OfferAndProcessProps> {
@@ -1233,6 +1346,30 @@ export class SalesforceService {
     };
   }
 
+  async findTaskFromExternalMessageId(
+    externalMessageId: string
+  ): Promise<ExternalMessageProps> {
+    const externalMessageDb = await this.externalMessagesService.findOne(
+      externalMessageId
+    );
+
+    const { user, ...externalMessage }: ExternalMessage =
+      externalMessageDb.toJSON();
+
+    return {
+      candidateEmail: user.email,
+      candidateFirstName: user.firstName,
+      candidateLastName: user.lastName,
+      email: externalMessage.senderEmail,
+      externalMessageId: '',
+      firstName: externalMessage.senderFirstName,
+      lastName: externalMessage.senderLastName,
+      phone: externalMessage.senderEmail,
+      subject: externalMessage.subject,
+      zone: user.zone,
+    };
+  }
+
   async createOrUpdateSalesforceOpportunity(
     opportunityId: string | string[],
     isSameOpportunity: boolean
@@ -1263,19 +1400,39 @@ export class SalesforceService {
     this.setIsWorker(true);
 
     if (Array.isArray(opportunityUserEventId)) {
-      const offersToCreate = await Promise.all(
+      const eventsToCreate = await Promise.all(
         opportunityUserEventId.map((singleOpportunityUserEventId) => {
           return this.findEventFromOpportunityUserEventId(
             singleOpportunityUserEventId
           );
         })
       );
-      return this.createOrUpdateSalesforceEvent(offersToCreate);
+      return this.createOrUpdateSalesforceEvent(eventsToCreate);
     } else {
       const eventToCreate = await this.findEventFromOpportunityUserEventId(
         opportunityUserEventId
       );
       return this.createOrUpdateSalesforceEvent(eventToCreate);
+    }
+  }
+
+  async createOrUpdateSalesforceExternalMessage(
+    externalMessageId: string | string[]
+  ) {
+    this.setIsWorker(true);
+
+    if (Array.isArray(externalMessageId)) {
+      const tasksToCreate = await Promise.all(
+        externalMessageId.map((singleExternalMessageId) => {
+          return this.findTaskFromExternalMessageId(singleExternalMessageId);
+        })
+      );
+      return this.createOrUpdateSalesforceTask(tasksToCreate);
+    } else {
+      const taskToCreate = await this.findTaskFromExternalMessageId(
+        externalMessageId
+      );
+      return this.createOrUpdateSalesforceTask(taskToCreate);
     }
   }
 
