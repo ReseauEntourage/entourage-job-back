@@ -5,8 +5,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
 import { ExternalMessagesService } from 'src/external-messages/external-messages.service';
 import {
-  ExternalMessageSubjectFilters,
   ExternalMessageContactTypeFilters,
+  ExternalMessageSubjectFilters,
 } from 'src/external-messages/external-messages.types';
 import { ExternalMessage } from 'src/external-messages/models';
 import { Factory } from 'src/utils/types';
@@ -30,6 +30,7 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
       subject: faker.random.arrayElement(
         ExternalMessageSubjectFilters.map(({ value }) => value)
       ),
+      optInNewsletter: faker.datatype.boolean(),
       message: faker.lorem.lines(3),
       type: faker.random.arrayElement(
         ExternalMessageContactTypeFilters.map(({ value }) => value)

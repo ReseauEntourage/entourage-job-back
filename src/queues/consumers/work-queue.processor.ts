@@ -398,7 +398,7 @@ export class WorkQueueProcessor {
       await this.salesforceService.createOrUpdateSalesforceExternalMessage(
         data.externalMessageId
       );
-      return `Salesforce : created or updated event '${data.externalMessageId}'`;
+      return `Salesforce : created or updated task '${data.externalMessageId}'`;
     }
 
     return `Salesforce job ignored : creation or update of task '${data.externalMessageId}'`;

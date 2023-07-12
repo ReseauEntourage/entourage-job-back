@@ -10,11 +10,14 @@ module.exports = {
       allowNull: true,
     });
 
-    await queryInterface.renameColumn('Messages', 'firstName', 'senderFirstName');
+    await queryInterface.renameColumn(
+      'Messages',
+      'firstName',
+      'senderFirstName'
+    );
     await queryInterface.renameColumn('Messages', 'lastName', 'senderLastName');
     await queryInterface.renameColumn('Messages', 'phone', 'senderPhone');
     await queryInterface.renameColumn('Messages', 'email', 'senderEmail');
-
 
     await queryInterface.addColumn('Messages', 'UserId', {
       type: Sequelize.UUID,
@@ -32,10 +35,16 @@ module.exports = {
       type: Sequelize.STRING,
       allowNull: true,
     });
+
+    await queryInterface.addColumn('Messages', 'optInNewsletter', {
+      type: Sequelize.BOOLEAN,
+      false: true,
+      default: false,
+    });
     await queryInterface.renameTable('Messages', 'ExternalMessages');
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.renameTable( 'ExternalMessages','Messages',);
+    await queryInterface.renameTable('ExternalMessages', 'Messages');
 
     await queryInterface.addColumn('Messages', 'job', {
       type: Sequelize.STRING,
@@ -54,11 +63,14 @@ module.exports = {
       allowNull: true,
     });
 
-    await queryInterface.renameColumn('Messages', 'senderFirstName', 'firstName');
+    await queryInterface.renameColumn(
+      'Messages',
+      'senderFirstName',
+      'firstName'
+    );
     await queryInterface.renameColumn('Messages', 'senderLastName', 'lastName');
     await queryInterface.renameColumn('Messages', 'senderPhone', 'phone');
     await queryInterface.renameColumn('Messages', 'senderEmail', 'email');
-
 
     await queryInterface.changeColumn('Messages', 'phone', {
       type: Sequelize.STRING,
@@ -68,5 +80,6 @@ module.exports = {
     await queryInterface.removeColumn('Messages', 'UserId');
     await queryInterface.removeColumn('Messages', 'subject');
     await queryInterface.removeColumn('Messages', 'type');
+    await queryInterface.removeColumn('Messages', 'optInNewsletter');
   },
 };

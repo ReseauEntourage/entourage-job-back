@@ -319,6 +319,7 @@ export function mapSalesforceTaskFields({
   subject,
   ownerSfId,
   leadSfId,
+  zone,
 }: TaskProps): SalesforceTask {
   return {
     ID_Externe__c: externalMessageId,
@@ -327,7 +328,8 @@ export function mapSalesforceTaskFields({
     Status: 'Completed',
     Subject: subject,
     WhoId: leadSfId,
-    WhatId: binomeSfId,
+    Bin_me__c: binomeSfId,
+    Antenne__c: zone,
   };
 }
 
@@ -381,7 +383,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     isLeadRecordTypeProps(recordType, LeadRecordTypesIds.COMPANY, leadProps) &&
     isLeadRecordType(recordType, LeadRecordTypesIds.COMPANY)
   ) {
-    const { company, position, approach, heardAbout } = leadProps;
+    const { company, position, approach, heardAbout, newsletter } = leadProps;
 
     return {
       ...commonFields,
@@ -395,6 +397,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         heardAbout,
         LeadHeardAbout
       ),
+      Abonnements_Plezi__c: newsletter,
     } as SalesforceLead<T>;
   }
 

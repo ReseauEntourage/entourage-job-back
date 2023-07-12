@@ -35,7 +35,8 @@ export class ExternalMessagesController {
     if (
       (createMessageDto.senderPhone &&
         !isValidPhone(createMessageDto.senderPhone)) ||
-      !isRoleIncluded(CandidateUserRoles, candidate.role)
+      !isRoleIncluded(CandidateUserRoles, candidate.role) ||
+      !createMessageDto.optInContact
     ) {
       throw new BadRequestException();
     }

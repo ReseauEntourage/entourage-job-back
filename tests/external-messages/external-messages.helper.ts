@@ -14,6 +14,8 @@ export class ExternalMessagesHelper {
       subject: message.subject,
       message: message.message,
       type: message.type,
+      optInNewsletter: message.optInNewsletter,
+      optInContact: true,
     };
   }
 }

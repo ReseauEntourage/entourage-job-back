@@ -24,6 +24,7 @@ import {
   EventProps,
   EventPropsWithProcessAndBinomeAndRecruiterId,
   EventRecordTypesIds,
+  ExternalMessageProps,
   LeadProp,
   LeadRecordType,
   LeadRecordTypesIds,
@@ -45,7 +46,6 @@ import {
   SalesforceOffer,
   SalesforceProcess,
   SalesforceTask,
-  ExternalMessageProps,
   TaskProps,
 } from './salesforce.types';
 
@@ -1248,6 +1248,7 @@ export class SalesforceService {
     candidateLastName,
     candidateEmail,
     externalMessageId,
+    optInNewsletter,
   }: ExternalMessageProps): Promise<TaskProps> {
     const leadSfId = (await this.findOrCreateLead(
       {
@@ -1259,7 +1260,7 @@ export class SalesforceService {
         zone,
         autreSource: 'Formulaire_Contact_Candidat',
         message: subject,
-        newsletter: 'Newsletter LinkedOut',
+        newsletter: optInNewsletter ? 'Newsletter LinkedOut' : null,
       },
       LeadRecordTypesIds.COMPANY
     )) as string;
@@ -1269,11 +1270,12 @@ export class SalesforceService {
     const ownerSfId = await this.findOwnerByLeadSfId(leadSfId);
 
     return {
-      binomeSfId: binomeSfId,
+      binomeSfId,
       externalMessageId,
       ownerSfId,
       leadSfId,
       subject: `Message envoyé à ${candidateFirstName} ${candidateLastName} LinkedOut via le site`,
+      zone,
     };
   }
 
@@ -1361,12 +1363,13 @@ export class SalesforceService {
       candidateFirstName: user.firstName,
       candidateLastName: user.lastName,
       email: externalMessage.senderEmail,
-      externalMessageId: '',
+      externalMessageId: externalMessage.id,
       firstName: externalMessage.senderFirstName,
       lastName: externalMessage.senderLastName,
       phone: externalMessage.senderEmail,
       subject: externalMessage.subject,
       zone: user.zone,
+      optInNewsletter: externalMessage.optInNewsletter,
     };
   }
 

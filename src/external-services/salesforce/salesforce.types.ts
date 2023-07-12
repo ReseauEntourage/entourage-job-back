@@ -417,6 +417,27 @@ export interface SalesforceEvent {
   RecordTypeId: EventRecordType;
 }
 
+export interface TaskProps {
+  externalMessageId: string;
+  subject: string;
+  ownerSfId: string;
+  leadSfId: string;
+  binomeSfId: string;
+  zone: CompanyZone;
+}
+
+export interface SalesforceTask {
+  Id?: string;
+  ActivityDate: Date;
+  Status: 'Completed' | 'Open';
+  WhoId: string;
+  Bin_me__c: string;
+  Subject: string;
+  OwnerId: string;
+  ID_Externe__c: string;
+  Antenne__c: string;
+}
+
 export interface AccountProps {
   name: string;
   businessLines?: BusinessLine[];
@@ -471,25 +492,7 @@ export interface ExternalMessageProps {
   candidateFirstName: string;
   candidateLastName: string;
   candidateEmail: string;
-}
-
-export interface TaskProps {
-  externalMessageId: string;
-  subject: string;
-  ownerSfId: string;
-  leadSfId: string;
-  binomeSfId: string;
-}
-
-export interface SalesforceTask {
-  Id?: string;
-  ActivityDate: Date;
-  Status: 'Completed' | 'Open';
-  WhoId: string;
-  WhatId: string;
-  Subject: string;
-  OwnerId: string;
-  ID_Externe__c: string;
+  optInNewsletter: boolean;
 }
 
 export interface ContactProps {

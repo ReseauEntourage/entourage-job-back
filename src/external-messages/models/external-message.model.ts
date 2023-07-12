@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEmail as IsEmailClassValidator,
   IsOptional,
   IsString,
@@ -21,8 +22,8 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import {
-  ExternalMessageSubject,
   ExternalMessageContactType,
+  ExternalMessageSubject,
 } from '../external-messages.types';
 import { User } from 'src/users/models';
 
@@ -87,6 +88,13 @@ export class ExternalMessage extends Model {
   @AllowNull(true)
   @Column
   type: ExternalMessageContactType;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  @Default(false)
+  @Column
+  optInNewsletter?: boolean;
 
   @BelongsTo(() => User, 'UserId')
   user: User;
