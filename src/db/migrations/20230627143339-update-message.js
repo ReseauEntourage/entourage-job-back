@@ -36,11 +36,6 @@ module.exports = {
       allowNull: true,
     });
 
-    await queryInterface.addColumn('Messages', 'optInNewsletter', {
-      type: Sequelize.BOOLEAN,
-      false: true,
-      default: false,
-    });
     await queryInterface.renameTable('Messages', 'ExternalMessages');
   },
   down: async (queryInterface, Sequelize) => {
@@ -80,6 +75,5 @@ module.exports = {
     await queryInterface.removeColumn('Messages', 'UserId');
     await queryInterface.removeColumn('Messages', 'subject');
     await queryInterface.removeColumn('Messages', 'type');
-    await queryInterface.removeColumn('Messages', 'optInNewsletter');
   },
 };
