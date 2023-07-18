@@ -1,6 +1,6 @@
 import { Includeable, Op } from 'sequelize';
 import { OfferStatus } from '../opportunities.types';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { User, UserCandidat } from 'src/users/models';
 import { FilterConstant } from 'src/utils/types';

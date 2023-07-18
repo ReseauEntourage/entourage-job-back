@@ -1,6 +1,6 @@
 import { Includeable } from 'sequelize/types';
 import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models/experience.model';
 import { Language } from 'src/common/languages/models';
@@ -94,7 +94,8 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
   {
     model: Location,
     as: 'locations',
-    attributes: ['id', 'name'],
+    attributes: ['id', 'name', 'order'],
+    order: [['locations.order', 'ASC']],
   },
   {
     model: Experience,

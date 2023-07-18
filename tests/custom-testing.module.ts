@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { AppModule } from 'src/app.module';
 import { AuthTestingModule } from './auth/auth-testing.module';
 import { AmbitionsTestingModule } from './common/ambitions/ambitions-testing.module';
-import { BusinessLinesTestingModule } from './common/businessLines/businessLines-testing.module';
+import { BusinessLinesTestingModule } from './common/business-lines/business-lines-testing.module';
 import { ContractsTestingModule } from './common/contracts/contracts-testing.module';
 import { ExperiencesTestingModule } from './common/experiences/experiences-testing.module';
 import { LanguagesTestingModule } from './common/languages/languages-testing.module';
@@ -15,6 +15,7 @@ import { SkillsTestingModule } from './common/skills/skills-testing.module';
 import { ContactsTestingModule } from './contacts/contacts-testing.module';
 import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
+import { ExternalMessagesTestingModule } from './external-messages/external-messages-testing.module';
 import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
@@ -39,6 +40,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsTestingModule,
     OpportunitiesTestingModule,
     OrganizationsTestingModule,
+    ExternalMessagesTestingModule,
   ],
   providers: [DatabaseHelper],
 })

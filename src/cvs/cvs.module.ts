@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
-import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
+import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
 import { ContractsModule } from 'src/common/contracts/contracts.module';
 import { ExperiencesModule } from 'src/common/experiences/experiences.module';
 import { LanguagesModule } from 'src/common/languages/languages.module';

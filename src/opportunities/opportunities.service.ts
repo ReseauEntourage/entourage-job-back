@@ -3,8 +3,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
-import { BusinessLineValue } from 'src/common/businessLines/businessLines.types';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { BusinessLine } from 'src/common/business-lines/models';
 import {
   Department,
   DepartmentFilters,
@@ -106,45 +106,43 @@ export class OpportunitiesService {
     >,
     createdById?: string
   ) {
-    const t = await this.opportunityModel.sequelize.transaction();
-
     try {
-      const createdOpportunity = await this.opportunityModel.create(
-        {
-          ...createOpportunityDto,
-          createdBy: createdById,
-        },
-        { hooks: true, transaction: t }
-      );
+      return this.opportunityModel.sequelize.transaction(async (t) => {
+        const createdOpportunity = await this.opportunityModel.create(
+          {
+            ...createOpportunityDto,
+            createdBy: createdById,
+          },
+          { hooks: true, transaction: t }
+        );
 
-      if (
-        (
-          createOpportunityDto as
-            | CreateExternalOpportunityDto
-            | CreateOpportunityDto
-        ).businessLines
-      ) {
-        const businessLines = await Promise.all(
+        if (
           (
             createOpportunityDto as
               | CreateExternalOpportunityDto
               | CreateOpportunityDto
-          ).businessLines.map(({ name, order = -1 }) => {
-            return this.businessLineModel.create(
-              { name, order },
-              { hooks: true, transaction: t }
-            );
-          })
-        );
-        await createdOpportunity.$add('businessLines', businessLines, {
-          transaction: t,
-        });
-      }
+          ).businessLines
+        ) {
+          const businessLines = await Promise.all(
+            (
+              createOpportunityDto as
+                | CreateExternalOpportunityDto
+                | CreateOpportunityDto
+            ).businessLines.map(({ name, order = -1 }) => {
+              return this.businessLineModel.create(
+                { name, order },
+                { hooks: true, transaction: t }
+              );
+            })
+          );
+          await createdOpportunity.$add('businessLines', businessLines, {
+            transaction: t,
+          });
+        }
 
-      await t.commit();
-      return createdOpportunity;
+        return createdOpportunity;
+      });
     } catch (error) {
-      await t.rollback();
       throw error;
     }
   }
@@ -373,48 +371,46 @@ export class OpportunitiesService {
       | Omit<UpdateOpportunityDto, 'shouldSendNotifications'>
       | UpdateExternalOpportunityDto
   ) {
-    const t = await this.opportunityModel.sequelize.transaction();
-
     try {
-      await this.opportunityModel.update(updateOpportunityDto, {
-        where: { id },
-        individualHooks: true,
-        transaction: t,
-      });
-
-      const updatedOpportunity = await this.findOne(id);
-
-      if (updateOpportunityDto.businessLines) {
-        const businessLines = await Promise.all(
-          updateOpportunityDto.businessLines.map(({ name, order = -1 }) => {
-            return this.businessLineModel.create(
-              { name, order },
-              { hooks: true, transaction: t }
-            );
-          })
-        );
-        await updatedOpportunity.$add('businessLines', businessLines, {
+      return this.opportunityModel.sequelize.transaction(async (t) => {
+        await this.opportunityModel.update(updateOpportunityDto, {
+          where: { id },
+          individualHooks: true,
           transaction: t,
         });
 
-        await this.opportunityBusinessLineModel.destroy({
-          where: {
-            OpportunityId: updatedOpportunity.id,
-            BusinessLineId: {
-              [Op.not]: businessLines.map((bl) => {
-                return bl.id;
-              }),
+        const updatedOpportunity = await this.findOne(id);
+
+        if (updateOpportunityDto.businessLines) {
+          const businessLines = await Promise.all(
+            updateOpportunityDto.businessLines.map(({ name, order = -1 }) => {
+              return this.businessLineModel.create(
+                { name, order },
+                { hooks: true, transaction: t }
+              );
+            })
+          );
+          await updatedOpportunity.$add('businessLines', businessLines, {
+            transaction: t,
+          });
+
+          await this.opportunityBusinessLineModel.destroy({
+            where: {
+              OpportunityId: updatedOpportunity.id,
+              BusinessLineId: {
+                [Op.not]: businessLines.map((bl) => {
+                  return bl.id;
+                }),
+              },
             },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      await t.commit();
+            hooks: true,
+            transaction: t,
+          });
+        }
 
-      return updatedOpportunity;
+        return updatedOpportunity;
+      });
     } catch (error) {
-      await t.rollback();
       throw error;
     }
   }
@@ -569,93 +565,91 @@ export class OpportunitiesService {
         []),
       // ...(candidatesToRecommendTo || []),
     ]);
-
-    const t = await this.opportunityUserModel.sequelize.transaction();
     try {
-      const opportunityUsers = await Promise.all(
-        uniqueCandidatesIds.map(async (candidateId) => {
-          return this.opportunityUsersService.createOrRestore(
-            {
-              OpportunityId: opportunity.id,
-              UserId: candidateId,
-            },
-            t
-          );
-        })
-      );
-
-      if (opportunity.isPublic) {
-        await this.opportunityUserModel.update(
-          {
-            recommended: true,
-          },
-          {
-            where: {
-              id: opportunityUsers.map((opportunityUser) => {
-                return opportunityUser.id;
-              }),
-            },
-            hooks: true,
-            transaction: t,
-          }
-        );
-        await this.opportunityUserModel.update(
-          {
-            recommended: false,
-          },
-          {
-            where: {
-              OpportunityId: opportunity.id,
-              UserId: {
-                [Op.not]: opportunityUsers.map((opportunityUser) => {
-                  return opportunityUser.UserId;
-                }),
-              },
-            },
-            hooks: true,
-            transaction: t,
-          }
-        );
-      } else {
-        const opportunitiesUsersToDestroy =
-          await this.opportunityUserModel.findAll({
-            where: {
-              OpportunityId: opportunity.id,
-              UserId: {
-                [Op.not]: opportunityUsers.map((opportunityUser) => {
-                  return opportunityUser.UserId;
-                }),
-              },
-            },
-            transaction: t,
-          });
-        await Promise.all(
-          opportunitiesUsersToDestroy.map((oppUs) => {
-            return this.opportunityUserStatusChangeModel.create(
+      await this.opportunityModel.sequelize.transaction(async (t) => {
+        const opportunityUsers = await Promise.all(
+          uniqueCandidatesIds.map(async (candidateId) => {
+            return this.opportunityUsersService.createOrRestore(
               {
-                oldStatus: oppUs.status,
-                newStatus: null,
-                OpportunityUserId: oppUs.id,
-                UserId: oppUs.UserId,
                 OpportunityId: opportunity.id,
+                UserId: candidateId,
               },
-              { transaction: t }
+              t
             );
           })
         );
-        await this.opportunityUserModel.destroy({
-          where: {
-            OpportunityId: opportunity.id,
-            UserId: opportunitiesUsersToDestroy.map((opportunityUser) => {
-              return opportunityUser.UserId;
-            }),
-          },
-          transaction: t,
-        });
-      }
-      await t.commit();
+
+        if (opportunity.isPublic) {
+          await this.opportunityUserModel.update(
+            {
+              recommended: true,
+            },
+            {
+              where: {
+                id: opportunityUsers.map((opportunityUser) => {
+                  return opportunityUser.id;
+                }),
+              },
+              hooks: true,
+              transaction: t,
+            }
+          );
+          await this.opportunityUserModel.update(
+            {
+              recommended: false,
+            },
+            {
+              where: {
+                OpportunityId: opportunity.id,
+                UserId: {
+                  [Op.not]: opportunityUsers.map((opportunityUser) => {
+                    return opportunityUser.UserId;
+                  }),
+                },
+              },
+              hooks: true,
+              transaction: t,
+            }
+          );
+        } else {
+          const opportunitiesUsersToDestroy =
+            await this.opportunityUserModel.findAll({
+              where: {
+                OpportunityId: opportunity.id,
+                UserId: {
+                  [Op.not]: opportunityUsers.map((opportunityUser) => {
+                    return opportunityUser.UserId;
+                  }),
+                },
+              },
+              transaction: t,
+            });
+          await Promise.all(
+            opportunitiesUsersToDestroy.map((oppUs) => {
+              return this.opportunityUserStatusChangeModel.create(
+                {
+                  oldStatus: oppUs.status,
+                  newStatus: null,
+                  OpportunityUserId: oppUs.id,
+                  UserId: oppUs.UserId,
+                  OpportunityId: opportunity.id,
+                },
+                { transaction: t }
+              );
+            })
+          );
+          await this.opportunityUserModel.destroy({
+            where: {
+              OpportunityId: opportunity.id,
+              UserId: opportunitiesUsersToDestroy.map((opportunityUser) => {
+                return opportunityUser.UserId;
+              }),
+            },
+            transaction: t,
+          });
+        }
+      });
     } catch (error) {
-      await t.rollback();
       throw error;
     }
 
@@ -845,7 +839,7 @@ export class OpportunitiesService {
       ' : ';
     if (shouldSend) {
       await this.sendArchiveOfferReminder(opportunity);
-      log += 'mail send; ';
+      log += 'mail sent; ';
     } else {
       log += 'no mail sent; ';
     }

@@ -26,6 +26,11 @@ export class Location extends WrapperModel {
   @Column
   name: Department;
 
+  @AllowNull(false)
+  @Default(-1)
+  @Column
+  order: number;
+
   @BelongsToMany(() => CV, () => CVLocation, 'LocationId', 'CVId')
   CVs: CV[];
 

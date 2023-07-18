@@ -1,4 +1,4 @@
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { Location } from 'src/common/locations/models';
 import {
   CustomMailParams,

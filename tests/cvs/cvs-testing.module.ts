@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
-import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
+import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
 import { ContractsModule } from 'src/common/contracts/contracts.module';
 import { ExperiencesModule } from 'src/common/experiences/experiences.module';
 import { LanguagesModule } from 'src/common/languages/languages.module';
@@ -11,7 +11,7 @@ import { SkillsModule } from 'src/common/skills/skills.module';
 import { CVsModule } from 'src/cvs/cvs.module';
 import { UsersModule } from 'src/users/users.module';
 import { CVAmbitionsHelper } from './cv-ambitions.helper';
-import { CVBusinessLinesHelper } from './cv-businessLines.helper';
+import { CVBusinessLinesHelper } from './cv-business-lines.helper';
 import { CVContractsHelper } from './cv-contracts.helper';
 import { CVLanguagesHelper } from './cv-languages.helper';
 import { CVLocationsHelper } from './cv-locations.helper';

@@ -10,7 +10,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { BusinessLineValue } from '../businessLines.types';
+import { BusinessLineValue } from '../business-lines.types';
 import { CV, CVBusinessLine } from 'src/cvs/models';
 import { Opportunity, OpportunityBusinessLine } from 'src/opportunities/models';
 import { WrapperModel } from 'src/utils/types';

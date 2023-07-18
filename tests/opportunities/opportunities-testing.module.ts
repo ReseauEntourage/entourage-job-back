@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BusinessLinesModule } from 'src/common/businessLines/businessLines.module';
+import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
 import { ContractsModule } from 'src/common/contracts/contracts.module';
 import { OpportunitiesModule } from 'src/opportunities/opportunities.module';
 import { OpportunitiesHelper } from './opportunities.helper';

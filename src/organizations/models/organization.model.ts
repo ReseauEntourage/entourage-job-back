@@ -41,7 +41,7 @@ export class Organization extends Model {
 
   @ApiProperty()
   @IsString()
-  @AllowNull(true)
+  @AllowNull(false)
   @Column
   zone: AdminZone;
 
