@@ -1,2 +1,2 @@
 export { Revision } from './revision.model';
-export { RevisionChange } from './revisionChange.model';
+export { RevisionChange } from './revision-change.model';

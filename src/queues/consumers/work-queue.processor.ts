@@ -176,12 +176,9 @@ export class WorkQueueProcessor {
   async processArchiveReminder(job: Job<SendOfferArchiveReminder>) {
     const { data } = job;
 
-    const jobLog =
-      await this.opportunitiesService.validateAndExecuteArchiveReminder(
-        data.opportunityId
-      );
-
-    return jobLog;
+    return await this.opportunitiesService.validateAndExecuteArchiveReminder(
+      data.opportunityId
+    );
   }
 
   @Process(Jobs.REMINDER_CV_10)

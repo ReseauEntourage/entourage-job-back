@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import {
   BusinessLineFilters,
   BusinessLineValue,
-} from 'src/common/businessLines/businessLines.types';
+} from 'src/common/business-lines/business-lines.types';
 import {
   Department,
   DepartmentFilters,

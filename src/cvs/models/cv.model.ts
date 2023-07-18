@@ -19,7 +19,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/businessLines/models';
+import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models/experience.model';
 import { Language } from 'src/common/languages/models';
@@ -30,7 +30,7 @@ import { Skill } from 'src/common/skills/models';
 import { UserCandidat } from 'src/users/models';
 import { CVStatus, CVStatuses } from 'src/users/users.types';
 import { CVAmbition } from './cv-ambition.model';
-import { CVBusinessLine } from './cv-businessLine.model';
+import { CVBusinessLine } from './cv-business-line.model';
 import { CVContract } from './cv-contract.model';
 import { CVLanguage } from './cv-language.model';
 import { CVLocation } from './cv-location.model';
