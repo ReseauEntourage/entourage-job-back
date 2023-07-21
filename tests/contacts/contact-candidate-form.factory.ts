@@ -62,7 +62,7 @@ export class ContactCandidateFormFactory
       diagnostic: faker.lorem.paragraphs(3, '\n'),
       description: faker.lorem.paragraphs(3, '\n'),
       heardAbout: faker.random.objectElement(HeardAbout),
-      contactWithCoach: true,
+      contactWithCoach: faker.datatype.boolean(),
     };
 
     return {

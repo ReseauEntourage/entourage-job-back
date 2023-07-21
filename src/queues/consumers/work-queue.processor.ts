@@ -24,6 +24,7 @@ import {
   CacheCVJob,
   CreateOrUpdateSalesforceEventJob,
   CreateOrUpdateSalesforceOpportunityJob,
+  CreateOrUpdateSalesforceTaskJob,
   GenerateCVPDFJob,
   GenerateCVPreviewJob,
   GenerateCVSearchStringJob,
@@ -385,6 +386,22 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of event '${data.opportunityUserEventId}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK)
+  async processCreateOrUpdateSalesforceTask(
+    job: Job<CreateOrUpdateSalesforceTaskJob>
+  ) {
+    const { data } = job;
+
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceExternalMessage(
+        data.externalMessageId
+      );
+      return `Salesforce : created or updated task '${data.externalMessageId}'`;
+    }
+
+    return `Salesforce job ignored : creation or update of task '${data.externalMessageId}'`;
   }
 
   @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)

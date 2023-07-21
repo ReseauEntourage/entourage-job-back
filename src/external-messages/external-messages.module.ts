@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
+import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
 import { ExternalMessagesController } from './external-messages.controller';
 import { ExternalMessagesService } from './external-messages.service';
-import { Message } from './models';
+import { ExternalMessage } from './models';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Message]),
+    SequelizeModule.forFeature([ExternalMessage]),
     MailsModule,
     UsersModule,
-    SalesforceModule,
+    ExternalDatabasesModule,
   ],
   controllers: [ExternalMessagesController],
   providers: [ExternalMessagesService],
