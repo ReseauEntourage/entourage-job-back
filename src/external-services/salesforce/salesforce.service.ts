@@ -1328,7 +1328,7 @@ export class SalesforceService {
            AND StartDate > TODAY
            AND IsActive = true
            AND Status != 'Aborted'
-         ORDER BY StartDate asc LIMIT 7`
+         ORDER BY StartDate asc`
       );
 
     // Remove the "Z" behind the time fetched from Salesforce to use it as is and not as UTC
