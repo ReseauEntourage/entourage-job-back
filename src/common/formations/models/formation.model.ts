@@ -14,10 +14,10 @@ import {
 } from 'sequelize-typescript';
 import { Skill } from 'src/common/skills/models';
 import { CV } from 'src/cvs/models/cv.model';
-import { ExperienceSkill } from './experience-skill.model';
+import { FormationSkill } from './formation-skill.model';
 
-@Table({ tableName: 'Experiences' })
-export class Experience extends Model {
+@Table({ tableName: 'Formations' })
+export class Formation extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -49,7 +49,7 @@ export class Experience extends Model {
 
   @AllowNull(true)
   @Column
-  company: string;
+  institution: string;
 
   @AllowNull(true)
   @Column
@@ -62,9 +62,9 @@ export class Experience extends Model {
   @BelongsTo(() => CV, 'CVId')
   cv: CV;
 
-  @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
+  @BelongsToMany(() => Skill, () => FormationSkill, 'FormationId', 'SkillId')
   skills: Skill[];
 
-  @HasMany(() => ExperienceSkill, 'ExperienceId')
-  experienceSkills: ExperienceSkill[];
+  @HasMany(() => FormationSkill, 'FormationId')
+  formationSkills: FormationSkill[];
 }
