@@ -594,7 +594,7 @@ export interface CandidateAndWorkerLeadProps {
   postalCode: string;
   city?: string;
   phone: string;
-  email?: string;
+  email: string;
   registeredUnemploymentOffice: CandidateYesNoValue;
   administrativeSituation?: CandidateAdministrativeSituation;
   workingRight: CandidateYesNoNSPPValue;
