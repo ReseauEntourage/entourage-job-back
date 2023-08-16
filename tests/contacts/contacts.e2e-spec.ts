@@ -182,6 +182,7 @@ describe('Contacts', () => {
         firstName: formAnswers.firstName,
         lastName: formAnswers.lastName,
         phone: formAnswers.phone,
+        email: formAnswers.email,
         postalCode: formAnswers.postalCode,
         structure: formAnswers.structure,
         workerFirstName: formAnswers.workerFirstName,
