@@ -84,8 +84,7 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
-  email?: string;
+  email: string;
 
   @ApiProperty()
   @IsString()
