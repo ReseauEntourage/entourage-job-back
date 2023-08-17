@@ -29,7 +29,6 @@ import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import {
   CreateExternalOpportunityDto,
-  CreateExternalOpportunityRestrictedDto,
   CreateOpportunityDto,
   UpdateExternalOpportunityDto,
   UpdateOpportunityDto,
@@ -90,20 +89,7 @@ export class OpportunitiesService {
   ) {}
 
   async create(
-    createOpportunityDto: Partial<
-      | Omit<
-          CreateOpportunityDto,
-          | 'isAdmin'
-          | 'locations'
-          | 'shouldSendNotifications'
-          | 'isCopy'
-          | 'candidatesIds'
-        >
-      | Omit<
-          CreateExternalOpportunityDto | CreateExternalOpportunityRestrictedDto,
-          'candidateId'
-        >
-    >,
+    createOpportunityDto: Partial<Opportunity>,
     createdById?: string
   ) {
     try {
