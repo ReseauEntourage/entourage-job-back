@@ -7,7 +7,7 @@ import {
   ExternalMessageSubjectFilters,
   ExternalMessageContactTypeFilters,
 } from 'src/external-messages/external-messages.types';
-import { Message } from 'src/external-messages/models/external-message.model';
+import { ExternalMessage } from 'src/external-messages/models/external-message.model';
 import {
   CustomMailParams,
   MailjetTemplate,
@@ -561,7 +561,10 @@ export class MailsService {
     });
   }
 
-  async sendExternalMessageReceivedMail(candidate: User, message: Message) {
+  async sendExternalMessageReceivedMail(
+    candidate: User,
+    message: ExternalMessage
+  ) {
     const coach = getCoachFromCandidate(candidate);
 
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);

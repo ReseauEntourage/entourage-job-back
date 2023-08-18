@@ -55,6 +55,8 @@ import {
   SalesforceObject,
   SalesforceOffer,
   SalesforceProcess,
+  SalesforceTask,
+  TaskProps,
 } from './salesforce.types';
 
 export function formatBusinessLines(businessLines: BusinessLine[]) {
@@ -311,6 +313,26 @@ export function mapSalesforceEventFields({
   };
 }
 
+export function mapSalesforceTaskFields({
+  externalMessageId,
+  binomeSfId,
+  subject,
+  ownerSfId,
+  leadSfId,
+  zone,
+}: TaskProps): SalesforceTask {
+  return {
+    ID_Externe__c: externalMessageId,
+    ActivityDate: new Date(),
+    OwnerId: ownerSfId,
+    Status: 'Completed',
+    Subject: subject,
+    WhoId: leadSfId,
+    Bin_me__c: binomeSfId,
+    Antenne__c: zone,
+  };
+}
+
 function isLeadRecordTypeProps<T extends LeadRecordType>(
   recordType: LeadRecordType,
   expectedValue: T,
@@ -361,7 +383,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     isLeadRecordTypeProps(recordType, LeadRecordTypesIds.COMPANY, leadProps) &&
     isLeadRecordType(recordType, LeadRecordTypesIds.COMPANY)
   ) {
-    const { company, position, approach, heardAbout } = leadProps;
+    const { company, position, approach, heardAbout, newsletter } = leadProps;
 
     return {
       ...commonFields,
@@ -375,6 +397,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         heardAbout,
         LeadHeardAbout
       ),
+      Abonnements_Plezi__c: newsletter,
     } as SalesforceLead<T>;
   }
 

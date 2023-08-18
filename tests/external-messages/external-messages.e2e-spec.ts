@@ -99,7 +99,7 @@ describe('External Messages', () => {
             false
           );
 
-          const { senderPhone, type, ...messageToCreate } =
+          const { senderPhone, type, optInNewsletter, ...messageToCreate } =
             await messagesHelper.mapMessageProps(message);
 
           const response: APIResponse<ExternalMessagesController['create']> =
@@ -112,6 +112,7 @@ describe('External Messages', () => {
               ...message,
               senderPhone: null,
               type: null,
+              optInNewsletter: false,
             })
           );
         });
@@ -128,6 +129,21 @@ describe('External Messages', () => {
             await request(app.getHttpServer())
               .post(`${route}`)
               .send(messageToCreate);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when message sender has not opted in for contact', async () => {
+          const message = await messageFactory.create(
+            { UserId: candidate.id },
+            false
+          );
+
+          const { optInContact, ...messageToCreate } =
+            await messagesHelper.mapMessageProps(message);
+
+          const response: APIResponse<ExternalMessagesController['create']> =
+            await request(app.getHttpServer())
+              .post(`${route}`)
+              .send({ ...messageToCreate, optInContact: false });
           expect(response.status).toBe(400);
         });
         it('Should return 400 when message has invalid phone number', async () => {
