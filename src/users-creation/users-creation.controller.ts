@@ -16,6 +16,7 @@ import { User } from 'src/users/models';
 import {
   ExternalUserRoles,
   Permissions,
+  SequelizeUniqueConstraintError,
   UserRoles,
 } from 'src/users/users.types';
 import {
@@ -28,8 +29,6 @@ import { UsersCreationService } from './users-creation.service';
 function generateFakePassword() {
   return randomBytes(16).toString('hex');
 }
-
-const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
 
 // TODO change to users
 @Controller('user')
