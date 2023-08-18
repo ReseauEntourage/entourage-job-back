@@ -35,7 +35,8 @@ export class ExternalMessagesController {
     if (
       (createMessageDto.senderPhone &&
         !isValidPhone(createMessageDto.senderPhone)) ||
-      !isRoleIncluded(CandidateUserRoles, candidate.role)
+      !isRoleIncluded(CandidateUserRoles, candidate.role) ||
+      !createMessageDto.optInContact
     ) {
       throw new BadRequestException();
     }
@@ -49,13 +50,9 @@ export class ExternalMessagesController {
       createdMessage
     );
 
-    /*
-      TODO later
-      await this.externalMessagesService.sendMessageToSalesforce(
-        candidate,
-        createdMessage
-      );
-    */
+    await this.externalMessagesService.createOrUpdateExternalDBTask(
+      createdMessage.id
+    );
 
     return createdMessage;
   }

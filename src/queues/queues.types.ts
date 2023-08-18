@@ -17,6 +17,7 @@ export const Jobs = {
   CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY:
     'create_or_update_salesforce_opportunity',
   CREATE_OR_UPDATE_SALESFORCE_EVENT: 'create_or_update_salesforce_event',
+  CREATE_OR_UPDATE_SALESFORCE_TASK: 'create_or_update_salesforce_task',
   REMINDER_OFFER: 'reminder_offer',
   REMINDER_CV_10: 'reminder_cv_10',
   REMINDER_CV_20: 'reminder_cv_20',
@@ -41,6 +42,7 @@ type JobsData = {
   [Jobs.SEND_SMS]: SendSMSJob | SendSMSJob[];
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT]: CreateOrUpdateSalesforceEventJob;
+  [Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK]: CreateOrUpdateSalesforceTaskJob;
   [Jobs.REMINDER_OFFER]: SendReminderOfferJob;
   [Jobs.REMINDER_CV_10]: SendReminderCVJob;
   [Jobs.REMINDER_CV_20]: SendReminderCVJob;
@@ -125,6 +127,10 @@ export interface CreateOrUpdateSalesforceOpportunityJob {
 
 export interface CreateOrUpdateSalesforceEventJob {
   opportunityUserEventId: string | string[];
+}
+
+export interface CreateOrUpdateSalesforceTaskJob {
+  externalMessageId: string | string[];
 }
 
 export interface SendOffersEmailAfterCVPublishJob {
