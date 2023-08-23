@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   NotFoundException,
@@ -43,6 +44,7 @@ import {
   CoachUserRoles,
   MemberFilterKey,
   Permissions,
+  SequelizeUniqueConstraintError,
   UserRole,
   UserRoles,
 } from './users.types';
@@ -444,7 +446,14 @@ export class UsersController {
       throw new BadRequestException();
     }
 
-    const updatedUser = await this.usersService.update(userId, updateUserDto);
+    let updatedUser: User;
+    try {
+      updatedUser = await this.usersService.update(userId, updateUserDto);
+    } catch (err) {
+      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+        throw new ConflictException();
+      }
+    }
 
     if (!updatedUser) {
       throw new NotFoundException();
