@@ -1,6 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
+import _ from 'lodash';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
 import { getPublishedCVQuery } from '../cvs/cvs.utils';
@@ -95,7 +96,7 @@ export class UsersService {
     const filterOptions = getMemberOptions(filtersObj);
 
     const options: FindOptions<User> = {
-      subQuery: false,
+      //subQuery: false,
       order,
       offset,
       limit,
@@ -119,61 +120,65 @@ export class UsersService {
       };
     }
 
+    const associatedUserOptions: {
+      coach: WhereOptions<UserCandidat>;
+      candidat: WhereOptions<UserCandidat>;
+    } = {
+      coach: {},
+      candidat: {},
+    };
+
     if (filterOptions.role && isRoleIncluded(AllUserRoles, role)) {
       options.where = {
         ...options.where,
         role: filterOptions.role,
       };
-
       if (filterOptions.associatedUser) {
         if (isRoleIncluded(CandidateUserRoles, role)) {
-          options.where = {
-            ...(options.where || {}),
-            ...filterOptions.associatedUser.candidate,
+          associatedUserOptions.candidat = {
+            candidat: filterOptions.associatedUser.candidate,
           };
         }
         if (isRoleIncluded(CoachUserRoles, role)) {
-          options.where = {
-            ...(options.where || {}),
-            ...filterOptions.associatedUser.coach,
+          associatedUserOptions.coach = {
+            coach: filterOptions.associatedUser.coach,
           };
         }
       }
     }
 
     const userCandidatOptions: FindOptions<UserCandidat> = {};
-    if (
-      isRoleIncluded(CandidateUserRoles, role) &&
-      (filterOptions.hidden || filterOptions.employed)
-    ) {
-      userCandidatOptions.where = {};
-      if (filterOptions.hidden) {
-        userCandidatOptions.where = {
-          ...userCandidatOptions.where,
-          hidden: filterOptions.hidden,
-        };
-      }
-      if (filterOptions.employed) {
-        userCandidatOptions.where = {
-          ...userCandidatOptions.where,
-          employed: filterOptions.employed,
-        };
+    if (isRoleIncluded(CandidateUserRoles, role)) {
+      userCandidatOptions.where = { ...associatedUserOptions.candidat };
+      if (filterOptions.hidden || filterOptions.employed) {
+        if (filterOptions.hidden) {
+          userCandidatOptions.where = {
+            ...userCandidatOptions.where,
+            hidden: filterOptions.hidden,
+          };
+        }
+        if (filterOptions.employed) {
+          userCandidatOptions.where = {
+            ...userCandidatOptions.where,
+            employed: filterOptions.employed,
+          };
+        }
       }
     }
-
+    /*
     if (filterOptions.cvStatus) {
       options.where = {
         ...(options.where || {}),
         '$candidat.cvs.status$': filterOptions.cvStatus,
       };
-    }
+    }*/
 
-    if (filterOptions.businessLines) {
+    /* if (filterOptions.businessLines) {
       options.where = {
-        ...(options.where || {}),
-        '$candidat.cvs.businessLines.name$': filterOptions.businessLines,
+        ...(options.where || {}),K
+        name: filterOptions.businessLines,
       };
-    }
+    }*/
 
     options.include = [
       {
@@ -181,19 +186,34 @@ export class UsersService {
         as: 'candidat',
         attributes: ['coachId', ...UserCandidatAttributes],
         ...userCandidatOptions,
+        required: !_.isEmpty(associatedUserOptions.candidat),
         include: [
           {
             model: CV,
             as: 'cvs',
             attributes: ['version', 'status', 'urlImg'],
-            required: !!filterOptions.cvStatus || !!filterOptions.businessLines,
-            where: lastCVVersionWhereOptions,
+            required:
+              isRoleIncluded(CandidateUserRoles, role) &&
+              (!!filterOptions.cvStatus || !!filterOptions.businessLines),
+            where: {
+              ...(isRoleIncluded(CandidateUserRoles, role)
+                ? lastCVVersionWhereOptions
+                : {}),
+              ...(filterOptions.cvStatus
+                ? { status: filterOptions.cvStatus }
+                : {}),
+            },
             include: [
               {
                 model: BusinessLine,
                 as: 'businessLines',
                 attributes: ['name', 'order'],
                 required: !!filterOptions.businessLines,
+                where: filterOptions.businessLines
+                  ? {
+                      name: filterOptions.businessLines,
+                    }
+                  : {},
               },
             ],
           },
@@ -214,6 +234,8 @@ export class UsersService {
       {
         model: UserCandidat,
         as: 'coaches',
+        where: associatedUserOptions.coach,
+        required: !_.isEmpty(associatedUserOptions.coach),
         attributes: ['candidatId', ...UserCandidatAttributes],
         include: [
           {

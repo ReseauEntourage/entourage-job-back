@@ -261,7 +261,7 @@ export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
       literal(`
         SELECT MAX("CVs"."version")
         FROM "CVs"
-        WHERE "candidat"."candidatId" = "CVs"."UserId"
+        WHERE "candidatId" = "CVs"."UserId"
         GROUP BY "CVs"."UserId"
       `),
     ],
