@@ -1,6 +1,7 @@
 import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import moment from 'moment/moment';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import {
@@ -10,6 +11,8 @@ import {
   S3Mocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
+import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
 import { CVsController } from 'src/cvs/cvs.controller';
 import { CVsService } from 'src/cvs/cvs.service';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
@@ -19,6 +22,8 @@ import { SharesController } from 'src/shares/shares.controller';
 import { User } from 'src/users/models';
 import { CVStatuses, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
+import { ExperiencesHelper } from 'tests/common/experiences/experiences.helper';
+import { FormationsHelper } from 'tests/common/formations/formations.helper';
 import { SharesHelper } from 'tests/common/shares/shares.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
@@ -38,6 +43,8 @@ describe('CVs', () => {
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
   let sharesHelper: SharesHelper;
+  let experiencesHelper: ExperiencesHelper;
+  let formationsHelper: FormationsHelper;
 
   const route = '/cv';
 
@@ -66,6 +73,8 @@ describe('CVs', () => {
     cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
     cvFactory = moduleFixture.get<CVFactory>(CVFactory);
     sharesHelper = moduleFixture.get<SharesHelper>(SharesHelper);
+    experiencesHelper = moduleFixture.get<ExperiencesHelper>(ExperiencesHelper);
+    formationsHelper = moduleFixture.get<FormationsHelper>(FormationsHelper);
   });
 
   afterAll(async () => {
@@ -104,7 +113,30 @@ describe('CVs', () => {
               {
                 UserId: loggedInCandidate.user.id,
               },
-              {},
+              {
+                experiences: [
+                  {
+                    title: '',
+                    description: '',
+                    location: '',
+                    company: '',
+                    dateStart: moment().toDate(),
+                    dateEnd: moment().toDate(),
+                  } as Experience,
+                ],
+                formations: [
+                  {
+                    title: '',
+                    description: '',
+                    location: '',
+                    institution: '',
+                    dateStart: moment().toDate(),
+                    dateEnd: moment().toDate(),
+                    createdAt: moment().toDate(),
+                    updatedAt: moment().toDate(),
+                  } as Formation,
+                ],
+              },
               false
             );
           const cvResponse = {
@@ -461,15 +493,40 @@ describe('CVs', () => {
       });
       describe("/:url - Get a CV by candidate's url", () => {
         let candidate: User;
-
         beforeEach(async () => {
           candidate = await userFactory.create({
             role: UserRoles.CANDIDATE,
           });
-          await cvFactory.create({
-            status: CVStatuses.PUBLISHED.value,
-            UserId: candidate.id,
-          });
+          await cvFactory.create(
+            {
+              status: CVStatuses.PUBLISHED.value,
+              UserId: candidate.id,
+            },
+            {
+              experiences: [
+                {
+                  title: '',
+                  description: '',
+                  location: '',
+                  company: '',
+                  dateStart: moment().toDate(),
+                  dateEnd: moment().toDate(),
+                } as Experience,
+              ],
+              formations: [
+                {
+                  title: '',
+                  description: '',
+                  location: '',
+                  institution: '',
+                  dateStart: moment().toDate(),
+                  dateEnd: moment().toDate(),
+                  createdAt: moment().toDate(),
+                  updatedAt: moment().toDate(),
+                } as Formation,
+              ],
+            }
+          );
         });
         it("Should return 200 if valid candidate's url provided", async () => {
           const candidatUrl = await userCandidatsHelper.getCandidatUrl(
@@ -479,8 +536,15 @@ describe('CVs', () => {
             await request(app.getHttpServer()).get(
               `${route}/url/${candidatUrl}`
             );
+
           expect(response.status).toBe(200);
           expect(response.body.cv.UserId).toBe(candidate.id);
+          const cvExperiencesCount =
+            await experiencesHelper.countExperiencesByCVId(response.body.cv.id);
+          expect(cvExperiencesCount).toBe(1);
+          const cvFormationsCount =
+            await formationsHelper.countFormationsByCVId(response.body.cv.id);
+          expect(cvFormationsCount).toBe(1);
         });
         it('Should return 200 if valid url provided and candidate has hidden CV', async () => {
           const candidatNoCv = await usersHelper.createLoggedInUser({

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -64,6 +65,18 @@ export class CVsController {
     @Body('autoSave') autoSave: boolean,
     @UploadedFile() file: Express.Multer.File
   ) {
+    if (createCVDto.formations?.length > 3) {
+      throw new BadRequestException(
+        'Vous ne pouvez dépasser 3 formations dans le CV'
+      );
+    }
+
+    if (createCVDto.experiences?.length > 5) {
+      throw new BadRequestException(
+        'Vous ne pouvez dépasser 5 expériences dans le CV'
+      );
+    }
+
     if (isRoleIncluded(CandidateUserRoles, role)) {
       createCVDto.status = CVStatuses.PROGRESS.value;
     } else if (isRoleIncluded(CoachUserRoles, role)) {

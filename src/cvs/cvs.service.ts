@@ -280,7 +280,6 @@ export class CVsService {
               cvData.formations.map(
                 async ({
                   description,
-                  order,
                   skills,
                   location,
                   institution,
@@ -292,7 +291,6 @@ export class CVsService {
                     {
                       CVId: createdCV.id,
                       description: description || '',
-                      order: order,
                       institution: institution,
                       location: location,
                       title: title,
@@ -385,10 +383,12 @@ export class CVsService {
   }
 
   async findOneByUrl(url: string): Promise<CV> {
-    const redisKey = RedisKeys.CV_PREFIX + url;
-    const redisCV: string = await this.cacheManager.get(redisKey);
+    // const redisKey = RedisKeys.CV_PREFIX + url;
+    // const redisCV: string = await this.cacheManager.get(redisKey);
 
-    return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
+    // return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
+
+    return await this.findAndCacheOneByUrl(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {

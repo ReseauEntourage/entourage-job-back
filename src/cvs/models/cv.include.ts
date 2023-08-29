@@ -119,7 +119,7 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
         attributes: ['id', 'name'],
       },
     ],
-    order: [['order', 'ASC']],
+    order: [['dateStart', 'DESC']],
   },
   {
     model: Formation,
@@ -128,7 +128,6 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
     attributes: [
       'id',
       'description',
-      'order',
       'location',
       'institution',
       'title',
@@ -142,7 +141,7 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
         attributes: ['id', 'name'],
       },
     ],
-    order: [['order', 'ASC']],
+    order: [['dateStart', 'DESC']],
   },
   {
     model: Review,

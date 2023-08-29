@@ -38,11 +38,6 @@ export class Formation extends Model {
   @Column
   title: string;
 
-  @AllowNull(false)
-  @Default(-1)
-  @Column
-  order: number;
-
   @AllowNull(true)
   @Column
   location: string;

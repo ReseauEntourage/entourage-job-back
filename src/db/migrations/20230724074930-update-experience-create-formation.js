@@ -20,11 +20,11 @@ module.exports = {
         onUpdate: 'cascade',
       },
       dateStart: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.DATE,
       },
       dateEnd: {
-        allowNull: false,
+        allowNull: true,
         type: Sequelize.DATE,
       },
       title: {
@@ -55,10 +55,10 @@ module.exports = {
 
     await queryInterface.createTable('Formation_Skills', {
       id: {
-        type: Sequelize.UUID,
-        primaryKey: true,
-        autoIncrement: true,
         allowNull: false,
+        primaryKey: true,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
       FormationId: {
         type: Sequelize.UUID,
@@ -91,17 +91,17 @@ module.exports = {
       },
     })
 
-    await queryInterface.addConstraint('Formations', {
-      fields: ['CVId'],
-      type: 'foreign key',
-      name: 'Formations_CVId_fkey',
-      references: {
-        table: 'CVs',
-        field: 'id',
-      },
-      onDelete: 'cascade',
-      onUpdate: 'cascade',
-    });
+    // await queryInterface.addConstraint('Formations', {
+    //   fields: ['CVId'],
+    //   type: 'foreign key',
+    //   name: 'Formations_CVId_fkey',
+    //   references: {
+    //     table: 'CVs',
+    //     field: 'id',
+    //   },
+    //   onDelete: 'cascade',
+    //   onUpdate: 'cascade',
+    // });
     
 
     await queryInterface.addColumn('Experiences', 'location',
@@ -132,9 +132,9 @@ module.exports = {
 
   async down (queryInterface, Sequelize) {
     
+    await queryInterface.dropTable('Formation_Skills');
     await queryInterface.dropTable('Formations');
 
-    await queryInterface.dropTable('Formation_Skills');
 
     await queryInterface.removeColumn('Experiences', 'company');
 
@@ -146,10 +146,10 @@ module.exports = {
 
     await queryInterface.removeColumn('Experiences', 'title');
 
-    await queryInterface.removeConstraint(
-      'Formations',
-      'Formations_CVId_fkey'
-    );
+    // await queryInterface.removeConstraint(
+    //   'Formations',
+    //   'Formations_CVId_fkey'
+    // );
 
   }
 };

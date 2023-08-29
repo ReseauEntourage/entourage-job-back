@@ -8,6 +8,7 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
 import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
@@ -27,7 +28,8 @@ type ComponentKeys =
   | 'review'
   | 'experience'
   | 'ambition'
-  | 'passion';
+  | 'passion'
+  | 'formation';
 
 type PluralComponentKeys = `${ComponentKeys}s`;
 
@@ -61,6 +63,8 @@ export class CVFactory implements Factory<CV> {
     private locationModel: typeof Location,
     @InjectModel(Experience)
     private experienceModel: typeof Experience,
+    @InjectModel(Formation)
+    private formationModel: typeof Formation,
     @InjectModel(Review)
     private reviewModel: typeof Review,
     @InjectModel(CVSearch)
@@ -94,7 +98,9 @@ export class CVFactory implements Factory<CV> {
     insertInDB = true
   ): Promise<CV> {
     const cvData = this.generateCV(props);
+
     const cvId = faker.datatype.uuid();
+
     if (insertInDB) {
       const createdCV = await this.cvModel.create(
         { ...cvData, id: cvId },
@@ -157,6 +163,36 @@ export class CVFactory implements Factory<CV> {
                         }
                       )
                     );
+                    await instance.$add(
+                      childrenPluralComponentKey,
+                      childrenInstances
+                    );
+                  }
+
+                  if (
+                    injectedModel.name === 'Formation' &&
+                    (component as Formation)[childrenPluralComponentKey]
+                  ) {
+                    const childrenInstances = await Promise.all(
+                      (component as Formation)[childrenPluralComponentKey].map(
+                        (component) => {
+                          if (_.isString(component)) {
+                            return childrenInjectedModel.create(
+                              {
+                                name: component,
+                              },
+                              { hooks: true }
+                            );
+                          } else {
+                            return childrenInjectedModel.create(
+                              component as Partial<WrapperModel>,
+                              { hooks: true }
+                            );
+                          }
+                        }
+                      )
+                    );
+
                     await instance.$add(
                       childrenPluralComponentKey,
                       childrenInstances
