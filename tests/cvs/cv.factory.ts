@@ -141,7 +141,8 @@ export class CVFactory implements Factory<CV> {
                   ] as typeof WrapperModel;
 
                   if (
-                    injectedModel.name === 'Experience' &&
+                    (injectedModel.name === 'Experience' ||
+                      injectedModel.name === 'Formation') &&
                     (component as Experience)[childrenPluralComponentKey]
                   ) {
                     const childrenInstances = await Promise.all(
@@ -163,36 +164,6 @@ export class CVFactory implements Factory<CV> {
                         }
                       )
                     );
-                    await instance.$add(
-                      childrenPluralComponentKey,
-                      childrenInstances
-                    );
-                  }
-
-                  if (
-                    injectedModel.name === 'Formation' &&
-                    (component as Formation)[childrenPluralComponentKey]
-                  ) {
-                    const childrenInstances = await Promise.all(
-                      (component as Formation)[childrenPluralComponentKey].map(
-                        (component) => {
-                          if (_.isString(component)) {
-                            return childrenInjectedModel.create(
-                              {
-                                name: component,
-                              },
-                              { hooks: true }
-                            );
-                          } else {
-                            return childrenInjectedModel.create(
-                              component as Partial<WrapperModel>,
-                              { hooks: true }
-                            );
-                          }
-                        }
-                      )
-                    );
-
                     await instance.$add(
                       childrenPluralComponentKey,
                       childrenInstances

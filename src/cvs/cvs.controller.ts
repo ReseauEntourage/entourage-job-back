@@ -65,15 +65,18 @@ export class CVsController {
     @Body('autoSave') autoSave: boolean,
     @UploadedFile() file: Express.Multer.File
   ) {
-    if (createCVDto.formations?.length > 3) {
+    const FORMATIONS_LIMIT = 3;
+    const EXPERIENCES_LIMIT = 5;
+
+    if (createCVDto.formations?.length > FORMATIONS_LIMIT) {
       throw new BadRequestException(
-        'Vous ne pouvez dépasser 3 formations dans le CV'
+        `Vous ne pouvez dépasser ${FORMATIONS_LIMIT} formations dans le CV`
       );
     }
 
-    if (createCVDto.experiences?.length > 5) {
+    if (createCVDto.experiences?.length > EXPERIENCES_LIMIT) {
       throw new BadRequestException(
-        'Vous ne pouvez dépasser 5 expériences dans le CV'
+        `Vous ne pouvez dépasser ${EXPERIENCES_LIMIT} expériences dans le CV`
       );
     }
 
