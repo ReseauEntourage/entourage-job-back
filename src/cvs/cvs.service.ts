@@ -19,6 +19,7 @@ import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
 import {
   Department,
@@ -79,6 +80,8 @@ export class CVsService {
     private locationModel: typeof Location,
     @InjectModel(Experience)
     private experienceModel: typeof Experience,
+    @InjectModel(Formation)
+    private formationModel: typeof Formation,
     @InjectModel(Review)
     private reviewModel: typeof Review,
     @InjectModel(CVSearch)
@@ -224,35 +227,99 @@ export class CVsService {
 
           if (cvData.experiences) {
             await Promise.all(
-              cvData.experiences.map(async ({ description, order, skills }) => {
-                const modelExperience = await this.experienceModel.create(
-                  {
-                    CVId: createdCV.id,
-                    description: description || '',
-                    order: order,
-                  },
-                  {
-                    hooks: true,
-                    transaction: t,
-                  }
-                );
-                if (skills) {
-                  const experienceSkills = await Promise.all(
-                    skills.map(({ name }) => {
-                      return this.skillModel.create(
-                        { name },
-                        {
-                          hooks: true,
-                          transaction: t,
-                        }
-                      );
-                    })
+              cvData.experiences.map(
+                async ({
+                  description,
+                  order,
+                  skills,
+                  company,
+                  location,
+                  title,
+                  dateStart,
+                  dateEnd,
+                }) => {
+                  const modelExperience = await this.experienceModel.create(
+                    {
+                      CVId: createdCV.id,
+                      description: description || '',
+                      order: order,
+                      location: location,
+                      company: company,
+                      title: title,
+                      dateStart: dateStart,
+                      dateEnd: dateEnd,
+                    },
+                    {
+                      hooks: true,
+                      transaction: t,
+                    }
                   );
-                  await modelExperience.$add('skills', experienceSkills, {
-                    transaction: t,
-                  });
+                  if (skills) {
+                    const experienceSkills = await Promise.all(
+                      skills.map(({ name }) => {
+                        return this.skillModel.create(
+                          { name },
+                          {
+                            hooks: true,
+                            transaction: t,
+                          }
+                        );
+                      })
+                    );
+                    await modelExperience.$add('skills', experienceSkills, {
+                      transaction: t,
+                    });
+                  }
                 }
-              })
+              )
+            );
+          }
+
+          if (cvData.formations) {
+            await Promise.all(
+              cvData.formations.map(
+                async ({
+                  description,
+                  skills,
+                  location,
+                  institution,
+                  title,
+                  dateStart,
+                  dateEnd,
+                }) => {
+                  const modelFormation = await this.formationModel.create(
+                    {
+                      CVId: createdCV.id,
+                      description: description || '',
+                      institution: institution,
+                      location: location,
+                      title: title,
+                      dateStart: dateStart,
+                      dateEnd: dateEnd,
+                    },
+                    {
+                      hooks: true,
+                      transaction: t,
+                    }
+                  );
+                  if (skills) {
+                    const formationSkills = await Promise.all(
+                      skills.map(({ name }) => {
+                        return this.skillModel.create(
+                          { name },
+                          {
+                            hooks: true,
+                            transaction: t,
+                          }
+                        );
+                      })
+                    );
+                    await modelFormation.$add('skills', formationSkills, {
+                      transaction: t,
+                    });
+                  }
+                }
+              )
             );
           }
 
@@ -320,6 +387,8 @@ export class CVsService {
     const redisCV: string = await this.cacheManager.get(redisKey);
 
     return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
+
+    return await this.findAndCacheOneByUrl(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {
@@ -754,6 +823,13 @@ export class CVsService {
         })
         .join(' '),
       cv.experiences
+        .map(({ description, skills }) => {
+          return [description, skills.map(({ name }) => name).join(' ')].join(
+            ' '
+          );
+        })
+        .join(' '),
+      cv.formations
         .map(({ description, skills }) => {
           return [description, skills.map(({ name }) => name).join(' ')].join(
             ' '

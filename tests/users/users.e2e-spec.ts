@@ -25,6 +25,7 @@ import { BusinessLinesHelper } from 'tests/common/business-lines/business-lines.
 import { ContractsHelper } from 'tests/common/contracts/contracts.helper';
 import { ExperiencesSkillsHelper } from 'tests/common/experiences/experiences-skills.helper';
 import { ExperiencesHelper } from 'tests/common/experiences/experiences.helper';
+import { FormationsHelper } from 'tests/common/formations/formations.helper';
 import { LanguagesHelper } from 'tests/common/languages/languages.helper';
 import { LocationsHelper } from 'tests/common/locations/locations.helper';
 import { PassionsHelper } from 'tests/common/passions/passions.helper';
@@ -65,6 +66,7 @@ describe('Users', () => {
   let cvSkillsHelper: CVSkillsHelper;
   let cvSearchesHelper: CVSearchesHelper;
   let experiencesHelper: ExperiencesHelper;
+  let formationsHelper: FormationsHelper;
   let businessLinesHelper: BusinessLinesHelper;
   let locationsHelper: LocationsHelper;
   let passionsHelper: PassionsHelper;
@@ -110,6 +112,7 @@ describe('Users', () => {
     cvLanguagesHelper = moduleFixture.get<CVLanguagesHelper>(CVLanguagesHelper);
     cvSkillsHelper = moduleFixture.get<CVSkillsHelper>(CVSkillsHelper);
     experiencesHelper = moduleFixture.get<ExperiencesHelper>(ExperiencesHelper);
+    formationsHelper = moduleFixture.get<FormationsHelper>(FormationsHelper);
     cvSearchesHelper = moduleFixture.get<CVSearchesHelper>(CVSearchesHelper);
     businessLinesHelper =
       moduleFixture.get<BusinessLinesHelper>(BusinessLinesHelper);
@@ -4363,6 +4366,8 @@ describe('Users', () => {
           const expSkillsCount = await skillsHelper.countSkillsByName(
             uniqId2ToFind
           );
+          const cvFormationsCount =
+            await formationsHelper.countFormationsByCVId(cvId);
           const cvExperiencesCount =
             await experiencesHelper.countExperiencesByCVId(cvId);
           const cvExpSkillsCount =
@@ -4371,6 +4376,7 @@ describe('Users', () => {
             );
 
           expect(cvExperiencesCount).toBe(0);
+          expect(cvFormationsCount).toBe(0);
           expect(cvExpSkillsCount).toBe(0);
           expect(expSkillsCount).toBe(1);
 

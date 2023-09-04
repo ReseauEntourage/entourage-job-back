@@ -6,6 +6,7 @@ import { AmbitionsTestingModule } from './common/ambitions/ambitions-testing.mod
 import { BusinessLinesTestingModule } from './common/business-lines/business-lines-testing.module';
 import { ContractsTestingModule } from './common/contracts/contracts-testing.module';
 import { ExperiencesTestingModule } from './common/experiences/experiences-testing.module';
+import { FormationsTestingModule } from './common/formations/formations-testing.module';
 import { LanguagesTestingModule } from './common/languages/languages-testing.module';
 import { LocationsTestingModule } from './common/locations/locations-testing.module';
 import { PassionsTestingModule } from './common/passions/passions-testing.module';
@@ -30,6 +31,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     AmbitionsTestingModule,
     ContractsTestingModule,
     ExperiencesTestingModule,
+    FormationsTestingModule,
     LanguagesTestingModule,
     LocationsTestingModule,
     PassionsTestingModule,
