@@ -385,10 +385,7 @@ export class CVsService {
   async findOneByUrl(url: string): Promise<CV> {
     const redisKey = RedisKeys.CV_PREFIX + url;
     const redisCV: string = await this.cacheManager.get(redisKey);
-
     return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
-
-    return await this.findAndCacheOneByUrl(url);
   }
 
   async findOneUserCandidateByUrl(url: string) {
