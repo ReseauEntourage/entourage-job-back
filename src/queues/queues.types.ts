@@ -107,7 +107,7 @@ export interface CacheAllCVJob {}
 export interface GenerateCVPDFJob {
   candidateId: string;
   token: string;
-  paths: string[];
+  fileName: string;
 }
 
 export interface GenerateCVPreviewJob {
