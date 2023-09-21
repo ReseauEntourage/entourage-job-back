@@ -194,3 +194,5 @@ export const MemberFilters: Filters<MemberFilterKey> = [
     title: 'Statut du CV',
   },
 ];
+
+export const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
