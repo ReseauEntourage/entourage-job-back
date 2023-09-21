@@ -22,6 +22,7 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models/experience.model';
+import { Formation } from 'src/common/formations/models/formation.model';
 import { Language } from 'src/common/languages/models';
 import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
@@ -49,6 +50,7 @@ const CVAssociations = [
   'cvSearch',
   'reviews',
   'experiences',
+  'formations',
 ] as const;
 
 @Table({ tableName: 'CVs' })
@@ -189,6 +191,10 @@ export class CV extends Model {
   @ApiProperty()
   @HasMany(() => Experience, 'CVId')
   experiences: Experience[];
+
+  @ApiProperty()
+  @HasMany(() => Formation, 'CVId')
+  formations: Formation[];
 
   @ApiProperty()
   @HasMany(() => Review, 'CVId')

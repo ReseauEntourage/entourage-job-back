@@ -12,8 +12,6 @@ interface LocationDto {
 export class CreateOpportunityDto extends PickType(Opportunity, [
   'title',
   'isPublic',
-  'isValidated',
-  'isArchived',
   'isExternal',
   'link',
   'externalOrigin',

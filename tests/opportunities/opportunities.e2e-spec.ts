@@ -132,8 +132,14 @@ describe('Opportunities', () => {
             false
           );
 
-          const { createdAt, updatedAt, createdBy, ...restOpportunity } =
-            opportunity;
+          const {
+            createdAt,
+            updatedAt,
+            createdBy,
+            isValidated,
+            isArchived,
+            ...restOpportunity
+          } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
             await request(app.getHttpServer())
@@ -153,8 +159,14 @@ describe('Opportunities', () => {
             {},
             false
           );
-          const { createdAt, updatedAt, createdBy, ...restOpportunity } =
-            opportunity;
+          const {
+            createdAt,
+            updatedAt,
+            createdBy,
+            isValidated,
+            isArchived,
+            ...restOpportunity
+          } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
             await request(app.getHttpServer())
@@ -176,8 +188,14 @@ describe('Opportunities', () => {
             {},
             false
           );
-          const { createdAt, updatedAt, createdBy, ...restOpportunity } =
-            opportunity;
+          const {
+            createdAt,
+            updatedAt,
+            createdBy,
+            isValidated,
+            isArchived,
+            ...restOpportunity
+          } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
             await request(app.getHttpServer())
@@ -199,8 +217,14 @@ describe('Opportunities', () => {
             lille: { address: 'Rue de Lille', department: 'Lille dept' },
           };
 
-          const { createdAt, updatedAt, createdBy, ...restOpportunity } =
-            opportunity;
+          const {
+            createdAt,
+            updatedAt,
+            createdBy,
+            isValidated,
+            isArchived,
+            ...restOpportunity
+          } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
             await request(app.getHttpServer())

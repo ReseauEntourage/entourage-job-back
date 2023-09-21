@@ -5,6 +5,7 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience, ExperienceSkill } from 'src/common/experiences/models';
+import { Formation, FormationSkill } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
 import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
@@ -86,6 +87,10 @@ export class DatabaseHelper {
     private experienceModel: typeof Experience,
     @InjectModel(ExperienceSkill)
     private experienceSkillModel: typeof ExperienceSkill,
+    @InjectModel(Formation)
+    private formationModel: typeof Formation,
+    @InjectModel(FormationSkill)
+    private formationSkillModel: typeof FormationSkill,
     @InjectModel(Review)
     private reviewModel: typeof Review,
     @InjectModel(CVSearch)
@@ -119,6 +124,8 @@ export class DatabaseHelper {
       await this.cvPassionModel.truncate(destroyOptions);
       await this.opportunityBusinessLineModel.truncate(destroyOptions);
       await this.experienceSkillModel.truncate(destroyOptions);
+      await this.formationModel.truncate(destroyOptions);
+      await this.formationSkillModel.truncate(destroyOptions);
       await this.locationModel.truncate(destroyOptions);
       await this.businessLineModel.truncate(destroyOptions);
       await this.skillModel.truncate(destroyOptions);

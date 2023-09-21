@@ -3,6 +3,7 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models/experience.model';
+import { Formation } from 'src/common/formations/models/formation.model';
 import { Language } from 'src/common/languages/models';
 import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
@@ -101,7 +102,16 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
     model: Experience,
     as: 'experiences',
     separate: true,
-    attributes: ['id', 'description', 'order'],
+    attributes: [
+      'id',
+      'description',
+      'order',
+      'location',
+      'company',
+      'title',
+      'dateStart',
+      'dateEnd',
+    ],
     include: [
       {
         model: Skill,
@@ -109,7 +119,29 @@ export const CVCompleteWithoutUserInclude: Includeable[] = [
         attributes: ['id', 'name'],
       },
     ],
-    order: [['order', 'ASC']],
+    order: [['dateStart', 'DESC']],
+  },
+  {
+    model: Formation,
+    as: 'formations',
+    separate: true,
+    attributes: [
+      'id',
+      'description',
+      'location',
+      'institution',
+      'title',
+      'dateStart',
+      'dateEnd',
+    ],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        attributes: ['id', 'name'],
+      },
+    ],
+    order: [['dateStart', 'DESC']],
   },
   {
     model: Review,
