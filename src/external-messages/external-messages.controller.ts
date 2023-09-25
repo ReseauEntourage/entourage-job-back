@@ -11,6 +11,7 @@ import { isRoleIncluded } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import { CreateExternalMessageDto, CreateExternalMessagePipe } from './dto';
 import { ExternalMessagesService } from './external-messages.service';
+import { ExternalMessageSubjects } from './external-messages.types';
 
 @Controller('externalMessage')
 export class ExternalMessagesController {
@@ -45,9 +46,13 @@ export class ExternalMessagesController {
       createMessageDto
     );
 
+    const isHiringOffer =
+      createMessageDto.subject === ExternalMessageSubjects.HIRING;
+
     await this.externalMessagesService.sendExternalMessageReceivedMail(
       candidate,
-      createdMessage
+      createdMessage,
+      isHiringOffer
     );
 
     await this.externalMessagesService.createOrUpdateExternalDBTask(

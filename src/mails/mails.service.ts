@@ -563,15 +563,22 @@ export class MailsService {
 
   async sendExternalMessageReceivedMail(
     candidate: User,
-    message: ExternalMessage
+    message: ExternalMessage,
+    isHiringOffer: boolean
   ) {
     const coach = getCoachFromCandidate(candidate);
 
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+    const { candidatesAdminMail, companiesAdminMail } = getAdminMailsFromZone(
+      candidate.zone
+    );
+
+    const mailsCC = [candidatesAdminMail];
+
+    if (isHiringOffer) mailsCC.push(companiesAdminMail);
 
     const toEmail: CustomMailParams['toEmail'] = {
       to: candidate.email,
-      cc: [candidatesAdminMail],
+      cc: mailsCC,
     };
 
     if (coach) {
