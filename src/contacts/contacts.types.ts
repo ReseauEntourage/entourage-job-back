@@ -9,6 +9,7 @@ export const HeardAbout = {
   SPORTS: 'sports',
   VOLUNTEER: 'volunteer',
   CONTACT: 'contact',
+  ORIENTATION: 'orientation',
   OTHER: 'other',
 } as const;
 
@@ -46,6 +47,10 @@ export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
   {
     label: 'Le bouche à oreille',
     value: HeardAbout.CONTACT,
+  },
+  {
+    label: 'Par mon travailleur social/Pôle emploi',
+    value: HeardAbout.ORIENTATION,
   },
   {
     label: 'Autre',
