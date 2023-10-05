@@ -970,12 +970,10 @@ export class SalesforceService {
     location,
     phone,
     workingRight,
-    tsPrescripteur
+    tsPrescripteur,
   }: CandidateInscriptionLeadProps) {
     const department = getDepartmentFromPostalCode(location);
     const zone = getZoneFromDepartment(department);
-
-    console.log(tsPrescripteur);
 
     const leadToCreate = {
       firstName,
