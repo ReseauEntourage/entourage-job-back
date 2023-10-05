@@ -108,6 +108,7 @@ export interface GenerateCVPDFJob {
   candidateId: string;
   token: string;
   fileName: string;
+  isTwoPages: boolean;
 }
 
 export interface GenerateCVPreviewJob {

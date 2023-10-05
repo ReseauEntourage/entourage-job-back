@@ -27,7 +27,6 @@ import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
-import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -89,8 +88,7 @@ export class CVsService {
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
-    private s3Service: S3Service,
-    private cloudFrontService: CloudFrontService
+    private s3Service: S3Service
   ) {}
 
   async create(createCVDto: CreateCVDto, userId: string) {
@@ -642,9 +640,10 @@ export class CVsService {
   async generatePDFFromCV(
     candidateId: string,
     token: string,
-    /*paths: string[],*/ fileName: string
+    /*paths: string[],*/ fileName: string,
+    isTwoPages: boolean
   ) {
-    const response = await fetch(`${process.env.AWS_LAMBDA_URL}`, {
+    const response = await fetch(`${process.env.CV_PDF_GENERATION_AWS_URL}`, {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -654,6 +653,7 @@ export class CVsService {
         candidateId,
         token,
         fileName,
+        isTwoPages,
       }),
     });
 
@@ -1089,12 +1089,14 @@ export class CVsService {
   async sendGenerateCVPDF(
     candidateId: string,
     token: string,
-    fileName: string
+    fileName: string,
+    isTwoPages: boolean
   ) {
     await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PDF, {
       candidateId,
       token,
       fileName,
+      isTwoPages,
     });
   }
 
