@@ -1008,8 +1008,6 @@ export class SalesforceService {
     const department = getDepartmentFromPostalCode(location);
     const zone = getZoneFromDepartment(department);
 
-    console.log(tsPrescripteur);
-
     const leadToCreate = {
       firstName,
       lastName,
