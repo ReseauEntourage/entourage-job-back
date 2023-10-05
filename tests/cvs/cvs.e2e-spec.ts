@@ -590,8 +590,8 @@ describe('CVs', () => {
             UserId: loggedInCandidate.user.id,
           });
           jest
-            .spyOn(CVsService.prototype, 'getPDFPageUrl')
-            .mockImplementationOnce(() => cvsHelper.getTestHtmlPagePath());
+            .spyOn(CVsService.prototype, 'generatePDFFromCV')
+            .mockImplementationOnce(async () => 'url');
         });
 
         it('Should return 401 if not logged in', async () => {
