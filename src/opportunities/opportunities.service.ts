@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
+import { MailjetService } from '../external-services/mailjet/mailjet.service';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
 import {
@@ -12,11 +13,7 @@ import {
 import { Location } from 'src/common/locations/models';
 import { CVsService } from 'src/cvs/cvs.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
-import { PleziService } from 'src/external-services/plezi/plezi.service';
-import {
-  ContactStatuses,
-  PleziTrackingData,
-} from 'src/external-services/plezi/plezi.types';
+import { ContactStatuses } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -84,7 +81,7 @@ export class OpportunitiesService {
     private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
-    private pleziService: PleziService,
+    private mailjetService: MailjetService,
     private smsService: SMSService
   ) {}
 
@@ -680,8 +677,7 @@ export class OpportunitiesService {
     opportunity: Opportunity,
     candidates: OpportunityUser[],
     isAdmin = false,
-    shouldSendNotifications = true,
-    pleziTrackingData?: PleziTrackingData
+    shouldSendNotifications = true
   ) {
     if (!isAdmin) {
       await this.mailsService.sendOnCreatedOfferMail(opportunity);
@@ -694,14 +690,11 @@ export class OpportunitiesService {
     }
 
     try {
-      await this.pleziService.sendContactToPlezi(
-        opportunity.contactMail || opportunity.recruiterMail,
-        getZoneFromDepartment(opportunity.department),
-        ContactStatuses.COMPANY,
-        pleziTrackingData?.visit,
-        pleziTrackingData?.visitor,
-        pleziTrackingData?.urlParams
-      );
+      await this.mailjetService.sendContact({
+        email: opportunity.contactMail || opportunity.recruiterMail,
+        zone: getZoneFromDepartment(opportunity.department),
+        status: ContactStatuses.COMPANY,
+      });
     } catch (err) {
       console.error(err);
     }

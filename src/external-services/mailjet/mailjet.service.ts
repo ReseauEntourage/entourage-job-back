@@ -1,22 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import _ from 'lodash';
-import { Email, connect } from 'node-mailjet';
-import { CustomMailParams, MailjetTemplates } from './mailjet.types';
+import { connect, Email } from 'node-mailjet';
+import {
+  CustomContactParams,
+  CustomMailParams,
+  MailjetError,
+  MailjetTemplates,
+} from './mailjet.types';
 import SendParams = Email.SendParams;
+import SendParamsRecipient = Email.SendParamsRecipient;
 
 const useCampaigns = process.env.MAILJET_CAMPAIGNS_ACTIVATED === 'true';
 
 @Injectable()
 export class MailjetService {
   private send: Email.PostResource;
+  private contact: Email.PostResource;
 
   constructor() {
-    const mailjet = connect(
+    const mailjetTransactional = connect(
       `${process.env.MAILJET_PUB}`,
       `${process.env.MAILJET_SEC}`
     );
 
-    this.send = mailjet.post('send', { version: 'v3.1' });
+    this.send = mailjetTransactional.post('send', {
+      version: 'v3.1',
+    });
+
+    const mailjetNewsletter = connect(
+      `${process.env.MAILJET_NEWSLETTER_PUB}`,
+      `${process.env.MAILJET_NEWSLETTER_SEC}`
+    );
+
+    this.contact = mailjetNewsletter.post('contact', { version: 'v3' });
   }
 
   createMail({
@@ -113,5 +129,29 @@ export class MailjetService {
     }
 
     return this.send.request(mailjetParams);
+  }
+
+  createContact({ email /* status, zone */ }: CustomContactParams) {
+    const contacts: SendParamsRecipient = {
+      Email: email,
+    };
+    return contacts;
+  }
+
+  async sendContact(params: CustomContactParams) {
+    const mailjetParams: SendParamsRecipient = this.createContact(params);
+
+    try {
+      await this.contact.request(mailjetParams);
+    } catch (err) {
+      console.error(err);
+      // Check if not a duplicate value error, otherwise consider it as successful request
+      if (
+        (err as MailjetError).statusCode !== 400 ||
+        !(err as MailjetError).ErrorMessage.includes('MJ18')
+      ) {
+        throw err;
+      }
+    }
   }
 }
