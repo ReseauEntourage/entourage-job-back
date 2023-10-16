@@ -11,6 +11,7 @@ export const HeardAbout = {
   CONTACT: 'contact',
   ORIENTATION: 'orientation',
   OTHER: 'other',
+  POLE_EMPLOI: 'pole_emploi',
 } as const;
 
 export type HeardAboutValue = typeof HeardAbout[keyof typeof HeardAbout];
@@ -49,8 +50,12 @@ export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
     value: HeardAbout.CONTACT,
   },
   {
-    label: 'Par mon travailleur social/Pôle emploi',
+    label: 'Association / travailleur social',
     value: HeardAbout.ORIENTATION,
+  },
+  {
+    label: 'Pôle Emploi',
+    value: HeardAbout.POLE_EMPLOI,
   },
   {
     label: 'Autre',
