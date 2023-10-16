@@ -162,7 +162,7 @@ export class SalesforceService {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.DUPLICATES_DETECTED
       ) {
-        return (err as SalesforceError).duplicateResut.matchResults[0]
+        return (err as SalesforceError).duplicateResult.matchResults[0]
           .matchRecords[0].record.Id;
       }
       console.error(err);
@@ -206,7 +206,7 @@ export class SalesforceService {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.DUPLICATES_DETECTED
       ) {
-        return (err as SalesforceError).duplicateResut.matchResults[0]
+        return (err as SalesforceError).duplicateResult.matchResults[0]
           .matchRecords[0].record.Id;
       }
       if (
@@ -280,7 +280,7 @@ export class SalesforceService {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.DUPLICATES_DETECTED
       ) {
-        return (err as SalesforceError).duplicateResut.matchResults[0]
+        return (err as SalesforceError).duplicateResult.matchResults[0]
           .matchRecords[0].record.Id;
       }
       console.error(err);
@@ -1019,17 +1019,26 @@ export class SalesforceService {
     );
     const { leadId, contactId } = leadOrContactId;
     if (!campaignMemberId) {
-      return this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
-        ...(leadId
-          ? {
-              LeadId: leadId,
-            }
-          : { ContactId: contactId }),
-        CampaignId: infoCoId,
-        Status: 'Inscrit',
-      });
+      try {
+        return this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
+          ...(leadId
+            ? {
+                LeadId: leadId,
+              }
+            : { ContactId: contactId }),
+          CampaignId: infoCoId,
+          Status: 'Inscrit',
+        });
+      } catch (err) {
+        // Case where the flow is not as fast as the api call
+        if ((err as SalesforceError).errorCode === ErrorCodes.DUPLICATE_VALUE) {
+          return this.findCampaignMember(leadOrContactId, infoCoId);
+        }
+        console.error(err);
+        throw err;
+      }
+      return campaignMemberId;
     }
-    return campaignMemberId;
   }
 
   async createCandidateLead(
