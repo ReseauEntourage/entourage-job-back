@@ -39,6 +39,7 @@ import { AnyCantFix } from 'src/utils/types';
 
 export const ErrorCodes = {
   DUPLICATES_DETECTED: 'DUPLICATES_DETECTED',
+  DUPLICATE_VALUE: 'DUPLICATE_VALUE',
   CANNOT_UPDATE_CONVERTED_LEAD: 'CANNOT_UPDATE_CONVERTED_LEAD',
   FIELD_INTEGRITY_EXCEPTION: 'FIELD_INTEGRITY_EXCEPTION',
   FIELD_FILTER_VALIDATION_EXCEPTION: 'FIELD_FILTER_VALIDATION_EXCEPTION',
@@ -50,7 +51,7 @@ export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
 export interface SalesforceError {
   errorCode: ErrorCode;
   message: string;
-  duplicateResut: {
+  duplicateResult: {
     matchResults: {
       matchRecords: {
         record: {
