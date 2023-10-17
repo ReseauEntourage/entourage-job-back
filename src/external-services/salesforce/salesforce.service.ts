@@ -1013,31 +1013,34 @@ export class SalesforceService {
     leadOrContactId: { leadId?: string; contactId?: string },
     infoCoId: string
   ) {
-    const campaignMemberId = await this.findCampaignMember(
-      leadOrContactId,
-      infoCoId
-    );
-    const { leadId, contactId } = leadOrContactId;
-    if (!campaignMemberId) {
-      try {
-        return this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
-          ...(leadId
-            ? {
-                LeadId: leadId,
-              }
-            : { ContactId: contactId }),
-          CampaignId: infoCoId,
-          Status: 'Inscrit',
-        });
-      } catch (err) {
-        // Case where the flow is not as fast as the api call
-        if ((err as SalesforceError).errorCode === ErrorCodes.DUPLICATE_VALUE) {
-          return this.findCampaignMember(leadOrContactId, infoCoId);
-        }
-        console.error(err);
-        throw err;
+    try {
+      let campaignMemberId = await this.findCampaignMember(
+        leadOrContactId,
+        infoCoId
+      );
+      const { leadId, contactId } = leadOrContactId;
+      if (!campaignMemberId) {
+        campaignMemberId = (await this.createRecord(
+          ObjectNames.CAMPAIGN_MEMBER,
+          {
+            ...(leadId
+              ? {
+                  LeadId: leadId,
+                }
+              : { ContactId: contactId }),
+            CampaignId: infoCoId,
+            Status: 'Inscrit',
+          }
+        )) as string;
       }
       return campaignMemberId;
+    } catch (err) {
+      // Case where the flow is not as fast as the api call
+      if ((err as SalesforceError).errorCode === ErrorCodes.DUPLICATE_VALUE) {
+        return this.findCampaignMember(leadOrContactId, infoCoId);
+      }
+      console.error(err);
+      throw err;
     }
   }
 
