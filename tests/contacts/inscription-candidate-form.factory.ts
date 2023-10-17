@@ -25,6 +25,7 @@ export class InscriptionCandidateFormFactory
       heardAbout: faker.random.objectElement(HeardAbout),
       birthdate: faker.date.past(40),
       infoCo: '',
+      tsPrescripteur: '',
     };
     return {
       ...fakeData,

@@ -42,4 +42,9 @@ export class InscriptionCandidateFormDto {
   @ApiProperty()
   @IsString()
   workingRight: CandidateYesNoNSPPValue;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  tsPrescripteur: string;
 }
