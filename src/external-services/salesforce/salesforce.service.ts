@@ -880,6 +880,7 @@ export class SalesforceService {
     heardAbout,
     diagnostic,
     contactWithCoach,
+    tsPrescripteur,
   }: CandidateAndWorkerLeadProps) {
     const department = getDepartmentFromPostalCode(postalCode);
 
@@ -935,6 +936,7 @@ export class SalesforceService {
       diagnostic,
       zone,
       associationSfId,
+      tsPrescripteur,
     };
 
     try {
@@ -968,6 +970,7 @@ export class SalesforceService {
     location,
     phone,
     workingRight,
+    tsPrescripteur,
   }: CandidateInscriptionLeadProps) {
     const department = getDepartmentFromPostalCode(location);
     const zone = getZoneFromDepartment(department);
@@ -981,6 +984,7 @@ export class SalesforceService {
       workingRight,
       heardAbout,
       zone,
+      tsPrescripteur,
       autreSource: 'Formulaire_Sourcing_Page_Travailler',
     } as const;
     const leadId = (await this.createCandidateLead(leadToCreate)) as string;
