@@ -2914,7 +2914,7 @@ describe('Opportunities', () => {
 
         it('Should return 200, with the correct array if candidate counts his opportunities according to status', async () => {
           const response: APIResponse<
-            OpportunitiesController['countOffersByStatus']
+            OpportunitiesController['candidateCountOffersByStatus']
           > = await request(app.getHttpServer())
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);
@@ -2923,7 +2923,7 @@ describe('Opportunities', () => {
         });
         it("Should return 200, if a coach counts his associated candidate's opportunities according to status", async () => {
           const response: APIResponse<
-            OpportunitiesController['countOffersByStatus']
+            OpportunitiesController['candidateCountOffersByStatus']
           > = await request(app.getHttpServer())
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
@@ -2932,7 +2932,7 @@ describe('Opportunities', () => {
         });
         it("Should return 403, if a admin counts a candidate's opportunities according to status", async () => {
           const response: APIResponse<
-            OpportunitiesController['countOffersByStatus']
+            OpportunitiesController['candidateCountOffersByStatus']
           > = await request(app.getHttpServer())
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`);
@@ -2940,7 +2940,7 @@ describe('Opportunities', () => {
         });
         it("Should return 403, if candidate counts an other candidate's opportunities according to status", async () => {
           const response: APIResponse<
-            OpportunitiesController['countOffersByStatus']
+            OpportunitiesController['candidateCountOffersByStatus']
           > = await request(app.getHttpServer())
             .get(`${route}/candidate/tabCount/${candidate.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`);

@@ -399,7 +399,7 @@ export class OpportunitiesController {
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/candidate/tabCount/:candidateId')
-  async countOffersByStatus(
+  async candidateCountOffersByStatus(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
     const opportunityUsers =
@@ -409,7 +409,23 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    return this.opportunityUsersService.countOffersByStatus(candidateId);
+    return this.opportunityUsersService.candidateCountOffersByStatus(candidateId);
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get('/admin/tabCount')
+  async adminCountOffersByType(
+    @Query()
+    query: {
+      type: OfferAdminTab;
+      search: string;
+    } & FilterParams<OfferFilterKey>
+  ) {
+    console.log(query);
+    const { type, search, businessLines, department, contracts } = query
+    console.log(type);
+    return this.opportunitiesService.adminCountOfferByType(type, search,businessLines, department, contracts);
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)

@@ -58,6 +58,7 @@ import {
   sortOpportunities,
 } from './opportunities.utils';
 import { OpportunityUsersService } from './opportunity-users.service';
+import { ContractValue } from 'src/common/contracts/contracts.types';
 
 const LIMIT = 25;
 
@@ -1050,5 +1051,46 @@ export class OpportunitiesService {
       opportunity,
       description
     );
+  }
+
+
+  async adminCountOfferByType(
+    type: OfferAdminTab,
+    search: string,
+    businessLines: string[],
+    department: string[],
+    contracts: string[],
+  ) {
+  
+    const {
+      typeParams,
+      searchOptions,
+      filterOptions,
+    } = destructureOptionsAndParams({type, search, businessLines, department});
+  
+    // const typeCounts = await this.opportunityModel.sequelize.query()
+  
+    // console.log("before destructure")
+    // console.log({typeParams,  searchOptions,
+    // businessLinesOptions,
+    // filterOptions})
+    // console.log("after destructure")
+
+    console.log("type params", typeParams);
+
+    const pendingOpportunitiesCount = await this.opportunityModel.count({
+      where: {
+        status: type ? type : '',
+        ...searchOptions,
+        ...filterOptions,
+        department,
+        isValidated: false,
+        isArchived: false,
+      },
+    });
+
+    console.log({type, search, businessLines, department, contracts});
+
+    return {pending: pendingOpportunitiesCount}
   }
 }
