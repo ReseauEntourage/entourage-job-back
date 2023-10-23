@@ -50,6 +50,7 @@ import {
 } from './salesforce.types';
 
 import {
+  escapeQuery,
   executeBulkAction,
   formatBusinessLines,
   formatCompanyName,
@@ -459,7 +460,7 @@ export class SalesforceService {
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.CONTACT}
-         WHERE Email = '${email}' ${
+         WHERE Email = '${escapeQuery(email)}' ${
           recordType ? `AND RecordTypeId = '${recordType}'` : ''
         } LIMIT 1`
       );
@@ -472,7 +473,7 @@ export class SalesforceService {
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.LEAD}
-         WHERE Email = '${email}'
+         WHERE Email = '${escapeQuery(email)}'
            AND RecordTypeId = '${recordType}' LIMIT 1
         `
       );
@@ -501,7 +502,7 @@ export class SalesforceService {
         `SELECT Id
          FROM ${ObjectNames.CAMPAIGN_MEMBER}
          WHERE ${leadId ? `LeadId = '${leadId}'` : `ContactId = '${contactId}'`}
-           AND CampaignId = '${infoCoId}' Limit 1`
+           AND CampaignId = '${escapeQuery(infoCoId)}' Limit 1`
       );
     return records[0]?.Id;
   }
