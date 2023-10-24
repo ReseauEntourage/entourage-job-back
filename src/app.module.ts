@@ -84,7 +84,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     SequelizeModule.forRoot(getSequelizeOptions()),
     ThrottlerModule.forRoot({
       ttl: 60,
-      limit: 100,
+      limit: 60,
     }),
     BullModule.forRoot({
       redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),

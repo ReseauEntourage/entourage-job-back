@@ -143,7 +143,7 @@ export class AuthController {
     return updatedUser;
   }
 
-  @Throttle(100, 60)
+  @Throttle(60, 60)
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
     const updatedUser = await this.authService.updateUser(id, {
