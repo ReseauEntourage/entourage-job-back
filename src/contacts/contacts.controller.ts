@@ -5,6 +5,7 @@ import {
   Get,
   Post,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from 'src/auth/guards';
 import {
   ContactCompanyFormDto,
@@ -25,6 +26,7 @@ import { InscriptionCandidateFormDto } from './dto/inscription-candidate-form.dt
 import { InscriptionCandidateFormPipe } from './dto/inscription-candidate-form.pipe';
 
 // TODO change to /contacts
+@Throttle(20, 60)
 @Controller('contact')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
