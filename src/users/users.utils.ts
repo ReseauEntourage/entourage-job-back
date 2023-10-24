@@ -1,17 +1,23 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { col, literal, Op, where, WhereOptions } from 'sequelize';
+import { col, FindOptions, literal, Op, where, WhereOptions } from 'sequelize';
+import { Order } from 'sequelize/types/model';
 import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
-import { searchInColumnWhereOption } from 'src/utils/misc';
-import { FilterObject } from 'src/utils/types';
-import { User, UserCandidat } from './models';
+import {
+  getFiltersObjectsFromQueryParams,
+  searchInColumnWhereOption,
+} from 'src/utils/misc';
+import { FilterObject, FilterParams } from 'src/utils/types';
+import { User, UserAttributes, UserCandidat } from './models';
 import {
   CandidateUserRoles,
   CoachUserRoles,
   CVStatuses,
   ExternalUserRoles,
+  MemberConstantType,
   MemberFilterKey,
+  MemberFilters,
   MemberOptions,
   NormalUserRoles,
   UserRole,
@@ -261,19 +267,13 @@ export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
       literal(`
         SELECT MAX("CVs"."version")
         FROM "CVs"
-        WHERE "candidatId" = "CVs"."UserId"
+        WHERE "User".id = "CVs"."UserId"
         GROUP BY "CVs"."UserId"
       `),
     ],
   },
 };
 
-export const lastCVVersionQuery = `
-  SELECT MAX("CVs"."version")
-  FROM "CVs"
-  WHERE "candidat"."candidatId" = "CVs"."UserId"
-  GROUP BY "CVs"."UserId"
-`;
 export function generateImageNamesToDelete(prefix: string) {
   const imageNames = Object.keys(CVStatuses).map((status) => {
     return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];
@@ -319,4 +319,37 @@ export function getCandidateAndCoachIdDependingOnRoles(
   } else {
     throw new BadRequestException();
   }
+}
+
+export function getCommonMembersFilterOptions(
+  params: {
+    limit: number;
+    offset: number;
+    search: string;
+    order: Order;
+  } & FilterParams<MemberFilterKey>
+): { options: FindOptions<User>, filterOptions: MemberOptions } {
+  const { limit, offset, search, order, ...restParams } = params;
+
+  const filtersObj = getFiltersObjectsFromQueryParams<
+    MemberFilterKey,
+    MemberConstantType
+  >(restParams, MemberFilters);
+
+  const filterOptions = getMemberOptions(filtersObj);
+
+  return {
+    options: {
+      order,
+      offset,
+      limit,
+      where: {
+        role: filterOptions.role,
+        ...(search ? { [Op.or]: userSearchQuery(search, true) } : {}),
+        ...(filterOptions.zone ? { zone: filterOptions.zone } : {}),
+      },
+      attributes: [...UserAttributes],
+    },
+    filterOptions,
+  };
 }

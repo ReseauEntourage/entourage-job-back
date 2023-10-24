@@ -40,6 +40,7 @@ import { User, UserCandidat } from './models';
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import {
+  AllUserRoles,
   CandidateUserRoles,
   CoachUserRoles,
   MemberFilterKey,
@@ -70,21 +71,42 @@ export class UsersController {
     limit: number,
     @Query('offset', new ParseIntPipe())
     offset: number,
+    @Query('query')
+    search: string,
+    @Query('role')
+    role: UserRole[],
     @Query()
-    query: {
-      query: string;
-      role: UserRole[];
-    } & FilterParams<MemberFilterKey>
+    query: FilterParams<MemberFilterKey>
   ) {
-    const order = [['firstName', 'ASC']] as Order;
-    const { query: search, ...restParams } = query;
-    return this.usersService.findAllMembers({
-      ...restParams,
-      limit,
-      order,
-      offset,
-      search,
-    });
+    const order: Order = [['firstName', 'ASC']];
+
+    if (!role) {
+      throw new BadRequestException();
+    }
+
+    if (isRoleIncluded(CandidateUserRoles, role)) {
+      return this.usersService.findAllCandidateMembers({
+        ...query,
+        role: role as typeof CandidateUserRoles,
+        limit,
+        order,
+        offset,
+        search,
+      });
+    }
+
+    if (isRoleIncluded(CoachUserRoles, role)) {
+      return this.usersService.findAllCoachMembers({
+        ...query,
+        role: role as typeof CoachUserRoles,
+        limit,
+        order,
+        offset,
+        search,
+      });
+    }
+
+    throw new BadRequestException();
   }
 
   // TODO divide service
