@@ -41,25 +41,31 @@ export class ContactsService {
   async sendCompanyContactToSalesforce(
     contactCompanyFormDto: ContactCompanyFormDto
   ) {
-    return this.salesforceService.createOrUpdateCompanySalesforceLead(
-      contactCompanyFormDto
-    );
+    if (process.env.ENABLE_SF === 'true') {
+      return this.salesforceService.createOrUpdateCompanySalesforceLead(
+        contactCompanyFormDto
+      );
+    }
   }
 
   async sendCandidateContactToSalesforce(
     contactCandidateFormDto: ContactCandidateFormDto
   ) {
-    return this.salesforceService.createOrUpdateContactCandidateSalesforceLead(
-      contactCandidateFormDto
-    );
+    if (process.env.ENABLE_SF === 'true') {
+      return this.salesforceService.createOrUpdateContactCandidateSalesforceLead(
+        contactCandidateFormDto
+      );
+    }
   }
 
   async sendCandidateInscriptionToSalesforce(
     inscriptionCandidateFormDto: InscriptionCandidateFormDto
   ) {
-    return this.salesforceService.createOrUpdateInscriptionCandidateSalesforceLead(
-      inscriptionCandidateFormDto
-    );
+    if (process.env.ENABLE_SF === 'true') {
+      return this.salesforceService.createOrUpdateInscriptionCandidateSalesforceLead(
+        inscriptionCandidateFormDto
+      );
+    }
   }
 
   async sendContactUsMail(contactUsFormDto: ContactUsFormDto) {
@@ -67,6 +73,8 @@ export class ContactsService {
   }
 
   async getCampaignsFromSF() {
-    return this.salesforceService.getCampaigns();
+    if (process.env.ENABLE_SF === 'true') {
+      return this.salesforceService.getCampaigns();
+    }
   }
 }
