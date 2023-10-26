@@ -402,6 +402,10 @@ export class MailsService {
         return status;
       });
 
+      const { companiesAdminMail } = getAdminMailsFromDepartment(
+        opportunity.department
+      );
+
       if (
         allStatus.every((status) => {
           return status < 0;
@@ -409,9 +413,7 @@ export class MailsService {
       ) {
         const toEmail: CustomMailParams['toEmail'] = {
           to: opportunity.contactMail || opportunity.recruiterMail,
-          bcc: process.env[
-            `ADMIN_COMPANIES_${getZoneFromDepartment(opportunity.department)}`
-          ],
+          bcc: companiesAdminMail,
         };
 
         await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
@@ -419,10 +421,7 @@ export class MailsService {
           templateId: opportunity.isPublic
             ? MailjetTemplates.OFFER_PUBLIC_NO_RESPONSE
             : MailjetTemplates.OFFER_PRIVATE_NO_RESPONSE,
-          replyTo:
-            process.env[
-              `ADMIN_COMPANIES_${getZoneFromDepartment(opportunity.department)}`
-            ],
+          replyTo: companiesAdminMail,
           variables: getMailjetVariablesForPrivateOrPublicOffer(
             opportunity.toJSON()
           ),

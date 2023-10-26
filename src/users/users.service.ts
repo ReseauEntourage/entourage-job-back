@@ -1,8 +1,7 @@
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
-import _ from 'lodash';
-import { Includeable, Op, QueryTypes, WhereOptions } from 'sequelize';
+import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions, Order } from 'sequelize/types/model';
 import { getPublishedCVQuery } from '../cvs/cvs.utils';
 import { BusinessLine } from 'src/common/business-lines/models';
@@ -12,7 +11,6 @@ import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
-import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -27,16 +25,13 @@ import {
   CandidateUserRoles,
   CoachUserRoles,
   CVStatuses,
-  MemberConstantType,
   MemberFilterKey,
-  MemberFilters,
   UserRole,
   UserRoles,
 } from './users.types';
 
 import {
   getCommonMembersFilterOptions,
-  getMemberOptions,
   lastCVVersionWhereOptions,
   userSearchQuery,
 } from './users.utils';
@@ -86,25 +81,32 @@ export class UsersService {
   ): Promise<User[]> {
     const { options, filterOptions } = getCommonMembersFilterOptions(params);
 
-    const userCandidatOptions: FindOptions<UserCandidat> = {};
+    let userCandidatWhereOptions: FindOptions<UserCandidat> = {};
 
     if (filterOptions.associatedUser) {
-      userCandidatOptions.where = {
-        candidat: filterOptions.associatedUser.candidate,
+      userCandidatWhereOptions = {
+        where: {
+          ...userCandidatWhereOptions.where,
+          ...filterOptions.associatedUser.candidat,
+        },
       };
     }
 
     if (filterOptions.hidden || filterOptions.employed) {
       if (filterOptions.hidden) {
-        userCandidatOptions.where = {
-          ...userCandidatOptions.where,
-          hidden: filterOptions.hidden,
+        userCandidatWhereOptions = {
+          where: {
+            ...userCandidatWhereOptions.where,
+            hidden: filterOptions.hidden,
+          },
         };
       }
       if (filterOptions.employed) {
-        userCandidatOptions.where = {
-          ...userCandidatOptions.where,
-          employed: filterOptions.employed,
+        userCandidatWhereOptions = {
+          where: {
+            ...userCandidatWhereOptions.where,
+            employed: filterOptions.employed,
+          },
         };
       }
     }
@@ -116,7 +118,7 @@ export class UsersService {
           model: UserCandidat,
           as: 'candidat',
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          ...userCandidatOptions,
+          ...userCandidatWhereOptions,
           include: [
             {
               model: CV,
@@ -178,23 +180,22 @@ export class UsersService {
   ): Promise<User[]> {
     const { options, filterOptions } = getCommonMembersFilterOptions(params);
 
-    const userCandidatOptions: FindOptions<UserCandidat> = {};
-
-    if (filterOptions.associatedUser) {
-      userCandidatOptions.where = {
-        coach: filterOptions.associatedUser.coach,
-      };
-    }
+    const associatedUserWhereOptions = filterOptions.associatedUser
+      ? filterOptions.associatedUser.coach
+      : {};
 
     return this.userModel.findAll({
       ...options,
+      where: {
+        ...options.where,
+        ...associatedUserWhereOptions,
+      },
       include: [
         {
           model: UserCandidat,
           as: 'coaches',
-          ...userCandidatOptions,
-          required: !_.isEmpty(filterOptions.associatedUser),
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
+          duplicating: false,
           include: [
             {
               model: User,

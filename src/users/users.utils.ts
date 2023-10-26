@@ -138,20 +138,19 @@ export function getMemberOptions(
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
             if (keys[i] === 'associatedUser') {
-              // These options don't work
               whereOptions = {
                 ...whereOptions,
                 [keys[i]]: {
                   coach: {
                     [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                      return where(
-                        col(`coaches.candidatId`),
-                        currentFilter.value ? Op.not : Op.is,
-                        null
-                      );
+                      return {
+                        '$coaches.candidatId$': {
+                          [currentFilter.value ? Op.not : Op.is]: null,
+                        },
+                      };
                     }),
                   },
-                  candidate: {
+                  candidat: {
                     [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
                       return where(
                         col(`candidat.coachId`),
@@ -160,7 +159,7 @@ export function getMemberOptions(
                       );
                     }),
                   },
-                } as MemberOptions['associatedUser'],
+                },
               };
             } else {
               whereOptions = {
@@ -265,10 +264,10 @@ export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
   version: {
     [Op.in]: [
       literal(`
-        SELECT MAX("CVs"."version")
-        FROM "CVs"
-        WHERE "User".id = "CVs"."UserId"
-        GROUP BY "CVs"."UserId"
+          SELECT MAX("CVs"."version")
+          FROM "CVs"
+          WHERE "User".id = "CVs"."UserId"
+          GROUP BY "CVs"."UserId"
       `),
     ],
   },
@@ -328,7 +327,7 @@ export function getCommonMembersFilterOptions(
     search: string;
     order: Order;
   } & FilterParams<MemberFilterKey>
-): { options: FindOptions<User>, filterOptions: MemberOptions } {
+): { options: FindOptions<User>; filterOptions: MemberOptions } {
   const { limit, offset, search, order, ...restParams } = params;
 
   const filtersObj = getFiltersObjectsFromQueryParams<

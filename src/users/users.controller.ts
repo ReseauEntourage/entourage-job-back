@@ -40,7 +40,6 @@ import { User, UserCandidat } from './models';
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import {
-  AllUserRoles,
   CandidateUserRoles,
   CoachUserRoles,
   MemberFilterKey,
