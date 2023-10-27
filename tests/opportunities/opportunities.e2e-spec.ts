@@ -7,13 +7,11 @@ import { v4 as uuid } from 'uuid';
 import {
   BitlyMocks,
   CacheMocks,
-  PleziMocks,
   QueueMocks,
   SalesforceMocks,
 } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
-import { PleziService } from 'src/external-services/plezi/plezi.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
@@ -65,8 +63,6 @@ describe('Opportunities', () => {
       .useValue(CacheMocks)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
-      .overrideProvider(PleziService)
-      .useValue(PleziMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();

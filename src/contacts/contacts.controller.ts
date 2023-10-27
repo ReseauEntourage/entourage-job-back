@@ -13,10 +13,7 @@ import {
   ContactUsFormDto,
   ContactUsFormPipe,
 } from 'src/contacts/dto';
-import {
-  ContactStatus,
-  PleziTrackingData,
-} from 'src/external-services/plezi/plezi.types';
+import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
 import { isValidPhone } from 'src/utils/misc';
 import { AdminZone } from 'src/utils/types';
 import { ContactsService } from './contacts.service';
@@ -83,25 +80,18 @@ export class ContactsController {
   @Post('newsletter')
   async addContactForNewsletter(
     @Body('email') email: string,
-    @Body('zone') zone: AdminZone | AdminZone[],
-    @Body('status') status: ContactStatus | ContactStatus[],
-    @Body('visit') visit?: PleziTrackingData['visit'],
-    @Body('visitor') visitor?: PleziTrackingData['visitor'],
-    @Body('urlParams')
-    urlParams?: PleziTrackingData['urlParams']
+    @Body('zone') zone?: AdminZone,
+    @Body('status') status?: ContactStatus
   ) {
     if (!email) {
       throw new BadRequestException();
     }
 
-    return this.contactsService.sendContactToPlezi(
+    await this.contactsService.sendContactToMailjet({
       email,
       zone,
       status,
-      visit,
-      visitor,
-      urlParams
-    );
+    });
   }
 
   @Public()

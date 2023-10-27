@@ -1,3 +1,5 @@
+import { AdminZone } from 'src/utils/types';
+
 export interface CustomMailParams {
   toEmail:
     | string
@@ -13,6 +15,39 @@ export interface CustomMailParams {
   html?: string;
   variables?: object;
   templateId: MailjetTemplate;
+}
+
+export interface CustomContactParams {
+  email: string;
+  zone: AdminZone;
+  status: ContactStatus;
+}
+
+export const MailjetContactTagNames = {
+  NEWSLETTER: 'newsletter_linkedout',
+  ZONE: 'antenne_linkedout',
+  STATUS: 'profil_linkedout',
+} as const;
+
+export type MailjetContactTagName =
+  typeof MailjetContactTagNames[keyof typeof MailjetContactTagNames];
+
+export interface MailjetContactTag {
+  Name: MailjetContactTagName;
+  Value: string | boolean;
+}
+
+export const MailjetListActions = {
+  NO_FORCE: 'addnoforce',
+  FORCE: 'addforce',
+} as const;
+
+export type MailjetListAction =
+  typeof MailjetListActions[keyof typeof MailjetListActions];
+
+export interface MailjetContactList {
+  Action: MailjetListAction;
+  ListID: string;
 }
 
 export const MailjetTemplates = {
@@ -52,3 +87,26 @@ export const MailjetTemplates = {
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
 export type MailjetTemplate = typeof MailjetTemplates[MailjetTemplateKey];
+
+export const ContactStatuses = {
+  INDIVIDUAL: 'PARTICULIER',
+  COMPANY: 'ENTREPRISE',
+  ASSOCIATION: 'ASSOCIATION',
+  CANDIDATE: 'CANDIDAT',
+} as const;
+
+export type ContactStatus =
+  typeof ContactStatuses[keyof typeof ContactStatuses];
+
+export interface MailjetError {
+  statusCode: number;
+  ErrorMessage: string;
+}
+
+export interface MailjetCustomContact {
+  ID: string;
+}
+
+export interface MailjetCustomResponse {
+  body: { Data: ReadonlyArray<MailjetCustomContact> };
+}
