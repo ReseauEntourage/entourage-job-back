@@ -101,8 +101,10 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
 } as const;
 
 export const MailjetMock: ProviderMock<MailjetService> = {
-  sendContact: jest.fn(),
-  createContact: jest.fn(),
   sendMail: jest.fn(),
-  createMail: jest.fn(),
+  findContact: jest.fn(),
+  createContact: jest.fn(),
+  updateContactTags: jest.fn(),
+  subscribeToNewsletterList: jest.fn(),
+  sendContact: jest.fn(),
 } as const;

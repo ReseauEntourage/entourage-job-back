@@ -80,8 +80,8 @@ export class ContactsController {
   @Post('newsletter')
   async addContactForNewsletter(
     @Body('email') email: string,
-    @Body('zone') zone?: AdminZone | AdminZone[],
-    @Body('status') status?: ContactStatus | ContactStatus[]
+    @Body('zone') zone?: AdminZone,
+    @Body('status') status?: ContactStatus
   ) {
     if (!email) {
       throw new BadRequestException();
