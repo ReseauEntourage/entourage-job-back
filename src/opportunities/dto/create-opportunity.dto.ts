@@ -2,7 +2,6 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsOptional } from 'class-validator';
 import { Opportunity } from '../models';
 import { Department } from 'src/common/locations/locations.types';
-import { PleziTrackingData } from 'src/external-services/plezi/plezi.types';
 
 interface LocationDto {
   department: Department;
@@ -65,16 +64,4 @@ export class CreateOpportunityDto extends PickType(Opportunity, [
   @ApiProperty()
   @IsOptional()
   locations?: LocationDto | LocationDto[];
-
-  @ApiProperty()
-  @IsOptional()
-  visit?: PleziTrackingData['visit'];
-
-  @ApiProperty()
-  @IsOptional()
-  visitor?: PleziTrackingData['visitor'];
-
-  @ApiProperty()
-  @IsOptional()
-  urlParams?: PleziTrackingData['urlParams'];
 }
