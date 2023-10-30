@@ -774,6 +774,15 @@ export class SalesforceService {
         if ((err as SalesforceError).errorCode === ErrorCodes.NOT_FOUND) {
           return leadSfIdToUpdate;
         }
+        if (
+          (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
+        ) {
+          return (await this.updateLead(
+            leadSfIdToUpdate,
+            lead,
+            recordType
+          )) as string;
+        }
       }
     }
     return leadSfId;
@@ -1005,28 +1014,28 @@ export class SalesforceService {
       autreSource: 'Formulaire_Sourcing_Page_Travailler',
     } as const;
 
-    if (infoCo) {
-      try {
-        const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+    try {
+      const leadId = (await this.createCandidateLead(leadToCreate)) as string;
+      if (infoCo) {
         await this.createCampaignMemberInfoCo({ leadId }, infoCo);
         return leadId;
-      } catch (err) {
-        if (
-          (err as SalesforceError).errorCode ===
-            ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD ||
-          (err as SalesforceError).errorCode ===
-            ErrorCodes.FIELD_INTEGRITY_EXCEPTION
-        ) {
-          const contactSfId = await this.findContact(email);
-          await this.createCampaignMemberInfoCo(
-            { contactId: contactSfId },
-            infoCo
-          );
-          return contactSfId;
-        }
-        console.error(err);
-        throw err;
       }
+    } catch (err) {
+      if (
+        (err as SalesforceError).errorCode ===
+          ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD ||
+        (err as SalesforceError).errorCode ===
+          ErrorCodes.FIELD_INTEGRITY_EXCEPTION
+      ) {
+        const contactSfId = await this.findContact(email);
+        await this.createCampaignMemberInfoCo(
+          { contactId: contactSfId },
+          infoCo
+        );
+        return contactSfId;
+      }
+      console.error(err);
+      throw err;
     }
   }
 
@@ -1068,9 +1077,8 @@ export class SalesforceService {
       await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
     } catch (err) {
       if (
-        (err as SalesforceError).errorCode !== ErrorCodes.UNABLE_TO_LOCK_ROW
+        (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
       ) {
-        await asyncTimeout(1000);
         await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
       }
       console.error(err);
