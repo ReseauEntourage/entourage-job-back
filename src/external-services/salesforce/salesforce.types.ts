@@ -44,6 +44,7 @@ export const ErrorCodes = {
   FIELD_INTEGRITY_EXCEPTION: 'FIELD_INTEGRITY_EXCEPTION',
   FIELD_FILTER_VALIDATION_EXCEPTION: 'FIELD_FILTER_VALIDATION_EXCEPTION',
   NOT_FOUND: 'NOT_FOUND',
+  UNABLE_TO_LOCK_ROW: 'UNABLE_TO_LOCK_ROW',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
@@ -425,6 +426,7 @@ export interface TaskProps {
   subject: string;
   ownerSfId: string;
   leadSfId: string;
+  contactSfId?: string;
   binomeSfId: string;
   zone: CompanyZone;
 }

@@ -397,21 +397,42 @@ export class SalesforceService {
   }
 
   async createOrUpdateTask(params: TaskProps | TaskProps[]) {
-    let records: SalesforceTask | SalesforceTask[];
     if (Array.isArray(params)) {
-      records = params.map((singleParams) => {
+      const records = params.map((singleParams) => {
         return mapSalesforceTaskFields(singleParams);
       });
-    } else {
-      records = mapSalesforceTaskFields(params);
-    }
 
-    return this.upsertRecord(
-      ObjectNames.TASK,
-      records,
-      'ID_Externe__c',
-      'findTaskById'
-    );
+      return this.upsertRecord(
+        ObjectNames.TASK,
+        records,
+        'ID_Externe__c',
+        'findTaskById'
+      );
+    } else {
+      const record = mapSalesforceTaskFields(params);
+      try {
+        return (await this.upsertRecord(
+          ObjectNames.TASK,
+          record,
+          'ID_Externe__c',
+          'findTaskById'
+        )) as string;
+      } catch (err) {
+        if (
+          (err as SalesforceError).errorCode ===
+          ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD
+        ) {
+          return (await this.upsertRecord(
+            ObjectNames.TASK,
+            { ...record, WhoId: params.contactSfId },
+            'ID_Externe__c',
+            'findTaskById'
+          )) as string;
+        }
+        console.error(err);
+        throw err;
+      }
+    }
   }
 
   async searchAccountByName(search: string, recordType: AccountRecordType) {
@@ -988,10 +1009,10 @@ export class SalesforceService {
       tsPrescripteur,
       autreSource: 'Formulaire_Sourcing_Page_Travailler',
     } as const;
-    const leadId = (await this.createCandidateLead(leadToCreate)) as string;
 
     if (infoCo) {
       try {
+        const leadId = (await this.createCandidateLead(leadToCreate)) as string;
         await this.createCampaignMemberInfoCo({ leadId }, infoCo);
         return leadId;
       } catch (err) {
@@ -1001,16 +1022,46 @@ export class SalesforceService {
           (err as SalesforceError).errorCode ===
             ErrorCodes.FIELD_INTEGRITY_EXCEPTION
         ) {
-          const contactId = await this.findContact(email);
+          const contactSfId = await this.findContact(email);
           await this.createCampaignMemberInfoCo(
-            { contactId: contactId },
+            { contactId: contactSfId },
             infoCo
           );
-          return leadId;
+          return contactSfId;
         }
         console.error(err);
         throw err;
       }
+    }
+  }
+
+  async findOrCreateCampaignMember(
+    leadOrContactId: { leadId?: string; contactId?: string },
+    infoCoId: string
+  ) {
+    try {
+      const campaignMemberSfId = await this.findCampaignMember(
+        leadOrContactId,
+        infoCoId
+      );
+      const { leadId, contactId } = leadOrContactId;
+      if (!campaignMemberSfId) {
+        await this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
+          ...(leadId
+            ? {
+                LeadId: leadId,
+              }
+            : { ContactId: contactId }),
+          CampaignId: infoCoId,
+          Status: 'Inscrit',
+        });
+      }
+    } catch (err) {
+      if ((err as SalesforceError).errorCode === ErrorCodes.DUPLICATE_VALUE) {
+        return;
+      }
+      console.error(err);
+      throw err;
     }
   }
 
@@ -1019,30 +1070,13 @@ export class SalesforceService {
     infoCoId: string
   ) {
     try {
-      let campaignMemberId = await this.findCampaignMember(
-        leadOrContactId,
-        infoCoId
-      );
-      const { leadId, contactId } = leadOrContactId;
-      if (!campaignMemberId) {
-        campaignMemberId = (await this.createRecord(
-          ObjectNames.CAMPAIGN_MEMBER,
-          {
-            ...(leadId
-              ? {
-                  LeadId: leadId,
-                }
-              : { ContactId: contactId }),
-            CampaignId: infoCoId,
-            Status: 'Inscrit',
-          }
-        )) as string;
-      }
-      return campaignMemberId;
+      await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
     } catch (err) {
-      // Case where the flow is not as fast as the api call
-      if ((err as SalesforceError).errorCode === ErrorCodes.DUPLICATE_VALUE) {
-        return this.findCampaignMember(leadOrContactId, infoCoId);
+      if (
+        (err as SalesforceError).errorCode !== ErrorCodes.UNABLE_TO_LOCK_ROW
+      ) {
+        await asyncTimeout(1000);
+        await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
       }
       console.error(err);
       throw err;
@@ -1286,11 +1320,14 @@ export class SalesforceService {
 
     const ownerSfId = await this.findOwnerByLeadSfId(leadSfId);
 
+    const contactSfId = await this.findContact(email);
+
     return {
       binomeSfId,
       externalMessageId,
       ownerSfId,
       leadSfId,
+      contactSfId,
       subject: `Message envoyé à ${candidateFirstName} ${candidateLastName} LinkedOut via le site`,
       zone,
     };
