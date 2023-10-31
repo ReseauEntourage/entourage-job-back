@@ -29,7 +29,6 @@ import { ExternalDatabasesModule } from './external-databases/external-databases
 import { ExternalMessagesModule } from './external-messages/external-messages.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
-import { PleziModule } from './external-services/plezi/plezi.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
@@ -120,7 +119,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     SMSModule,
     BitlyModule,
     ContactsModule,
-    PleziModule,
     OrganizationsModule,
     ExternalMessagesModule,
   ],

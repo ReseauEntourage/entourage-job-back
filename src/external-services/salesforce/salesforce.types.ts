@@ -165,7 +165,9 @@ export const LeadHeardAbout: { [K in HeardAboutValue]: string } = {
   [HeardAbout.SOCIAL]: 'Autres réseaux (facebook, twitter, instagram...)',
   [HeardAbout.SPORTS]: 'Un partenariat sportif',
   [HeardAbout.VOLUNTEER]: 'Un site de bénévolat',
+  [HeardAbout.ORIENTATION]: 'Association / travailleur social',
   [HeardAbout.CONTACT]: 'Le bouche à oreille',
+  [HeardAbout.POLE_EMPLOI]: 'Pôle Emploi',
   [HeardAbout.OTHER]: 'Autre',
 } as const;
 
@@ -586,9 +588,10 @@ export interface CandidateLeadProps {
   workerSfIdAsProspect?: string;
   workerSfIdAsContact?: string;
   associationSfId?: string;
-  heardAbout?: string;
+  heardAbout?: HeardAboutValue;
   location?: string;
   autreSource?: 'Formulaire_Sourcing_Page_Travailler';
+  tsPrescripteur: string;
 }
 
 export interface CoachLeadProps {
@@ -623,6 +626,7 @@ export interface CandidateInscriptionLeadProps {
   location: string;
   phone: string;
   workingRight: CandidateYesNoNSPPValue;
+  tsPrescripteur: string;
 }
 
 export interface CandidateAndWorkerLeadProps {
@@ -657,6 +661,7 @@ export interface CandidateAndWorkerLeadProps {
   heardAbout: HeardAboutValue;
   diagnostic?: string;
   contactWithCoach?: boolean;
+  tsPrescripteur?: string;
 }
 
 export interface CandidateSalesforceLead {
@@ -694,6 +699,8 @@ export interface CandidateSalesforceLead {
   Antenne__c: string;
   Source__c: 'Lead entrant';
   Autre_source_LinkedOut__c: 'Formulaire_Sourcing_Page_Travailler';
+  TS_du_Candidat__c: string;
+  Comment_vous_nous_avez_connu__c: string;
 }
 
 export interface WorkerSalesforceLead {

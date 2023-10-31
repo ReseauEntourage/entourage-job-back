@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { PleziModule } from 'src/external-services/plezi/plezi.module';
+import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 
 @Module({
-  imports: [MailsModule, SalesforceModule, PleziModule],
+  imports: [MailsModule, SalesforceModule, MailjetModule],
   controllers: [ContactsController],
   providers: [ContactsService],
   exports: [ContactsService],

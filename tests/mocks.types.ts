@@ -3,7 +3,7 @@ import { Cache } from 'cache-manager';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
-import { PleziService } from 'src/external-services/plezi/plezi.service';
+import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 
 type ProviderMock<T> = { [K in keyof T]: jest.Mock };
@@ -101,6 +101,11 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   getCampaigns: jest.fn(),
 } as const;
 
-export const PleziMocks: ProviderMock<PleziService> = {
-  sendContactToPlezi: jest.fn(),
+export const MailjetMock: ProviderMock<MailjetService> = {
+  sendMail: jest.fn(),
+  findContact: jest.fn(),
+  createContact: jest.fn(),
+  updateContactTags: jest.fn(),
+  subscribeToNewsletterList: jest.fn(),
+  sendContact: jest.fn(),
 } as const;

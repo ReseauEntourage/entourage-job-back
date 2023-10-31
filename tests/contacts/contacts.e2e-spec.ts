@@ -3,9 +3,8 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { ContactsController } from 'src/contacts/contacts.controller';
-import { ContactsService } from 'src/contacts/contacts.service';
-import { PleziService } from 'src/external-services/plezi/plezi.service';
-import { ContactStatus } from 'src/external-services/plezi/plezi.types';
+import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
+import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { Queues } from 'src/queues/queues.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
@@ -13,7 +12,7 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import {
   CacheMocks,
-  PleziMocks,
+  MailjetMock,
   QueueMocks,
   SalesforceMocks,
 } from 'tests/mocks.types';
@@ -43,8 +42,8 @@ describe('Contacts', () => {
       .useValue(CacheMocks)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
-      .overrideProvider(PleziService)
-      .useValue(PleziMocks)
+      .overrideProvider(MailjetService)
+      .useValue(MailjetMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -227,12 +226,6 @@ describe('Contacts', () => {
   });
 
   describe('/newsletter - Subscribe contact email to newsletter list', () => {
-    beforeEach(() => {
-      jest
-        .spyOn(ContactsService.prototype, 'sendContactToPlezi')
-        .mockImplementationOnce(async () => null);
-    });
-
     it('Should return 201, if all content provided', async () => {
       const response: APIResponse<
         ContactsController['addContactForNewsletter']
