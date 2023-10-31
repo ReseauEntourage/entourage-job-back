@@ -777,6 +777,7 @@ export class SalesforceService {
         if (
           (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
         ) {
+          console.log('LOCK ROW IN findOrCreateLead');
           return (await this.updateLead(
             leadSfIdToUpdate,
             lead,
@@ -1079,6 +1080,7 @@ export class SalesforceService {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
       ) {
+        console.log('LOCK ROW IN createCampaignMemberInfoCo');
         await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
       }
       console.error(err);
