@@ -310,7 +310,8 @@ export class WorkQueueProcessor {
     await this.cvsService.generatePDFFromCV(
       data.candidateId,
       data.token,
-      data.paths
+      data.fileName,
+      data.isTwoPages
     );
 
     await this.pusherService.sendEvent(
@@ -321,7 +322,7 @@ export class WorkQueueProcessor {
       }
     );
 
-    return `PDF generated for User ${data.candidateId} : ${data.paths[2]}`;
+    return `PDF generated for User ${data.candidateId} : ${data.fileName}`;
   }
 
   @Process(Jobs.GENERATE_CV_PREVIEW)

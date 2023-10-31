@@ -11,7 +11,6 @@ import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
-import { getFiltersObjectsFromQueryParams } from 'src/utils/misc';
 import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -23,20 +22,16 @@ import {
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
-  AllUserRoles,
   CandidateUserRoles,
   CoachUserRoles,
   CVStatuses,
-  MemberConstantType,
   MemberFilterKey,
-  MemberFilters,
   UserRole,
   UserRoles,
 } from './users.types';
 
 import {
-  getMemberOptions,
-  isRoleIncluded,
+  getCommonMembersFilterOptions,
   lastCVVersionWhereOptions,
   userSearchQuery,
 } from './users.utils';
@@ -75,169 +70,154 @@ export class UsersService {
       include: UserCandidatInclude,
     });
   }
-
-  async findAllMembers(
+  async findAllCandidateMembers(
     params: {
       limit: number;
       offset: number;
       search: string;
       order: Order;
-      role: UserRole[];
+      role: typeof CandidateUserRoles;
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
-    const { limit, offset, search, order, role, ...restParams } = params;
+    const { options, filterOptions } = getCommonMembersFilterOptions(params);
 
-    const filtersObj = getFiltersObjectsFromQueryParams<
-      MemberFilterKey,
-      MemberConstantType
-    >({ ...restParams, role }, MemberFilters);
+    let userCandidatWhereOptions: FindOptions<UserCandidat> = {};
 
-    const filterOptions = getMemberOptions(filtersObj);
-
-    const options: FindOptions<User> = {
-      subQuery: false,
-      order,
-      offset,
-      limit,
-      where: {
-        role: { [Op.not]: UserRoles.ADMIN },
-      },
-      attributes: [...UserAttributes],
-    };
-
-    if (search) {
-      options.where = {
-        ...options.where,
-        [Op.or]: userSearchQuery(search, true),
+    if (filterOptions.associatedUser) {
+      userCandidatWhereOptions = {
+        where: {
+          ...userCandidatWhereOptions.where,
+          ...filterOptions.associatedUser.candidat,
+        },
       };
     }
 
-    if (filterOptions.zone) {
-      options.where = {
-        ...options.where,
-        zone: filterOptions.zone,
-      };
-    }
-
-    if (filterOptions.role && isRoleIncluded(AllUserRoles, role)) {
-      options.where = {
-        ...options.where,
-        role: filterOptions.role,
-      };
-
-      if (filterOptions.associatedUser) {
-        if (isRoleIncluded(CandidateUserRoles, role)) {
-          options.where = {
-            ...(options.where || {}),
-            ...filterOptions.associatedUser.candidate,
-          };
-        }
-        if (isRoleIncluded(CoachUserRoles, role)) {
-          options.where = {
-            ...(options.where || {}),
-            ...filterOptions.associatedUser.coach,
-          };
-        }
-      }
-    }
-
-    const userCandidatOptions: FindOptions<UserCandidat> = {};
-    if (
-      isRoleIncluded(CandidateUserRoles, role) &&
-      (filterOptions.hidden || filterOptions.employed)
-    ) {
-      userCandidatOptions.where = {};
+    if (filterOptions.hidden || filterOptions.employed) {
       if (filterOptions.hidden) {
-        userCandidatOptions.where = {
-          ...userCandidatOptions.where,
-          hidden: filterOptions.hidden,
+        userCandidatWhereOptions = {
+          where: {
+            ...userCandidatWhereOptions.where,
+            hidden: filterOptions.hidden,
+          },
         };
       }
       if (filterOptions.employed) {
-        userCandidatOptions.where = {
-          ...userCandidatOptions.where,
-          employed: filterOptions.employed,
+        userCandidatWhereOptions = {
+          where: {
+            ...userCandidatWhereOptions.where,
+            employed: filterOptions.employed,
+          },
         };
       }
     }
 
-    if (filterOptions.cvStatus) {
-      options.where = {
-        ...(options.where || {}),
-        '$candidat.cvs.status$': filterOptions.cvStatus,
-      };
-    }
-
-    if (filterOptions.businessLines) {
-      options.where = {
-        ...(options.where || {}),
-        '$candidat.cvs.businessLines.name$': filterOptions.businessLines,
-      };
-    }
-
-    options.include = [
-      {
-        model: UserCandidat,
-        as: 'candidat',
-        attributes: ['coachId', ...UserCandidatAttributes],
-        ...userCandidatOptions,
-        include: [
-          {
-            model: CV,
-            as: 'cvs',
-            attributes: ['version', 'status', 'urlImg'],
-            required: !!filterOptions.cvStatus || !!filterOptions.businessLines,
-            where: lastCVVersionWhereOptions,
-            include: [
-              {
-                model: BusinessLine,
-                as: 'businessLines',
-                attributes: ['name', 'order'],
-                required: !!filterOptions.businessLines,
+    return this.userModel.findAll({
+      ...options,
+      include: [
+        {
+          model: UserCandidat,
+          as: 'candidat',
+          attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
+          ...userCandidatWhereOptions,
+          include: [
+            {
+              model: CV,
+              as: 'cvs',
+              attributes: ['version', 'status', 'urlImg'],
+              required:
+                !!filterOptions.cvStatus || !!filterOptions.businessLines,
+              where: {
+                ...lastCVVersionWhereOptions,
+                ...(filterOptions.cvStatus
+                  ? { status: filterOptions.cvStatus }
+                  : {}),
               },
-            ],
-          },
-          {
-            model: User,
-            as: 'coach',
-            attributes: [...UserAttributes],
-            include: [
-              {
-                model: Organization,
-                as: 'organization',
-                attributes: ['name', 'address', 'zone', 'id'],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        model: UserCandidat,
-        as: 'coaches',
-        attributes: ['candidatId', ...UserCandidatAttributes],
-        include: [
-          {
-            model: User,
-            as: 'candidat',
-            attributes: [...UserAttributes],
-            include: [
-              {
-                model: Organization,
-                as: 'organization',
-                attributes: ['name', 'address', 'zone', 'id'],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        model: Organization,
-        as: 'organization',
-        attributes: ['name', 'address', 'zone', 'id'],
-      },
-    ];
+              include: [
+                {
+                  model: BusinessLine,
+                  as: 'businessLines',
+                  attributes: ['name', 'order'],
+                  required: !!filterOptions.businessLines,
+                  where: filterOptions.businessLines
+                    ? {
+                        name: filterOptions.businessLines,
+                      }
+                    : {},
+                },
+              ],
+            },
+            {
+              model: User,
+              as: 'coach',
+              attributes: [...UserAttributes],
+              include: [
+                {
+                  model: Organization,
+                  as: 'organization',
+                  attributes: ['name', 'address', 'zone', 'id'],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: Organization,
+          as: 'organization',
+          attributes: ['name', 'address', 'zone', 'id'],
+        },
+      ],
+    });
+  }
 
-    return this.userModel.findAll(options);
+  async findAllCoachMembers(
+    params: {
+      limit: number;
+      offset: number;
+      search: string;
+      order: Order;
+      role: typeof CoachUserRoles;
+    } & FilterParams<MemberFilterKey>
+  ): Promise<User[]> {
+    const { options, filterOptions } = getCommonMembersFilterOptions(params);
+
+    const associatedUserWhereOptions = filterOptions.associatedUser
+      ? filterOptions.associatedUser.coach
+      : {};
+
+    return this.userModel.findAll({
+      ...options,
+      where: {
+        ...options.where,
+        ...associatedUserWhereOptions,
+      },
+      include: [
+        {
+          model: UserCandidat,
+          as: 'coaches',
+          attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
+          duplicating: false,
+          include: [
+            {
+              model: User,
+              as: 'candidat',
+              attributes: [...UserAttributes],
+              include: [
+                {
+                  model: Organization,
+                  as: 'organization',
+                  attributes: ['name', 'address', 'zone', 'id'],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: Organization,
+          as: 'organization',
+          attributes: ['name', 'address', 'zone', 'id'],
+        },
+      ],
+    });
   }
 
   async findAllUsers(
@@ -342,7 +322,6 @@ export class UsersService {
     const options: FindOptions<User> = {
       where: {
         ...whereOptions,
-        '$candidat.cvs.status$': CVStatuses.PENDING.value,
         role: CandidateUserRoles,
       } as WhereOptions<User>,
       attributes: [],
@@ -357,7 +336,10 @@ export class UsersService {
               model: CV,
               as: 'cvs',
               attributes: [],
-              where: lastCVVersionWhereOptions,
+              where: {
+                ...lastCVVersionWhereOptions,
+                status: CVStatuses.PENDING.value,
+              },
             },
           ],
         },

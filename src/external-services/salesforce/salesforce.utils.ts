@@ -453,6 +453,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       workerSfIdAsContact,
       associationSfId,
       autreSource,
+      tsPrescripteur,
     } = leadProps;
 
     const parsedAddress = parseAddress(address);
@@ -468,6 +469,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
       Date_de_naissance__c: birthDate,
       Autre_source_LinkedOut__c: autreSource,
+      TS_du_Candidat__c: tsPrescripteur,
       Accompagnement_social__c: formatSalesforceValue<CandidateHelpWithValue>(
         helpWith,
         LeadHelpWith
@@ -589,4 +591,8 @@ export function executeBulkAction<T extends ObjectName>(
       res(results);
     });
   });
+}
+
+export function escapeQuery(query: string) {
+  return query.replace(/'/g, "\\'");
 }

@@ -5,8 +5,6 @@ import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
 import fetch from 'node-fetch';
-import { PDFDocument } from 'pdf-lib';
-import * as puppeteer from 'puppeteer-core';
 import { col, fn, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
@@ -29,7 +27,6 @@ import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
-import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -91,8 +88,7 @@ export class CVsService {
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
-    private s3Service: S3Service,
-    private cloudFrontService: CloudFrontService
+    private s3Service: S3Service
   ) {}
 
   async create(createCVDto: CreateCVDto, userId: string) {
@@ -641,91 +637,35 @@ export class CVsService {
     }
   }
 
-  async generatePDFFromCV(candidateId: string, token: string, paths: string[]) {
-    const s3Key = `${process.env.AWSS3_FILE_DIRECTORY}${paths[2]}`;
-
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--font-render-hinting=none'],
-      executablePath:
-        process.env.PUPPETEER_EXEC_PATH || process.env.CHROME_PATH,
-    });
-    const page = await browser.newPage();
-
-    const options = {
-      content: '@page { size: A4 portrait; margin: 0; }',
-    };
-
-    // Fix because can't create page break
-    await page.goto(
-      `${this.getPDFPageUrl(candidateId)}?token=${token}&page=0`,
-      { waitUntil: 'networkidle2' }
-    );
-
-    await page.addStyleTag(options);
-    await page.emulateMediaType('screen');
-    await page.pdf({
-      path: paths[0],
-      preferCSSPageSize: true,
-      printBackground: true,
+  async generatePDFFromCV(
+    candidateId: string,
+    token: string,
+    /*paths: string[],*/ fileName: string,
+    isTwoPages: boolean
+  ) {
+    const response = await fetch(`${process.env.CV_PDF_GENERATION_AWS_URL}`, {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      body: JSON.stringify({
+        candidateId,
+        token,
+        fileName,
+        isTwoPages,
+      }),
     });
 
-    await page.goto(
-      `${this.getPDFPageUrl(candidateId)}?token=${token}&page=1`,
-      { waitUntil: 'networkidle2' }
-    );
+    const responseJSON = await response.json();
 
-    await page.addStyleTag(options);
-    await page.emulateMediaType('screen');
-    await page.pdf({
-      path: paths[1],
-      preferCSSPageSize: true,
-      printBackground: true,
-    });
-
-    await page.close();
-
-    await browser.close();
-
-    const mergedPdf = await PDFDocument.create();
-
-    const pdfA = await PDFDocument.load(fs.readFileSync(paths[0]));
-    const pdfB = await PDFDocument.load(fs.readFileSync(paths[1]));
-
-    const copiedPagesA = await mergedPdf.copyPages(pdfA, pdfA.getPageIndices());
-    copiedPagesA.forEach((pdfPage) => {
-      return mergedPdf.addPage(pdfPage);
-    });
-
-    const copiedPagesB = await mergedPdf.copyPages(pdfB, pdfB.getPageIndices());
-    copiedPagesB.forEach((pdfPage) => {
-      return mergedPdf.addPage(pdfPage);
-    });
-
-    const mergedPdfFile = await mergedPdf.save();
-
-    const pdfBuffer = Buffer.from(mergedPdfFile);
-
-    await this.s3Service.upload(
-      pdfBuffer,
-      'application/pdf',
-      `${paths[2]}`,
-      true
-    );
-
-    if (fs.existsSync(paths[0])) {
-      fs.unlinkSync(paths[0]);
-    }
-    if (fs.existsSync(paths[1])) {
-      fs.unlinkSync(paths[1]);
-    }
-    if (fs.existsSync(paths[2])) {
-      fs.unlinkSync(paths[2]);
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error(`${response.status}, ${responseJSON.message}`);
     }
 
-    await this.cloudFrontService.invalidateCache(['/' + s3Key]);
+    const { pdfUrl } = responseJSON as { pdfUrl: string };
 
-    return this.s3Service.getSignedUrl(s3Key);
+    return pdfUrl;
   }
 
   async generatePreviewFromCV(
@@ -1146,11 +1086,17 @@ export class CVsService {
     });
   }
 
-  async sendGenerateCVPDF(candidateId: string, token: string, paths: string[]) {
+  async sendGenerateCVPDF(
+    candidateId: string,
+    token: string,
+    fileName: string,
+    isTwoPages: boolean
+  ) {
     await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PDF, {
       candidateId,
       token,
-      paths,
+      fileName,
+      isTwoPages,
     });
   }
 

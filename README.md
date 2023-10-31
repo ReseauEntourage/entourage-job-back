@@ -63,7 +63,8 @@ yarn
 docker-compose up --build
 ```
 
-Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein du container:
+Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein du
+container:
 
 ```
 docker exec -it api_new bash
@@ -87,7 +88,8 @@ Pour lancer les migrations :
 yarn db:migrate
 ```
 
-APour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres utilisateurs :
+APour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
+utilisateurs :
 
 ```
 yarn db:seed
@@ -95,7 +97,8 @@ yarn db:seed
 
 #### Avec Docker
 
-La même chose que sans Docker, mais vous devez précéder les commandes par la suivante, et ne pas lancer la commande de création de DB:
+La même chose que sans Docker, mais vous devez précéder les commandes par la suivante, et ne pas lancer la commande de
+création de DB:
 
 ```
 docker exec -it api bash
@@ -152,9 +155,11 @@ yarn start
 
 #### Mode développement
 
-Pour pouvoir utiliser le worker en local il faut lancer une instance de **_Redis_** en local : https://redis.io/docs/getting-started
+Pour pouvoir utiliser le worker en local il faut lancer une instance de **_Redis_** en
+local : https://redis.io/docs/getting-started
 
-Il faut également enlever les variables d'environnement _REDIS_URL_ et _REDIS_TLS_URL_ afin que les modules **_Redis_** et **_Bull_** utilisent leur configuration par défaut pour se connecter à _**Redis**_ en local (`127.0.0.1:6379`)
+Il faut également enlever les variables d'environnement _REDIS_URL_ et _REDIS_TLS_URL_ afin que les modules **_Redis_**
+et **_Bull_** utilisent leur configuration par défaut pour se connecter à _**Redis**_ en local (`127.0.0.1:6379`)
 
 ```
 yarn worker:start:dev
@@ -222,10 +227,6 @@ MAILJET_SMS_TOKEN=
 MAILJET_SUPPORT_EMAIL=
 OFFER_NO_RESPONSE_DELAY=
 OFFER_REMINDER_DELAY=
-PLEZI_API_KEY=
-PLEZI_CONTENT_WEB_FORM_ID=
-PLEZI_FORM_ID=
-PLEZI_TENANT_NAME=
 PORT=
 PUSHER_API_KEY=
 PUSHER_API_SECRET=
@@ -263,7 +264,8 @@ VONAGE_API_SECRET=
 docker run --name linkedout-db-test -e POSTGRES_PASSWORD=linkedout -e POSTGRES_USER=linkedout -e POSTGRES_DB=linkedout -d -p 54300:5432 postgres
 ```
 
-Vous avez besoin des données du fichier `.env.test` pour les tests en local, et de renseigner le champ _DATABASE_URL_ (_ex:_ `postgresql://linkedout:linkedout@localhost:54300/linkedout`) avec l'adresse de l'instance **_Docker_**
+Vous avez besoin des données du fichier `.env.test` pour les tests en local, et de renseigner le champ _DATABASE_URL_ (
+_ex:_ `postgresql://linkedout:linkedout@localhost:54300/linkedout`) avec l'adresse de l'instance **_Docker_**
 
 ```
 NODE_ENV=dev-test yarn db:migrate
@@ -278,9 +280,11 @@ NODE_ENV=dev-test yarn db:migrate
 
 Le déploiement se fait automatiquement grâce à **_Github Actions_** et **_Heroku_**.
 
-Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-production : **[https://entourage-job-preprod.herokuapp.com](https://entourage-job-preprod.herokuapp.com)**
+Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-production : *
+*[https://entourage-job-preprod.herokuapp.com](https://entourage-job-preprod.herokuapp.com)**
 
-Si un commit est poussé sur `master`, l'application sera déployé sur la production : **[https://api.linkedout.fr](https://api.linkedout.fr)**
+Si un commit est poussé sur `master`, l'application sera déployé sur la production : *
+*[https://api.linkedout.fr](https://api.linkedout.fr)**
 
 Les tests sont effectués sur **_Github Actions_** avant de déployer le projet sur **_Heroku_**.
 

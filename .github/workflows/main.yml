@@ -38,15 +38,6 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '16.x'
-    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
-      with:
-        args:
-          yarn install
-    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
-      with:
-        args:
-          yarn db:migrate
-    - uses: ianwalter/playwright-container@43940dfa7d309fe3569b9df407ae9e84dcbf2e7f
-      with:
-        args:
-          yarn test:e2e
+    - run: yarn install
+    - run: yarn db:migrate
+    - run: yarn test:e2e
