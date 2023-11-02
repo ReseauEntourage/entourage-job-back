@@ -778,6 +778,7 @@ export class SalesforceService {
         if (
           (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
         ) {
+          // eslint-disable-next-line no-console
           console.log('LOCK ROW IN findOrCreateLead');
           return (await this.updateLead(
             leadSfIdToUpdate,
@@ -1085,6 +1086,7 @@ export class SalesforceService {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
       ) {
+        // eslint-disable-next-line no-console
         console.log('LOCK ROW IN createCampaignMemberInfoCo');
         await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
       }

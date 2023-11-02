@@ -1,15 +1,15 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { col, FindOptions, literal, Op, where, WhereOptions } from 'sequelize';
-import { Order } from 'sequelize/types/model';
+import { literal, Op, WhereOptions } from 'sequelize';
 import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,
+  searchInColumnWhereOptionRaw,
 } from 'src/utils/misc';
 import { FilterObject, FilterParams } from 'src/utils/types';
-import { User, UserAttributes, UserCandidat } from './models';
+import { User, UserCandidat } from './models';
 import {
   CandidateUserRoles,
   CoachUserRoles,
@@ -18,7 +18,6 @@ import {
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
-  MemberOptions,
   NormalUserRoles,
   UserRole,
   UserRoles,
@@ -119,10 +118,32 @@ export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
   return null;
 }
 
-export function getMemberOptions(
-  filtersObj: FilterObject<MemberFilterKey>
-): MemberOptions {
-  let whereOptions = {} as MemberOptions;
+export const formatAssociatedUserMemberOptions = (
+  key: string,
+  filterValues: FilterObject<MemberFilterKey>['associatedUser']
+) => {
+  return `(
+    ${filterValues
+      .map((currentFilterValue) => {
+        return `${key} ${currentFilterValue.value ? 'IS NOT NULL' : 'IS NULL'}`;
+      })
+      .join(' OR ')}
+    )`;
+};
+
+export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
+  let whereOptions: string[] = [];
+
+  let associatedUserOptionKey: string;
+  const rolesFilters = filtersObj.role.map(({ value }) => value);
+
+  if (isRoleIncluded(CandidateUserRoles, rolesFilters)) {
+    associatedUserOptionKey = '"candidat"."coachId"';
+  } else if (isRoleIncluded(CoachUserRoles, rolesFilters)) {
+    associatedUserOptionKey = '"coaches"."candidatId"';
+  } else {
+    return [];
+  }
 
   if (filtersObj) {
     const keys: MemberFilterKey[] = Object.keys(
@@ -137,39 +158,53 @@ export function getMemberOptions(
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
-            if (keys[i] === 'associatedUser') {
-              whereOptions = {
-                ...whereOptions,
-                [keys[i]]: {
-                  coach: {
-                    [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                      return {
-                        '$coaches.candidatId$': {
-                          [currentFilter.value ? Op.not : Op.is]: null,
-                        },
-                      };
-                    }),
-                  },
-                  candidat: {
-                    [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                      return where(
-                        col(`candidat.coachId`),
-                        currentFilter.value ? Op.not : Op.is,
-                        null
-                      );
-                    }),
-                  },
-                },
-              };
-            } else {
-              whereOptions = {
-                ...whereOptions,
-                [keys[i]]: {
-                  [Op.or]: filtersObj[keys[i]].map((currentFilter) => {
-                    return currentFilter.value;
-                  }),
-                },
-              };
+            switch (keys[i]) {
+              case 'role':
+                whereOptions = [
+                  ...whereOptions,
+                  `"User"."role" IN (:${keys[i]})`,
+                ];
+                break;
+              case 'zone':
+                whereOptions = [
+                  ...whereOptions,
+                  `"User"."zone" IN (:${keys[i]})`,
+                ];
+                break;
+              case 'associatedUser':
+                whereOptions = [
+                  ...whereOptions,
+                  `${formatAssociatedUserMemberOptions(
+                    associatedUserOptionKey,
+                    filtersObj[keys[i]]
+                  )}`,
+                ];
+                break;
+              // Only candidates
+              case 'businessLines':
+                whereOptions = [
+                  ...whereOptions,
+                  `"candidat->cvs->businessLines"."name" IN (:${keys[i]})`,
+                ];
+                break;
+              case 'hidden':
+                whereOptions = [
+                  ...whereOptions,
+                  `"candidat"."hidden" IN (:${keys[i]})`,
+                ];
+                break;
+              case 'employed':
+                whereOptions = [
+                  ...whereOptions,
+                  `"candidat"."employed" IN (:${keys[i]})`,
+                ];
+                break;
+              case 'cvStatus':
+                whereOptions = [
+                  ...whereOptions,
+                  `"candidat->cvs"."status" IN (:${keys[i]})`,
+                ];
+                break;
             }
           }
         }
@@ -260,13 +295,49 @@ export function userSearchQuery(query = '', withOrganizationName = false) {
   ];
 }
 
+export function userSearchQueryRaw(query = '', withOrganizationName = false) {
+  const organizationSearchOption = withOrganizationName
+    ? [searchInColumnWhereOptionRaw('"organization"."name"', query)]
+    : [];
+
+  return `(
+    ${[
+      searchInColumnWhereOptionRaw('"User"."email"', query),
+      searchInColumnWhereOptionRaw('"User"."firstName"', query),
+      searchInColumnWhereOptionRaw('"User"."lastName"', query),
+      ...organizationSearchOption,
+    ].join(' OR ')}
+  )`;
+}
+
+export function getRawLastCVVersionWhereOptions(
+  maxVersions: {
+    candidateId: string;
+    maxVersion: number;
+  }[]
+) {
+  if (maxVersions && maxVersions.length > 0) {
+    return `
+      AND ("UserId","version") IN (
+        ${maxVersions
+          .map(({ candidateId, maxVersion }) => {
+            return `('${candidateId}','${maxVersion}')`;
+          })
+          .join(',')}
+        )
+    `;
+  }
+
+  return '';
+}
+
 export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
   version: {
     [Op.in]: [
       literal(`
           SELECT MAX("CVs"."version")
           FROM "CVs"
-          WHERE "User".id = "CVs"."UserId"
+          WHERE "candidatId" = "CVs"."UserId"
           GROUP BY "CVs"."UserId"
       `),
     ],
@@ -321,34 +392,24 @@ export function getCandidateAndCoachIdDependingOnRoles(
 }
 
 export function getCommonMembersFilterOptions(
-  params: {
-    limit: number;
-    offset: number;
-    search: string;
-    order: Order;
-  } & FilterParams<MemberFilterKey>
-): { options: FindOptions<User>; filterOptions: MemberOptions } {
-  const { limit, offset, search, order, ...restParams } = params;
-
+  params: FilterParams<MemberFilterKey>
+): {
+  replacements: FilterParams<MemberFilterKey>;
+  filterOptions: string[];
+} {
   const filtersObj = getFiltersObjectsFromQueryParams<
     MemberFilterKey,
     MemberConstantType
-  >(restParams, MemberFilters);
+  >(params, MemberFilters);
 
   const filterOptions = getMemberOptions(filtersObj);
 
-  return {
-    options: {
-      order,
-      offset,
-      limit,
-      where: {
-        role: filterOptions.role,
-        ...(search ? { [Op.or]: userSearchQuery(search, true) } : {}),
-        ...(filterOptions.zone ? { zone: filterOptions.zone } : {}),
-      },
-      attributes: [...UserAttributes],
-    },
-    filterOptions,
-  };
+  const replacements = Object.keys(filtersObj).reduce((acc, curr) => {
+    return {
+      ...acc,
+      [curr]: filtersObj[curr as MemberFilterKey].map(({ value }) => value),
+    };
+  }, {});
+
+  return { filterOptions, replacements };
 }
