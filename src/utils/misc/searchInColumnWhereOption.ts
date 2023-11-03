@@ -26,3 +26,8 @@ export function searchInColumnWhereOption(column: string, query: string) {
     [Op.like]: `%${escapedQuery}%`,
   });
 }
+
+export function searchInColumnWhereOptionRaw(column: string, query: string) {
+  const escapedQuery = escapeQuery(query);
+  return `${escapeColumnRaw(column)} like '%${escapedQuery}%'`;
+}

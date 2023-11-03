@@ -14,7 +14,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { passwordStrength } from 'check-password-strength';
-import { Order } from 'sequelize/types/model';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
@@ -77,8 +76,6 @@ export class UsersController {
     @Query()
     query: FilterParams<MemberFilterKey>
   ) {
-    const order: Order = [['firstName', 'ASC']];
-
     if (!role) {
       throw new BadRequestException();
     }
@@ -88,7 +85,6 @@ export class UsersController {
         ...query,
         role: role as typeof CandidateUserRoles,
         limit,
-        order,
         offset,
         search,
       });
@@ -99,7 +95,6 @@ export class UsersController {
         ...query,
         role: role as typeof CoachUserRoles,
         limit,
-        order,
         offset,
         search,
       });
