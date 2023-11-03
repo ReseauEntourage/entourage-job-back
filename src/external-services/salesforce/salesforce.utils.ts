@@ -454,6 +454,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       associationSfId,
       autreSource,
       tsPrescripteur,
+      heardAbout,
     } = leadProps;
 
     const parsedAddress = parseAddress(address);
@@ -527,6 +528,10 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       Prospect__c: workerSfIdAsProspect,
       Association_prescriptrice__c: associationSfId,
       Company: 'Candidats LinkedOut',
+      Comment_vous_nous_avez_connu__c: formatSalesforceValue<HeardAboutValue>(
+        heardAbout,
+        LeadHeardAbout
+      ),
     } as SalesforceLead<T>;
   }
 
