@@ -2257,6 +2257,79 @@ describe('Users', () => {
             expect(response.body[1].firstName).toMatch('D');
           });
         });
+        describe('/members?query= - Read all members with search query', () => {
+          let loggedInAdmin: LoggedUser;
+
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+
+          it('Should return 200 and candidates matching search query', async () => {
+            const candidate1 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'YYYY',
+            });
+            const candidate2 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'YYY',
+            });
+
+            const expectedCandidates = [candidate1, candidate2];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidates.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200 and coaches matching search query', async () => {
+            const coaches1 = await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'YYY',
+            });
+            const coaches2 = await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'YYY',
+            });
+            const expectedCoaches = [coaches1, coaches2];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoaches.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
         describe('/members?zone[]=&employed[]=&hidden[]=&businessLines[]=&associatedUser[]=&cvStatus[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
@@ -2770,6 +2843,115 @@ describe('Users', () => {
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(notAssociatedUserCoaches.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+        describe('/members - Read all members as admin with all filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that match all the filters', async () => {
+            const organization = await organizationFactory.create({}, {}, true);
+
+            const lyonAssociatedExternalCoaches =
+              await databaseHelper.createEntities(userFactory, 2, {
+                firstName: 'XXX',
+                role: UserRoles.COACH_EXTERNAL,
+                zone: AdminZones.LYON,
+                OrganizationId: organization.id,
+              });
+
+            const lyonAssociatedExternalCandidates =
+              await databaseHelper.createEntities(userFactory, 2, {
+                firstName: 'XXX',
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                zone: AdminZones.LYON,
+                OrganizationId: organization.id,
+              });
+
+            await Promise.all(
+              lyonAssociatedExternalCandidates.map(async ({ id }) => {
+                return cvFactory.create(
+                  {
+                    UserId: id,
+                    version: 4,
+                    status: CVStatuses.PUBLISHED.value,
+                  },
+                  { businessLines: ['rh', 'aa'] }
+                );
+              })
+            );
+
+            await Promise.all(
+              lyonAssociatedExternalCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedExternalCoaches[index],
+                  candidate
+                );
+              })
+            );
+
+            const expectedCandidatesIds = [
+              ...lyonAssociatedExternalCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&cvStatus[]=${CVStatuses.PUBLISHED.value}&businessLines[]=rh&associatedUser[]=true`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that match all the filters', async () => {
+            const organization = await organizationFactory.create({}, {}, true);
+
+            const lyonAssociatedExternalCoaches =
+              await databaseHelper.createEntities(userFactory, 2, {
+                firstName: 'XXX',
+                role: UserRoles.COACH_EXTERNAL,
+                zone: AdminZones.LYON,
+                OrganizationId: organization.id,
+              });
+
+            const associatedExternalCandidates =
+              await databaseHelper.createEntities(userFactory, 2, {
+                firstName: 'XXX',
+                role: UserRoles.CANDIDATE_EXTERNAL,
+                zone: AdminZones.LYON,
+                OrganizationId: organization.id,
+              });
+
+            await Promise.all(
+              associatedExternalCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedExternalCoaches[index],
+                  candidate
+                );
+              })
+            );
+
+            const expectedCoachesIds = [
+              ...lyonAssociatedExternalCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&role[]=${UserRoles.COACH_EXTERNAL}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoachesIds).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });

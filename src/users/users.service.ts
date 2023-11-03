@@ -2,7 +2,7 @@ import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
-import { FindOptions, Order } from 'sequelize/types/model';
+import { FindOptions } from 'sequelize/types/model';
 import { getPublishedCVQuery } from '../cvs/cvs.utils';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
@@ -32,8 +32,10 @@ import {
 
 import {
   getCommonMembersFilterOptions,
+  getRawLastCVVersionWhereOptions,
   lastCVVersionWhereOptions,
   userSearchQuery,
+  userSearchQueryRaw,
 } from './users.utils';
 
 @Injectable()
@@ -70,79 +72,93 @@ export class UsersService {
       include: UserCandidatInclude,
     });
   }
+
+  async findAllLastCVVersions(): Promise<
+    { candidateId: string; maxVersion: number }[]
+  > {
+    return this.userModel.sequelize.query(
+      `SELECT "CVs"."UserId" as "candidateId", MAX("CVs"."version") as "maxVersion"
+       FROM "CVs"
+       GROUP BY "CVs"."UserId"`,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+  }
+
   async findAllCandidateMembers(
     params: {
       limit: number;
       offset: number;
       search: string;
-      order: Order;
       role: typeof CandidateUserRoles;
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
-    const { options, filterOptions } = getCommonMembersFilterOptions(params);
+    const { limit, offset, search, ...restParams } = params;
 
-    let userCandidatWhereOptions: FindOptions<UserCandidat> = {};
+    const { filterOptions, replacements } =
+      getCommonMembersFilterOptions(restParams);
 
-    if (filterOptions.associatedUser) {
-      userCandidatWhereOptions = {
-        where: {
-          ...userCandidatWhereOptions.where,
-          ...filterOptions.associatedUser.candidat,
-        },
-      };
-    }
+    const lastCVVersions = await this.findAllLastCVVersions();
 
-    if (filterOptions.hidden || filterOptions.employed) {
-      if (filterOptions.hidden) {
-        userCandidatWhereOptions = {
-          where: {
-            ...userCandidatWhereOptions.where,
-            hidden: filterOptions.hidden,
-          },
-        };
-      }
-      if (filterOptions.employed) {
-        userCandidatWhereOptions = {
-          where: {
-            ...userCandidatWhereOptions.where,
-            employed: filterOptions.employed,
-          },
-        };
-      }
-    }
+    const candidatesIds: { nameAndId: string; userId: string }[] =
+      await this.userModel.sequelize.query(
+        `
+            SELECT DISTINCT("User"."firstName", "User"."id") as "nameAndId", "User"."id" as "userId"
+            FROM "Users" AS "User"
+                     LEFT OUTER JOIN "User_Candidats" AS "candidat" ON "User"."id" = "candidat"."candidatId"
+                     LEFT OUTER JOIN "CVs" AS "candidat->cvs" ON "candidat"."candidatId" = "candidat->cvs"."UserId" AND
+                                                                 "candidat->cvs"."deletedAt" IS NULL ${getRawLastCVVersionWhereOptions(
+                                                                   lastCVVersions
+                                                                 )}
+                   LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
+            ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
+                LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
+                LEFT OUTER JOIN "Users" AS "candidat->coach"
+                ON "candidat"."coachId" = "candidat->coach"."id" AND
+                ("candidat->coach"."deletedAt" IS NULL)
+                LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
+                ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
+                LEFT OUTER JOIN "Organizations" AS "organization" ON "User"."OrganizationId" = "organization"."id"
+            WHERE "User"."deletedAt" IS NULL
+              AND ${filterOptions.join(' AND ')} ${
+          search ? `AND ${userSearchQueryRaw(search, true)}` : ''
+        }
+            ORDER BY ("User"."firstName", "User"."id") ASC
+                LIMIT ${limit}
+            OFFSET ${offset}
+        `,
+        {
+          type: QueryTypes.SELECT,
+          raw: true,
+          replacements,
+        }
+      );
 
     return this.userModel.findAll({
-      ...options,
+      attributes: [...UserAttributes],
+      where: {
+        id: candidatesIds.map(({ userId }) => userId),
+      },
+      order: [['firstName', 'ASC']],
       include: [
         {
           model: UserCandidat,
           as: 'candidat',
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          ...userCandidatWhereOptions,
           include: [
             {
               model: CV,
               as: 'cvs',
               attributes: ['version', 'status', 'urlImg'],
-              required:
-                !!filterOptions.cvStatus || !!filterOptions.businessLines,
               where: {
                 ...lastCVVersionWhereOptions,
-                ...(filterOptions.cvStatus
-                  ? { status: filterOptions.cvStatus }
-                  : {}),
               },
               include: [
                 {
                   model: BusinessLine,
                   as: 'businessLines',
                   attributes: ['name', 'order'],
-                  required: !!filterOptions.businessLines,
-                  where: filterOptions.businessLines
-                    ? {
-                        name: filterOptions.businessLines,
-                      }
-                    : {},
                 },
               ],
             },
@@ -174,28 +190,52 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      order: Order;
       role: typeof CoachUserRoles;
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
-    const { options, filterOptions } = getCommonMembersFilterOptions(params);
+    const { limit, offset, search, ...restParams } = params;
 
-    const associatedUserWhereOptions = filterOptions.associatedUser
-      ? filterOptions.associatedUser.coach
-      : {};
+    const { replacements, filterOptions } =
+      getCommonMembersFilterOptions(restParams);
+
+    const coachesIds: { nameAndId: string; userId: string }[] =
+      await this.userModel.sequelize.query(
+        `
+            SELECT DISTINCT("User"."firstName", "User"."id") as "nameAndId", "User"."id" as "userId"
+            FROM "Users" as "User"
+                     LEFT OUTER JOIN "User_Candidats" AS "coaches" ON "User"."id" = "coaches"."coachId"
+                     LEFT OUTER JOIN "Users" AS "coaches->candidat"
+                                     ON "coaches"."candidatId" = "coaches->candidat"."id" AND
+                                        ("coaches->candidat"."deletedAt" IS NULL)
+                     LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
+                                     ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
+                     LEFT OUTER JOIN "Organizations" AS "organization" ON "User"."OrganizationId" = "organization"."id"
+            WHERE "User"."deletedAt" IS NULL
+              AND ${filterOptions.join(' AND ')} ${
+          search ? `AND ${userSearchQueryRaw(search, true)}` : ''
+        }
+            ORDER BY ("User"."firstName", "User"."id") ASC
+                LIMIT ${limit}
+            OFFSET ${offset}
+        `,
+        {
+          type: QueryTypes.SELECT,
+          raw: true,
+          replacements,
+        }
+      );
 
     return this.userModel.findAll({
-      ...options,
+      attributes: [...UserAttributes],
       where: {
-        ...options.where,
-        ...associatedUserWhereOptions,
+        id: coachesIds.map(({ userId }) => userId),
       },
+      order: [['firstName', 'ASC']],
       include: [
         {
           model: UserCandidat,
           as: 'coaches',
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          duplicating: false,
           include: [
             {
               model: User,
