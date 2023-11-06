@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ContractsModule } from '../common/contracts/contracts.module';
 import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
+import { ContractsModule } from 'src/common/contracts/contracts.module';
 import { CVsModule } from 'src/cvs/cvs.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
-import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
 import { SMSModule } from 'src/sms/sms.module';
@@ -34,7 +33,6 @@ import { OpportunityUsersService } from './opportunity-users.service';
     CVsModule,
     BusinessLinesModule,
     MailsModule,
-    MailjetModule,
     SMSModule,
     ExternalDatabasesModule,
     QueuesModule,
