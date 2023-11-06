@@ -87,7 +87,7 @@ export class ContactsController {
       throw new BadRequestException();
     }
 
-    await this.contactsService.sendContactToMailjet({
+    return this.contactsService.sendContactToMailjet({
       email,
       zone,
       status,

@@ -1,6 +1,7 @@
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Location } from 'src/common/locations/models';
 import {
+  CustomContactParams,
   CustomMailParams,
   MailjetTemplate,
 } from 'src/external-services/mailjet/mailjet.types';
@@ -13,6 +14,7 @@ export const Jobs = {
   CACHE_CV: 'cache_cv',
   CACHE_ALL_CVS: 'cache_all_cvs',
   SEND_MAIL: 'send_mail',
+  NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription',
   SEND_SMS: 'send_sms',
   CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY:
     'create_or_update_salesforce_opportunity',
@@ -39,6 +41,7 @@ type JobsData = {
   [Jobs.CACHE_CV]: CacheCVJob;
   [Jobs.CACHE_ALL_CVS]: CacheAllCVJob;
   [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
+  [Jobs.NEWSLETTER_SUBSCRIPTION]: NewsletterSubscriptionJob;
   [Jobs.SEND_SMS]: SendSMSJob | SendSMSJob[];
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT]: CreateOrUpdateSalesforceEventJob;
@@ -61,6 +64,8 @@ export interface SendMailJob extends CustomMailParams {
   templateId: MailjetTemplate;
   variables: object;
 }
+
+export interface NewsletterSubscriptionJob extends CustomContactParams {}
 
 export interface SendSMSJob extends CustomSMSParams {}
 

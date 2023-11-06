@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { QueuesModule } from 'src/queues/producers';
 import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 
 @Module({
-  imports: [MailsModule, SalesforceModule, MailjetModule],
+  imports: [MailsModule, SalesforceModule, QueuesModule],
   controllers: [ContactsController],
   providers: [ContactsService],
   exports: [ContactsService],
