@@ -29,6 +29,7 @@ import {
   GenerateCVPreviewJob,
   GenerateCVSearchStringJob,
   Jobs,
+  NewsletterSubscriptionJob,
   Queues,
   SendMailJob,
   SendNoResponseOfferJob,
@@ -119,6 +120,15 @@ export class WorkQueueProcessor {
     )}' with template '${emails.map(({ templateId }) => {
       return templateId;
     })}'`;
+  }
+
+  @Process(Jobs.NEWSLETTER_SUBSCRIPTION)
+  async processNewsletterSubscription(job: Job<NewsletterSubscriptionJob>) {
+    const { data } = job;
+
+    await this.mailjetService.sendContact(data);
+
+    return `Contact '${data.email}' subscribed to newsletter`;
   }
 
   @Process(Jobs.SEND_SMS)
