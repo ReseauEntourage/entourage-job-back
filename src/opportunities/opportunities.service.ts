@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
 import moment from 'moment';
 import { Op } from 'sequelize';
-import { MailjetService } from '../external-services/mailjet/mailjet.service';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
 import {
@@ -81,7 +80,6 @@ export class OpportunitiesService {
     private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
-    private mailjetService: MailjetService,
     private smsService: SMSService
   ) {}
 
@@ -690,7 +688,7 @@ export class OpportunitiesService {
     }
 
     try {
-      await this.mailjetService.sendContact({
+      await this.queuesService.addToWorkQueue(Jobs.NEWSLETTER_SUBSCRIPTION, {
         email: opportunity.contactMail || opportunity.recruiterMail,
         zone: getZoneFromDepartment(opportunity.department),
         status: ContactStatuses.COMPANY,

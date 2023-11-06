@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { MailjetService } from '../external-services/mailjet/mailjet.service';
-import { CustomContactParams } from '../external-services/mailjet/mailjet.types';
 import { ContactCompanyFormDto, ContactUsFormDto } from 'src/contacts/dto';
+import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { MailsService } from 'src/mails/mails.service';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
 import { InscriptionCandidateFormDto } from './dto/inscription-candidate-form.dto';
 
@@ -12,11 +13,14 @@ export class ContactsService {
   constructor(
     private mailsService: MailsService,
     private salesforceService: SalesforceService,
-    private mailjetService: MailjetService
+    private queuesService: QueuesService
   ) {}
 
   async sendContactToMailjet(contact: CustomContactParams) {
-    return this.mailjetService.sendContact(contact);
+    await this.queuesService.addToWorkQueue(
+      Jobs.NEWSLETTER_SUBSCRIPTION,
+      contact
+    );
   }
 
   async sendCompanyContactToSalesforce(
