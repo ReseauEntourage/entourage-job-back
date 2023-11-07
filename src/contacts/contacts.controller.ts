@@ -6,6 +6,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import validator from 'validator';
 import { Public } from 'src/auth/guards';
 import {
   ContactCompanyFormDto,
@@ -83,7 +84,7 @@ export class ContactsController {
     @Body('zone') zone?: AdminZone,
     @Body('status') status?: ContactStatus
   ) {
-    if (!email) {
+    if (!email || !validator.isEmail(email)) {
       throw new BadRequestException();
     }
 
