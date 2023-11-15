@@ -436,7 +436,7 @@ export class SalesforceService {
   }
 
   async searchAccountByName(search: string, recordType: AccountRecordType) {
-    const escapedSearch = search.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
+    const escapedSearch = search?.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
     await this.refreshSalesforceInstance();
     if (escapedSearch.length === 1) {
       const { records }: { records: Partial<SalesforceAccount>[] } =
@@ -1571,7 +1571,7 @@ export class SalesforceService {
           : null,
         time: moment
           .tz(
-            `${record.StartDate} ${record.Heure_de_d_but__c.replace('Z', '')}`,
+            `${record.StartDate} ${record.Heure_de_d_but__c?.replace('Z', '')}`,
             timeZone
           )
           .format(),
