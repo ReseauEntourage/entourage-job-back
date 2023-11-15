@@ -123,7 +123,7 @@ export function parseAddress(address: string) {
 
       if (number) {
         const parsedStreet = address
-          .replace(number[0], number[0].replace(/,/g, ''))
+          .replace(number[0], number[0]?.replace(/,/g, ''))
           .split(',');
 
         return {
@@ -599,5 +599,5 @@ export function executeBulkAction<T extends ObjectName>(
 }
 
 export function escapeQuery(query: string) {
-  return query.replace(/'/g, "\\'");
+  return query ? query.replace(/'/g, "\\'") : query;
 }
