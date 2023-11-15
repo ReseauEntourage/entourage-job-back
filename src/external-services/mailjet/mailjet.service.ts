@@ -16,16 +16,24 @@ import SendParamsRecipient = Email.SendParamsRecipient;
 
 @Injectable()
 export class MailjetService {
-  private mailjetTransactional: Email.Client;
-  private mailjetNewsletter: Email.Client;
+  /*
+    private mailjetTransactional: Email.Client;
+    private mailjetNewsletter: Email.Client;
+  */
 
-  constructor() {
-    this.mailjetTransactional = connect(
-      `${process.env.MAILJET_PUB}`,
-      `${process.env.MAILJET_SEC}`
-    );
+  /*
+    constructor() {
+      this.mailjetTransactional = this.getTransactionalInstance();
+      this.mailjetNewsletter = this.getNewsletterInstance();
+    }
+  */
 
-    this.mailjetNewsletter = connect(
+  getTransactionalInstance() {
+    return connect(`${process.env.MAILJET_PUB}`, `${process.env.MAILJET_SEC}`);
+  }
+
+  getNewsletterInstance() {
+    return connect(
       `${process.env.MAILJET_NEWSLETTER_PUB}`,
       `${process.env.MAILJET_NEWSLETTER_SEC}`
     );
@@ -41,7 +49,7 @@ export class MailjetService {
       mailjetParams.Messages = [createMail(params)];
     }
 
-    return this.mailjetTransactional
+    return await this.getTransactionalInstance()
       .post('send', {
         version: 'v3.1',
       })
@@ -57,7 +65,7 @@ export class MailjetService {
 
     const {
       body: { Data: data },
-    } = (await this.mailjetNewsletter
+    } = (await this.getNewsletterInstance()
       .get('contact', { version: 'v3' })
       .request(contact)) as MailjetCustomResponse;
 
@@ -72,7 +80,7 @@ export class MailjetService {
     };
     const {
       body: { Data: data },
-    } = (await this.mailjetNewsletter
+    } = (await this.getNewsletterInstance()
       .post('contact', { version: 'v3' })
       .request(contact)) as MailjetCustomResponse;
 
@@ -115,7 +123,7 @@ export class MailjetService {
       };
     }
 
-    return this.mailjetNewsletter
+    return await this.getNewsletterInstance()
       .put('contactdata', { version: 'v3' })
       .id(id)
       .request(dataToUpdate);
@@ -131,7 +139,7 @@ export class MailjetService {
       ],
     };
 
-    return this.mailjetNewsletter
+    return await this.getNewsletterInstance()
       .post('contact', { version: 'v3' })
       .id(id)
       .action('managecontactslists')

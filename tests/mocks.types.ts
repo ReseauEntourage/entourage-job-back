@@ -108,4 +108,6 @@ export const MailjetMock: ProviderMock<MailjetService> = {
   updateContactTags: jest.fn(),
   subscribeToNewsletterList: jest.fn(),
   sendContact: jest.fn(),
+  getNewsletterInstance: jest.fn(),
+  getTransactionalInstance: jest.fn(),
 } as const;
