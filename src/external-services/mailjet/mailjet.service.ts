@@ -67,7 +67,7 @@ export class MailjetService {
       Email: email,
     };
 
-    await this.mailjetNewsletter
+    return this.mailjetNewsletter
       .post('contactslist', MailjetOptions.CONTACTS)
       .id(parseInt(process.env.MAILJET_NEWSLETTER_LIST_ID))
       .action('managecontact')
