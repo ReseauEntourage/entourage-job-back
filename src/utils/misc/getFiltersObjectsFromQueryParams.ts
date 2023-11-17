@@ -19,10 +19,8 @@ export function getFiltersObjectsFromQueryParams<K extends string, T>(
 
   let filters = {} as FilterObject<K, T>;
 
-  
   if (filtersConst) {
     _.forEach(Object.keys(params), (paramKey) => {
-      console.log(paramKey);
       const filter = findConstant<K, T>(filtersConst, paramKey as K);
       if (filter) {
         const valueArray = params[paramKey as K];

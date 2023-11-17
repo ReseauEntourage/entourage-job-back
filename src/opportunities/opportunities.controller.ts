@@ -357,6 +357,8 @@ export class OpportunitiesController {
     query: {
       type: OfferAdminTab;
       search: string;
+      offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     return this.opportunitiesService.findAll(query);
@@ -422,9 +424,7 @@ export class OpportunitiesController {
       search: string;
     } & FilterParams<OfferFilterKey>
   ) {
-    console.log(query);
     const { type, search, businessLines, department, contracts } = query
-    console.log(type);
     return this.opportunitiesService.adminCountOfferByType(type, search,businessLines, department, contracts);
   }
 

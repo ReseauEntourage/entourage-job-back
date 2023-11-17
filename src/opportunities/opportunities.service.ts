@@ -161,6 +161,8 @@ export class OpportunitiesService {
     query: {
       type: OfferAdminTab;
       search: string;
+      offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const {
@@ -182,12 +184,16 @@ export class OpportunitiesService {
       delete filterOptions.isPublic;
     }
 
+    const limit = query.limit || LIMIT;
+
     const opportunities = await this.opportunityModel.findAll({
       ...options,
       where: {
         ...searchOptions,
         ...filterOptions,
       },
+      offset: query.offset ? query.offset * limit : 0,
+      limit,
     });
 
     const cleanedOpportunites = opportunities.map((opportunity) => {
@@ -1080,7 +1086,6 @@ export class OpportunitiesService {
 
     const pendingOpportunitiesCount = await this.opportunityModel.count({
       where: {
-        status: type ? type : '',
         ...searchOptions,
         ...filterOptions,
         department,
@@ -1088,6 +1093,10 @@ export class OpportunitiesService {
         isArchived: false,
       },
     });
+
+    // const cleanedOpportunites = pendingOpportunitiesCount.map((opportunity) => {
+    //   return opportunity.toJSON();
+    // });
 
     console.log({type, search, businessLines, department, contracts});
 
