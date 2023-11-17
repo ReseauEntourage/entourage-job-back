@@ -1,7 +1,6 @@
 import _ from 'lodash';
-import { Email } from 'node-mailjet';
+import { SendEmailV3_1 } from 'node-mailjet';
 import { CustomMailParams, MailjetTemplates } from './mailjet.types';
-import SendParams = Email.SendParams;
 
 const useCampaigns = process.env.MAILJET_CAMPAIGNS_ACTIVATED === 'true';
 
@@ -14,7 +13,7 @@ export function createMail({
   variables,
   templateId,
 }: CustomMailParams) {
-  const recipients: SendParams['Messages'][number] = {
+  const recipients: SendEmailV3_1.Body['Messages'][number] = {
     To: [],
     Cc: [],
     From: { Email: '' },

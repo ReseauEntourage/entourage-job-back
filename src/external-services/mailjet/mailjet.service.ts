@@ -1,46 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { connect, Email } from 'node-mailjet';
+import { Client, ContactSubscription, SendEmailV3_1 } from 'node-mailjet';
+
 import {
   CustomContactParams,
   CustomMailParams,
-  MailjetContactList,
-  MailjetContactTag,
+  MailjetContactProperties,
   MailjetContactTagNames,
-  MailjetCustomContact,
-  MailjetCustomResponse,
   MailjetListActions,
+  MailjetOptions,
 } from './mailjet.types';
+
 import { createMail } from './mailjet.utils';
-import SendParams = Email.SendParams;
-import SendParamsRecipient = Email.SendParamsRecipient;
 
 @Injectable()
 export class MailjetService {
-  /*
-    private mailjetTransactional: Email.Client;
-    private mailjetNewsletter: Email.Client;
-  */
+  private mailjetTransactional: Client;
+  private mailjetNewsletter: Client;
 
-  /*
-    constructor() {
-      this.mailjetTransactional = this.getTransactionalInstance();
-      this.mailjetNewsletter = this.getNewsletterInstance();
-    }
-  */
-
-  getTransactionalInstance() {
-    return connect(`${process.env.MAILJET_PUB}`, `${process.env.MAILJET_SEC}`);
-  }
-
-  getNewsletterInstance() {
-    return connect(
-      `${process.env.MAILJET_NEWSLETTER_PUB}`,
-      `${process.env.MAILJET_NEWSLETTER_SEC}`
-    );
+  constructor() {
+    this.mailjetTransactional = new Client({
+      apiKey: `${process.env.MAILJET_PUB}`,
+      apiSecret: `${process.env.MAILJET_SEC}`,
+    });
+    this.mailjetNewsletter = new Client({
+      apiKey: `${process.env.MAILJET_NEWSLETTER_PUB}`,
+      apiSecret: `${process.env.MAILJET_NEWSLETTER_SEC}`,
+    });
   }
 
   async sendMail(params: CustomMailParams | CustomMailParams[]) {
-    const mailjetParams: SendParams = { Messages: [] };
+    const mailjetParams: SendEmailV3_1.Body = { Messages: [] };
     if (Array.isArray(params)) {
       mailjetParams.Messages = params.map((p) => {
         return createMail(p);
@@ -49,109 +38,39 @@ export class MailjetService {
       mailjetParams.Messages = [createMail(params)];
     }
 
-    return await this.getTransactionalInstance()
-      .post('send', {
-        version: 'v3.1',
-      })
+    return this.mailjetTransactional
+      .post('send', MailjetOptions.MAILS)
       .request(mailjetParams);
   }
 
-  async findContact(
-    email: CustomContactParams['email']
-  ): Promise<MailjetCustomContact> {
-    const contact: SendParamsRecipient = {
-      Email: email.toLowerCase(),
-    };
-
-    const {
-      body: { Data: data },
-    } = (await this.getNewsletterInstance()
-      .get('contact', { version: 'v3' })
-      .request(contact)) as MailjetCustomResponse;
-
-    return data[0];
-  }
-
-  async createContact(
-    email: CustomContactParams['email']
-  ): Promise<MailjetCustomContact> {
-    const contact: SendParamsRecipient = {
-      Email: email,
-    };
-    const {
-      body: { Data: data },
-    } = (await this.getNewsletterInstance()
-      .post('contact', { version: 'v3' })
-      .request(contact)) as MailjetCustomResponse;
-
-    return data[0];
-  }
-
-  async updateContactTags(
-    id: string,
-    { zone, status }: Pick<CustomContactParams, 'zone' | 'status'>
-  ) {
-    let dataToUpdate: { Data: MailjetContactTag[] } = {
-      Data: [
-        {
-          Name: MailjetContactTagNames.NEWSLETTER,
-          Value: true,
-        },
-      ],
+  async sendContact({ email, zone, status }: CustomContactParams) {
+    let contactProperties: Partial<MailjetContactProperties> = {
+      [MailjetContactTagNames.NEWSLETTER]: true,
     };
 
     if (zone) {
-      dataToUpdate = {
-        Data: [
-          ...dataToUpdate.Data,
-          {
-            Name: MailjetContactTagNames.ZONE,
-            Value: zone,
-          },
-        ],
+      contactProperties = {
+        ...contactProperties,
+        [MailjetContactTagNames.ZONE]: zone,
       };
     }
     if (status) {
-      dataToUpdate = {
-        Data: [
-          ...dataToUpdate.Data,
-          {
-            Name: MailjetContactTagNames.STATUS,
-            Value: status,
-          },
-        ],
+      contactProperties = {
+        ...contactProperties,
+        [MailjetContactTagNames.STATUS]: status,
       };
     }
 
-    return await this.getNewsletterInstance()
-      .put('contactdata', { version: 'v3' })
-      .id(id)
-      .request(dataToUpdate);
-  }
-
-  async subscribeToNewsletterList(id: string) {
-    const dataToUpdate: { ContactsLists: MailjetContactList[] } = {
-      ContactsLists: [
-        {
-          Action: MailjetListActions.FORCE,
-          ListID: process.env.MAILJET_NEWSLETTER_LIST_ID,
-        },
-      ],
+    const contact: ContactSubscription.PostContactsListManageContactBody = {
+      Properties: contactProperties,
+      Action: MailjetListActions.FORCE,
+      Email: email,
     };
 
-    return await this.getNewsletterInstance()
-      .post('contact', { version: 'v3' })
-      .id(id)
-      .action('managecontactslists')
-      .request(dataToUpdate);
-  }
-
-  async sendContact({ email, zone, status }: CustomContactParams) {
-    let contact = await this.findContact(email);
-    if (!contact) {
-      contact = await this.createContact(email);
-    }
-    await this.subscribeToNewsletterList(contact.ID);
-    await this.updateContactTags(contact.ID, { zone, status });
+    await this.mailjetNewsletter
+      .post('contactslist', MailjetOptions.CONTACTS)
+      .id(parseInt(process.env.MAILJET_NEWSLETTER_LIST_ID))
+      .action('managecontact')
+      .request(contact);
   }
 }
