@@ -1,4 +1,11 @@
+import { BulkContactManagement } from 'node-mailjet';
+import { RequestConstructorConfig } from 'node-mailjet/declarations/request/Request';
 import { AdminZone } from 'src/utils/types';
+
+export const MailjetOptions: { [K in string]: RequestConstructorConfig } = {
+  MAILS: { version: 'v3.1' },
+  CONTACTS: { version: 'v3' },
+} as const;
 
 export interface CustomMailParams {
   toEmail:
@@ -29,25 +36,21 @@ export const MailjetContactTagNames = {
   STATUS: 'profil_linkedout',
 } as const;
 
-export type MailjetContactTagName =
-  typeof MailjetContactTagNames[keyof typeof MailjetContactTagNames];
-
-export interface MailjetContactTag {
-  Name: MailjetContactTagName;
-  Value: string | boolean;
-}
-
-export const MailjetListActions = {
+const MailjetListActionsValues = {
   NO_FORCE: 'addnoforce',
   FORCE: 'addforce',
 } as const;
 
-export type MailjetListAction =
-  typeof MailjetListActions[keyof typeof MailjetListActions];
+// Hack because error when getting ManageContactsAction enum value
+export const MailjetListActions = MailjetListActionsValues as Record<
+  keyof typeof MailjetListActionsValues,
+  BulkContactManagement.ManageContactsAction
+>;
 
-export interface MailjetContactList {
-  Action: MailjetListAction;
-  ListID: string;
+export interface MailjetContactProperties {
+  [MailjetContactTagNames.NEWSLETTER]: boolean;
+  [MailjetContactTagNames.ZONE]: AdminZone;
+  [MailjetContactTagNames.STATUS]: ContactStatus;
 }
 
 export const MailjetTemplates = {
@@ -97,16 +100,3 @@ export const ContactStatuses = {
 
 export type ContactStatus =
   typeof ContactStatuses[keyof typeof ContactStatuses];
-
-export interface MailjetError {
-  statusCode: number;
-  ErrorMessage: string;
-}
-
-export interface MailjetCustomContact {
-  ID: string;
-}
-
-export interface MailjetCustomResponse {
-  body: { Data: ReadonlyArray<MailjetCustomContact> };
-}
