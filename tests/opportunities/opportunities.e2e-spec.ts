@@ -1674,6 +1674,56 @@ describe('Opportunities', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
+        it('Should return 200 and 2 first opportunities', async () => {
+          const firstOpportunity = await opportunityFactory.create({});
+
+          const secondpportunity = await opportunityFactory.create({});
+
+          await opportunityFactory.create({});
+
+          await opportunityFactory.create({});
+
+          const expectedOpportunitiesId = [
+            firstOpportunity.id,
+            secondpportunity.id,
+          ];
+
+          const response: APIResponse<OpportunitiesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/admin?limit=2&offset=0`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
+        it('Should return 200 and third and fourth opportunities', async () => {
+          
+          await opportunityFactory.create({});
+          
+          await opportunityFactory.create({});
+          
+          const thirdOpportunity = await opportunityFactory.create({});
+
+          const fourthpportunity = await opportunityFactory.create({});
+          
+          const expectedOpportunitiesId = [
+            thirdOpportunity.id,
+            fourthpportunity.id,
+          ];
+
+
+          const response: APIResponse<OpportunitiesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/admin?limit=2&offset=1`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.length).toBe(2);
+          expect(expectedOpportunitiesId).toEqual(
+            expect.arrayContaining(response.body.map(({ id }) => id))
+          );
+        });
         it('Should return 200, and all the opportunities that matches the search query', async () => {
           const searchedOpportunity = await opportunityFactory.create({
             title: 'XXXXX',
