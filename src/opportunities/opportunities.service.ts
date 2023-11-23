@@ -1060,46 +1060,47 @@ export class OpportunitiesService {
   }
 
 
-  async adminCountOfferByType(
-    type: OfferAdminTab,
-    search: string,
-    businessLines: string[],
-    department: string[],
-    contracts: string[],
-  ) {
+  // to be implemented 
+  // async adminCountOfferByType(
+  //   type: OfferAdminTab,
+  //   search: string,
+  //   businessLines: string[],
+  //   department: string[],
+  //   contracts: string[],
+  // ) {
   
-    const {
-      typeParams,
-      searchOptions,
-      filterOptions,
-    } = destructureOptionsAndParams({type, search, businessLines, department});
+  //   const {
+  //     typeParams,
+  //     searchOptions,
+  //     filterOptions,
+  //   } = destructureOptionsAndParams({type, search, businessLines, department});
   
-    // const typeCounts = await this.opportunityModel.sequelize.query()
+  //   // const typeCounts = await this.opportunityModel.sequelize.query()
   
-    // console.log("before destructure")
-    // console.log({typeParams,  searchOptions,
-    // businessLinesOptions,
-    // filterOptions})
-    // console.log("after destructure")
+  //   // console.log("before destructure")
+  //   // console.log({typeParams,  searchOptions,
+  //   // businessLinesOptions,
+  //   // filterOptions})
+  //   // console.log("after destructure")
 
-    console.log("type params", typeParams);
+  //   console.log("type params", typeParams);
 
-    const pendingOpportunitiesCount = await this.opportunityModel.count({
-      where: {
-        ...searchOptions,
-        ...filterOptions,
-        department,
-        isValidated: false,
-        isArchived: false,
-      },
-    });
+  //   const pendingOpportunitiesCount = await this.opportunityModel.count({
+  //     where: {
+  //       ...searchOptions,
+  //       ...filterOptions,
+  //       department,
+  //       isValidated: false,
+  //       isArchived: false,
+  //     },
+  //   });
 
-    // const cleanedOpportunites = pendingOpportunitiesCount.map((opportunity) => {
-    //   return opportunity.toJSON();
-    // });
+  //   // const cleanedOpportunites = pendingOpportunitiesCount.map((opportunity) => {
+  //   //   return opportunity.toJSON();
+  //   // });
 
-    console.log({type, search, businessLines, department, contracts});
+  //   console.log({type, search, businessLines, department, contracts});
 
-    return {pending: pendingOpportunitiesCount}
-  }
+  //   return {pending: pendingOpportunitiesCount}
+  // }
 }

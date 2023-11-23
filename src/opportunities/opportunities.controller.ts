@@ -414,19 +414,20 @@ export class OpportunitiesController {
     return this.opportunityUsersService.candidateCountOffersByStatus(candidateId);
   }
 
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
-  @Get('/admin/tabCount')
-  async adminCountOffersByType(
-    @Query()
-    query: {
-      type: OfferAdminTab;
-      search: string;
-    } & FilterParams<OfferFilterKey>
-  ) {
-    const { type, search, businessLines, department, contracts } = query
-    return this.opportunitiesService.adminCountOfferByType(type, search,businessLines, department, contracts);
-  }
+  // to be implemented
+  // @UserPermissions(Permissions.ADMIN)
+  // @UseGuards(UserPermissionsGuard)
+  // @Get('/admin/tabCount')
+  // async adminCountOffersByType(
+  //   @Query()
+  //   query: {
+  //     type: OfferAdminTab;
+  //     search: string;
+  //   } & FilterParams<OfferFilterKey>
+  // ) {
+  //   const { type, search, businessLines, department, contracts } = query
+  //   return this.opportunitiesService.adminCountOfferByType(type, search,businessLines, department, contracts);
+  // }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
