@@ -108,6 +108,16 @@ export class SalesforceService {
     );
   }
 
+  async checkIfConnected() {
+    try {
+      await this.salesforce
+        .sobject(ObjectNames.USER)
+        .find({ Email: process.env.SALESFORCE_USERNAME });
+    } catch (error) {
+      await this.refreshSalesforceInstance();
+    }
+  }
+
   async refreshSalesforceInstance(retries?: number) {
     const remainingRetries = retries || retries === 0 ? retries : RETRY_NUMBER;
     try {
@@ -131,7 +141,7 @@ export class SalesforceService {
     name: T,
     params: SalesforceObject<T, K> | SalesforceObject<T, K>[]
   ): Promise<string | string[]> {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
 
     try {
       if (Array.isArray(params)) {
@@ -175,7 +185,7 @@ export class SalesforceService {
     name: T,
     params: SalesforceObject<T, K> | SalesforceObject<T, K>[]
   ): Promise<string | string[]> {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
 
     try {
       if (Array.isArray(params)) {
@@ -234,7 +244,7 @@ export class SalesforceService {
       | 'findEventById'
       | 'findTaskById'
   ): Promise<string | string[]> {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
 
     try {
       if (Array.isArray(params)) {
@@ -437,7 +447,7 @@ export class SalesforceService {
 
   async searchAccountByName(search: string, recordType: AccountRecordType) {
     const escapedSearch = search?.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     if (escapedSearch.length === 1) {
       const { records }: { records: Partial<SalesforceAccount>[] } =
         await this.salesforce.query(
@@ -476,7 +486,7 @@ export class SalesforceService {
   }
 
   async findContact(email: string, recordType?: ContactRecordType) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceContact>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -489,7 +499,7 @@ export class SalesforceService {
   }
 
   async findLead<T extends LeadRecordType>(email: string, recordType: T) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceLead<T>>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -502,7 +512,7 @@ export class SalesforceService {
   }
 
   async findOwnerByLeadSfId<T extends LeadRecordType>(id: string) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceLead<T>>[] } =
       await this.salesforce.query(
         `SELECT OwnerId
@@ -517,7 +527,7 @@ export class SalesforceService {
     { leadId, contactId }: { leadId?: string; contactId?: string },
     infoCoId: string
   ) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceCampaignMember>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -529,7 +539,7 @@ export class SalesforceService {
   }
 
   async findBinomeByCandidateSfId<T>(id: T) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceBinome>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -540,7 +550,7 @@ export class SalesforceService {
   }
 
   async findOfferById<T>(id: T): Promise<string> {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceOffer>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -551,7 +561,7 @@ export class SalesforceService {
   }
 
   async findEventById<T>(id: T): Promise<string> {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceEvent>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -563,7 +573,7 @@ export class SalesforceService {
   }
 
   async findTaskById<T>(id: T): Promise<string> {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceTask>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -574,7 +584,7 @@ export class SalesforceService {
   }
 
   async findOfferRelationsById<T>(id: T) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceOffer>[] } =
       await this.salesforce.query(
         `SELECT Entreprise_Recruteuse__c, Prenom_Nom_du_recruteur__c
@@ -588,7 +598,7 @@ export class SalesforceService {
   }
 
   async findProcessById<T>(id: T) {
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceProcess>[] } =
       await this.salesforce.query(
         `SELECT Id
@@ -1526,7 +1536,7 @@ export class SalesforceService {
 
   async getCampaigns() {
     this.setIsWorker(false);
-    await this.refreshSalesforceInstance();
+    await this.checkIfConnected();
 
     const {
       records: timeZoneRecords,

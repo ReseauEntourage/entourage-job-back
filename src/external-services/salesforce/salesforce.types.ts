@@ -74,6 +74,7 @@ export const ObjectNames = {
   CAMPAIGN: 'Campaign',
   CAMPAIGN_MEMBER: 'CampaignMember',
   TASK: 'Task',
+  USER: 'User',
 } as const;
 
 export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
@@ -89,6 +90,7 @@ type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.CAMPAIGN]: SalesforceCampaign;
   [ObjectNames.CAMPAIGN_MEMBER]: SalesforceCampaignMember;
   [ObjectNames.TASK]: SalesforceTask;
+  [ObjectNames.USER]: SalesforceUser;
 };
 
 export type SalesforceObject<
@@ -472,10 +474,6 @@ export interface SalesforceCampaign {
   Heure_de_d_but__c: string;
   Adresse_de_l_v_nement__c: string;
   Code_postal__c: string;
-  attributes: {
-    type: string;
-    url: string;
-  };
 }
 
 export interface SalesforceCampaignMember {
@@ -484,6 +482,11 @@ export interface SalesforceCampaignMember {
   ContactId?: string;
   CampaignId: string;
   Status: string; // Inscrit
+}
+
+export interface SalesforceUser {
+  Id?: string;
+  Email: string;
 }
 
 export interface ExternalMessageProps {
