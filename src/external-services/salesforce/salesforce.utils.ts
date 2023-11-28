@@ -352,7 +352,6 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
   leadProps: LeadProp<T>,
   recordType: AnyCantFix
 ): SalesforceLeads[T] {
-
   const { firstName, lastName, email, phone, zone } = leadProps;
 
   const commonFields = {

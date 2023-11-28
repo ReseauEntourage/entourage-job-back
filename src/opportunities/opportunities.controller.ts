@@ -48,7 +48,8 @@ import { OpportunitiesService } from './opportunities.service';
 import {
   EventTypes,
   OfferAdminTab,
-  OfferCandidateTab,
+  OfferCandidateType,
+  OfferCandidateTypes,
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
@@ -411,7 +412,9 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    return this.opportunityUsersService.candidateCountOffersByStatus(candidateId);
+    return this.opportunityUsersService.candidateCountOffersByStatus(
+      candidateId
+    );
   }
 
   // to be implemented
@@ -438,14 +441,14 @@ export class OpportunitiesController {
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Query()
     query: {
-      type: OfferCandidateTab;
+      type: OfferCandidateType;
       search: string;
       offset: number;
       limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const { type, status } = query;
-    if (type !== 'public' && !status) {
+    if (type !== OfferCandidateTypes.PUBLIC && !status) {
       throw new BadRequestException('status expected');
     }
 

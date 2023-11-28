@@ -1630,7 +1630,7 @@ describe('Opportunities', () => {
       });
     });
     describe('R - Read many Opportunities', () => {
-      describe('/admin?search=&type=&businessLines[]=&status[]=&isPublic[]&department[]= - Read all opportunities as admin matching specific filters', () => {
+      describe('/admin - Read all opportunities', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
 
@@ -1644,7 +1644,13 @@ describe('Opportunities', () => {
           });
         });
 
-        it('Should return 403, if not logged in admin', async () => {
+        it('Should return 401, if user is not logged in', async () => {
+          const response: APIResponse<OpportunitiesController['findAll']> =
+            await request(app.getHttpServer()).get(`${route}/admin`);
+          expect(response.status).toBe(401);
+        });
+
+        it('Should return 403, if user is not logged as admin', async () => {
           const response: APIResponse<OpportunitiesController['findAll']> =
             await request(app.getHttpServer())
               .get(`${route}/admin`)
@@ -1674,392 +1680,459 @@ describe('Opportunities', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and 2 first opportunities', async () => {
-          const firstOpportunity = await opportunityFactory.create({});
+        describe('/admin?offset=&limit - Get paginated and chronologically sorted opportunities', () => {
+          it('Should return 200 and 2 first opportunities', async () => {
+            const firstOpportunity = await opportunityFactory.create({});
 
-          const secondpportunity = await opportunityFactory.create({});
+            const secondOpportunity = await opportunityFactory.create({});
 
-          await opportunityFactory.create({});
+            await opportunityFactory.create({});
 
-          await opportunityFactory.create({});
+            await opportunityFactory.create({});
 
-          const expectedOpportunitiesId = [
-            firstOpportunity.id,
-            secondpportunity.id,
-          ];
+            const expectedOpportunitiesId = [
+              firstOpportunity.id,
+              secondOpportunity.id,
+            ];
 
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?limit=2&offset=0`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200 and third and fourth opportunities', async () => {
-          
-          await opportunityFactory.create({});
-          
-          await opportunityFactory.create({});
-          
-          const thirdOpportunity = await opportunityFactory.create({});
-
-          const fourthpportunity = await opportunityFactory.create({});
-          
-          const expectedOpportunitiesId = [
-            thirdOpportunity.id,
-            fourthpportunity.id,
-          ];
-
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?limit=2&offset=1`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the search query', async () => {
-          const searchedOpportunity = await opportunityFactory.create({
-            title: 'XXXXX',
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?limit=2&offset=0`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
           });
+          it('Should return 200 and third and fourth opportunities', async () => {
+            await opportunityFactory.create({});
 
-          await opportunityFactory.create({
-            title: 'AZERTY',
-          });
+            await opportunityFactory.create({});
 
-          await opportunityFactory.create({
-            title: 'AZERTY',
-          });
+            const thirdOpportunity = await opportunityFactory.create({});
 
-          const expectedOpportunitiesId = [searchedOpportunity.id];
+            const fourthOpportunity = await opportunityFactory.create({});
 
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?search=XXXXX`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(1);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the pending filter', async () => {
-          const firstPendingOpportunity = await opportunityFactory.create({
-            isValidated: false,
-            isArchived: false,
-            isExternal: false,
-          });
+            const expectedOpportunitiesId = [
+              thirdOpportunity.id,
+              fourthOpportunity.id,
+            ];
 
-          const secondPendingOpportunity = await opportunityFactory.create({
-            isValidated: false,
-            isArchived: false,
-            isExternal: false,
-          });
-
-          await opportunityFactory.create({
-            isValidated: true,
-            isArchived: false,
-            isExternal: false,
-          });
-
-          const expectedOpportunitiesId = [
-            firstPendingOpportunity.id,
-            secondPendingOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?type=${OfferAdminTabs.PENDING}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the validated filter', async () => {
-          const firstValidatedOpportunity = await opportunityFactory.create({
-            isValidated: true,
-            isArchived: false,
-            isExternal: false,
-          });
-
-          const secondValidatedOpportunity = await opportunityFactory.create({
-            isValidated: true,
-            isArchived: false,
-            isExternal: false,
-          });
-
-          await opportunityFactory.create({
-            isValidated: false,
-            isArchived: false,
-            isExternal: false,
-          });
-
-          const expectedOpportunitiesId = [
-            firstValidatedOpportunity.id,
-            secondValidatedOpportunity.id,
-          ];
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?type=validated`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the external filter', async () => {
-          const firstExternalOpportunity = await opportunityFactory.create({
-            isExternal: true,
-          });
-
-          const secondExternalOpportunity = await opportunityFactory.create({
-            isExternal: true,
-          });
-
-          await opportunityFactory.create({
-            isExternal: false,
-          });
-
-          const expectedOpportunitiesId = [
-            firstExternalOpportunity.id,
-            secondExternalOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?type=${OfferAdminTabs.EXTERNAL}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the archived filter', async () => {
-          const firstArchivedOpportunity = await opportunityFactory.create({
-            isArchived: true,
-          });
-
-          const secondArchivedOpportunity = await opportunityFactory.create({
-            isArchived: true,
-          });
-
-          await opportunityFactory.create({
-            isArchived: false,
-          });
-
-          const expectedOpportunitiesId = [
-            firstArchivedOpportunity.id,
-            secondArchivedOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?type=${OfferAdminTabs.ARCHIVED}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the department filters', async () => {
-          const firstOpportunity = await opportunityFactory.create({
-            department: 'Rhône (69)',
-          });
-
-          const secondOpportunity = await opportunityFactory.create({
-            department: 'Rhône (69)',
-          });
-
-          const thirdOpportunity = await opportunityFactory.create({
-            department: 'Nord (59)',
-          });
-
-          await opportunityFactory.create({
-            department: 'Paris (75)',
-          });
-
-          const expectedOpportunitiesId = [
-            firstOpportunity.id,
-            secondOpportunity.id,
-            thirdOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/admin?department[]=Rhône (69)&department[]=Nord (59)`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(3);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the isPublic filters', async () => {
-          const firstOpportunity = await opportunityFactory.create({
-            isPublic: true,
-          });
-
-          const secondOpportunity = await opportunityFactory.create({
-            isPublic: true,
-          });
-
-          await opportunityFactory.create({
-            isPublic: false,
-          });
-
-          const expectedOpportunitiesId = [
-            firstOpportunity.id,
-            secondOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?isPublic[]=true`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the businessLines filters', async () => {
-          const firstOpportunity = await opportunityFactory.create(
-            {},
-            { businessLines: ['id', 'bat'] }
-          );
-
-          const secondOpportunity = await opportunityFactory.create(
-            {},
-            { businessLines: ['bat'] }
-          );
-
-          const thirdOpportunity = await opportunityFactory.create(
-            {},
-            { businessLines: ['id'] }
-          );
-
-          await opportunityFactory.create({}, { businessLines: ['asp'] });
-
-          const expectedOpportunitiesId = [
-            firstOpportunity.id,
-            secondOpportunity.id,
-            thirdOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/admin?businessLines[]=id&businessLines[]=bat`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(3);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the opportunities that matches the status filters', async () => {
-          const newUser1 = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-          const firstOpportunity = await opportunityFactory.create({});
-          await opportunityUsersHelper.associateOpportunityUser(
-            firstOpportunity.id,
-            newUser1.id,
-            { status: OfferStatuses.INTERVIEW.value }
-          );
-
-          const newUser2 = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-          const secondOpportunity = await opportunityFactory.create({});
-          await opportunityUsersHelper.associateOpportunityUser(
-            secondOpportunity.id,
-            newUser2.id,
-            { status: OfferStatuses.HIRED.value }
-          );
-
-          const newUser3 = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-          const thirdOpportunity = await opportunityFactory.create({});
-          await opportunityUsersHelper.associateOpportunityUser(
-            thirdOpportunity.id,
-            newUser3.id,
-            { status: OfferStatuses.CONTACTED.value }
-          );
-
-          const expectedOpportunitiesId = [
-            firstOpportunity.id,
-            secondOpportunity.id,
-          ];
-
-          const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/admin?status[]=${OfferStatuses.INTERVIEW.value}&status[]=${OfferStatuses.HIRED.value}`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedOpportunitiesId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-      });
-      describe('/admin/count - Count all pending opportunities as admin', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-            zone: AdminZones.LYON,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-
-          await databaseHelper.createEntities(opportunityFactory, 3, {
-            isValidated: false,
-            isArchived: false,
-            department: 'Rhône (69)',
-          });
-
-          await databaseHelper.createEntities(opportunityFactory, 3, {
-            isValidated: false,
-            isArchived: false,
-            department: 'Paris (75)',
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?limit=2&offset=1`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
           });
         });
 
-        it('Should return 200 and count of all pending opportunities, if logged in admin', async () => {
-          const response: APIResponse<OpportunitiesController['countPending']> =
-            await request(app.getHttpServer())
+        describe('/admin?search=&type=&businessLines[]=&status[]=&isPublic[]&department[]= - Read all opportunities as admin matching specific filters', () => {
+          it('Should return 200, and all the opportunities that matches the search query', async () => {
+            const searchedOpportunity = await opportunityFactory.create({
+              title: 'XXXXX',
+            });
+
+            await opportunityFactory.create({
+              title: 'AZERTY',
+            });
+
+            await opportunityFactory.create({
+              title: 'AZERTY',
+            });
+
+            const expectedOpportunitiesId = [searchedOpportunity.id];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?search=XXXXX`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the pending filter', async () => {
+            const firstPendingOpportunity = await opportunityFactory.create({
+              isValidated: false,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            const secondPendingOpportunity = await opportunityFactory.create({
+              isValidated: false,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            await opportunityFactory.create({
+              isValidated: true,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            const expectedOpportunitiesId = [
+              firstPendingOpportunity.id,
+              secondPendingOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?type=${OfferAdminTabs.PENDING}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the validated filter', async () => {
+            const firstValidatedOpportunity = await opportunityFactory.create({
+              isValidated: true,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            const secondValidatedOpportunity = await opportunityFactory.create({
+              isValidated: true,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            await opportunityFactory.create({
+              isValidated: false,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            const expectedOpportunitiesId = [
+              firstValidatedOpportunity.id,
+              secondValidatedOpportunity.id,
+            ];
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?type=validated`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the external filter', async () => {
+            const firstExternalOpportunity = await opportunityFactory.create({
+              isExternal: true,
+            });
+
+            const secondExternalOpportunity = await opportunityFactory.create({
+              isExternal: true,
+            });
+
+            await opportunityFactory.create({
+              isExternal: false,
+            });
+
+            const expectedOpportunitiesId = [
+              firstExternalOpportunity.id,
+              secondExternalOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?type=${OfferAdminTabs.EXTERNAL}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the archived filter', async () => {
+            const firstArchivedOpportunity = await opportunityFactory.create({
+              isArchived: true,
+            });
+
+            const secondArchivedOpportunity = await opportunityFactory.create({
+              isArchived: true,
+            });
+
+            await opportunityFactory.create({
+              isArchived: false,
+            });
+
+            const expectedOpportunitiesId = [
+              firstArchivedOpportunity.id,
+              secondArchivedOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?type=${OfferAdminTabs.ARCHIVED}`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the department filters', async () => {
+            const firstOpportunity = await opportunityFactory.create({
+              department: 'Rhône (69)',
+            });
+
+            const secondOpportunity = await opportunityFactory.create({
+              department: 'Rhône (69)',
+            });
+
+            const thirdOpportunity = await opportunityFactory.create({
+              department: 'Nord (59)',
+            });
+
+            await opportunityFactory.create({
+              department: 'Paris (75)',
+            });
+
+            const expectedOpportunitiesId = [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/admin?department[]=Rhône (69)&department[]=Nord (59)`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(3);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the isPublic filters', async () => {
+            const firstOpportunity = await opportunityFactory.create({
+              isPublic: true,
+            });
+
+            const secondOpportunity = await opportunityFactory.create({
+              isPublic: true,
+            });
+
+            await opportunityFactory.create({
+              isPublic: false,
+            });
+
+            const expectedOpportunitiesId = [
+              firstOpportunity.id,
+              secondOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?isPublic[]=true`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the businessLines filters', async () => {
+            const firstOpportunity = await opportunityFactory.create(
+              {},
+              { businessLines: ['id', 'bat'] }
+            );
+
+            const secondOpportunity = await opportunityFactory.create(
+              {},
+              { businessLines: ['bat'] }
+            );
+
+            const thirdOpportunity = await opportunityFactory.create(
+              {},
+              { businessLines: ['id'] }
+            );
+
+            await opportunityFactory.create({}, { businessLines: ['asp'] });
+
+            const expectedOpportunitiesId = [
+              firstOpportunity.id,
+              secondOpportunity.id,
+              thirdOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(`${route}/admin?businessLines[]=id&businessLines[]=bat`)
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(3);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the opportunities that matches the status filters', async () => {
+            const newUser1 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+            });
+            const firstOpportunity = await opportunityFactory.create({});
+            await opportunityUsersHelper.associateOpportunityUser(
+              firstOpportunity.id,
+              newUser1.id,
+              { status: OfferStatuses.INTERVIEW.value }
+            );
+
+            const newUser2 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+            });
+            const secondOpportunity = await opportunityFactory.create({});
+            await opportunityUsersHelper.associateOpportunityUser(
+              secondOpportunity.id,
+              newUser2.id,
+              { status: OfferStatuses.HIRED.value }
+            );
+
+            const newUser3 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+            });
+            const thirdOpportunity = await opportunityFactory.create({});
+            await opportunityUsersHelper.associateOpportunityUser(
+              thirdOpportunity.id,
+              newUser3.id,
+              { status: OfferStatuses.CONTACTED.value }
+            );
+
+            const expectedOpportunitiesId = [
+              firstOpportunity.id,
+              secondOpportunity.id,
+            ];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/admin?status[]=${OfferStatuses.INTERVIEW.value}&status[]=${OfferStatuses.HIRED.value}`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+        describe('/admin - Read all opportunities as admin that matches all filters', () => {
+          it('Should return 200, and all the opportunities that matches all the filters', async () => {
+            const opportunity = await opportunityFactory.create(
+              {
+                department: 'Paris (75)',
+                recruiterName: 'XXX',
+                isPublic: true,
+                isValidated: true,
+                isArchived: false,
+                isExternal: false,
+              },
+              { businessLines: ['bat'] }
+            );
+
+            await opportunityUsersHelper.associateOpportunityUser(
+              opportunity.id,
+              loggedInCandidate.user.id,
+              { status: OfferStatuses.CONTACTED.value }
+            );
+
+            await opportunityFactory.create({
+              title: 'XXXXX',
+              isValidated: false,
+              isArchived: false,
+              isExternal: false,
+            });
+
+            await opportunityFactory.create(
+              {
+                title: 'AZERTY',
+                department: 'Paris (75)',
+                isValidated: false,
+                isArchived: false,
+                isExternal: false,
+              },
+              { businessLines: ['id'] }
+            );
+
+            await opportunityFactory.create({
+              department: 'Rhône (69)',
+              isValidated: true,
+              isArchived: false,
+              isExternal: false,
+              isPublic: true,
+            });
+
+            const expectedOpportunitiesId = [opportunity.id];
+
+            const response: APIResponse<OpportunitiesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/admin?offset=0&limit=50&search=XXX&type=validated&businessLines[]=bat&status[]=${OfferStatuses.CONTACTED.value}&isPublic[]=true&department[]=Paris (75)`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(expectedOpportunitiesId).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+        describe('/admin/count - Count all pending opportunities as admin', () => {
+          let loggedInAdmin: LoggedUser;
+          let loggedInCandidate: LoggedUser;
+
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+              zone: AdminZones.LYON,
+            });
+            loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+
+            await databaseHelper.createEntities(opportunityFactory, 3, {
+              isValidated: false,
+              isArchived: false,
+              department: 'Rhône (69)',
+            });
+
+            await databaseHelper.createEntities(opportunityFactory, 3, {
+              isValidated: false,
+              isArchived: false,
+              department: 'Paris (75)',
+            });
+          });
+
+          it('Should return 200 and count of all pending opportunities, if logged in admin', async () => {
+            const response: APIResponse<
+              OpportunitiesController['countPending']
+            > = await request(app.getHttpServer())
               .get(`${route}/admin/count`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.pendingOpportunities).toBe(3);
-        });
-        it('Should return 403, if not logged in admin', async () => {
-          const response: APIResponse<OpportunitiesController['countPending']> =
-            await request(app.getHttpServer())
+            expect(response.status).toBe(200);
+            expect(response.body.pendingOpportunities).toBe(3);
+          });
+          it('Should return 403, if not logged in admin', async () => {
+            const response: APIResponse<
+              OpportunitiesController['countPending']
+            > = await request(app.getHttpServer())
               .get(`${route}/admin/count`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
-          expect(response.status).toBe(403);
+            expect(response.status).toBe(403);
+          });
         });
       });
+
       describe("/candidate/private/:candidateId?search=&type=&businessLines[]=&status[]=&isPublic[]&department[]= - Read a user's private opportunities as admin", () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;

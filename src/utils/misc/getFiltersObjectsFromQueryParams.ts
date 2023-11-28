@@ -16,7 +16,6 @@ export function getFiltersObjectsFromQueryParams<K extends string, T>(
   params: Partial<Record<K, AnyToFix>>,
   filtersConst: Filters<K, T>
 ) {
-
   let filters = {} as FilterObject<K, T>;
 
   if (filtersConst) {

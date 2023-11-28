@@ -24,7 +24,7 @@ export class CreateOpportunityPipe
       forbidNonWhitelisted: true,
       forbidUnknownValues: true,
     });
-    
+
     if (errors.length > 0) {
       throw new BadRequestException();
     }
