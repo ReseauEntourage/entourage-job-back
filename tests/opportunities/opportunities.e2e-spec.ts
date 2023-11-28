@@ -1681,18 +1681,18 @@ describe('Opportunities', () => {
           );
         });
         describe('/admin?offset=&limit - Get paginated and chronologically sorted opportunities', () => {
-          it('Should return 200 and 2 first opportunities', async () => {
-            const firstOpportunity = await opportunityFactory.create({});
-
-            const secondOpportunity = await opportunityFactory.create({});
-
+          it('Should return 200 and 2 most recent opportunities', async () => {
             await opportunityFactory.create({});
 
             await opportunityFactory.create({});
+
+            const thirdOpportunity = await opportunityFactory.create({});
+
+            const fourthOpportunity = await opportunityFactory.create({});
 
             const expectedOpportunitiesId = [
-              firstOpportunity.id,
-              secondOpportunity.id,
+              thirdOpportunity.id,
+              fourthOpportunity.id,
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
@@ -1705,18 +1705,18 @@ describe('Opportunities', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200 and third and fourth opportunities', async () => {
-            await opportunityFactory.create({});
+          it('Should return 200 and 2 less recent opportunities', async () => {
+            const firstOpportunity = await opportunityFactory.create({});
+
+            const secondOpportunity = await opportunityFactory.create({});
 
             await opportunityFactory.create({});
 
-            const thirdOpportunity = await opportunityFactory.create({});
-
-            const fourthOpportunity = await opportunityFactory.create({});
+            await opportunityFactory.create({});
 
             const expectedOpportunitiesId = [
-              thirdOpportunity.id,
-              fourthOpportunity.id,
+              firstOpportunity.id,
+              secondOpportunity.id,
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
