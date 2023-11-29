@@ -37,6 +37,7 @@ import {
 } from './models';
 import { OpportunityCandidateAttributes } from './models/opportunity.attributes';
 import {
+  OpportunityCompleteAdminInclude,
   OpportunityCompleteAdminWithoutBusinessLinesInclude,
   OpportunityCompleteInclude,
   OpportunityCompleteWithoutOpportunityUsersInclude,
@@ -44,16 +45,15 @@ import {
 import {
   OfferAdminTab,
   OfferAdminTabs,
-  OfferCandidateTab,
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
 } from './opportunities.types';
 import {
   destructureOptionsAndParams,
-  filterAdminOffersByType,
   filterOffersByStatus,
   getOfferOptions,
+  getOfferOptionsAdminByType,
   renderOffersQuery,
   sortOpportunities,
 } from './opportunities.utils';
@@ -160,6 +160,8 @@ export class OpportunitiesService {
     query: {
       type: OfferAdminTab;
       search: string;
+      offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const {
@@ -170,35 +172,47 @@ export class OpportunitiesService {
       filterOptions,
     } = destructureOptionsAndParams(query);
 
-    const options = {
-      include: [
-        ...OpportunityCompleteAdminWithoutBusinessLinesInclude,
-        businessLinesOptions,
-      ],
-    };
-
     if (typeParams && typeParams === OfferAdminTabs.EXTERNAL) {
       delete filterOptions.isPublic;
     }
 
+    const limit = query.limit || LIMIT;
+
     const opportunities = await this.opportunityModel.findAll({
-      ...options,
+      attributes: ['id', 'createdAt'],
+      include: [
+        {
+          model: OpportunityUser,
+          as: 'opportunityUsers',
+          required: !!statusParams && statusParams.length > 0,
+          ...(statusParams && statusParams?.length > 0
+            ? {
+                where: {
+                  status: statusParams.map(({ value }) => value),
+                },
+              }
+            : {}),
+          attributes: ['status'],
+        },
+        businessLinesOptions,
+      ],
       where: {
         ...searchOptions,
         ...filterOptions,
+        ...getOfferOptionsAdminByType(typeParams),
       },
+      offset: query.offset ? query.offset * limit : 0,
+      limit,
+      order: [['createdAt', 'DESC']],
     });
 
-    const cleanedOpportunites = opportunities.map((opportunity) => {
-      return opportunity.toJSON();
+    return this.opportunityModel.findAll({
+      include: OpportunityCompleteAdminInclude,
+      where: {
+        id: opportunities.map(({ id }) => id),
+      },
+      order: [['createdAt', 'DESC']],
     });
-
-    const filteredTypeOpportunites = filterAdminOffersByType(
-      cleanedOpportunites,
-      typeParams as OfferAdminTab
-    );
-
-    return filterOffersByStatus(filteredTypeOpportunites, statusParams);
   }
 
   async findAllUserOpportunitiesAsAdmin(
@@ -243,7 +257,6 @@ export class OpportunitiesService {
   async findAllAsCandidate(
     candidateId: string,
     query: {
-      type: OfferCandidateTab;
       search: string;
       offset: number;
       limit: number;
@@ -1051,4 +1064,48 @@ export class OpportunitiesService {
       description
     );
   }
+
+  // to be implemented
+  // async adminCountOfferByType(
+  //   type: OfferAdminTab,
+  //   search: string,
+  //   businessLines: string[],
+  //   department: string[],
+  //   contracts: string[],
+  // ) {
+
+  //   const {
+  //     typeParams,
+  //     searchOptions,
+  //     filterOptions,
+  //   } = destructureOptionsAndParams({type, search, businessLines, department});
+
+  //   // const typeCounts = await this.opportunityModel.sequelize.query()
+
+  //   // console.log("before destructure")
+  //   // console.log({typeParams,  searchOptions,
+  //   // businessLinesOptions,
+  //   // filterOptions})
+  //   // console.log("after destructure")
+
+  //   console.log("type params", typeParams);
+
+  //   const pendingOpportunitiesCount = await this.opportunityModel.count({
+  //     where: {
+  //       ...searchOptions,
+  //       ...filterOptions,
+  //       department,
+  //       isValidated: false,
+  //       isArchived: false,
+  //     },
+  //   });
+
+  //   // const cleanedOpportunites = pendingOpportunitiesCount.map((opportunity) => {
+  //   //   return opportunity.toJSON();
+  //   // });
+
+  //   console.log({type, search, businessLines, department, contracts});
+
+  //   return {pending: pendingOpportunitiesCount}
+  // }
 }
