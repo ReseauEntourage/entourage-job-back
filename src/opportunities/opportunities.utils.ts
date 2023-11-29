@@ -18,8 +18,7 @@ import { renderOpportunityCompleteWithoutBusinessLinesInclude } from './models/o
 import {
   OfferAdminTab,
   OfferAdminTabs,
-  OfferCandidateTab,
-  OfferCandidateTabs,
+  OfferCandidateType,
   OfferFilterKey,
   OfferFilters,
   OfferOptions,
@@ -171,7 +170,7 @@ export function getOfferOptions(
 export function renderOffersQuery(
   candidateId: string,
   params: {
-    type?: OfferAdminTab | OfferCandidateTab;
+    type?: OfferCandidateType;
     search: string;
   } & FilterParams<OfferFilterKey>
 ): {
@@ -249,11 +248,11 @@ export function renderOffersQuery(
 
 export function destructureOptionsAndParams(
   params: {
-    type?: OfferAdminTab | OfferCandidateTab;
+    type?: OfferAdminTab;
     search: string;
   } & FilterParams<OfferFilterKey>
 ): {
-  typeParams: OfferAdminTab | OfferCandidateTab;
+  typeParams: OfferAdminTab;
   statusParams: FilterConstant<OfferStatus>[];
   searchOptions: { [Op.or]: WhereOptions[] };
   businessLinesOptions: Includeable;
@@ -279,6 +278,7 @@ export function destructureOptionsAndParams(
       model: BusinessLine,
       as: 'businessLines',
       attributes: ['name', 'order'],
+      required: !!businessLinesOptions,
       ...(businessLinesOptions
         ? {
             where: {
@@ -291,55 +291,38 @@ export function destructureOptionsAndParams(
   };
 }
 
-export function filterAdminOffersByType(
-  offers: Opportunity[],
+export function getOfferOptionsAdminByType(
   type: OfferAdminTab
-) {
-  let filteredList = offers;
-  if (offers) {
-    filteredList = filteredList.filter((offer) => {
-      switch (type) {
-        case OfferAdminTabs.PENDING:
-          return !offer.isValidated && !offer.isArchived && !offer.isExternal;
-        case OfferAdminTabs.VALIDATED:
-          return offer.isValidated && !offer.isArchived && !offer.isExternal;
-        case OfferAdminTabs.EXTERNAL:
-          return offer.isExternal;
-        case OfferAdminTabs.ARCHIVED:
-          return offer.isArchived;
-        default:
-          return true;
-      }
-    });
+): WhereOptions<Opportunity> {
+  switch (type) {
+    case OfferAdminTabs.PENDING:
+      return {
+        [Op.and]: {
+          isValidated: false,
+          isArchived: false,
+          isExternal: false,
+        },
+      };
+    case OfferAdminTabs.VALIDATED:
+      return {
+        [Op.and]: {
+          isValidated: true,
+          isArchived: false,
+          isExternal: false,
+        },
+      };
+    case OfferAdminTabs.EXTERNAL:
+      return {
+        isExternal: true,
+      };
+    case OfferAdminTabs.ARCHIVED:
+      return {
+        isArchived: true,
+      };
+    default: {
+      return {};
+    }
   }
-
-  return filteredList;
-}
-
-export function filterCandidateOffersByType(
-  offers: OpportunityRestricted[],
-  type: OfferCandidateTab
-) {
-  let filteredList = offers;
-  if (offers) {
-    filteredList = filteredList.filter((offer) => {
-      const isArchived =
-        offer.opportunityUsers && offer.opportunityUsers.archived;
-
-      switch (type) {
-        case OfferCandidateTabs.PRIVATE:
-          return !offer.isPublic && !isArchived;
-        case OfferCandidateTabs.PUBLIC:
-          return offer.isPublic && !isArchived;
-        case OfferCandidateTabs.ARCHIVED:
-          return isArchived;
-        default:
-          return true;
-      }
-    });
-  }
-
-  return filteredList;
 }
 
 export function getOpportunityUserFromOffer(
