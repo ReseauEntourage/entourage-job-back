@@ -62,7 +62,7 @@ export class UsersService {
   async findOneByMail(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
-      attributes: [...UserAttributes, 'salt', 'password'],
+      attributes: [...UserAttributes],
       include: UserCandidatInclude,
     });
   }
