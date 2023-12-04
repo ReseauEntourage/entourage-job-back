@@ -153,7 +153,7 @@ export class OpportunitiesController {
     }
 
     const createdOpportunity = await this.opportunitiesService.create(
-      { ...opportunityToCreate, isValidated: isAdmin },
+      { ...opportunityToCreate, isValidated: isCopy ? false : isAdmin },
       userId
     );
 
