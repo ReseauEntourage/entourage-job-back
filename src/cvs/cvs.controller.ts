@@ -1,5 +1,4 @@
 import {
-  // BadRequestException,
   Body,
   Controller,
   Get,
@@ -166,8 +165,14 @@ export class CVsController {
       const token = getTokenFromHeaders(req);
 
       let isTwoPages = false;
-      if (createCVDto.experiences?.length + createCVDto.formations?.length > 4)
+
+      if (
+        (createCVDto.experiences?.length || 0) +
+          (createCVDto.formations?.length || 0) >
+        4
+      ) {
         isTwoPages = true;
+      }
 
       await this.cvsService.sendGenerateCVPDF(
         candidateId,
