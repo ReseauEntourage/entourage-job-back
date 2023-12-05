@@ -1,7 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
 import { literal, Op, WhereOptions } from 'sequelize';
-import { PayloadUser } from 'src/auth/auth.types';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import {
   getFiltersObjectsFromQueryParams,
@@ -99,7 +98,7 @@ export function getCandidateFromCoach(coach: User, candidateId: string) {
   return null;
 }
 
-export function getCandidateIdFromCoachOrCandidate(member: User | PayloadUser) {
+export function getCandidateIdFromCoachOrCandidate(member: User) {
   if (member) {
     if (isRoleIncluded(CandidateUserRoles, member.role)) {
       return member.id;

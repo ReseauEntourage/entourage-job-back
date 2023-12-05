@@ -13,7 +13,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
-import { PayloadUser } from 'src/auth/auth.types';
 import { Public, UserPayload } from 'src/auth/guards';
 import {
   LinkedUser,
@@ -21,6 +20,7 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
+import { User } from 'src/users/models';
 import { Permissions, UserRole, UserRoles } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
@@ -489,7 +489,7 @@ export class OpportunitiesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @UserPayload('role') role: UserRole,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @UserPayload() user: PayloadUser
+    @UserPayload() user: User
   ) {
     let opportunity: Opportunity | OpportunityRestricted;
     if (role === UserRoles.ADMIN) {
@@ -626,7 +626,7 @@ export class OpportunitiesController {
   async updateOpportunityUserEvent(
     @Param('id', new ParseUUIDPipe()) id: string,
     @UserPayload('role') role: UserRole,
-    @UserPayload() user: PayloadUser,
+    @UserPayload() user: User,
     @Body(new UpdateOpportunityUserEventPipe())
     updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
   ) {

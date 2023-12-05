@@ -1,6 +1,4 @@
 import { pbkdf2Sync, randomBytes } from 'crypto';
-import { User } from 'src/users/models';
-import { PayloadUser } from './auth.types';
 
 export function getTokenFromHeaders(
   req: Request & { headers: Request['headers'] & { authorization: string } }
@@ -13,60 +11,6 @@ export function getTokenFromHeaders(
     return authorization.split(' ')[1];
   }
   return null;
-}
-
-export function getPartialUserForPayload(user: User): PayloadUser {
-  const {
-    id,
-    OrganizationId,
-    email,
-    firstName,
-    lastName,
-    gender,
-    phone,
-    address,
-    zone,
-    role,
-    adminRole,
-    lastConnection,
-    coaches,
-    candidat,
-  } = user;
-
-  const commonAttributes = {
-    id: id,
-    OrganizationId: OrganizationId,
-    email: email,
-    firstName: firstName,
-    lastName: lastName,
-    gender: gender,
-    phone: phone,
-    address: address,
-    zone: zone,
-    role: role,
-    adminRole: adminRole,
-    lastConnection: lastConnection,
-  };
-
-  if (coaches && coaches.length > 0) {
-    const restCoaches = coaches.map((coach) => {
-      const { note, ...restCoach } = coach;
-      return restCoach;
-    });
-    return {
-      ...commonAttributes,
-      coaches: restCoaches,
-    };
-  }
-  if (candidat) {
-    const { note, ...restCandidate } = candidat;
-    return {
-      ...commonAttributes,
-      candidat: restCandidate,
-    };
-  }
-
-  return commonAttributes;
 }
 
 const ITERATIONS = 10000;
