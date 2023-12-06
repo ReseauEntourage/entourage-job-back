@@ -10,6 +10,8 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { UserProfileSearchAmbition } from '../../../user-profiles/models';
+import { UserProfile } from '../../../user-profiles/models/user-profile.model';
 import { CV, CVAmbition } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
 
@@ -43,4 +45,12 @@ export class Ambition extends WrapperModel {
 
   @UpdatedAt
   updatedAt: Date;
+
+  @BelongsToMany(
+    () => UserProfile,
+    () => UserProfileSearchAmbition,
+    'AmbitionId',
+    'UserProfileId'
+  )
+  searchUserProfiles: CV[];
 }
