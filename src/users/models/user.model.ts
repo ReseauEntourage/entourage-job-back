@@ -29,6 +29,7 @@ import {
   Unique,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { UserProfile } from '../../user-profiles/models';
 import {
   AdminRole,
   CandidateUserRoles,
@@ -186,6 +187,12 @@ export class User extends HistorizedModel {
   @BelongsTo(() => Organization, 'OrganizationId')
   organization?: Organization;
 
+  @HasOne(() => UserProfile, {
+    foreignKey: 'UserId',
+    hooks: true,
+  })
+  userProfile: UserProfile;
+
   @BeforeCreate
   @BeforeUpdate
   static trimValues(user: User) {
@@ -205,9 +212,18 @@ export class User extends HistorizedModel {
         },
         { hooks: true }
       );
-      await Share.create({
-        CandidatId: createdUser.id,
-      });
+      await Share.create(
+        {
+          CandidatId: createdUser.id,
+        },
+        { hooks: true }
+      );
+      await UserProfile.create(
+        {
+          UserId: createdUser.id,
+        },
+        { hooks: true }
+      );
     }
   }
 

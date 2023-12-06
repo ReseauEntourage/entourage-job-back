@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UserProfilesService } from '../user-profiles/user-profiles.service';
 import { UserCandidat } from '../users/models';
 import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
@@ -16,6 +17,7 @@ export class UsersDeletionService {
   constructor(
     private cvsService: CVsService,
     private usersService: UsersService,
+    private userProfilesService: UserProfilesService,
     private userCandidatsService: UserCandidatsService,
     private opportunityUsersService: OpportunityUsersService,
     private revisionsService: RevisionsService,
@@ -90,6 +92,14 @@ export class UsersDeletionService {
     await this.s3Service.deleteFiles(
       `${process.env.AWSS3_FILE_DIRECTORY}${pdfFileName}`
     );
+  }
+
+  async removeUserProfile(id: string) {
+    await this.userProfilesService.updateByUserId(id, {
+      currentJob: null,
+      description: null,
+    });
+    return this.userProfilesService.removeByUserId(id);
   }
 
   async removeCandidateCVs(id: string) {
