@@ -1,4 +1,5 @@
 const { QueryTypes } = require('sequelize');
+const uuid = require('uuid');
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('User_Profiles', {
@@ -192,15 +193,18 @@ module.exports = {
       { type: QueryTypes.SELECT }
     );
 
-    await queryInterface.bulkInsert(
-      'User_Profiles',
-      usersIds.map(({ id }) => ({
-        id: Sequelize.literal('uuid_generate_v4()'),
+    const userProfiles = usersIds.map(({ id }) => {
+      return {
+        id: uuid.v4(),
         UserId: id,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      }))
-    );
+      };
+    });
+
+    if (userProfiles?.length > 0) {
+      await queryInterface.bulkInsert('User_Profiles', userProfiles);
+    }
   },
 
   async down(queryInterface, Sequelize) {
