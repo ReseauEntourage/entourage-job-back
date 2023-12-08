@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment/moment';
 import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
+import { UserProfile } from 'src/user-profiles/models';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Gender, UserRoles } from 'src/users/users.types';
@@ -18,6 +19,8 @@ export class UserFactory implements Factory<User> {
     private userModel: typeof User,
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
+    @InjectModel(UserProfile)
+    private userProfileModel: typeof UserProfile,
     private usersService: UsersService
   ) {}
 
@@ -54,7 +57,10 @@ export class UserFactory implements Factory<User> {
 
   async create(
     props: Partial<User> = {},
-    userCandidatProps: Partial<UserCandidat> = {},
+    userAssociationsProps: {
+      userCandidat?: Partial<UserCandidat>;
+      userProfile?: Partial<UserProfile>;
+    } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<User> {
     const userData = this.generateUser(props);
@@ -62,10 +68,19 @@ export class UserFactory implements Factory<User> {
     if (insertInDB) {
       await this.userModel.create({ ...userData, id: userId }, { hooks: true });
       await this.userCandidatModel.update(
-        { ...userCandidatProps },
+        { ...userAssociationsProps.userCandidat },
         {
           where: {
             candidatId: userId,
+          },
+          individualHooks: true,
+        }
+      );
+      await this.userProfileModel.update(
+        { ...userAssociationsProps.userProfile },
+        {
+          where: {
+            UserId: userId,
           },
           individualHooks: true,
         }

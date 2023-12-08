@@ -103,6 +103,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OpportunitiesModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UserProfilesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -122,7 +123,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ContactsModule,
     OrganizationsModule,
     ExternalMessagesModule,
-    UserProfilesModule,
   ],
   providers: [
     {
@@ -144,6 +144,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OpportunitiesModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UserProfilesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,

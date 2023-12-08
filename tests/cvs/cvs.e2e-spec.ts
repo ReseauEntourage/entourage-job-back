@@ -886,7 +886,9 @@ describe('CVs', () => {
               role: UserRoles.CANDIDATE,
             },
             {
-              employed: false,
+              userCandidat: {
+                employed: false,
+              },
             }
           );
           const newCV1 = await cvFactory.create({
@@ -898,7 +900,9 @@ describe('CVs', () => {
               role: UserRoles.CANDIDATE,
             },
             {
-              employed: false,
+              userCandidat: {
+                employed: false,
+              },
             }
           );
           const newCV2 = await cvFactory.create({
@@ -910,7 +914,9 @@ describe('CVs', () => {
               role: UserRoles.CANDIDATE,
             },
             {
-              employed: true,
+              userCandidat: {
+                employed: true,
+              },
             }
           );
           await cvFactory.create({

@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { CreateUserProfileDto } from './dto/create-user-profile.dto';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { UserProfile } from './models';
+import { UpdateUserProfileDto } from './dto';
+import { UserProfile, UserProfileInclude } from './models';
 
 @Injectable()
 export class UserProfilesService {
@@ -11,17 +10,16 @@ export class UserProfilesService {
     private userProfileModel: typeof UserProfile
   ) {}
 
-  create(createUserProfileDto: CreateUserProfileDto) {
-    return 'This action adds a new userProfile';
-  }
-
-  findAll() {
-    return `This action returns all userProfiles`;
+  async findOne(id: string) {
+    return this.userProfileModel.findByPk(id, {
+      include: UserProfileInclude,
+    });
   }
 
   async findOneByUserId(userId: string) {
     return this.userProfileModel.findOne({
       where: { UserId: userId },
+      include: UserProfileInclude,
     });
   }
 
