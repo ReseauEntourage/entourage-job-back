@@ -45,6 +45,7 @@ import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { UserCandidatsHelper } from './user-candidats.helper';
+import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
 
@@ -55,6 +56,7 @@ describe('Users', () => {
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
+  let userProfileHelper: UserProfilesHelper;
   let cvsHelper: CVsHelper;
   let cvFactory: CVFactory;
   let cvBusinessLinesHelper: CVBusinessLinesHelper;
@@ -99,6 +101,8 @@ describe('Users', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
+    userProfileHelper =
+      moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
     cvFactory = moduleFixture.get<CVFactory>(CVFactory);
@@ -2432,7 +2436,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { hidden: true }
+              {
+                userCandidat: {
+                  hidden: true,
+                },
+              }
             );
             await databaseHelper.createEntities(
               userFactory,
@@ -2440,7 +2448,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { hidden: false }
+              {
+                userCandidat: {
+                  hidden: false,
+                },
+              }
             );
 
             const response: APIResponse<UsersController['findMembers']> =
@@ -2462,7 +2474,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { employed: true }
+              {
+                userCandidat: {
+                  employed: true,
+                },
+              }
             );
             await databaseHelper.createEntities(
               userFactory,
@@ -2470,7 +2486,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { employed: false }
+              {
+                userCandidat: {
+                  employed: false,
+                },
+              }
             );
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
@@ -4479,9 +4499,15 @@ describe('Users', () => {
             await userCandidatsHelper.findOneUserCandidat({
               coachId: coach.id,
             });
+
           expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
+
+          const userProfile = await userProfileHelper.findOneProfileByUserId(
+            candidate.id
+          );
+          expect(userProfile).toBeFalsy();
 
           const cvs = await cvsHelper.findAllCVsByCandidateId(candidate.id);
           expect(cvs.length).toBeFalsy();
@@ -4596,9 +4622,15 @@ describe('Users', () => {
             await userCandidatsHelper.findOneUserCandidat({
               coachId: coach.id,
             });
+
           expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
+
+          const userProfile = await userProfileHelper.findOneProfileByUserId(
+            coach.id
+          );
+          expect(userProfile).toBeFalsy();
         });
       });
     });

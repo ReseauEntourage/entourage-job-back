@@ -4,7 +4,7 @@ import { Permissions } from 'src/users/users.types';
 import { UpdateUserProfileDto } from './dto';
 import { UserProfilesService } from './user-profiles.service';
 
-@Controller('user-profiles')
+@Controller('user')
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
 
