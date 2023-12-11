@@ -94,9 +94,8 @@ module.exports = {
     await queryInterface.createTable('User_Profile_Network_BusinessLines', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       UserProfileId: {
         type: Sequelize.UUID,
@@ -126,9 +125,8 @@ module.exports = {
     await queryInterface.createTable('User_Profile_Search_BusinessLines', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       UserProfileId: {
         type: Sequelize.UUID,
@@ -158,9 +156,8 @@ module.exports = {
     await queryInterface.createTable('User_Profile_Search_Ambitions', {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       UserProfileId: {
         type: Sequelize.UUID,
