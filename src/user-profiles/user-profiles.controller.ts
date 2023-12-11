@@ -1,7 +1,21 @@
-import { Body, Controller, Param, Put, UseGuards } from '@nestjs/common';
-import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
+import {
+  Body,
+  Controller,
+  NotFoundException,
+  Param,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  Self,
+  SelfGuard,
+  UserPermissions,
+  UserPermissionsGuard,
+} from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
-import { UpdateUserProfileDto } from './dto';
+import { UpdateCoachUserProfileDto } from './dto';
+import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
+import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfilesService } from './user-profiles.service';
 
 @Controller('user')
@@ -10,15 +24,25 @@ export class UserProfilesController {
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
-  @Put(':userId')
-  updateByUserId(
+  @Self('params.userId')
+  @UseGuards(SelfGuard)
+  @Put('/profile/:userId')
+  async updateByUserId(
     @Param('userId') userId: string,
-    @Body() updateUserProfileDto: UpdateUserProfileDto
+    @Body(UpdateUserProfilePipe)
+    updateUserProfileDto:
+      | UpdateCandidateUserProfileDto
+      | UpdateCoachUserProfileDto
   ) {
-    // TODO manage validation DTO
-    return this.userProfilesService.updateByUserId(
+    const updatedUserProfile = await this.userProfilesService.updateByUserId(
       userId,
       updateUserProfileDto
     );
+
+    if (!updatedUserProfile) {
+      throw new NotFoundException();
+    }
+
+    return updatedUserProfile;
   }
 }

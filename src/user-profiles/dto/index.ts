@@ -1,2 +1,2 @@
-export * from './create-user-profile.dto';
-export * from './update-user-profile.dto';
+export * from './create-coach-user-profile.dto';
+export * from './update-coach-user-profile.dto';

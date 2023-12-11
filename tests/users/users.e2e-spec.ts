@@ -13,6 +13,8 @@ import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
+import { HelpNeed, HelpOffer, UserProfile } from 'src/user-profiles/models';
+import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User, UserCandidat } from 'src/users/models';
@@ -3203,6 +3205,161 @@ describe('Users', () => {
           });
 
           expect(userCandidat).toBeFalsy();
+        });
+      });
+      describe('/profile/:id - Update user profile', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer()).put(
+            `${route}/profile/${loggedInCandidate.user.id}`
+          );
+
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if admin updates a user profile', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              description: 'hello',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach updates another profile than his own', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              description: 'hello',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate updates another profile than his own', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              description: 'hello',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200, if candidate updates his profile candidate properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...updatedProfile,
+              searchBusinessLines: expect.arrayContaining([
+                expect.objectContaining({ name: 'id' }),
+              ]),
+              searchAmbitions: expect.arrayContaining([
+                expect.objectContaining({ name: 'développeur' }),
+              ]),
+              helpNeeds: expect.arrayContaining([
+                expect.objectContaining({ name: 'network' }),
+              ]),
+            })
+          );
+        });
+        it('Should return 400, if candidate updates his profile with coach properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            currentJob: 'mécanicien',
+            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpOffers: [{ name: 'network' }] as HelpOffer[],
+          };
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 200, if coach updates his profile coach properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            currentJob: 'mécanicien',
+            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpOffers: [{ name: 'network' }] as HelpOffer[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...updatedProfile,
+              networkBusinessLines: expect.arrayContaining([
+                expect.objectContaining({ name: 'id' }),
+              ]),
+              helpOffers: expect.arrayContaining([
+                expect.objectContaining({ name: 'network' }),
+              ]),
+            })
+          );
+        });
+        it('Should return 400, if coach updates his profile with candidate properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
         });
       });
       describe('/changePwd - Update password', () => {
