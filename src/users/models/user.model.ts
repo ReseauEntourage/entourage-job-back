@@ -218,13 +218,13 @@ export class User extends HistorizedModel {
         },
         { hooks: true }
       );
-      await UserProfile.create(
-        {
-          UserId: createdUser.id,
-        },
-        { hooks: true }
-      );
     }
+    await UserProfile.create(
+      {
+        UserId: createdUser.id,
+      },
+      { hooks: true }
+    );
   }
 
   @BeforeUpdate

@@ -10,9 +10,9 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { UserProfileSearchAmbition } from '../../../user-profiles/models';
-import { UserProfile } from '../../../user-profiles/models/user-profile.model';
 import { CV, CVAmbition } from 'src/cvs/models';
+import { UserProfileSearchAmbition } from 'src/user-profiles/models';
+import { UserProfile } from 'src/user-profiles/models/user-profile.model';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Ambitions' })
@@ -37,14 +37,14 @@ export class Ambition extends WrapperModel {
   @Column
   order: number;
 
-  @BelongsToMany(() => CV, () => CVAmbition, 'AmbitionId', 'CVId')
-  CVs: CV[];
-
   @CreatedAt
   createdAt: Date;
 
   @UpdatedAt
   updatedAt: Date;
+
+  @BelongsToMany(() => CV, () => CVAmbition, 'AmbitionId', 'CVId')
+  CVs: CV[];
 
   @BelongsToMany(
     () => UserProfile,

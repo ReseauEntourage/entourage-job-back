@@ -65,6 +65,9 @@ export class UserProfile extends Model {
   @BelongsTo(() => User, 'UserId')
   user: User;
 
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @BelongsToMany(
     () => BusinessLine,
     () => UserProfileNetworkBusinessLine,
@@ -76,6 +79,9 @@ export class UserProfile extends Model {
   @HasMany(() => UserProfileNetworkBusinessLine, 'UserProfileId')
   userProfileNetworkBusinessLines: UserProfileNetworkBusinessLine[];
 
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @BelongsToMany(
     () => BusinessLine,
     () => UserProfileSearchBusinessLine,
@@ -98,9 +104,6 @@ export class UserProfile extends Model {
   )
   searchAmbitions: Ambition[];
 
-  @ApiProperty()
-  @IsArray()
-  @IsOptional()
   @HasMany(() => UserProfileSearchAmbition, 'UserProfileId')
   userProfileSearchAmbitions: UserProfileSearchAmbition[];
 
