@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
+import { UsersService } from 'src/users/users.service';
 import { HelpNeed, HelpOffer, UserProfile } from './models';
 
 @Injectable()
@@ -16,7 +17,8 @@ export class UserProfilesService {
     @InjectModel(HelpNeed)
     private helpNeedModel: typeof HelpNeed,
     @InjectModel(HelpOffer)
-    private helpOfferModel: typeof HelpOffer
+    private helpOfferModel: typeof HelpOffer,
+    private usersService: UsersService
   ) {}
 
   async findOne(id: string) {
@@ -82,6 +84,10 @@ export class UserProfilesService {
         },
       ],
     });
+  }
+
+  async findOneUser(userId: string) {
+    return this.usersService.findOne(userId);
   }
 
   async updateByUserId(

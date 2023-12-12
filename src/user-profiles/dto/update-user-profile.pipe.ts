@@ -10,8 +10,8 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CandidateUserRoles, CoachUserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import { Permissions } from 'src/users/users.types';
+import { hasPermission } from 'src/users/users.utils';
 import { RequestWithUser } from 'src/utils/types';
 import { UpdateCandidateUserProfileDto } from './update-candidate-user-profile.dto';
 import { UpdateCoachUserProfileDto } from './update-coach-user-profile.dto';
@@ -41,7 +41,7 @@ export class UpdateUserProfilePipe
 
     const { role } = this.request.user;
 
-    if (isRoleIncluded(CandidateUserRoles, role)) {
+    if (hasPermission(Permissions.CANDIDATE, role)) {
       const object = plainToInstance(UpdateCandidateUserProfileDto, value);
       const errors = await validate(object, {
         whitelist: true,
@@ -54,7 +54,7 @@ export class UpdateUserProfilePipe
       }
     }
 
-    if (isRoleIncluded(CoachUserRoles, role)) {
+    if (hasPermission(Permissions.COACH, role)) {
       const object = plainToInstance(UpdateCoachUserProfileDto, value);
       const errors = await validate(object, {
         whitelist: true,
