@@ -1,5 +1,8 @@
+import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import sharp from 'sharp';
+import { S3Service } from '../external-services/aws/s3.service';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { UsersService } from 'src/users/users.service';
@@ -19,6 +22,7 @@ export class UserProfilesService {
     private helpNeedModel: typeof HelpNeed,
     @InjectModel(HelpOffer)
     private helpOfferModel: typeof HelpOffer,
+    private s3Service: S3Service,
     private usersService: UsersService
   ) {}
 
@@ -149,5 +153,31 @@ export class UserProfilesService {
       where: { UserId: userId },
       individualHooks: true,
     });
+  }
+
+  async uploadProfileImage(userId: string, file: Express.Multer.File) {
+    const { path } = file;
+
+    let uploadedImg: string;
+
+    try {
+      const fileBuffer = await sharp(path)
+        .trim()
+        .jpeg({ quality: 75 })
+        .toBuffer();
+
+      uploadedImg = await this.s3Service.upload(
+        fileBuffer,
+        'image/jpeg',
+        `${userId}.profile.jpg`
+      );
+    } catch (error) {
+      uploadedImg = null;
+    } finally {
+      if (fs.existsSync(path)) {
+        fs.unlinkSync(path); // remove image locally after upload to S3
+      }
+    }
+    return uploadedImg;
   }
 }
