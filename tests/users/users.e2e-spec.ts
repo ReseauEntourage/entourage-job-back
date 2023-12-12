@@ -3362,6 +3362,112 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
       });
+      describe('/profile/uploadImage/:id - Upload user profile picture', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        let path: string;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+          path = userProfileHelper.getTestImagePath();
+        });
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+
+          expect(response.status).toBe(401);
+        });
+        it("Should return 403, if admin uploads a user's profile picture", async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach uploads profile picture for antoher user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate uploads profile picture for antoher user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 201, if candidate uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 400, if candidate uploads empty profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data');
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 201, if coach uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 400, if coach uploads empty profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data');
+          expect(response.status).toBe(400);
+        });
+      });
       describe('/changePwd - Update password', () => {
         let loggedInCandidate: LoggedUser;
         const password = 'Candidat123!';
