@@ -1,7 +1,8 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as _ from 'lodash';
-import { UserRoles } from '../users.types';
+import { Permissions } from '../users.types';
+import { hasPermission } from '../users.utils';
 import { SELF_KEY } from './self.decorator';
 
 @Injectable()
@@ -24,6 +25,6 @@ export class SelfGuard implements CanActivate {
       return user.id === requestId || user.email === requestId;
     });
 
-    return isSelf || user.role === UserRoles.ADMIN;
+    return isSelf || hasPermission(Permissions.ADMIN, user.role);
   }
 }
