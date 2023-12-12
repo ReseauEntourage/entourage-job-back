@@ -34,6 +34,12 @@ export class UserProfilesController {
       | UpdateCandidateUserProfileDto
       | UpdateCoachUserProfileDto
   ) {
+    const user = this.userProfilesService.findOneUser(userId);
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
     const updatedUserProfile = await this.userProfilesService.updateByUserId(
       userId,
       updateUserProfileDto

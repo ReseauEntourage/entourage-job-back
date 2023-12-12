@@ -18,6 +18,8 @@ import {
   MemberFilterKey,
   MemberFilters,
   NormalUserRoles,
+  Permission,
+  UserPermissions,
   UserRole,
   UserRoles,
 } from './users.types';
@@ -30,6 +32,18 @@ export function isRoleIncluded(
     return _.difference([subset], superset).length === 0;
   }
   return _.difference(subset, superset).length === 0;
+}
+
+export function hasPermission(
+  permission: Permission | Permission[],
+  role: UserRole
+) {
+  if (!Array.isArray(permission)) {
+    return UserPermissions[role] === permission;
+  }
+
+  const userPermission = UserPermissions[role];
+  return permission.includes(userPermission);
 }
 
 export function generateUrl(user: User) {

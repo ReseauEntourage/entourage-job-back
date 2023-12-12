@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
 import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
+import { UsersModule } from 'src/users/users.module';
 import {
   HelpNeed,
   HelpOffer,
@@ -23,6 +24,7 @@ import { UserProfilesService } from './user-profiles.service';
       HelpNeed,
       HelpOffer,
     ]),
+    UsersModule,
     AmbitionsModule,
     BusinessLinesModule,
   ],
