@@ -1,3 +1,4 @@
+import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
@@ -11,5 +12,9 @@ export class UserProfilesHelper {
 
   async findOneProfile(profileId: string) {
     return this.userProfilesService.findOne(profileId);
+  }
+
+  getTestImagePath() {
+    return path.join(process.cwd(), '/tests/test-data/image-test.jpg');
   }
 }

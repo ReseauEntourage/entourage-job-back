@@ -24,7 +24,7 @@ import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profi
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfilesService } from './user-profiles.service';
 
-@Controller('user')
+@Controller('user/profile')
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
 
@@ -32,7 +32,7 @@ export class UserProfilesController {
   @UseGuards(UserPermissionsGuard)
   @Self('params.userId')
   @UseGuards(SelfGuard)
-  @Put('/profile/:userId')
+  @Put('/:userId')
   async updateByUserId(
     @Param('userId') userId: string,
     @Body(UpdateUserProfilePipe)
@@ -63,8 +63,8 @@ export class UserProfilesController {
   @Self('params.userId')
   @UseGuards(SelfGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
-  @Post('/profile/uploadImage/:userId')
-  async uploadFile(
+  @Post('/uploadImage/:userId')
+  async uploadProfileImage(
     @Param('userId') userId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
