@@ -13,7 +13,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { validate as uuidValidate } from 'uuid';
-import { PayloadUser } from 'src/auth/auth.types';
 import { Public, UserPayload } from 'src/auth/guards';
 import {
   LinkedUser,
@@ -21,6 +20,7 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
+import { User } from 'src/users/models';
 import { Permissions, UserRole, UserRoles } from 'src/users/users.types';
 import { getCandidateIdFromCoachOrCandidate } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
@@ -48,7 +48,8 @@ import { OpportunitiesService } from './opportunities.service';
 import {
   EventTypes,
   OfferAdminTab,
-  OfferCandidateTab,
+  OfferCandidateType,
+  OfferCandidateTypes,
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
@@ -152,7 +153,7 @@ export class OpportunitiesController {
     }
 
     const createdOpportunity = await this.opportunitiesService.create(
-      { ...opportunityToCreate, isValidated: isAdmin },
+      { ...opportunityToCreate, isValidated: isCopy ? false : isAdmin },
       userId
     );
 
@@ -357,6 +358,8 @@ export class OpportunitiesController {
     query: {
       type: OfferAdminTab;
       search: string;
+      offset: number;
+      limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     return this.opportunitiesService.findAll(query);
@@ -399,7 +402,7 @@ export class OpportunitiesController {
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('/candidate/tabCount/:candidateId')
-  async countOffersByStatus(
+  async candidateCountOffersByStatus(
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string
   ) {
     const opportunityUsers =
@@ -409,8 +412,25 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
-    return this.opportunityUsersService.countOffersByStatus(candidateId);
+    return this.opportunityUsersService.candidateCountOffersByStatus(
+      candidateId
+    );
   }
+
+  // to be implemented
+  // @UserPermissions(Permissions.ADMIN)
+  // @UseGuards(UserPermissionsGuard)
+  // @Get('/admin/tabCount')
+  // async adminCountOffersByType(
+  //   @Query()
+  //   query: {
+  //     type: OfferAdminTab;
+  //     search: string;
+  //   } & FilterParams<OfferFilterKey>
+  // ) {
+  //   const { type, search, businessLines, department, contracts } = query
+  //   return this.opportunitiesService.adminCountOfferByType(type, search,businessLines, department, contracts);
+  // }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
@@ -421,14 +441,14 @@ export class OpportunitiesController {
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Query()
     query: {
-      type: OfferCandidateTab;
+      type: OfferCandidateType;
       search: string;
       offset: number;
       limit: number;
     } & FilterParams<OfferFilterKey>
   ) {
     const { type, status } = query;
-    if (type !== 'public' && !status) {
+    if (type !== OfferCandidateTypes.PUBLIC && !status) {
       throw new BadRequestException('status expected');
     }
 
@@ -469,7 +489,7 @@ export class OpportunitiesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @UserPayload('role') role: UserRole,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @UserPayload() user: PayloadUser
+    @UserPayload() user: User
   ) {
     let opportunity: Opportunity | OpportunityRestricted;
     if (role === UserRoles.ADMIN) {
@@ -606,7 +626,7 @@ export class OpportunitiesController {
   async updateOpportunityUserEvent(
     @Param('id', new ParseUUIDPipe()) id: string,
     @UserPayload('role') role: UserRole,
-    @UserPayload() user: PayloadUser,
+    @UserPayload() user: User,
     @Body(new UpdateOpportunityUserEventPipe())
     updateOpportunityUserEventDto: UpdateOpportunityUserEventDto
   ) {

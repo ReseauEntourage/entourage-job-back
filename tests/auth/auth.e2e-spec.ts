@@ -3,8 +3,6 @@ import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
-import { PayloadUser } from 'src/auth/auth.types';
-import { getPartialUserForPayload } from 'src/auth/auth.utils';
 import { Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -60,14 +58,11 @@ describe('Auth', () => {
 
   describe('/login - Login', () => {
     let candidate: User;
-    let candidateResponse: PayloadUser;
     beforeEach(async () => {
       candidate = await userFactory.create({
         role: UserRoles.CANDIDATE,
         password: 'Candidat123!',
       });
-
-      candidateResponse = getPartialUserForPayload(candidate);
     });
 
     it("Should return 201 and user's info with token, if valid email and password", async () => {
@@ -81,12 +76,12 @@ describe('Auth', () => {
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
-        ...candidateResponse,
+        ...candidate,
         lastConnection: response.body.user.lastConnection,
       });
       expect(response.body.token).toBeTruthy();
     });
-    it('Should return 401, if invalid email', async () => {
+    it('Should return 400, if invalid email', async () => {
       const response: APIResponse<AuthController['login']> = await request(
         app.getHttpServer()
       )
@@ -95,7 +90,7 @@ describe('Auth', () => {
           email: 'invalidEmail',
           password: 'candidate',
         });
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(400);
     });
     it('Should return 401, if invalid password', async () => {
       const response: APIResponse<AuthController['login']> = await request(
@@ -187,7 +182,7 @@ describe('Auth', () => {
       });
 
       it('Should return 200, if valid link', async () => {
-        const token = await authHelper.getResetToken(candidate);
+        const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
             `${route}/reset/${candidate.id}/${token}`
@@ -196,7 +191,7 @@ describe('Auth', () => {
       });
       it('Should return 400, if invalid user id', async () => {
         const invalidUserId = '1111-invalid-99999';
-        const token = await authHelper.getResetToken(candidate);
+        const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
             `${route}/reset/${invalidUserId}/${token}`
@@ -204,7 +199,7 @@ describe('Auth', () => {
         expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
-        await authHelper.getResetToken(candidate);
+        await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['checkReset']> =
           await request(app.getHttpServer()).get(
             `${route}/reset/${candidate.id}/${invalidToken}`
@@ -214,16 +209,14 @@ describe('Auth', () => {
     });
     describe('Reset password', () => {
       let candidate: User;
-      let candidateResponse: PayloadUser;
       beforeEach(async () => {
         candidate = await userFactory.create({
           role: UserRoles.CANDIDATE,
         });
-        candidateResponse = getPartialUserForPayload(candidate);
       });
 
       it('Should return 200 and updated user, if valid link', async () => {
-        const token = await authHelper.getResetToken(candidate);
+        const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidate.id}/${token}`)
@@ -233,10 +226,10 @@ describe('Auth', () => {
             });
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
-          ...candidateResponse,
+          ...candidate,
           coaches: [],
           candidat: {
-            ...candidateResponse.candidat,
+            ...candidate.candidat,
             note: null,
           },
           organization: null,
@@ -244,7 +237,7 @@ describe('Auth', () => {
         });
       });
       it('Should return 400, if not matching passwords', async () => {
-        const token = await authHelper.getResetToken(candidate);
+        const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidate.id}/${token}`)
@@ -256,7 +249,7 @@ describe('Auth', () => {
         expect(response.status).toBe(400);
       });
       it("Should return 400, if password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
-        const token = await authHelper.getResetToken(candidate);
+        const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidate.id}/${token}`)
@@ -270,7 +263,7 @@ describe('Auth', () => {
       it('Should return 400, if invalid user id', async () => {
         const invalidUserId = '1111-invalid-99999';
 
-        const token = await authHelper.getResetToken(candidate);
+        const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
             .post(`${route}/reset/${invalidUserId}/${token}`)
@@ -281,7 +274,7 @@ describe('Auth', () => {
         expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
-        await authHelper.getResetToken(candidate);
+        await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
           await request(app.getHttpServer())
             .post(`${route}/reset/${candidate.id}/${invalidToken}`)
@@ -299,7 +292,6 @@ describe('Auth', () => {
         role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
-      const candidateResponse = getPartialUserForPayload(loggedInCandidat.user);
 
       const response: APIResponse<AuthController['getCurrent']> = await request(
         app.getHttpServer()
@@ -308,10 +300,10 @@ describe('Auth', () => {
         .set('authorization', `Token ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
-        ...candidateResponse,
+        ...loggedInCandidat.user,
         coaches: [],
         candidat: {
-          ...candidateResponse.candidat,
+          ...loggedInCandidat.user.candidat,
           note: null,
         },
         organization: null,

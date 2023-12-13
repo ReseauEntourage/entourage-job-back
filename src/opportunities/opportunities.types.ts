@@ -11,12 +11,7 @@ import {
   Department,
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
-import {
-  AdminZones,
-  FilterConstant,
-  Filters,
-  TabFilters,
-} from 'src/utils/types';
+import { AdminZones, FilterConstant, Filters } from 'src/utils/types';
 import { Opportunity, OpportunityUser } from './models';
 
 export type ExternalOfferOrigin = 'network' | 'internet' | 'counselor';
@@ -85,21 +80,6 @@ export interface OfferOptions {
 
 export type OfferFilterKey = keyof OfferOptions;
 
-export const OfferCandidateTabs = {
-  PRIVATE: 'private',
-  PUBLIC: 'public',
-  ARCHIVED: 'archived',
-} as const;
-
-type OfferCandidateTabKey = keyof typeof OfferCandidateTabs;
-export type OfferCandidateTab = typeof OfferCandidateTabs[OfferCandidateTabKey];
-
-export const OfferCandidateTabFilters: TabFilters<OfferCandidateTab> = [
-  { tag: 'private', title: 'Offres personnelles', active: true },
-  { tag: 'public', title: 'Offres générales' },
-  { tag: 'archived', title: 'Offres archivées' },
-];
-
 export const OfferAdminTabs = {
   PENDING: 'pending',
   VALIDATED: 'validated',
@@ -110,13 +90,14 @@ export const OfferAdminTabs = {
 type OfferAdminTabKey = keyof typeof OfferAdminTabs;
 export type OfferAdminTab = typeof OfferAdminTabs[OfferAdminTabKey];
 
-export const OfferAdminTabFilters: TabFilters<OfferAdminTab> = [
-  { tag: 'pending', title: 'Offres à valider' },
-  { tag: 'validated', title: 'Offres publiées', active: true },
-  { tag: 'external', title: 'Offres externes' },
-  { tag: 'archived', title: 'Offres archivées' },
-];
+export const OfferCandidateTypes = {
+  PUBLIC: 'public',
+  PRIVATE: 'private',
+} as const;
 
+type OfferCandidateTypeKey = keyof typeof OfferCandidateTypes;
+export type OfferCandidateType =
+  typeof OfferCandidateTypes[OfferCandidateTypeKey];
 export const OfferFilters: Filters<OfferFilterKey> = [
   {
     key: 'isPublic',
