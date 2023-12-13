@@ -15,10 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as _ from 'lodash';
-import {
-  PayloadUser,
-  RequestWithAuthorizationHeader,
-} from 'src/auth/auth.types';
+import { RequestWithAuthorizationHeader } from 'src/auth/auth.types';
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
 import {
@@ -55,7 +52,7 @@ export class CVsController {
   @Post(':candidateId')
   async createCV(
     @Req() req: RequestWithAuthorizationHeader,
-    @UserPayload() user: PayloadUser,
+    @UserPayload() user: User,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UserPayload('role') role: UserRole,
     @UserPayload('zone') zone: AdminZone,

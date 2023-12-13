@@ -27,7 +27,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@UserPayload() user: User) {
-    return this.authService.login(user.toJSON());
+    return this.authService.login(user);
   }
 
   @Redirect(`${process.env.FRONT_URL}`, 302)
@@ -50,7 +50,7 @@ export class AuthController {
     }
 
     const { updatedUser, token } = await this.authService.generateResetToken(
-      user
+      user.id
     );
 
     const { id, firstName, role, zone } = updatedUser;

@@ -6,11 +6,7 @@ import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { LoggedUser } from './auth.types';
-import {
-  encryptPassword,
-  getPartialUserForPayload,
-  validatePassword,
-} from './auth.utils';
+import { encryptPassword, validatePassword } from './auth.utils';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +18,9 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.usersService.findOneByMail(email);
-    if (user && validatePassword(password, user.password, user.salt)) {
+    const { password: userPassword, salt: userSalt } =
+      await this.usersService.findOneComplete(user.id);
+    if (user && validatePassword(password, userPassword, userSalt)) {
       return user;
     }
     return null;
@@ -32,16 +30,14 @@ export class AuthService {
     user: User,
     expiration: string | number = '30d'
   ): Promise<LoggedUser> {
-    const payloadUser = getPartialUserForPayload(user);
-
-    const { id, ...restPayloadUser } = payloadUser;
+    const { id } = user;
 
     const payload = {
       sub: id,
-      ...restPayloadUser,
     };
+
     return {
-      user: payloadUser,
+      user: user,
       token: this.jwtService.sign(payload, {
         secret: `${process.env.JWT_SECRET}`,
         expiresIn: expiration,
@@ -89,10 +85,10 @@ export class AuthService {
     };
   }
 
-  async generateResetToken(user: User) {
+  async generateResetToken(userId: string) {
     const { hash, salt, jwtToken } = this.generateRandomPasswordInJWT('1d');
 
-    const updatedUser = await this.usersService.update(user.id, {
+    const updatedUser = await this.usersService.update(userId, {
       hashReset: hash,
       saltReset: salt,
     });

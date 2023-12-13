@@ -322,7 +322,7 @@ export class OpportunityUsersService {
     return opportunityUser;
   }
 
-  async countOffersByStatus(candidateId: string) {
+  async candidateCountOffersByStatus(candidateId: string) {
     const statusCounts = await this.opportunityUserModel.sequelize.query(
       `SELECT status, count(*)
        FROM "Opportunity_Users"

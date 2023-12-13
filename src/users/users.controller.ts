@@ -229,7 +229,9 @@ export class UsersController {
       throw new UnauthorizedException();
     }
 
-    const { salt: oldSalt, password } = user;
+    const { salt: oldSalt, password } = await this.usersService.findOneComplete(
+      user.id
+    );
 
     const validated = validatePassword(oldPassword, password, oldSalt);
 
