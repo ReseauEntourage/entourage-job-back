@@ -44,4 +44,9 @@ export class ContactCompanyFormDto {
   @IsString()
   @IsOptional()
   heardAbout?: HeardAboutValue;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  message?: string;
 }
