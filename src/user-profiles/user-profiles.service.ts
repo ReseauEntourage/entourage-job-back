@@ -4,6 +4,7 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { UsersService } from 'src/users/users.service';
 import { HelpNeed, HelpOffer, UserProfile } from './models';
+import { getUserProfileInclude } from './models/user-profile.include';
 
 @Injectable()
 export class UserProfilesService {
@@ -23,66 +24,14 @@ export class UserProfilesService {
 
   async findOne(id: string) {
     return this.userProfileModel.findByPk(id, {
-      include: [
-        {
-          model: BusinessLine,
-          as: 'networkBusinessLines',
-          attributes: ['id', 'name', 'order'],
-        },
-        {
-          model: BusinessLine,
-          as: 'searchBusinessLines',
-          attributes: ['id', 'name', 'order'],
-        },
-        {
-          model: Ambition,
-          as: 'searchAmbitions',
-          attributes: ['id', 'name', 'prefix', 'order'],
-        },
-        {
-          model: HelpNeed,
-          as: 'helpNeeds',
-          attributes: ['id', 'name'],
-        },
-        {
-          model: HelpOffer,
-          as: 'helpOffers',
-          attributes: ['id', 'name'],
-        },
-      ],
+      include: getUserProfileInclude(),
     });
   }
 
   async findOneByUserId(userId: string) {
     return this.userProfileModel.findOne({
       where: { UserId: userId },
-      include: [
-        {
-          model: BusinessLine,
-          as: 'networkBusinessLines',
-          attributes: ['id', 'name', 'order'],
-        },
-        {
-          model: BusinessLine,
-          as: 'searchBusinessLines',
-          attributes: ['id', 'name', 'order'],
-        },
-        {
-          model: Ambition,
-          as: 'searchAmbitions',
-          attributes: ['id', 'name', 'prefix', 'order'],
-        },
-        {
-          model: HelpNeed,
-          as: 'helpNeeds',
-          attributes: ['id', 'name'],
-        },
-        {
-          model: HelpOffer,
-          as: 'helpOffers',
-          attributes: ['id', 'name'],
-        },
-      ],
+      include: getUserProfileInclude(),
     });
   }
 

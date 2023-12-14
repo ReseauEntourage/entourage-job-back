@@ -29,7 +29,6 @@ import {
   Unique,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { UserProfile } from '../../user-profiles/models';
 import {
   AdminRole,
   CandidateUserRoles,
@@ -48,6 +47,7 @@ import {
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
 import { Share } from 'src/shares/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
