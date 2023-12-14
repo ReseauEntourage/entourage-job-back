@@ -1,5 +1,4 @@
-import { ApiProperty, PickType } from '@nestjs/swagger';
-import { IsBoolean } from 'class-validator';
+import { PickType } from '@nestjs/swagger';
 import { ExternalMessage } from '../models';
 
 export class CreateExternalMessageDto extends PickType(ExternalMessage, [
@@ -12,8 +11,4 @@ export class CreateExternalMessageDto extends PickType(ExternalMessage, [
   'message',
   'type',
   'optInNewsletter',
-] as const) {
-  @ApiProperty()
-  @IsBoolean()
-  optInContact: boolean;
-}
+] as const) {}
