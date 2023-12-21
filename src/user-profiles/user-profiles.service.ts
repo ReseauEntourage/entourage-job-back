@@ -1,12 +1,20 @@
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import sharp from 'sharp';
 import { S3Service } from '../external-services/aws/s3.service';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { UsersService } from 'src/users/users.service';
-import { HelpNeed, HelpOffer, UserProfile } from './models';
+import {
+  HelpNeed,
+  HelpOffer,
+  UserProfile,
+  UserProfileNetworkBusinessLine,
+  UserProfileSearchAmbition,
+  UserProfileSearchBusinessLine,
+} from './models';
 import { getUserProfileInclude } from './models/user-profile.include';
 
 @Injectable()
@@ -16,6 +24,12 @@ export class UserProfilesService {
     private userProfileModel: typeof UserProfile,
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine,
+    @InjectModel(UserProfileNetworkBusinessLine)
+    private userProfileNetworkBusinessLineModel: typeof UserProfileNetworkBusinessLine,
+    @InjectModel(UserProfileSearchBusinessLine)
+    private userProfileSearchBusinessLineModel: typeof UserProfileSearchBusinessLine,
+    @InjectModel(UserProfileSearchAmbition)
+    private userProfileSearchAmbitionModel: typeof UserProfileSearchAmbition,
     @InjectModel(Ambition)
     private ambitionModel: typeof Ambition,
     @InjectModel(HelpNeed)
@@ -59,7 +73,7 @@ export class UserProfilesService {
         individualHooks: true,
       });
 
-      if (updateUserProfileDto.networkBusinessLines?.length > 0) {
+      if (updateUserProfileDto.networkBusinessLines) {
         const networkBusinessLines = await Promise.all(
           updateUserProfileDto.networkBusinessLines.map(
             ({ name, order = -1 }) => {
@@ -78,8 +92,20 @@ export class UserProfilesService {
           networkBusinessLines,
           { transaction: t }
         );
+        await this.userProfileNetworkBusinessLineModel.destroy({
+          where: {
+            UserProfileId: userProfileToUpdate.id,
+            BusinessLineId: {
+              [Op.not]: networkBusinessLines.map((bl) => {
+                return bl.id;
+              }),
+            },
+          },
+          hooks: true,
+          transaction: t,
+        });
       }
-      if (updateUserProfileDto.searchBusinessLines?.length > 0) {
+      if (updateUserProfileDto.searchBusinessLines) {
         const searchBusinessLines = await Promise.all(
           updateUserProfileDto.searchBusinessLines.map(
             ({ name, order = -1 }) => {
@@ -98,8 +124,21 @@ export class UserProfilesService {
           searchBusinessLines,
           { transaction: t }
         );
+
+        await this.userProfileSearchBusinessLineModel.destroy({
+          where: {
+            UserProfileId: userProfileToUpdate.id,
+            BusinessLineId: {
+              [Op.not]: searchBusinessLines.map((bl) => {
+                return bl.id;
+              }),
+            },
+          },
+          hooks: true,
+          transaction: t,
+        });
       }
-      if (updateUserProfileDto.searchAmbitions?.length > 0) {
+      if (updateUserProfileDto.searchAmbitions) {
         const searchAmbitions = await Promise.all(
           updateUserProfileDto.searchAmbitions.map(
             ({ name, order = -1, prefix = 'dans' }) => {
@@ -116,9 +155,22 @@ export class UserProfilesService {
         await userProfileToUpdate.$add('searchAmbitions', searchAmbitions, {
           transaction: t,
         });
+
+        await this.userProfileSearchAmbitionModel.destroy({
+          where: {
+            UserProfileId: userProfileToUpdate.id,
+            AmbitionId: {
+              [Op.not]: searchAmbitions.map((amb) => {
+                return amb.id;
+              }),
+            },
+          },
+          hooks: true,
+          transaction: t,
+        });
       }
-      if (updateUserProfileDto.helpNeeds?.length > 0) {
-        await Promise.all(
+      if (updateUserProfileDto.helpNeeds) {
+        const helpNeeds = await Promise.all(
           updateUserProfileDto.helpNeeds.map(({ name }) => {
             return this.helpNeedModel.create(
               { UserProfileId: userProfileToUpdate.id, name },
@@ -129,9 +181,21 @@ export class UserProfilesService {
             );
           })
         );
+
+        await this.helpNeedModel.destroy({
+          where: {
+            id: {
+              [Op.not]: helpNeeds.map((hn) => {
+                return hn.id;
+              }),
+            },
+          },
+          hooks: true,
+          transaction: t,
+        });
       }
-      if (updateUserProfileDto.helpOffers?.length > 0) {
-        await Promise.all(
+      if (updateUserProfileDto.helpOffers) {
+        const helpOffers = await Promise.all(
           updateUserProfileDto.helpOffers.map(({ name }) => {
             return this.helpOfferModel.create(
               { UserProfileId: userProfileToUpdate.id, name },
@@ -142,6 +206,17 @@ export class UserProfilesService {
             );
           })
         );
+        await this.helpOfferModel.destroy({
+          where: {
+            id: {
+              [Op.not]: helpOffers.map((ho) => {
+                return ho.id;
+              }),
+            },
+          },
+          hooks: true,
+          transaction: t,
+        });
       }
     });
 
