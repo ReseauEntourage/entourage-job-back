@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { User } from '../models';
 import { Permission } from '../users.types';
 import { hasPermission } from '../users.utils';
-import { User } from '../models';
 import { PERSMISSIONS_KEY } from './user-permissions.decorator';
 
 @Injectable()

@@ -3216,12 +3216,30 @@ describe('Users', () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
-          });
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+            },
+            {
+              userProfile: {
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+            },
+            {
+              userProfile: {
+                currentJob: 'peintre',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
 
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -3290,15 +3308,11 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              searchBusinessLines: expect.arrayContaining([
-                expect.objectContaining({ name: 'id' }),
-              ]),
-              searchAmbitions: expect.arrayContaining([
+              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
+              searchAmbitions: [
                 expect.objectContaining({ name: 'développeur' }),
-              ]),
-              helpNeeds: expect.arrayContaining([
-                expect.objectContaining({ name: 'network' }),
-              ]),
+              ],
+              helpNeeds: [expect.objectContaining({ name: 'network' })],
             })
           );
         });
@@ -3336,12 +3350,8 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              networkBusinessLines: expect.arrayContaining([
-                expect.objectContaining({ name: 'id' }),
-              ]),
-              helpOffers: expect.arrayContaining([
-                expect.objectContaining({ name: 'network' }),
-              ]),
+              networkBusinessLines: [expect.objectContaining({ name: 'id' })],
+              helpOffers: [expect.objectContaining({ name: 'network' })],
             })
           );
         });
