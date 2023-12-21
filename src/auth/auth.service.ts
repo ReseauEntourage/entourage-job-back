@@ -18,11 +18,15 @@ export class AuthService {
 
   async validateUser(email: string, password: string) {
     const user = await this.usersService.findOneByMail(email);
-    const { password: userPassword, salt: userSalt } =
-      await this.usersService.findOneComplete(user.id);
-    if (user && validatePassword(password, userPassword, userSalt)) {
-      return user;
+    if (user) {
+      const { password: userPassword, salt: userSalt } =
+        await this.usersService.findOneComplete(user.id);
+
+      if (validatePassword(password, userPassword, userSalt)) {
+        return user;
+      }
     }
+
     return null;
   }
 
