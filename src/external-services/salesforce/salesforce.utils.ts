@@ -383,7 +383,8 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     isLeadRecordTypeProps(recordType, LeadRecordTypesIds.COMPANY, leadProps) &&
     isLeadRecordType(recordType, LeadRecordTypesIds.COMPANY)
   ) {
-    const { company, position, approach, heardAbout, newsletter } = leadProps;
+    const { company, position, approach, heardAbout, newsletter, message } =
+      leadProps;
 
     return {
       ...commonFields,
@@ -397,6 +398,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         heardAbout,
         LeadHeardAbout
       ),
+      Message_For__c: message,
       Abonnements_Plezi__c: newsletter,
     } as SalesforceLead<T>;
   }

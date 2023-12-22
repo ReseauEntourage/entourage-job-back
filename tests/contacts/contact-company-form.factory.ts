@@ -27,6 +27,7 @@ export class ContactCompanyFormFactory
       ),
       approach: faker.random.objectElement(CompanyApproaches),
       heardAbout: faker.random.objectElement(HeardAbout),
+      message: faker.lorem.lines(3),
     };
 
     return {
