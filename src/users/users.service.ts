@@ -146,6 +146,7 @@ export class UsersService {
           model: UserCandidat,
           as: 'candidat',
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
+          required: false,
           include: [
             {
               model: CV,
@@ -154,23 +155,27 @@ export class UsersService {
               where: {
                 ...lastCVVersionWhereOptions,
               },
+              required: false,
               include: [
                 {
                   model: BusinessLine,
                   as: 'businessLines',
                   attributes: ['name', 'order'],
+                  required: false,
                 },
               ],
             },
             {
               model: User,
               as: 'coach',
+              required: false,
               attributes: [...UserAttributes],
               include: [
                 {
                   model: Organization,
                   as: 'organization',
                   attributes: ['name', 'address', 'zone', 'id'],
+                  required: false,
                 },
               ],
             },
@@ -180,6 +185,7 @@ export class UsersService {
           model: Organization,
           as: 'organization',
           attributes: ['name', 'address', 'zone', 'id'],
+          required: false,
         },
       ],
     });
@@ -236,16 +242,19 @@ export class UsersService {
           model: UserCandidat,
           as: 'coaches',
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
+          required: false,
           include: [
             {
               model: User,
               as: 'candidat',
               attributes: [...UserAttributes],
+              required: false,
               include: [
                 {
                   model: Organization,
                   as: 'organization',
                   attributes: ['name', 'address', 'zone', 'id'],
+                  required: false,
                 },
               ],
             },
@@ -255,6 +264,7 @@ export class UsersService {
           model: Organization,
           as: 'organization',
           attributes: ['name', 'address', 'zone', 'id'],
+          required: false,
         },
       ],
     });
