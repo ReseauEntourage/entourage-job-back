@@ -115,7 +115,7 @@ export class CVsController {
       status === CVStatuses.PENDING.value
     ) {
       await this.cvsService.sendMailsAfterSubmitting(
-        user as User,
+        user,
         candidateId,
         createdCV
       );
