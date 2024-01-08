@@ -874,6 +874,7 @@ export class SalesforceService {
     zone,
     approach,
     heardAbout,
+    message,
   }: CompanyLeadProps) {
     return (await this.findOrCreateLead(
       {
@@ -886,6 +887,7 @@ export class SalesforceService {
         zone,
         approach,
         heardAbout,
+        message,
       },
       LeadRecordTypesIds.COMPANY
     )) as string;
