@@ -13,6 +13,8 @@ import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
+import { HelpNeed, HelpOffer, UserProfile } from 'src/user-profiles/models';
+import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User, UserCandidat } from 'src/users/models';
@@ -45,6 +47,7 @@ import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { UserCandidatsHelper } from './user-candidats.helper';
+import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
 
@@ -55,6 +58,7 @@ describe('Users', () => {
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
+  let userProfileHelper: UserProfilesHelper;
   let cvsHelper: CVsHelper;
   let cvFactory: CVFactory;
   let cvBusinessLinesHelper: CVBusinessLinesHelper;
@@ -99,6 +103,8 @@ describe('Users', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
+    userProfileHelper =
+      moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
     cvFactory = moduleFixture.get<CVFactory>(CVFactory);
@@ -2432,7 +2438,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { hidden: true }
+              {
+                userCandidat: {
+                  hidden: true,
+                },
+              }
             );
             await databaseHelper.createEntities(
               userFactory,
@@ -2440,7 +2450,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { hidden: false }
+              {
+                userCandidat: {
+                  hidden: false,
+                },
+              }
             );
 
             const response: APIResponse<UsersController['findMembers']> =
@@ -2462,7 +2476,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { employed: true }
+              {
+                userCandidat: {
+                  employed: true,
+                },
+              }
             );
             await databaseHelper.createEntities(
               userFactory,
@@ -2470,7 +2488,11 @@ describe('Users', () => {
               {
                 role: UserRoles.CANDIDATE,
               },
-              { employed: false }
+              {
+                userCandidat: {
+                  employed: false,
+                },
+              }
             );
             const response: APIResponse<UsersController['findMembers']> =
               await request(app.getHttpServer())
@@ -3183,6 +3205,277 @@ describe('Users', () => {
           });
 
           expect(userCandidat).toBeFalsy();
+        });
+      });
+      describe('/profile/:id - Update user profile', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+            },
+            {
+              userProfile: {
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+            },
+            {
+              userProfile: {
+                currentJob: 'peintre',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+        });
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer()).put(
+            `${route}/profile/${loggedInCandidate.user.id}`
+          );
+
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if admin updates a user profile', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              description: 'hello',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach updates another profile than his own', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              description: 'hello',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate updates another profile than his own', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              description: 'hello',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200, if candidate updates his profile candidate properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...updatedProfile,
+              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
+              searchAmbitions: [
+                expect.objectContaining({ name: 'développeur' }),
+              ],
+              helpNeeds: [expect.objectContaining({ name: 'network' })],
+            })
+          );
+        });
+        it('Should return 400, if candidate updates his profile with coach properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            currentJob: 'mécanicien',
+            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpOffers: [{ name: 'network' }] as HelpOffer[],
+          };
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 200, if coach updates his profile coach properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            currentJob: 'mécanicien',
+            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpOffers: [{ name: 'network' }] as HelpOffer[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...updatedProfile,
+              networkBusinessLines: [expect.objectContaining({ name: 'id' })],
+              helpOffers: [expect.objectContaining({ name: 'network' })],
+            })
+          );
+        });
+        it('Should return 400, if coach updates his profile with candidate properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
+        });
+      });
+      describe('/profile/uploadImage/:id - Upload user profile picture', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+
+        let path: string;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+          path = userProfileHelper.getTestImagePath();
+        });
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+
+          expect(response.status).toBe(401);
+        });
+        it("Should return 403, if admin uploads a user's profile picture", async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach uploads profile picture for antoher user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate uploads profile picture for antoher user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 201, if candidate uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 400, if candidate uploads empty profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data');
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 201, if coach uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 400, if coach uploads empty profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data');
+          expect(response.status).toBe(400);
         });
       });
       describe('/changePwd - Update password', () => {
@@ -4479,9 +4772,15 @@ describe('Users', () => {
             await userCandidatsHelper.findOneUserCandidat({
               coachId: coach.id,
             });
+
           expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
+
+          const userProfile = await userProfileHelper.findOneProfileByUserId(
+            candidate.id
+          );
+          expect(userProfile).toBeFalsy();
 
           const cvs = await cvsHelper.findAllCVsByCandidateId(candidate.id);
           expect(cvs.length).toBeFalsy();
@@ -4596,9 +4895,15 @@ describe('Users', () => {
             await userCandidatsHelper.findOneUserCandidat({
               coachId: coach.id,
             });
+
           expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
+
+          const userProfile = await userProfileHelper.findOneProfileByUserId(
+            coach.id
+          );
+          expect(userProfile).toBeFalsy();
         });
       });
     });

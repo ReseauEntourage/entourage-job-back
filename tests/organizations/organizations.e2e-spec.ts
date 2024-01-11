@@ -360,16 +360,6 @@ describe('Organizations', () => {
           expect(response.body[0].name).toMatch('C');
           expect(response.body[1].name).toMatch('D');
         });
-        it('Should return 200 and the 3rd and 4th organization', async () => {
-          const response: APIResponse<OrganizationsController['findAll']> =
-            await request(app.getHttpServer())
-              .get(`${route}/?limit=2&offset=2`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(response.body[0].name).toMatch('C');
-          expect(response.body[1].name).toMatch('D');
-        });
       });
       describe('/?search=&zone= - Read all organizations matching search query and filters', () => {
         let loggedInAdmin: LoggedUser;

@@ -1,7 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { User } from '../models';
-import { Permission, UserPermissions } from '../users.types';
+import { Permission } from '../users.types';
+import { hasPermission } from '../users.utils';
 import { PERSMISSIONS_KEY } from './user-permissions.decorator';
 
 @Injectable()
@@ -18,7 +19,6 @@ export class UserPermissionsGuard implements CanActivate {
     }
     const request = context.switchToHttp().getRequest();
     const user: User = request.user;
-    const userPermission = UserPermissions[user.role];
-    return permissions.includes(userPermission);
+    return hasPermission(permissions, user.role);
   }
 }

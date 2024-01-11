@@ -35,6 +35,7 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
+import { UserProfilesModule } from './user-profiles/user-profiles.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -102,6 +103,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OpportunitiesModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UserProfilesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -142,6 +144,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OpportunitiesModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UserProfilesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
