@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -61,19 +62,16 @@ export class UserProfilesController {
     return updatedUserProfile;
   }
 
-  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
-  @UseGuards(UserPermissionsGuard)
   @Get()
   async findAll(
-    @Query()
-    query: {
-      role: UserRole[];
-      offset: number;
-      limit: number;
-    },
-    @Query('role') role: UserRole[]
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number,
+    @Query('role')
+    role: UserRole[]
   ) {
-    if (!role) {
+    if (!role || role.length === 0) {
       throw new BadRequestException();
     }
 
@@ -81,7 +79,7 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll(query);
+    return this.userProfilesService.findAll({ role, offset, limit });
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)

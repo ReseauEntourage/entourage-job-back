@@ -58,7 +58,7 @@ describe('Users', () => {
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
-  let userProfileHelper: UserProfilesHelper;
+  let userProfilesHelper: UserProfilesHelper;
   let cvsHelper: CVsHelper;
   let cvFactory: CVFactory;
   let cvBusinessLinesHelper: CVBusinessLinesHelper;
@@ -103,7 +103,7 @@ describe('Users', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
-    userProfileHelper =
+    userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
@@ -3042,19 +3042,45 @@ describe('Users', () => {
         it('Should return 401 if user is not logged in', async () => {
           const response: APIResponse<UserProfilesController['findAll']> =
             await request(app.getHttpServer()).get(
-              `${route}/profile?role=${UserRoles.CANDIDATE}`
+              `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
             );
           expect(response.status).toBe(401);
         });
-        it('Should return 403 if user is logged in as admin', async () => {
+        it('Should return 200 if user is logged in as admin', async () => {
           const loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
           const response: APIResponse<UserProfilesController['findAll']> =
             await request(app.getHttpServer())
-              .get(`${route}/profile?role=${UserRoles.CANDIDATE}`)
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
               .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(403);
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 if user is logged in as candidate', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 if user is logged in as coach', async () => {
+          const loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
         });
         it('Should return 400 if no role parameter', async () => {
           const loggedInCandidate = await usersHelper.createLoggedInUser({
@@ -3064,7 +3090,7 @@ describe('Users', () => {
             await request(app.getHttpServer())
               .get(`${route}/profile`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
-          expect(response.status).toBe(403);
+          expect(response.status).toBe(400);
         });
         describe('/profile?limit=&offset=&role= - Get paginated and creation date sorted users filtered by role', () => {
           let loggedInCandidate: LoggedUser;
@@ -3088,11 +3114,13 @@ describe('Users', () => {
               searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
               searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
               helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              description: 'hello',
             };
             const userProfileCoach = {
               currentJob: 'peintre',
               networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-              helpOffers: [{ name: 'interview' }] as HelpNeed[],
+              helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              description: 'hello',
             };
             await userFactory.create(
               {
@@ -3164,17 +3192,20 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
-            expect(
-              response.body.map(({ user: { role } }) => role)
-            ).toStrictEqual([UserRoles.CANDIDATE, UserRoles.CANDIDATE]);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.CANDIDATE,
+              UserRoles.CANDIDATE,
+            ]);
             expect(response.body[0]).toEqual(
               expect.objectContaining(
-                usersHelper.mapUserProfileFromUser(fifthCreatedCandidate)
+                userProfilesHelper.mapUserProfileFromUser(fifthCreatedCandidate)
               )
             );
             expect(response.body[1]).toEqual(
               expect.objectContaining(
-                usersHelper.mapUserProfileFromUser(fourthCreatedCandidate)
+                userProfilesHelper.mapUserProfileFromUser(
+                  fourthCreatedCandidate
+                )
               )
             );
           });
@@ -3187,30 +3218,25 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
-            expect(
-              response.body.map(({ user: { role } }) => role)
-            ).toStrictEqual([
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
               UserRoles.COACH,
               UserRoles.COACH,
               UserRoles.COACH,
             ]);
             expect(response.body[0]).toEqual(
-              expect.objectContaining({
-                ...fifthCreatedCoach.userProfile,
-                user: fifthCreatedCoach,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(fifthCreatedCoach)
+              )
             );
             expect(response.body[1]).toEqual(
-              expect.objectContaining({
-                ...fourthCreatedCoach.userProfile,
-                user: fourthCreatedCoach,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(fourthCreatedCoach)
+              )
             );
             expect(response.body[2]).toEqual(
-              expect.objectContaining({
-                ...thirdCreatedCoach.userProfile,
-                user: thirdCreatedCoach,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(thirdCreatedCoach)
+              )
             );
           });
           it('Should return 200 and the 3rd and 4th candidate', async () => {
@@ -3222,21 +3248,22 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
-            expect(
-              response.body.map(({ user: { role } }) => role)
-            ).toStrictEqual([UserRoles.CANDIDATE, UserRoles.CANDIDATE]);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.CANDIDATE,
+              UserRoles.CANDIDATE,
+            ]);
 
             expect(response.body[0]).toEqual(
-              expect.objectContaining({
-                ...thirdCreatedCandidate.userProfile,
-                user: thirdCreatedCandidate,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(thirdCreatedCandidate)
+              )
             );
             expect(response.body[1]).toEqual(
-              expect.objectContaining({
-                ...secondCreatedCandidate.userProfile,
-                user: secondCreatedCandidate,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(
+                  secondCreatedCandidate
+                )
+              )
             );
           });
           it('Should return 200 and the 3rd and 4th coach', async () => {
@@ -3248,20 +3275,19 @@ describe('Users', () => {
                 .set('authorization', `Token ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
-            expect(
-              response.body.map(({ user: { role } }) => role)
-            ).toStrictEqual([UserRoles.COACH, UserRoles.COACH]);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.COACH,
+              UserRoles.COACH,
+            ]);
             expect(response.body[0]).toEqual(
-              expect.objectContaining({
-                ...thirdCreatedCoach.userProfile,
-                user: thirdCreatedCoach,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(thirdCreatedCoach)
+              )
             );
             expect(response.body[1]).toEqual(
-              expect.objectContaining({
-                ...secondCreatedCoach.userProfile,
-                user: secondCreatedCoach,
-              })
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(secondCreatedCoach)
+              )
             );
           });
         });
@@ -3467,7 +3493,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpNeed[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
           );
@@ -3644,7 +3670,7 @@ describe('Users', () => {
               loggedInCandidate,
               true
             ));
-          path = userProfileHelper.getTestImagePath();
+          path = userProfilesHelper.getTestImagePath();
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
@@ -5025,7 +5051,7 @@ describe('Users', () => {
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
 
-          const userProfile = await userProfileHelper.findOneProfileByUserId(
+          const userProfile = await userProfilesHelper.findOneProfileByUserId(
             candidate.id
           );
           expect(userProfile).toBeFalsy();
@@ -5148,7 +5174,7 @@ describe('Users', () => {
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
 
-          const userProfile = await userProfileHelper.findOneProfileByUserId(
+          const userProfile = await userProfilesHelper.findOneProfileByUserId(
             coach.id
           );
           expect(userProfile).toBeFalsy();

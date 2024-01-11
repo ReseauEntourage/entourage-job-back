@@ -19,8 +19,6 @@ import {
 } from './models';
 import { getUserProfileInclude } from './models/user-profile.include';
 
-const LIMIT = 25;
-
 @Injectable()
 export class UserProfilesService {
   constructor(
@@ -62,12 +60,12 @@ export class UserProfilesService {
   }
 
   async findAll(query: { role: UserRole[]; offset: number; limit: number }) {
-    const { role, offset, limit = LIMIT } = query;
-
-    return this.userProfileModel.findAll({
-      offset: offset ? offset * limit : 0,
+    const { role, offset, limit } = query;
+    const profiles = await this.userProfileModel.findAll({
+      offset,
       limit,
       order: [['createdAt', 'DESC']],
+      attributes: ['currentJob', 'description', 'createdAt'],
       include: [
         ...getUserProfileInclude(),
         {
@@ -77,6 +75,14 @@ export class UserProfilesService {
           where: { role },
         },
       ],
+    });
+
+    return profiles.map((profile) => {
+      const { user, ...restProfile } = profile.toJSON();
+      return {
+        ...user,
+        ...restProfile,
+      };
     });
   }
 
@@ -208,6 +214,7 @@ export class UserProfilesService {
 
         await this.helpNeedModel.destroy({
           where: {
+            UserProfileId: userProfileToUpdate.id,
             id: {
               [Op.not]: helpNeeds.map((hn) => {
                 return hn.id;
@@ -232,6 +239,7 @@ export class UserProfilesService {
         );
         await this.helpOfferModel.destroy({
           where: {
+            UserProfileId: userProfileToUpdate.id,
             id: {
               [Op.not]: helpOffers.map((ho) => {
                 return ho.id;
