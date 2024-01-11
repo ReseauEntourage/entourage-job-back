@@ -5,10 +5,17 @@ import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment/moment';
 import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
+import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { Gender, UserRoles } from 'src/users/users.types';
-import { capitalizeNameAndTrim } from 'src/users/users.utils';
+import {
+  CandidateUserRoles,
+  CoachUserRoles,
+  Gender,
+  UserRoles,
+} from 'src/users/users.types';
+import { capitalizeNameAndTrim, isRoleIncluded } from 'src/users/users.utils';
 import { AdminZones, Factory } from 'src/utils/types';
 
 @Injectable()
@@ -18,7 +25,10 @@ export class UserFactory implements Factory<User> {
     private userModel: typeof User,
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
-    private usersService: UsersService
+    @InjectModel(UserProfile)
+    private userProfileModel: typeof UserProfile,
+    private usersService: UsersService,
+    private userProfilesService: UserProfilesService
   ) {}
 
   generateUser(props: Partial<User>): Partial<User> {
@@ -54,22 +64,45 @@ export class UserFactory implements Factory<User> {
 
   async create(
     props: Partial<User> = {},
-    userCandidatProps: Partial<UserCandidat> = {},
+    userAssociationsProps: {
+      userCandidat?: Partial<UserCandidat>;
+      userProfile?: Partial<UserProfile>;
+    } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<User> {
     const userData = this.generateUser(props);
     const userId = faker.datatype.uuid();
     if (insertInDB) {
       await this.userModel.create({ ...userData, id: userId }, { hooks: true });
-      await this.userCandidatModel.update(
-        { ...userCandidatProps },
-        {
-          where: {
-            candidatId: userId,
-          },
-          individualHooks: true,
+      if (userAssociationsProps?.userCandidat) {
+        if (isRoleIncluded(CandidateUserRoles, userData.role)) {
+          await this.userCandidatModel.update(
+            { ...userAssociationsProps.userCandidat },
+            {
+              where: {
+                candidatId: userId,
+              },
+              individualHooks: true,
+            }
+          );
+        } else if (isRoleIncluded(CoachUserRoles, userData.role)) {
+          await this.userCandidatModel.update(
+            { ...userAssociationsProps.userCandidat },
+            {
+              where: {
+                coachId: userId,
+              },
+              individualHooks: true,
+            }
+          );
         }
-      );
+      }
+
+      if (userAssociationsProps?.userProfile) {
+        await this.userProfilesService.updateByUserId(userId, {
+          ...userAssociationsProps.userProfile,
+        });
+      }
     }
     const dbUser = await this.usersService.findOne(userData.id || userId);
     if (dbUser) {

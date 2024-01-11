@@ -13,6 +13,11 @@ import {
 import { BusinessLineValue } from '../business-lines.types';
 import { CV, CVBusinessLine } from 'src/cvs/models';
 import { Opportunity, OpportunityBusinessLine } from 'src/opportunities/models';
+import {
+  UserProfile,
+  UserProfileNetworkBusinessLine,
+  UserProfileSearchBusinessLine,
+} from 'src/user-profiles/models';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'BusinessLines' })
@@ -48,4 +53,20 @@ export class BusinessLine extends WrapperModel {
     'OpportunityId'
   )
   Opportunities: Opportunity[];
+
+  @BelongsToMany(
+    () => UserProfile,
+    () => UserProfileNetworkBusinessLine,
+    'BusinessLineId',
+    'UserProfileId'
+  )
+  networkUserProfiles: CV[];
+
+  @BelongsToMany(
+    () => UserProfile,
+    () => UserProfileSearchBusinessLine,
+    'BusinessLineId',
+    'UserProfileId'
+  )
+  searchUserProfiles: CV[];
 }

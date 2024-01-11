@@ -10,7 +10,6 @@ import {
   DepartmentFilters,
 } from 'src/common/locations/locations.types';
 import { Location } from 'src/common/locations/models';
-import { CVsService } from 'src/cvs/cvs.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { ContactStatuses } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
@@ -77,7 +76,6 @@ export class OpportunitiesService {
     private queuesService: QueuesService,
     private opportunityUsersService: OpportunityUsersService,
     private usersService: UsersService,
-    private cvsService: CVsService,
     private externalDatabasesService: ExternalDatabasesService,
     private mailsService: MailsService,
     private smsService: SMSService

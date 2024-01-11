@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
+import { UserProfile } from 'src/user-profiles/models';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserFactory } from './user.factory';
@@ -14,12 +15,15 @@ export class UsersHelper {
 
   async createLoggedInUser(
     props: Partial<User> = {},
-    userCandidatProps: Partial<UserCandidat> = {},
+    userAssociationsProps: {
+      userCandidat?: Partial<UserCandidat>;
+      userProfile?: Partial<UserProfile>;
+    } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<{ user: User; token: string }> {
     const user = await this.userFactory.create(
       props,
-      userCandidatProps,
+      userAssociationsProps,
       insertInDB
     );
 

@@ -33,7 +33,15 @@ import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import { Share } from 'src/shares/models';
-import { UserCandidat, User } from 'src/users/models';
+import {
+  HelpNeed,
+  HelpOffer,
+  UserProfile,
+  UserProfileNetworkBusinessLine,
+  UserProfileSearchAmbition,
+  UserProfileSearchBusinessLine,
+} from 'src/user-profiles/models';
+import { User, UserCandidat } from 'src/users/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
@@ -43,6 +51,18 @@ export class DatabaseHelper {
     private userModel: typeof User,
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
+    @InjectModel(UserProfile)
+    private userProfileModel: typeof UserProfile,
+    @InjectModel(UserProfileNetworkBusinessLine)
+    private userProfileNetworkBusinessLineModel: typeof UserProfileNetworkBusinessLine,
+    @InjectModel(UserProfileSearchAmbition)
+    private userProfileSearchAmbitionModel: typeof UserProfileSearchAmbition,
+    @InjectModel(UserProfileSearchBusinessLine)
+    private userProfileSearchBusinessLineModel: typeof UserProfileSearchBusinessLine,
+    @InjectModel(HelpNeed)
+    private helpNeedModel: typeof HelpNeed,
+    @InjectModel(HelpOffer)
+    private helpOfferModel: typeof HelpOffer,
     @InjectModel(CV)
     private cvModel: typeof CV,
     @InjectModel(Location)
@@ -115,6 +135,11 @@ export class DatabaseHelper {
     try {
       await this.revisionChangeModel.truncate(destroyOptions);
       await this.revisionModel.truncate(destroyOptions);
+      await this.userProfileNetworkBusinessLineModel.truncate(destroyOptions);
+      await this.userProfileSearchBusinessLineModel.truncate(destroyOptions);
+      await this.userProfileSearchAmbitionModel.truncate(destroyOptions);
+      await this.helpNeedModel.truncate(destroyOptions);
+      await this.helpOfferModel.truncate(destroyOptions);
       await this.cvLocationModel.truncate(destroyOptions);
       await this.cvBusinessLineModel.truncate(destroyOptions);
       await this.cvSkillModel.truncate(destroyOptions);
@@ -146,6 +171,7 @@ export class DatabaseHelper {
       await this.organizationModel.truncate(destroyOptions);
       await this.organizationReferentModel.truncate(destroyOptions);
       await this.userCandidatModel.truncate(destroyOptions);
+      await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
     } catch (err) {
       console.error(err);

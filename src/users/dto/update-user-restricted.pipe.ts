@@ -10,7 +10,8 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { UserRoles } from 'src/users/users.types';
+import { Permissions } from '../users.types';
+import { hasPermission } from '../users.utils';
 import { RequestWithUser } from 'src/utils/types';
 import { UpdateUserRestrictedDto } from './update-user-restricted.dto';
 
@@ -37,7 +38,7 @@ export class UpdateUserRestrictedPipe
 
     const { role } = this.request.user;
 
-    if (errors.length > 0 && role !== UserRoles.ADMIN) {
+    if (errors.length > 0 && !hasPermission(Permissions.ADMIN, role)) {
       throw new BadRequestException();
     }
     return value;

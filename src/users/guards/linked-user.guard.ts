@@ -1,8 +1,11 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as _ from 'lodash';
-import { UserRoles } from '../users.types';
-import { getCandidateIdFromCoachOrCandidate } from '../users.utils';
+import { Permissions } from '../users.types';
+import {
+  getCandidateIdFromCoachOrCandidate,
+  hasPermission,
+} from '../users.utils';
 import { LINKED_USER_KEY } from './linked-user.decorator';
 
 @Injectable()
@@ -28,7 +31,7 @@ export class LinkedUserGuard implements CanActivate {
         ? candidateId.includes(requestId)
         : candidateId === requestId) ||
       user.id === requestId ||
-      user.role === UserRoles.ADMIN
+      hasPermission(Permissions.ADMIN, user.role)
     );
   }
 }
