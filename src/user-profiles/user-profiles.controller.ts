@@ -2,11 +2,13 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   InternalServerErrorException,
   NotFoundException,
   Param,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -18,7 +20,8 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { Permissions } from 'src/users/users.types';
+import { AllUserRoles, Permissions, UserRole } from 'src/users/users.types';
+import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
@@ -56,6 +59,29 @@ export class UserProfilesController {
     }
 
     return updatedUserProfile;
+  }
+
+  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UseGuards(UserPermissionsGuard)
+  @Get()
+  async findAll(
+    @Query()
+    query: {
+      role: UserRole[];
+      offset: number;
+      limit: number;
+    },
+    @Query('role') role: UserRole[]
+  ) {
+    if (!role) {
+      throw new BadRequestException();
+    }
+
+    if (!isRoleIncluded(AllUserRoles, role)) {
+      throw new BadRequestException();
+    }
+
+    return this.userProfilesService.findAll(query);
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)

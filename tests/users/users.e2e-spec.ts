@@ -2148,7 +2148,7 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        describe('/members?limit=&offset= - Get paginated and alphabetically sorted users', () => {
+        describe('/members?limit=&offset=&role= - Get paginated and alphabetically sorted users filtered by role', () => {
           let loggedInAdmin: LoggedUser;
 
           beforeEach(async () => {
@@ -2979,7 +2979,6 @@ describe('Users', () => {
           });
         });
       });
-
       describe('/members/count - Count all pending members', () => {
         it('Should return 403 if user is not a logged in admin', async () => {
           const loggedInCandidate = await usersHelper.createLoggedInUser({
@@ -3037,6 +3036,234 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pendingCVs).toBe(2);
+        });
+      });
+      describe('/profile - Read all profiles', () => {
+        it('Should return 401 if user is not logged in', async () => {
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer()).get(
+              `${route}/profile?role=${UserRoles.CANDIDATE}`
+            );
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403 if user is logged in as admin', async () => {
+          const loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile?role=${UserRoles.CANDIDATE}`)
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 400 if no role parameter', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(403);
+        });
+        describe('/profile?limit=&offset=&role= - Get paginated and creation date sorted users filtered by role', () => {
+          let loggedInCandidate: LoggedUser;
+
+          let secondCreatedCandidate: User;
+          let thirdCreatedCandidate: User;
+          let fourthCreatedCandidate: User;
+          let fifthCreatedCandidate: User;
+
+          let secondCreatedCoach: User;
+          let thirdCreatedCoach: User;
+          let fourthCreatedCoach: User;
+          let fifthCreatedCoach: User;
+
+          beforeEach(async () => {
+            loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+
+            const userProfileCandidate = {
+              searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+              searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+              helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+            };
+            const userProfileCoach = {
+              currentJob: 'peintre',
+              networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+              helpOffers: [{ name: 'interview' }] as HelpNeed[],
+            };
+            await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            secondCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            thirdCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            fourthCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            fifthCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            secondCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            thirdCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            fourthCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            fifthCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+          });
+          it('Should return 200 and 2 first candidates profiles', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(
+              response.body.map(({ user: { role } }) => role)
+            ).toStrictEqual([UserRoles.CANDIDATE, UserRoles.CANDIDATE]);
+            expect(response.body[0]).toEqual(
+              expect.objectContaining(
+                usersHelper.mapUserProfileFromUser(fifthCreatedCandidate)
+              )
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining(
+                usersHelper.mapUserProfileFromUser(fourthCreatedCandidate)
+              )
+            );
+          });
+          it('Should return 200 and 3 first coaches', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=3&offset=0&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(3);
+            expect(
+              response.body.map(({ user: { role } }) => role)
+            ).toStrictEqual([
+              UserRoles.COACH,
+              UserRoles.COACH,
+              UserRoles.COACH,
+            ]);
+            expect(response.body[0]).toEqual(
+              expect.objectContaining({
+                ...fifthCreatedCoach.userProfile,
+                user: fifthCreatedCoach,
+              })
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining({
+                ...fourthCreatedCoach.userProfile,
+                user: fourthCreatedCoach,
+              })
+            );
+            expect(response.body[2]).toEqual(
+              expect.objectContaining({
+                ...thirdCreatedCoach.userProfile,
+                user: thirdCreatedCoach,
+              })
+            );
+          });
+          it('Should return 200 and the 3rd and 4th candidate', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(
+              response.body.map(({ user: { role } }) => role)
+            ).toStrictEqual([UserRoles.CANDIDATE, UserRoles.CANDIDATE]);
+
+            expect(response.body[0]).toEqual(
+              expect.objectContaining({
+                ...thirdCreatedCandidate.userProfile,
+                user: thirdCreatedCandidate,
+              })
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining({
+                ...secondCreatedCandidate.userProfile,
+                user: secondCreatedCandidate,
+              })
+            );
+          });
+          it('Should return 200 and the 3rd and 4th coach', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=2&offset=2&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(
+              response.body.map(({ user: { role } }) => role)
+            ).toStrictEqual([UserRoles.COACH, UserRoles.COACH]);
+            expect(response.body[0]).toEqual(
+              expect.objectContaining({
+                ...thirdCreatedCoach.userProfile,
+                user: thirdCreatedCoach,
+              })
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining({
+                ...secondCreatedCoach.userProfile,
+                user: secondCreatedCoach,
+              })
+            );
+          });
         });
       });
     });

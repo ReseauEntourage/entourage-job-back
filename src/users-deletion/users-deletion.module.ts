@@ -11,8 +11,8 @@ import { UsersDeletionService } from './users-deletion.service';
 @Module({
   imports: [
     CVsModule,
-    UsersModule,
     UserProfilesModule,
+    UsersModule,
     AWSModule,
     OpportunitiesModule,
     RevisionsModule,

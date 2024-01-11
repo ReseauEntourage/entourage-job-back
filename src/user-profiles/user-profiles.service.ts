@@ -3,10 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import sharp from 'sharp';
-import { S3Service } from '../external-services/aws/s3.service';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
+import { S3Service } from 'src/external-services/aws/s3.service';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRole } from 'src/users/users.types';
 import {
   HelpNeed,
   HelpOffer,
@@ -16,6 +18,8 @@ import {
   UserProfileSearchBusinessLine,
 } from './models';
 import { getUserProfileInclude } from './models/user-profile.include';
+
+const LIMIT = 25;
 
 @Injectable()
 export class UserProfilesService {
@@ -55,6 +59,25 @@ export class UserProfilesService {
 
   async findOneUser(userId: string) {
     return this.usersService.findOne(userId);
+  }
+
+  async findAll(query: { role: UserRole[]; offset: number; limit: number }) {
+    const { role, offset, limit = LIMIT } = query;
+
+    return this.userProfileModel.findAll({
+      offset: offset ? offset * limit : 0,
+      limit,
+      order: [['createdAt', 'DESC']],
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'role', 'zone'],
+          where: { role },
+        },
+      ],
+    });
   }
 
   async updateByUserId(
