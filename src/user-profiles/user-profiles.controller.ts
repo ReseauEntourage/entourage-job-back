@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -15,6 +16,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserPayload } from '../auth/guards';
 import {
   Self,
   SelfGuard,
@@ -64,6 +66,7 @@ export class UserProfilesController {
 
   @Get()
   async findAll(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Query('limit', new ParseIntPipe())
     limit: number,
     @Query('offset', new ParseIntPipe())
@@ -79,7 +82,7 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll({ role, offset, limit });
+    return this.userProfilesService.findAll(userId, { role, offset, limit });
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)

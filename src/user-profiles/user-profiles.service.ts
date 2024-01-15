@@ -59,7 +59,10 @@ export class UserProfilesService {
     return this.usersService.findOne(userId);
   }
 
-  async findAll(query: { role: UserRole[]; offset: number; limit: number }) {
+  async findAll(
+    userId: string,
+    query: { role: UserRole[]; offset: number; limit: number }
+  ) {
     const { role, offset, limit } = query;
     const profiles = await this.userProfileModel.findAll({
       offset,
@@ -72,7 +75,7 @@ export class UserProfilesService {
           model: User,
           as: 'user',
           attributes: ['id', 'firstName', 'lastName', 'role', 'zone'],
-          where: { role },
+          where: { role, id: { [Op.not]: userId } },
         },
       ],
     });
