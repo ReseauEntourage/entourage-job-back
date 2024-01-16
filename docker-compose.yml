@@ -1,132 +1,93 @@
 version: '3.8'
+
 services:
-  api_new:
-    container_name: api_new
+  ## LINKEDOUT BACKEND API
+  linkedout-api-worker:
+    container_name: linkedout-api-worker
     build:
       context: ./
-      target: dev
+      target: base
     volumes:
-      - .:/src
-    image: nestjs-api-dev:1.0.0
-    command: yarn start:dev
+      - .:/home/node
+    image: linkedout-api-worker:nestjs
     ports:
       - '3002:3002'
+      - '3003:3003'
     env_file:
       - .env
     environment:
       NODE_ENV: development
-      # DEBUG: nodejs-docker-express:*
-      # REDIS_HOST: cache_new
-      # REDIS_PORT: 6379
-      # REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      # DB_HOST: db_new
-      # DB_PORT: 5432
-      # DB_USER: linkedout
-      # DB_PASSWORD: linkedout
-      # DB_NAME: linkedout
+      REDIS_HOST: linkedout-cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      DB_HOST: linkedout-db
+      DB_PORT: 5432
+      DB_USER: linkedout
+      DB_PASSWORD: linkedout
+      DB_NAME: linkedout
     depends_on:
-      - db_new
-      - cache_new
+      - linkedout-db
+      - linkedout-cache
     links:
-      - db_new
-      - cache_new
-  api_test:
-    container_name: api_test
+      - linkedout-db
+      - linkedout-cache
+  ## LINKEDOUT BACKEND API FOR TEST
+  linkedout-api-test:
+    container_name: linkedout-api-test
     build:
       context: ./
-      target: dev
+      target: base
     volumes:
-      - .:/src
-    image: nestjs-api-dev:1.0.0
-    command: yarn start:dev
+      - .:/home/node
+    image: linkedout-api-worker:nestjs
     ports:
       - '3005:3005'
     env_file:
       - .env.test
     environment:
       NODE_ENV: dev-test
-      # DEBUG: nodejs-docker-express:*
-      # REDIS_HOST: cache_new
-      # REDIS_PORT: 6379
-      # REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      # DB_HOST: db_test
-      # DB_PORT: 5432
-      # DB_USER: linkedout
-      # DB_PASSWORD: linkedout
-      # DB_NAME: linkedout
-    depends_on:
-      - db_new
-    links:
-      - db_new
-  worker_new:
-    container_name: worker_new
-    build:
-      context: ./
-      target: dev
-    volumes:
-      - .:/src
-    command: yarn run worker:start:dev
-    ports:
-      - '3003:3003'
-    environment:
-      NODE_ENV: development
-      # DEBUG: nodejs-docker-express:*
-      REDIS_HOST: cache_new
+      REDIS_HOST: linkedout-cache
       REDIS_PORT: 6379
       REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      DB_HOST: db_new
+      DB_HOST: linkedout-db
       DB_PORT: 5432
       DB_USER: linkedout
       DB_PASSWORD: linkedout
-      DB_NAME: linkedout
+      DB_NAME: linkedouttest
     depends_on:
-      - db_new
-      - cache_new
+      - linkedout-db
+      - linkedout-cache
     links:
-      - db_new
-      - cache_new
-  db_new:
-    container_name: db_new
+      - linkedout-db
+      - linkedout-cache
+  ## LINKEDOUT BACKEND DATABASE
+  linkedout-db:
     image: postgres:14.1-alpine
+    container_name: linkedout-db-postgresql
     restart: always
     environment:
       - POSTGRES_USER=linkedout
       - POSTGRES_PASSWORD=linkedout
     ports:
       - '5432:5432'
-    volumes:
-      - db_new:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
-    command: 
-      - "postgres"
-      - "-c"
-      - "log_temp_files=10240"
-      - "-c"
-      - "shared_buffers=3GB"
-  #  db_test:
-  #   container_name: db_test
-  #   image: postgres:14.1-alpine
-  #   restart: always
-  #   environment:
-  #     - POSTGRES_USER=linkedout
-  #     - POSTGRES_PASSWORD=linkedout
-  #   ports:
-  #     - '5430:5432'
-  #   volumes:
-  #     - db_test:/var/lib/postgresql/data
-  #     - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
-  cache_new:
+    command:
+      - 'postgres'
+      - '-c'
+      - 'log_temp_files=10240'
+      - '-c'
+      - 'shared_buffers=3GB'
+  ## LINKEDOUT BACKEND CACHE
+  linkedout-cache:
     image: redis:6.2-alpine
+    container_name: linkedout-cache-redis
     restart: always
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
-      - cache_new:/data
+      - linkedout-cache:/data
 volumes:
-  db_new:
+  linkedout-db:
     driver: local
-  # db_test:
-  #   driver: local
-  cache_new:
+  linkedout-cache:
     driver: local
