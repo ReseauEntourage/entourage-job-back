@@ -1784,7 +1784,7 @@ describe('Users', () => {
       });
     });
     describe('R - Read many Users', () => {
-      describe('/search?query=&role=&organizationId= - Search a user where query string in email, first name or last name', () => {
+      describe('/search?query=&role[]=&organizationId= - Search a user where query string in email, first name or last name', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -1896,7 +1896,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?query=${loggedInCandidate.user.firstName}&role=${UserRoles.CANDIDATE}`
+                `${route}/search?query=${loggedInCandidate.user.firstName}&role[]=${UserRoles.CANDIDATE}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -1918,7 +1918,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.CANDIDATE}`)
+              .get(`${route}/search?&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1934,7 +1934,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}`)
+              .get(`${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1971,7 +1971,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.COACH}`)
+              .get(`${route}/search?&role[]=${UserRoles.COACH}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1987,7 +1987,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.COACH_EXTERNAL}`)
+              .get(`${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -2022,7 +2022,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2037,7 +2037,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2051,7 +2051,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2062,7 +2062,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.COACH}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.COACH}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2073,14 +2073,14 @@ describe('Users', () => {
         it('Should return 403 if user is logged in as candidate', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
+              .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if user is logged in as coach', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
+              .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
@@ -2148,7 +2148,7 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        describe('/members?limit=&offset=&role= - Get paginated and alphabetically sorted users filtered by role', () => {
+        describe('/members?limit=&offset=&role[]= - Get paginated and alphabetically sorted users filtered by role', () => {
           let loggedInAdmin: LoggedUser;
 
           beforeEach(async () => {
@@ -3092,7 +3092,7 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
-        describe('/profile?limit=&offset=&role= - Get paginated and creation date sorted users filtered by role', () => {
+        describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
           let loggedInCandidate: LoggedUser;
 
           let secondCreatedCandidate: User;

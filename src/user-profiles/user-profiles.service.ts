@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import sequelize, { Op } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
@@ -67,14 +67,21 @@ export class UserProfilesService {
     const profiles = await this.userProfileModel.findAll({
       offset,
       limit,
-      order: [['createdAt', 'DESC']],
-      attributes: ['currentJob', 'description', 'createdAt'],
+      attributes: ['currentJob', 'description'],
+      order: sequelize.literal('"user.createdAt" DESC'),
       include: [
         ...getUserProfileInclude(),
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'role', 'zone'],
+          attributes: [
+            'id',
+            'firstName',
+            'lastName',
+            'role',
+            'zone',
+            'createdAt',
+          ],
           where: { role, id: { [Op.not]: userId } },
         },
       ],
