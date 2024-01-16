@@ -31,6 +31,35 @@ services:
     links:
       - linkedout-db
       - linkedout-cache
+  ## LINKEDOUT BACKEND API FOR TEST
+  linkedout-api-test:
+    container_name: linkedout-api-test
+    build:
+      context: ./
+      target: base
+    volumes:
+      - .:/home/node
+    image: linkedout-api-worker:nestjs
+    ports:
+      - '3005:3005'
+    env_file:
+      - .env.test
+    environment:
+      NODE_ENV: dev-test
+      REDIS_HOST: linkedout-cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      DB_HOST: linkedout-db
+      DB_PORT: 5432
+      DB_USER: linkedout
+      DB_PASSWORD: linkedout
+      DB_NAME: linkedouttest
+    depends_on:
+      - linkedout-db
+      - linkedout-cache
+    links:
+      - linkedout-db
+      - linkedout-cache
   ## LINKEDOUT BACKEND DATABASE
   linkedout-db:
     image: postgres:14.1-alpine
