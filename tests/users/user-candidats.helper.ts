@@ -14,7 +14,7 @@ export class UserCandidatsHelper {
     private userCandidatModel: typeof UserCandidat,
     private userCandidatsService: UserCandidatsService,
     private authService: AuthService,
-    private userHelper: UsersHelper,
+    private usersHelper: UsersHelper,
     private userFactory: UserFactory
   ) {}
 
@@ -42,12 +42,12 @@ export class UserCandidatsHelper {
     );
     if (isLogged) {
       return {
-        loggedInCoach: await this.userHelper.createLoggedInUser(
+        loggedInCoach: await this.usersHelper.createLoggedInUser(
           (coach as LoggedUser).user as User,
           {},
           false
         ),
-        loggedInCandidate: await this.userHelper.createLoggedInUser(
+        loggedInCandidate: await this.usersHelper.createLoggedInUser(
           (candidate as LoggedUser).user as User,
           {},
           false

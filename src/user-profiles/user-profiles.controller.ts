@@ -2,23 +2,29 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   InternalServerErrorException,
   NotFoundException,
   Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UserPayload } from '../auth/guards';
 import {
   Self,
   SelfGuard,
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { Permissions } from 'src/users/users.types';
+import { AllUserRoles, Permissions, UserRole } from 'src/users/users.types';
+import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
@@ -56,6 +62,27 @@ export class UserProfilesController {
     }
 
     return updatedUserProfile;
+  }
+
+  @Get()
+  async findAll(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number,
+    @Query('role')
+    role: UserRole[]
+  ) {
+    if (!role || role.length === 0) {
+      throw new BadRequestException();
+    }
+
+    if (!isRoleIncluded(AllUserRoles, role)) {
+      throw new BadRequestException();
+    }
+
+    return this.userProfilesService.findAll(userId, { role, offset, limit });
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
