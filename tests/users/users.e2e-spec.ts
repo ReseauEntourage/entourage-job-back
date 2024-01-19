@@ -3110,17 +3110,19 @@ describe('Users', () => {
               role: UserRoles.CANDIDATE,
             });
 
-            const userProfileCandidate = {
+            const userProfileCandidate: Partial<UserProfile> = {
               searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
               searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
               helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               description: 'hello',
+              department: 'Paris (75)',
             };
-            const userProfileCoach = {
+            const userProfileCoach: Partial<UserProfile> = {
               currentJob: 'peintre',
               networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
               helpOffers: [{ name: 'interview' }] as HelpOffer[],
               description: 'hello',
+              department: 'Paris (75)',
             };
             await userFactory.create(
               {

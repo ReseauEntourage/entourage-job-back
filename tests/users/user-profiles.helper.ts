@@ -29,6 +29,7 @@ export class UserProfilesHelper {
       zone: user.zone,
       description: user.userProfile.description,
       currentJob: user.userProfile.currentJob,
+      department: user.userProfile.department,
       networkBusinessLines: expect.arrayContaining(
         user.userProfile.networkBusinessLines.map(({ name }) =>
           expect.objectContaining({

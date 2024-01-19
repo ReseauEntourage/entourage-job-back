@@ -17,6 +17,7 @@ import {
   UserProfileSearchAmbition,
   UserProfileSearchBusinessLine,
 } from './models';
+import { UserProfilesAttributes } from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
 
 @Injectable()
@@ -67,7 +68,7 @@ export class UserProfilesService {
     const profiles = await this.userProfileModel.findAll({
       offset,
       limit,
-      attributes: ['currentJob', 'description'],
+      attributes: UserProfilesAttributes,
       order: sequelize.literal('"user.createdAt" DESC'),
       include: [
         ...getUserProfileInclude(),
