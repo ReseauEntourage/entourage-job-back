@@ -270,11 +270,7 @@ export class UsersService {
     });
   }
 
-  async findAllUsers(
-    search: string,
-    role: UserRole | UserRole[],
-    organizationId: string
-  ) {
+  async findAllUsers(search: string, role: UserRole[], organizationId: string) {
     const options: FindOptions<User> = {
       attributes: [...UserAttributes],
       where: {

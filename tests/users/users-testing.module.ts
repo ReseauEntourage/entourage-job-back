@@ -8,7 +8,7 @@ import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
 
 @Module({
-  imports: [UsersModule, UserProfilesModule, AuthModule],
+  imports: [UserProfilesModule, UsersModule, AuthModule],
   providers: [
     UsersHelper,
     UserCandidatsHelper,

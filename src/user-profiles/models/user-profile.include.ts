@@ -9,26 +9,31 @@ export function getUserProfileInclude(): Includeable[] {
     {
       model: BusinessLine,
       as: 'networkBusinessLines',
+      required: false,
       attributes: ['id', 'name', 'order'],
     },
     {
       model: BusinessLine,
       as: 'searchBusinessLines',
+      required: false,
       attributes: ['id', 'name', 'order'],
     },
     {
       model: Ambition,
       as: 'searchAmbitions',
+      required: false,
       attributes: ['id', 'name', 'prefix', 'order'],
     },
     {
       model: HelpNeed,
       as: 'helpNeeds',
+      required: false,
       attributes: ['id', 'name'],
     },
     {
       model: HelpOffer,
       as: 'helpOffers',
+      required: false,
       attributes: ['id', 'name'],
     },
   ];

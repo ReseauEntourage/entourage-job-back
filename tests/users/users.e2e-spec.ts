@@ -58,7 +58,7 @@ describe('Users', () => {
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
-  let userProfileHelper: UserProfilesHelper;
+  let userProfilesHelper: UserProfilesHelper;
   let cvsHelper: CVsHelper;
   let cvFactory: CVFactory;
   let cvBusinessLinesHelper: CVBusinessLinesHelper;
@@ -103,7 +103,7 @@ describe('Users', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userCandidatsHelper =
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
-    userProfileHelper =
+    userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
@@ -1784,7 +1784,7 @@ describe('Users', () => {
       });
     });
     describe('R - Read many Users', () => {
-      describe('/search?query=&role=&organizationId= - Search a user where query string in email, first name or last name', () => {
+      describe('/search?query=&role[]=&organizationId= - Search a user where query string in email, first name or last name', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
@@ -1896,7 +1896,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?query=${loggedInCandidate.user.firstName}&role=${UserRoles.CANDIDATE}`
+                `${route}/search?query=${loggedInCandidate.user.firstName}&role[]=${UserRoles.CANDIDATE}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -1918,7 +1918,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.CANDIDATE}`)
+              .get(`${route}/search?&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1934,7 +1934,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}`)
+              .get(`${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1971,7 +1971,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.COACH}`)
+              .get(`${route}/search?&role[]=${UserRoles.COACH}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -1987,7 +1987,7 @@ describe('Users', () => {
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?&role=${UserRoles.COACH_EXTERNAL}`)
+              .get(`${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}`)
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -2022,7 +2022,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2037,7 +2037,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2051,7 +2051,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2062,7 +2062,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
               .get(
-                `${route}/search?&role=${UserRoles.COACH}&organizationId=${organization.id}`
+                `${route}/search?&role[]=${UserRoles.COACH}&organizationId=${organization.id}`
               )
               .set('authorization', `Token ${loggedInAdmin.token}`);
 
@@ -2073,14 +2073,14 @@ describe('Users', () => {
         it('Should return 403 if user is logged in as candidate', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
+              .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if user is logged in as coach', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(app.getHttpServer())
-              .get(`${route}/search?query=e&role=${UserRoles.CANDIDATE}`)
+              .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
@@ -2148,7 +2148,7 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        describe('/members?limit=&offset= - Get paginated and alphabetically sorted users', () => {
+        describe('/members?limit=&offset=&role[]= - Get paginated and alphabetically sorted users filtered by role', () => {
           let loggedInAdmin: LoggedUser;
 
           beforeEach(async () => {
@@ -2979,7 +2979,6 @@ describe('Users', () => {
           });
         });
       });
-
       describe('/members/count - Count all pending members', () => {
         it('Should return 403 if user is not a logged in admin', async () => {
           const loggedInCandidate = await usersHelper.createLoggedInUser({
@@ -3037,6 +3036,262 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pendingCVs).toBe(2);
+        });
+      });
+      describe('/profile - Read all profiles', () => {
+        it('Should return 401 if user is not logged in', async () => {
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer()).get(
+              `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+            );
+          expect(response.status).toBe(401);
+        });
+        it('Should return 200 if user is logged in as admin', async () => {
+          const loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 if user is logged in as candidate', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+        });
+        it('Should return 200 if user is logged in as coach', async () => {
+          const loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+        });
+        it('Should return 400 if no role parameter', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(400);
+        });
+        describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
+          let loggedInCandidate: LoggedUser;
+
+          let secondCreatedCandidate: User;
+          let thirdCreatedCandidate: User;
+          let fourthCreatedCandidate: User;
+          let fifthCreatedCandidate: User;
+
+          let secondCreatedCoach: User;
+          let thirdCreatedCoach: User;
+          let fourthCreatedCoach: User;
+          let fifthCreatedCoach: User;
+
+          beforeEach(async () => {
+            loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+
+            const userProfileCandidate: Partial<UserProfile> = {
+              searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+              searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+              helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              description: 'hello',
+              department: 'Paris (75)',
+            };
+            const userProfileCoach: Partial<UserProfile> = {
+              currentJob: 'peintre',
+              networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+              helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              description: 'hello',
+              department: 'Paris (75)',
+            };
+            await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            secondCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            thirdCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            fourthCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            fifthCreatedCandidate = await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              { userProfile: userProfileCandidate }
+            );
+            await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            secondCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            thirdCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            fourthCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+            fifthCreatedCoach = await userFactory.create(
+              {
+                role: UserRoles.COACH,
+              },
+              { userProfile: userProfileCoach }
+            );
+          });
+          it('Should return 200 and 2 first candidates profiles', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.CANDIDATE,
+              UserRoles.CANDIDATE,
+            ]);
+            expect(response.body[0]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(fifthCreatedCandidate)
+              )
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(
+                  fourthCreatedCandidate
+                )
+              )
+            );
+          });
+          it('Should return 200 and 3 first coaches', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=3&offset=0&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(3);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.COACH,
+              UserRoles.COACH,
+              UserRoles.COACH,
+            ]);
+            expect(response.body[0]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(fifthCreatedCoach)
+              )
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(fourthCreatedCoach)
+              )
+            );
+            expect(response.body[2]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(thirdCreatedCoach)
+              )
+            );
+          });
+          it('Should return 200 and the 3rd and 4th candidate', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.CANDIDATE,
+              UserRoles.CANDIDATE,
+            ]);
+
+            expect(response.body[0]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(thirdCreatedCandidate)
+              )
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(
+                  secondCreatedCandidate
+                )
+              )
+            );
+          });
+          it('Should return 200 and the 3rd and 4th coach', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=2&offset=2&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.COACH,
+              UserRoles.COACH,
+            ]);
+            expect(response.body[0]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(thirdCreatedCoach)
+              )
+            );
+            expect(response.body[1]).toEqual(
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(secondCreatedCoach)
+              )
+            );
+          });
         });
       });
     });
@@ -3240,7 +3495,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpNeed[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
           );
@@ -3417,7 +3672,7 @@ describe('Users', () => {
               loggedInCandidate,
               true
             ));
-          path = userProfileHelper.getTestImagePath();
+          path = userProfilesHelper.getTestImagePath();
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
@@ -4798,7 +5053,7 @@ describe('Users', () => {
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
 
-          const userProfile = await userProfileHelper.findOneProfileByUserId(
+          const userProfile = await userProfilesHelper.findOneProfileByUserId(
             candidate.id
           );
           expect(userProfile).toBeFalsy();
@@ -4921,7 +5176,7 @@ describe('Users', () => {
           expect(userCandidatByCandidateId).toBeTruthy();
           expect(userCandidatByCoachId).toBeFalsy();
 
-          const userProfile = await userProfileHelper.findOneProfileByUserId(
+          const userProfile = await userProfilesHelper.findOneProfileByUserId(
             coach.id
           );
           expect(userProfile).toBeFalsy();

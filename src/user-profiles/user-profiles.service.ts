@@ -1,12 +1,14 @@
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import sequelize, { Op } from 'sequelize';
 import sharp from 'sharp';
-import { S3Service } from '../external-services/aws/s3.service';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
+import { S3Service } from 'src/external-services/aws/s3.service';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRole } from 'src/users/users.types';
 import {
   HelpNeed,
   HelpOffer,
@@ -15,6 +17,7 @@ import {
   UserProfileSearchAmbition,
   UserProfileSearchBusinessLine,
 } from './models';
+import { UserProfilesAttributes } from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
 
 @Injectable()
@@ -55,6 +58,43 @@ export class UserProfilesService {
 
   async findOneUser(userId: string) {
     return this.usersService.findOne(userId);
+  }
+
+  async findAll(
+    userId: string,
+    query: { role: UserRole[]; offset: number; limit: number }
+  ) {
+    const { role, offset, limit } = query;
+    const profiles = await this.userProfileModel.findAll({
+      offset,
+      limit,
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.createdAt" DESC'),
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: [
+            'id',
+            'firstName',
+            'lastName',
+            'role',
+            'zone',
+            'createdAt',
+          ],
+          where: { role, id: { [Op.not]: userId } },
+        },
+      ],
+    });
+
+    return profiles.map((profile) => {
+      const { user, ...restProfile } = profile.toJSON();
+      return {
+        ...user,
+        ...restProfile,
+      };
+    });
   }
 
   async updateByUserId(
@@ -185,6 +225,7 @@ export class UserProfilesService {
 
         await this.helpNeedModel.destroy({
           where: {
+            UserProfileId: userProfileToUpdate.id,
             id: {
               [Op.not]: helpNeeds.map((hn) => {
                 return hn.id;
@@ -209,6 +250,7 @@ export class UserProfilesService {
         );
         await this.helpOfferModel.destroy({
           where: {
+            UserProfileId: userProfileToUpdate.id,
             id: {
               [Op.not]: helpOffers.map((ho) => {
                 return ho.id;
