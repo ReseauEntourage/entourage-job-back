@@ -1,6 +1,7 @@
 import { Includeable } from 'sequelize';
 import { Organization } from 'src/organizations/models';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
@@ -22,7 +23,7 @@ export const UserCandidatInclude: Includeable[] = [
           {
             model: UserProfile,
             as: 'userProfile',
-            attributes: ['description', 'currentJob'],
+            attributes: UserProfilesAttributes,
             include: getUserProfileInclude(),
           },
         ],
@@ -43,7 +44,7 @@ export const UserCandidatInclude: Includeable[] = [
           {
             model: UserProfile,
             as: 'userProfile',
-            attributes: ['description', 'currentJob'],
+            attributes: UserProfilesAttributes,
             include: getUserProfileInclude(),
           },
         ],
@@ -58,7 +59,7 @@ export const UserCandidatInclude: Includeable[] = [
   {
     model: UserProfile,
     as: 'userProfile',
-    attributes: ['description', 'currentJob'],
+    attributes: UserProfilesAttributes,
     include: getUserProfileInclude(),
   },
 ];

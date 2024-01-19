@@ -3219,9 +3219,11 @@ describe('Users', () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
               role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
             },
             {
               userProfile: {
+                department: 'Rhône (69)',
                 searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
@@ -3231,9 +3233,11 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
               role: UserRoles.COACH,
+              zone: AdminZones.LYON,
             },
             {
               userProfile: {
+                department: 'Rhône (69)',
                 currentJob: 'peintre',
                 networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
                 helpOffers: [{ name: 'interview' }] as HelpNeed[],
@@ -3265,6 +3269,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
         });
@@ -3276,6 +3281,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send({
               description: 'hello',
+              department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
         });
@@ -3293,6 +3299,7 @@ describe('Users', () => {
         it('Should return 200, if candidate updates his profile candidate properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            department: 'Paris (75)',
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
@@ -3304,6 +3311,11 @@ describe('Users', () => {
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInCandidate.token}`)
             .send(updatedProfile);
+
+          const updatedUser = await usersHelper.findUser(
+            loggedInCandidate.user.id
+          );
+
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -3315,11 +3327,13 @@ describe('Users', () => {
               helpNeeds: [expect.objectContaining({ name: 'network' })],
             })
           );
+          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
         it('Should return 400, if candidate updates his profile with coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
             currentJob: 'mécanicien',
+            department: 'Paris (75)',
             networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
@@ -3336,6 +3350,7 @@ describe('Users', () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
             currentJob: 'mécanicien',
+            department: 'Paris (75)',
             networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
@@ -3346,6 +3361,9 @@ describe('Users', () => {
             .put(`${route}/profile/${loggedInCoach.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send(updatedProfile);
+
+          const updatedUser = await usersHelper.findUser(loggedInCoach.user.id);
+
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -3354,10 +3372,13 @@ describe('Users', () => {
               helpOffers: [expect.objectContaining({ name: 'network' })],
             })
           );
+
+          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
         it('Should return 400, if coach updates his profile with candidate properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            department: 'Paris (75)',
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
