@@ -42,7 +42,6 @@ const ENV = `${process.env.NODE_ENV}`;
 const getParsedURI = (uri: string) => new URL(uri);
 
 export function getRedisOptions() {
-  console.log('getRedisOptions')
   const redisUri = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
   const { port, hostname, password } = getParsedURI(redisUri);
   return {
@@ -76,7 +75,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
   };
 }
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -89,12 +87,12 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       limit: 100,
     }),
     BullModule.forRoot({
-      redis: ENV === 'test' ? {} : getRedisOptions(),
+      redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...( ENV === 'test' ? {} : getRedisOptions()),
+      ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
     }),
     RevisionsModule,
     SharesModule,

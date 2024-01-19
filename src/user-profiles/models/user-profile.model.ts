@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString } from 'class-validator';
+import { Transaction } from 'sequelize';
 import {
+  AfterUpdate,
   AllowNull,
   BelongsTo,
   BelongsToMany,
@@ -19,7 +21,9 @@ import {
 } from 'sequelize-typescript';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
+import { Department } from 'src/common/locations/locations.types';
 import { User } from 'src/users/models';
+import { getZoneFromDepartment } from 'src/utils/misc';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
 import { UserProfileNetworkBusinessLine } from './user-profile-network-business-line.model';
@@ -52,6 +56,12 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   currentJob: string;
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Column
+  department: Department;
 
   @CreatedAt
   createdAt: Date;
@@ -118,4 +128,31 @@ export class UserProfile extends Model {
   @IsOptional()
   @HasMany(() => HelpOffer, 'UserProfileId')
   helpOffers: HelpOffer[];
+
+  @AfterUpdate
+  static async updateAdminZone(
+    updatedUserProfile: UserProfile,
+    options: { transaction: Transaction }
+  ) {
+    const previousDepartment: Department =
+      updatedUserProfile.previous('department');
+
+    if (
+      updatedUserProfile &&
+      updatedUserProfile.department &&
+      previousDepartment !== updatedUserProfile.department
+    ) {
+      await User.update(
+        {
+          zone: getZoneFromDepartment(updatedUserProfile.department),
+        },
+        {
+          where: {
+            id: updatedUserProfile.UserId,
+          },
+          ...(options?.transaction ? { transaction: options.transaction } : {}),
+        }
+      );
+    }
+  }
 }

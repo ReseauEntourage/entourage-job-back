@@ -71,6 +71,7 @@ export class UserProfilesService {
       await this.userProfileModel.update(updateUserProfileDto, {
         where: { UserId: userId },
         individualHooks: true,
+        transaction: t,
       });
 
       if (updateUserProfileDto.networkBusinessLines) {
