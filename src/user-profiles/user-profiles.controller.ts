@@ -23,14 +23,13 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { AllUserRoles, Permissions, UserRole } from 'src/users/users.types';
+import { AllUserRoles, Permissions, UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfilesService } from './user-profiles.service';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
-import { UserRoles } from 'dist/users/users.types';
 
 @Controller('user/profile')
 export class UserProfilesController {
