@@ -23,7 +23,12 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { AllUserRoles, Permissions, UserRole, UserRoles } from 'src/users/users.types';
+import {
+  AllUserRoles,
+  Permissions,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
@@ -35,7 +40,7 @@ import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
 
-  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
+  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
   @UseGuards(UserPermissionsGuard)
   @Self('params.userId')
   @UseGuards(SelfGuard)
@@ -83,11 +88,13 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
+    if (role.includes(UserRoles.COACH_EXTERNAL)) {
+      throw new BadRequestException();
+    }
+
     return this.userProfilesService.findAll(userId, { role, offset, limit });
   }
 
-  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
-  @UseGuards(UserPermissionsGuard)
   @Self('params.userId')
   @UseGuards(SelfGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
@@ -120,10 +127,7 @@ export class UserProfilesController {
   }
 
   @Get('/:userId')
-  async findByUserId(
-    @Param('userId', new ParseUUIDPipe()) userId: string
-  ) {
-
+  async findByUserId(@Param('userId', new ParseUUIDPipe()) userId: string) {
     const user = await this.userProfilesService.findOneUser(userId);
 
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
@@ -137,6 +141,5 @@ export class UserProfilesController {
     }
 
     return getPublicProfileFromUserAndUserProfile(user, userProfile);
-  };
-
-};
+  }
+}

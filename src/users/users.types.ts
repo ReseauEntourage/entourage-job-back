@@ -24,18 +24,19 @@ export type UserRole = typeof UserRoles[keyof typeof UserRoles];
 export const Permissions = {
   CANDIDATE: 'Candidat',
   COACH: 'Coach',
+  RESTRICTED_COACH: 'Restricted_Coach',
   ADMIN: 'Admin',
 } as const;
 
 export type Permission = typeof Permissions[keyof typeof Permissions];
 
-export const UserPermissions: { [K in UserRole]: Permission } = {
+export const UserPermissions: { [K in UserRole]: Permission | Permission[] } = {
   [UserRoles.CANDIDATE]: Permissions.CANDIDATE,
   [UserRoles.CANDIDATE_EXTERNAL]: Permissions.CANDIDATE,
-  [UserRoles.COACH]: Permissions.COACH,
+  [UserRoles.COACH]: [Permissions.COACH, Permissions.RESTRICTED_COACH],
   [UserRoles.COACH_EXTERNAL]: Permissions.COACH,
   [UserRoles.ADMIN]: Permissions.ADMIN,
-} as const;
+};
 
 export const NormalUserRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
 export const ExternalUserRoles = [
