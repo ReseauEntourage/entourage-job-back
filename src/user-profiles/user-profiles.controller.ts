@@ -23,12 +23,13 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from 'src/users/guards';
-import { AllUserRoles, Permissions, UserRole } from 'src/users/users.types';
+import { AllUserRoles, Permissions, UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfilesService } from './user-profiles.service';
+import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @Controller('user/profile')
 export class UserProfilesController {
@@ -117,4 +118,25 @@ export class UserProfilesController {
 
     return profileImage;
   }
-}
+
+  @Get('/:userId')
+  async findByUserId(
+    @Param('userId', new ParseUUIDPipe()) userId: string
+  ) {
+
+    const user = await this.userProfilesService.findOneUser(userId);
+
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    if (user.role === UserRoles.ADMIN) {
+      throw new BadRequestException();
+    }
+
+    return getPublicProfileFromUserAndUserProfile(user, userProfile);
+  };
+
+};
