@@ -3318,7 +3318,7 @@ describe('Users', () => {
       });
     });
     describe('R - Read Profiles', () => {
-      describe('/profile/:id - Get user profile', () => {
+      describe('/profile/:userId - Get user profile', () => {
         let loggedInUser: LoggedUser;
         let randomUser: User;
         beforeEach(async () => {
@@ -3326,44 +3326,51 @@ describe('Users', () => {
           randomUser = await userFactory.create(
             {},
             {
-              userProfile : {
+              userProfile: {
+                department: 'Paris (75)',
                 searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'développeur' }] as Ambition[],
                 helpNeeds: [{ name: 'network' }] as HelpNeed[],
                 helpOffers: [{ name: 'network' }] as HelpOffer[],
-              }
+              },
             }
           );
         });
         it('Should return 401, if user not logged in', async () => {
-          const response:APIResponse<UserProfilesController['findByUserId']> = await request(app.getHttpServer()).get(`${route}/profile/${randomUser.id}`);
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer()).get(
+              `${route}/profile/${randomUser.id}`
+            );
           expect(response.status).toBe(401);
-        })
+        });
         it('Should return 200, if user logged in', async () => {
-            const response:APIResponse<UserProfilesController['findByUserId']> = await request(app.getHttpServer())
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
               .get(`${route}/profile/${randomUser.id}`)
               .set('authorization', `Token ${loggedInUser.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body).toEqual(
-                expect.objectContaining({
-                  id: randomUser.id,
-                  firstName: randomUser.firstName,
-                  lastName: randomUser.lastName,
-                  role: randomUser.role,
-                  zone: randomUser.zone,
-                  currentJob: randomUser.userProfile.currentJob,
-                  helpNeeds: [expect.objectContaining({ name: 'network' })],
-                  helpOffers: [expect.objectContaining({ name: 'network' })],
-                  description: randomUser.userProfile.description,
-                  searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-                  networkBusinessLines: [],
-                  searchAmbitions: [expect.objectContaining({ name: 'développeur' })],
-              })
-            );
-          });
-          
-      })
-    })
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              id: randomUser.id,
+              firstName: randomUser.firstName,
+              lastName: randomUser.lastName,
+              role: randomUser.role,
+              zone: randomUser.zone,
+              currentJob: randomUser.userProfile.currentJob,
+              department: randomUser.userProfile.department,
+              helpNeeds: [expect.objectContaining({ name: 'network' })],
+              helpOffers: [expect.objectContaining({ name: 'network' })],
+              description: randomUser.userProfile.description,
+              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
+              networkBusinessLines: [],
+              searchAmbitions: [
+                expect.objectContaining({ name: 'développeur' }),
+              ],
+            })
+          );
+        });
+      });
+    });
     describe('U - Update 1 User', () => {
       describe('/:id - Update user', () => {
         let loggedInAdmin: LoggedUser;
@@ -3839,7 +3846,7 @@ describe('Users', () => {
             .attach('profileImage', path);
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if candidate uploads profile picture for antoher user', async () => {
+        it('Should return 403, if candidate uploads profile picture for another user', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(app.getHttpServer())
