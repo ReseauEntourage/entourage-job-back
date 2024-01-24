@@ -54,7 +54,7 @@ export class UpdateUserProfilePipe
       }
     }
 
-    if (hasPermission(Permissions.COACH, role)) {
+    if (hasPermission(Permissions.RESTRICTED_COACH, role)) {
       const object = plainToInstance(UpdateCoachUserProfileDto, value);
       const errors = await validate(object, {
         whitelist: true,

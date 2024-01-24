@@ -25,8 +25,8 @@ import {
 } from './users.types';
 
 export function isRoleIncluded(
-  superset: Array<UserRole>,
-  subset: UserRole | Array<UserRole>
+  superset: UserRole[],
+  subset: UserRole | UserRole[]
 ) {
   if (!Array.isArray(subset)) {
     return _.difference([subset], superset).length === 0;
@@ -38,12 +38,19 @@ export function hasPermission(
   permission: Permission | Permission[],
   role: UserRole
 ) {
-  if (!Array.isArray(permission)) {
-    return UserPermissions[role] === permission;
-  }
-
   const userPermission = UserPermissions[role];
-  return permission.includes(userPermission);
+
+  const userPermissionsArray = Array.isArray(userPermission)
+    ? userPermission
+    : [userPermission];
+
+  const permissionsToCheckArray = Array.isArray(permission)
+    ? permission
+    : [permission];
+
+  return (
+    _.intersection(userPermissionsArray, permissionsToCheckArray).length > 0
+  );
 }
 
 export function generateUrl(user: User) {
