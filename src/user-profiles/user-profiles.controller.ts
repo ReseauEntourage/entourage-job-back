@@ -127,10 +127,24 @@ export class UserProfilesController {
   }
 
   @Get('/:userId')
-  async findByUserId(@Param('userId', new ParseUUIDPipe()) userId: string) {
-    const user = await this.userProfilesService.findOneUser(userId);
+  async findByUserId(
+    @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
+    @Param('userId', new ParseUUIDPipe()) userIdToGet: string
+  ) {
+    const user = await this.userProfilesService.findOneUser(userIdToGet);
 
-    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+    const userProfile = await this.userProfilesService.findOneByUserId(
+      userIdToGet
+    );
+
+    const lastSentMessage = await this.userProfilesService.getLastContact(
+      currentUserId,
+      userIdToGet
+    );
+    const lastReceivedMessage = await this.userProfilesService.getLastContact(
+      userIdToGet,
+      currentUserId
+    );
 
     if (!user || !userProfile) {
       throw new NotFoundException();
@@ -140,6 +154,11 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return getPublicProfileFromUserAndUserProfile(user, userProfile);
+    return getPublicProfileFromUserAndUserProfile(
+      user,
+      userProfile,
+      lastSentMessage?.createdAt,
+      lastReceivedMessage?.createdAt
+    );
   }
 }

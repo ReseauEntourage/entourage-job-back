@@ -3,12 +3,12 @@ import faker from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
-import { ExternalMessagesService } from 'src/external-messages/external-messages.service';
+import { MessagesService } from 'src/messages/messages.service';
 import {
   ExternalMessageContactTypeFilters,
   ExternalMessageSubjectFilters,
-} from 'src/external-messages/external-messages.types';
-import { ExternalMessage } from 'src/external-messages/models';
+} from 'src/messages/messages.types';
+import { ExternalMessage } from 'src/messages/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
@@ -16,10 +16,12 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
   constructor(
     @InjectModel(ExternalMessage)
     private messageModel: typeof ExternalMessage,
-    private messagesService: ExternalMessagesService
+    private messagesService: MessagesService
   ) {}
 
-  generateMessage(props: Partial<ExternalMessage>): Partial<ExternalMessage> {
+  generateExternalMessage(
+    props: Partial<ExternalMessage>
+  ): Partial<ExternalMessage> {
     const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
 
     const fakeData: Partial<ExternalMessage> = {
@@ -47,7 +49,7 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
     props: Partial<ExternalMessage> = {},
     insertInDB = true
   ): Promise<ExternalMessage> {
-    const messageData = this.generateMessage(props);
+    const messageData = this.generateExternalMessage(props);
 
     const messageId = faker.datatype.uuid();
     if (insertInDB) {
@@ -56,7 +58,7 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
         { hooks: true }
       );
     }
-    const dbMessage = await this.messagesService.findOne(
+    const dbMessage = await this.messagesService.findOneExternalMessage(
       messageData.id || messageId
     );
     if (dbMessage) {

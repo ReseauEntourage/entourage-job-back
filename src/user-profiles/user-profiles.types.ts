@@ -21,4 +21,6 @@ export type PublicProfile = {
   searchBusinessLines: BusinessLine[];
   networkBusinessLines: BusinessLine[];
   searchAmbitions: Ambition[];
+  lastSentMessage: Date;
+  lastReceivedMessage: Date;
 };

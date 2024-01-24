@@ -4,26 +4,34 @@ import { ExternalDatabasesService } from 'src/external-databases/external-databa
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { ExternalMessage } from './models';
+import { ExternalMessage, InternalMessage } from './models';
 
 @Injectable()
-export class ExternalMessagesService {
+export class MessagesService {
   constructor(
     @InjectModel(ExternalMessage)
-    private messageModel: typeof ExternalMessage,
+    private externalMessageModel: typeof ExternalMessage,
+    @InjectModel(InternalMessage)
+    private internalMessageModel: typeof InternalMessage,
     private mailsService: MailsService,
     private usersService: UsersService,
     private externalDatabasesService: ExternalDatabasesService
   ) {}
 
-  async create(createMessageDto: Partial<ExternalMessage>) {
-    return this.messageModel.create(createMessageDto, {
+  async createExternalMessage(createMessageDto: Partial<ExternalMessage>) {
+    return this.externalMessageModel.create(createMessageDto, {
       hooks: true,
     });
   }
 
-  async findOne(id: string) {
-    return this.messageModel.findByPk(id, {
+  async createInternalMessage(createMessageDto: Partial<InternalMessage>) {
+    return this.internalMessageModel.create(createMessageDto, {
+      hooks: true,
+    });
+  }
+
+  async findOneExternalMessage(id: string) {
+    return this.externalMessageModel.findByPk(id, {
       include: [
         {
           model: User,
@@ -32,6 +40,10 @@ export class ExternalMessagesService {
         },
       ],
     });
+  }
+
+  async findOneInternalMessage(id: string) {
+    return this.internalMessageModel.findByPk(id, {});
   }
 
   async findOneUser(id: string) {
@@ -50,9 +62,34 @@ export class ExternalMessagesService {
     );
   }
 
+  async sendInternalMessageByMail(
+    senderUser: User,
+    addresseeUser: User,
+    message: InternalMessage
+  ) {
+    return this.mailsService.sendInternalMessageByMail(
+      senderUser,
+      addresseeUser,
+      message
+    );
+  }
+
   async createOrUpdateExternalDBTask(externalMessageId: string) {
     return this.externalDatabasesService.createOrUpdateExternalDBTask(
       externalMessageId
     );
+  }
+
+  async getLastMessageBetweenUsers(
+    senderUserId: string,
+    addresseeUserId: string
+  ) {
+    return await this.internalMessageModel.findOne({
+      where: {
+        senderUserId,
+        addresseeUserId,
+      },
+      order: [['createdAt', 'DESC']],
+    });
   }
 }
