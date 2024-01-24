@@ -3082,13 +3082,35 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
         });
+        it('Should return 400 if no offset or limit parameter', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(400);
+        });
         it('Should return 400 if no role parameter', async () => {
           const loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
           });
           const response: APIResponse<UserProfilesController['findAll']> =
             await request(app.getHttpServer())
-              .get(`${route}/profile`)
+              .get(`${route}/profile?offset=0&limit=25`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 if external coach in role parameter', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
+              )
               .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
@@ -3296,7 +3318,7 @@ describe('Users', () => {
       });
     });
     describe('R - Read Profiles', () => {
-      describe('/profile/:id - Get user profile', () => {
+      describe('/profile/:userId - Get user profile', () => {
         let loggedInUser: LoggedUser;
         let randomUser: User;
         beforeEach(async () => {
@@ -3304,44 +3326,51 @@ describe('Users', () => {
           randomUser = await userFactory.create(
             {},
             {
-              userProfile : {
+              userProfile: {
+                department: 'Paris (75)',
                 searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'développeur' }] as Ambition[],
                 helpNeeds: [{ name: 'network' }] as HelpNeed[],
                 helpOffers: [{ name: 'network' }] as HelpOffer[],
-              }
+              },
             }
           );
         });
         it('Should return 401, if user not logged in', async () => {
-          const response:APIResponse<UserProfilesController['findByUserId']> = await request(app.getHttpServer()).get(`${route}/profile/${randomUser.id}`);
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer()).get(
+              `${route}/profile/${randomUser.id}`
+            );
           expect(response.status).toBe(401);
-        })
+        });
         it('Should return 200, if user logged in', async () => {
-            const response:APIResponse<UserProfilesController['findByUserId']> = await request(app.getHttpServer())
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
               .get(`${route}/profile/${randomUser.id}`)
               .set('authorization', `Token ${loggedInUser.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body).toEqual(
-                expect.objectContaining({
-                  id: randomUser.id,
-                  firstName: randomUser.firstName,
-                  lastName: randomUser.lastName,
-                  role: randomUser.role,
-                  zone: randomUser.zone,
-                  currentJob: randomUser.userProfile.currentJob,
-                  helpNeeds: [expect.objectContaining({ name: 'network' })],
-                  helpOffers: [expect.objectContaining({ name: 'network' })],
-                  description: randomUser.userProfile.description,
-                  searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-                  networkBusinessLines: [],
-                  searchAmbitions: [expect.objectContaining({ name: 'développeur' })],
-              })
-            );
-          });
-          
-      })
-    })
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              id: randomUser.id,
+              firstName: randomUser.firstName,
+              lastName: randomUser.lastName,
+              role: randomUser.role,
+              zone: randomUser.zone,
+              currentJob: randomUser.userProfile.currentJob,
+              department: randomUser.userProfile.department,
+              helpNeeds: [expect.objectContaining({ name: 'network' })],
+              helpOffers: [expect.objectContaining({ name: 'network' })],
+              description: randomUser.userProfile.description,
+              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
+              networkBusinessLines: [],
+              searchAmbitions: [
+                expect.objectContaining({ name: 'développeur' }),
+              ],
+            })
+          );
+        });
+      });
+    });
     describe('U - Update 1 User', () => {
       describe('/:id - Update user', () => {
         let loggedInAdmin: LoggedUser;
@@ -3512,7 +3541,9 @@ describe('Users', () => {
       describe('/profile/:id - Update user profile', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
+        let loggedInExternalCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInExternalCoach: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -3547,12 +3578,40 @@ describe('Users', () => {
             }
           );
 
+          loggedInExternalCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+          loggedInExternalCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH_EXTERNAL,
+            zone: AdminZones.LYON,
+          });
+
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
               loggedInCoach,
               loggedInCandidate,
               true
             ));
+
+          ({
+            loggedInCoach: loggedInExternalCoach,
+            loggedInCandidate: loggedInExternalCandidate,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            loggedInExternalCoach,
+            loggedInExternalCandidate,
+            true
+          ));
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
@@ -3569,6 +3628,42 @@ describe('Users', () => {
           > = await request(app.getHttpServer())
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              description: 'hello',
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if admin updates his user profile', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInAdmin.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              description: 'hello',
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if external coach updates his user profile', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInExternalCoach.user.id}`)
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .send({
+              description: 'hello',
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it("Should return 403, if external coach updates his candidate's profile", async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInExternalCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
             .send({
               description: 'hello',
               department: 'Paris (75)',
@@ -3731,17 +3826,17 @@ describe('Users', () => {
 
           expect(response.status).toBe(401);
         });
-        it("Should return 403, if admin uploads a user's profile picture", async () => {
+        it('Should return 201, if admin uploads his profile picture', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
-          expect(response.status).toBe(403);
+          expect(response.status).toBe(201);
         });
-        it('Should return 403, if coach uploads profile picture for antoher user', async () => {
+        it('Should return 403, if coach uploads profile picture for another user', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(app.getHttpServer())
@@ -3751,7 +3846,7 @@ describe('Users', () => {
             .attach('profileImage', path);
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if candidate uploads profile picture for antoher user', async () => {
+        it('Should return 403, if candidate uploads profile picture for another user', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(app.getHttpServer())
@@ -3780,7 +3875,6 @@ describe('Users', () => {
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
         });
-
         it('Should return 201, if coach uploads his profile picture', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
