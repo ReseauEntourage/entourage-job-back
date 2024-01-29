@@ -3,8 +3,8 @@ import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import moment from 'moment-timezone';
 
-import { ExternalMessagesService } from 'src/external-messages/external-messages.service';
-import { ExternalMessage } from 'src/external-messages/models';
+import { MessagesService } from 'src/messages/messages.service';
+import { ExternalMessage } from 'src/messages/models';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
@@ -83,7 +83,7 @@ export class SalesforceService {
   constructor(
     private opportunitiesService: OpportunitiesService,
     private opportunityUsersService: OpportunityUsersService,
-    private externalMessagesService: ExternalMessagesService
+    private messagesService: MessagesService
   ) {}
 
   setIsWorker(isWorker: boolean) {
@@ -1429,7 +1429,7 @@ export class SalesforceService {
   async findTaskFromExternalMessageId(
     externalMessageId: string
   ): Promise<ExternalMessageProps> {
-    const externalMessageDb = await this.externalMessagesService.findOne(
+    const externalMessageDb = await this.messagesService.findOneExternalMessage(
       externalMessageId
     );
 

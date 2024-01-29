@@ -26,11 +26,11 @@ import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { UsersModule } from 'src/users/users.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
-import { ExternalMessagesModule } from './external-messages/external-messages.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
+import { MessagesModule } from './messages/messages.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
@@ -123,7 +123,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     BitlyModule,
     ContactsModule,
     OrganizationsModule,
-    ExternalMessagesModule,
+    MessagesModule,
   ],
   providers: [
     {
@@ -165,7 +165,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     BitlyModule,
     ContactsModule,
     OrganizationsModule,
-    ExternalMessagesModule,
+    MessagesModule,
   ],
 })
 export class AppModule {}

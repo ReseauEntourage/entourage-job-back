@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { MessagesService } from 'src/messages/messages.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole } from 'src/users/users.types';
@@ -40,7 +41,8 @@ export class UserProfilesService {
     @InjectModel(HelpOffer)
     private helpOfferModel: typeof HelpOffer,
     private s3Service: S3Service,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private messagesService: MessagesService
   ) {}
 
   async findOne(id: string) {
@@ -271,6 +273,18 @@ export class UserProfilesService {
       where: { UserId: userId },
       individualHooks: true,
     });
+  }
+
+  async getLastContact(senderUserId: string, addresseeUserId: string) {
+    if (!senderUserId || !addresseeUserId) {
+      return null;
+    }
+    const lastSendMessage =
+      await this.messagesService.getLastMessageBetweenUsers(
+        senderUserId,
+        addresseeUserId
+      );
+    return lastSendMessage;
   }
 
   async uploadProfileImage(userId: string, file: Express.Multer.File) {

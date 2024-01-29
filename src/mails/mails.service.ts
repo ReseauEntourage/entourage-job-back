@@ -4,16 +4,17 @@ import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
 import {
-  ExternalMessageSubjectFilters,
-  ExternalMessageContactTypeFilters,
-} from 'src/external-messages/external-messages.types';
-import { ExternalMessage } from 'src/external-messages/models/external-message.model';
-import {
   CustomMailParams,
   MailjetTemplate,
   MailjetTemplateKey,
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
+import {
+  ExternalMessageSubjectFilters,
+  ExternalMessageContactTypeFilters,
+} from 'src/messages/messages.types';
+import { InternalMessage } from 'src/messages/models';
+import { ExternalMessage } from 'src/messages/models/external-message.model';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
   OfferStatuses,
@@ -23,10 +24,16 @@ import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/op
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
-import { UserRoles } from 'src/users/users.types';
+import {
+  UserRoles,
+  CandidateUserRoles,
+  CoachUserRoles,
+  UserRole,
+} from 'src/users/users.types';
 import {
   getCandidateFromCoach,
   getCoachFromCandidate,
+  isRoleIncluded,
 } from 'src/users/users.utils';
 import {
   getAdminMailsFromDepartment,
@@ -606,6 +613,51 @@ export class MailsService {
               ExternalMessageContactTypeFilters
             ).label
           : '',
+      },
+    });
+  }
+
+  async sendInternalMessageByMail(
+    senderUser: User,
+    addresseeUser: User,
+    message: InternalMessage
+  ) {
+    let senderRole: UserRole;
+    if (isRoleIncluded(CandidateUserRoles, senderUser.role)) {
+      senderRole = 'Candidat';
+    } else if (isRoleIncluded(CoachUserRoles, senderUser.role)) {
+      senderRole = 'Coach';
+    } else {
+      senderRole = 'Admin';
+    }
+
+    // envoi du mail au destinataire
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: addresseeUser.email,
+      templateId: MailjetTemplates.INTERNAL_MESSAGE,
+      replyTo: senderUser.email,
+      variables: {
+        senderName: `${senderUser.firstName} ${senderUser.lastName}`,
+        addresseeName: `${addresseeUser.firstName} ${addresseeUser.lastName}`,
+        senderRole,
+        senderEmail: senderUser.email,
+        message: message.message,
+        zone: addresseeUser.zone,
+        subject: message.subject,
+      },
+    });
+
+    // envoi de la confirmation à l'expéditeur
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: senderUser.email,
+      templateId: MailjetTemplates.INTERNAL_MESSAGE_CONFIRMATION,
+      replyTo: senderUser.email,
+      variables: {
+        senderName: `${senderUser.firstName} ${senderUser.lastName}`,
+        addresseeName: `${addresseeUser.firstName} ${addresseeUser.lastName}`,
+        senderEmail: senderUser.email,
+        zone: senderUser.zone,
+        subject: message.subject,
       },
     });
   }

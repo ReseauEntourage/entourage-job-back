@@ -9,6 +9,13 @@ export const ExternalMessageContactTypes = {
 export type ExternalMessageContactType =
   typeof ExternalMessageContactTypes[keyof typeof ExternalMessageContactTypes];
 
+// export const InternalMessageContactTypes = {
+//   CONTACT: 'contact',
+// } as const;
+
+// export type InternalMessageContactType =
+//   typeof InternalMessageContactTypes[keyof typeof InternalMessageContactTypes];
+
 export const ExternalMessageContactTypeFilters: FilterConstant<ExternalMessageContactType>[] =
   [
     {

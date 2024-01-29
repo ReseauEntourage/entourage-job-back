@@ -24,7 +24,7 @@ import {
 import {
   ExternalMessageContactType,
   ExternalMessageSubject,
-} from '../external-messages.types';
+} from '../messages.types';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'ExternalMessages' })
