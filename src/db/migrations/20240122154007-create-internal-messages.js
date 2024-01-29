@@ -46,6 +46,6 @@ module.exports = {
   },
 
   async down (queryInterface) {
-    return queryInterface.dropTable('InternalMessages');
+    await queryInterface.dropTable('InternalMessages');
   }
 };

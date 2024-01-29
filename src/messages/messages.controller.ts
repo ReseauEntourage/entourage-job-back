@@ -90,8 +90,6 @@ export class MessagesController {
       createdMessage
     );
 
-    await this.messagesService.createOrUpdateExternalDBTask(createdMessage.id);
-
     return createdMessage;
   }
 }

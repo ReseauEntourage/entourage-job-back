@@ -28,6 +28,7 @@ import {
   UserRoles,
   CandidateUserRoles,
   CoachUserRoles,
+  UserRole,
 } from 'src/users/users.types';
 import {
   getCandidateFromCoach,
@@ -621,7 +622,7 @@ export class MailsService {
     addresseeUser: User,
     message: InternalMessage
   ) {
-    let senderRole: string;
+    let senderRole: UserRole;
     if (isRoleIncluded(CandidateUserRoles, senderUser.role)) {
       senderRole = 'Candidat';
     } else if (isRoleIncluded(CoachUserRoles, senderUser.role)) {
