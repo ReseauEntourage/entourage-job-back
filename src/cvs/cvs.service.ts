@@ -1110,10 +1110,7 @@ export class CVsService {
     let uploadedImg: string;
 
     try {
-      const fileBuffer = await sharp(path)
-        .trim()
-        .jpeg({ quality: 75 })
-        .toBuffer();
+      const fileBuffer = await sharp(path).jpeg({ quality: 75 }).toBuffer();
 
       uploadedImg = await this.s3Service.upload(
         fileBuffer,
@@ -1125,7 +1122,6 @@ export class CVsService {
         TO KEEP If ever we want to pre-resize the preview background image
 
         const previewBuffer = await sharp(fileBuffer)
-          .trim()
           .resize(imageWidth, imageHeight, {
             fit: 'cover',
           })
