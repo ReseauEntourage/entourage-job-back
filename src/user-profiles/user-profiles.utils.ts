@@ -4,7 +4,9 @@ import { PublicProfile } from './user-profiles.types';
 
 export const getPublicProfileFromUserAndUserProfile = (
   user: User,
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  lastSentMessage: Date,
+  lastReceivedMessage: Date
 ): PublicProfile => {
   return {
     id: user.id,
@@ -20,5 +22,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     searchBusinessLines: userProfile.searchBusinessLines,
     networkBusinessLines: userProfile.networkBusinessLines,
     searchAmbitions: userProfile.searchAmbitions,
+    lastSentMessage: lastSentMessage ? lastSentMessage : null,
+    lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
   };
 };

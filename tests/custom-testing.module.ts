@@ -16,7 +16,7 @@ import { SkillsTestingModule } from './common/skills/skills-testing.module';
 import { ContactsTestingModule } from './contacts/contacts-testing.module';
 import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
-import { ExternalMessagesTestingModule } from './external-messages/external-messages-testing.module';
+import { MessagesTestingModule } from './messages/messages-testing.module';
 import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
@@ -42,7 +42,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsTestingModule,
     OpportunitiesTestingModule,
     OrganizationsTestingModule,
-    ExternalMessagesTestingModule,
+    MessagesTestingModule,
   ],
   providers: [DatabaseHelper],
 })

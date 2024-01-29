@@ -3366,6 +3366,8 @@ describe('Users', () => {
               searchAmbitions: [
                 expect.objectContaining({ name: 'développeur' }),
               ],
+              lastReceivedMessage: null,
+              lastSentMessage: null,
             })
           );
         });
