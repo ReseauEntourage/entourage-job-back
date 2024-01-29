@@ -18,18 +18,39 @@ import {
   MemberFilterKey,
   MemberFilters,
   NormalUserRoles,
+  Permission,
+  UserPermissions,
   UserRole,
   UserRoles,
 } from './users.types';
 
 export function isRoleIncluded(
-  superset: Array<UserRole>,
-  subset: UserRole | Array<UserRole>
+  superset: UserRole[],
+  subset: UserRole | UserRole[]
 ) {
   if (!Array.isArray(subset)) {
     return _.difference([subset], superset).length === 0;
   }
   return _.difference(subset, superset).length === 0;
+}
+
+export function hasPermission(
+  permission: Permission | Permission[],
+  role: UserRole
+) {
+  const userPermission = UserPermissions[role];
+
+  const userPermissionsArray = Array.isArray(userPermission)
+    ? userPermission
+    : [userPermission];
+
+  const permissionsToCheckArray = Array.isArray(permission)
+    ? permission
+    : [permission];
+
+  return (
+    _.intersection(userPermissionsArray, permissionsToCheckArray).length > 0
+  );
 }
 
 export function generateUrl(user: User) {

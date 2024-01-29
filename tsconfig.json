@@ -24,6 +24,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
+  "watchOptions": {
+    "watchFile": "fixedPollingInterval"
+  },
   "exclude": [
     "node_modules",
   ],

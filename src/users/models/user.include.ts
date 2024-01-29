@@ -1,5 +1,8 @@
 import { Includeable } from 'sequelize';
 import { Organization } from 'src/organizations/models';
+import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
+import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';
@@ -16,6 +19,14 @@ export const UserCandidatInclude: Includeable[] = [
         as: 'coach',
         attributes: [...UserAttributes],
         paranoid: false,
+        include: [
+          {
+            model: UserProfile,
+            as: 'userProfile',
+            attributes: UserProfilesAttributes,
+            include: getUserProfileInclude(),
+          },
+        ],
       },
     ],
   },
@@ -29,12 +40,26 @@ export const UserCandidatInclude: Includeable[] = [
         as: 'candidat',
         attributes: [...UserAttributes],
         paranoid: false,
+        include: [
+          {
+            model: UserProfile,
+            as: 'userProfile',
+            attributes: UserProfilesAttributes,
+            include: getUserProfileInclude(),
+          },
+        ],
       },
     ],
   },
   {
     model: Organization,
     as: 'organization',
-    attributes: ['name', 'address', 'zone', 'id'],
+    attributes: ['id', 'name', 'address', 'zone'],
+  },
+  {
+    model: UserProfile,
+    as: 'userProfile',
+    attributes: UserProfilesAttributes,
+    include: getUserProfileInclude(),
   },
 ];

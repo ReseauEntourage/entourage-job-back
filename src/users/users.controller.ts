@@ -124,7 +124,7 @@ export class UsersController {
   @Get('search')
   async findUsers(
     @Query('query') search: string,
-    @Query('role') role: UserRole | UserRole[],
+    @Query('role') role: UserRole[],
     @Query('organizationId') organizationId?: string
   ) {
     if (organizationId && !uuidValidate(organizationId)) {
