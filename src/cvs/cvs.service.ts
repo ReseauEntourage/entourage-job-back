@@ -191,7 +191,7 @@ export class CVsService {
 
           if (cvData.businessLines) {
             const businessLines = await Promise.all(
-              cvData.businessLines.map(({ name, order }) => {
+              cvData.businessLines.map(({ name, order = -1 }) => {
                 return this.businessLineModel.create(
                   { name, order },
                   {
@@ -208,7 +208,7 @@ export class CVsService {
 
           if (cvData.locations) {
             const locations = await Promise.all(
-              cvData.locations.map(({ name, order }) => {
+              cvData.locations.map(({ name, order = -1 }) => {
                 return this.locationModel.create(
                   { name, order },
                   {

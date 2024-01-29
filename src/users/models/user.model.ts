@@ -47,6 +47,7 @@ import {
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
 import { Share } from 'src/shares/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { UserCandidat } from './user-candidat.model';
 
@@ -186,6 +187,12 @@ export class User extends HistorizedModel {
   @BelongsTo(() => Organization, 'OrganizationId')
   organization?: Organization;
 
+  @HasOne(() => UserProfile, {
+    foreignKey: 'UserId',
+    hooks: true,
+  })
+  userProfile: UserProfile;
+
   @BeforeCreate
   @BeforeUpdate
   static trimValues(user: User) {
@@ -205,10 +212,19 @@ export class User extends HistorizedModel {
         },
         { hooks: true }
       );
-      await Share.create({
-        CandidatId: createdUser.id,
-      });
+      await Share.create(
+        {
+          CandidatId: createdUser.id,
+        },
+        { hooks: true }
+      );
     }
+    await UserProfile.create(
+      {
+        UserId: createdUser.id,
+      },
+      { hooks: true }
+    );
   }
 
   @BeforeUpdate

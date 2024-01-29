@@ -35,6 +35,7 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
+import { UserProfilesModule } from './user-profiles/user-profiles.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -94,14 +95,16 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
     }),
     RevisionsModule,
+    UserProfilesModule,
+    // Put UserProfilesModule before UsersModule
     SharesModule,
     // Put SharesModule before CVsModule
-    CVsModule,
-    AuthModule,
     UsersModule,
-    OpportunitiesModule,
     UsersDeletionModule,
     UsersCreationModule,
+    AuthModule,
+    CVsModule,
+    OpportunitiesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -134,14 +137,16 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
   ],
   exports: [
     RevisionsModule,
+    UserProfilesModule,
+    // Put UserProfilesModule before UsersModule
     SharesModule,
     // Put SharesModule before CVsModule
-    CVsModule,
-    AuthModule,
     UsersModule,
-    OpportunitiesModule,
     UsersDeletionModule,
     UsersCreationModule,
+    AuthModule,
+    CVsModule,
+    OpportunitiesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -152,6 +157,13 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ExperiencesModule,
     FormationsModule,
     ReviewsModule,
+    MailsModule,
+    MailjetModule,
+    ExternalDatabasesModule,
+    SalesforceModule,
+    SMSModule,
+    BitlyModule,
+    ContactsModule,
     OrganizationsModule,
     ExternalMessagesModule,
   ],

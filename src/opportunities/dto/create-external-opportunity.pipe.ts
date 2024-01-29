@@ -10,7 +10,8 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { UserRoles } from 'src/users/users.types';
+import { Permissions } from 'src/users/users.types';
+import { hasPermission } from 'src/users/users.utils';
 import { RequestWithUser } from 'src/utils/types';
 import { CreateExternalOpportunityRestrictedDto } from './create-external-opportunity-restricted.dto';
 import { CreateExternalOpportunityDto } from './create-external-opportunity.dto';
@@ -62,7 +63,10 @@ export class CreateExternalOpportunityPipe
       forbidUnknownValues: true,
     });
 
-    if (restrictedErrors.length > 0 && role !== UserRoles.ADMIN) {
+    if (
+      restrictedErrors.length > 0 &&
+      !hasPermission(Permissions.ADMIN, role)
+    ) {
       throw new BadRequestException();
     }
     return value;

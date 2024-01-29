@@ -38,8 +38,10 @@ export class UsersDeletionController {
       address: null,
     });
 
-    if (candidat?.url)
+    if (candidat?.url) {
       await this.usersDeletionService.uncacheCandidateCV(candidat.url);
+    }
+
     const cvsDeleted = await this.usersDeletionService.removeCandidateCVs(
       userId
     );
@@ -69,6 +71,8 @@ export class UsersDeletionController {
         return opportunityUser.id;
       })
     );
+
+    await this.usersDeletionService.removeUserProfile(userId);
 
     // Todo change to userDeleted
     const usersDeleted = await this.usersDeletionService.removeUser(userId);
