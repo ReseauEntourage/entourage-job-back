@@ -16,16 +16,16 @@ export function getUserProfileInclude(
   businessLinesOptions: WhereOptions<BusinessLine> = {},
   helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
 ): Includeable[] {
-  const businessLinesRequired = role && !_.isEmpty(businessLinesOptions);
+  const isBusinessLinesRequired = role && !_.isEmpty(businessLinesOptions);
   const isCandidateBusinessLines =
-    businessLinesRequired && isRoleIncluded(CandidateUserRoles, role);
+    isBusinessLinesRequired && isRoleIncluded(CandidateUserRoles, role);
   const isCoachBusinessLines =
-    businessLinesRequired && isRoleIncluded(CoachUserRoles, role);
+    isBusinessLinesRequired && isRoleIncluded(CoachUserRoles, role);
 
-  const helpsRequired = role && !_.isEmpty(helpsOptions);
+  const isHelpsRequired = role && !_.isEmpty(helpsOptions);
   const isCandidateHelps =
-    helpsRequired && isRoleIncluded(CandidateUserRoles, role);
-  const isCoachHelps = helpsRequired && isRoleIncluded(CoachUserRoles, role);
+    isHelpsRequired && isRoleIncluded(CandidateUserRoles, role);
+  const isCoachHelps = isHelpsRequired && isRoleIncluded(CoachUserRoles, role);
 
   return [
     {

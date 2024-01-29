@@ -3072,25 +3072,9 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
-            expect.objectContaining({
-              id: randomUser.id,
-              firstName: randomUser.firstName,
-              lastName: randomUser.lastName,
-              role: randomUser.role,
-              zone: randomUser.zone,
-              currentJob: randomUser.userProfile.currentJob,
-              department: randomUser.userProfile.department,
-              helpNeeds: [expect.objectContaining({ name: 'network' })],
-              helpOffers: [expect.objectContaining({ name: 'network' })],
-              description: randomUser.userProfile.description,
-              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-              networkBusinessLines: [],
-              searchAmbitions: [
-                expect.objectContaining({ name: 'développeur' }),
-              ],
-              lastReceivedMessage: null,
-              lastSentMessage: null,
-            })
+            expect.objectContaining(
+              userProfilesHelper.mapUserProfileFromUser(randomUser)
+            )
           );
         });
       });
@@ -3383,795 +3367,809 @@ describe('Users', () => {
             );
           });
         });
-      });
-      describe('/profile?search= - Read all profiles with search query', () => {
-        let loggedInAdmin: LoggedUser;
+        describe('/profile?search= - Read all profiles with search query', () => {
+          let loggedInAdmin: LoggedUser;
 
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-        });
-
-        it('Should return 200 and candidates matching search query', async () => {
-          const candidate1 = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-            firstName: 'XXX',
-          });
-          await userFactory.create({
-            role: UserRoles.CANDIDATE,
-            firstName: 'YYYY',
-          });
-          const candidate2 = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-            firstName: 'XXX',
-          });
-          await userFactory.create({
-            role: UserRoles.CANDIDATE,
-            firstName: 'YYY',
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
           });
 
-          const expectedCandidates = [candidate1, candidate2];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&search=XXX`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedCandidates.map(({ id }) => id)).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200 and coaches matching search query', async () => {
-          const coaches1 = await userFactory.create({
-            role: UserRoles.COACH,
-            firstName: 'XXX',
-          });
-          await userFactory.create({
-            role: UserRoles.COACH,
-            firstName: 'YYY',
-          });
-          const coaches2 = await userFactory.create({
-            role: UserRoles.COACH,
-            firstName: 'XXX',
-          });
-          await userFactory.create({
-            role: UserRoles.COACH,
-            firstName: 'YYY',
-          });
-          const expectedCoaches = [coaches1, coaches2];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&search=XXX`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedCoaches.map(({ id }) => id)).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-      });
-      describe('/profile?departments[]=&businessLines[]=&helps[]= - Read all profiles with filters', () => {
-        let loggedInAdmin: LoggedUser;
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-        });
-        it('Should return 200, and all the candidates that matches the department filter', async () => {
-          const lyonCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
+          it('Should return 200 and candidates matching search query', async () => {
+            const candidate1 = await userFactory.create({
               role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: { department: 'Rhône (69)' },
-            }
-          );
-          const parisCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: { department: 'Paris (75)' },
-            }
-          );
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: { department: 'Nord (59)' },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: { department: 'Nord (59)' },
-            }
-          );
-
-          const expectedCandidatesIds = [
-            ...lyonCandidates.map(({ id }) => id),
-            ...parisCandidates.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(4);
-          expect(expectedCandidatesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the coaches that matches the department filter', async () => {
-          const lyonCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: { department: 'Rhône (69)' },
-            }
-          );
-          const parisCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-              },
-            }
-          );
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: { department: 'Rhône (69)' },
-            }
-          );
-
-          const expectedCoachesIds = [
-            ...lyonCoaches.map(({ id }) => id),
-            ...parisCoaches.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(4);
-          expect(expectedCoachesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-
-        it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
-          const batCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                searchBusinessLines: [
-                  { name: 'bat' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          const rhCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                searchBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'aa' },
-                  { name: 'pr' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'bat' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'aa' },
-                  { name: 'pr' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          const expectedCandidatesIds = [
-            ...batCandidates.map(({ id }) => id),
-            ...rhCandidates.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(4);
-          expect(expectedCandidatesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the coaches that matches the businessLines filters', async () => {
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                searchBusinessLines: [
-                  { name: 'bat' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                searchBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'aa' },
-                  { name: 'pr' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          const batCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'bat' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          const rhCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                networkBusinessLines: [
-                  { name: 'aa' },
-                  { name: 'pr' },
-                ] as BusinessLine[],
-              },
-            }
-          );
-
-          const expectedCoachesIds = [
-            ...batCoaches.map(({ id }) => id),
-            ...rhCoaches.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessLines[]=bat&businessLines[]=rh`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(4);
-          expect(expectedCoachesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-
-        it('Should return 200, and all the candidates that matches the helps filters', async () => {
-          const cvCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                helpNeeds: [{ name: 'cv' }, { name: 'network' }] as HelpNeed[],
-              },
-            }
-          );
-
-          const interviewCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                helpNeeds: [
-                  { name: 'interview' },
-                  { name: 'event' },
-                ] as HelpNeed[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                helpNeeds: [{ name: 'tips' }] as HelpNeed[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                helpOffers: [
-                  { name: 'cv' },
-                  { name: 'network' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                helpOffers: [
-                  { name: 'interview' },
-                  { name: 'event' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                helpOffers: [{ name: 'tips' }] as HelpOffer[],
-              },
-            }
-          );
-
-          const expectedCandidatesIds = [
-            ...interviewCandidates.map(({ id }) => id),
-            ...cvCandidates.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&helps[]=cv&helps[]=interview`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(4);
-          expect(expectedCandidatesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the coaches that matches the helps filters', async () => {
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                helpNeeds: [{ name: 'cv' }, { name: 'network' }] as HelpNeed[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                helpNeeds: [
-                  { name: 'interview' },
-                  { name: 'event' },
-                ] as HelpNeed[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                helpNeeds: [{ name: 'tips' }] as HelpNeed[],
-              },
-            }
-          );
-
-          const cvCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                helpOffers: [
-                  { name: 'cv' },
-                  { name: 'network' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          const interviewCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                helpOffers: [
-                  { name: 'interview' },
-                  { name: 'event' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                helpOffers: [{ name: 'tips' }] as HelpOffer[],
-              },
-            }
-          );
-
-          const expectedCoachesIds = [
-            ...interviewCoaches.map(({ id }) => id),
-            ...cvCoaches.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&helps[]=cv&helps[]=interview`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(4);
-          expect(expectedCoachesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-      });
-      describe('/profile - Read all profiles with all filters', () => {
-        let loggedInAdmin: LoggedUser;
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-        });
-        it('Should return 200, and all the candidates that match all the filters', async () => {
-          const lyonAssociatedCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
               firstName: 'XXX',
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                networkBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-
-                helpOffers: [
-                  { name: 'cv' },
-                  { name: 'network' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          const lyonAssociatedCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              firstName: 'XXX',
+            });
+            await userFactory.create({
               role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                searchBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-                helpNeeds: [{ name: 'cv' }, { name: 'network' }] as HelpNeed[],
-              },
-            }
-          );
+              firstName: 'YYYY',
+            });
+            const candidate2 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'YYY',
+            });
 
-          await Promise.all(
-            lyonAssociatedCandidates.map(async (candidate, index) => {
-              return userCandidatsHelper.associateCoachAndCandidate(
-                lyonAssociatedCoaches[index],
-                candidate
+            const expectedCandidates = [candidate1, candidate2];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&search=XXX`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidates.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200 and coaches matching search query', async () => {
+            const coaches1 = await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'YYY',
+            });
+            const coaches2 = await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'YYY',
+            });
+            const expectedCoaches = [coaches1, coaches2];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&search=XXX`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoaches.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+        describe('/profile?departments[]=&businessLines[]=&helps[]= - Read all profiles with filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that matches the department filter', async () => {
+            const lyonCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+            const parisCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Paris (75)' },
+              }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Nord (59)' },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: { department: 'Nord (59)' },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...lyonCandidates.map(({ id }) => id),
+              ...parisCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the department filter', async () => {
+            const lyonCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+            const parisCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Paris (75)',
+                },
+              }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+
+            const expectedCoachesIds = [
+              ...lyonCoaches.map(({ id }) => id),
+              ...parisCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
+            const batCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const rhCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...batCandidates.map(({ id }) => id),
+              ...rhCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the businessLines filters', async () => {
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const batCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const rhCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const expectedCoachesIds = [
+              ...batCoaches.map(({ id }) => id),
+              ...rhCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessLines[]=bat&businessLines[]=rh`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200, and all the candidates that matches the helps filters', async () => {
+            const cvCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            const interviewCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...interviewCandidates.map(({ id }) => id),
+              ...cvCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&helps[]=cv&helps[]=interview`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the helps filters', async () => {
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                },
+              }
+            );
+
+            const cvCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            const interviewCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                },
+              }
+            );
+
+            const expectedCoachesIds = [
+              ...interviewCoaches.map(({ id }) => id),
+              ...cvCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&helps[]=cv&helps[]=interview`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+        describe('/profile - Read all profiles with all filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that match all the filters', async () => {
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            const lyonAssociatedCandidates =
+              await databaseHelper.createEntities(
+                userFactory,
+                2,
+                {
+                  firstName: 'XXX',
+                  role: UserRoles.CANDIDATE,
+                },
+                {
+                  userProfile: {
+                    department: 'Rhône (69)',
+                    searchBusinessLines: [
+                      { name: 'rh' },
+                      { name: 'aa' },
+                    ] as BusinessLine[],
+                    helpNeeds: [
+                      { name: 'cv' },
+                      { name: 'network' },
+                    ] as HelpNeed[],
+                  },
+                }
               );
-            })
-          );
 
-          const expectedCandidatesIds = [
-            ...lyonAssociatedCandidates.map(({ id }) => id),
-          ];
+            await Promise.all(
+              lyonAssociatedCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedCoaches[index],
+                  candidate
+                );
+              })
+            );
 
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedCandidatesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200, and all the coaches that match all the filters', async () => {
-          const lyonAssociatedCoaches = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              firstName: 'XXX',
-              role: UserRoles.COACH,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                networkBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
+            const expectedCandidatesIds = [
+              ...lyonAssociatedCandidates.map(({ id }) => id),
+            ];
 
-                helpOffers: [
-                  { name: 'cv' },
-                  { name: 'network' },
-                ] as HelpOffer[],
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that match all the filters', async () => {
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.COACH,
               },
-            }
-          );
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
 
-          const lyonAssociatedCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              firstName: 'XXX',
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                searchBusinessLines: [
-                  { name: 'rh' },
-                  { name: 'aa' },
-                ] as BusinessLine[],
-                helpNeeds: [{ name: 'cv' }, { name: 'network' }] as HelpNeed[],
-              },
-            }
-          );
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
 
-          await Promise.all(
-            lyonAssociatedCandidates.map(async (candidate, index) => {
-              return userCandidatsHelper.associateCoachAndCandidate(
-                lyonAssociatedCoaches[index],
-                candidate
+            const lyonAssociatedCandidates =
+              await databaseHelper.createEntities(
+                userFactory,
+                2,
+                {
+                  firstName: 'XXX',
+                  role: UserRoles.CANDIDATE,
+                },
+                {
+                  userProfile: {
+                    department: 'Rhône (69)',
+                    searchBusinessLines: [
+                      { name: 'rh' },
+                      { name: 'aa' },
+                    ] as BusinessLine[],
+                    helpNeeds: [
+                      { name: 'cv' },
+                      { name: 'network' },
+                    ] as HelpNeed[],
+                  },
+                }
               );
-            })
-          );
 
-          const expectedCoachesIds = [
-            ...lyonAssociatedCoaches.map(({ id }) => id),
-          ];
+            await Promise.all(
+              lyonAssociatedCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedCoaches[index],
+                  candidate
+                );
+              })
+            );
 
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(app.getHttpServer())
-              .get(
-                `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
-              )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+            const expectedCoachesIds = [
+              ...lyonAssociatedCoaches.map(({ id }) => id),
+            ];
 
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(2);
-          expect(expectedCoachesIds).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
         });
       });
     });
@@ -5612,7 +5610,6 @@ describe('Users', () => {
             .send(updatedProfile);
           expect(response.status).toBe(400);
         });
-
         it('Should return 200, if coach updates his profile coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',

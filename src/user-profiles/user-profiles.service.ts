@@ -23,7 +23,7 @@ import {
 } from './models';
 import { UserProfilesAttributes } from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
-import { HelpValue } from './user-profiles.types';
+import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 @Injectable()
@@ -78,7 +78,7 @@ export class UserProfilesService {
       departments: Department[];
       businessLines: BusinessLineValue[];
     }
-  ) {
+  ): Promise<PublicProfile[]> {
     const { role, offset, limit, search, helps, departments, businessLines } =
       query;
 
@@ -120,14 +120,7 @@ export class UserProfilesService {
         {
           model: User,
           as: 'user',
-          attributes: [
-            'id',
-            'firstName',
-            'lastName',
-            'role',
-            'zone',
-            'createdAt',
-          ],
+          attributes: ['id', 'firstName', 'lastName', 'role', 'createdAt'],
           where: {
             role,
             id: { [Op.not]: userId },
@@ -137,13 +130,26 @@ export class UserProfilesService {
       ],
     });
 
-    return profiles.map((profile) => {
-      const { user, ...restProfile } = profile.toJSON();
-      return {
-        ...user,
-        ...restProfile,
-      };
-    });
+    return Promise.all(
+      profiles.map(async (profile): Promise<PublicProfile> => {
+        const lastSentMessage = await this.getLastContact(
+          userId,
+          profile.user.id
+        );
+        const lastReceivedMessage = await this.getLastContact(
+          profile.user.id,
+          userId
+        );
+
+        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          lastSentMessage: lastSentMessage?.createdAt || null,
+          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+        };
+      })
+    );
   }
 
   async updateByUserId(
@@ -326,12 +332,10 @@ export class UserProfilesService {
     if (!senderUserId || !addresseeUserId) {
       return null;
     }
-    const lastSendMessage =
-      await this.messagesService.getLastMessageBetweenUsers(
-        senderUserId,
-        addresseeUserId
-      );
-    return lastSendMessage;
+    return this.messagesService.getLastMessageBetweenUsers(
+      senderUserId,
+      addresseeUserId
+    );
   }
 
   async uploadProfileImage(userId: string, file: Express.Multer.File) {
