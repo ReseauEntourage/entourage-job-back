@@ -5425,6 +5425,7 @@ describe('Users', () => {
             {
               userProfile: {
                 department: 'Rhône (69)',
+                isAvailable: true,
                 searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
@@ -5440,6 +5441,7 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
+                isAvailable: true,
                 networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
@@ -5454,6 +5456,7 @@ describe('Users', () => {
             {
               userProfile: {
                 department: 'Rhône (69)',
+                isAvailable: true,
                 searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
@@ -5498,6 +5501,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              isAvailable: false,
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -5510,6 +5514,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              isAvailable: false,
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -5522,6 +5527,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInExternalCoach.token}`)
             .send({
               description: 'hello',
+              isAvailable: false,
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -5534,6 +5540,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInExternalCoach.token}`)
             .send({
               description: 'hello',
+              isAvailable: false,
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -5546,6 +5553,7 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInCoach.token}`)
             .send({
               description: 'hello',
+              isAvailable: false,
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -5558,6 +5566,8 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
         });
@@ -5565,6 +5575,7 @@ describe('Users', () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
             department: 'Paris (75)',
+            isAvailable: false,
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
@@ -5599,6 +5610,7 @@ describe('Users', () => {
             description: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
+            isAvailable: false,
             networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
@@ -5610,11 +5622,13 @@ describe('Users', () => {
             .send(updatedProfile);
           expect(response.status).toBe(400);
         });
+
         it('Should return 200, if coach updates his profile coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
+            isAvailable: false,
             networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
@@ -5643,6 +5657,7 @@ describe('Users', () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
             department: 'Paris (75)',
+            isAvailable: false,
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],

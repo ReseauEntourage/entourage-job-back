@@ -2,8 +2,8 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.addColumn('ExternalMessages', 'optInNewsletter', {
       type: Sequelize.BOOLEAN,
-      false: true,
-      default: false,
+      allowNull: false,
+      defaultValue: false,
     });
   },
   down: async (queryInterface) => {

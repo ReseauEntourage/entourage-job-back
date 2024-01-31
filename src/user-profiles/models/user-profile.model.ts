@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 import { Transaction } from 'sequelize';
 import {
   AfterUpdate,
@@ -50,6 +50,13 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   description: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(false)
+  @Column
+  isAvailable: boolean;
 
   @ApiProperty()
   @IsString()
