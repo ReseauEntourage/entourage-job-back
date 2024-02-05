@@ -13,6 +13,7 @@ export type PublicProfile = {
   role: UserRole;
   department: Department;
   currentJob: string;
+  isAvailable: boolean;
   helpOffers: HelpOffer[];
   helpNeeds: HelpOffer[];
   description: string;
