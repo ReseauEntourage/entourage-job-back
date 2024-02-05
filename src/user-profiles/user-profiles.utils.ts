@@ -1,4 +1,5 @@
 import { User } from 'src/users/models';
+import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UserProfile } from './models';
 import { PublicProfile } from './user-profiles.types';
 
@@ -13,7 +14,6 @@ export const getPublicProfileFromUserAndUserProfile = (
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
-    zone: user.zone,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     helpOffers: userProfile.helpOffers,
@@ -26,3 +26,10 @@ export const getPublicProfileFromUserAndUserProfile = (
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
   };
 };
+
+export function userProfileSearchQuery(query = '') {
+  return [
+    searchInColumnWhereOption('user.firstName', query),
+    searchInColumnWhereOption('user.lastName', query),
+  ];
+}
