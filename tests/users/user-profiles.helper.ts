@@ -1,8 +1,8 @@
 import path from 'path';
 import { Injectable } from '@nestjs/common';
-import { UserProfile } from '../../src/user-profiles/models';
-import { User } from '../../src/users/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { User } from 'src/users/models';
 
 @Injectable()
 export class UserProfilesHelper {
@@ -26,10 +26,11 @@ export class UserProfilesHelper {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      zone: user.zone,
       description: user.userProfile.description,
       currentJob: user.userProfile.currentJob,
       department: user.userProfile.department,
+      lastReceivedMessage: null,
+      lastSentMessage: null,
       networkBusinessLines: expect.arrayContaining(
         user.userProfile.networkBusinessLines.map(({ name }) =>
           expect.objectContaining({

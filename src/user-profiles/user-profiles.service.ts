@@ -1,10 +1,13 @@
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import sequelize, { Op } from 'sequelize';
+import _ from 'lodash';
+import sequelize, { Op, WhereOptions } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
+import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
+import { Department } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { User } from 'src/users/models';
@@ -20,6 +23,8 @@ import {
 } from './models';
 import { UserProfilesAttributes } from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
+import { HelpValue, PublicProfile } from './user-profiles.types';
+import { userProfileSearchQuery } from './user-profiles.utils';
 
 @Injectable()
 export class UserProfilesService {
@@ -64,39 +69,87 @@ export class UserProfilesService {
 
   async findAll(
     userId: string,
-    query: { role: UserRole[]; offset: number; limit: number }
-  ) {
-    const { role, offset, limit } = query;
+    query: {
+      role: UserRole[];
+      offset: number;
+      limit: number;
+      search: string;
+      helps: HelpValue[];
+      departments: Department[];
+      businessLines: BusinessLineValue[];
+    }
+  ): Promise<PublicProfile[]> {
+    const { role, offset, limit, search, helps, departments, businessLines } =
+      query;
+
+    const searchOptions = search
+      ? { [Op.or]: userProfileSearchQuery(search) }
+      : {};
+
+    const departmentsOptions: WhereOptions<UserProfile> =
+      departments?.length > 0
+        ? {
+            department: { [Op.or]: departments },
+          }
+        : {};
+
+    const businessLinesOptions: WhereOptions<BusinessLine> =
+      businessLines?.length > 0
+        ? {
+            name: { [Op.or]: businessLines },
+          }
+        : {};
+
+    const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
+      helps?.length > 0
+        ? {
+            name: {
+              [Op.or]: helps,
+            },
+          }
+        : {};
+
     const profiles = await this.userProfileModel.findAll({
       offset,
       limit,
       attributes: UserProfilesAttributes,
       order: sequelize.literal('"user.createdAt" DESC'),
+      ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
-        ...getUserProfileInclude(),
+        ...getUserProfileInclude(role, businessLinesOptions, helpsOptions),
         {
           model: User,
           as: 'user',
-          attributes: [
-            'id',
-            'firstName',
-            'lastName',
-            'role',
-            'zone',
-            'createdAt',
-          ],
-          where: { role, id: { [Op.not]: userId } },
+          attributes: ['id', 'firstName', 'lastName', 'role', 'createdAt'],
+          where: {
+            role,
+            id: { [Op.not]: userId },
+            ...searchOptions,
+          },
         },
       ],
     });
 
-    return profiles.map((profile) => {
-      const { user, ...restProfile } = profile.toJSON();
-      return {
-        ...user,
-        ...restProfile,
-      };
-    });
+    return Promise.all(
+      profiles.map(async (profile): Promise<PublicProfile> => {
+        const lastSentMessage = await this.getLastContact(
+          userId,
+          profile.user.id
+        );
+        const lastReceivedMessage = await this.getLastContact(
+          profile.user.id,
+          userId
+        );
+
+        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          lastSentMessage: lastSentMessage?.createdAt || null,
+          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+        };
+      })
+    );
   }
 
   async updateByUserId(
@@ -268,7 +321,7 @@ export class UserProfilesService {
     return this.findOneByUserId(userId);
   }
 
-  async removeByUserId(userId: string) {
+  removeByUserId(userId: string) {
     return this.userProfileModel.destroy({
       where: { UserId: userId },
       individualHooks: true,
@@ -279,12 +332,10 @@ export class UserProfilesService {
     if (!senderUserId || !addresseeUserId) {
       return null;
     }
-    const lastSendMessage =
-      await this.messagesService.getLastMessageBetweenUsers(
-        senderUserId,
-        addresseeUserId
-      );
-    return lastSendMessage;
+    return this.messagesService.getLastMessageBetweenUsers(
+      senderUserId,
+      addresseeUserId
+    );
   }
 
   async uploadProfileImage(userId: string, file: Express.Multer.File) {

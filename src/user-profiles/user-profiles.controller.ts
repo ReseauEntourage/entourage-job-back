@@ -16,7 +16,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UserPayload } from '../auth/guards';
+import { UserPayload } from 'src/auth/guards';
+import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
   SelfGuard,
@@ -34,6 +36,7 @@ import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfilesService } from './user-profiles.service';
+import { HelpValue } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @Controller('user/profile')
@@ -78,7 +81,15 @@ export class UserProfilesController {
     @Query('offset', new ParseIntPipe())
     offset: number,
     @Query('role')
-    role: UserRole[]
+    role: UserRole[],
+    @Query('search')
+    search: string,
+    @Query('helps')
+    helps: HelpValue[],
+    @Query('departments')
+    departments: Department[],
+    @Query('businessLines')
+    businessLines: BusinessLineValue[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -92,7 +103,15 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll(userId, { role, offset, limit });
+    return this.userProfilesService.findAll(userId, {
+      role,
+      offset,
+      limit,
+      search,
+      helps,
+      departments,
+      businessLines,
+    });
   }
 
   @Self('params.userId')
