@@ -14,6 +14,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
+    isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     helpOffers: userProfile.helpOffers,

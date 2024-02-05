@@ -29,6 +29,7 @@ export class UserProfilesHelper {
       description: user.userProfile.description,
       currentJob: user.userProfile.currentJob,
       department: user.userProfile.department,
+      isAvailable: user.userProfile.isAvailable,
       lastReceivedMessage: null,
       lastSentMessage: null,
       networkBusinessLines: expect.arrayContaining(
