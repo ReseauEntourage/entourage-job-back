@@ -18,6 +18,10 @@ export class MailjetService {
   private mailjetNewsletter: Client;
 
   constructor() {
+    this.refreshInstances();
+  }
+
+  refreshInstances() {
     this.mailjetTransactional = new Client({
       apiKey: `${process.env.MAILJET_PUB}`,
       apiSecret: `${process.env.MAILJET_SEC}`,
@@ -38,9 +42,18 @@ export class MailjetService {
       mailjetParams.Messages = [createMail(params)];
     }
 
-    return this.mailjetTransactional
-      .post('send', MailjetOptions.MAILS)
-      .request(mailjetParams);
+    try {
+      return await this.mailjetTransactional
+        .post('send', MailjetOptions.MAILS)
+        .request(mailjetParams);
+    } catch (error) {
+      console.error(error);
+      console.error('Mailjet Connection Reset : Refreshing Instances');
+      this.refreshInstances();
+      return await this.mailjetTransactional
+        .post('send', MailjetOptions.MAILS)
+        .request(mailjetParams);
+    }
   }
 
   async sendContact({ email, zone, status }: CustomContactParams) {
@@ -67,10 +80,21 @@ export class MailjetService {
       Email: email,
     };
 
-    return this.mailjetNewsletter
-      .post('contactslist', MailjetOptions.CONTACTS)
-      .id(parseInt(process.env.MAILJET_NEWSLETTER_LIST_ID))
-      .action('managecontact')
-      .request(contact);
+    try {
+      return await this.mailjetNewsletter
+        .post('contactslist', MailjetOptions.CONTACTS)
+        .id(parseInt(process.env.MAILJET_NEWSLETTER_LIST_ID))
+        .action('managecontact')
+        .request(contact);
+    } catch (error) {
+      console.error(error);
+      console.error('Mailjet Connection Reset : Refreshing Instances');
+      this.refreshInstances();
+      return await this.mailjetNewsletter
+        .post('contactslist', MailjetOptions.CONTACTS)
+        .id(parseInt(process.env.MAILJET_NEWSLETTER_LIST_ID))
+        .action('managecontact')
+        .request(contact);
+    }
   }
 }
