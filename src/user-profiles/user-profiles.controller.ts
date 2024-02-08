@@ -16,6 +16,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { Department } from 'src/common/locations/locations.types';
@@ -35,8 +36,9 @@ import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
+import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
-import { HelpValue } from './user-profiles.types';
+import { HelpValue, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @Controller('user/profile')
@@ -49,7 +51,7 @@ export class UserProfilesController {
   @UseGuards(SelfGuard)
   @Put('/:userId')
   async updateByUserId(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body(UpdateUserProfilePipe)
     updateUserProfileDto:
       | UpdateCandidateUserProfileDto
@@ -119,7 +121,7 @@ export class UserProfilesController {
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
   @Post('/uploadImage/:userId')
   async uploadProfileImage(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
     if (!file) {
@@ -178,6 +180,70 @@ export class UserProfilesController {
       userProfile,
       lastSentMessage?.createdAt,
       lastReceivedMessage?.createdAt
+    );
+  }
+
+  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
+  @UseGuards(UserPermissionsGuard)
+  @Self('params.userId')
+  @UseGuards(SelfGuard)
+  @Get('/:userId')
+  async findRecommendations(
+    @Param('userId', new ParseUUIDPipe()) userId: string
+  ): Promise<PublicProfile[]> {
+    const user = this.userProfilesService.findOneUser(userId);
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    const oneWeekAgo = moment().subtract(1, 'week');
+
+    if (moment(userProfile.lastRecommendationDate).isBefore(oneWeekAgo)) {
+      await this.userProfilesService.removeRecommendationsByUserProfileId(
+        userProfile.id
+      );
+
+      await this.userProfilesService.updateRecommendationsByUserProfileId(
+        userProfile.id
+      );
+
+      await this.userProfilesService.updateByUserId(userId, {
+        lastRecommendationDate: moment().toDate(),
+      });
+    }
+
+    const recommendedProfiles =
+      await this.userProfilesService.findRecommendationsByUserProfileId(
+        userProfile.id
+      );
+
+    return Promise.all(
+      recommendedProfiles.map(
+        async (recommendedProfile): Promise<PublicProfile> => {
+          const lastSentMessage = await this.userProfilesService.getLastContact(
+            userId,
+            recommendedProfile.userProfile.user.id
+          );
+          const lastReceivedMessage =
+            await this.userProfilesService.getLastContact(
+              recommendedProfile.userProfile.user.id,
+              userId
+            );
+
+          const {
+            userProfile: { user, ...restProfile },
+          }: UserProfileRecommendation = recommendedProfile.toJSON();
+
+          return {
+            ...user,
+            ...restProfile,
+            lastSentMessage: lastSentMessage?.createdAt || null,
+            lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          };
+        }
+      )
     );
   }
 }

@@ -21,7 +21,11 @@ import {
   UserProfileSearchAmbition,
   UserProfileSearchBusinessLine,
 } from './models';
-import { UserProfilesAttributes } from './models/user-profile.attributes';
+import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
+import {
+  UserProfilesAttributes,
+  UserProfilesUserAttributes,
+} from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
@@ -45,6 +49,8 @@ export class UserProfilesService {
     private helpNeedModel: typeof HelpNeed,
     @InjectModel(HelpOffer)
     private helpOfferModel: typeof HelpOffer,
+    @InjectModel(UserProfileRecommendation)
+    private userProfileRecommandationModel: typeof UserProfileRecommendation,
     private s3Service: S3Service,
     private usersService: UsersService,
     private messagesService: MessagesService
@@ -141,7 +147,7 @@ export class UserProfilesService {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'role', 'createdAt'],
+          attributes: UserProfilesUserAttributes,
         },
       ],
     });
@@ -165,6 +171,37 @@ export class UserProfilesService {
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
         };
       })
+    );
+  }
+
+  async findRecommendationsByUserProfileId(
+    userProfileId: string
+  ): Promise<UserProfileRecommendation[]> {
+    return this.userProfileRecommandationModel.findAll({
+      where: { UserProfileId: userProfileId },
+      include: {
+        model: UserProfile,
+        as: 'userProfile',
+        attributes: UserProfilesAttributes,
+        include: [
+          ...getUserProfileInclude(),
+          {
+            model: User,
+            as: 'user',
+            attributes: UserProfilesUserAttributes,
+          },
+        ],
+      },
+    });
+  }
+
+  async getLastContact(senderUserId: string, addresseeUserId: string) {
+    if (!senderUserId || !addresseeUserId) {
+      return null;
+    }
+    return this.messagesService.getLastMessageBetweenUsers(
+      senderUserId,
+      addresseeUserId
     );
   }
 
@@ -337,22 +374,7 @@ export class UserProfilesService {
     return this.findOneByUserId(userId);
   }
 
-  removeByUserId(userId: string) {
-    return this.userProfileModel.destroy({
-      where: { UserId: userId },
-      individualHooks: true,
-    });
-  }
-
-  async getLastContact(senderUserId: string, addresseeUserId: string) {
-    if (!senderUserId || !addresseeUserId) {
-      return null;
-    }
-    return this.messagesService.getLastMessageBetweenUsers(
-      senderUserId,
-      addresseeUserId
-    );
-  }
+  async updateRecommendationsByUserProfileId(userProfileId: string) {}
 
   async uploadProfileImage(userId: string, file: Express.Multer.File) {
     const { path } = file;
@@ -375,5 +397,19 @@ export class UserProfilesService {
       }
     }
     return uploadedImg;
+  }
+
+  async removeByUserId(userId: string) {
+    return this.userProfileModel.destroy({
+      where: { UserId: userId },
+      individualHooks: true,
+    });
+  }
+
+  async removeRecommendationsByUserProfileId(userProfileId: string) {
+    return this.userProfileRecommandationModel.destroy({
+      where: { UserProfileId: userProfileId },
+      individualHooks: true,
+    });
   }
 }
