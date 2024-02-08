@@ -16,11 +16,16 @@ export class SMSService {
     private bitlyService: BitlyService
   ) {}
 
-  async sendCandidateOfferSMS(candidatePhone: string, opportunityId: string) {
+  async sendCandidateOfferSMS(
+    candidateId: string,
+    candidatePhone: string,
+    opportunityId: string
+  ) {
     if (candidatePhone && isValidPhone(candidatePhone)) {
       await this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
         toPhone: candidatePhone,
         text: `Bonjour,\nUn recruteur vous a personnellement adressé une offre sur LinkedOut. Consultez-la ici et traitez-la avec votre coach: ${await this.bitlyService.getShortenedOfferURL(
+          candidateId,
           opportunityId,
           _.findKey(MailjetTemplates, (id) => {
             return id === MailjetTemplates.OFFER_RECEIVED;
@@ -31,6 +36,7 @@ export class SMSService {
   }
 
   async sendReminderAboutOfferSMS(
+    candidateId: string,
     candidatePhone: string,
     opportunityId: string
   ) {
@@ -38,6 +44,7 @@ export class SMSService {
       await this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
         toPhone: candidatePhone,
         text: `Bonjour,\nIl y a 5 jours un recruteur vous a personnellement adressé une offre. Consultez-la ici et traitez-la avec votre coach: ${await this.bitlyService.getShortenedOfferURL(
+          candidateId,
           opportunityId,
           _.findKey(MailjetTemplates, (id) => {
             return id === MailjetTemplates.OFFER_REMINDER;
