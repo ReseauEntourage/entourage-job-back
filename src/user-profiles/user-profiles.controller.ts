@@ -147,6 +147,67 @@ export class UserProfilesController {
     return profileImage;
   }
 
+  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
+  @UseGuards(UserPermissionsGuard)
+  @Self('params.userId')
+  @UseGuards(SelfGuard)
+  @Get('/recommendations/:userId')
+  async findRecommendationsByUserId(
+    @Param('userId', new ParseUUIDPipe()) userId: string
+  ): Promise<PublicProfile[]> {
+    const user = await this.userProfilesService.findOneUser(userId);
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    const oneWeekAgo = moment().subtract(1, 'week');
+
+    if (
+      !userProfile.lastRecommendationsDate ||
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo)
+    ) {
+      await this.userProfilesService.removeRecommendationsByUserId(user.id);
+
+      await this.userProfilesService.updateRecommendationsByUserId(user.id);
+
+      await this.userProfilesService.updateByUserId(userId, {
+        lastRecommendationsDate: moment().toDate(),
+      });
+    }
+
+    const recommendedProfiles =
+      await this.userProfilesService.findRecommendationsByUserId(user.id);
+
+    return Promise.all(
+      recommendedProfiles.map(
+        async (recommendedProfile): Promise<PublicProfile> => {
+          const lastSentMessage = await this.userProfilesService.getLastContact(
+            userId,
+            recommendedProfile.recommendedUser.id
+          );
+          const lastReceivedMessage =
+            await this.userProfilesService.getLastContact(
+              recommendedProfile.recommendedUser.id,
+              userId
+            );
+
+          const {
+            recommendedUser: { userProfile, ...restRecommendedUser },
+          }: UserProfileRecommendation = recommendedProfile.toJSON();
+
+          return {
+            ...restRecommendedUser,
+            ...userProfile,
+            lastSentMessage: lastSentMessage?.createdAt || null,
+            lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          };
+        }
+      )
+    );
+  }
+
   @Get('/:userId')
   async findByUserId(
     @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
@@ -180,70 +241,6 @@ export class UserProfilesController {
       userProfile,
       lastSentMessage?.createdAt,
       lastReceivedMessage?.createdAt
-    );
-  }
-
-  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
-  @UseGuards(UserPermissionsGuard)
-  @Self('params.userId')
-  @UseGuards(SelfGuard)
-  @Get('/:userId')
-  async findRecommendations(
-    @Param('userId', new ParseUUIDPipe()) userId: string
-  ): Promise<PublicProfile[]> {
-    const user = this.userProfilesService.findOneUser(userId);
-    const userProfile = await this.userProfilesService.findOneByUserId(userId);
-
-    if (!user || !userProfile) {
-      throw new NotFoundException();
-    }
-
-    const oneWeekAgo = moment().subtract(1, 'week');
-
-    if (moment(userProfile.lastRecommendationDate).isBefore(oneWeekAgo)) {
-      await this.userProfilesService.removeRecommendationsByUserProfileId(
-        userProfile.id
-      );
-
-      await this.userProfilesService.updateRecommendationsByUserProfileId(
-        userProfile.id
-      );
-
-      await this.userProfilesService.updateByUserId(userId, {
-        lastRecommendationDate: moment().toDate(),
-      });
-    }
-
-    const recommendedProfiles =
-      await this.userProfilesService.findRecommendationsByUserProfileId(
-        userProfile.id
-      );
-
-    return Promise.all(
-      recommendedProfiles.map(
-        async (recommendedProfile): Promise<PublicProfile> => {
-          const lastSentMessage = await this.userProfilesService.getLastContact(
-            userId,
-            recommendedProfile.userProfile.user.id
-          );
-          const lastReceivedMessage =
-            await this.userProfilesService.getLastContact(
-              recommendedProfile.userProfile.user.id,
-              userId
-            );
-
-          const {
-            userProfile: { user, ...restProfile },
-          }: UserProfileRecommendation = recommendedProfile.toJSON();
-
-          return {
-            ...user,
-            ...restProfile,
-            lastSentMessage: lastSentMessage?.createdAt || null,
-            lastReceivedMessage: lastReceivedMessage?.createdAt || null,
-          };
-        }
-      )
     );
   }
 }

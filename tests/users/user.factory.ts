@@ -25,8 +25,6 @@ export class UserFactory implements Factory<User> {
     private userModel: typeof User,
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
-    @InjectModel(UserProfile)
-    private userProfileModel: typeof UserProfile,
     private usersService: UsersService,
     private userProfilesService: UserProfilesService
   ) {}

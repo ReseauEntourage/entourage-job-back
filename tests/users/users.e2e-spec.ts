@@ -1,6 +1,7 @@
 import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import moment from 'moment';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
@@ -3078,6 +3079,245 @@ describe('Users', () => {
           );
         });
       });
+      describe('/profile/recommendations/:userId - Get user recommendations', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInExternalCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let loggedInExternalCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          loggedInExternalCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE_EXTERNAL,
+          });
+          loggedInExternalCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH_EXTERNAL,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          ({
+            loggedInCoach: loggedInExternalCoach,
+            loggedInCandidate: loggedInExternalCandidate,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            loggedInExternalCoach,
+            loggedInExternalCandidate,
+            true
+          ));
+        });
+
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer()).get(
+            `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+          );
+
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if admin gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if admin gets his recommendations', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInAdmin.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it("Should return 403, if external coach get his candidate's recommendations", async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInExternalCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`);
+
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if external coach gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInExternalCoach.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const usersToRecommend = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            usersToRecommend.map(({ userProfile: { id } }) => id)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual([
+            usersToRecommend.map((user) =>
+              userProfilesHelper.mapUserProfileFromUser(user)
+            ),
+          ]);
+        });
+
+        it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+        });
+
+        it('Should return 200, and actual recommendations, if candidate gets his recent recommendations', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const usersToRecommend = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            usersToRecommend.map(({ userProfile: { id } }) => id)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual([
+            usersToRecommend.map((user) =>
+              userProfilesHelper.mapUserProfileFromUser(user)
+            ),
+          ]);
+        });
+
+        it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+        });
+      });
     });
     describe('R - Read many Profiles', () => {
       describe('/profile - Read all profiles', () => {
@@ -5493,11 +5733,11 @@ describe('Users', () => {
 
           expect(response.status).toBe(401);
         });
-        it('Should return 403, if admin updates a user profile', async () => {
+        it('Should return 403, if admin updates his user profile', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .put(`${route}/profile/${loggedInAdmin.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
@@ -5506,11 +5746,11 @@ describe('Users', () => {
             });
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if admin updates his user profile', async () => {
+        it('Should return 403, if admin updates a profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInAdmin.user.id}`)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
             .set('authorization', `Token ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
@@ -5532,7 +5772,7 @@ describe('Users', () => {
             });
           expect(response.status).toBe(403);
         });
-        it("Should return 403, if external coach updates his candidate's profile", async () => {
+        it('Should return 403, if external coach updates the profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(app.getHttpServer())
@@ -5545,7 +5785,7 @@ describe('Users', () => {
             });
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if coach updates another profile than his own', async () => {
+        it('Should return 403, if coach updates a profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(app.getHttpServer())
@@ -5558,7 +5798,7 @@ describe('Users', () => {
             });
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if candidate updates another profile than his own', async () => {
+        it('Should return 403, if candidate updates a profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(app.getHttpServer())
@@ -5622,7 +5862,6 @@ describe('Users', () => {
             .send(updatedProfile);
           expect(response.status).toBe(400);
         });
-
         it('Should return 200, if coach updates his profile coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
@@ -5673,13 +5912,17 @@ describe('Users', () => {
         });
       });
       describe('/profile/uploadImage/:id - Upload user profile picture', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-
         let path: string;
 
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInExternalCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let loggedInExternalCoach: LoggedUser;
+
         beforeEach(async () => {
+          path = userProfilesHelper.getTestImagePath();
+
           loggedInAdmin = await usersHelper.createLoggedInUser({
             role: UserRoles.ADMIN,
           });
@@ -5689,6 +5932,12 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
+          loggedInExternalCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE_EXTERNAL,
+          });
+          loggedInExternalCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH_EXTERNAL,
+          });
 
           ({ loggedInCoach, loggedInCandidate } =
             await userCandidatsHelper.associateCoachAndCandidate(
@@ -5696,8 +5945,17 @@ describe('Users', () => {
               loggedInCandidate,
               true
             ));
-          path = userProfilesHelper.getTestImagePath();
+
+          ({
+            loggedInCoach: loggedInExternalCoach,
+            loggedInCandidate: loggedInExternalCandidate,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            loggedInExternalCoach,
+            loggedInExternalCandidate,
+            true
+          ));
         });
+
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
@@ -5717,6 +5975,40 @@ describe('Users', () => {
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
+        });
+        it('Should return 403, if admin uploads a profile picture for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 201, if external coach uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(
+              `${route}/profile/uploadImage/${loggedInExternalCoach.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 403, if external coach uploads a profile picture for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(
+              `${route}/profile/uploadImage/${loggedInExternalCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
         });
         it('Should return 403, if coach uploads profile picture for another user', async () => {
           const response: APIResponse<
@@ -5802,6 +6094,8 @@ describe('Users', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
+            },
+            {
               userCandidat: { hidden: true },
             }
           );
@@ -5848,6 +6142,8 @@ describe('Users', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
+            },
+            {
               userCandidat: { hidden: true },
             }
           );
@@ -5872,6 +6168,8 @@ describe('Users', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
+            },
+            {
               userCandidat: { hidden: true },
             }
           );

@@ -79,7 +79,7 @@ export class UserProfile extends Model {
   @IsDate()
   @AllowNull(true)
   @Column
-  lastRecommendationDate: Date;
+  lastRecommendationsDate: Date;
 
   @CreatedAt
   createdAt: Date;

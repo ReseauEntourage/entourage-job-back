@@ -4,6 +4,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions } from 'sequelize';
 import sharp from 'sharp';
+import { InternalMessage } from '../messages/models';
+import { isRoleIncluded } from '../users/users.utils';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
@@ -12,7 +14,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRole } from 'src/users/users.types';
+import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
 import {
   HelpNeed,
   HelpOffer,
@@ -58,14 +60,28 @@ export class UserProfilesService {
 
   async findOne(id: string) {
     return this.userProfileModel.findByPk(id, {
-      include: getUserProfileInclude(),
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+        },
+      ],
     });
   }
 
   async findOneByUserId(userId: string) {
     return this.userProfileModel.findOne({
       where: { UserId: userId },
-      include: getUserProfileInclude(),
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+        },
+      ],
     });
   }
 
@@ -174,21 +190,22 @@ export class UserProfilesService {
     );
   }
 
-  async findRecommendationsByUserProfileId(
-    userProfileId: string
+  async findRecommendationsByUserId(
+    userId: string
   ): Promise<UserProfileRecommendation[]> {
     return this.userProfileRecommandationModel.findAll({
-      where: { UserProfileId: userProfileId },
+      where: { UserId: userId },
+      order: sequelize.literal('"user.createdAt" DESC'),
       include: {
-        model: UserProfile,
-        as: 'userProfile',
-        attributes: UserProfilesAttributes,
+        model: User,
+        as: 'recommendedUser',
+        attributes: UserProfilesUserAttributes,
         include: [
-          ...getUserProfileInclude(),
           {
-            model: User,
-            as: 'user',
-            attributes: UserProfilesUserAttributes,
+            model: UserProfile,
+            as: 'userProfile',
+            attributes: UserProfilesAttributes,
+            include: getUserProfileInclude(),
           },
         ],
       },
@@ -374,7 +391,71 @@ export class UserProfilesService {
     return this.findOneByUserId(userId);
   }
 
-  async updateRecommendationsByUserProfileId(userProfileId: string) {}
+  async createRecommendations(userId: string, usersToRecommendIds: string[]) {
+    return this.userProfileRecommandationModel.bulkCreate(
+      usersToRecommendIds.map(
+        (userToRecommendId) => {
+          return {
+            UserId: userId,
+            RecommendedUserId: userToRecommendId,
+          };
+        },
+        {
+          hooks: true,
+          individualHooks: true,
+        }
+      )
+    );
+  }
+
+  async updateRecommendationsByUserId(userId: string) {
+    const user = await this.findOneUser(userId);
+
+    const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
+      ? UserRoles.COACH
+      : CandidateUserRoles;
+
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.createdAt" DESC'),
+      logging: console.log,
+      // limit: 3,
+      where: {
+        isAvailable: true,
+        '$user.receivedMessages.id$': null,
+        '$user.sentMessages.id$': null,
+      },
+      include: [
+        /*...getUserProfileInclude(role, businessLinesOptions, helpsOptions),*/
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+          include: [
+            {
+              model: InternalMessage,
+              as: 'receivedMessages',
+              where: { senderUserId: userId },
+            },
+            {
+              model: InternalMessage,
+              as: 'sentMessages',
+              where: { addresseeUserId: userId },
+            },
+          ],
+          where: {
+            role: rolesToFind,
+            id: { [Op.not]: userId },
+          },
+        },
+      ],
+    });
+
+    return this.createRecommendations(
+      userId,
+      profiles.map((profile) => profile.id)
+    );
+  }
 
   async uploadProfileImage(userId: string, file: Express.Multer.File) {
     const { path } = file;
@@ -406,9 +487,9 @@ export class UserProfilesService {
     });
   }
 
-  async removeRecommendationsByUserProfileId(userProfileId: string) {
+  async removeRecommendationsByUserId(userId: string) {
     return this.userProfileRecommandationModel.destroy({
-      where: { UserProfileId: userProfileId },
+      where: { UserId: userId },
       individualHooks: true,
     });
   }

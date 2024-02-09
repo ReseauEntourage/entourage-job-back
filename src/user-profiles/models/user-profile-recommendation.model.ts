@@ -10,9 +10,9 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { UserProfile } from './user-profile.model';
+import { User } from 'src/users/models';
 
-@Table({ tableName: 'User_Profiles_Recommendations' })
+@Table({ tableName: 'User_Profile_Recommendations' })
 export class UserProfileRecommendation extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -21,17 +21,17 @@ export class UserProfileRecommendation extends Model {
   id: string;
 
   @IsUUID(4)
-  @ForeignKey(() => UserProfile)
+  @ForeignKey(() => User)
   @AllowNull(false)
   @Column
-  UserProfileId: string;
+  UserId: string;
 
   @IsUUID(4)
-  @ForeignKey(() => UserProfile)
+  @ForeignKey(() => User)
   @AllowNull(false)
   @Column
-  RecommendedUserProfileId: string;
+  RecommendedUserId: string;
 
-  @BelongsTo(() => UserProfile, 'UserProfileId')
-  userProfile: UserProfile;
+  @BelongsTo(() => User, 'RecommendedUserId')
+  recommendedUser: User;
 }
