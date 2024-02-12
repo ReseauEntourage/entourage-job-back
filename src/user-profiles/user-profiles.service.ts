@@ -109,10 +109,10 @@ export class UserProfilesService {
           }
         : {};
 
-    const profiles = await this.userProfileModel.findAll({
+    const filteredProfiles = await this.userProfileModel.findAll({
       offset,
       limit,
-      attributes: UserProfilesAttributes,
+      attributes: ['id'],
       order: sequelize.literal('"user.createdAt" DESC'),
       ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
@@ -120,12 +120,28 @@ export class UserProfilesService {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'role', 'createdAt'],
+          attributes: ['createdAt'],
           where: {
             role,
             id: { [Op.not]: userId },
             ...searchOptions,
           },
+        },
+      ],
+    });
+
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.createdAt" DESC'),
+      where: {
+        id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
+      },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'role', 'createdAt'],
         },
       ],
     });
