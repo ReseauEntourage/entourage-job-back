@@ -4,17 +4,17 @@ import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions } from 'sequelize';
 import sharp from 'sharp';
-import { InternalMessage } from '../messages/models';
-import { isRoleIncluded } from '../users/users.utils';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MessagesService } from 'src/messages/messages.service';
+import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
+import { isRoleIncluded } from 'src/users/users.utils';
 import {
   HelpNeed,
   HelpOffer,
@@ -195,7 +195,7 @@ export class UserProfilesService {
   ): Promise<UserProfileRecommendation[]> {
     return this.userProfileRecommandationModel.findAll({
       where: { UserId: userId },
-      order: sequelize.literal('"user.createdAt" DESC'),
+      order: sequelize.literal('"recommendedUser.createdAt" DESC'),
       include: {
         model: User,
         as: 'recommendedUser',

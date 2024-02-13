@@ -3201,32 +3201,36 @@ describe('Users', () => {
                 isAvailable: true,
                 networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
-              },
-            }
-          );
-
-          const usersToRecommend = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LYON,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                isAvailable: true,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
           );
 
+          const usersToRecommend = (
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  isAvailable: true,
+                  searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                  searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                },
+              }
+            )
+          ).sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCoach.user.id,
-            usersToRecommend.map(({ userProfile: { id } }) => id)
+            usersToRecommend.map(({ id }) => id)
           );
 
           const response: APIResponse<
@@ -3235,11 +3239,13 @@ describe('Users', () => {
             .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
-          expect(response.body).toEqual([
+          expect(response.body).toEqual(
             usersToRecommend.map((user) =>
-              userProfilesHelper.mapUserProfileFromUser(user)
-            ),
-          ]);
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
         });
 
         it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
@@ -3269,27 +3275,31 @@ describe('Users', () => {
             }
           );
 
-          const usersToRecommend = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LYON,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                isAvailable: true,
-                currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+          const usersToRecommend = (
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.COACH,
+                zone: AdminZones.LYON,
               },
-            }
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  isAvailable: true,
+                  currentJob: 'menuisier',
+                  networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                },
+              }
+            )
+          ).sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
           );
 
           await userProfilesHelper.createUserProfileRecommendations(
-            loggedInCoach.user.id,
-            usersToRecommend.map(({ userProfile: { id } }) => id)
+            loggedInCandidate.user.id,
+            usersToRecommend.map(({ id }) => id)
           );
 
           const response: APIResponse<
@@ -3300,11 +3310,13 @@ describe('Users', () => {
             )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
-          expect(response.body).toEqual([
+          expect(response.body).toEqual(
             usersToRecommend.map((user) =>
-              userProfilesHelper.mapUserProfileFromUser(user)
-            ),
-          ]);
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
         });
 
         it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
