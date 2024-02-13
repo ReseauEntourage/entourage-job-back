@@ -11,11 +11,12 @@ export class BitlyService {
   }
 
   async getShortenedOfferURL(
+    candidateId: string,
     opportunityId: string,
     campaign: MailjetTemplateKey
   ) {
     try {
-      const offerUrl = `${process.env.FRONT_URL}/backoffice/candidat/offres/private/${opportunityId}`;
+      const offerUrl = `${process.env.FRONT_URL}/backoffice/candidat/${candidateId}/offres/private/${opportunityId}`;
       const { link } = await this.bitly.shorten(
         `${offerUrl.replace('localhost', '127.0.0.1')}${
           campaign
