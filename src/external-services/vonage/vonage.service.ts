@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import Vonage from '@vonage/server-sdk';
 import { CustomSMSParams } from './vonage.types';
 
-const useSMS = process.env.USE_SMS === 'true';
-
 @Injectable()
 export class VonageService {
   private vonage: Vonage;
@@ -34,6 +32,8 @@ export class VonageService {
     } else {
       smsToSend = this.createSMS(params);
     }
+
+    const useSMS = process.env.USE_SMS === 'true';
 
     return Promise.all(
       smsToSend.map(({ toPhone, text }) => {
