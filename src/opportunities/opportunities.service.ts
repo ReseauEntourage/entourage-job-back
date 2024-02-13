@@ -864,10 +864,12 @@ export class OpportunitiesService {
           opportunity
         );
 
-        const candidatPhone = opportunityUser?.user?.phone;
+        const candidateId = opportunityUser?.user?.id;
+        const candidatePhone = opportunityUser?.user?.phone;
 
         await this.smsService.sendCandidateOfferSMS(
-          candidatPhone,
+          candidateId,
+          candidatePhone,
           opportunity.id
         );
 
@@ -922,10 +924,12 @@ export class OpportunitiesService {
     if (opportunity) {
       const candidate: User = opportunity.opportunityUsers.user;
 
-      const candidatPhone = candidate?.phone;
+      const candidateId = candidate?.id;
+      const candidatePhone = candidate?.phone;
 
       await this.smsService.sendReminderAboutOfferSMS(
-        candidatPhone,
+        candidateId,
+        candidatePhone,
         opportunity.id
       );
 
