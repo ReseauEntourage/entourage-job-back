@@ -46,6 +46,7 @@ import { CVSkillsHelper } from 'tests/cvs/cv-skills.helper';
 import { CVFactory } from 'tests/cvs/cv.factory';
 import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
+import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
@@ -82,6 +83,7 @@ describe('Users', () => {
   let experiencesSkillsHelper: ExperiencesSkillsHelper;
   let reviewsHelper: ReviewsHelper;
   let organizationFactory: OrganizationFactory;
+  let internalMessageFactory: InternalMessageFactory;
 
   const route = '/user';
 
@@ -135,6 +137,9 @@ describe('Users', () => {
     reviewsHelper = moduleFixture.get<ReviewsHelper>(ReviewsHelper);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
+    internalMessageFactory = moduleFixture.get<InternalMessageFactory>(
+      InternalMessageFactory
+    );
   });
 
   afterAll(async () => {
@@ -3187,7 +3192,6 @@ describe('Users', () => {
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-
         it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -3247,16 +3251,227 @@ describe('Users', () => {
             )
           );
         });
-
         it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
+              },
+            }
+          );
+
+          const newUsersToRecommend = [
+            ...(await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  isAvailable: true,
+                  searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                  searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                },
+              }
+            )),
+            await userFactory.create(
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Ain (01)',
+                  isAvailable: true,
+                  searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                  searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                },
+              }
+            ),
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          // Candidate wrong departement
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.PARIS,
+            },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate wrong helps
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'cv' }] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate wrong business lines
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate not available
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: false,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          // Coach same profile
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Candidate who sent message
+          const sentMessageCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: sentMessageCandidate.id,
+            addresseeUserId: loggedInCoach.user.id,
+          });
+
+          // Candidate who received message
+          const receivedMessageCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: loggedInCoach.user.id,
+            addresseeUserId: receivedMessageCandidate.id,
+          });
+
+          const oldRecommendedUsers = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            oldRecommendedUsers.map(({ id }) => id)
+          );
+
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
           > = await request(app.getHttpServer())
             .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
             .set('authorization', `Token ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            newUsersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
         });
-
         it('Should return 200, and actual recommendations, if candidate gets his recent recommendations', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
@@ -3318,8 +3533,230 @@ describe('Users', () => {
             )
           );
         });
-
         it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
+              },
+            }
+          );
+
+          const newUsersToRecommend = [
+            ...(await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.COACH,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  isAvailable: true,
+                  currentJob: 'menuisier',
+                  networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                },
+              }
+            )),
+            await userFactory.create(
+              {
+                role: UserRoles.COACH,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Ain (01)',
+                  isAvailable: true,
+                  currentJob: 'menuisier',
+                  networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                },
+              }
+            ),
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          // Coach wrong department
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.PARIS,
+            },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach wrong helps
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'cv' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach wrong business lines
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach wrong business lines
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach not available
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: false,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Candidate same profile
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach who sent message
+          const sentMessageCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: sentMessageCoach.id,
+            addresseeUserId: loggedInCoach.user.id,
+          });
+
+          // Coach who received message
+          const receivedMessageCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: loggedInCandidate.user.id,
+            addresseeUserId: receivedMessageCoach.id,
+          });
+
+          const oldRecommendedUsers = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCandidate.user.id,
+            oldRecommendedUsers.map(({ id }) => id)
+          );
+
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
           > = await request(app.getHttpServer())
@@ -3328,6 +3765,13 @@ describe('Users', () => {
             )
             .set('authorization', `Token ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            newUsersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
         });
       });
     });

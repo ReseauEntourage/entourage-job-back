@@ -7,13 +7,18 @@ import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
-import { Department } from 'src/common/locations/locations.types';
+import { Department, Departments } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
+import {
+  CandidateUserRoles,
+  CoachUserRoles,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import {
   HelpNeed,
@@ -28,7 +33,11 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
+import {
+  getUserProfileAmbitionsInclude,
+  getUserProfileBusinessLinesInclude,
+  getUserProfileInclude,
+} from './models/user-profile.include';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -410,10 +419,39 @@ export class UserProfilesService {
 
   async updateRecommendationsByUserId(userId: string) {
     const user = await this.findOneUser(userId);
+    const userProfile = await this.findOneByUserId(userId);
 
     const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
-      ? UserRoles.COACH
+      ? [UserRoles.COACH]
       : CandidateUserRoles;
+
+    const sameRegionDepartmentsOptions = Departments.filter(
+      ({ region }) =>
+        region ===
+        Departments.find(({ name }) => userProfile.department === name).region
+    ).map(({ name }) => name);
+
+    const businessLines = [
+      ...userProfile.searchBusinessLines,
+      ...userProfile.networkBusinessLines,
+    ];
+    const businessLinesOptions: WhereOptions<BusinessLine> =
+      businessLines.length > 0
+        ? {
+            name: { [Op.or]: businessLines.map(({ name }) => name) },
+          }
+        : {};
+
+    const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
+
+    const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
+      helps?.length > 0
+        ? {
+            name: {
+              [Op.or]: helps.map(({ name }) => name),
+            },
+          }
+        : {};
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
@@ -422,11 +460,40 @@ export class UserProfilesService {
       // limit: 3,
       where: {
         isAvailable: true,
+        department: sameRegionDepartmentsOptions,
         '$user.receivedMessages.id$': null,
         '$user.sentMessages.id$': null,
+        [Op.not]: {
+          ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+            ? { '$helpNeeds.id$': null }
+            : {}),
+          ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+            ? { '$helpOffers.id$': null }
+            : {}),
+        },
       },
       include: [
-        /*...getUserProfileInclude(role, businessLinesOptions, helpsOptions),*/
+        ...getUserProfileAmbitionsInclude(),
+        ...getUserProfileAmbitionsInclude(),
+        ...getUserProfileBusinessLinesInclude(),
+        {
+          model: HelpNeed,
+          as: 'helpNeeds',
+          required: false,
+          attributes: ['id', 'name'],
+          ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+            ? { where: helpsOptions }
+            : {}),
+        },
+        {
+          model: HelpOffer,
+          as: 'helpOffers',
+          required: false,
+          attributes: ['id', 'name'],
+          ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+            ? { where: helpsOptions }
+            : {}),
+        },
         {
           model: User,
           as: 'user',
@@ -435,11 +502,13 @@ export class UserProfilesService {
             {
               model: InternalMessage,
               as: 'receivedMessages',
+              required: false,
               where: { senderUserId: userId },
             },
             {
               model: InternalMessage,
               as: 'sentMessages',
+              required: false,
               where: { addresseeUserId: userId },
             },
           ],
@@ -451,9 +520,22 @@ export class UserProfilesService {
       ],
     });
 
+    const profilesInSameDepartment = profiles.filter(
+      ({ department }) => department === userProfile.department
+    );
+
+    const profilesInSameRegionButOtherDepartments = profiles.filter(
+      ({ department }) => department !== userProfile.department
+    );
+
+    const profilesToRecommend = [
+      ...profilesInSameDepartment,
+      ...profilesInSameRegionButOtherDepartments,
+    ];
+
     return this.createRecommendations(
       userId,
-      profiles.map((profile) => profile.id)
+      profilesToRecommend.slice(0, 3).map((profile) => profile.user.id)
     );
   }
 
