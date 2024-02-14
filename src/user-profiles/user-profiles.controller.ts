@@ -168,9 +168,15 @@ export class UserProfilesController {
       !userProfile.lastRecommendationsDate ||
       moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo)
     ) {
+      const oldRecommendedProfiles =
+        await this.userProfilesService.findRecommendationsByUserId(user.id);
+
       await this.userProfilesService.removeRecommendationsByUserId(user.id);
 
-      await this.userProfilesService.updateRecommendationsByUserId(user.id);
+      await this.userProfilesService.updateRecommendationsByUserId(
+        user.id,
+        oldRecommendedProfiles.map(({ recommendedUser }) => recommendedUser.id)
+      );
 
       await this.userProfilesService.updateByUserId(userId, {
         lastRecommendationsDate: moment().toDate(),

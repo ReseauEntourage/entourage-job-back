@@ -417,7 +417,10 @@ export class UserProfilesService {
     );
   }
 
-  async updateRecommendationsByUserId(userId: string) {
+  async updateRecommendationsByUserId(
+    userId: string,
+    usersIdsToExclude: string[]
+  ) {
     const user = await this.findOneUser(userId);
     const userProfile = await this.findOneByUserId(userId);
 
@@ -430,17 +433,6 @@ export class UserProfilesService {
         region ===
         Departments.find(({ name }) => userProfile.department === name).region
     ).map(({ name }) => name);
-
-    const businessLines = [
-      ...userProfile.searchBusinessLines,
-      ...userProfile.networkBusinessLines,
-    ];
-    const businessLinesOptions: WhereOptions<BusinessLine> =
-      businessLines.length > 0
-        ? {
-            name: { [Op.or]: businessLines.map(({ name }) => name) },
-          }
-        : {};
 
     const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
 
@@ -456,8 +448,6 @@ export class UserProfilesService {
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
       order: sequelize.literal('"user.createdAt" DESC'),
-      logging: console.log,
-      // limit: 3,
       where: {
         isAvailable: true,
         department: sameRegionDepartmentsOptions,
@@ -473,7 +463,6 @@ export class UserProfilesService {
         },
       },
       include: [
-        ...getUserProfileAmbitionsInclude(),
         ...getUserProfileAmbitionsInclude(),
         ...getUserProfileBusinessLinesInclude(),
         {
@@ -514,28 +503,30 @@ export class UserProfilesService {
           ],
           where: {
             role: rolesToFind,
-            id: { [Op.not]: userId },
+            id: { [Op.not]: [userId, ...usersIdsToExclude] },
           },
         },
       ],
     });
 
-    const profilesInSameDepartment = profiles.filter(
-      ({ department }) => department === userProfile.department
-    );
-
-    const profilesInSameRegionButOtherDepartments = profiles.filter(
-      ({ department }) => department !== userProfile.department
-    );
-
-    const profilesToRecommend = [
-      ...profilesInSameDepartment,
-      ...profilesInSameRegionButOtherDepartments,
-    ];
+    const sortedProfiles = _.sortBy(profiles, [
+      (profile) =>
+        !profile.searchBusinessLines.some(({ name }) =>
+          userProfile.networkBusinessLines.some(
+            ({ name: businessLineName }) => businessLineName === name
+          )
+        ) &&
+        !profile.networkBusinessLines.some(({ name }) =>
+          userProfile.searchBusinessLines.some(
+            ({ name: businessLineName }) => businessLineName === name
+          )
+        ),
+      ({ department }) => department !== userProfile.department,
+    ]);
 
     return this.createRecommendations(
       userId,
-      profilesToRecommend.slice(0, 3).map((profile) => profile.user.id)
+      sortedProfiles.slice(0, 3).map((profile) => profile.user.id)
     );
   }
 
