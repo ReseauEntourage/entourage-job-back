@@ -3252,6 +3252,104 @@ describe('Users', () => {
             )
           );
         });
+        it('Should return 200 and new recommendations, if coach gets his recent recommendations and one of the candidates is not available anymore', async () => {
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const stillAvailableUsers = await databaseHelper.createEntities(
+            userFactory,
+            2,
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          const userNotAvailable = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: false,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          const oldRecommendedUsers = [
+            ...stillAvailableUsers,
+            userNotAvailable,
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          const userAvailable = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
+            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            oldRecommendedUsers.map(({ id }) => id)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            usersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
         it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -3263,46 +3361,97 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
           );
 
+          const candidateSameRegion = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Aisne (02)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          const candidate2BusinessLinesInCommon = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'cd' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          const candidate2HelpsInCommon = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'cv' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
           const newUsersToRecommend = [
-            await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE,
-                zone: AdminZones.LILLE,
-              },
-              {
-                userProfile: {
-                  department: 'Aisne (02)',
-                  isAvailable: true,
-                  searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                  searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                  helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                },
-              }
-            ),
-            ...(await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-                zone: AdminZones.LILLE,
-              },
-              {
-                userProfile: {
-                  department: 'Nord (59)',
-                  isAvailable: true,
-                  searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                  searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                  helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                },
-              }
-            )),
+            candidateSameRegion,
+            candidate2BusinessLinesInCommon,
+            candidate2HelpsInCommon,
           ].sort((userA, userB) =>
             moment(userB.createdAt).diff(userA.createdAt)
           );
@@ -3318,13 +3467,21 @@ describe('Users', () => {
                 department: 'Paris (75)',
                 isAvailable: true,
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
               },
             }
           );
 
-          // Candidate wrong helps
+          // Candidate no helps in common
           await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
@@ -3335,13 +3492,20 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpNeeds: [{ name: 'cv' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpNeed[],
               },
             }
           );
 
-          // Candidate wrong business lines
+          // Candidate 1 help in common
           await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
@@ -3352,11 +3516,70 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpNeed[],
               },
             }
           );
+
+          // Candidate no business lines in common
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'aa' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate 1 business line in common
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
           // Candidate not available
           await userFactory.create(
             {
@@ -3368,8 +3591,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: false,
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
               },
             }
           );
@@ -3385,8 +3616,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
               },
             }
           );
@@ -3402,8 +3641,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
               },
             }
           );
@@ -3424,8 +3671,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
               },
             }
           );
@@ -3435,27 +3690,38 @@ describe('Users', () => {
             addresseeUserId: receivedMessageCandidate.id,
           });
 
-          const oldRecommendedUsers = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          const oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon =
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
               },
-            }
-          );
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                  isAvailable: true,
+                  searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                  searchBusinessLines: [
+                    { name: 'id' },
+                    { name: 'aa' },
+                    { name: 'cm' },
+                  ] as BusinessLine[],
+                  helpNeeds: [
+                    { name: 'network' },
+                    { name: 'tips' },
+                    { name: 'interview' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCoach.user.id,
-            oldRecommendedUsers.map(({ id }) => id)
+            oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon.map(
+              ({ id }) => id
+            )
           );
 
           const response: APIResponse<
@@ -3533,6 +3799,106 @@ describe('Users', () => {
             )
           );
         });
+        it('Should return 200, and new recommendations, if candidate gets his recent recommendations and on of the coaches is not available anymore', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const stillAvailableUsers = await databaseHelper.createEntities(
+            userFactory,
+            2,
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const userNotAvailable = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: false,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const oldRecommendedUsers = [
+            ...stillAvailableUsers,
+            userNotAvailable,
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCandidate.user.id,
+            oldRecommendedUsers.map(({ id }) => id)
+          );
+
+          const userAvailable = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
+            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            usersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
         it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
@@ -3543,47 +3909,98 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
           );
 
+          const coachSameRegion = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Aisne (02)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          const coach2BusinessLinesInCommon = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'cd' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          const coach2HelpsInCommon = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'cv' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
           const newUsersToRecommend = [
-            await userFactory.create(
-              {
-                role: UserRoles.COACH,
-                zone: AdminZones.LILLE,
-              },
-              {
-                userProfile: {
-                  department: 'Aisne (02)',
-                  isAvailable: true,
-                  currentJob: 'Développeur',
-                  networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                  helpOffers: [{ name: 'network' }] as HelpOffer[],
-                },
-              }
-            ),
-            ...(await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.COACH,
-                zone: AdminZones.LILLE,
-              },
-              {
-                userProfile: {
-                  department: 'Nord (59)',
-                  isAvailable: true,
-                  currentJob: 'Développeur',
-                  networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                  helpOffers: [{ name: 'network' }] as HelpOffer[],
-                },
-              }
-            )),
+            coachSameRegion,
+            coach2BusinessLinesInCommon,
+            coach2HelpsInCommon,
           ].sort((userA, userB) =>
             moment(userB.createdAt).diff(userA.createdAt)
           );
@@ -3599,13 +4016,21 @@ describe('Users', () => {
                 department: 'Paris (75)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
               },
             }
           );
 
-          // Coach wrong helps
+          // Coach no helps in common
           await userFactory.create(
             {
               role: UserRoles.COACH,
@@ -3616,12 +4041,20 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'cv' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpOffer[],
               },
             }
           );
-          // Coach wrong business lines
+
+          // Coach 1 help in common
           await userFactory.create(
             {
               role: UserRoles.COACH,
@@ -3632,11 +4065,70 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpOffer[],
               },
             }
           );
+
+          // Coach no business lines in common
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'aa' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach 1 business line in common
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
           // Coach not available
           await userFactory.create(
             {
@@ -3648,8 +4140,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: false,
                 currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
               },
             }
           );
@@ -3664,9 +4164,17 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
               },
             }
           );
@@ -3682,8 +4190,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
               },
             }
           );
@@ -3704,8 +4220,16 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
               },
             }
           );
@@ -3715,27 +4239,38 @@ describe('Users', () => {
             addresseeUserId: receivedMessageCoach.id,
           });
 
-          const oldRecommendedUsers = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                currentJob: 'Développeur',
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+          const oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon =
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.COACH,
+                zone: AdminZones.LILLE,
               },
-            }
-          );
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                  isAvailable: true,
+                  currentJob: 'Développeur',
+                  networkBusinessLines: [
+                    { name: 'id' },
+                    { name: 'aa' },
+                    { name: 'cm' },
+                  ] as BusinessLine[],
+                  helpOffers: [
+                    { name: 'network' },
+                    { name: 'tips' },
+                    { name: 'interview' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCandidate.user.id,
-            oldRecommendedUsers.map(({ id }) => id)
+            oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon.map(
+              ({ id }) => id
+            )
           );
 
           const response: APIResponse<

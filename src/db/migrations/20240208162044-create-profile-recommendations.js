@@ -30,6 +30,10 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
       },
+      deletedAt: {
+        allowNull: true,
+        type: Sequelize.DATE,
+      },
     });
     await queryInterface.addColumn('User_Profiles', 'lastRecommendationsDate', {
       type: Sequelize.DATE,

@@ -41,6 +41,11 @@ import {
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
+const UserProfileRecommendationsWeights = {
+  BUSINESS_LINES: 0.3,
+  HELPS: 0.5,
+};
+
 @Injectable()
 export class UserProfilesService {
   constructor(
@@ -417,10 +422,7 @@ export class UserProfilesService {
     );
   }
 
-  async updateRecommendationsByUserId(
-    userId: string,
-    usersIdsToExclude: string[]
-  ) {
+  async updateRecommendationsByUserId(userId: string) {
     const user = await this.findOneUser(userId);
     const userProfile = await this.findOneByUserId(userId);
 
@@ -435,6 +437,10 @@ export class UserProfilesService {
     ).map(({ name }) => name);
 
     const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
+    const businessLines = [
+      ...userProfile.searchBusinessLines,
+      ...userProfile.networkBusinessLines,
+    ];
 
     const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
       helps?.length > 0
@@ -445,9 +451,8 @@ export class UserProfilesService {
           }
         : {};
 
-    const profiles = await this.userProfileModel.findAll({
-      attributes: UserProfilesAttributes,
-      order: sequelize.literal('"user.createdAt" DESC'),
+    const filteredProfiles = await this.userProfileModel.findAll({
+      attributes: ['id'],
       where: {
         isAvailable: true,
         department: sameRegionDepartmentsOptions,
@@ -469,7 +474,7 @@ export class UserProfilesService {
           model: HelpNeed,
           as: 'helpNeeds',
           required: false,
-          attributes: ['id', 'name'],
+          attributes: ['id'],
           ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
             ? { where: helpsOptions }
             : {}),
@@ -478,7 +483,7 @@ export class UserProfilesService {
           model: HelpOffer,
           as: 'helpOffers',
           required: false,
-          attributes: ['id', 'name'],
+          attributes: ['id'],
           ...(isRoleIncluded(CoachUserRoles, rolesToFind)
             ? { where: helpsOptions }
             : {}),
@@ -486,43 +491,81 @@ export class UserProfilesService {
         {
           model: User,
           as: 'user',
-          attributes: UserProfilesUserAttributes,
+          attributes: ['id'],
           include: [
             {
               model: InternalMessage,
               as: 'receivedMessages',
               required: false,
+              attributes: ['id'],
               where: { senderUserId: userId },
             },
             {
               model: InternalMessage,
               as: 'sentMessages',
               required: false,
+              attributes: ['id'],
               where: { addresseeUserId: userId },
             },
           ],
           where: {
             role: rolesToFind,
-            id: { [Op.not]: [userId, ...usersIdsToExclude] },
           },
         },
       ],
     });
 
-    const sortedProfiles = _.sortBy(profiles, [
-      (profile) =>
-        !profile.searchBusinessLines.some(({ name }) =>
-          userProfile.networkBusinessLines.some(
-            ({ name: businessLineName }) => businessLineName === name
-          )
-        ) &&
-        !profile.networkBusinessLines.some(({ name }) =>
-          userProfile.searchBusinessLines.some(
-            ({ name: businessLineName }) => businessLineName === name
-          )
-        ),
-      ({ department }) => department !== userProfile.department,
-    ]);
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      where: {
+        id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
+      },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+        },
+      ],
+    });
+
+    const sortedProfiles = _.orderBy(
+      profiles,
+      [
+        (profile) => {
+          const profileBusinessLines = [
+            ...profile.searchBusinessLines,
+            ...profile.networkBusinessLines,
+          ];
+
+          const businessLinesDifference = _.difference(
+            businessLines.map(({ name }) => name),
+            profileBusinessLines.map(({ name }) => name)
+          );
+
+          const businessLinesMatching =
+            (businessLines.length - businessLinesDifference.length) *
+            UserProfileRecommendationsWeights.BUSINESS_LINES;
+
+          const profileHelps = [...profile.helpOffers, ...profile.helpNeeds];
+
+          const helpsDifferences = _.difference(
+            helps.map(({ name }) => name),
+            profileHelps.map(({ name }) => name)
+          );
+
+          const helpsMatching =
+            (helps.length - helpsDifferences.length) *
+            UserProfileRecommendationsWeights.HELPS;
+
+          return businessLinesMatching + helpsMatching;
+        },
+        ({ department }) => department === userProfile.department,
+        ({ user: { createdAt } }) => createdAt,
+      ],
+      ['desc', 'asc', 'desc']
+    );
 
     return this.createRecommendations(
       userId,

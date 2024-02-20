@@ -164,19 +164,22 @@ export class UserProfilesController {
 
     const oneWeekAgo = moment().subtract(1, 'week');
 
+    const currentRecommendedProfiles =
+      await this.userProfilesService.findRecommendationsByUserId(user.id);
+
+    const oneOfCurrentRecommendedProfilesIsNotAvailable =
+      currentRecommendedProfiles.some((recommendedProfile) => {
+        return !recommendedProfile.recommendedUser.userProfile.isAvailable;
+      });
+
     if (
       !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo)
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
+      oneOfCurrentRecommendedProfilesIsNotAvailable
     ) {
-      const oldRecommendedProfiles =
-        await this.userProfilesService.findRecommendationsByUserId(user.id);
-
       await this.userProfilesService.removeRecommendationsByUserId(user.id);
 
-      await this.userProfilesService.updateRecommendationsByUserId(
-        user.id,
-        oldRecommendedProfiles.map(({ recommendedUser }) => recommendedUser.id)
-      );
+      await this.userProfilesService.updateRecommendationsByUserId(user.id);
 
       await this.userProfilesService.updateByUserId(userId, {
         lastRecommendationsDate: moment().toDate(),

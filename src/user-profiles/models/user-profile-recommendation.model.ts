@@ -2,13 +2,16 @@ import {
   AllowNull,
   BelongsTo,
   Column,
+  CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   ForeignKey,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
+  UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
 
@@ -31,6 +34,15 @@ export class UserProfileRecommendation extends Model {
   @AllowNull(false)
   @Column
   RecommendedUserId: string;
+
+  @CreatedAt
+  createdAt: Date;
+
+  @UpdatedAt
+  updatedAt: Date;
+
+  @DeletedAt
+  deletedAt: Date;
 
   @BelongsTo(() => User, 'RecommendedUserId')
   recommendedUser: User;
