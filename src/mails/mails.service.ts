@@ -637,6 +637,7 @@ export class MailsService {
       templateId: MailjetTemplates.INTERNAL_MESSAGE,
       replyTo: senderUser.email,
       variables: {
+        addresseeId: addresseeUser.id,
         senderName: `${senderUser.firstName} ${senderUser.lastName}`,
         addresseeName: `${addresseeUser.firstName} ${addresseeUser.lastName}`,
         senderRole,
