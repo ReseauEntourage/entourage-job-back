@@ -175,6 +175,7 @@ export class UserProfilesController {
     if (
       !userProfile.lastRecommendationsDate ||
       moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
+      currentRecommendedProfiles.length <= 3 ||
       oneOfCurrentRecommendedProfilesIsNotAvailable
     ) {
       await this.userProfilesService.removeRecommendationsByUserId(user.id);
