@@ -78,6 +78,7 @@ describe('Auth', () => {
       expect(response.body.user).toStrictEqual({
         ...candidate,
         lastConnection: response.body.user.lastConnection,
+        createdAt: response.body.user.createdAt,
       });
       expect(response.body.token).toBeTruthy();
     });
@@ -234,6 +235,7 @@ describe('Auth', () => {
           },
           organization: null,
           lastConnection: response.body.lastConnection,
+          createdAt: response.body.createdAt,
         });
       });
       it('Should return 400, if not matching passwords', async () => {
@@ -308,6 +310,7 @@ describe('Auth', () => {
         },
         organization: null,
         lastConnection: response.body.lastConnection,
+        createdAt: response.body.createdAt,
       });
     });
     it('Should return 401, if invalid token', async () => {

@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsDate,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { Transaction } from 'sequelize';
 import {
   AfterUpdate,
@@ -69,6 +75,11 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   department: Department;
+
+  @IsDate()
+  @AllowNull(true)
+  @Column
+  lastRecommendationsDate: Date;
 
   @CreatedAt
   createdAt: Date;

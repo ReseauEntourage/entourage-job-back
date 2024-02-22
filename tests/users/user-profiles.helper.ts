@@ -69,4 +69,14 @@ export class UserProfilesHelper {
       ),
     } as Partial<UserProfile & User>;
   }
+
+  async createUserProfileRecommendations(
+    userId: string,
+    usersToRecommendIds: string[]
+  ) {
+    return this.userProfilesService.createRecommendations(
+      userId,
+      usersToRecommendIds
+    );
+  }
 }

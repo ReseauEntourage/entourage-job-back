@@ -11,8 +11,8 @@ export const UserAttributes = [
   'zone',
   'gender',
   'lastConnection',
-  /*'createdAt',
-  'updatedAt',
+  'createdAt',
+  /*'updatedAt',
   'deletedAt',*/
 ] as const;
 

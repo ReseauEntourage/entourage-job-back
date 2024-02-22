@@ -13,6 +13,7 @@ import {
   UserProfileSearchAmbition,
   UserProfileSearchBusinessLine,
 } from './models';
+import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesController } from './user-profiles.controller';
 import { UserProfilesService } from './user-profiles.service';
 
@@ -25,6 +26,7 @@ import { UserProfilesService } from './user-profiles.service';
       UserProfileNetworkBusinessLine,
       HelpNeed,
       HelpOffer,
+      UserProfileRecommendation,
     ]),
     UsersModule,
     AmbitionsModule,
