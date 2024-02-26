@@ -44,6 +44,7 @@ import {
   generateUrl,
   isRoleIncluded,
 } from '../users.utils';
+import { InternalMessage } from 'src/messages/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
 import { Share } from 'src/shares/models';
@@ -192,6 +193,12 @@ export class User extends HistorizedModel {
     hooks: true,
   })
   userProfile: UserProfile;
+
+  @HasMany(() => InternalMessage, 'addresseeUserId')
+  receivedMessages: InternalMessage[];
+
+  @HasMany(() => InternalMessage, 'senderUserId')
+  sentMessages: InternalMessage[];
 
   @BeforeCreate
   @BeforeUpdate

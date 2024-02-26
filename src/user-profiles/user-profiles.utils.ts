@@ -1,17 +1,20 @@
 import { User } from 'src/users/models';
+import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UserProfile } from './models';
 import { PublicProfile } from './user-profiles.types';
 
 export const getPublicProfileFromUserAndUserProfile = (
   user: User,
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  lastSentMessage: Date,
+  lastReceivedMessage: Date
 ): PublicProfile => {
   return {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
-    zone: user.zone,
+    isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     helpOffers: userProfile.helpOffers,
@@ -20,5 +23,14 @@ export const getPublicProfileFromUserAndUserProfile = (
     searchBusinessLines: userProfile.searchBusinessLines,
     networkBusinessLines: userProfile.networkBusinessLines,
     searchAmbitions: userProfile.searchAmbitions,
+    lastSentMessage: lastSentMessage ? lastSentMessage : null,
+    lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
   };
 };
+
+export function userProfileSearchQuery(query = '') {
+  return [
+    searchInColumnWhereOption('user.firstName', query),
+    searchInColumnWhereOption('user.lastName', query),
+  ];
+}

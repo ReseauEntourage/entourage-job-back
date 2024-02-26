@@ -34,6 +34,7 @@ import {
   UserPermissions,
   UserPermissionsGuard,
 } from './guards';
+import { AdminOverride } from './guards/admin-override.decorator';
 import { User, UserCandidat } from './models';
 
 import { UserCandidatsService } from './user-candidats.service';
@@ -175,6 +176,7 @@ export class UsersController {
     return userCandidate;
   }
 
+  @AdminOverride()
   @Self('params.id')
   @UseGuards(SelfGuard)
   @Get(':id')
@@ -451,6 +453,7 @@ export class UsersController {
     return updatedUserCandidat;
   }
 
+  @AdminOverride()
   @Self('params.id')
   @UseGuards(SelfGuard)
   @Put(':id')
