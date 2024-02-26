@@ -16,7 +16,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UserPayload } from '../auth/guards';
+import moment from 'moment';
+import { UserPayload } from 'src/auth/guards';
+import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
   SelfGuard,
@@ -33,7 +36,9 @@ import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
+import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
+import { HelpValue, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @Controller('user/profile')
@@ -46,7 +51,7 @@ export class UserProfilesController {
   @UseGuards(SelfGuard)
   @Put('/:userId')
   async updateByUserId(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body(UpdateUserProfilePipe)
     updateUserProfileDto:
       | UpdateCandidateUserProfileDto
@@ -78,7 +83,15 @@ export class UserProfilesController {
     @Query('offset', new ParseIntPipe())
     offset: number,
     @Query('role')
-    role: UserRole[]
+    role: UserRole[],
+    @Query('search')
+    search: string,
+    @Query('helps')
+    helps: HelpValue[],
+    @Query('departments')
+    departments: Department[],
+    @Query('businessLines')
+    businessLines: BusinessLineValue[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -92,7 +105,15 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll(userId, { role, offset, limit });
+    return this.userProfilesService.findAll(userId, {
+      role,
+      offset,
+      limit,
+      search,
+      helps,
+      departments,
+      businessLines,
+    });
   }
 
   @Self('params.userId')
@@ -100,7 +121,7 @@ export class UserProfilesController {
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
   @Post('/uploadImage/:userId')
   async uploadProfileImage(
-    @Param('userId') userId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
     if (!file) {
@@ -126,11 +147,96 @@ export class UserProfilesController {
     return profileImage;
   }
 
-  @Get('/:userId')
-  async findByUserId(@Param('userId', new ParseUUIDPipe()) userId: string) {
+  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
+  @UseGuards(UserPermissionsGuard)
+  @Self('params.userId')
+  @UseGuards(SelfGuard)
+  @Get('/recommendations/:userId')
+  async findRecommendationsByUserId(
+    @Param('userId', new ParseUUIDPipe()) userId: string
+  ): Promise<PublicProfile[]> {
     const user = await this.userProfilesService.findOneUser(userId);
-
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
+
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    const oneWeekAgo = moment().subtract(1, 'week');
+
+    const currentRecommendedProfiles =
+      await this.userProfilesService.findRecommendationsByUserId(user.id);
+
+    const oneOfCurrentRecommendedProfilesIsNotAvailable =
+      currentRecommendedProfiles.some((recommendedProfile) => {
+        return !recommendedProfile.recommendedUser.userProfile.isAvailable;
+      });
+
+    if (
+      !userProfile.lastRecommendationsDate ||
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
+      currentRecommendedProfiles.length <= 3 ||
+      oneOfCurrentRecommendedProfilesIsNotAvailable
+    ) {
+      await this.userProfilesService.removeRecommendationsByUserId(user.id);
+
+      await this.userProfilesService.updateRecommendationsByUserId(user.id);
+
+      await this.userProfilesService.updateByUserId(userId, {
+        lastRecommendationsDate: moment().toDate(),
+      });
+    }
+
+    const recommendedProfiles =
+      await this.userProfilesService.findRecommendationsByUserId(user.id);
+
+    return Promise.all(
+      recommendedProfiles.map(
+        async (recommendedProfile): Promise<PublicProfile> => {
+          const lastSentMessage = await this.userProfilesService.getLastContact(
+            userId,
+            recommendedProfile.recommendedUser.id
+          );
+          const lastReceivedMessage =
+            await this.userProfilesService.getLastContact(
+              recommendedProfile.recommendedUser.id,
+              userId
+            );
+
+          const {
+            recommendedUser: { userProfile, ...restRecommendedUser },
+          }: UserProfileRecommendation = recommendedProfile.toJSON();
+
+          return {
+            ...restRecommendedUser,
+            ...userProfile,
+            lastSentMessage: lastSentMessage?.createdAt || null,
+            lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          };
+        }
+      )
+    );
+  }
+
+  @Get('/:userId')
+  async findByUserId(
+    @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
+    @Param('userId', new ParseUUIDPipe()) userIdToGet: string
+  ) {
+    const user = await this.userProfilesService.findOneUser(userIdToGet);
+
+    const userProfile = await this.userProfilesService.findOneByUserId(
+      userIdToGet
+    );
+
+    const lastSentMessage = await this.userProfilesService.getLastContact(
+      currentUserId,
+      userIdToGet
+    );
+    const lastReceivedMessage = await this.userProfilesService.getLastContact(
+      userIdToGet,
+      currentUserId
+    );
 
     if (!user || !userProfile) {
       throw new NotFoundException();
@@ -140,6 +246,11 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return getPublicProfileFromUserAndUserProfile(user, userProfile);
+    return getPublicProfileFromUserAndUserProfile(
+      user,
+      userProfile,
+      lastSentMessage?.createdAt,
+      lastReceivedMessage?.createdAt
+    );
   }
 }

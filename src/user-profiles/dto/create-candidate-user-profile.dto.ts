@@ -5,6 +5,7 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'UserId',
   'description',
   'department',
+  'isAvailable',
   'searchBusinessLines',
   'searchAmbitions',
   'helpNeeds',

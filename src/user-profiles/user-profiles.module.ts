@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
 import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
+import { MessagesModule } from 'src/messages/messages.module';
 import { UsersModule } from 'src/users/users.module';
 import {
   HelpNeed,
@@ -12,6 +13,7 @@ import {
   UserProfileSearchAmbition,
   UserProfileSearchBusinessLine,
 } from './models';
+import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesController } from './user-profiles.controller';
 import { UserProfilesService } from './user-profiles.service';
 
@@ -24,11 +26,13 @@ import { UserProfilesService } from './user-profiles.service';
       UserProfileNetworkBusinessLine,
       HelpNeed,
       HelpOffer,
+      UserProfileRecommendation,
     ]),
     UsersModule,
     AmbitionsModule,
     BusinessLinesModule,
     AWSModule,
+    MessagesModule,
   ],
   controllers: [UserProfilesController],
   providers: [UserProfilesService],

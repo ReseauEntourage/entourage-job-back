@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import * as _ from 'lodash';
 import { Permissions } from '../users.types';
 import { hasPermission } from '../users.utils';
+import { ADMIN_OVERRIDE } from './admin-override.decorator';
 import { SELF_KEY } from './self.decorator';
 
 @Injectable()
@@ -14,6 +15,12 @@ export class SelfGuard implements CanActivate {
       SELF_KEY,
       context.getHandler()
     );
+
+    const adminOverride = this.reflector.get<boolean>(
+      ADMIN_OVERRIDE,
+      context.getHandler()
+    );
+
     if (!selfIdKeys || selfIdKeys.length === 0) {
       return false;
     }
@@ -25,6 +32,8 @@ export class SelfGuard implements CanActivate {
       return user.id === requestId || user.email === requestId;
     });
 
-    return isSelf || hasPermission(Permissions.ADMIN, user.role);
+    return (
+      isSelf || (adminOverride && hasPermission(Permissions.ADMIN, user.role))
+    );
   }
 }

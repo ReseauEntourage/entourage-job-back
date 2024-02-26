@@ -41,6 +41,7 @@ import {
   UserProfileSearchAmbition,
   UserProfileSearchBusinessLine,
 } from 'src/user-profiles/models';
+import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import { User, UserCandidat } from 'src/users/models';
 import { Factory } from 'src/utils/types';
 
@@ -59,6 +60,8 @@ export class DatabaseHelper {
     private userProfileSearchAmbitionModel: typeof UserProfileSearchAmbition,
     @InjectModel(UserProfileSearchBusinessLine)
     private userProfileSearchBusinessLineModel: typeof UserProfileSearchBusinessLine,
+    @InjectModel(UserProfileRecommendation)
+    private userProfileRecommendationModel: typeof UserProfileRecommendation,
     @InjectModel(HelpNeed)
     private helpNeedModel: typeof HelpNeed,
     @InjectModel(HelpOffer)
@@ -140,6 +143,7 @@ export class DatabaseHelper {
       await this.userProfileSearchAmbitionModel.truncate(destroyOptions);
       await this.helpNeedModel.truncate(destroyOptions);
       await this.helpOfferModel.truncate(destroyOptions);
+      await this.userProfileRecommendationModel.truncate(destroyOptions);
       await this.cvLocationModel.truncate(destroyOptions);
       await this.cvBusinessLineModel.truncate(destroyOptions);
       await this.cvSkillModel.truncate(destroyOptions);

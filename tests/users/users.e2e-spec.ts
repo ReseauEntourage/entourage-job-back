@@ -1,6 +1,7 @@
 import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import moment from 'moment';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
@@ -45,6 +46,7 @@ import { CVSkillsHelper } from 'tests/cvs/cv-skills.helper';
 import { CVFactory } from 'tests/cvs/cv.factory';
 import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
+import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
@@ -81,6 +83,7 @@ describe('Users', () => {
   let experiencesSkillsHelper: ExperiencesSkillsHelper;
   let reviewsHelper: ReviewsHelper;
   let organizationFactory: OrganizationFactory;
+  let internalMessageFactory: InternalMessageFactory;
 
   const route = '/user';
 
@@ -134,6 +137,9 @@ describe('Users', () => {
     reviewsHelper = moduleFixture.get<ReviewsHelper>(ReviewsHelper);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
+    internalMessageFactory = moduleFixture.get<InternalMessageFactory>(
+      InternalMessageFactory
+    );
   });
 
   afterAll(async () => {
@@ -1906,6 +1912,7 @@ describe('Users', () => {
               ...privateCandidateInfo,
               lastConnection:
                 loggedInCandidate.user.lastConnection?.toISOString(),
+              createdAt: loggedInCandidate.user.createdAt?.toISOString(),
             },
           ]);
         });
@@ -3038,6 +3045,1253 @@ describe('Users', () => {
           expect(response.body.pendingCVs).toBe(2);
         });
       });
+    });
+    describe('R - Read 1 Profile', () => {
+      describe('/profile/:userId - Get user profile', () => {
+        let loggedInUser: LoggedUser;
+        let randomUser: User;
+        beforeEach(async () => {
+          loggedInUser = await usersHelper.createLoggedInUser();
+          randomUser = await userFactory.create(
+            {},
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+            }
+          );
+        });
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer()).get(
+              `${route}/profile/${randomUser.id}`
+            );
+          expect(response.status).toBe(401);
+        });
+        it('Should return 200, if user logged in', async () => {
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${randomUser.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(
+              userProfilesHelper.mapUserProfileFromUser(randomUser)
+            )
+          );
+        });
+      });
+      describe('/profile/recommendations/:userId - Get user recommendations', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInExternalCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let loggedInExternalCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+
+          loggedInExternalCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE_EXTERNAL,
+          });
+          loggedInExternalCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH_EXTERNAL,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          ({
+            loggedInCoach: loggedInExternalCoach,
+            loggedInCandidate: loggedInExternalCandidate,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            loggedInExternalCoach,
+            loggedInExternalCandidate,
+            true
+          ));
+        });
+
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer()).get(
+            `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+          );
+
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if admin gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if admin gets his recommendations', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInAdmin.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it("Should return 403, if external coach get his candidate's recommendations", async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInExternalCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`);
+
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if external coach gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInExternalCoach.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const usersToRecommend = (
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  isAvailable: true,
+                  searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                  searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                },
+              }
+            )
+          ).sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            usersToRecommend.map(({ id }) => id)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            usersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
+        it('Should return 200 and new recommendations, if coach gets his recent recommendations and one of the candidates is not available anymore', async () => {
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const stillAvailableUsers = await databaseHelper.createEntities(
+            userFactory,
+            2,
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          const userNotAvailable = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: false,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          const oldRecommendedUsers = [
+            ...stillAvailableUsers,
+            userNotAvailable,
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          const userAvailable = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+
+          const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
+            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            oldRecommendedUsers.map(({ id }) => id)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            usersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
+        it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                currentJob: 'Développeur',
+                isAvailable: true,
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+                lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
+              },
+            }
+          );
+
+          const candidateSameRegion = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Aisne (02)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          const candidate2BusinessLinesInCommon = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'cd' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          const candidate2HelpsInCommon = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'cv' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          const newUsersToRecommend = [
+            candidateSameRegion,
+            candidate2BusinessLinesInCommon,
+            candidate2HelpsInCommon,
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          // Candidate wrong departement
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.PARIS,
+            },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate no helps in common
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate 1 help in common
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate no business lines in common
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'aa' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate 1 business line in common
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Candidate not available
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: false,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Coach same profile
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                currentJob: 'Développeur',
+                isAvailable: true,
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Candidate who sent message
+          const sentMessageCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: sentMessageCandidate.id,
+            addresseeUserId: loggedInCoach.user.id,
+          });
+
+          // Candidate who received message
+          const receivedMessageCandidate = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: loggedInCoach.user.id,
+            addresseeUserId: receivedMessageCandidate.id,
+          });
+
+          const oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon =
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+              },
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                  isAvailable: true,
+                  searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                  searchBusinessLines: [
+                    { name: 'id' },
+                    { name: 'aa' },
+                    { name: 'cm' },
+                  ] as BusinessLine[],
+                  helpNeeds: [
+                    { name: 'network' },
+                    { name: 'tips' },
+                    { name: 'interview' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCoach.user.id,
+            oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon.map(
+              ({ id }) => id
+            )
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            newUsersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
+        it('Should return 200, and actual recommendations, if candidate gets his recent recommendations', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const usersToRecommend = (
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.COACH,
+                zone: AdminZones.LYON,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  isAvailable: true,
+                  currentJob: 'menuisier',
+                  networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                },
+              }
+            )
+          ).sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCandidate.user.id,
+            usersToRecommend.map(({ id }) => id)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            usersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
+        it('Should return 200, and new recommendations, if candidate gets his recent recommendations and on of the coaches is not available anymore', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
+              },
+            }
+          );
+
+          const stillAvailableUsers = await databaseHelper.createEntities(
+            userFactory,
+            2,
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const userNotAvailable = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: false,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const oldRecommendedUsers = [
+            ...stillAvailableUsers,
+            userNotAvailable,
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCandidate.user.id,
+            oldRecommendedUsers.map(({ id }) => id)
+          );
+
+          const userAvailable = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
+            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            usersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
+        it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+                lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
+              },
+            }
+          );
+
+          const coachSameRegion = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Aisne (02)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          const coach2BusinessLinesInCommon = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'cd' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          const coach2HelpsInCommon = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'cv' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          const newUsersToRecommend = [
+            coachSameRegion,
+            coach2BusinessLinesInCommon,
+            coach2HelpsInCommon,
+          ].sort((userA, userB) =>
+            moment(userB.createdAt).diff(userA.createdAt)
+          );
+
+          // Coach wrong department
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.PARIS,
+            },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach no helps in common
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach 1 help in common
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'interview' },
+                  { name: 'cv' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach no business lines in common
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'aa' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach 1 business line in common
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aev' },
+                  { name: 'asp' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Coach not available
+          await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: false,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          // Candidate same profile
+          await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
+                searchBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpNeeds: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpNeed[],
+              },
+            }
+          );
+
+          // Coach who sent message
+          const sentMessageCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: sentMessageCoach.id,
+            addresseeUserId: loggedInCandidate.user.id,
+          });
+
+          // Coach who received message
+          const receivedMessageCoach = await userFactory.create(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LILLE,
+            },
+            {
+              userProfile: {
+                department: 'Nord (59)',
+                isAvailable: true,
+                currentJob: 'Développeur',
+                networkBusinessLines: [
+                  { name: 'id' },
+                  { name: 'aa' },
+                  { name: 'art' },
+                ] as BusinessLine[],
+                helpOffers: [
+                  { name: 'network' },
+                  { name: 'tips' },
+                  { name: 'event' },
+                ] as HelpOffer[],
+              },
+            }
+          );
+
+          await internalMessageFactory.create({
+            senderUserId: loggedInCandidate.user.id,
+            addresseeUserId: receivedMessageCoach.id,
+          });
+
+          const oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon =
+            await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.COACH,
+                zone: AdminZones.LILLE,
+              },
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                  isAvailable: true,
+                  currentJob: 'Développeur',
+                  networkBusinessLines: [
+                    { name: 'id' },
+                    { name: 'aa' },
+                    { name: 'cm' },
+                  ] as BusinessLine[],
+                  helpOffers: [
+                    { name: 'network' },
+                    { name: 'tips' },
+                    { name: 'interview' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+          await userProfilesHelper.createUserProfileRecommendations(
+            loggedInCandidate.user.id,
+            oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon.map(
+              ({ id }) => id
+            )
+          );
+
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(app.getHttpServer())
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            newUsersToRecommend.map((user) =>
+              expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              )
+            )
+          );
+        });
+      });
+    });
+    describe('R - Read many Profiles', () => {
       describe('/profile - Read all profiles', () => {
         it('Should return 401 if user is not logged in', async () => {
           const response: APIResponse<UserProfilesController['findAll']> =
@@ -3045,6 +4299,16 @@ describe('Users', () => {
               `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
             );
           expect(response.status).toBe(401);
+        });
+        it('Should return 400 if no role parameter', async () => {
+          const loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile`)
+              .set('authorization', `Token ${loggedInCandidate.token}`);
+          expect(response.status).toBe(400);
         });
         it('Should return 200 if user is logged in as admin', async () => {
           const loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -3315,59 +4579,809 @@ describe('Users', () => {
             );
           });
         });
-      });
-    });
-    describe('R - Read Profiles', () => {
-      describe('/profile/:userId - Get user profile', () => {
-        let loggedInUser: LoggedUser;
-        let randomUser: User;
-        beforeEach(async () => {
-          loggedInUser = await usersHelper.createLoggedInUser();
-          randomUser = await userFactory.create(
-            {},
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-            }
-          );
-        });
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(app.getHttpServer()).get(
-              `${route}/profile/${randomUser.id}`
+        describe('/profile?search= - Read all profiles with search query', () => {
+          let loggedInAdmin: LoggedUser;
+
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+
+          it('Should return 200 and candidates matching search query', async () => {
+            const candidate1 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'YYYY',
+            });
+            const candidate2 = await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.CANDIDATE,
+              firstName: 'YYY',
+            });
+
+            const expectedCandidates = [candidate1, candidate2];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&search=XXX`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidates.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
             );
-          expect(response.status).toBe(401);
+          });
+          it('Should return 200 and coaches matching search query', async () => {
+            const coaches1 = await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'YYY',
+            });
+            const coaches2 = await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'XXX',
+            });
+            await userFactory.create({
+              role: UserRoles.COACH,
+              firstName: 'YYY',
+            });
+            const expectedCoaches = [coaches1, coaches2];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&search=XXX`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoaches.map(({ id }) => id)).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
         });
-        it('Should return 200, if user logged in', async () => {
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(app.getHttpServer())
-              .get(`${route}/profile/${randomUser.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              id: randomUser.id,
-              firstName: randomUser.firstName,
-              lastName: randomUser.lastName,
-              role: randomUser.role,
-              zone: randomUser.zone,
-              currentJob: randomUser.userProfile.currentJob,
-              department: randomUser.userProfile.department,
-              helpNeeds: [expect.objectContaining({ name: 'network' })],
-              helpOffers: [expect.objectContaining({ name: 'network' })],
-              description: randomUser.userProfile.description,
-              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-              networkBusinessLines: [],
-              searchAmbitions: [
-                expect.objectContaining({ name: 'développeur' }),
-              ],
-            })
-          );
+        describe('/profile?departments[]=&businessLines[]=&helps[]= - Read all profiles with filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that matches the department filter', async () => {
+            const lyonCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+            const parisCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Paris (75)' },
+              }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Nord (59)' },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: { department: 'Nord (59)' },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...lyonCandidates.map(({ id }) => id),
+              ...parisCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the department filter', async () => {
+            const lyonCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+            const parisCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Paris (75)',
+                },
+              }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+
+            const expectedCoachesIds = [
+              ...lyonCoaches.map(({ id }) => id),
+              ...parisCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
+            const batCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const rhCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...batCandidates.map(({ id }) => id),
+              ...rhCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the businessLines filters', async () => {
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  searchBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const batCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'bat' },
+                    { name: 'asp' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const rhCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  networkBusinessLines: [
+                    { name: 'aa' },
+                    { name: 'pr' },
+                  ] as BusinessLine[],
+                },
+              }
+            );
+
+            const expectedCoachesIds = [
+              ...batCoaches.map(({ id }) => id),
+              ...rhCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessLines[]=bat&businessLines[]=rh`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200, and all the candidates that matches the helps filters', async () => {
+            const cvCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            const interviewCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...interviewCandidates.map(({ id }) => id),
+              ...cvCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&helps[]=cv&helps[]=interview`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the helps filters', async () => {
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpNeed[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                },
+              }
+            );
+
+            const cvCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            const interviewCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [
+                    { name: 'interview' },
+                    { name: 'event' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                },
+              }
+            );
+
+            const expectedCoachesIds = [
+              ...interviewCoaches.map(({ id }) => id),
+              ...cvCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&helps[]=cv&helps[]=interview`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+        describe('/profile - Read all profiles with all filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that match all the filters', async () => {
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            const lyonAssociatedCandidates =
+              await databaseHelper.createEntities(
+                userFactory,
+                2,
+                {
+                  firstName: 'XXX',
+                  role: UserRoles.CANDIDATE,
+                },
+                {
+                  userProfile: {
+                    department: 'Rhône (69)',
+                    searchBusinessLines: [
+                      { name: 'rh' },
+                      { name: 'aa' },
+                    ] as BusinessLine[],
+                    helpNeeds: [
+                      { name: 'cv' },
+                      { name: 'network' },
+                    ] as HelpNeed[],
+                  },
+                }
+              );
+
+            await Promise.all(
+              lyonAssociatedCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedCoaches[index],
+                  candidate
+                );
+              })
+            );
+
+            const expectedCandidatesIds = [
+              ...lyonAssociatedCandidates.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that match all the filters', async () => {
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  networkBusinessLines: [
+                    { name: 'rh' },
+                    { name: 'aa' },
+                  ] as BusinessLine[],
+
+                  helpOffers: [
+                    { name: 'cv' },
+                    { name: 'network' },
+                  ] as HelpOffer[],
+                },
+              }
+            );
+
+            const lyonAssociatedCandidates =
+              await databaseHelper.createEntities(
+                userFactory,
+                2,
+                {
+                  firstName: 'XXX',
+                  role: UserRoles.CANDIDATE,
+                },
+                {
+                  userProfile: {
+                    department: 'Rhône (69)',
+                    searchBusinessLines: [
+                      { name: 'rh' },
+                      { name: 'aa' },
+                    ] as BusinessLine[],
+                    helpNeeds: [
+                      { name: 'cv' },
+                      { name: 'network' },
+                    ] as HelpNeed[],
+                  },
+                }
+              );
+
+            await Promise.all(
+              lyonAssociatedCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedCoaches[index],
+                  candidate
+                );
+              })
+            );
+
+            const expectedCoachesIds = [
+              ...lyonAssociatedCoaches.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(app.getHttpServer())
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                )
+                .set('authorization', `Token ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
         });
       });
     });
@@ -3536,363 +5550,6 @@ describe('Users', () => {
           });
 
           expect(userCandidat).toBeFalsy();
-        });
-      });
-      describe('/profile/:id - Update user profile', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInExternalCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInExternalCoach: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser(
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LYON,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
-              },
-            }
-          );
-          loggedInCoach = await usersHelper.createLoggedInUser(
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LYON,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                currentJob: 'peintre',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
-              },
-            }
-          );
-
-          loggedInExternalCandidate = await usersHelper.createLoggedInUser(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              zone: AdminZones.LYON,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
-              },
-            }
-          );
-          loggedInExternalCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH_EXTERNAL,
-            zone: AdminZones.LYON,
-          });
-
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-
-          ({
-            loggedInCoach: loggedInExternalCoach,
-            loggedInCandidate: loggedInExternalCandidate,
-          } = await userCandidatsHelper.associateCoachAndCandidate(
-            loggedInExternalCoach,
-            loggedInExternalCandidate,
-            true
-          ));
-        });
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer()).put(
-            `${route}/profile/${loggedInCandidate.user.id}`
-          );
-
-          expect(response.status).toBe(401);
-        });
-        it('Should return 403, if admin updates a user profile', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({
-              description: 'hello',
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if admin updates his user profile', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInAdmin.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .send({
-              description: 'hello',
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if external coach updates his user profile', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInExternalCoach.user.id}`)
-            .set('authorization', `Token ${loggedInExternalCoach.token}`)
-            .send({
-              description: 'hello',
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
-        it("Should return 403, if external coach updates his candidate's profile", async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInExternalCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInExternalCoach.token}`)
-            .send({
-              description: 'hello',
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if coach updates another profile than his own', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send({
-              description: 'hello',
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if candidate updates another profile than his own', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send({
-              description: 'hello',
-            });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 200, if candidate updates his profile candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            department: 'Paris (75)',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send(updatedProfile);
-
-          const updatedUser = await usersHelper.findUser(
-            loggedInCandidate.user.id
-          );
-
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...updatedProfile,
-              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-              searchAmbitions: [
-                expect.objectContaining({ name: 'développeur' }),
-              ],
-              helpNeeds: [expect.objectContaining({ name: 'network' })],
-            })
-          );
-          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
-        });
-        it('Should return 400, if candidate updates his profile with coach properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            currentJob: 'mécanicien',
-            department: 'Paris (75)',
-            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            helpOffers: [{ name: 'network' }] as HelpOffer[],
-          };
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .send(updatedProfile);
-          expect(response.status).toBe(400);
-        });
-
-        it('Should return 200, if coach updates his profile coach properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            currentJob: 'mécanicien',
-            department: 'Paris (75)',
-            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            helpOffers: [{ name: 'network' }] as HelpOffer[],
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send(updatedProfile);
-
-          const updatedUser = await usersHelper.findUser(loggedInCoach.user.id);
-
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...updatedProfile,
-              networkBusinessLines: [expect.objectContaining({ name: 'id' })],
-              helpOffers: [expect.objectContaining({ name: 'network' })],
-            })
-          );
-
-          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
-        });
-        it('Should return 400, if coach updates his profile with candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            department: 'Paris (75)',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(app.getHttpServer())
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .send(updatedProfile);
-          expect(response.status).toBe(400);
-        });
-      });
-      describe('/profile/uploadImage/:id - Upload user profile picture', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-
-        let path: string;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
-          });
-
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-          path = userProfilesHelper.getTestImagePath();
-        });
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-
-          expect(response.status).toBe(401);
-        });
-        it('Should return 201, if admin uploads his profile picture', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(201);
-        });
-        it('Should return 403, if coach uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if candidate uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 201, if candidate uploads his profile picture', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(201);
-        });
-        it('Should return 400, if candidate uploads empty profile picture', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
-            .set('Content-Type', 'multipart/form-data');
-          expect(response.status).toBe(400);
-        });
-        it('Should return 201, if coach uploads his profile picture', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(201);
-        });
-        it('Should return 400, if coach uploads empty profile picture', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(app.getHttpServer())
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
-            .set('Content-Type', 'multipart/form-data');
-          expect(response.status).toBe(400);
         });
       });
       describe('/changePwd - Update password', () => {
@@ -4164,6 +5821,7 @@ describe('Users', () => {
             candidat,
             coaches,
             lastConnection,
+            createdAt,
             organization,
             ...restCandidate
           } = loggedInCandidate.user;
@@ -4172,6 +5830,7 @@ describe('Users', () => {
             candidat: coachCandidat,
             coaches: coachCoaches,
             lastConnection: lastConnectionCoach,
+            createdAt: createdAtCoach,
             organization: coachOrganization,
             ...restCoach
           } = loggedInCoach.user;
@@ -4201,6 +5860,7 @@ describe('Users', () => {
             candidat: { coach, ...restCandidateCandidat },
             coaches,
             lastConnection,
+            createdAt,
             organization,
             ...restCandidate
           } = loggedInCandidate.user;
@@ -4209,6 +5869,7 @@ describe('Users', () => {
             candidat: coachCandidat,
             coaches: coachCoaches,
             lastConnection: lastConnectionCoach,
+            createdAt: createdAtCoach,
             organization: coachOrganization,
             ...restCoach
           } = loggedInCoach.user;
@@ -4248,6 +5909,7 @@ describe('Users', () => {
             candidat,
             coaches,
             lastConnection,
+            createdAt,
             organization,
             ...restCandidate
           } = loggedInCandidate.user;
@@ -4282,6 +5944,7 @@ describe('Users', () => {
             candidat: coachCandidat,
             coaches: coachCoaches,
             lastConnection: lastConnectionCoach,
+            createdAt: createdAtCoach,
             organization: coachOrganization,
             ...restCoach
           } = loggedInCoach.user;
@@ -4339,6 +6002,7 @@ describe('Users', () => {
             candidat: { coach, ...restExternalCandidateCandidat },
             coaches,
             lastConnection,
+            createdAt,
             organization: candidateOrganization,
             ...restExternalCandidate
           } = externalCandidate;
@@ -4366,6 +6030,7 @@ describe('Users', () => {
             },
             coaches: otherCandidateCoaches,
             lastConnection: otherCandidateLastConnection,
+            createdAt: otherCandidateCreatedAt,
             organization: otherCandidateOrganization,
             ...restOtherExternalCandidate
           } = otherExternalCandidate;
@@ -4374,6 +6039,7 @@ describe('Users', () => {
             candidat: coachCandidat,
             coaches: coachCoaches,
             lastConnection: lastConnectionCoach,
+            createdAt: createdAtCoach,
             organization: coachOrganization,
             ...restExternalCoach
           } = externalCoach;
@@ -4428,6 +6094,7 @@ describe('Users', () => {
             },
             coaches: otherCandidateCoaches,
             lastConnection: otherCandidateLastConnection,
+            createdAt: otherCandidateCreatedAt,
             organization: otherCandidateOrganization,
             ...restOtherExternalCandidate
           } = await userFactory.create(
@@ -4443,6 +6110,7 @@ describe('Users', () => {
             candidat: { coach, ...restExternalCandidateCandidat },
             coaches,
             lastConnection,
+            createdAt,
             organization: candidateOrganization,
             ...restExternalCandidate
           } = externalCandidate;
@@ -4451,6 +6119,7 @@ describe('Users', () => {
             candidat: coachCandidat,
             coaches: coachCoaches,
             lastConnection: lastConnectionCoach,
+            createdAt: createdAtCoach,
             organization: coachOrganization,
             ...restExternalCoach
           } = externalCoach;
@@ -4499,6 +6168,7 @@ describe('Users', () => {
             candidat,
             coaches,
             lastConnection,
+            createdAt,
             organization: candidateOrganization,
             ...restExternalCandidate
           } = externalCandidate;
@@ -4534,6 +6204,7 @@ describe('Users', () => {
             candidat: coachCandidat,
             coaches: coachCoaches,
             lastConnection: lastConnectionCoach,
+            createdAt: createdAtCoach,
             organization: coachOrganization,
             ...restExternalCoach
           } = externalCoach;
@@ -4960,6 +6631,431 @@ describe('Users', () => {
         });
       });
     });
+    describe('U - Update 1 Profile', () => {
+      describe('/profile/:userId - Update user profile', () => {
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInExternalCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let loggedInExternalCoach: LoggedUser;
+
+        beforeEach(async () => {
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+          loggedInCoach = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                currentJob: 'peintre',
+                isAvailable: true,
+                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              },
+            }
+          );
+
+          loggedInExternalCandidate = await usersHelper.createLoggedInUser(
+            {
+              role: UserRoles.CANDIDATE_EXTERNAL,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              },
+            }
+          );
+          loggedInExternalCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH_EXTERNAL,
+            zone: AdminZones.LYON,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          ({
+            loggedInCoach: loggedInExternalCoach,
+            loggedInCandidate: loggedInExternalCandidate,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            loggedInExternalCoach,
+            loggedInExternalCandidate,
+            true
+          ));
+        });
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer()).put(
+            `${route}/profile/${loggedInCandidate.user.id}`
+          );
+
+          expect(response.status).toBe(401);
+        });
+        it('Should return 403, if admin updates his user profile', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInAdmin.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if admin updates a profile for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .send({
+              description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if external coach updates his user profile', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInExternalCoach.user.id}`)
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .send({
+              description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if external coach updates the profile for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInExternalCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .send({
+              description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach updates a profile for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send({
+              description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate updates a profile for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send({
+              description: 'hello',
+              isAvailable: false,
+              department: 'Paris (75)',
+            });
+          expect(response.status).toBe(403);
+        });
+        it('Should return 200, if candidate updates his profile candidate properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            department: 'Paris (75)',
+            isAvailable: false,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+
+          const updatedUser = await usersHelper.findUser(
+            loggedInCandidate.user.id
+          );
+
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...updatedProfile,
+              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
+              searchAmbitions: [
+                expect.objectContaining({ name: 'développeur' }),
+              ],
+              helpNeeds: [expect.objectContaining({ name: 'network' })],
+            })
+          );
+          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
+        });
+        it('Should return 400, if candidate updates his profile with coach properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            currentJob: 'mécanicien',
+            department: 'Paris (75)',
+            isAvailable: false,
+            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpOffers: [{ name: 'network' }] as HelpOffer[],
+          };
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 200, if coach updates his profile coach properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            currentJob: 'mécanicien',
+            department: 'Paris (75)',
+            isAvailable: false,
+            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpOffers: [{ name: 'network' }] as HelpOffer[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(updatedProfile);
+
+          const updatedUser = await usersHelper.findUser(loggedInCoach.user.id);
+
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...updatedProfile,
+              networkBusinessLines: [expect.objectContaining({ name: 'id' })],
+              helpOffers: [expect.objectContaining({ name: 'network' })],
+            })
+          );
+
+          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
+        });
+        it('Should return 400, if coach updates his profile with candidate properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            department: 'Paris (75)',
+            isAvailable: false,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(app.getHttpServer())
+            .put(`${route}/profile/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
+        });
+      });
+      describe('/profile/uploadImage/:id - Upload user profile picture', () => {
+        let path: string;
+
+        let loggedInAdmin: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInExternalCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let loggedInExternalCoach: LoggedUser;
+
+        beforeEach(async () => {
+          path = userProfilesHelper.getTestImagePath();
+
+          loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+          });
+          loggedInExternalCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE_EXTERNAL,
+          });
+          loggedInExternalCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH_EXTERNAL,
+          });
+
+          ({ loggedInCoach, loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+
+          ({
+            loggedInCoach: loggedInExternalCoach,
+            loggedInCandidate: loggedInExternalCandidate,
+          } = await userCandidatsHelper.associateCoachAndCandidate(
+            loggedInExternalCoach,
+            loggedInExternalCandidate,
+            true
+          ));
+        });
+
+        it('Should return 401, if user not logged in', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+
+          expect(response.status).toBe(401);
+        });
+        it('Should return 201, if admin uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 403, if admin uploads a profile picture for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 201, if external coach uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(
+              `${route}/profile/uploadImage/${loggedInExternalCoach.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 403, if external coach uploads a profile picture for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(
+              `${route}/profile/uploadImage/${loggedInExternalCandidate.user.id}`
+            )
+            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if coach uploads profile picture for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if candidate uploads profile picture for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 201, if candidate uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 400, if candidate uploads empty profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data');
+          expect(response.status).toBe(400);
+        });
+        it('Should return 201, if coach uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 400, if coach uploads empty profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(app.getHttpServer())
+            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('Content-Type', 'multipart/form-data');
+          expect(response.status).toBe(400);
+        });
+      });
+    });
     describe('U - Update many Users', () => {
       describe('/bulk - Bulk update users', () => {
         let loggedInAdmin: LoggedUser;
@@ -4984,6 +7080,8 @@ describe('Users', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
+            },
+            {
               userCandidat: { hidden: true },
             }
           );
@@ -5030,6 +7128,8 @@ describe('Users', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
+            },
+            {
               userCandidat: { hidden: true },
             }
           );
@@ -5054,6 +7154,8 @@ describe('Users', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
+            },
+            {
               userCandidat: { hidden: true },
             }
           );
