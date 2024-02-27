@@ -2,12 +2,12 @@ name: LinkedOut Backend Test
 
 on:
   push:
-  pull_request:
-    branches: [ master, develop ]
+    branches: [ master ]
+  pull_request: { }
   workflow_dispatch:
 
 jobs:
-   test:
+  test:
     runs-on: ubuntu-latest
     environment: entourage-job-back-test
 
@@ -33,10 +33,10 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
-      with:
-        node-version: '16.x'
-    - run: yarn install
-    - run: yarn db:migrate
-    - run: yarn test:e2e
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '16.x'
+      - run: yarn install
+      - run: yarn db:migrate
+      - run: yarn test:e2e
