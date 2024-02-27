@@ -26,7 +26,7 @@ import {
 } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
-  CandidateUserRoles,
+  AllUserRoles,
   CoachUserRoles,
   CVStatuses,
   Permissions,
@@ -76,9 +76,7 @@ export class CVsController {
     //   );
     // }
 
-    if (isRoleIncluded(CandidateUserRoles, role)) {
-      createCVDto.status = CVStatuses.PROGRESS.value;
-    } else if (isRoleIncluded(CoachUserRoles, role)) {
+    if (isRoleIncluded(AllUserRoles, role)) {
       if (
         createCVDto.status !== CVStatuses.PROGRESS.value &&
         createCVDto.status !== CVStatuses.PENDING.value
