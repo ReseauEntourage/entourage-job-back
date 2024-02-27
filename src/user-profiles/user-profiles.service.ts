@@ -8,14 +8,17 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
+import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
+import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import {
   CandidateUserRoles,
   CoachUserRoles,
+  CVStatuses,
   UserRole,
   UserRoles,
 } from 'src/users/users.types';
@@ -69,6 +72,8 @@ export class UserProfilesService {
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
     private s3Service: S3Service,
     private usersService: UsersService,
+    private userCandidatsService: UserCandidatsService,
+    private cvsService: CVsService,
     private messagesService: MessagesService
   ) {}
 
@@ -101,6 +106,17 @@ export class UserProfilesService {
 
   async findOneUser(userId: string) {
     return this.usersService.findOne(userId);
+  }
+
+  async findUserCandidateByCandidateId(candidateId: string) {
+    return this.userCandidatsService.findOneByCandidateId(candidateId);
+  }
+
+  async findHasPublishedCVByCandidateId(candidateId: string) {
+    return this.cvsService.findHasAtLeastOnceStatusByCandidateId(
+      candidateId,
+      CVStatuses.PUBLISHED.value
+    );
   }
 
   async findAll(

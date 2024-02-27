@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
 import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
+import { CVsModule } from 'src/cvs/cvs.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { MessagesModule } from 'src/messages/messages.module';
 import { UsersModule } from 'src/users/users.module';
@@ -31,6 +32,7 @@ import { UserProfilesService } from './user-profiles.service';
     UsersModule,
     AmbitionsModule,
     BusinessLinesModule,
+    CVsModule,
     AWSModule,
     MessagesModule,
   ],

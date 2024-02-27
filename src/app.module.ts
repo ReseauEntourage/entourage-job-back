@@ -94,11 +94,11 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       store: redisStore,
       ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
     }),
+    SharesModule,
+    // Put SharesModule before CVsModule
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
@@ -136,11 +136,11 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     },
   ],
   exports: [
+    SharesModule,
+    // Put SharesModule before CVsModule
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,

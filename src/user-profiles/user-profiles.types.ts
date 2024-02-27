@@ -22,4 +22,5 @@ export type PublicProfile = {
   searchAmbitions: Ambition[];
   lastSentMessage: Date;
   lastReceivedMessage: Date;
+  cvUrl?: string;
 };
