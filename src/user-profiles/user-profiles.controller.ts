@@ -254,20 +254,13 @@ export class UserProfilesController {
         );
 
       if (!userCandidate.hidden) {
-        const hasPublishedAtLeastOnce =
-          await this.userProfilesService.findHasPublishedCVByCandidateId(
-            userIdToGet
-          );
-
-        if (hasPublishedAtLeastOnce) {
-          return getPublicProfileFromUserAndUserProfile(
-            user,
-            userProfile,
-            lastSentMessage?.createdAt,
-            lastReceivedMessage?.createdAt,
-            userCandidate.url
-          );
-        }
+        return getPublicProfileFromUserAndUserProfile(
+          user,
+          userProfile,
+          lastSentMessage?.createdAt,
+          lastReceivedMessage?.createdAt,
+          userCandidate.url
+        );
       }
     }
 

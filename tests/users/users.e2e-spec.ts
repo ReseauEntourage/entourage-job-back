@@ -3110,7 +3110,7 @@ describe('Users', () => {
             })
           );
         });
-        it('Should return 200, and cvUrl if user profile is a candidate with published CV and not hidden', async () => {
+        it('Should return 200, and cvUrl if user profile is a candidate not hidden CV', async () => {
           const candidate = await userFactory.create(
             { role: UserRoles.CANDIDATE },
             {
@@ -3127,11 +3127,6 @@ describe('Users', () => {
               },
             }
           );
-
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PUBLISHED.value,
-          });
 
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(app.getHttpServer())
@@ -3163,11 +3158,6 @@ describe('Users', () => {
             }
           );
 
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PUBLISHED.value,
-          });
-
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(app.getHttpServer())
               .get(`${route}/profile/${candidate.id}`)
@@ -3180,42 +3170,7 @@ describe('Users', () => {
           );
           expect(response.body.cvUrl).toBeFalsy();
         });
-        it('Should return 200, and no cvUrl if user profile is a candidate with no published CV', async () => {
-          const candidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-              userCandidat: {
-                hidden: false,
-              },
-            }
-          );
-
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PROGRESS.value,
-          });
-
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(app.getHttpServer())
-              .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(candidate)
-            )
-          );
-          expect(response.body.cvUrl).toBeFalsy();
-        });
-        it('Should return 200, and no cvUrl if user profile is not candidate', async () => {
+        it('Should return 200, and no cvUrl if user profile is not a candidate', async () => {
           const coach = await userFactory.create(
             { role: UserRoles.COACH },
             {
