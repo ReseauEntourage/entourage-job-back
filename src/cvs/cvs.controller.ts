@@ -125,14 +125,11 @@ export class CVsController {
         await this.cvsService.sendCacheAllCVs();
         await this.cvsService.sendGenerateCVSearchString(candidateId);
 
-        const cvs = await this.cvsService.findAllVersionsByCandidateId(
-          candidateId
-        );
-
         const hasPublishedAtLeastOnce =
-          cvs?.filter(({ status }) => {
-            return status === CVStatuses.PUBLISHED.value;
-          }).length > 1;
+          await this.cvsService.findHasAtLeastOnceStatusByCandidateId(
+            candidateId,
+            CVStatuses.PUBLISHED.value
+          );
 
         if (!hasPublishedAtLeastOnce) {
           await this.cvsService.sendMailsAfterPublishing(candidateId);
