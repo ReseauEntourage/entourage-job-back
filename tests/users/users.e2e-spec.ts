@@ -3058,6 +3058,7 @@ describe('Users', () => {
               userProfile: {
                 department: 'Paris (75)',
                 searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'développeur' }] as Ambition[],
                 helpNeeds: [{ name: 'network' }] as HelpNeed[],
                 helpOffers: [{ name: 'network' }] as HelpOffer[],
@@ -3083,6 +3084,117 @@ describe('Users', () => {
               userProfilesHelper.mapUserProfileFromUser(randomUser)
             )
           );
+        });
+        it('Should return 200, and last contacted dates if user has contacted other user', async () => {
+          const internalMessageReceived = await internalMessageFactory.create({
+            senderUserId: randomUser.id,
+            addresseeUserId: loggedInUser.user.id,
+          });
+
+          const internalMessageSent = await internalMessageFactory.create({
+            senderUserId: loggedInUser.user.id,
+            addresseeUserId: randomUser.id,
+          });
+
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${randomUser.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userProfilesHelper.mapUserProfileFromUser(randomUser),
+              lastReceivedMessage:
+                internalMessageReceived.createdAt.toISOString(),
+              lastSentMessage: internalMessageSent.createdAt.toISOString(),
+            })
+          );
+        });
+        it('Should return 200, and cvUrl if user profile is a candidate not hidden CV', async () => {
+          const candidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+              userCandidat: {
+                hidden: false,
+              },
+            }
+          );
+
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${candidate.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userProfilesHelper.mapUserProfileFromUser(candidate),
+              cvUrl: candidate.candidat.url,
+            })
+          );
+        });
+        it('Should return 200, and no cvUrl if user profile is a candidate with hidden CV', async () => {
+          const candidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+              userCandidat: {
+                hidden: true,
+              },
+            }
+          );
+
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${candidate.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(
+              userProfilesHelper.mapUserProfileFromUser(candidate)
+            )
+          );
+          expect(response.body.cvUrl).toBeFalsy();
+        });
+        it('Should return 200, and no cvUrl if user profile is not a candidate', async () => {
+          const coach = await userFactory.create(
+            { role: UserRoles.COACH },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+            }
+          );
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${coach.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(
+              userProfilesHelper.mapUserProfileFromUser(coach)
+            )
+          );
+          expect(response.body.cvUrl).toBeFalsy();
         });
       });
       describe('/profile/recommendations/:userId - Get user recommendations', () => {

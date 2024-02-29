@@ -28,6 +28,7 @@ import {
 } from 'src/users/guards';
 import {
   AllUserRoles,
+  CandidateUserRoles,
   Permissions,
   UserRole,
   UserRoles,
@@ -165,7 +166,7 @@ export class UserProfilesController {
     const oneWeekAgo = moment().subtract(1, 'week');
 
     const currentRecommendedProfiles =
-      await this.userProfilesService.findRecommendationsByUserId(user.id);
+      await this.userProfilesService.findRecommendationsByUserId(userId);
 
     const oneOfCurrentRecommendedProfilesIsNotAvailable =
       currentRecommendedProfiles.some((recommendedProfile) => {
@@ -178,9 +179,9 @@ export class UserProfilesController {
       currentRecommendedProfiles.length <= 3 ||
       oneOfCurrentRecommendedProfilesIsNotAvailable
     ) {
-      await this.userProfilesService.removeRecommendationsByUserId(user.id);
+      await this.userProfilesService.removeRecommendationsByUserId(userId);
 
-      await this.userProfilesService.updateRecommendationsByUserId(user.id);
+      await this.userProfilesService.updateRecommendationsByUserId(userId);
 
       await this.userProfilesService.updateByUserId(userId, {
         lastRecommendationsDate: moment().toDate(),
@@ -188,7 +189,7 @@ export class UserProfilesController {
     }
 
     const recommendedProfiles =
-      await this.userProfilesService.findRecommendationsByUserId(user.id);
+      await this.userProfilesService.findRecommendationsByUserId(userId);
 
     return Promise.all(
       recommendedProfiles.map(
@@ -229,6 +230,14 @@ export class UserProfilesController {
       userIdToGet
     );
 
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    if (user.role === UserRoles.ADMIN) {
+      throw new BadRequestException();
+    }
+
     const lastSentMessage = await this.userProfilesService.getLastContact(
       currentUserId,
       userIdToGet
@@ -238,12 +247,21 @@ export class UserProfilesController {
       currentUserId
     );
 
-    if (!user || !userProfile) {
-      throw new NotFoundException();
-    }
+    if (isRoleIncluded(CandidateUserRoles, user.role)) {
+      const userCandidate =
+        await this.userProfilesService.findUserCandidateByCandidateId(
+          userIdToGet
+        );
 
-    if (user.role === UserRoles.ADMIN) {
-      throw new BadRequestException();
+      if (!userCandidate.hidden) {
+        return getPublicProfileFromUserAndUserProfile(
+          user,
+          userProfile,
+          lastSentMessage?.createdAt,
+          lastReceivedMessage?.createdAt,
+          userCandidate.url
+        );
+      }
     }
 
     return getPublicProfileFromUserAndUserProfile(
