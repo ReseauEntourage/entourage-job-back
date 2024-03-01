@@ -2,7 +2,7 @@ name: LinkedOut Backend Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
   pull_request: { }
   workflow_dispatch:
 
