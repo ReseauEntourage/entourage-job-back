@@ -47,6 +47,7 @@ import {
 import { InternalMessage } from 'src/messages/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
+import { ReadDocuments } from 'src/read-documents/models';
 import { Share } from 'src/shares/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
@@ -199,6 +200,9 @@ export class User extends HistorizedModel {
 
   @HasMany(() => InternalMessage, 'senderUserId')
   sentMessages: InternalMessage[];
+
+  @HasMany(() => ReadDocuments, 'UserId')
+  ReadDocuments: ReadDocuments[];
 
   @BeforeCreate
   @BeforeUpdate
