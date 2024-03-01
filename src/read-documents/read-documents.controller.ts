@@ -10,9 +10,9 @@ import {
 } from '@nestjs/common';
 import { Self, SelfGuard } from 'src/users/guards';
 import { ReadDocumentsService } from './read-documents.service';
-import { DocumentsTypes, DocumentsTypesArray } from './read-documents.types';
+import { DocumentType, DocumentsTypesArray } from './read-documents.types';
 
-@Controller('read-documents')
+@Controller('readDocuments')
 export class ReadDocumentsController {
   constructor(private readonly readDocumentsService: ReadDocumentsService) {}
 
@@ -21,7 +21,7 @@ export class ReadDocumentsController {
   @Post('/read/:userId')
   async createReadDocument(
     @Param('userId', new ParseUUIDPipe()) userId: string,
-    @Body('documentName') documentName: DocumentsTypes
+    @Body('documentName') documentName: DocumentType
   ) {
     const user = await this.readDocumentsService.findOneUser(userId);
 

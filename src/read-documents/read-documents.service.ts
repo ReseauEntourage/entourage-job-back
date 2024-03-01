@@ -1,26 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { UsersService } from 'src/users/users.service';
-import { ReadDocuments } from './models';
+import { ReadDocument } from './models';
 
 @Injectable()
 export class ReadDocumentsService {
   constructor(
-    @InjectModel(ReadDocuments)
-    private readDocuments: typeof ReadDocuments,
+    @InjectModel(ReadDocument)
+    private readDocuments: typeof ReadDocument,
     private usersService: UsersService
   ) {}
 
   async findOneUser(userId: string) {
-    const user = await this.usersService.findOne(userId);
-    return user;
+    return this.usersService.findOne(userId);
   }
 
   async createReadDocument(UserId: string, documentName: string) {
-    const readDocument = await this.readDocuments.create({
+    return this.readDocuments.create({
       UserId,
       documentName,
     });
-    return readDocument;
   }
 }

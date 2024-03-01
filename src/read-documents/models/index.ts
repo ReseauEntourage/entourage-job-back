@@ -1,1 +1,1 @@
-export { ReadDocuments } from './read-documents.model';
+export { ReadDocument } from './read-document.model';

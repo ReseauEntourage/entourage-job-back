@@ -1,6 +1,6 @@
 import { Includeable } from 'sequelize';
 import { Organization } from 'src/organizations/models';
-import { ReadDocuments } from 'src/read-documents/models';
+import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
@@ -64,7 +64,8 @@ export const UserCandidatInclude: Includeable[] = [
     include: getUserProfileInclude(),
   },
   {
-    model: ReadDocuments,
+    model: ReadDocument,
+    as: 'readDocuments',
     attributes: ['documentName', 'createdAt'],
   },
 ];

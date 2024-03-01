@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UsersModule } from 'src/users/users.module';
-import { ReadDocuments } from './models';
+import { ReadDocument } from './models';
 import { ReadDocumentsController } from './read-documents.controller';
 import { ReadDocumentsService } from './read-documents.service';
 
 @Module({
-  imports: [SequelizeModule.forFeature([ReadDocuments]), UsersModule],
+  imports: [SequelizeModule.forFeature([ReadDocument]), UsersModule],
   providers: [ReadDocumentsService],
   controllers: [ReadDocumentsController],
   exports: [SequelizeModule, ReadDocumentsService],

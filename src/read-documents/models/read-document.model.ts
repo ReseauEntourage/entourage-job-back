@@ -12,11 +12,11 @@ import {
   Table,
   Model,
 } from 'sequelize-typescript';
-import { DocumentsTypes } from '../read-documents.types';
+import { DocumentType } from '../read-documents.types';
 import { User } from 'src/users/models';
 
-@Table({ tableName: 'ReadDocuments' })
-export class ReadDocuments extends Model {
+@Table({ tableName: 'ReadDocument' })
+export class ReadDocument extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -33,7 +33,7 @@ export class ReadDocuments extends Model {
 
   @AllowNull(false)
   @Column
-  documentName: DocumentsTypes;
+  documentName: DocumentType;
 
   @BelongsTo(() => User, 'UserId')
   user: User;

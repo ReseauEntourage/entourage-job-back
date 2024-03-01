@@ -1,6 +1,6 @@
-export type DocumentsTypes = 'CharteEthique' | 'ConseilsPosture';
+export type DocumentType = 'CharteEthique' | 'ConseilsPosture';
 
-export const DocumentsTypesArray: DocumentsTypes[] = [
+export const DocumentsTypesArray: DocumentType[] = [
   'CharteEthique',
   'ConseilsPosture',
 ];
