@@ -33,9 +33,6 @@ export class ReadDocumentsController {
       throw new BadRequestException();
     }
 
-    const createdReadDocument =
-      await this.readDocumentsService.createReadDocument(userId, documentName);
-
-    return createdReadDocument;
+    return this.readDocumentsService.createReadDocument(userId, documentName);
   }
 }
