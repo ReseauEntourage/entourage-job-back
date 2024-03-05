@@ -98,7 +98,7 @@ describe('Read Documents', () => {
         expect(response.status).toBe(403);
       });
 
-      it('Should return 403 if no user logged', async () => {
+      it('Should return 401 if no user logged', async () => {
         const response: APIResponse<
           ReadDocumentsController['createReadDocument']
         > = await request(app.getHttpServer())

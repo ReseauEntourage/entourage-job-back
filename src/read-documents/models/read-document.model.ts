@@ -15,7 +15,7 @@ import {
 import { DocumentType } from '../read-documents.types';
 import { User } from 'src/users/models';
 
-@Table({ tableName: 'ReadDocument' })
+@Table({ tableName: 'ReadDocuments' })
 export class ReadDocument extends Model {
   @IsUUID(4)
   @PrimaryKey
