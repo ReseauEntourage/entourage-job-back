@@ -365,6 +365,7 @@ describe('Users', () => {
               updatedAt: coachUpdatedAt,
               createdAt: coachCreatedAt,
               lastConnection: coachLastConnection,
+              readDocuments: [],
               organization,
               candidat,
               coaches,
@@ -460,6 +461,7 @@ describe('Users', () => {
               updatedAt: candidateUpdatedAt,
               createdAt: candidateCreatedAt,
               lastConnection: candidateLastConnection,
+              readDocuments: [],
               organization,
               candidat,
               coaches,
@@ -850,6 +852,7 @@ describe('Users', () => {
               candidat,
               coaches,
               organization: coachOrganization,
+              readDocuments: coachReadDocuments,
               ...restCoach
             } = coach;
 
@@ -863,6 +866,7 @@ describe('Users', () => {
               createdAt,
               lastConnection,
               candidat: candidateCandidat,
+              readDocuments: candidateReadDocuments,
               ...restCandidate
             } = candidate;
 
@@ -874,6 +878,7 @@ describe('Users', () => {
               coaches: otherExternalCandidateCoaches,
               lastConnection: otherCandidateLastConnection,
               organization: otherCandidateOrganization,
+              readDocuments: otherCandidateReadDocuments,
               ...restOtherExternalCandidate
             } = otherExternalCandidate;
 
@@ -910,6 +915,7 @@ describe('Users', () => {
 
             expect(coachFromDB).toEqual(
               expect.objectContaining({
+                // coachReadDocuments,
                 ...restCoach,
                 coaches: expect.arrayContaining([
                   expect.objectContaining({
@@ -1031,6 +1037,7 @@ describe('Users', () => {
               candidat,
               coaches,
               organization: candidateOrganization,
+              readDocuments,
               ...candidate
             } = await userFactory.create(
               {
@@ -1707,6 +1714,7 @@ describe('Users', () => {
               candidat,
               coaches,
               organization: coachOrganization,
+              readDocuments: coachReadDocuments,
               ...restExternalLoggedInCoach
             },
           } = externalLoggedInCoach;
@@ -1724,6 +1732,7 @@ describe('Users', () => {
               candidat: candidate1Candidat,
               coaches: candidate1Coaches,
               organization: candidate1Organization,
+              readDocuments: candidate1ReadDocuments,
               ...restExternalLoggedInCandidate1
             },
           } = externalLoggedInCandidate1;
@@ -1741,6 +1750,7 @@ describe('Users', () => {
               candidat: candidate2Candidat,
               coaches: candidate2Coaches,
               organization: candidate2Organization,
+              readDocuments: candidate2ReadDocuments,
               ...restExternalLoggedInCandidate2
             },
           } = externalLoggedInCandidate2;
@@ -5944,6 +5954,7 @@ describe('Users', () => {
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
+            readDocuments,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -5974,6 +5985,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization,
+            readDocuments,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6116,6 +6128,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization: candidateOrganization,
+            readDocuments: candidateReadDocuments,
             ...restExternalCandidate
           } = externalCandidate;
 
@@ -6144,6 +6157,7 @@ describe('Users', () => {
             lastConnection: otherCandidateLastConnection,
             createdAt: otherCandidateCreatedAt,
             organization: otherCandidateOrganization,
+            readDocuments: otherCandidateReadDocuments,
             ...restOtherExternalCandidate
           } = otherExternalCandidate;
 
@@ -6153,6 +6167,7 @@ describe('Users', () => {
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
+            readDocuments: externalCoachReadDocuments,
             ...restExternalCoach
           } = externalCoach;
 
@@ -6208,6 +6223,7 @@ describe('Users', () => {
             lastConnection: otherCandidateLastConnection,
             createdAt: otherCandidateCreatedAt,
             organization: otherCandidateOrganization,
+            readDocuments: otherCandidateReadDocuments,
             ...restOtherExternalCandidate
           } = await userFactory.create(
             {
@@ -6224,6 +6240,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization: candidateOrganization,
+            readDocuments: candidateReadDocuments,
             ...restExternalCandidate
           } = externalCandidate;
 

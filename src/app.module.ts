@@ -33,6 +33,7 @@ import { MailsModule } from './mails/mails.module';
 import { MessagesModule } from './messages/messages.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SMSModule } from './sms/sms.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
@@ -124,6 +125,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ContactsModule,
     OrganizationsModule,
     MessagesModule,
+    ReadDocumentsModule,
   ],
   providers: [
     {
