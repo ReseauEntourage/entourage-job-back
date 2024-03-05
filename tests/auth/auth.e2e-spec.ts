@@ -311,7 +311,6 @@ describe('Auth', () => {
         organization: null,
         lastConnection: response.body.lastConnection,
         createdAt: response.body.createdAt,
-        ReadDocuments: [],
       });
     });
     it('Should return 401, if invalid token', async () => {

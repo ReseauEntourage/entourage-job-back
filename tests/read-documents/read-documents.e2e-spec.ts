@@ -21,7 +21,7 @@ describe('Read Documents', () => {
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
 
-  const routeReadDocuments = '/read-documents';
+  const routeReadDocuments = '/readDocuments';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -96,6 +96,17 @@ describe('Read Documents', () => {
             documentName: 'CharteEthique',
           });
         expect(response.status).toBe(403);
+      });
+
+      it('Should return 403 if no user logged', async () => {
+        const response: APIResponse<
+          ReadDocumentsController['createReadDocument']
+        > = await request(app.getHttpServer())
+          .post(`${routeReadDocuments}/read/${userBis.id}`)
+          .send({
+            documentName: 'CharteEthique',
+          });
+        expect(response.status).toBe(401);
       });
     });
   });
