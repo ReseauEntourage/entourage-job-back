@@ -2,7 +2,7 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
 import { UserRole } from 'src/users/users.types';
-import { HelpOffer } from './models';
+import { HelpNeed, HelpOffer } from './models';
 
 export type HelpValue = 'tips' | 'interview' | 'cv' | 'network' | 'event';
 
@@ -15,7 +15,7 @@ export type PublicProfile = {
   currentJob: string;
   isAvailable: boolean;
   helpOffers: HelpOffer[];
-  helpNeeds: HelpOffer[];
+  helpNeeds: HelpNeed[];
   description: string;
   searchBusinessLines: BusinessLine[];
   networkBusinessLines: BusinessLine[];
