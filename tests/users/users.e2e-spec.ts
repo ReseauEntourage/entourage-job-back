@@ -9,18 +9,22 @@ import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Experience } from 'src/common/experiences/models';
+import { Department } from 'src/common/locations/locations.types';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
+import { CandidateYesNoNSPP } from 'src/contacts/contacts.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
 import { HelpNeed, HelpOffer, UserProfile } from 'src/user-profiles/models';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
+import { HelpValue } from 'src/user-profiles/user-profiles.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
-import { CVStatuses, UserRoles } from 'src/users/users.types';
+import { CVStatuses, Programs, UserRoles } from 'src/users/users.types';
+import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
@@ -1480,6 +1484,359 @@ describe('Users', () => {
                 });
             expect(response.status).toBe(400);
           });
+        });
+      });
+      describe('/registration - Create user through registration', () => {
+        it('Should return 200 and a created candidate if valid candidate data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const expectations: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            expectations: expectations,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body.token).toBeDefined();
+          expect(response.body.user).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+                helpNeeds: expect.arrayContaining(
+                  userProfileValues.expectations.map((expectation) =>
+                    expect.objectContaining(expectation)
+                  )
+                ),
+              }),
+            })
+          );
+        });
+        it('Should return 200 and a created coach if valid coach data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            campaign: '1234',
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body.token).toBeDefined();
+          expect(response.body.user).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+              }),
+            })
+          );
+        });
+        it('Should return 200 and a created candidate if missing optional fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body.token).toBeDefined();
+          expect(response.body.user).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+              }),
+            })
+          );
+        });
+        it('Should return 400 when candidate has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when coach has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when user has invalid email', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: 'email.fr',
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when user has invalid phone', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: '1234',
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when user has wrong role', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH_EXTERNAL },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 409 when the email already exist', async () => {
+          const existingUser = await userFactory.create({}, {}, true);
+
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: existingUser.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.LONG,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(409);
         });
       });
     });

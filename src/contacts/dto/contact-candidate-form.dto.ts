@@ -14,6 +14,7 @@ import {
   CandidateHelpWithValue,
   CandidateProfessionalSituation,
   CandidateResource,
+  CandidateYesNoNSPPValue,
   CandidateYesNoValue,
   HeardAboutValue,
 } from 'src/contacts/contacts.types';
@@ -97,7 +98,7 @@ export class ContactCandidateFormDto {
 
   @ApiProperty()
   @IsString()
-  workingRight: CandidateYesNoValue;
+  workingRight: CandidateYesNoNSPPValue;
 
   @ApiProperty()
   @IsString()

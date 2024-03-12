@@ -1,6 +1,6 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
-import { OpportunityUserEvent } from '../models/opportunity-user-event.model';
+import { OpportunityUserEvent } from '../models';
 
 export class CreateOpportunityUserEventDto extends PickType(
   OpportunityUserEvent,
