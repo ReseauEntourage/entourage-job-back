@@ -207,7 +207,7 @@ export class UsersCreationController {
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
-        helpNeeds: createUserRegistrationDto.expectations,
+        helpNeeds: createUserRegistrationDto.helpNeeds,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(

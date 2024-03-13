@@ -1494,7 +1494,7 @@ describe('Users', () => {
             false
           );
 
-          const expectations: { name: HelpValue }[] = [
+          const helpNeeds: { name: HelpValue }[] = [
             { name: 'cv' },
             { name: 'interview' },
           ];
@@ -1509,7 +1509,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            expectations: expectations,
+            helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1537,7 +1537,7 @@ describe('Users', () => {
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
                 helpNeeds: expect.arrayContaining(
-                  userProfileValues.expectations.map((expectation) =>
+                  userProfileValues.helpNeeds.map((expectation) =>
                     expect.objectContaining(expectation)
                   )
                 ),

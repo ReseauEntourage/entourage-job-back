@@ -42,7 +42,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  expectations?: HelpNeed[];
+  helpNeeds?: HelpNeed[];
 
   @ApiProperty()
   @IsString()
