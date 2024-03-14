@@ -436,11 +436,14 @@ export class UserProfilesService {
       ? [UserRoles.COACH]
       : CandidateUserRoles;
 
-    const sameRegionDepartmentsOptions = Departments.filter(
-      ({ region }) =>
-        region ===
-        Departments.find(({ name }) => userProfile.department === name).region
-    ).map(({ name }) => name);
+    const sameRegionDepartmentsOptions = userProfile.department
+      ? Departments.filter(
+          ({ region }) =>
+            region ===
+            Departments.find(({ name }) => userProfile.department === name)
+              .region
+        ).map(({ name }) => name)
+      : Departments.map(({ name }) => name);
 
     const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
     const businessLines = [

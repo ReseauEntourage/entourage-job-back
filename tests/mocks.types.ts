@@ -98,7 +98,8 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findOrCreateLeadFromExternalMessage: jest.fn(),
   createCampaignMemberInfoCo: jest.fn(),
   createOrUpdateInscriptionCandidateSalesforceLead: jest.fn(),
-  getCampaigns: jest.fn(),
+  getCandidateCampaigns: jest.fn(),
+  getCoachCampaigns: jest.fn(),
   checkIfConnected: jest.fn(),
 } as const;
 

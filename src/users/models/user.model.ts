@@ -119,7 +119,7 @@ export class User extends HistorizedModel {
   @ApiProperty()
   @IsNumber()
   @AllowNull(false)
-  @Default(Genders.MALE)
+  @Default(Genders.OTHER)
   @Column
   gender: Gender;
 

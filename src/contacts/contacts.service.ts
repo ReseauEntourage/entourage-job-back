@@ -57,9 +57,15 @@ export class ContactsService {
     return this.mailsService.sendContactUsMail(contactUsFormDto);
   }
 
-  async getCampaignsFromSF() {
+  async getCandidateCampaignsFromSF() {
     if (process.env.ENABLE_SF === 'true') {
-      return this.salesforceService.getCampaigns();
+      return this.salesforceService.getCandidateCampaigns();
+    }
+  }
+
+  async getCoachCampaignsFromSF() {
+    if (process.env.ENABLE_SF === 'true') {
+      return this.salesforceService.getCoachCampaigns();
     }
   }
 }

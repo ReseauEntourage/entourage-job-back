@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { OpportunityUserEvent } from '../../src/opportunities/models/opportunity-user-event.model';
 import { OpportunityUser } from 'src/opportunities/models';
+import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 
 @Injectable()
 export class OpportunityUsersHelper {

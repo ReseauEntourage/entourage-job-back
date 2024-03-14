@@ -1536,7 +1536,7 @@ export class SalesforceService {
     return this.findOrCreateLeadFromInscriptionCandidateForm(lead);
   }
 
-  async getCampaigns() {
+  async getCandidateCampaigns() {
     this.setIsWorker(false);
     await this.checkIfConnected();
 
@@ -1581,6 +1581,52 @@ export class SalesforceService {
               record.Code_postal__c ? ` ${record.Code_postal__c}` : ''
             }`
           : null,
+        time: moment
+          .tz(
+            `${record.StartDate} ${record.Heure_de_d_but__c?.replace('Z', '')}`,
+            timeZone
+          )
+          .format(),
+      };
+    });
+  }
+
+  async getCoachCampaigns() {
+    this.setIsWorker(false);
+    await this.checkIfConnected();
+
+    const {
+      records: timeZoneRecords,
+    }: { records: { TimeZoneSidKey: string }[] } = await this.salesforce.query(
+      `SELECT TimeZoneSidKey
+       FROM Organization ${
+         process.env.SF_ORGANIZATION_ID
+           ? `WHERE Id = '${process.env.SF_ORGANIZATION_ID}'`
+           : ''
+       } LIMIT 1`
+    );
+
+    const timeZone = timeZoneRecords[0]?.TimeZoneSidKey;
+
+    const { records }: { records: SalesforceCampaign[] } =
+      await this.salesforce.query(
+        `SELECT Id,
+                StartDate,
+                Heure_de_d_but__c
+         FROM ${ObjectNames.CAMPAIGN}
+         WHERE ParentId = '${process.env.SF_WEBINAIRE_COACH_CAMPAIGN_ID}'
+           AND StartDate > TODAY
+           AND IsActive = true
+           AND Status != 'Aborted'
+         ORDER BY StartDate asc`
+      );
+
+    // Remove the "Z" behind the time fetched from Salesforce to use it as is and not as UTC
+    // Parse it using the timezone from Salesforce to manage DST
+
+    return records.map((record) => {
+      return {
+        id: record.Id,
         time: moment
           .tz(
             `${record.StartDate} ${record.Heure_de_d_but__c?.replace('Z', '')}`,

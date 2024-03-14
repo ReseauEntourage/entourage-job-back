@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { MailsService } from 'src/mails/mails.service';
-import { CreateUserDto } from 'src/users/dto';
+import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
@@ -11,11 +12,12 @@ export class UsersCreationService {
   constructor(
     private authService: AuthService,
     private usersService: UsersService,
+    private userProfilesService: UserProfilesService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService
   ) {}
 
-  async createUser(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: Partial<User>) {
     return this.usersService.create(createUserDto);
   }
 
@@ -25,6 +27,10 @@ export class UsersCreationService {
 
   async findOneUserCandidatByCandidateId(candidateId: string) {
     return this.userCandidatsService.findOneByCandidateId(candidateId);
+  }
+
+  async loginUser(user: User) {
+    return this.authService.login(user);
   }
 
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
@@ -59,6 +65,16 @@ export class UsersCreationService {
     return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
       candidatesAndCoachesIds,
       isExternalCandidate
+    );
+  }
+
+  async updateUserProfileByUserId(
+    userId: string,
+    updateUserProfileDto: Partial<UserProfile>
+  ) {
+    return this.userProfilesService.updateByUserId(
+      userId,
+      updateUserProfileDto
     );
   }
 }
