@@ -1,3 +1,4 @@
+import { UserRole } from '../../users/users.types';
 import {
   BusinessLineFilters,
   BusinessLineValue,
@@ -511,7 +512,7 @@ export interface ContactProps {
   phone?: string;
   position?: string;
   department: Department;
-  companySfId: string;
+  companySfId?: string;
 }
 
 export interface SalesforceContact {
@@ -624,13 +625,13 @@ export interface CandidateInscriptionLeadProps {
   birthdate: Date;
   email: string;
   firstName: string;
-  heardAbout: HeardAboutValue;
+  heardAbout?: HeardAboutValue;
   infoCo: string;
   lastName: string;
-  location: string;
+  department: Department;
   phone: string;
   workingRight: CandidateYesNoNSPPValue;
-  tsPrescripteur: string;
+  tsPrescripteur?: string;
 }
 
 export interface CandidateAndWorkerLeadProps {
@@ -737,4 +738,13 @@ export interface CoachSalesforceLead {
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
+}
+
+export interface UserProps {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  department: Department;
+  role: UserRole;
 }

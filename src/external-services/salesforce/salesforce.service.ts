@@ -3,12 +3,15 @@ import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import moment from 'moment-timezone';
 
+import { CandidateYesNoNSPPValue } from '../../contacts/contacts.types';
+import { UsersService } from '../../users/users.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { ExternalMessage } from 'src/messages/models';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
+import { Program, UserRoles } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import {
   AccountProps,
@@ -47,6 +50,7 @@ import {
   SalesforceProcess,
   SalesforceTask,
   TaskProps,
+  UserProps,
 } from './salesforce.types';
 
 import {
@@ -83,7 +87,8 @@ export class SalesforceService {
   constructor(
     private opportunitiesService: OpportunitiesService,
     private opportunityUsersService: OpportunityUsersService,
-    private messagesService: MessagesService
+    private messagesService: MessagesService,
+    private usersService: UsersService
   ) {}
 
   setIsWorker(isWorker: boolean) {
@@ -1012,12 +1017,11 @@ export class SalesforceService {
     heardAbout,
     infoCo,
     lastName,
-    location,
+    department,
     phone,
     workingRight,
     tsPrescripteur,
   }: CandidateInscriptionLeadProps) {
-    const department = getDepartmentFromPostalCode(location);
     const zone = getZoneFromDepartment(department);
 
     const leadToCreate = {
@@ -1451,6 +1455,19 @@ export class SalesforceService {
     };
   }
 
+  async findContactFromUserId(userId: string): Promise<UserProps> {
+    const userDb = await this.usersService.findOne(userId);
+
+    return {
+      firstName: userDb.firstName,
+      lastName: userDb.lastName,
+      email: userDb.email,
+      phone: userDb.phone,
+      department: userDb.userProfile.department,
+      role: userDb.role,
+    };
+  }
+
   async createOrUpdateSalesforceOpportunity(
     opportunityId: string | string[],
     isSameOpportunity: boolean
@@ -1515,6 +1532,39 @@ export class SalesforceService {
       );
       return this.createOrUpdateSalesforceTask(taskToCreate);
     }
+  }
+
+  async createOrUpdateSalesforceUser(
+    userId: string,
+    otherInfo: {
+      program: Program;
+      birthDate: Date;
+      campaign?: string;
+      workingRight?: CandidateYesNoNSPPValue;
+    }
+  ) {
+    this.setIsWorker(true);
+
+    const userToCreate = await this.findContactFromUserId(userId);
+
+    if (userToCreate.role === UserRoles.CANDIDATE) {
+      const leadSfId = await this.findOrCreateLeadFromInscriptionCandidateForm({
+        ...userToCreate,
+        birthdate: otherInfo.birthDate,
+        infoCo: otherInfo.campaign,
+        workingRight: otherInfo.workingRight,
+      });
+    }
+
+    if (userToCreate.role === UserRoles.COACH) {
+      const leadSfId = await this.findOrCreateLead(
+        userToCreate,
+        ContactRecordTypesIds.COACH
+      );
+    }
+
+    // TODO Convert Lead to Contact
+    // TODO Casquette
   }
 
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {

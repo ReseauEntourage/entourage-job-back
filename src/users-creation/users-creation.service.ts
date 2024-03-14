@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
+import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { MailsService } from 'src/mails/mails.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
+import { CreateUserRegistrationDto } from './dto';
 
 @Injectable()
 export class UsersCreationService {
@@ -14,11 +16,25 @@ export class UsersCreationService {
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private userCandidatsService: UserCandidatsService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private externalDatabasesService: ExternalDatabasesService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
     return this.usersService.create(createUserDto);
+  }
+
+  async createExternalDBUser(
+    createdUserId: string,
+    otherInfo: Pick<
+      CreateUserRegistrationDto,
+      'program' | 'workingRight' | 'campaign' | 'birthDate'
+    >
+  ) {
+    return this.externalDatabasesService.createExternalDBUser(
+      createdUserId,
+      otherInfo
+    );
   }
 
   async findOneUser(id: string) {
