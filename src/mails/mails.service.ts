@@ -10,8 +10,8 @@ import {
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
 import {
-  ExternalMessageSubjectFilters,
   ExternalMessageContactTypeFilters,
+  ExternalMessageSubjectFilters,
 } from 'src/messages/messages.types';
 import { InternalMessage } from 'src/messages/models';
 import { ExternalMessage } from 'src/messages/models/external-message.model';
@@ -25,10 +25,10 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import {
-  UserRoles,
   CandidateUserRoles,
   CoachUserRoles,
   UserRole,
+  UserRoles,
 } from 'src/users/users.types';
 import {
   getCandidateFromCoach,
@@ -78,6 +78,34 @@ export class MailsService {
         token,
       },
     });
+  }
+
+  async sendWelcomeMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
+
+    if (user.role === UserRoles.COACH) {
+      return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+        toEmail: user.email,
+        replyTo: candidatesAdminMail,
+        templateId: MailjetTemplates.WELCOME_COACH,
+        variables: {
+          ..._.omitBy(user, _.isNil),
+        },
+      });
+    }
+
+    if (user.role === UserRoles.CANDIDATE) {
+      return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+        toEmail: user.email,
+        replyTo: candidatesAdminMail,
+        templateId: MailjetTemplates.WELCOME_CANDIDATE,
+        variables: {
+          ..._.omitBy(user, _.isNil),
+        },
+      });
+    }
   }
 
   async sendCVPreparationMail(candidate: User) {
