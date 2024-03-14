@@ -234,10 +234,11 @@ export const LeadAccomodations: {
 } as const;
 
 export const LeadGender: {
-  [K in CandidateGender]: string;
+  [K in CandidateGender]: string | null;
 } = {
   [CandidateGenders.MALE]: 'Homme',
   [CandidateGenders.FEMALE]: 'Femme',
+  [CandidateGenders.OTHER]: '',
 } as const;
 
 export const LeadYesNo: {
@@ -674,7 +675,7 @@ export interface CandidateSalesforceLead {
   FirstName: string;
   Email?: string;
   Phone: string;
-  Genre__c: string;
+  Genre__c: CandidateGender | null;
   Date_de_naissance__c?: Date;
   Situation_administrative__c?: string;
   Droit_de_travailler_en_France__c: string;
