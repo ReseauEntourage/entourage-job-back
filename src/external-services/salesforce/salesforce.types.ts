@@ -1,4 +1,3 @@
-import { UserRole } from '../../users/users.types';
 import {
   BusinessLineFilters,
   BusinessLineValue,
@@ -35,6 +34,7 @@ import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
+import { NormalUserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -46,6 +46,7 @@ export const ErrorCodes = {
   FIELD_FILTER_VALIDATION_EXCEPTION: 'FIELD_FILTER_VALIDATION_EXCEPTION',
   NOT_FOUND: 'NOT_FOUND',
   UNABLE_TO_LOCK_ROW: 'UNABLE_TO_LOCK_ROW',
+  FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION:',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
@@ -104,6 +105,8 @@ export const ContactRecordTypesIds = {
   CANDIDATE: '0127Q000000UbNVQA0',
   COMPANY: '0127Q000000UomWQAS',
   ASSOCIATION: '0127Q000000Uhq0QAC',
+  PRECARIOUS: '012Aa000001EmAfIAK',
+  NEIGHBOR: '012Aa000001HBL3IAO',
 } as const;
 
 export type ContactRecordType =
@@ -122,6 +125,7 @@ export type LeadRecordType =
 export const AccountRecordTypesIds = {
   COMPANY: '0127Q000000TZ4YQAW',
   ASSOCIATION: '0127Q000000TZ4sQAG',
+  HOUSEHOLD: '012Aa000000WJ7ZIAW',
 } as const;
 
 export type AccountRecordType =
@@ -152,6 +156,13 @@ export type SalesforceLeads = {
 };
 
 export type SalesforceLead<T extends LeadRecordType> = SalesforceLeads[T];
+
+export const ContactRecordTypeFromRole: {
+  [K in NormalUserRole]: ContactRecordType;
+} = {
+  [UserRoles.CANDIDATE]: ContactRecordTypesIds.PRECARIOUS,
+  [UserRoles.COACH]: ContactRecordTypesIds.NEIGHBOR,
+};
 
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
@@ -279,6 +290,17 @@ export const LeadBusinessLines: {
   fjr: findConstantFromValue('fjr', BusinessLineFilters).label,
   sm: findConstantFromValue('sm', BusinessLineFilters).label,
 } as const;
+
+export type ProgramString =
+  | 'PRO Coach Coup de pouce'
+  | 'PRO Candidat Coup de pouce'
+  | 'PRO Coach 360'
+  | 'PRO Candidat 360';
+
+type Casquette = `${
+  | 'Contact Entreprise/Financeur'
+  | ProgramString
+  | 'PRO Candidat 360'}${`${string}` | undefined}`;
 
 export interface SalesforceBinome {
   Id?: string;
@@ -506,27 +528,33 @@ export interface ExternalMessageProps {
 }
 
 export interface ContactProps {
+  id?: string;
   firstName?: string;
   lastName?: string;
   email: string;
   phone?: string;
+  birthDate?: Date;
   position?: string;
   department: Department;
   companySfId?: string;
+  casquette: Casquette;
 }
 
 export interface SalesforceContact {
   Id?: string;
   LastName: string;
   FirstName: string;
+  Date_de_naissance__c?: Date;
   Email: string;
   Phone: string;
   Title: string;
   AccountId: string;
-  Casquettes_r_les__c: 'Contact Entreprise/Financeur';
+  Casquettes_r_les__c: Casquette;
   Reseaux__c: 'LinkedOut';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
+  MailingPostalCode?: string;
+  ID_App_Entourage_Pro__c?: string;
   Source__c: 'Lead entrant';
 }
 
@@ -741,10 +769,15 @@ export interface CoachSalesforceLead {
 }
 
 export interface UserProps {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   department: Department;
-  role: UserRole;
+  role: NormalUserRole;
+  birthDate: Date;
+  program: string;
+  workingRight?: CandidateYesNoNSPPValue;
+  campaign?: string;
 }
