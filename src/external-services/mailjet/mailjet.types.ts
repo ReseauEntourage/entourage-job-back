@@ -55,6 +55,8 @@ export interface MailjetContactProperties {
 
 export const MailjetTemplates = {
   ACCOUNT_CREATED: 3920498,
+  WELCOME_COACH: 5786622,
+  WELCOME_CANDIDATE: 5786606,
   CV_PREPARE: 3782475,
   CV_REMINDER_10: 3782934,
   CV_REMINDER_20: 3917533,
