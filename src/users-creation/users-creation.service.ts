@@ -44,6 +44,12 @@ export class UsersCreationService {
     return this.mailsService.sendNewAccountMail(user, token);
   }
 
+  async sendWelcomeMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
+    return this.mailsService.sendWelcomeMail(user);
+  }
+
   async sendMailsAfterMatching(candidateId: string) {
     return this.usersService.sendMailsAfterMatching(candidateId);
   }

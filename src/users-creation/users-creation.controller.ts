@@ -228,17 +228,15 @@ export class UsersCreationController {
 
       const loggedUser = await this.usersCreationService.loginUser(createdUser);
 
-      // TODO use new mail template
-      await this.usersCreationService.sendNewAccountMail(
-        {
+      if (createUserRegistrationDto.program === Programs.SHORT) {
+        await this.usersCreationService.sendWelcomeMail({
           id: createdUser.id,
           firstName: createdUser.firstName,
           role: createdUser.role,
           zone: createdUser.zone,
           email: createdUser.email,
-        },
-        loggedUser.token
-      );
+        });
+      }
 
       return loggedUser;
     } catch (err) {
