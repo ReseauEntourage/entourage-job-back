@@ -105,8 +105,8 @@ export const ContactRecordTypesIds = {
   CANDIDATE: '0127Q000000UbNVQA0',
   COMPANY: '0127Q000000UomWQAS',
   ASSOCIATION: '0127Q000000Uhq0QAC',
-  PRECARIOUS: '012Aa000001EmAfIAK',
-  NEIGHBOR: '012Aa000001HBL3IAO',
+  PRECARIOUS: '012Jv000000wYfdIAE',
+  NEIGHBOR: '012Jv000000wYfeIAE',
 } as const;
 
 export type ContactRecordType =
@@ -125,7 +125,7 @@ export type LeadRecordType =
 export const AccountRecordTypesIds = {
   COMPANY: '0127Q000000TZ4YQAW',
   ASSOCIATION: '0127Q000000TZ4sQAG',
-  HOUSEHOLD: '012Aa000000WJ7ZIAW',
+  HOUSEHOLD: '012Jv000001XP78IAG',
 } as const;
 
 export type AccountRecordType =
