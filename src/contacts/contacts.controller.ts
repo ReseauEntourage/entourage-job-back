@@ -116,6 +116,7 @@ export class ContactsController {
     if (!isValidPhone(inscriptionCandidateFormDto.phone)) {
       throw new BadRequestException('invalid phone');
     }
+
     return this.contactsService.sendCandidateInscriptionToSalesforce(
       inscriptionCandidateFormDto
     );

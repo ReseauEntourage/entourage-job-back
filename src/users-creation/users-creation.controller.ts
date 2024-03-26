@@ -214,17 +214,15 @@ export class UsersCreationController {
         createdUserId
       );
 
-      if (createUserRegistrationDto.program === Programs.SHORT) {
-        // TODO remove Campaign
-      }
-
-      // TODO send
-      //  program
-      //  birthDate
-      //  department
-      //  campaign
-      //  workingRight
-      //  to Salesforce
+      await this.usersCreationService.createExternalDBUser(createdUserId, {
+        program: createUserRegistrationDto.program,
+        birthDate: createUserRegistrationDto.birthDate,
+        campaign:
+          createUserRegistrationDto.program === Programs.LONG
+            ? createUserRegistrationDto.campaign
+            : undefined,
+        workingRight: createUserRegistrationDto.workingRight,
+      });
 
       const loggedUser = await this.usersCreationService.loginUser(createdUser);
 

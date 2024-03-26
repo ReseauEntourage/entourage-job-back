@@ -60,7 +60,7 @@ export class UserProfile extends Model {
   @ApiProperty()
   @IsBoolean()
   @AllowNull(false)
-  @Default(false)
+  @Default(true)
   @Column
   isAvailable: boolean;
 

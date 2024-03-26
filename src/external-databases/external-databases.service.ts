@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CreateUserRegistrationDto } from '../users-creation/dto';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 
@@ -6,6 +7,7 @@ import { Jobs } from 'src/queues/queues.types';
 export class ExternalDatabasesService {
   constructor(private queuesService: QueuesService) {}
 
+  // TODO merge with createExternalDBOpportunity
   async updateExternalDBOpportunity(
     opportunityId: string | string[],
     isSameOpportunity = false
@@ -19,6 +21,7 @@ export class ExternalDatabasesService {
     );
   }
 
+  // TODO merge with updateExternalDBOpportunity
   async createExternalDBOpportunity(
     opportunityId: string | string[],
     isSameOpportunity = false
@@ -28,6 +31,22 @@ export class ExternalDatabasesService {
       {
         opportunityId,
         isSameOpportunity,
+      }
+    );
+  }
+
+  async createExternalDBUser(
+    userId: string,
+    otherInfo: Pick<
+      CreateUserRegistrationDto,
+      'program' | 'workingRight' | 'campaign' | 'birthDate'
+    >
+  ) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_USER,
+      {
+        userId,
+        ...otherInfo,
       }
     );
   }

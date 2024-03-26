@@ -1,5 +1,6 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString } from 'class-validator';
+import { CandidateYesNoNSPPValue } from '../../contacts/contacts.types';
 import { Department } from 'src/common/locations/locations.types';
 import { HelpNeed } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
@@ -28,7 +29,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
 
   @ApiProperty()
   @IsString()
-  birthDate: string;
+  birthDate: Date;
 
   @ApiProperty()
   @IsString()
@@ -47,5 +48,5 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsString()
   @IsOptional()
-  workingRight?: string;
+  workingRight?: CandidateYesNoNSPPValue;
 }

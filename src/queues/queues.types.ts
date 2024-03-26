@@ -1,3 +1,4 @@
+import { CandidateYesNoNSPPValue } from '../contacts/contacts.types';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Location } from 'src/common/locations/models';
 import {
@@ -6,6 +7,7 @@ import {
   MailjetTemplate,
 } from 'src/external-services/mailjet/mailjet.types';
 import { CustomSMSParams } from 'src/external-services/vonage/vonage.types';
+import { Program } from 'src/users/users.types';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',
@@ -20,6 +22,7 @@ export const Jobs = {
     'create_or_update_salesforce_opportunity',
   CREATE_OR_UPDATE_SALESFORCE_EVENT: 'create_or_update_salesforce_event',
   CREATE_OR_UPDATE_SALESFORCE_TASK: 'create_or_update_salesforce_task',
+  CREATE_OR_UPDATE_SALESFORCE_USER: 'create_or_update_salesforce_user',
   REMINDER_OFFER: 'reminder_offer',
   REMINDER_CV_10: 'reminder_cv_10',
   REMINDER_CV_20: 'reminder_cv_20',
@@ -46,6 +49,7 @@ type JobsData = {
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY]: CreateOrUpdateSalesforceOpportunityJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT]: CreateOrUpdateSalesforceEventJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK]: CreateOrUpdateSalesforceTaskJob;
+  [Jobs.CREATE_OR_UPDATE_SALESFORCE_USER]: CreateOrUpdateSalesforceUserJob;
   [Jobs.REMINDER_OFFER]: SendReminderOfferJob;
   [Jobs.REMINDER_CV_10]: SendReminderCVJob;
   [Jobs.REMINDER_CV_20]: SendReminderCVJob;
@@ -137,6 +141,14 @@ export interface CreateOrUpdateSalesforceEventJob {
 
 export interface CreateOrUpdateSalesforceTaskJob {
   externalMessageId: string | string[];
+}
+
+export interface CreateOrUpdateSalesforceUserJob {
+  userId: string;
+  program: Program;
+  birthDate: Date;
+  campaign?: string;
+  workingRight?: CandidateYesNoNSPPValue;
 }
 
 export interface SendOffersEmailAfterCVPublishJob {

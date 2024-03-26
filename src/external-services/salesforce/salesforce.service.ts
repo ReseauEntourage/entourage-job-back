@@ -3,12 +3,15 @@ import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import moment from 'moment-timezone';
 
+import { CandidateYesNoNSPPValue } from 'src/contacts/contacts.types';
 import { MessagesService } from 'src/messages/messages.service';
 import { ExternalMessage } from 'src/messages/models';
 import { Opportunity } from 'src/opportunities/models';
 import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
+import { UsersService } from 'src/users/users.service';
+import { NormalUserRole, Program, Programs } from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import {
   AccountProps,
@@ -19,6 +22,7 @@ import {
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
+  ContactRecordTypeFromRole,
   ContactRecordTypesIds,
   ErrorCodes,
   EventProps,
@@ -34,6 +38,7 @@ import {
   OfferProps,
   OfferPropsWithRecruiterId,
   ProcessProps,
+  ProgramString,
   SalesforceAccount,
   SalesforceBinome,
   SalesforceCampaign,
@@ -47,6 +52,7 @@ import {
   SalesforceProcess,
   SalesforceTask,
   TaskProps,
+  UserProps,
 } from './salesforce.types';
 
 import {
@@ -56,7 +62,9 @@ import {
   formatCompanyName,
   formatDepartment,
   getDepartmentFromPostalCode,
+  getPostalCodeFromDepartment,
   mapProcessFromOpportunityUser,
+  mapSalesforceContactFields,
   mapSalesforceEventFields,
   mapSalesforceLeadFields,
   mapSalesforceOfferFields,
@@ -67,6 +75,8 @@ import {
 
 const RETRY_DELAY = 60 * 10;
 const RETRY_NUMBER = 5;
+
+const REGEX_ESCAPE = /[?&|!{}[\]()^~*:\\"'+-]/gi;
 
 const asyncTimeout = (delay: number) =>
   new Promise<void>((res) => {
@@ -83,7 +93,8 @@ export class SalesforceService {
   constructor(
     private opportunitiesService: OpportunitiesService,
     private opportunityUsersService: OpportunityUsersService,
-    private messagesService: MessagesService
+    private messagesService: MessagesService,
+    private usersService: UsersService
   ) {}
 
   setIsWorker(isWorker: boolean) {
@@ -183,7 +194,7 @@ export class SalesforceService {
 
   async updateRecord<T extends ObjectName, K extends LeadRecordType>(
     name: T,
-    params: SalesforceObject<T, K> | SalesforceObject<T, K>[]
+    params: Partial<SalesforceObject<T, K> | SalesforceObject<T, K>[]>
   ): Promise<string | string[]> {
     await this.checkIfConnected();
 
@@ -446,7 +457,7 @@ export class SalesforceService {
   }
 
   async searchAccountByName(search: string, recordType: AccountRecordType) {
-    const escapedSearch = search?.replace(/[?&|!{}[\]()^~*:\\"'+-]/gi, '\\$&');
+    const escapedSearch = search.replace(REGEX_ESCAPE, '\\$&');
     await this.checkIfConnected();
     if (escapedSearch.length === 1) {
       const { records }: { records: Partial<SalesforceAccount>[] } =
@@ -461,6 +472,17 @@ export class SalesforceService {
 
     const { searchRecords } = await this.salesforce.search(
       `FIND {${escapedSearch}} IN NAME FIELDS RETURNING ${ObjectNames.ACCOUNT}(Id) LIMIT 1`
+    );
+
+    return searchRecords[0]?.Id;
+  }
+
+  async searchAccount(search: string) {
+    const escapedSearch = search.replace(REGEX_ESCAPE, '\\$&');
+    await this.checkIfConnected();
+
+    const { searchRecords } = await this.salesforce.search(
+      `FIND {${escapedSearch}} RETURNING ${ObjectNames.ACCOUNT}(Id) LIMIT 1`
     );
 
     return searchRecords[0]?.Id;
@@ -485,27 +507,36 @@ export class SalesforceService {
     return binomeSfId;
   }
 
-  async findContact(email: string, recordType?: ContactRecordType) {
+  async findContact(
+    email: string,
+    recordType?: ContactRecordType
+  ): Promise<{ Id: string; Casquettes_r_les__c: string } | null> {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceContact>[] } =
       await this.salesforce.query(
-        `SELECT Id
+        `SELECT Id, Casquettes_r_les__c, AccountId
          FROM ${ObjectNames.CONTACT}
-         WHERE Email = '${escapeQuery(email)}' ${
+         WHERE Email = '${email}' ${
           recordType ? `AND RecordTypeId = '${recordType}'` : ''
         } LIMIT 1`
       );
-    return records[0]?.Id;
+    return records[0]
+      ? {
+          Id: records[0]?.Id,
+          Casquettes_r_les__c: records[0]?.Casquettes_r_les__c,
+        }
+      : null;
   }
 
-  async findLead<T extends LeadRecordType>(email: string, recordType: T) {
+  async findLead<T extends LeadRecordType>(email: string, recordType?: T) {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceLead<T>>[] } =
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.LEAD}
-         WHERE Email = '${escapeQuery(email)}'
-           AND RecordTypeId = '${recordType}' LIMIT 1
+         WHERE Email = '${escapeQuery(email)}' ${
+          recordType ? `AND RecordTypeId = '${recordType}'` : ''
+        } LIMIT 1
         `
       );
     return records[0]?.Id;
@@ -525,7 +556,7 @@ export class SalesforceService {
 
   async findCampaignMember(
     { leadId, contactId }: { leadId?: string; contactId?: string },
-    infoCoId: string
+    campaignId: string
   ) {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceCampaignMember>[] } =
@@ -533,7 +564,7 @@ export class SalesforceService {
         `SELECT Id
          FROM ${ObjectNames.CAMPAIGN_MEMBER}
          WHERE ${leadId ? `LeadId = '${leadId}'` : `ContactId = '${contactId}'`}
-           AND CampaignId = '${escapeQuery(infoCoId)}' Limit 1`
+           AND CampaignId = '${escapeQuery(campaignId)}' Limit 1`
       );
     return records[0]?.Id;
   }
@@ -632,39 +663,6 @@ export class SalesforceService {
     });
   }
 
-  async createContact(
-    {
-      firstName,
-      lastName,
-      email,
-      phone,
-      position,
-      department,
-      companySfId,
-    }: ContactProps,
-    recordType: ContactRecordType
-  ) {
-    return this.createRecord(ObjectNames.CONTACT, {
-      LastName:
-        lastName?.length > 80
-          ? lastName.substring(0, 80)
-          : lastName || 'Inconnu',
-      FirstName: firstName,
-      Email: email
-        ?.replace(/\+/g, '.')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, ''),
-      Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-      Title: position,
-      AccountId: companySfId,
-      Casquettes_r_les__c: 'Contact Entreprise/Financeur',
-      Reseaux__c: 'LinkedOut',
-      RecordTypeId: recordType,
-      Antenne__c: formatDepartment(department),
-      Source__c: 'Lead entrant',
-    });
-  }
-
   async updateLead<T extends LeadRecordType>(
     leadSfId: string,
     leadProps: LeadProp<T>,
@@ -688,6 +686,85 @@ export class SalesforceService {
       ObjectNames.LEAD,
       record
     );
+  }
+
+  async updateContact(
+    contactSfId: string,
+    contactProps: ContactProps,
+    recordType: ContactRecordType
+  ) {
+    const record = mapSalesforceContactFields(contactProps, recordType);
+    return this.updateRecord(ObjectNames.CONTACT, {
+      Id: contactSfId,
+      ...record,
+    });
+  }
+
+  async updateContactCasquetteAndAppId(
+    contactSfId: string,
+    contactProps: Pick<ContactProps, 'casquette' | 'id'>
+  ) {
+    return this.updateRecord(ObjectNames.CONTACT, {
+      Id: contactSfId,
+      ID_App_Entourage_Pro__c: contactProps.id,
+      Casquettes_r_les__c: contactProps.casquette,
+    });
+  }
+
+  async createContact(
+    contactProps: ContactProps,
+    recordType: ContactRecordType
+  ) {
+    const record = mapSalesforceContactFields(contactProps, recordType);
+
+    // Hack : update Contact after creation to set right RecordTypeId because RecordTypeId isn't taken into account when using create
+    const contactSfIdToUpdate = (await this.createRecord(
+      ObjectNames.CONTACT,
+      record
+    )) as string;
+
+    try {
+      return (await this.updateContact(
+        contactSfIdToUpdate,
+        contactProps,
+        recordType
+      )) as string;
+    } catch (err) {
+      if ((err as SalesforceError).errorCode === ErrorCodes.NOT_FOUND) {
+        return contactSfIdToUpdate;
+      }
+      if (
+        (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
+      ) {
+        // eslint-disable-next-line no-console
+        console.log('LOCK ROW IN createContact');
+        return (await this.updateContact(
+          contactSfIdToUpdate,
+          contactProps,
+          recordType
+        )) as string;
+      }
+    }
+  }
+
+  async findOrCreateHouseholdAccount({
+    name,
+    department,
+    address,
+  }: AccountProps) {
+    let companySfId = await this.searchAccount(`${name} ${address}`);
+
+    if (!companySfId) {
+      companySfId = (await this.createAccount(
+        {
+          name,
+          department,
+          address,
+        },
+        AccountRecordTypesIds.HOUSEHOLD
+      )) as string;
+    }
+    return companySfId;
   }
 
   async findOrCreateAccount(
@@ -720,7 +797,7 @@ export class SalesforceService {
     return companySfId;
   }
 
-  async findOrCreateContact(
+  async findOrCreateCompanyContact(
     {
       contactMail,
       email,
@@ -734,10 +811,11 @@ export class SalesforceService {
     }: ContactProps & { contactMail: string; mainCompanySfId: string },
     recordType: ContactRecordType
   ) {
-    let recruiterSfId = await this.findContact(
+    const recruiterSf = await this.findContact(
       contactMail || email,
       recordType
     );
+    let recruiterSfId = recruiterSf?.Id;
 
     if (!recruiterSfId) {
       recruiterSfId = (await this.createContact(
@@ -746,6 +824,7 @@ export class SalesforceService {
               email: contactMail,
               department,
               companySfId: mainCompanySfId || companySfId,
+              casquette: 'Contact Entreprise/Financeur',
             }
           : {
               firstName,
@@ -755,6 +834,7 @@ export class SalesforceService {
               position,
               department,
               companySfId: mainCompanySfId || companySfId,
+              casquette: 'Contact Entreprise/Financeur',
             },
         recordType
       )) as string;
@@ -842,7 +922,7 @@ export class SalesforceService {
     if (mainContactSfId) {
       recruiterSfId = mainContactSfId;
     } else if (!recruiterSfId) {
-      recruiterSfId = (await this.findOrCreateContact(
+      recruiterSfId = (await this.findOrCreateCompanyContact(
         {
           firstName: recruiterFirstName,
           lastName: recruiterName,
@@ -853,6 +933,7 @@ export class SalesforceService {
           department,
           companySfId,
           mainCompanySfId,
+          casquette: 'Contact Entreprise/Financeur',
         },
         ContactRecordTypesIds.COMPANY
       )) as string;
@@ -1012,12 +1093,11 @@ export class SalesforceService {
     heardAbout,
     infoCo,
     lastName,
-    location,
+    department,
     phone,
     workingRight,
     tsPrescripteur,
   }: CandidateInscriptionLeadProps) {
-    const department = getDepartmentFromPostalCode(location);
     const zone = getZoneFromDepartment(department);
 
     const leadToCreate = {
@@ -1036,7 +1116,7 @@ export class SalesforceService {
     try {
       const leadId = (await this.createCandidateLead(leadToCreate)) as string;
       if (infoCo) {
-        await this.createCampaignMemberInfoCo({ leadId }, infoCo);
+        await this.addLeadOrContactToCampaign({ leadId }, infoCo);
         return leadId;
       }
     } catch (err) {
@@ -1046,8 +1126,9 @@ export class SalesforceService {
         (err as SalesforceError).errorCode ===
           ErrorCodes.FIELD_INTEGRITY_EXCEPTION
       ) {
-        const contactSfId = await this.findContact(email);
-        await this.createCampaignMemberInfoCo(
+        const contactSf = await this.findContact(email);
+        const contactSfId = contactSf?.Id;
+        await this.addLeadOrContactToCampaign(
           { contactId: contactSfId },
           infoCo
         );
@@ -1058,14 +1139,80 @@ export class SalesforceService {
     }
   }
 
+  async findOrCreateContactFromUserRegistrationForm({
+    id,
+    firstName,
+    lastName,
+    email,
+    phone,
+    department,
+    role,
+    birthDate,
+    program,
+    campaign,
+  }: UserProps) {
+    const leadSfId = await this.findLead(email);
+    const contactSf = await this.findContact(email);
+    let contactSfId = contactSf?.Id;
+
+    const programString: ProgramString =
+      program === Programs.LONG
+        ? `PRO ${role} 360`
+        : `PRO ${role} Coup de pouce`;
+
+    if (!contactSfId) {
+      const companySfId = await this.findOrCreateHouseholdAccount({
+        name: `${firstName} ${lastName} Foyer`,
+        department,
+        address: getPostalCodeFromDepartment(department),
+      });
+
+      const contactToCreate = {
+        id,
+        firstName,
+        lastName,
+        birthDate,
+        email: leadSfId ? 'doublon_' + email : email,
+        phone,
+        department,
+        companySfId,
+      };
+
+      contactSfId = (await this.createContact(
+        {
+          ...contactToCreate,
+          casquette: programString,
+        },
+        ContactRecordTypeFromRole[role]
+      )) as string;
+    } else {
+      await this.updateContactCasquetteAndAppId(contactSfId, {
+        id,
+        casquette: `${programString};${contactSf.Casquettes_r_les__c.replace(
+          programString,
+          ''
+        )}`,
+      });
+    }
+
+    if (contactSfId && program === Programs.LONG && campaign) {
+      await this.addLeadOrContactToCampaign(
+        { contactId: contactSfId },
+        campaign
+      );
+    }
+
+    return contactSfId;
+  }
+
   async findOrCreateCampaignMember(
     leadOrContactId: { leadId?: string; contactId?: string },
-    infoCoId: string
+    campaignId: string
   ) {
     try {
       const campaignMemberSfId = await this.findCampaignMember(
         leadOrContactId,
-        infoCoId
+        campaignId
       );
       const { leadId, contactId } = leadOrContactId;
       if (!campaignMemberSfId) {
@@ -1075,7 +1222,7 @@ export class SalesforceService {
                 LeadId: leadId,
               }
             : { ContactId: contactId }),
-          CampaignId: infoCoId,
+          CampaignId: campaignId,
           Status: 'Inscrit',
         });
       }
@@ -1088,19 +1235,19 @@ export class SalesforceService {
     }
   }
 
-  async createCampaignMemberInfoCo(
+  async addLeadOrContactToCampaign(
     leadOrContactId: { leadId?: string; contactId?: string },
-    infoCoId: string
+    campaignId: string
   ) {
     try {
-      await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
+      await this.findOrCreateCampaignMember(leadOrContactId, campaignId);
     } catch (err) {
       if (
         (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
       ) {
         // eslint-disable-next-line no-console
         console.log('LOCK ROW IN createCampaignMemberInfoCo');
-        await this.findOrCreateCampaignMember(leadOrContactId, infoCoId);
+        await this.findOrCreateCampaignMember(leadOrContactId, campaignId);
       }
       console.error(err);
       throw err;
@@ -1276,10 +1423,12 @@ export class SalesforceService {
 
         const processSfId = await this.findProcessById(processId);
         const binomeSfId = await this.findBinomeByCandidateEmail(candidateMail);
-        const recruiterSfId = await this.findContact(
+        const recruiterSf = await this.findContact(
           recruiterMail,
           ContactRecordTypesIds.COMPANY
         );
+
+        const recruiterSfId = recruiterSf?.Id;
 
         eventsToCreate = [
           ...eventsToCreate,
@@ -1298,10 +1447,11 @@ export class SalesforceService {
 
       const processSfId = await this.findProcessById(processId);
       const binomeSfId = await this.findBinomeByCandidateEmail(candidateMail);
-      const recruiterSfId = await this.findContact(
+      const recruiterSf = await this.findContact(
         recruiterMail,
         ContactRecordTypesIds.COMPANY
       );
+      const recruiterSfId = recruiterSf?.Id;
 
       return (await this.createOrUpdateEvent({
         ...restEvent,
@@ -1344,7 +1494,8 @@ export class SalesforceService {
 
     const ownerSfId = await this.findOwnerByLeadSfId(leadSfId);
 
-    const contactSfId = await this.findContact(email);
+    const contactSf = await this.findContact(email);
+    const contactSfId = contactSf?.Id;
 
     return {
       binomeSfId,
@@ -1451,6 +1602,33 @@ export class SalesforceService {
     };
   }
 
+  async findContactFromUserId(
+    userId: string
+  ): Promise<
+    Pick<
+      UserProps,
+      | 'id'
+      | 'firstName'
+      | 'lastName'
+      | 'email'
+      | 'phone'
+      | 'department'
+      | 'role'
+    >
+  > {
+    const userDb = await this.usersService.findOne(userId);
+
+    return {
+      id: userDb.id,
+      firstName: userDb.firstName,
+      lastName: userDb.lastName,
+      email: userDb.email,
+      phone: userDb.phone,
+      department: userDb.userProfile.department,
+      role: userDb.role as NormalUserRole,
+    };
+  }
+
   async createOrUpdateSalesforceOpportunity(
     opportunityId: string | string[],
     isSameOpportunity: boolean
@@ -1515,6 +1693,28 @@ export class SalesforceService {
       );
       return this.createOrUpdateSalesforceTask(taskToCreate);
     }
+  }
+
+  async createOrUpdateSalesforceUser(
+    userId: string,
+    otherInfo: {
+      program: Program;
+      birthDate: Date;
+      campaign?: string;
+      workingRight?: CandidateYesNoNSPPValue;
+    }
+  ) {
+    this.setIsWorker(true);
+
+    const userToCreate = await this.findContactFromUserId(userId);
+
+    return this.findOrCreateContactFromUserRegistrationForm({
+      ...userToCreate,
+      birthDate: otherInfo.birthDate,
+      campaign: otherInfo.campaign,
+      workingRight: otherInfo.workingRight,
+      program: otherInfo.program,
+    });
   }
 
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {
