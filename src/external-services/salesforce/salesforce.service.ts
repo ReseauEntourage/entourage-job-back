@@ -489,16 +489,14 @@ export class SalesforceService {
   }
 
   async findBinomeByCandidateEmail(email: string) {
-    const candidateSfId = await this.findContact(
-      email,
-      ContactRecordTypesIds.CANDIDATE
-    );
-    if (!candidateSfId) {
+    const candidateSf = await this.findContact(email);
+
+    if (!candidateSf) {
       console.error('Error finding Salesforce candidate by mail : ' + email);
       return null;
     }
 
-    const binomeSfId = await this.findBinomeByCandidateSfId(candidateSfId);
+    const binomeSfId = await this.findBinomeByCandidateSfId(candidateSf.Id);
     if (!binomeSfId) {
       console.error('Error finding Salesforce binome by mail : ' + email);
       return null;
@@ -569,7 +567,7 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findBinomeByCandidateSfId<T>(id: T) {
+  async findBinomeByCandidateSfId<T extends string>(id: T) {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceBinome>[] } =
       await this.salesforce.query(
@@ -580,7 +578,7 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findOfferById<T>(id: T): Promise<string> {
+  async findOfferById<T extends string>(id: T): Promise<string> {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceOffer>[] } =
       await this.salesforce.query(
@@ -591,7 +589,7 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findEventById<T>(id: T): Promise<string> {
+  async findEventById<T extends string>(id: T): Promise<string> {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceEvent>[] } =
       await this.salesforce.query(
@@ -603,7 +601,7 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findTaskById<T>(id: T): Promise<string> {
+  async findTaskById<T extends string>(id: T): Promise<string> {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceTask>[] } =
       await this.salesforce.query(
@@ -614,7 +612,7 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findOfferRelationsById<T>(id: T) {
+  async findOfferRelationsById<T extends string>(id: T) {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceOffer>[] } =
       await this.salesforce.query(
@@ -628,7 +626,7 @@ export class SalesforceService {
     };
   }
 
-  async findProcessById<T>(id: T) {
+  async findProcessById<T extends string>(id: T) {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceProcess>[] } =
       await this.salesforce.query(
@@ -708,6 +706,16 @@ export class SalesforceService {
       Id: contactSfId,
       ID_App_Entourage_Pro__c: contactProps.id,
       Casquettes_r_les__c: contactProps.casquette,
+    });
+  }
+
+  async updateContactEmail(
+    contactSfId: string,
+    contactProps: Pick<ContactProps, 'email'>
+  ) {
+    return this.updateRecord(ObjectNames.CONTACT, {
+      Id: contactSfId,
+      Email: contactProps.email,
     });
   }
 
@@ -1185,6 +1193,11 @@ export class SalesforceService {
         },
         ContactRecordTypeFromRole[role]
       )) as string;
+
+      if (leadSfId) {
+        // Hack to have a contact with the same mail as the prospect if it exists
+        await this.updateContactEmail(contactSfId, { email });
+      }
     } else {
       await this.updateContactCasquetteAndAppId(contactSfId, {
         id,
