@@ -1519,7 +1519,7 @@ describe('Users', () => {
             password: user.password,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
@@ -1570,7 +1570,7 @@ describe('Users', () => {
             ...userProfileValues,
             password: user.password,
             campaign: '1234',
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
@@ -1615,7 +1615,7 @@ describe('Users', () => {
             ...userValues,
             ...userProfileValues,
             password: user.password,
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
@@ -1720,7 +1720,7 @@ describe('Users', () => {
             ...userValues,
             ...userProfileValues,
             password: user.password,
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
@@ -1755,7 +1755,7 @@ describe('Users', () => {
             ...userValues,
             ...userProfileValues,
             password: user.password,
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
@@ -1790,7 +1790,7 @@ describe('Users', () => {
             ...userValues,
             ...userProfileValues,
             password: user.password,
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
@@ -1827,7 +1827,7 @@ describe('Users', () => {
             ...userValues,
             ...userProfileValues,
             password: user.password,
-            program: Programs.LONG,
+            program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
           };
 
