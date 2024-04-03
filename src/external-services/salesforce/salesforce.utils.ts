@@ -559,7 +559,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
 
     return {
       ...commonFields,
-      Company: company,
+      Company: company || 'Coachs LinkedOut',
       Title: position,
     } as SalesforceLead<T>;
   }
@@ -653,4 +653,8 @@ export function executeBulkAction<T extends ObjectName>(
 
 export function escapeQuery(query: string) {
   return query ? query.replace(/'/g, "\\'") : query;
+}
+
+export function prependDuplicateIfCondition(value: string, condition: boolean) {
+  return condition ? `bis_${value}` : value;
 }

@@ -31,6 +31,7 @@ import {
   ExternalMessageProps,
   LeadProp,
   LeadRecordType,
+  LeadRecordTypeFromRole,
   LeadRecordTypesIds,
   ObjectName,
   ObjectNames,
@@ -71,6 +72,7 @@ import {
   mapSalesforceProcessFields,
   mapSalesforceTaskFields,
   parseAddress,
+  prependDuplicateIfCondition,
 } from './salesforce.utils';
 
 const RETRY_DELAY = 60 * 10;
@@ -674,6 +676,16 @@ export class SalesforceService {
     });
   }
 
+  async updateLeadPhone<T extends LeadRecordType>(
+    leadSfId: string,
+    leadProps: Pick<LeadProp<T>, 'phone'>
+  ) {
+    return this.updateRecord(ObjectNames.LEAD, {
+      Id: leadSfId,
+      Phone: leadProps.phone,
+    });
+  }
+
   async createLead<T extends LeadRecordType>(
     leadProps: LeadProp<T>,
     recordType: T
@@ -709,13 +721,14 @@ export class SalesforceService {
     });
   }
 
-  async updateContactEmail(
+  async updateContactEmailAndPhone(
     contactSfId: string,
-    contactProps: Pick<ContactProps, 'email'>
+    contactProps: Pick<ContactProps, 'email' | 'phone'>
   ) {
     return this.updateRecord(ObjectNames.CONTACT, {
       Id: contactSfId,
       Email: contactProps.email,
+      Phone: contactProps.phone,
     });
   }
 
@@ -1159,9 +1172,51 @@ export class SalesforceService {
     program,
     campaign,
   }: UserProps) {
-    const leadSfId = await this.findLead(email);
+    let leadSfId = await this.findLead(email);
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
+
+    if (program === Programs.LONG) {
+      if (leadSfId) {
+        await this.updateLeadPhone(leadSfId, { phone: phone });
+      } else {
+        const leadToCreate = {
+          id,
+          firstName,
+          lastName,
+          birthDate,
+          email,
+          phone,
+          department,
+          zone: getZoneFromDepartment(department),
+        };
+
+        if (contactSfId) {
+          // Hack to have a contact with the same mail and phone as the prospect if it exists
+          await this.updateContactEmailAndPhone(contactSfId, {
+            email: prependDuplicateIfCondition(email, true),
+            phone: prependDuplicateIfCondition(phone, true),
+          });
+        }
+
+        leadSfId = (await this.createLead(
+          leadToCreate,
+          LeadRecordTypeFromRole[role]
+        )) as string;
+
+        if (contactSfId) {
+          // Hack to have a contact with the same mail and phone as the prospect if it exists
+          await this.updateContactEmailAndPhone(contactSfId, {
+            email: email,
+            phone: phone,
+          });
+        }
+      }
+
+      if (campaign) {
+        await this.addLeadOrContactToCampaign({ leadId: leadSfId }, campaign);
+      }
+    }
 
     const programString: ProgramString =
       program === Programs.LONG
@@ -1180,8 +1235,9 @@ export class SalesforceService {
         firstName,
         lastName,
         birthDate,
-        email: leadSfId ? 'doublon_' + email : email,
-        phone,
+        // Hack to have a contact with the same mail and phone as the prospect if it exists
+        email: prependDuplicateIfCondition(email, !!leadSfId),
+        phone: prependDuplicateIfCondition(phone, !!leadSfId),
         department,
         companySfId,
       };
@@ -1195,24 +1251,16 @@ export class SalesforceService {
       )) as string;
 
       if (leadSfId) {
-        // Hack to have a contact with the same mail as the prospect if it exists
-        await this.updateContactEmail(contactSfId, { email });
+        // Hack to have a contact with the same mail and phone as the prospect if it exists
+        await this.updateContactEmailAndPhone(contactSfId, { email, phone });
       }
     } else {
       await this.updateContactCasquetteAndAppId(contactSfId, {
         id,
-        casquette: `${programString};${contactSf.Casquettes_r_les__c.replace(
-          programString,
-          ''
-        )}`,
+        casquette: `${programString};${(
+          contactSf.Casquettes_r_les__c || ''
+        ).replace(programString, '')}`,
       });
-    }
-
-    if (contactSfId && program === Programs.LONG && campaign) {
-      await this.addLeadOrContactToCampaign(
-        { contactId: contactSfId },
-        campaign
-      );
     }
 
     return contactSfId;

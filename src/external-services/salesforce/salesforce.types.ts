@@ -164,6 +164,13 @@ export const ContactRecordTypeFromRole: {
   [UserRoles.COACH]: ContactRecordTypesIds.NEIGHBOR,
 };
 
+export const LeadRecordTypeFromRole: {
+  [K in NormalUserRole]: LeadRecordType;
+} = {
+  [UserRoles.CANDIDATE]: LeadRecordTypesIds.CANDIDATE,
+  [UserRoles.COACH]: LeadRecordTypesIds.COACH,
+};
+
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
   [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
@@ -624,7 +631,7 @@ export interface CandidateLeadProps {
   heardAbout?: HeardAboutValue;
   location?: string;
   autreSource?: 'Formulaire_Sourcing_Page_Travailler';
-  tsPrescripteur: string;
+  tsPrescripteur?: string;
 }
 
 export interface CoachLeadProps {
@@ -758,7 +765,7 @@ export interface CoachSalesforceLead {
   OwnerId?: string;
   LastName: string;
   FirstName: string;
-  Company: string;
+  Company: 'Coachs LinkedOut' | string;
   Title: string;
   Email: string;
   Phone?: string;
