@@ -72,7 +72,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createContact: jest.fn(),
   updateContact: jest.fn(),
   updateContactEmailAndPhone: jest.fn(),
-  updateLeadPhone: jest.fn(),
+  updateLeadPhoneAndRecordType: jest.fn(),
   createLead: jest.fn(),
   updateLead: jest.fn(),
   createCandidateLead: jest.fn(),

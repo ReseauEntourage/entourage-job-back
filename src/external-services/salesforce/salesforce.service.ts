@@ -676,13 +676,15 @@ export class SalesforceService {
     });
   }
 
-  async updateLeadPhone<T extends LeadRecordType>(
+  async updateLeadPhoneAndRecordType<T extends LeadRecordType>(
     leadSfId: string,
-    leadProps: Pick<LeadProp<T>, 'phone'>
+    leadProps: Pick<LeadProp<T>, 'phone'>,
+    recordType: T
   ) {
     return this.updateRecord(ObjectNames.LEAD, {
       Id: leadSfId,
       Phone: leadProps.phone,
+      RecordTypeId: recordType,
     });
   }
 
@@ -867,7 +869,7 @@ export class SalesforceService {
     lead: LeadProp<T>,
     recordType: T
   ) {
-    const leadSfId = await this.findLead(lead.email, recordType);
+    const leadSfId = await this.findLead(lead.email);
 
     if (!leadSfId) {
       // Hack : update Lead after creation to set right RecordTypeId because RecordTypeId isn't taken into account when using create
@@ -1172,49 +1174,56 @@ export class SalesforceService {
     program,
     campaign,
   }: UserProps) {
-    let leadSfId = await this.findLead(email);
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
 
     if (program === Programs.LONG) {
-      if (leadSfId) {
-        await this.updateLeadPhone(leadSfId, { phone: phone });
-      } else {
-        const leadToCreate = {
-          id,
-          firstName,
-          lastName,
-          birthDate,
-          email,
-          phone,
-          department,
-          zone: getZoneFromDepartment(department),
-        };
+      if (contactSfId) {
+        // Hack to have a contact with the same mail and phone as the prospect if it exists
+        await this.updateContactEmailAndPhone(contactSfId, {
+          email: prependDuplicateIfCondition(email, true),
+          phone: prependDuplicateIfCondition(phone, true),
+        });
+      }
 
-        if (contactSfId) {
-          // Hack to have a contact with the same mail and phone as the prospect if it exists
-          await this.updateContactEmailAndPhone(contactSfId, {
-            email: prependDuplicateIfCondition(email, true),
-            phone: prependDuplicateIfCondition(phone, true),
-          });
-        }
+      const leadToCreate = {
+        id,
+        firstName,
+        lastName,
+        birthDate,
+        email,
+        phone,
+        department,
+        zone: getZoneFromDepartment(department),
+      };
 
-        leadSfId = (await this.createLead(
-          leadToCreate,
-          LeadRecordTypeFromRole[role]
-        )) as string;
+      const leadSfId = (await this.findOrCreateLead(
+        leadToCreate,
+        LeadRecordTypeFromRole[role]
+      )) as string;
 
-        if (contactSfId) {
-          // Hack to have a contact with the same mail and phone as the prospect if it exists
-          await this.updateContactEmailAndPhone(contactSfId, {
-            email: email,
-            phone: phone,
-          });
-        }
+      // Update lead with phone and record type in case the lead already exists
+      await this.updateLeadPhoneAndRecordType(
+        leadSfId,
+        { phone: phone },
+        LeadRecordTypeFromRole[role]
+      );
+
+      if (contactSfId) {
+        // Hack to have a contact with the same mail and phone as the prospect if it exists
+        await this.updateContactEmailAndPhone(contactSfId, {
+          email: email,
+          phone: phone,
+        });
       }
 
       if (campaign) {
-        await this.addLeadOrContactToCampaign({ leadId: leadSfId }, campaign);
+        try {
+          // ignore exception if wrong campaign
+          await this.addLeadOrContactToCampaign({ leadId: leadSfId }, campaign);
+        } catch (err) {
+          console.error(err);
+        }
       }
     }
 
@@ -1224,6 +1233,8 @@ export class SalesforceService {
         : `PRO ${role} Coup de pouce`;
 
     if (!contactSfId) {
+      const leadSfId = await this.findLead(email);
+
       const companySfId = await this.findOrCreateHouseholdAccount({
         name: `${firstName} ${lastName} Foyer`,
         department,
