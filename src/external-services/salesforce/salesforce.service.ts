@@ -1177,7 +1177,7 @@ export class SalesforceService {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
 
-    if (program === Programs.LONG) {
+    if (program === Programs.THREE_SIXTY) {
       if (contactSfId) {
         // Hack to have a contact with the same mail and phone as the prospect if it exists
         await this.updateContactEmailAndPhone(contactSfId, {
@@ -1228,7 +1228,7 @@ export class SalesforceService {
     }
 
     const programString: ProgramString =
-      program === Programs.LONG
+      program === Programs.THREE_SIXTY
         ? `PRO ${role} 360`
         : `PRO ${role} Coup de pouce`;
 

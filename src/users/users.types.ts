@@ -232,8 +232,8 @@ export const MemberFilters: Filters<MemberFilterKey> = [
 ];
 
 export const Programs = {
-  SHORT: 'short',
-  LONG: 'long',
+  BOOST: 'boost',
+  THREE_SIXTY: 'three_sixty',
 } as const;
 
 export type Program = typeof Programs[keyof typeof Programs];

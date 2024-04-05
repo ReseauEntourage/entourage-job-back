@@ -218,7 +218,7 @@ export class UsersCreationController {
         program: createUserRegistrationDto.program,
         birthDate: createUserRegistrationDto.birthDate,
         campaign:
-          createUserRegistrationDto.program === Programs.LONG
+          createUserRegistrationDto.program === Programs.THREE_SIXTY
             ? createUserRegistrationDto.campaign
             : undefined,
         workingRight: createUserRegistrationDto.workingRight,
@@ -226,7 +226,7 @@ export class UsersCreationController {
 
       const loggedUser = await this.usersCreationService.loginUser(createdUser);
 
-      if (createUserRegistrationDto.program === Programs.SHORT) {
+      if (createUserRegistrationDto.program === Programs.BOOST) {
         await this.usersCreationService.sendWelcomeMail({
           id: createdUser.id,
           firstName: createdUser.firstName,
