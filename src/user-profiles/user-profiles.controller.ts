@@ -170,7 +170,7 @@ export class UserProfilesController {
 
     const oneOfCurrentRecommendedProfilesIsNotAvailable =
       currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile.recommendedUser.userProfile.isAvailable;
+        return !recommendedProfile?.recommendedUser?.userProfile?.isAvailable;
       });
 
     if (
