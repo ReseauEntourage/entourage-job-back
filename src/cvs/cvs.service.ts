@@ -424,12 +424,19 @@ export class CVsService {
     });
   }
 
-  async findAllVersionsByCandidateId(candidateId: string): Promise<CV[]> {
-    return this.cvModel.findAll({
+  async findHasAtLeastOnceStatusByCandidateId(
+    candidateId: string,
+    statusToFind: CVStatus
+  ) {
+    const cvs = await this.cvModel.findAll({
       attributes: ['status', 'version'],
       where: {
         UserId: candidateId,
       },
+    });
+
+    return cvs.some(({ status }) => {
+      return status === statusToFind;
     });
   }
 
@@ -893,10 +900,11 @@ export class CVsService {
         moment(firstOfMarch2022, 'YYYY-MM-DD')
       )
     ) {
-      const cvs = await this.findAllVersionsByCandidateId(candidateId);
-      const hasSubmittedAtLeastOnce = cvs?.some(({ status }) => {
-        return status === CVStatuses.PENDING.value;
-      });
+      const hasSubmittedAtLeastOnce =
+        await this.findHasAtLeastOnceStatusByCandidateId(
+          candidateId,
+          CVStatuses.PENDING.value
+        );
 
       if (!hasSubmittedAtLeastOnce) {
         return this.mailsService.sendCVReminderMail(candidate, is20Days);

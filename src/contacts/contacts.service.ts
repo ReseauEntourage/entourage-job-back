@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { getDepartmentFromPostalCode } from '../external-services/salesforce/salesforce.utils';
 import { ContactCompanyFormDto, ContactUsFormDto } from 'src/contacts/dto';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -46,9 +47,20 @@ export class ContactsService {
   async sendCandidateInscriptionToSalesforce(
     inscriptionCandidateFormDto: InscriptionCandidateFormDto
   ) {
+    const department = getDepartmentFromPostalCode(
+      inscriptionCandidateFormDto.location
+    );
+    const { location, ...inscriptionCandidateFormDtoWithoutLocation } =
+      inscriptionCandidateFormDto;
+
+    const candidateToCreate = {
+      ...inscriptionCandidateFormDtoWithoutLocation,
+      department,
+    };
+
     if (process.env.ENABLE_SF === 'true') {
       return this.salesforceService.createOrUpdateInscriptionCandidateSalesforceLead(
-        inscriptionCandidateFormDto
+        candidateToCreate
       );
     }
   }
@@ -57,9 +69,15 @@ export class ContactsService {
     return this.mailsService.sendContactUsMail(contactUsFormDto);
   }
 
-  async getCampaignsFromSF() {
+  async getCandidateCampaignsFromSF() {
     if (process.env.ENABLE_SF === 'true') {
-      return this.salesforceService.getCampaigns();
+      return this.salesforceService.getCandidateCampaigns();
+    }
+  }
+
+  async getCoachCampaignsFromSF() {
+    if (process.env.ENABLE_SF === 'true') {
+      return this.salesforceService.getCoachCampaigns();
     }
   }
 }

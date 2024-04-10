@@ -34,6 +34,7 @@ import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
+import { NormalUserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -45,6 +46,7 @@ export const ErrorCodes = {
   FIELD_FILTER_VALIDATION_EXCEPTION: 'FIELD_FILTER_VALIDATION_EXCEPTION',
   NOT_FOUND: 'NOT_FOUND',
   UNABLE_TO_LOCK_ROW: 'UNABLE_TO_LOCK_ROW',
+  FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION:',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
@@ -103,6 +105,8 @@ export const ContactRecordTypesIds = {
   CANDIDATE: '0127Q000000UbNVQA0',
   COMPANY: '0127Q000000UomWQAS',
   ASSOCIATION: '0127Q000000Uhq0QAC',
+  PRECARIOUS: '012Jv000000wYfdIAE',
+  NEIGHBOR: '012Jv000000wYfeIAE',
 } as const;
 
 export type ContactRecordType =
@@ -121,6 +125,7 @@ export type LeadRecordType =
 export const AccountRecordTypesIds = {
   COMPANY: '0127Q000000TZ4YQAW',
   ASSOCIATION: '0127Q000000TZ4sQAG',
+  HOUSEHOLD: '012Jv000001XP78IAG',
 } as const;
 
 export type AccountRecordType =
@@ -151,6 +156,20 @@ export type SalesforceLeads = {
 };
 
 export type SalesforceLead<T extends LeadRecordType> = SalesforceLeads[T];
+
+export const ContactRecordTypeFromRole: {
+  [K in NormalUserRole]: ContactRecordType;
+} = {
+  [UserRoles.CANDIDATE]: ContactRecordTypesIds.PRECARIOUS,
+  [UserRoles.COACH]: ContactRecordTypesIds.NEIGHBOR,
+};
+
+export const LeadRecordTypeFromRole: {
+  [K in NormalUserRole]: LeadRecordType;
+} = {
+  [UserRoles.CANDIDATE]: LeadRecordTypesIds.CANDIDATE,
+  [UserRoles.COACH]: LeadRecordTypesIds.COACH,
+};
 
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
@@ -234,10 +253,11 @@ export const LeadAccomodations: {
 } as const;
 
 export const LeadGender: {
-  [K in CandidateGender]: string;
+  [K in CandidateGender]: string | null;
 } = {
   [CandidateGenders.MALE]: 'Homme',
   [CandidateGenders.FEMALE]: 'Femme',
+  [CandidateGenders.OTHER]: '',
 } as const;
 
 export const LeadYesNo: {
@@ -277,6 +297,17 @@ export const LeadBusinessLines: {
   fjr: findConstantFromValue('fjr', BusinessLineFilters).label,
   sm: findConstantFromValue('sm', BusinessLineFilters).label,
 } as const;
+
+export type ProgramString =
+  | 'PRO Coach Coup de pouce'
+  | 'PRO Candidat Coup de pouce'
+  | 'PRO Coach 360'
+  | 'PRO Candidat 360';
+
+type Casquette = `${
+  | 'Contact Entreprise/Financeur'
+  | ProgramString
+  | 'PRO Candidat 360'}${`${string}` | undefined}`;
 
 export interface SalesforceBinome {
   Id?: string;
@@ -504,27 +535,33 @@ export interface ExternalMessageProps {
 }
 
 export interface ContactProps {
+  id?: string;
   firstName?: string;
   lastName?: string;
   email: string;
   phone?: string;
+  birthDate?: Date;
   position?: string;
   department: Department;
-  companySfId: string;
+  companySfId?: string;
+  casquette: Casquette;
 }
 
 export interface SalesforceContact {
   Id?: string;
   LastName: string;
   FirstName: string;
+  Date_de_naissance__c?: Date;
   Email: string;
   Phone: string;
   Title: string;
   AccountId: string;
-  Casquettes_r_les__c: 'Contact Entreprise/Financeur';
+  Casquettes_r_les__c: Casquette;
   Reseaux__c: 'LinkedOut';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
+  MailingPostalCode?: string;
+  ID_App_Entourage_Pro__c?: string;
   Source__c: 'Lead entrant';
 }
 
@@ -594,7 +631,7 @@ export interface CandidateLeadProps {
   heardAbout?: HeardAboutValue;
   location?: string;
   autreSource?: 'Formulaire_Sourcing_Page_Travailler';
-  tsPrescripteur: string;
+  tsPrescripteur?: string;
 }
 
 export interface CoachLeadProps {
@@ -623,13 +660,13 @@ export interface CandidateInscriptionLeadProps {
   birthdate: Date;
   email: string;
   firstName: string;
-  heardAbout: HeardAboutValue;
+  heardAbout?: HeardAboutValue;
   infoCo: string;
   lastName: string;
-  location: string;
+  department: Department;
   phone: string;
   workingRight: CandidateYesNoNSPPValue;
-  tsPrescripteur: string;
+  tsPrescripteur?: string;
 }
 
 export interface CandidateAndWorkerLeadProps {
@@ -674,7 +711,7 @@ export interface CandidateSalesforceLead {
   FirstName: string;
   Email?: string;
   Phone: string;
-  Genre__c: string;
+  Genre__c: CandidateGender | null;
   Date_de_naissance__c?: Date;
   Situation_administrative__c?: string;
   Droit_de_travailler_en_France__c: string;
@@ -728,7 +765,7 @@ export interface CoachSalesforceLead {
   OwnerId?: string;
   LastName: string;
   FirstName: string;
-  Company: string;
+  Company: 'Coachs LinkedOut' | string;
   Title: string;
   Email: string;
   Phone?: string;
@@ -736,4 +773,18 @@ export interface CoachSalesforceLead {
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
+}
+
+export interface UserProps {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  department: Department;
+  role: NormalUserRole;
+  birthDate: Date;
+  program: string;
+  workingRight?: CandidateYesNoNSPPValue;
+  campaign?: string;
 }

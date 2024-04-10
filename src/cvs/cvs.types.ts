@@ -21,6 +21,10 @@ export const GenderFilters: FilterConstant<Gender>[] = [
     label: 'Femme',
     value: 1,
   },
+  {
+    label: 'Other',
+    value: 2,
+  },
 ];
 
 export interface CVOptions {

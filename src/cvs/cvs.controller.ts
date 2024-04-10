@@ -26,7 +26,7 @@ import {
 } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
-  CandidateUserRoles,
+  AllUserRoles,
   CoachUserRoles,
   CVStatuses,
   Permissions,
@@ -76,9 +76,7 @@ export class CVsController {
     //   );
     // }
 
-    if (isRoleIncluded(CandidateUserRoles, role)) {
-      createCVDto.status = CVStatuses.PROGRESS.value;
-    } else if (isRoleIncluded(CoachUserRoles, role)) {
+    if (isRoleIncluded(AllUserRoles, role)) {
       if (
         createCVDto.status !== CVStatuses.PROGRESS.value &&
         createCVDto.status !== CVStatuses.PENDING.value
@@ -127,14 +125,11 @@ export class CVsController {
         await this.cvsService.sendCacheAllCVs();
         await this.cvsService.sendGenerateCVSearchString(candidateId);
 
-        const cvs = await this.cvsService.findAllVersionsByCandidateId(
-          candidateId
-        );
-
         const hasPublishedAtLeastOnce =
-          cvs?.filter(({ status }) => {
-            return status === CVStatuses.PUBLISHED.value;
-          }).length > 1;
+          await this.cvsService.findHasAtLeastOnceStatusByCandidateId(
+            candidateId,
+            CVStatuses.PUBLISHED.value
+          );
 
         if (!hasPublishedAtLeastOnce) {
           await this.cvsService.sendMailsAfterPublishing(candidateId);

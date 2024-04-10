@@ -38,18 +38,45 @@ export const UserPermissions: { [K in UserRole]: Permission | Permission[] } = {
   [UserRoles.ADMIN]: Permissions.ADMIN,
 };
 
-export const NormalUserRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
-export const ExternalUserRoles = [
+export type NormalUserRole =
+  | typeof UserRoles.CANDIDATE
+  | typeof UserRoles.COACH;
+
+export const NormalUserRoles: NormalUserRole[] = [
+  UserRoles.CANDIDATE,
+  UserRoles.COACH,
+];
+
+export type ExternalUserRole =
+  | typeof UserRoles.CANDIDATE_EXTERNAL
+  | typeof UserRoles.COACH_EXTERNAL;
+
+export const ExternalUserRoles: ExternalUserRole[] = [
   UserRoles.CANDIDATE_EXTERNAL,
   UserRoles.COACH_EXTERNAL,
 ];
 
-export const CandidateUserRoles = [
+export type CandidateUserRole =
+  | typeof UserRoles.CANDIDATE
+  | typeof UserRoles.CANDIDATE_EXTERNAL;
+
+export const CandidateUserRoles: CandidateUserRole[] = [
   UserRoles.CANDIDATE,
   UserRoles.CANDIDATE_EXTERNAL,
 ];
-export const CoachUserRoles = [UserRoles.COACH, UserRoles.COACH_EXTERNAL];
-export const AllUserRoles = [...CandidateUserRoles, ...CoachUserRoles];
+
+export type CoachUserRole =
+  | typeof UserRoles.COACH
+  | typeof UserRoles.COACH_EXTERNAL;
+
+export const CoachUserRoles: CoachUserRole[] = [
+  UserRoles.COACH,
+  UserRoles.COACH_EXTERNAL,
+];
+export const AllUserRoles: (CandidateUserRole | CoachUserRole)[] = [
+  ...CandidateUserRoles,
+  ...CoachUserRoles,
+];
 
 export const AdminRoles = {
   CANDIDATES: 'Candidats',
@@ -72,6 +99,7 @@ export const UserRolesFilters = [
 export const Genders = {
   MALE: 0,
   FEMALE: 1,
+  OTHER: 2,
 } as const;
 
 export type Gender = typeof Genders[keyof typeof Genders];
@@ -202,5 +230,12 @@ export const MemberFilters: Filters<MemberFilterKey> = [
     title: 'Statut du CV',
   },
 ];
+
+export const Programs = {
+  BOOST: 'boost',
+  THREE_SIXTY: 'three_sixty',
+} as const;
+
+export type Program = typeof Programs[keyof typeof Programs];
 
 export const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';

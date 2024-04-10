@@ -12,6 +12,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
+import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import {
   CandidateUserRoles,
@@ -69,6 +70,7 @@ export class UserProfilesService {
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
     private s3Service: S3Service,
     private usersService: UsersService,
+    private userCandidatsService: UserCandidatsService,
     private messagesService: MessagesService
   ) {}
 
@@ -101,6 +103,10 @@ export class UserProfilesService {
 
   async findOneUser(userId: string) {
     return this.usersService.findOne(userId);
+  }
+
+  async findUserCandidateByCandidateId(candidateId: string) {
+    return this.userCandidatsService.findOneByCandidateId(candidateId);
   }
 
   async findAll(
@@ -430,11 +436,14 @@ export class UserProfilesService {
       ? [UserRoles.COACH]
       : CandidateUserRoles;
 
-    const sameRegionDepartmentsOptions = Departments.filter(
-      ({ region }) =>
-        region ===
-        Departments.find(({ name }) => userProfile.department === name).region
-    ).map(({ name }) => name);
+    const sameRegionDepartmentsOptions = userProfile.department
+      ? Departments.filter(
+          ({ region }) =>
+            region ===
+            Departments.find(({ name }) => userProfile.department === name)
+              .region
+        ).map(({ name }) => name)
+      : Departments.map(({ name }) => name);
 
     const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
     const businessLines = [

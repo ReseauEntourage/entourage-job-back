@@ -90,6 +90,7 @@ export type CandidateHelpWithValue =
 export const CandidateGenders = {
   MALE: 'male',
   FEMALE: 'female',
+  OTHER: 'other',
 } as const;
 
 export type CandidateGender =
