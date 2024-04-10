@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { UsersModule } from '../users/users.module';
+import { UsersModule } from 'src/users/users.module';
 import { Organization } from './models';
 import { OrganizationReferent } from './models/organization-referent.model';
 import { OrganizationReferentsService } from './organization-referents.service';

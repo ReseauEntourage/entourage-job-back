@@ -25,6 +25,7 @@ import {
   CreateOrUpdateSalesforceEventJob,
   CreateOrUpdateSalesforceOpportunityJob,
   CreateOrUpdateSalesforceTaskJob,
+  CreateOrUpdateSalesforceUserJob,
   GenerateCVPDFJob,
   GenerateCVPreviewJob,
   GenerateCVSearchStringJob,
@@ -339,7 +340,6 @@ export class WorkQueueProcessor {
   async processGenerateCVPreview(job: Job<GenerateCVPreviewJob>) {
     const { data } = job;
 
-    // TODO FIX PREVIEW GENERATION
     const previewUrl = await this.cvsService.generatePreviewFromCV(
       data.candidateId,
       data.uploadedImg,
@@ -413,6 +413,25 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of task '${data.externalMessageId}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_USER)
+  async processCreateOrUpdateSalesforceUser(
+    job: Job<CreateOrUpdateSalesforceUserJob>
+  ) {
+    const { data } = job;
+
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceUser(data.userId, {
+        program: data.program,
+        workingRight: data.workingRight,
+        campaign: data.campaign,
+        birthDate: data.birthDate,
+      });
+      return `Salesforce : created or updated user '${data.userId}'`;
+    }
+
+    return `Salesforce job ignored : creation or update of user '${data.userId}'`;
   }
 
   @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)

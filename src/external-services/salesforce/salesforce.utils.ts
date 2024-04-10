@@ -30,6 +30,8 @@ import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones, AnyCantFix } from 'src/utils/types';
 import {
+  ContactProps,
+  ContactRecordType,
   EventPropsWithProcessAndBinomeAndRecruiterId,
   EventRecordTypesIds,
   LeadAccomodations,
@@ -49,6 +51,7 @@ import {
   ObjectName,
   OfferProps,
   ProcessProps,
+  SalesforceContact,
   SalesforceEvent,
   SalesforceLead,
   SalesforceLeads,
@@ -147,6 +150,17 @@ export function getDepartmentFromPostalCode(postalCode: string): Department {
     return name.includes(`(${deptNumber})`);
   });
   return department.name;
+}
+
+export function getPostalCodeFromDepartment(department: Department): string {
+  const postalCodeRegex = /\(([^)]+)\)/;
+  const postalCodeMatches = postalCodeRegex.exec(department);
+
+  const postalCodeDigits = postalCodeMatches ? postalCodeMatches[1] : '';
+
+  return (
+    postalCodeDigits + new Array(5 - postalCodeDigits.length).fill('0').join('')
+  );
 }
 
 export function mapSalesforceOfferFields({
@@ -545,11 +559,48 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
 
     return {
       ...commonFields,
-      Company: company,
+      Company: company || 'Coachs LinkedOut',
       Title: position,
     } as SalesforceLead<T>;
   }
 }
+
+export const mapSalesforceContactFields = (
+  {
+    id,
+    firstName,
+    lastName,
+    email,
+    phone,
+    position,
+    department,
+    companySfId,
+    casquette,
+    birthDate,
+  }: ContactProps,
+  recordType: ContactRecordType
+): SalesforceContact => {
+  return {
+    LastName:
+      lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
+    FirstName: firstName,
+    Email: email
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
+    Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
+    Title: position,
+    AccountId: companySfId,
+    Date_de_naissance__c: birthDate,
+    Casquettes_r_les__c: casquette,
+    Reseaux__c: 'LinkedOut',
+    RecordTypeId: recordType,
+    Antenne__c: formatDepartment(department),
+    MailingPostalCode: getPostalCodeFromDepartment(department),
+    ID_App_Entourage_Pro__c: id || '',
+    Source__c: 'Lead entrant',
+  };
+};
 
 export function mapProcessFromOpportunityUser(
   opportunityUsers: OpportunityUser[],
@@ -602,4 +653,8 @@ export function executeBulkAction<T extends ObjectName>(
 
 export function escapeQuery(query: string) {
   return query ? query.replace(/'/g, "\\'") : query;
+}
+
+export function prependDuplicateIfCondition(value: string, condition: boolean) {
+  return condition ? `bis_${value}` : value;
 }

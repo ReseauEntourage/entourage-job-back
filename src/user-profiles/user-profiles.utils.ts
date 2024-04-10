@@ -7,7 +7,8 @@ export const getPublicProfileFromUserAndUserProfile = (
   user: User,
   userProfile: UserProfile,
   lastSentMessage: Date,
-  lastReceivedMessage: Date
+  lastReceivedMessage: Date,
+  cvUrl?: string
 ): PublicProfile => {
   return {
     id: user.id,
@@ -25,6 +26,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     searchAmbitions: userProfile.searchAmbitions,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
+    cvUrl: cvUrl,
   };
 };
 

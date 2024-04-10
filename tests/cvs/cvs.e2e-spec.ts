@@ -107,7 +107,7 @@ describe('CVs', () => {
           path = cvsHelper.getTestImagePath();
         });
 
-        it('Should return 201 and CV with cv status set as progress if logged in user', async () => {
+        it('Should return 201 and CV with cv status set as progress if logged in candidate', async () => {
           const { createdAt, updatedAt, version, urlImg, ...cv } =
             await cvFactory.create(
               {
@@ -181,6 +181,35 @@ describe('CVs', () => {
               .post(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Token ${loggedInCoach.token}`)
               .field('cv', JSON.stringify(cv))
+              .attach('profileImage', path);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(expect.objectContaining(cvResponse));
+        });
+        it('Should return 201 and CV with cv status set as pending if CV submitted, if logged in user is candidate', async () => {
+          ({ loggedInCoach, loggedInCandidate: loggedInCandidate } =
+            await userCandidatsHelper.associateCoachAndCandidate(
+              loggedInCoach,
+              loggedInCandidate,
+              true
+            ));
+          const { createdAt, updatedAt, version, urlImg, ...cv } =
+            await cvFactory.create(
+              {
+                UserId: loggedInCandidate.user.id,
+                urlImg: null,
+              },
+              {},
+              false
+            );
+          const cvResponse = {
+            ...cv,
+            status: CVStatuses.PENDING.value,
+          };
+          const response: APIResponse<CVsController['createCV']> =
+            await request(app.getHttpServer())
+              .post(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .field('cv', JSON.stringify(cvResponse))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(expect.objectContaining(cvResponse));

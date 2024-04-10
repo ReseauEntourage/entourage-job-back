@@ -262,10 +262,21 @@ describe('Contacts', () => {
     });
   });
 
-  describe('/campaigns - Get all the campaigns in the future', () => {
+  describe('/campaigns/candidate - Get all the candidate the campaigns in the future', () => {
     it('should return 201 on route call', async () => {
-      const response: APIResponse<ContactsController['getCampaigns']> =
-        await request(app.getHttpServer()).get(`${route}/campaigns`).send();
+      const response: APIResponse<ContactsController['getCandidateCampaigns']> =
+        await request(app.getHttpServer())
+          .get(`${route}/campaigns/candidate`)
+          .send();
+      expect(response.status).toBe(200);
+    });
+  });
+  describe('/campaigns/coach - Get all the coach campaigns in the future', () => {
+    it('should return 201 on route call', async () => {
+      const response: APIResponse<ContactsController['getCoachCampaigns']> =
+        await request(app.getHttpServer())
+          .get(`${route}/campaigns/coach`)
+          .send();
       expect(response.status).toBe(200);
     });
   });

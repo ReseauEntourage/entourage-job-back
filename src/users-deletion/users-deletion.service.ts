@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { UserProfilesService } from '../user-profiles/user-profiles.service';
-import { UserCandidat } from '../users/models';
 import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { UpdateOpportunityUserDto } from 'src/opportunities/dto/update-opportunity-user.dto';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { RevisionChangesService } from 'src/revisions/revision-changes.service';
 import { RevisionsService } from 'src/revisions/revisions.service';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
+import { UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { generateImageNamesToDelete } from 'src/users/users.utils';

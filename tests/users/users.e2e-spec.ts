@@ -9,18 +9,22 @@ import { LoggedUser } from 'src/auth/auth.types';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Experience } from 'src/common/experiences/models';
+import { Department } from 'src/common/locations/locations.types';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
+import { CandidateYesNoNSPP } from 'src/contacts/contacts.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
 import { HelpNeed, HelpOffer, UserProfile } from 'src/user-profiles/models';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
+import { HelpValue } from 'src/user-profiles/user-profiles.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
-import { CVStatuses, UserRoles } from 'src/users/users.types';
+import { CVStatuses, Programs, UserRoles } from 'src/users/users.types';
+import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
@@ -365,6 +369,7 @@ describe('Users', () => {
               updatedAt: coachUpdatedAt,
               createdAt: coachCreatedAt,
               lastConnection: coachLastConnection,
+              readDocuments: [],
               organization,
               candidat,
               coaches,
@@ -460,6 +465,7 @@ describe('Users', () => {
               updatedAt: candidateUpdatedAt,
               createdAt: candidateCreatedAt,
               lastConnection: candidateLastConnection,
+              readDocuments: [],
               organization,
               candidat,
               coaches,
@@ -850,6 +856,7 @@ describe('Users', () => {
               candidat,
               coaches,
               organization: coachOrganization,
+              readDocuments: coachReadDocuments,
               ...restCoach
             } = coach;
 
@@ -863,6 +870,7 @@ describe('Users', () => {
               createdAt,
               lastConnection,
               candidat: candidateCandidat,
+              readDocuments: candidateReadDocuments,
               ...restCandidate
             } = candidate;
 
@@ -874,6 +882,7 @@ describe('Users', () => {
               coaches: otherExternalCandidateCoaches,
               lastConnection: otherCandidateLastConnection,
               organization: otherCandidateOrganization,
+              readDocuments: otherCandidateReadDocuments,
               ...restOtherExternalCandidate
             } = otherExternalCandidate;
 
@@ -910,6 +919,7 @@ describe('Users', () => {
 
             expect(coachFromDB).toEqual(
               expect.objectContaining({
+                // coachReadDocuments,
                 ...restCoach,
                 coaches: expect.arrayContaining([
                   expect.objectContaining({
@@ -1031,6 +1041,7 @@ describe('Users', () => {
               candidat,
               coaches,
               organization: candidateOrganization,
+              readDocuments,
               ...candidate
             } = await userFactory.create(
               {
@@ -1475,6 +1486,359 @@ describe('Users', () => {
           });
         });
       });
+      describe('/registration - Create user through registration', () => {
+        it('Should return 200 and a created candidate if valid candidate data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body.token).toBeDefined();
+          expect(response.body.user).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+                helpNeeds: expect.arrayContaining(
+                  userProfileValues.helpNeeds.map((expectation) =>
+                    expect.objectContaining(expectation)
+                  )
+                ),
+              }),
+            })
+          );
+        });
+        it('Should return 200 and a created coach if valid coach data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            campaign: '1234',
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body.token).toBeDefined();
+          expect(response.body.user).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+              }),
+            })
+          );
+        });
+        it('Should return 200 and a created candidate if missing optional fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body.token).toBeDefined();
+          expect(response.body.user).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+              }),
+            })
+          );
+        });
+        it('Should return 400 when candidate has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when coach has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when user has invalid email', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: 'email.fr',
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when user has invalid phone', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: '1234',
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 400 when user has wrong role', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.COACH_EXTERNAL },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+        it('Should return 409 when the email already exist', async () => {
+          const existingUser = await userFactory.create({}, {}, true);
+
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: existingUser.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(app.getHttpServer())
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(409);
+        });
+      });
     });
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {
@@ -1707,6 +2071,7 @@ describe('Users', () => {
               candidat,
               coaches,
               organization: coachOrganization,
+              readDocuments: coachReadDocuments,
               ...restExternalLoggedInCoach
             },
           } = externalLoggedInCoach;
@@ -1724,6 +2089,7 @@ describe('Users', () => {
               candidat: candidate1Candidat,
               coaches: candidate1Coaches,
               organization: candidate1Organization,
+              readDocuments: candidate1ReadDocuments,
               ...restExternalLoggedInCandidate1
             },
           } = externalLoggedInCandidate1;
@@ -1741,6 +2107,7 @@ describe('Users', () => {
               candidat: candidate2Candidat,
               coaches: candidate2Coaches,
               organization: candidate2Organization,
+              readDocuments: candidate2ReadDocuments,
               ...restExternalLoggedInCandidate2
             },
           } = externalLoggedInCandidate2;
@@ -3058,6 +3425,7 @@ describe('Users', () => {
               userProfile: {
                 department: 'Paris (75)',
                 searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
                 searchAmbitions: [{ name: 'développeur' }] as Ambition[],
                 helpNeeds: [{ name: 'network' }] as HelpNeed[],
                 helpOffers: [{ name: 'network' }] as HelpOffer[],
@@ -3083,6 +3451,117 @@ describe('Users', () => {
               userProfilesHelper.mapUserProfileFromUser(randomUser)
             )
           );
+        });
+        it('Should return 200, and last contacted dates if user has contacted other user', async () => {
+          const internalMessageReceived = await internalMessageFactory.create({
+            senderUserId: randomUser.id,
+            addresseeUserId: loggedInUser.user.id,
+          });
+
+          const internalMessageSent = await internalMessageFactory.create({
+            senderUserId: loggedInUser.user.id,
+            addresseeUserId: randomUser.id,
+          });
+
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${randomUser.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userProfilesHelper.mapUserProfileFromUser(randomUser),
+              lastReceivedMessage:
+                internalMessageReceived.createdAt.toISOString(),
+              lastSentMessage: internalMessageSent.createdAt.toISOString(),
+            })
+          );
+        });
+        it('Should return 200, and cvUrl if user profile is a candidate not hidden CV', async () => {
+          const candidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+              userCandidat: {
+                hidden: false,
+              },
+            }
+          );
+
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${candidate.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userProfilesHelper.mapUserProfileFromUser(candidate),
+              cvUrl: candidate.candidat.url,
+            })
+          );
+        });
+        it('Should return 200, and no cvUrl if user profile is a candidate with hidden CV', async () => {
+          const candidate = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+              userCandidat: {
+                hidden: true,
+              },
+            }
+          );
+
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${candidate.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(
+              userProfilesHelper.mapUserProfileFromUser(candidate)
+            )
+          );
+          expect(response.body.cvUrl).toBeFalsy();
+        });
+        it('Should return 200, and no cvUrl if user profile is not a candidate', async () => {
+          const coach = await userFactory.create(
+            { role: UserRoles.COACH },
+            {
+              userProfile: {
+                department: 'Paris (75)',
+                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                helpOffers: [{ name: 'network' }] as HelpOffer[],
+              },
+            }
+          );
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(app.getHttpServer())
+              .get(`${route}/profile/${coach.id}`)
+              .set('authorization', `Token ${loggedInUser.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body).toEqual(
+            expect.objectContaining(
+              userProfilesHelper.mapUserProfileFromUser(coach)
+            )
+          );
+          expect(response.body.cvUrl).toBeFalsy();
         });
       });
       describe('/profile/recommendations/:userId - Get user recommendations', () => {
@@ -5832,6 +6311,7 @@ describe('Users', () => {
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
+            readDocuments,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -5862,6 +6342,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization,
+            readDocuments,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6004,6 +6485,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization: candidateOrganization,
+            readDocuments: candidateReadDocuments,
             ...restExternalCandidate
           } = externalCandidate;
 
@@ -6032,6 +6514,7 @@ describe('Users', () => {
             lastConnection: otherCandidateLastConnection,
             createdAt: otherCandidateCreatedAt,
             organization: otherCandidateOrganization,
+            readDocuments: otherCandidateReadDocuments,
             ...restOtherExternalCandidate
           } = otherExternalCandidate;
 
@@ -6041,6 +6524,7 @@ describe('Users', () => {
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
+            readDocuments: externalCoachReadDocuments,
             ...restExternalCoach
           } = externalCoach;
 
@@ -6096,6 +6580,7 @@ describe('Users', () => {
             lastConnection: otherCandidateLastConnection,
             createdAt: otherCandidateCreatedAt,
             organization: otherCandidateOrganization,
+            readDocuments: otherCandidateReadDocuments,
             ...restOtherExternalCandidate
           } = await userFactory.create(
             {
@@ -6112,6 +6597,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization: candidateOrganization,
+            readDocuments: candidateReadDocuments,
             ...restExternalCandidate
           } = externalCandidate;
 

@@ -96,9 +96,15 @@ export class ContactsController {
   }
 
   @Public()
-  @Get('campaigns')
-  async getCampaigns() {
-    return this.contactsService.getCampaignsFromSF();
+  @Get('campaigns/candidate')
+  async getCandidateCampaigns() {
+    return this.contactsService.getCandidateCampaignsFromSF();
+  }
+
+  @Public()
+  @Get('campaigns/coach')
+  async getCoachCampaigns() {
+    return this.contactsService.getCoachCampaignsFromSF();
   }
 
   @Public()
@@ -110,6 +116,7 @@ export class ContactsController {
     if (!isValidPhone(inscriptionCandidateFormDto.phone)) {
       throw new BadRequestException('invalid phone');
     }
+
     return this.contactsService.sendCandidateInscriptionToSalesforce(
       inscriptionCandidateFormDto
     );
