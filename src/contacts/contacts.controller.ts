@@ -101,6 +101,13 @@ export class ContactsController {
     return this.contactsService.getCandidateCampaignsFromSF();
   }
 
+  // TODO Remove after switch to entourage-pro
+  @Public()
+  @Get('campaigns')
+  async getLegacyCampaigns() {
+    return this.contactsService.getCandidateCampaignsFromSF();
+  }
+
   @Public()
   @Get('campaigns/coach')
   async getCoachCampaigns() {
