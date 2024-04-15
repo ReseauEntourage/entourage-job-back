@@ -40,7 +40,7 @@ export class VonageService {
         if (useSMS) {
           return new Promise((res, rej) => {
             this.vonage.message.sendSms(
-              process.env.MAILJET_FROM_NAME,
+              process.env.SMS_SENDER_ID,
               toPhone,
               text,
               {},
