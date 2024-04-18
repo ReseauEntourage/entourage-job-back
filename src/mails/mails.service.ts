@@ -108,6 +108,17 @@ export class MailsService {
     }
   }
 
+  async sendVerificationMail(user: User, token: string) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+      variables: {
+        toEmail: user.email,
+        token,
+      },
+    });
+  }
+
   async sendCVPreparationMail(candidate: User) {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 

@@ -125,4 +125,8 @@ export class AuthService {
   ) {
     return this.mailsService.sendPasswordResetLinkMail(user, token);
   }
+
+  async generateVerificationToken(userId: string) {
+    return this.jwtService.sign({ sub: userId }, { expiresIn: '1d' });
+  }
 }
