@@ -245,6 +245,8 @@ export class UsersCreationController {
         });
       }
 
+      await this.usersCreationService.sendVerificationMail(createdUser);
+
       return loggedUser;
     } catch (err) {
       if (((err as Error).name = SequelizeUniqueConstraintError)) {

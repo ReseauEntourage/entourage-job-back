@@ -49,10 +49,11 @@ export class AuthService {
     };
   }
 
-  decodeJWT(token: string) {
+  decodeJWT(token: string, ignoreExpiration?: boolean) {
     try {
       return this.jwtService.verify(token, {
         secret: `${process.env.JWT_SECRET}`,
+        ignoreExpiration: ignoreExpiration,
       });
     } catch (err) {
       return false;
@@ -124,5 +125,19 @@ export class AuthService {
     token: string
   ) {
     return this.mailsService.sendPasswordResetLinkMail(user, token);
+  }
+
+  async sendVerificationMail(user: User, token: string) {
+    return this.mailsService.sendVerificationMail(user, token);
+  }
+
+  async generateVerificationToken(userId: string) {
+    return this.jwtService.sign(
+      { sub: userId },
+      {
+        secret: process.env.JWT_SECRET,
+        expiresIn: '7d',
+      }
+    );
   }
 }

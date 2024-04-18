@@ -2283,6 +2283,7 @@ describe('Users', () => {
             gender: loggedInCandidate.user.gender,
             phone: loggedInCandidate.user.phone,
             zone: loggedInCandidate.user.zone,
+            isEmailVerified: loggedInCandidate.user.isEmailVerified,
             organization: null,
           };
 

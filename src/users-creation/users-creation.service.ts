@@ -77,6 +77,11 @@ export class UsersCreationService {
     return this.mailsService.sendWelcomeMail(user);
   }
 
+  async sendVerificationMail(user: User) {
+    const token = await this.authService.generateVerificationToken(user.id);
+    return this.mailsService.sendVerificationMail(user, token);
+  }
+
   async sendMailsAfterMatching(candidateId: string) {
     return this.usersService.sendMailsAfterMatching(candidateId);
   }
