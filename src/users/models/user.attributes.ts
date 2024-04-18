@@ -11,6 +11,7 @@ export const UserAttributes = [
   'zone',
   'gender',
   'lastConnection',
+  'isEmailVerified',
   'createdAt',
   /*'updatedAt',
   'deletedAt',*/
