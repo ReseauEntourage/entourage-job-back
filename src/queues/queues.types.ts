@@ -1,6 +1,15 @@
-import { CandidateYesNoNSPPValue } from '../contacts/contacts.types';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Location } from 'src/common/locations/models';
+import {
+  CandidateAccommodation,
+  CandidateResource,
+  CandidateYesNoNSPPValue,
+  JobSearchDuration,
+  Nationality,
+  StudiesLevel,
+  WorkingExperience,
+  YesNoJNSPRValue,
+} from 'src/contacts/contacts.types';
 import {
   CustomContactParams,
   CustomMailParams,
@@ -148,6 +157,13 @@ export interface CreateOrUpdateSalesforceUserJob {
   program: Program;
   birthDate: Date;
   campaign?: string;
+  nationality?: Nationality;
+  accommodation?: CandidateAccommodation;
+  hasSocialWorker?: YesNoJNSPRValue;
+  resources?: CandidateResource;
+  studiesLevel?: StudiesLevel;
+  workingExperience?: WorkingExperience;
+  jobSearchDuration?: JobSearchDuration;
   workingRight?: CandidateYesNoNSPPValue;
 }
 
