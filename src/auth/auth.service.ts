@@ -127,6 +127,6 @@ export class AuthService {
   }
 
   async generateVerificationToken(userId: string) {
-    return this.jwtService.sign({ sub: userId }, { expiresIn: '1d' });
+    return this.jwtService.sign({ sub: userId }, { expiresIn: '7d' });
   }
 }
