@@ -1,6 +1,6 @@
 # ==== CONFIGURE BACK =====
 # USE NODE 16
-FROM node:16-alpine3.18 as base
+FROM node:18-alpine3.18 as base
 # GO INSIDE WORKING DIR
 WORKDIR /home/node
 # THEN COPY MAIN FILE FOR FIRST
