@@ -157,8 +157,8 @@ export class AuthController {
   }
 
   @Public()
-  @Get('verify-email/:token')
-  async verifyEmail(@Param('token') token: string): Promise<void> {
+  @Post('verify-email')
+  async verifyEmail(@Body('token') token: string): Promise<void> {
     // double check that verify checks the expiration date
     const decodedToken = this.authService.decodeJWT(token);
     const { userId, exp } = decodedToken;
@@ -170,7 +170,11 @@ export class AuthController {
       throw new BadRequestException('Invalid token');
     }
     const user = await this.authService.findOneUserComplete(userId);
-    if (!user || !expirationDate || expirationDate < currentDate) {
+    if (
+      !user ||
+      !expirationDate ||
+      expirationDate.getTime() < currentDate.getTime()
+    ) {
       throw new NotFoundException();
     }
     if (user.isEmailVerified) {
