@@ -4910,60 +4910,70 @@ describe('Users', () => {
             await userFactory.create(
               {
                 role: UserRoles.CANDIDATE,
+                lastConnection: moment().subtract(5, 'day').toDate(),
               },
               { userProfile: userProfileCandidate }
             );
             secondCreatedCandidate = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE,
+                lastConnection: moment().subtract(4, 'day').toDate(),
               },
               { userProfile: userProfileCandidate }
             );
             thirdCreatedCandidate = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE,
+                lastConnection: moment().subtract(3, 'day').toDate(),
               },
               { userProfile: userProfileCandidate }
             );
             fourthCreatedCandidate = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE,
+                lastConnection: moment().subtract(2, 'day').toDate(),
               },
               { userProfile: userProfileCandidate }
             );
             fifthCreatedCandidate = await userFactory.create(
               {
                 role: UserRoles.CANDIDATE,
+                lastConnection: moment().subtract(1, 'day').toDate(),
               },
               { userProfile: userProfileCandidate }
             );
             await userFactory.create(
               {
                 role: UserRoles.COACH,
+                lastConnection: moment().subtract(5, 'day').toDate(),
               },
               { userProfile: userProfileCoach }
             );
             secondCreatedCoach = await userFactory.create(
               {
                 role: UserRoles.COACH,
+                lastConnection: moment().subtract(4, 'day').toDate(),
               },
               { userProfile: userProfileCoach }
             );
             thirdCreatedCoach = await userFactory.create(
               {
                 role: UserRoles.COACH,
+                lastConnection: moment().subtract(3, 'day').toDate(),
               },
               { userProfile: userProfileCoach }
             );
             fourthCreatedCoach = await userFactory.create(
               {
                 role: UserRoles.COACH,
+                lastConnection: moment().subtract(2, 'day').toDate(),
               },
               { userProfile: userProfileCoach }
             );
             fifthCreatedCoach = await userFactory.create(
               {
                 role: UserRoles.COACH,
+                lastConnection: moment().subtract(1, 'day').toDate(),
               },
               { userProfile: userProfileCoach }
             );
