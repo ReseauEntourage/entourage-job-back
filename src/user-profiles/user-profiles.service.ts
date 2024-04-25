@@ -155,17 +155,18 @@ export class UserProfilesService {
       offset,
       limit,
       attributes: ['id'],
-      order: sequelize.literal('"user.createdAt" DESC'),
+      order: sequelize.literal('"user.lastConnection" DESC'),
       ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
         ...getUserProfileInclude(role, businessLinesOptions, helpsOptions),
         {
           model: User,
           as: 'user',
-          attributes: ['createdAt'],
+          attributes: ['lastConnection'],
           where: {
             role,
             id: { [Op.not]: userId },
+            lastConnection: { [Op.ne]: null },
             ...searchOptions,
           },
         },
@@ -174,7 +175,7 @@ export class UserProfilesService {
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
-      order: sequelize.literal('"user.createdAt" DESC'),
+      order: sequelize.literal('"user.lastConnection" DESC'),
       where: {
         id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
       },
