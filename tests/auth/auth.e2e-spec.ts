@@ -1,6 +1,7 @@
 import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import moment from 'moment';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
 import { Queues } from 'src/queues/queues.types';
@@ -62,10 +63,11 @@ describe('Auth', () => {
 
   describe('/login - Login', () => {
     let candidate: User;
+    const password = 'Candidat123!';
     beforeEach(async () => {
       candidate = await userFactory.create({
         role: UserRoles.CANDIDATE,
-        password: 'Candidat123!',
+        password: password,
       });
     });
 
@@ -76,7 +78,7 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidate.email,
-          password: 'Candidat123!',
+          password,
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
@@ -125,6 +127,20 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidate.email,
+        });
+      expect(response.status).toBe(401);
+    });
+    it('Should return 401, if user is deleted', async () => {
+      await usersHelper.updateUser(candidate.id, {
+        deletedAt: moment().toDate(),
+      });
+      const response: APIResponse<AuthController['login']> = await request(
+        app.getHttpServer()
+      )
+        .post(`${route}/login`)
+        .send({
+          email: candidate.email,
+          password,
         });
       expect(response.status).toBe(401);
     });
@@ -319,6 +335,21 @@ describe('Auth', () => {
       )
         .get(`${route}/current`)
         .set('authorization', `Token ${invalidToken}`);
+      expect(response.status).toBe(401);
+    });
+    it('Should return 401, if deleted user', async () => {
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+        password: 'loggedInCandidat',
+      });
+      await usersHelper.updateUser(loggedInCandidat.user.id, {
+        deletedAt: moment().toDate(),
+      });
+      const response: APIResponse<AuthController['getCurrent']> = await request(
+        app.getHttpServer()
+      )
+        .get(`${route}/current`)
+        .set('authorization', `Token ${loggedInCandidat.token}`);
       expect(response.status).toBe(401);
     });
   });

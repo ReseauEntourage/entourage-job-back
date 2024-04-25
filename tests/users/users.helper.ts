@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { UserProfile } from 'src/user-profiles/models';
+import { UpdateUserDto } from 'src/users/dto';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserFactory } from './user.factory';
@@ -33,6 +34,11 @@ export class UsersHelper {
       user,
       token: token,
     };
+  }
+
+  async updateUser(userId: string, props: UpdateUserDto): Promise<User> {
+    const user = await this.usersService.update(userId, props);
+    return user?.toJSON();
   }
 
   async findUser(userId: string): Promise<User> {

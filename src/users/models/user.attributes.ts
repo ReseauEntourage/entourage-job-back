@@ -13,8 +13,8 @@ export const UserAttributes = [
   'lastConnection',
   'isEmailVerified',
   'createdAt',
-  /*'updatedAt',
-  'deletedAt',*/
+  /*'updatedAt',*/
+  'deletedAt',
 ] as const;
 
 export type UserAttribute = typeof UserAttributes[number];
