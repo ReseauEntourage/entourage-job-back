@@ -36,13 +36,13 @@ export class UsersHelper {
     };
   }
 
-  async updateUser(userId: string, props: UpdateUserDto): Promise<User> {
-    const user = await this.usersService.update(userId, props);
-    return user?.toJSON();
-  }
-
   async findUser(userId: string): Promise<User> {
     const user = await this.usersService.findOne(userId);
     return user?.toJSON();
+  }
+
+  async updateUser(userId: string, props: UpdateUserDto): Promise<User> {
+    const updatedUser = await this.usersService.update(userId, props);
+    return updatedUser?.toJSON();
   }
 }
