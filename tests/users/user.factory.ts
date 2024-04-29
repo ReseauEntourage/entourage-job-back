@@ -111,15 +111,15 @@ export class UserFactory implements Factory<User> {
     return builtUserWithoutId as User;
   }
 
-  async delete(userId: string) {
-    await this.usersService.update(userId, { deletedAt: new Date() });
-  }
+  // async delete(userId: string) {
+  //   await this.usersService.update(userId, { deletedAt: new Date() });
+  // }
 
-  async createAndDelete(props: Partial<User> = {}) {
-    const createdUser = await this.create(props);
-    const deletedUser = await this.usersService.update(createdUser.id, {
-      deletedAt: new Date(),
-    });
-    return deletedUser.toJSON();
-  }
+  // async createAndDelete(props: Partial<User> = {}) {
+  //   const createdUser = await this.create(props);
+  //   const deletedUser = await this.usersService.update(createdUser.id, {
+  //     deletedAt: new Date(),
+  //   });
+  //   return deletedUser.toJSON();
+  // }
 }
