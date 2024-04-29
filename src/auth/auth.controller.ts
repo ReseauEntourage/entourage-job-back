@@ -159,26 +159,25 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   async verifyEmail(@Body('token') token: string): Promise<void> {
-    // double check that verify checks the expiration date
-    const decodedToken = this.authService.decodeJWT(token);
-    const { userId, exp } = decodedToken;
+    // Need to ignore expiration date here when verifying the token to be able to check if the user emailis already verified
+    const decodedToken = this.authService.decodeJWT(token, true);
+    const { sub: userId, exp } = decodedToken;
 
     const expirationDate = new Date(exp * 1000);
     const currentDate = new Date();
 
-    if (!userId) {
-      throw new BadRequestException('Invalid token');
+    if (!decodedToken || !exp || !userId) {
+      throw new BadRequestException('INVALID_TOKEN');
     }
     const user = await this.authService.findOneUserComplete(userId);
-    if (
-      !user ||
-      !expirationDate ||
-      expirationDate.getTime() < currentDate.getTime()
-    ) {
+    if (!user) {
       throw new NotFoundException();
     }
     if (user.isEmailVerified) {
-      throw new BadRequestException('Email already verified');
+      throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+    if (expirationDate.getTime() < currentDate.getTime()) {
+      throw new BadRequestException('TOKEN_EXPIRED');
     }
 
     const updatedUser = await this.authService.updateUser(userId, {
@@ -188,6 +187,31 @@ export class AuthController {
     if (!updatedUser) {
       throw new NotFoundException();
     }
+
+    return;
+  }
+
+  @Throttle(60, 60)
+  @Public()
+  @Post('send-verify-email')
+  async sendVerifyEmail(@Body('token') token: string): Promise<void> {
+    // Need to ignore expiration date to extract the user
+    const decodedToken = this.authService.decodeJWT(token, true);
+    const { sub: userId } = decodedToken;
+
+    if (!decodedToken || !userId) {
+      throw new BadRequestException();
+    }
+    const user = await this.authService.findOneUserComplete(userId);
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    const tokenToSend = await this.authService.generateVerificationToken(
+      userId
+    );
+
+    await this.authService.sendVerificationMail(user, tokenToSend);
 
     return;
   }

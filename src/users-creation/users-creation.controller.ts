@@ -245,7 +245,7 @@ export class UsersCreationController {
         });
       }
 
-      this.usersCreationService.sendVerificationMail(createdUser);
+      await this.usersCreationService.sendVerificationMail(createdUser);
 
       return loggedUser;
     } catch (err) {
