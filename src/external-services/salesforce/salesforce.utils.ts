@@ -19,6 +19,11 @@ import {
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,
+  JobSearchDuration,
+  Nationality,
+  StudiesLevel,
+  WorkingExperience,
+  YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
 import { OpportunityUser } from 'src/opportunities/models';
 import {
@@ -41,12 +46,17 @@ import {
   LeadGender,
   LeadHeardAbout,
   LeadHelpWith,
+  LeadJobSearchDurations,
+  LeadNationalities,
   LeadProfessionalSituation,
   LeadProp,
   LeadRecordType,
   LeadRecordTypesIds,
   LeadResources,
+  LeadStudiesLevels,
+  LeadWorkingExperienceYears,
   LeadYesNo,
+  LeadYesNoJNSPR,
   LeadYesNoNSPP,
   ObjectName,
   OfferProps,
@@ -471,6 +481,11 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       autreSource,
       tsPrescripteur,
       heardAbout,
+      nationality,
+      hasSocialWorker,
+      studiesLevel,
+      workingExperience,
+      jobSearchDuration,
     } = leadProps;
 
     const parsedAddress = parseAddress(address);
@@ -548,6 +563,25 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         heardAbout,
         LeadHeardAbout
       ),
+      Nationalite__c: formatSalesforceValue<Nationality>(
+        nationality,
+        LeadNationalities
+      ),
+      Accompagnement_social_O_N__c: formatSalesforceValue<YesNoJNSPRValue>(
+        hasSocialWorker,
+        LeadYesNoJNSPR
+      ),
+      Plus_haut_niveau_de_formation_atteint__c:
+        formatSalesforceValue<StudiesLevel>(studiesLevel, LeadStudiesLevels),
+      annees_d_experiences_professionnelles__c:
+        formatSalesforceValue<WorkingExperience>(
+          workingExperience,
+          LeadWorkingExperienceYears
+        ),
+      Duree_de_recherche_d_emploi__c: formatSalesforceValue<JobSearchDuration>(
+        jobSearchDuration,
+        LeadJobSearchDurations
+      ),
     } as SalesforceLead<T>;
   }
 
@@ -577,6 +611,13 @@ export const mapSalesforceContactFields = (
     companySfId,
     casquette,
     birthDate,
+    nationality,
+    accommodation,
+    hasSocialWorker,
+    resources,
+    studiesLevel,
+    workingExperience,
+    jobSearchDuration,
   }: ContactProps,
   recordType: ContactRecordType
 ): SalesforceContact => {
@@ -599,6 +640,33 @@ export const mapSalesforceContactFields = (
     MailingPostalCode: getPostalCodeFromDepartment(department),
     ID_App_Entourage_Pro__c: id || '',
     Source__c: 'Lead entrant',
+    Nationalit__c: formatSalesforceValue<Nationality>(
+      nationality,
+      LeadNationalities
+    ),
+    Accompagnement_social_O_N__c: formatSalesforceValue<YesNoJNSPRValue>(
+      hasSocialWorker,
+      LeadYesNoJNSPR
+    ),
+    Plus_haut_niveau_de_formation_attein__c:
+      formatSalesforceValue<StudiesLevel>(studiesLevel, LeadStudiesLevels),
+    Ann_es_d_exp_rience_professionnelle__c:
+      formatSalesforceValue<WorkingExperience>(
+        workingExperience,
+        LeadWorkingExperienceYears
+      ),
+    Dur_e_de_recherche_d_emploi__c: formatSalesforceValue<JobSearchDuration>(
+      jobSearchDuration,
+      LeadJobSearchDurations
+    ),
+    Situation_d_h_bergement__c: formatSalesforceValue<CandidateAccommodation>(
+      accommodation,
+      LeadAccomodations
+    ),
+    Type_de_ressources__c: formatSalesforceValue<CandidateResource>(
+      resources,
+      LeadResources
+    ),
   };
 };
 
