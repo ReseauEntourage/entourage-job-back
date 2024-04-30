@@ -28,7 +28,18 @@ export class UsersCreationService {
     createdUserId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      'program' | 'workingRight' | 'campaign' | 'birthDate'
+      | 'program'
+      | 'workingRight'
+      | 'campaign'
+      | 'birthDate'
+      | 'nationality'
+      | 'accommodation'
+      | 'hasSocialWorker'
+      | 'resources'
+      | 'studiesLevel'
+      | 'workingExperience'
+      | 'jobSearchDuration'
+      | 'workingRight'
     >
   ) {
     return this.externalDatabasesService.createExternalDBUser(

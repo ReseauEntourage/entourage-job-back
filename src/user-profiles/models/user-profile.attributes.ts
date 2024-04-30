@@ -10,5 +10,6 @@ export const UserProfilesUserAttributes = [
   'firstName',
   'lastName',
   'role',
+  'lastConnection',
   'createdAt',
 ];

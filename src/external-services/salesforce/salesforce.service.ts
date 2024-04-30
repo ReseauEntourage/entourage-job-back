@@ -3,7 +3,16 @@ import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import moment from 'moment-timezone';
 
-import { CandidateYesNoNSPPValue } from 'src/contacts/contacts.types';
+import {
+  CandidateAccommodation,
+  CandidateResource,
+  CandidateYesNoNSPPValue,
+  JobSearchDuration,
+  Nationality,
+  StudiesLevel,
+  WorkingExperience,
+  YesNoJNSPRValue,
+} from 'src/contacts/contacts.types';
 import { MessagesService } from 'src/messages/messages.service';
 import { ExternalMessage } from 'src/messages/models';
 import { Opportunity } from 'src/opportunities/models';
@@ -1173,6 +1182,14 @@ export class SalesforceService {
     birthDate,
     program,
     campaign,
+    nationality,
+    accommodation,
+    hasSocialWorker,
+    resources,
+    studiesLevel,
+    workingExperience,
+    workingRight,
+    jobSearchDuration,
   }: UserProps) {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
@@ -1195,6 +1212,14 @@ export class SalesforceService {
         phone,
         department,
         zone: getZoneFromDepartment(department),
+        nationality,
+        accommodation,
+        hasSocialWorker,
+        resources,
+        studiesLevel,
+        workingExperience,
+        jobSearchDuration,
+        workingRight,
       };
 
       const leadSfId = (await this.findOrCreateLead(
@@ -1251,6 +1276,13 @@ export class SalesforceService {
         phone: prependDuplicateIfCondition(phone, !!leadSfId),
         department,
         companySfId,
+        nationality,
+        accommodation,
+        hasSocialWorker,
+        resources,
+        studiesLevel,
+        workingExperience,
+        jobSearchDuration,
       };
 
       contactSfId = (await this.createContact(
@@ -1774,6 +1806,13 @@ export class SalesforceService {
       birthDate: Date;
       campaign?: string;
       workingRight?: CandidateYesNoNSPPValue;
+      nationality?: Nationality;
+      accommodation?: CandidateAccommodation;
+      hasSocialWorker?: YesNoJNSPRValue;
+      resources?: CandidateResource;
+      studiesLevel?: StudiesLevel;
+      workingExperience?: WorkingExperience;
+      jobSearchDuration?: JobSearchDuration;
     }
   ) {
     this.setIsWorker(true);
@@ -1786,6 +1825,13 @@ export class SalesforceService {
       campaign: otherInfo.campaign,
       workingRight: otherInfo.workingRight,
       program: otherInfo.program,
+      nationality: otherInfo.nationality,
+      accommodation: otherInfo.accommodation,
+      hasSocialWorker: otherInfo.hasSocialWorker,
+      resources: otherInfo.resources,
+      studiesLevel: otherInfo.studiesLevel,
+      workingExperience: otherInfo.workingExperience,
+      jobSearchDuration: otherInfo.jobSearchDuration,
     });
   }
 
