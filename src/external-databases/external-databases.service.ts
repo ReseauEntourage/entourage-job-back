@@ -39,7 +39,17 @@ export class ExternalDatabasesService {
     userId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      'program' | 'workingRight' | 'campaign' | 'birthDate'
+      | 'program'
+      | 'campaign'
+      | 'birthDate'
+      | 'nationality'
+      | 'accommodation'
+      | 'hasSocialWorker'
+      | 'resources'
+      | 'studiesLevel'
+      | 'workingExperience'
+      | 'jobSearchDuration'
+      | 'workingRight'
     >
   ) {
     await this.queuesService.addToWorkQueue(
