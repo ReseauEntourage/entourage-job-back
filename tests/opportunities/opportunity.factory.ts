@@ -8,7 +8,10 @@ import phone from 'phone';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Departments } from 'src/common/locations/locations.types';
-import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import {
+  Opportunity,
+  // OpportunityUser
+} from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { Factory, WrapperModel } from 'src/utils/types';
@@ -31,8 +34,8 @@ export class OpportunityFactory implements Factory<Opportunity> {
   constructor(
     @InjectModel(Opportunity)
     private opportunityModel: typeof Opportunity,
-    @InjectModel(OpportunityUser)
-    private opportunityUserModel: typeof OpportunityUser,
+    // @InjectModel(OpportunityUser)
+    // private opportunityUserModel: typeof OpportunityUser,
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine,
     private opportunitiesService: OpportunitiesService
