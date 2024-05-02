@@ -22,7 +22,7 @@ export class ContactCompanyFormFactory
       email: faker.internet.email(),
       company: faker.company.companyName(2),
       position: faker.word.noun(2),
-      zone: faker.random.arrayElement(
+      zone: faker.helpers.arrayElement(
         AdminZoneFilters.map(({ value }) => value)
       ),
       approach: faker.random.objectElement(CompanyApproaches),

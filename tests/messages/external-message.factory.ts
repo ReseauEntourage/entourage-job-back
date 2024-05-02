@@ -29,12 +29,12 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
       senderLastName: faker.name.lastName(),
       senderEmail: faker.internet.email(),
       senderPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
-      subject: faker.random.arrayElement(
+      subject: faker.helpers.arrayElement(
         ExternalMessageSubjectFilters.map(({ value }) => value)
       ),
       optInNewsletter: faker.datatype.boolean(),
       message: faker.lorem.lines(3),
-      type: faker.random.arrayElement(
+      type: faker.helpers.arrayElement(
         ExternalMessageContactTypeFilters.map(({ value }) => value)
       ),
     };

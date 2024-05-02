@@ -37,7 +37,7 @@ export class OpportunityUserEventFactory
     props: Partial<OpportunityUserEvent>
   ): Partial<OpportunityUserEvent> {
     const fakeData: Partial<OpportunityUserEvent> = {
-      type: faker.random.arrayElement(EventTypeFilters).value,
+      type: faker.helpers.arrayElement(EventTypeFilters).value,
       startDate: moment().toDate(),
       endDate: faker.date.future(),
       createdAt: moment().toDate(),
