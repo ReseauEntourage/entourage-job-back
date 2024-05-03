@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
 import { HeardAbout, CandidateYesNoNSPP } from 'src/contacts/contacts.types';
@@ -21,8 +21,8 @@ export class InscriptionCandidateFormFactory
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
       location: '93',
-      workingRight: faker.random.objectElement(CandidateYesNoNSPP),
-      heardAbout: faker.random.objectElement(HeardAbout),
+      workingRight: faker.helpers.objectValue(CandidateYesNoNSPP),
+      heardAbout: faker.helpers.objectValue(HeardAbout),
       birthdate: faker.date.past(40),
       infoCo: '',
       tsPrescripteur: '',

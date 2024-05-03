@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
@@ -55,12 +55,12 @@ export class OpportunityFactory implements Factory<Opportunity> {
       recruiterMail: faker.internet.email(),
       recruiterPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       recruiterPosition: faker.lorem.words(2),
-      department: faker.random.arrayElement(Departments).name,
+      department: faker.helpers.arrayElement(Departments).name,
       date: moment().toDate(),
       description: faker.lorem.paragraphs(3),
       prerequisites: faker.lorem.paragraphs(3),
       skills: faker.lorem.paragraphs(3),
-      contract: faker.random.arrayElement(ContractFilters).value,
+      contract: faker.helpers.arrayElement(ContractFilters).value,
       endOfContract: moment().toDate(),
       startOfContract: moment().toDate(),
       isPartTime: faker.datatype.boolean(),
@@ -68,7 +68,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       numberOfPositions: faker.datatype.number(),
       message: faker.lorem.paragraphs(3),
       link: faker.lorem.words(2),
-      externalOrigin: faker.random.arrayElement(ExternalOfferOriginFilters)
+      externalOrigin: faker.helpers.arrayElement(ExternalOfferOriginFilters)
         .value,
       address: faker.address.city(),
       driversLicense: faker.datatype.boolean(),

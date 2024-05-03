@@ -20,6 +20,8 @@ import { MessagesHelper } from './messages.helper';
 
 describe('Messages', () => {
   let app: INestApplication;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let server: any;
 
   let databaseHelper: DatabaseHelper;
   let externalMessageFactory: ExternalMessageFactory;
@@ -45,6 +47,7 @@ describe('Messages', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    server = app.getHttpServer();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
@@ -61,6 +64,7 @@ describe('Messages', () => {
   afterAll(async () => {
     await databaseHelper.resetTestDB();
     await app.close();
+    server.close();
   });
 
   beforeEach(async () => {
@@ -98,7 +102,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeExternalMessage}`)
             .send(messageToCreate);
           expect(response.status).toBe(201);
@@ -115,7 +119,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeExternalMessage}`)
             .send(messageToCreate);
           expect(response.status).toBe(201);
@@ -139,7 +143,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeExternalMessage}`)
             .send(messageToCreate);
           expect(response.status).toBe(400);
@@ -156,7 +160,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeExternalMessage}`)
             .send({ ...messageToCreate, senderPhone: '1234' });
           expect(response.status).toBe(400);
@@ -173,7 +177,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeExternalMessage}`)
             .send(messageToCreate);
           expect(response.status).toBe(400);
@@ -190,7 +194,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeExternalMessage}`)
             .send(messageToCreate);
           expect(response.status).toBe(400);
@@ -221,7 +225,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createInternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeInternalMessage}`)
             .set('authorization', `Token ${senderUser.token}`)
             .send(messageToCreate);
@@ -246,7 +250,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createExternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeInternalMessage}`)
             .set('authorization', `Token ${senderUser.token}`)
             .send(messageToCreate);
@@ -268,7 +272,7 @@ describe('Messages', () => {
 
           const response: APIResponse<
             MessagesController['createInternalMessage']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${routeInternalMessage}`)
             .send(messageToCreate);
           expect(response.status).toBe(401);
