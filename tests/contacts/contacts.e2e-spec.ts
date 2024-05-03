@@ -23,6 +23,8 @@ import { InscriptionCandidateFormFactory } from './inscription-candidate-form.fa
 
 describe('Contacts', () => {
   let app: INestApplication;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let server: any;
 
   let databaseHelper: DatabaseHelper;
   let contactUsFormFactory: ContactUsFormFactory;
@@ -48,6 +50,7 @@ describe('Contacts', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    server = app.getHttpServer();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     contactUsFormFactory =
@@ -68,6 +71,7 @@ describe('Contacts', () => {
   afterAll(async () => {
     await databaseHelper.resetTestDB();
     await app.close();
+    server.close();
   });
 
   beforeEach(async () => {
@@ -78,9 +82,7 @@ describe('Contacts', () => {
     it('Should return 201, if all content provided', async () => {
       const formAnswers = await contactUsFormFactory.create({});
       const response: APIResponse<ContactsController['sendMailContactUsForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/contactUs`)
-          .send(formAnswers);
+        await request(server).post(`${route}/contactUs`).send(formAnswers);
       expect(response.status).toBe(201);
     });
 
@@ -96,9 +98,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['sendMailContactUsForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/contactUs`)
-          .send(shortData);
+        await request(server).post(`${route}/contactUs`).send(shortData);
       expect(response.status).toBe(201);
     });
 
@@ -111,9 +111,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['sendMailContactUsForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/contactUs`)
-          .send(shortData);
+        await request(server).post(`${route}/contactUs`).send(shortData);
       expect(response.status).toBe(400);
     });
   });
@@ -122,9 +120,7 @@ describe('Contacts', () => {
     it('Should return 201, if all content provided', async () => {
       const formAnswers = await contactCompanyFormFactory.create({});
       const response: APIResponse<ContactsController['sendCompanyForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/company`)
-          .send(formAnswers);
+        await request(server).post(`${route}/company`).send(formAnswers);
       expect(response.status).toBe(201);
     });
 
@@ -142,9 +138,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['sendCompanyForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/company`)
-          .send(shortData);
+        await request(server).post(`${route}/company`).send(shortData);
       expect(response.status).toBe(201);
     });
 
@@ -157,9 +151,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['sendCompanyForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/company`)
-          .send(shortData);
+        await request(server).post(`${route}/company`).send(shortData);
       expect(response.status).toBe(400);
     });
   });
@@ -168,9 +160,7 @@ describe('Contacts', () => {
     it('Should return 201, if all content provided', async () => {
       const formAnswers = await contactCandidateFormFactory.create({});
       const response: APIResponse<ContactsController['sendCandidateForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/candidate`)
-          .send(formAnswers);
+        await request(server).post(`${route}/candidate`).send(formAnswers);
       expect(response.status).toBe(201);
     });
 
@@ -203,9 +193,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['sendCandidateForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/candidate`)
-          .send(shortData);
+        await request(server).post(`${route}/candidate`).send(shortData);
       expect(response.status).toBe(201);
     });
 
@@ -218,9 +206,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['sendCandidateForm']> =
-        await request(app.getHttpServer())
-          .post(`${route}/candidate`)
-          .send(shortData);
+        await request(server).post(`${route}/candidate`).send(shortData);
       expect(response.status).toBe(400);
     });
   });
@@ -229,7 +215,7 @@ describe('Contacts', () => {
     it('Should return 201, if all content provided', async () => {
       const response: APIResponse<
         ContactsController['addContactForNewsletter']
-      > = await request(app.getHttpServer())
+      > = await request(server)
         .post(`${route}/newsletter`)
         .send({
           email: 'john@gmail.com',
@@ -242,7 +228,7 @@ describe('Contacts', () => {
     it('Should return 201, if optional fields not provided', async () => {
       const response: APIResponse<
         ContactsController['addContactForNewsletter']
-      > = await request(app.getHttpServer()).post(`${route}/newsletter`).send({
+      > = await request(server).post(`${route}/newsletter`).send({
         email: 'john@gmail.com',
       });
       expect(response.status).toBe(201);
@@ -251,7 +237,7 @@ describe('Contacts', () => {
     it('Should return 400, if missing email', async () => {
       const response: APIResponse<
         ContactsController['addContactForNewsletter']
-      > = await request(app.getHttpServer())
+      > = await request(server)
         .post(`${route}/newsletter`)
         .send({
           email: null,
@@ -265,18 +251,14 @@ describe('Contacts', () => {
   describe('/campaigns/candidate - Get all the candidate the campaigns in the future', () => {
     it('should return 201 on route call', async () => {
       const response: APIResponse<ContactsController['getCandidateCampaigns']> =
-        await request(app.getHttpServer())
-          .get(`${route}/campaigns/candidate`)
-          .send();
+        await request(server).get(`${route}/campaigns/candidate`).send();
       expect(response.status).toBe(200);
     });
   });
   describe('/campaigns/coach - Get all the coach campaigns in the future', () => {
     it('should return 201 on route call', async () => {
       const response: APIResponse<ContactsController['getCoachCampaigns']> =
-        await request(app.getHttpServer())
-          .get(`${route}/campaigns/coach`)
-          .send();
+        await request(server).get(`${route}/campaigns/coach`).send();
       expect(response.status).toBe(200);
     });
   });
@@ -298,7 +280,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['candidateInscription']> =
-        await request(app.getHttpServer())
+        await request(server)
           .post(`${route}/candidateInscription`)
           .send(shortData);
       expect(response.status).toBe(201);
@@ -318,7 +300,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['candidateInscription']> =
-        await request(app.getHttpServer())
+        await request(server)
           .post(`${route}/candidateInscription`)
           .send(shortData);
       expect(response.status).toBe(201);
@@ -339,7 +321,7 @@ describe('Contacts', () => {
       };
 
       const response: APIResponse<ContactsController['candidateInscription']> =
-        await request(app.getHttpServer())
+        await request(server)
           .post(`${route}/candidateInscription`)
           .send(shortData);
       expect(response.status).toBe(400);

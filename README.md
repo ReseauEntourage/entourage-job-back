@@ -2,7 +2,7 @@
 
 ## Modules principaux & versions
 
-> Node 16.x.x
+> Node 18.x.x
 
 > NestJS 8.0.0
 
@@ -18,19 +18,19 @@
 - `.husky` : scripts de hook de commit avec **_Husky_**
 - `/public` : stockage des ressources non dynamique accessible publiquement
 - `/src`
-    - `/constants` : fichiers de constantes
-    - `/controllers` : logiques métier de chaque use case de l'application
-    - `/helpers` : fichier d'utilitaire lié aux use cases
-    - `/jobs` : configuration des jobs asynchrones et gestions des jobs entrants
-    - `/routes` : configuration des routes avec **Express.js**
-        - `/db` : configuration de la base de données avec **Sequelize**
-            - `/config` : configuration d'accès à la base de données
-            - `/migrations`: fichiers de migration de la structure de la base
-            - `/models` : fichiers modèles des objets en base
-    - `/utils` : fonctions utilitaires communes
-    - `app.js`: point d'entrée de lancement du serveur
-    - `mainWorker.js`: point d'entrée de lancement du worker
-    - `server.js`: gestion du serveur
+  - `/constants` : fichiers de constantes
+  - `/controllers` : logiques métier de chaque use case de l'application
+  - `/helpers` : fichier d'utilitaire lié aux use cases
+  - `/jobs` : configuration des jobs asynchrones et gestions des jobs entrants
+  - `/routes` : configuration des routes avec **Express.js**
+    - `/db` : configuration de la base de données avec **Sequelize**
+      - `/config` : configuration d'accès à la base de données
+      - `/migrations`: fichiers de migration de la structure de la base
+      - `/models` : fichiers modèles des objets en base
+  - `/utils` : fonctions utilitaires communes
+  - `app.js`: point d'entrée de lancement du serveur
+  - `mainWorker.js`: point d'entrée de lancement du worker
+  - `server.js`: gestion du serveur
 - `.babelrc` : configuration pour **_Babel_**
 - `.editorconfig` : configuration par défaut de la syntaxe du code de l'éditeur
 - `.env` : à ajouter pour gérer les variables d'environnements ([cf. exemple](#fichier-env-minimal))
@@ -271,11 +271,9 @@ NODE_ENV=dev-test yarn db:migrate
 
 Le déploiement se fait automatiquement grâce à **_Github Actions_** et **_Heroku_**.
 
-Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-production : *
-*[https://entourage-job-preprod.herokuapp.com](https://entourage-job-preprod.herokuapp.com)**
+Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-production : \* \*[https://entourage-job-preprod.herokuapp.com](https://entourage-job-preprod.herokuapp.com)\*\*
 
-Si un commit est poussé sur `master`, l'application sera déployé sur la production : *
-*[https://api.linkedout.fr](https://api.linkedout.fr)**
+Si un commit est poussé sur `master`, l'application sera déployé sur la production : \* \*[https://api.linkedout.fr](https://api.linkedout.fr)\*\*
 
 Les tests sont effectués sur **_Github Actions_** avant de déployer le projet sur **_Heroku_**.
 

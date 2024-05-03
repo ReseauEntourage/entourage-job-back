@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment/moment';
@@ -41,7 +41,7 @@ export class UserFactory implements Factory<User> {
       firstName: capitalizeNameAndTrim(faker.name.firstName()),
       lastName: capitalizeNameAndTrim(faker.name.lastName()),
       role: UserRoles.CANDIDATE,
-      gender: faker.random.arrayElement([0, 1]) as Gender,
+      gender: faker.helpers.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       address: faker.address.streetAddress(),
       lastConnection: new Date(),
