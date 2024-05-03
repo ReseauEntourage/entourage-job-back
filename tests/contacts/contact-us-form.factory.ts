@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
 import { HeardAbout } from 'src/contacts/contacts.types';
@@ -20,7 +20,7 @@ export class ContactUsFormFactory implements Factory<ContactUsFormDto> {
       email: faker.internet.email(),
       structure: faker.company.companyName(2),
       message: faker.lorem.paragraphs(3, '\n'),
-      heardAbout: faker.random.objectElement(HeardAbout),
+      heardAbout: faker.helpers.objectValue(HeardAbout),
       cgu: true,
     };
     return {
