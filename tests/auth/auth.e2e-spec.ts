@@ -16,6 +16,8 @@ import { AuthHelper } from './auth.helper';
 
 describe('Auth', () => {
   let app: INestApplication;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let server: any;
 
   let databaseHelper: DatabaseHelper;
   let authHelper: AuthHelper;
@@ -36,6 +38,7 @@ describe('Auth', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    server = app.getHttpServer();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
@@ -46,6 +49,7 @@ describe('Auth', () => {
   afterAll(async () => {
     await databaseHelper.resetTestDB();
     await app.close();
+    server.close();
   });
 
   beforeEach(async () => {
@@ -67,7 +71,7 @@ describe('Auth', () => {
 
     it("Should return 201 and user's info with token, if valid email and password", async () => {
       const response: APIResponse<AuthController['login']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/login`)
         .send({
@@ -84,7 +88,7 @@ describe('Auth', () => {
     });
     it('Should return 400, if invalid email', async () => {
       const response: APIResponse<AuthController['login']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/login`)
         .send({
@@ -95,7 +99,7 @@ describe('Auth', () => {
     });
     it('Should return 401, if invalid password', async () => {
       const response: APIResponse<AuthController['login']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/login`)
         .send({
@@ -106,7 +110,7 @@ describe('Auth', () => {
     });
     it('Should return 401, if no email', async () => {
       const response: APIResponse<AuthController['login']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/login`)
         .send({
@@ -116,7 +120,7 @@ describe('Auth', () => {
     });
     it('Should return 401, if no password', async () => {
       const response: APIResponse<AuthController['login']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/login`)
         .send({
@@ -133,7 +137,7 @@ describe('Auth', () => {
       });
 
       const response: APIResponse<AuthController['logout']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/logout`)
         .set('authorization', `Token ${loggedInCandidat.token}`);
@@ -144,13 +148,13 @@ describe('Auth', () => {
   describe('/forgot - Forgot', () => {
     it('Should return 400; if no user email provided', async () => {
       const response: APIResponse<AuthController['forgot']> = await request(
-        app.getHttpServer()
+        server
       ).post(`${route}/forgot`);
       expect(response.status).toBe(400);
     });
     it('Should return 404; if invalid user email provided', async () => {
       const response: APIResponse<AuthController['forgot']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/forgot`)
         .send({
@@ -164,7 +168,7 @@ describe('Auth', () => {
       });
 
       const response: APIResponse<AuthController['forgot']> = await request(
-        app.getHttpServer()
+        server
       )
         .post(`${route}/forgot`)
         .send({
@@ -185,24 +189,20 @@ describe('Auth', () => {
       it('Should return 200, if valid link', async () => {
         const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['checkReset']> =
-          await request(app.getHttpServer()).get(
-            `${route}/reset/${candidate.id}/${token}`
-          );
+          await request(server).get(`${route}/reset/${candidate.id}/${token}`);
         expect(response.status).toBe(200);
       });
       it('Should return 400, if invalid user id', async () => {
         const invalidUserId = '1111-invalid-99999';
         const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['checkReset']> =
-          await request(app.getHttpServer()).get(
-            `${route}/reset/${invalidUserId}/${token}`
-          );
+          await request(server).get(`${route}/reset/${invalidUserId}/${token}`);
         expect(response.status).toBe(400);
       });
       it('Should return 401 if invalid user token', async () => {
         await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['checkReset']> =
-          await request(app.getHttpServer()).get(
+          await request(server).get(
             `${route}/reset/${candidate.id}/${invalidToken}`
           );
         expect(response.status).toBe(401);
@@ -219,7 +219,7 @@ describe('Auth', () => {
       it('Should return 200 and updated user, if valid link', async () => {
         const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
-          await request(app.getHttpServer())
+          await request(server)
             .post(`${route}/reset/${candidate.id}/${token}`)
             .send({
               newPassword: 'newPassword123!',
@@ -241,7 +241,7 @@ describe('Auth', () => {
       it('Should return 400, if not matching passwords', async () => {
         const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
-          await request(app.getHttpServer())
+          await request(server)
             .post(`${route}/reset/${candidate.id}/${token}`)
             .send({
               newPassword: 'newPassword123!',
@@ -253,7 +253,7 @@ describe('Auth', () => {
       it("Should return 400, if password doesn't contain uppercase and lowercase letters, numbers & special characters password", async () => {
         const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
-          await request(app.getHttpServer())
+          await request(server)
             .post(`${route}/reset/${candidate.id}/${token}`)
             .send({
               newPassword: 'newPassword',
@@ -267,7 +267,7 @@ describe('Auth', () => {
 
         const token = await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
-          await request(app.getHttpServer())
+          await request(server)
             .post(`${route}/reset/${invalidUserId}/${token}`)
             .send({
               newPassword: 'newPassword123!',
@@ -278,7 +278,7 @@ describe('Auth', () => {
       it('Should return 401 if invalid user token', async () => {
         await authHelper.getResetToken(candidate.id);
         const response: APIResponse<AuthController['resetPassword']> =
-          await request(app.getHttpServer())
+          await request(server)
             .post(`${route}/reset/${candidate.id}/${invalidToken}`)
             .send({
               newPassword: 'newPassword123!',
@@ -296,7 +296,7 @@ describe('Auth', () => {
       });
 
       const response: APIResponse<AuthController['getCurrent']> = await request(
-        app.getHttpServer()
+        server
       )
         .get(`${route}/current`)
         .set('authorization', `Token ${loggedInCandidat.token}`);
@@ -315,7 +315,7 @@ describe('Auth', () => {
     });
     it('Should return 401, if invalid token', async () => {
       const response: APIResponse<AuthController['getCurrent']> = await request(
-        app.getHttpServer()
+        server
       )
         .get(`${route}/current`)
         .set('authorization', `Token ${invalidToken}`);
