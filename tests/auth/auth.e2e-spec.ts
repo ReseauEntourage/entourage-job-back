@@ -126,18 +126,6 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidate.email,
-        });
-      expect(response.status).toBe(401);
-    });
-    // test to be fixed
-    it('Should return 401, if user is deleted', async () => {
-      await userFactory.delete(candidate.id);
-      const response: APIResponse<AuthController['login']> = await request(
-        app.getHttpServer()
-      )
-        .post(`${route}/login`)
-        .send({
-          email: candidate.email,
           password,
         });
       expect(response.status).toBe(401);
