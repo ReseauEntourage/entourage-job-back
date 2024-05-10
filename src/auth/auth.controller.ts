@@ -194,21 +194,37 @@ export class AuthController {
   @Throttle(60, 60)
   @Public()
   @Post('send-verify-email')
-  async sendVerifyEmail(@Body('token') token: string): Promise<void> {
-    // Need to ignore expiration date to extract the user
-    const decodedToken = this.authService.decodeJWT(token, true);
-    const { sub: userId } = decodedToken;
-
-    if (!decodedToken || !userId) {
+  async sendVerifyEmail(
+    @Body('token') token?: string,
+    @Body('email') email?: string
+  ): Promise<void> {
+    if (!token && !email) {
       throw new BadRequestException();
     }
-    const user = await this.authService.findOneUserComplete(userId);
-    if (!user) {
-      throw new NotFoundException();
+
+    let user: User;
+
+    if (token) {
+      // Need to ignore expiration date to extract the user
+      const decodedToken = this.authService.decodeJWT(token, true);
+      const { sub: userId } = decodedToken;
+
+      if (!decodedToken || !userId) {
+        throw new BadRequestException();
+      }
+      user = await this.authService.findOneUserComplete(userId);
+      if (!user) {
+        throw new NotFoundException();
+      }
+    } else if (email) {
+      user = await this.authService.findOneUserByMail(email);
+      if (!user) {
+        throw new NotFoundException();
+      }
     }
 
     const tokenToSend = await this.authService.generateVerificationToken(
-      userId
+      user.id
     );
 
     await this.authService.sendVerificationMail(user, tokenToSend);
