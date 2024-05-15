@@ -23,7 +23,7 @@ export class ContactCandidateFormFactory
   generateContactCandidateFormAnswers(
     props: Partial<ContactCandidateFormDto>
   ): ContactCandidateFormDto {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData = {
       firstName: faker.name.firstName(),

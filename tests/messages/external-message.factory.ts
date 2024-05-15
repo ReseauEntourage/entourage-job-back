@@ -22,7 +22,7 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
   generateExternalMessage(
     props: Partial<ExternalMessage>
   ): Partial<ExternalMessage> {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<ExternalMessage> = {
       senderFirstName: faker.name.firstName(),

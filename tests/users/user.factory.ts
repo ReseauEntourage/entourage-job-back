@@ -34,7 +34,7 @@ export class UserFactory implements Factory<User> {
       props.password || faker.internet.password()
     );
 
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<User> = {
       email: faker.internet.email().toLowerCase(),

@@ -7,7 +7,7 @@ export const ExternalMessageContactTypes = {
 } as const;
 
 export type ExternalMessageContactType =
-  typeof ExternalMessageContactTypes[keyof typeof ExternalMessageContactTypes];
+  (typeof ExternalMessageContactTypes)[keyof typeof ExternalMessageContactTypes];
 
 // export const InternalMessageContactTypes = {
 //   CONTACT: 'contact',
@@ -42,7 +42,7 @@ export const ExternalMessageSubjects = {
 } as const;
 
 export type ExternalMessageSubject =
-  typeof ExternalMessageSubjects[keyof typeof ExternalMessageSubjects];
+  (typeof ExternalMessageSubjects)[keyof typeof ExternalMessageSubjects];
 
 export const ExternalMessageSubjectFilters: FilterConstant<ExternalMessageSubject>[] =
   [

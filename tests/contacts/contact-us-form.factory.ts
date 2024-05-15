@@ -11,7 +11,7 @@ export class ContactUsFormFactory implements Factory<ContactUsFormDto> {
   generateContactUsFormAnswers(
     props: Partial<ContactUsFormDto>
   ): ContactUsFormDto {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: ContactUsFormDto = {
       firstName: faker.name.firstName(),
