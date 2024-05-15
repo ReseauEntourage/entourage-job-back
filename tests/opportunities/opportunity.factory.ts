@@ -50,7 +50,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       isExternal: faker.datatype.boolean(),
       isValidated: faker.datatype.boolean(),
       isArchived: faker.datatype.boolean(),
-      company: faker.company.companyName(2),
+      company: faker.company.name(2),
       companyDescription: faker.lorem.paragraphs(3),
       contactMail: '',
       recruiterName: faker.name.findName(),

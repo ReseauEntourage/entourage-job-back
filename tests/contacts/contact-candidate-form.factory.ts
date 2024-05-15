@@ -31,7 +31,7 @@ export class ContactCandidateFormFactory
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
       birthDate: faker.date.past(),
-      structure: faker.company.companyName(2),
+      structure: faker.company.name(2),
       postalCode: faker.address.zipCode('#####'),
       city: faker.address.city(),
       address: faker.address.city(),

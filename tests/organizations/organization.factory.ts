@@ -20,7 +20,7 @@ export class OrganizationFactory implements Factory<Organization> {
 
   generateOrganization(props: Partial<Organization>): Partial<Organization> {
     const fakeData: Partial<Organization> = {
-      name: faker.company.companyName(),
+      name: faker.company.name(),
       address: faker.address.streetAddress(),
       zone: AdminZones.PARIS,
     };
