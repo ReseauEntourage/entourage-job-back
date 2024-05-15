@@ -510,8 +510,8 @@ export const Departments = [
   },
 ] as const;
 
-export type Department = typeof Departments[number]['name'];
-export type Region = typeof Departments[number]['region'];
+export type Department = (typeof Departments)[number]['name'];
+export type Region = (typeof Departments)[number]['region'];
 
 const RegionLabels: Partial<Record<Region, string>> = {
   'Île-de-France': 'Paris et sa région',

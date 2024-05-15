@@ -13,14 +13,14 @@ export class ContactCompanyFormFactory
   generateContactCompanyFormAnswers(
     props: Partial<ContactCompanyFormDto>
   ): ContactCompanyFormDto {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData = {
       firstName: faker.name.firstName(),
       lastName: faker.name.lastName(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
-      company: faker.company.companyName(2),
+      company: faker.company.name(2),
       position: faker.word.noun(2),
       zone: faker.helpers.arrayElement(
         AdminZoneFilters.map(({ value }) => value)

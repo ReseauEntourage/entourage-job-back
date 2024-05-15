@@ -10,7 +10,7 @@ export const AdminZones = {
   HZ: 'HORS ZONE',
 } as const;
 
-export type AdminZone = typeof AdminZones[keyof typeof AdminZones];
+export type AdminZone = (typeof AdminZones)[keyof typeof AdminZones];
 
 export const AdminZoneFilters: FilterConstant<AdminZone>[] = [
   { value: AdminZones.PARIS, label: _.capitalize(AdminZones.PARIS) },
@@ -21,4 +21,4 @@ export const AdminZoneFilters: FilterConstant<AdminZone>[] = [
   { value: AdminZones.HZ, label: _.capitalize(AdminZones.HZ) },
 ];
 
-export type AdminZoneFilter = typeof AdminZoneFilters[number];
+export type AdminZoneFilter = (typeof AdminZoneFilters)[number];

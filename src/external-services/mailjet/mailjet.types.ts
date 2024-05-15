@@ -93,7 +93,7 @@ export const MailjetTemplates = {
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
-export type MailjetTemplate = typeof MailjetTemplates[MailjetTemplateKey];
+export type MailjetTemplate = (typeof MailjetTemplates)[MailjetTemplateKey];
 
 export const ContactStatuses = {
   INDIVIDUAL: 'PARTICULIER',
@@ -103,4 +103,4 @@ export const ContactStatuses = {
 } as const;
 
 export type ContactStatus =
-  typeof ContactStatuses[keyof typeof ContactStatuses];
+  (typeof ContactStatuses)[keyof typeof ContactStatuses];

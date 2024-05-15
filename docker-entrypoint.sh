@@ -3,6 +3,8 @@ echo "============================"
 echo "= Linkedout API is Running ="
 echo "============================"
 
+npm install -g @nestjs/cli
+
 # Start the API in the background
 yarn start:dev &
 

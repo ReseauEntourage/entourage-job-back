@@ -34,7 +34,7 @@ export class UserFactory implements Factory<User> {
       props.password || faker.internet.password()
     );
 
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<User> = {
       email: faker.internet.email().toLowerCase(),
@@ -110,4 +110,16 @@ export class UserFactory implements Factory<User> {
     const { id, ...builtUserWithoutId } = builtUser.toJSON();
     return builtUserWithoutId as User;
   }
+
+  async delete(userId: string) {
+    await this.usersService.update(userId, { deletedAt: new Date() });
+  }
+
+  // async createAndDelete(props: Partial<User> = {}) {
+  //   const createdUser = await this.create(props);
+  //   const deletedUser = await this.usersService.update(createdUser.id, {
+  //     deletedAt: new Date(),
+  //   });
+  //   return deletedUser.toJSON();
+  // }
 }

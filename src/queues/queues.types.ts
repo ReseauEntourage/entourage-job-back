@@ -44,7 +44,7 @@ export const Jobs = {
   SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH: 'send_offers_email_after_cv_publish',
 } as const;
 
-export type Job = typeof Jobs[keyof typeof Jobs];
+export type Job = (typeof Jobs)[keyof typeof Jobs];
 
 type JobsData = {
   [Jobs.GENERATE_CV_PDF]: GenerateCVPDFJob;
@@ -177,4 +177,4 @@ export const Queues = {
   WORK: 'work',
 } as const;
 
-export type Queue = typeof Queues[keyof typeof Queues];
+export type Queue = (typeof Queues)[keyof typeof Queues];

@@ -2301,6 +2301,7 @@ describe('Users', () => {
               lastConnection:
                 loggedInCandidate.user.lastConnection?.toISOString(),
               createdAt: loggedInCandidate.user.createdAt?.toISOString(),
+              deletedAt: null,
             },
           ]);
         });

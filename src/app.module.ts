@@ -87,12 +87,13 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       limit: 100,
     }),
     BullModule.forRoot({
-      redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
+      redis: {},
+      // redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
-      ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
+      // ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
     }),
     RevisionsModule,
     UserProfilesModule,
