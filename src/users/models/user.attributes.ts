@@ -13,11 +13,11 @@ export const UserAttributes = [
   'lastConnection',
   'isEmailVerified',
   'createdAt',
-  /*'updatedAt',
-  'deletedAt',*/
+  /*'updatedAt',*/
+  'deletedAt',
 ] as const;
 
-export type UserAttribute = typeof UserAttributes[number];
+export type UserAttribute = (typeof UserAttributes)[number];
 
 export const PublicUserAttributes = [
   'id',
@@ -26,4 +26,4 @@ export const PublicUserAttributes = [
   'role',
 ] as const;
 
-export type PublicUserAttribute = typeof PublicUserAttributes[number];
+export type PublicUserAttribute = (typeof PublicUserAttributes)[number];

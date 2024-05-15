@@ -62,10 +62,11 @@ describe('Auth', () => {
 
   describe('/login - Login', () => {
     let candidate: User;
+    const password = 'Candidat123!';
     beforeEach(async () => {
       candidate = await userFactory.create({
         role: UserRoles.CANDIDATE,
-        password: 'Candidat123!',
+        password: password,
       });
     });
 
@@ -76,7 +77,7 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidate.email,
-          password: 'Candidat123!',
+          password,
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
@@ -125,6 +126,19 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidate.email,
+        });
+      expect(response.status).toBe(401);
+    });
+    // test to be fixed
+    it('Should return 401, if user is deleted', async () => {
+      await userFactory.delete(candidate.id);
+      const response: APIResponse<AuthController['login']> = await request(
+        app.getHttpServer()
+      )
+        .post(`${route}/login`)
+        .send({
+          email: candidate.email,
+          password,
         });
       expect(response.status).toBe(401);
     });
@@ -319,6 +333,19 @@ describe('Auth', () => {
       )
         .get(`${route}/current`)
         .set('authorization', `Token ${invalidToken}`);
+      expect(response.status).toBe(401);
+    });
+    it('Should return 401, if deleted user', async () => {
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+        password: 'loggedInCandidat',
+      });
+      await userFactory.delete(loggedInCandidat.user.id);
+      const response: APIResponse<AuthController['getCurrent']> = await request(
+        server
+      )
+        .get(`${route}/current`)
+        .set('authorization', `Token ${loggedInCandidat.token}`);
       expect(response.status).toBe(401);
     });
   });

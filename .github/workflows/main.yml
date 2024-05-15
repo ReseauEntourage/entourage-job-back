@@ -2,8 +2,8 @@ name: LinkedOut Backend Test
 
 on:
   push:
-    branches: [ master, develop ]
-  pull_request: { }
+    branches: [master, develop]
+  pull_request: {}
   workflow_dispatch:
 
 jobs:
@@ -33,8 +33,8 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
       - run: yarn install

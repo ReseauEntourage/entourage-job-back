@@ -13,7 +13,7 @@ export class InscriptionCandidateFormFactory
   generateInscriptionCandidateFormAnswers(
     props: Partial<InscriptionCandidateFormDto>
   ): InscriptionCandidateFormDto {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData = {
       firstName: faker.name.firstName(),

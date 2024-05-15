@@ -340,7 +340,7 @@ export function getOpportunityUserFromOffer(
 
 export function filterOffersByStatus(
   offers: Opportunity[],
-  status: typeof OfferStatusFilters[number][],
+  status: (typeof OfferStatusFilters)[number][],
   candidateId?: string
 ) {
   let filteredList = offers;

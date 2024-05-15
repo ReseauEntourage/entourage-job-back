@@ -19,7 +19,7 @@ export const UserRoles = {
   ADMIN: 'Admin',
 } as const;
 
-export type UserRole = typeof UserRoles[keyof typeof UserRoles];
+export type UserRole = (typeof UserRoles)[keyof typeof UserRoles];
 
 export const Permissions = {
   CANDIDATE: 'Candidat',
@@ -28,7 +28,7 @@ export const Permissions = {
   ADMIN: 'Admin',
 } as const;
 
-export type Permission = typeof Permissions[keyof typeof Permissions];
+export type Permission = (typeof Permissions)[keyof typeof Permissions];
 
 export const UserPermissions: { [K in UserRole]: Permission | Permission[] } = {
   [UserRoles.CANDIDATE]: Permissions.CANDIDATE,
@@ -83,7 +83,7 @@ export const AdminRoles = {
   ENTREPRISES: 'Entreprises',
 } as const;
 
-export type AdminRole = typeof AdminRoles[keyof typeof AdminRoles];
+export type AdminRole = (typeof AdminRoles)[keyof typeof AdminRoles];
 
 export const UserRolesFilters = [
   { value: UserRoles.CANDIDATE, label: `${UserRoles.CANDIDATE} LKO` },
@@ -102,7 +102,7 @@ export const Genders = {
   OTHER: 2,
 } as const;
 
-export type Gender = typeof Genders[keyof typeof Genders];
+export type Gender = (typeof Genders)[keyof typeof Genders];
 
 export const CVStatuses = {
   PUBLISHED: {
@@ -138,7 +138,7 @@ export const CVStatuses = {
 } as const;
 
 export type CVStatusKey = keyof typeof CVStatuses;
-export type CVStatus = typeof CVStatuses[CVStatusKey]['value'];
+export type CVStatus = (typeof CVStatuses)[CVStatusKey]['value'];
 
 export const CVStatusFilters: FilterConstant<CVStatus>[] = [
   CVStatuses.PUBLISHED,
@@ -186,12 +186,12 @@ export const EmployedFilters: FilterConstant<boolean>[] = [
 ];
 
 export type MemberConstantType =
-  | typeof AdminZoneFilters[number]['value']
-  | typeof BusinessLineFilters[number]['value']
-  | typeof AssociatedUserFilters[number]['value']
-  | typeof HiddenFilters[number]['value']
-  | typeof EmployedFilters[number]['value']
-  | typeof CVStatusFilters[number]['value'];
+  | (typeof AdminZoneFilters)[number]['value']
+  | (typeof BusinessLineFilters)[number]['value']
+  | (typeof AssociatedUserFilters)[number]['value']
+  | (typeof HiddenFilters)[number]['value']
+  | (typeof EmployedFilters)[number]['value']
+  | (typeof CVStatusFilters)[number]['value'];
 
 export const MemberFilters: Filters<MemberFilterKey> = [
   {
@@ -236,6 +236,6 @@ export const Programs = {
   THREE_SIXTY: 'three_sixty',
 } as const;
 
-export type Program = typeof Programs[keyof typeof Programs];
+export type Program = (typeof Programs)[keyof typeof Programs];
 
 export const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
