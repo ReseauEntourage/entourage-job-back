@@ -22,6 +22,7 @@ export class UsersHelper {
     } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<{ user: User; token: string }> {
+    props.isEmailVerified = true;
     const user = await this.userFactory.create(
       props,
       userAssociationsProps,
