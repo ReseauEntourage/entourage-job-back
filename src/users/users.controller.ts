@@ -18,13 +18,14 @@ import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
-import { isValidPhone } from 'src/utils/misc';
-import { AdminZone, FilterParams } from 'src/utils/types';
 import {
+  UpdateUserDto,
   UpdateUserCandidatDto,
   UpdateUserRestrictedDto,
   UpdateUserRestrictedPipe,
-} from './dto';
+} from 'src/users/dto';
+import { isValidPhone } from 'src/utils/misc';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
@@ -478,6 +479,25 @@ export class UsersController {
 
     if (!updatedUser) {
       throw new NotFoundException();
+    }
+
+    // if the email is updated, we need to send a verification email
+    if (updateUserDto.email) {
+      const updateUserIsEmailVerified: UpdateUserDto = {
+        isEmailVerified: false,
+      };
+      const updatedUser = await this.usersService.update(
+        userId,
+        updateUserIsEmailVerified
+      );
+      if (!updatedUser) {
+        throw new NotFoundException();
+      }
+
+      const token = await this.usersService.generateVerificationToken(
+        updatedUser
+      );
+      this.usersService.sendVerificationMail(updatedUser, token);
     }
 
     return updatedUser;

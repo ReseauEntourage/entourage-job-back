@@ -1,5 +1,10 @@
 import { randomBytes } from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
 import { UpdateUserDto } from 'src/users/dto';
@@ -13,6 +18,7 @@ export class AuthService {
   constructor(
     private mailsService: MailsService,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService
   ) {}
 
@@ -131,9 +137,9 @@ export class AuthService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
-  async generateVerificationToken(userId: string) {
+  async generateVerificationToken(user: User) {
     return this.jwtService.sign(
-      { sub: userId },
+      { sub: user.id },
       {
         secret: process.env.JWT_SECRET,
         expiresIn: '7d',
