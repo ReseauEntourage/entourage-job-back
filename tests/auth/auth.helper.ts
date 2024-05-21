@@ -9,4 +9,9 @@ export class AuthHelper {
     const { token } = await this.authService.generateResetToken(userId);
     return token;
   }
+
+  async getVerifyEmailToken(userId: string) {
+    const token = await this.authService.generateVerificationToken(userId);
+    return token;
+  }
 }

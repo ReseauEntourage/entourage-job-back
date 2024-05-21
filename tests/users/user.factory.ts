@@ -68,6 +68,7 @@ export class UserFactory implements Factory<User> {
     } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<User> {
+    props.isEmailVerified = true;
     const userData = this.generateUser(props);
     const userId = faker.datatype.uuid();
     if (insertInDB) {
