@@ -1,4 +1,4 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
@@ -47,6 +47,7 @@ export class UsersService {
     private queuesService: QueuesService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private mailsService: MailsService,
+    @Inject(forwardRef(() => AuthService))
     private authService: AuthService
   ) {}
 
