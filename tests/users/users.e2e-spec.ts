@@ -1551,8 +1551,7 @@ describe('Users', () => {
             .post(`${route}/registration`)
             .send(userToSend);
           expect(response.status).toBe(201);
-          expect(response.body.token).toBeDefined();
-          expect(response.body.user).toEqual(
+          expect(response.body).toEqual(
             expect.objectContaining({
               ...userValues,
               zone: getZoneFromDepartment(userProfileValues.department),
@@ -1602,8 +1601,7 @@ describe('Users', () => {
             .post(`${route}/registration`)
             .send(userToSend);
           expect(response.status).toBe(201);
-          expect(response.body.token).toBeDefined();
-          expect(response.body.user).toEqual(
+          expect(response.body).toEqual(
             expect.objectContaining({
               ...userValues,
               zone: getZoneFromDepartment(userProfileValues.department),
@@ -1647,8 +1645,7 @@ describe('Users', () => {
             .post(`${route}/registration`)
             .send(userToSend);
           expect(response.status).toBe(201);
-          expect(response.body.token).toBeDefined();
-          expect(response.body.user).toEqual(
+          expect(response.body).toEqual(
             expect.objectContaining({
               ...userValues,
               zone: getZoneFromDepartment(userProfileValues.department),
