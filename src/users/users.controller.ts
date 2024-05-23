@@ -258,6 +258,7 @@ export class UsersController {
     return updatedUser;
   }
 
+  // for admin to modify multiple users at the same time
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('candidate/bulk')
@@ -320,6 +321,7 @@ export class UsersController {
     return updatedUserCandidat;
   }
 
+  // match coach and candidate
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('linkUser/:userId')
@@ -327,13 +329,14 @@ export class UsersController {
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body('userToLinkId') userToLinkId: string | string[]
   ) {
+    // check if users are already linked and remove existing link if needed
     const shouldRemoveLinkedUser =
       (Array.isArray(userToLinkId) && userToLinkId.length === 0) ||
       (!Array.isArray(userToLinkId) && userToLinkId === null);
 
     if (
       !shouldRemoveLinkedUser &&
-      (Array.isArray(userToLinkId)
+      (Array.isArray(userToLinkId) // external coach has possibly multiple candidates
         ? !userToLinkId.every((id) => uuidValidate(id))
         : !uuidValidate(userId))
     ) {
@@ -348,6 +351,7 @@ export class UsersController {
 
     if (
       !shouldRemoveLinkedUser &&
+      // only external coach can have multiple candidates
       ((user.role !== UserRoles.COACH_EXTERNAL &&
         Array.isArray(userToLinkId)) ||
         (user.role === UserRoles.COACH_EXTERNAL &&

@@ -20,8 +20,6 @@ import { AdminZone } from 'src/utils/types';
 import { ContactsService } from './contacts.service';
 import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
 import { ContactCandidateFormPipe } from './dto/contact-candidate-form.pipe';
-import { InscriptionCandidateFormDto } from './dto/inscription-candidate-form.dto';
-import { InscriptionCandidateFormPipe } from './dto/inscription-candidate-form.pipe';
 
 // TODO change to /contacts
 @Throttle(20, 60)
@@ -101,31 +99,9 @@ export class ContactsController {
     return this.contactsService.getCandidateCampaignsFromSF();
   }
 
-  // TODO Remove after switch to entourage-pro
-  @Public()
-  @Get('campaigns')
-  async getLegacyCampaigns() {
-    return this.contactsService.getCandidateCampaignsFromSF();
-  }
-
   @Public()
   @Get('campaigns/coach')
   async getCoachCampaigns() {
     return this.contactsService.getCoachCampaignsFromSF();
-  }
-
-  @Public()
-  @Post('candidateInscription')
-  async candidateInscription(
-    @Body(new InscriptionCandidateFormPipe())
-    inscriptionCandidateFormDto: InscriptionCandidateFormDto
-  ) {
-    if (!isValidPhone(inscriptionCandidateFormDto.phone)) {
-      throw new BadRequestException('invalid phone');
-    }
-
-    return this.contactsService.sendCandidateInscriptionToSalesforce(
-      inscriptionCandidateFormDto
-    );
   }
 }

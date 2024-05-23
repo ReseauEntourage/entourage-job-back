@@ -19,7 +19,6 @@ import {
 import { ContactCandidateFormFactory } from './contact-candidate-form.factory';
 import { ContactCompanyFormFactory } from './contact-company-form.factory';
 import { ContactUsFormFactory } from './contact-us-form.factory';
-import { InscriptionCandidateFormFactory } from './inscription-candidate-form.factory';
 
 describe('Contacts', () => {
   let app: INestApplication;
@@ -30,7 +29,6 @@ describe('Contacts', () => {
   let contactUsFormFactory: ContactUsFormFactory;
   let contactCompanyFormFactory: ContactCompanyFormFactory;
   let contactCandidateFormFactory: ContactCandidateFormFactory;
-  let inscriptionCandidateFormFactory: InscriptionCandidateFormFactory;
 
   const route = '/contact';
 
@@ -61,10 +59,6 @@ describe('Contacts', () => {
     contactCandidateFormFactory =
       moduleFixture.get<ContactCandidateFormFactory>(
         ContactCandidateFormFactory
-      );
-    inscriptionCandidateFormFactory =
-      moduleFixture.get<InscriptionCandidateFormFactory>(
-        InscriptionCandidateFormFactory
       );
   });
 
@@ -263,68 +257,69 @@ describe('Contacts', () => {
     });
   });
 
-  describe('/candidateInscription - Post candidate inscription form', () => {
-    it('should return 201 on route call with complete data', async () => {
-      const formAnswers = await inscriptionCandidateFormFactory.create({});
+  // to be deleted soon
+  // describe('/candidateInscription - Post candidate inscription form', () => {
+  //   it('should return 201 on route call with complete data', async () => {
+  //     const formAnswers = await inscriptionCandidateFormFactory.create({});
 
-      const shortData = {
-        firstName: formAnswers.firstName,
-        lastName: formAnswers.lastName,
-        email: formAnswers.email,
-        birthdate: formAnswers.birthdate,
-        workingRight: formAnswers.workingRight,
-        heardAbout: formAnswers.heardAbout,
-        phone: formAnswers.phone,
-        location: formAnswers.location,
-        infoCo: formAnswers.infoCo,
-      };
+  //     const shortData = {
+  //       firstName: formAnswers.firstName,
+  //       lastName: formAnswers.lastName,
+  //       email: formAnswers.email,
+  //       birthdate: formAnswers.birthdate,
+  //       workingRight: formAnswers.workingRight,
+  //       heardAbout: formAnswers.heardAbout,
+  //       phone: formAnswers.phone,
+  //       location: formAnswers.location,
+  //       infoCo: formAnswers.infoCo,
+  //     };
 
-      const response: APIResponse<ContactsController['candidateInscription']> =
-        await request(server)
-          .post(`${route}/candidateInscription`)
-          .send(shortData);
-      expect(response.status).toBe(201);
-    });
-    it('should return 201 on route call without infoCo', async () => {
-      const formAnswers = await inscriptionCandidateFormFactory.create({});
+  //     const response: APIResponse<ContactsController['candidateInscription']> =
+  //       await request(server)
+  //         .post(`${route}/candidateInscription`)
+  //         .send(shortData);
+  //     expect(response.status).toBe(201);
+  //   });
+  //   it('should return 201 on route call without infoCo', async () => {
+  //     const formAnswers = await inscriptionCandidateFormFactory.create({});
 
-      const shortData = {
-        firstName: formAnswers.firstName,
-        lastName: formAnswers.lastName,
-        email: formAnswers.email,
-        birthdate: formAnswers.birthdate,
-        workingRight: formAnswers.workingRight,
-        heardAbout: formAnswers.heardAbout,
-        phone: formAnswers.phone,
-        location: formAnswers.location,
-      };
+  //     const shortData = {
+  //       firstName: formAnswers.firstName,
+  //       lastName: formAnswers.lastName,
+  //       email: formAnswers.email,
+  //       birthdate: formAnswers.birthdate,
+  //       workingRight: formAnswers.workingRight,
+  //       heardAbout: formAnswers.heardAbout,
+  //       phone: formAnswers.phone,
+  //       location: formAnswers.location,
+  //     };
 
-      const response: APIResponse<ContactsController['candidateInscription']> =
-        await request(server)
-          .post(`${route}/candidateInscription`)
-          .send(shortData);
-      expect(response.status).toBe(201);
-    });
+  //     const response: APIResponse<ContactsController['candidateInscription']> =
+  //       await request(server)
+  //         .post(`${route}/candidateInscription`)
+  //         .send(shortData);
+  //     expect(response.status).toBe(201);
+  //   });
 
-    it('should return 400 with missing property', async () => {
-      const formAnswers = await inscriptionCandidateFormFactory.create({});
+  //   it('should return 400 with missing property', async () => {
+  //     const formAnswers = await inscriptionCandidateFormFactory.create({});
 
-      const shortData = {
-        firstName: formAnswers.firstName,
-        lastName: formAnswers.lastName,
-        email: formAnswers.email,
-        birthdate: formAnswers.birthdate,
-        workingRight: formAnswers.workingRight,
-        heardAbout: formAnswers.heardAbout,
-        // phone: formAnswers.phone,
-        location: formAnswers.location,
-      };
+  //     const shortData = {
+  //       firstName: formAnswers.firstName,
+  //       lastName: formAnswers.lastName,
+  //       email: formAnswers.email,
+  //       birthdate: formAnswers.birthdate,
+  //       workingRight: formAnswers.workingRight,
+  //       heardAbout: formAnswers.heardAbout,
+  //       // phone: formAnswers.phone,
+  //       location: formAnswers.location,
+  //     };
 
-      const response: APIResponse<ContactsController['candidateInscription']> =
-        await request(server)
-          .post(`${route}/candidateInscription`)
-          .send(shortData);
-      expect(response.status).toBe(400);
-    });
-  });
+  //     const response: APIResponse<ContactsController['candidateInscription']> =
+  //       await request(server)
+  //         .post(`${route}/candidateInscription`)
+  //         .send(shortData);
+  //     expect(response.status).toBe(400);
+  //   });
+  // });
 });

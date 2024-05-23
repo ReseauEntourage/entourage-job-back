@@ -454,6 +454,7 @@ export class UsersService {
       },
       {
         delay:
+          // delay depending on environment to make it faster in local
           (process.env.CV_10_REMINDER_DELAY
             ? parseFloat(process.env.CV_10_REMINDER_DELAY)
             : 10) *
@@ -469,7 +470,8 @@ export class UsersService {
       {
         delay:
           (process.env.CV_20_REMINDER_DELAY
-            ? parseFloat(process.env.CV_20_REMINDER_DELAY)
+            ? // delay depending on environment to make it faster in local
+              parseFloat(process.env.CV_20_REMINDER_DELAY)
             : 20) *
           3600000 *
           24,

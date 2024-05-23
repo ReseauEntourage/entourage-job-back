@@ -42,6 +42,7 @@ import {
   OpportunityCompleteWithoutOpportunityUsersInclude,
 } from './models/opportunity.include';
 import {
+  ContactEmployerType,
   OfferAdminTab,
   OfferAdminTabs,
   OfferFilterKey,
@@ -308,7 +309,7 @@ export class OpportunitiesService {
       where: {
         [Op.or]: [
           { isValidated: true, isExternal: false, isArchived: false, id },
-          { isExternal: true, isArchived: false, id },
+          { isExternal: true, isArchived: false, id }, // external doesnt need validation
         ],
       },
       attributes: [...OpportunityCandidateAttributes],
@@ -319,7 +320,7 @@ export class OpportunitiesService {
       return null;
     }
 
-    const opportunityUser = Array.isArray(candidateId)
+    const opportunityUser = Array.isArray(candidateId) // in case of multiple candidates for external coach
       ? (
           await Promise.all(
             candidateId.map((singleCandidateId) => {
@@ -659,7 +660,7 @@ export class OpportunitiesService {
       await this.opportunityUsersService.findAllByOpportunityId(opportunity.id);
 
     if (oldOpportunity && opportunityUsers && opportunityUsers.length > 0) {
-      // Case where the opportunity was not validated and has been validated, we send the mail to everybody
+      // Case where the opportunity was not validate;d and has been validated, we send the mail to everybody
       if (!oldOpportunity.isValidated && opportunity.isValidated) {
         return opportunity.isPublic
           ? opportunityUsers.filter((userOpp) => {
@@ -759,6 +760,7 @@ export class OpportunitiesService {
       },
       {
         delay:
+          // delay difference between local and prod
           (process.env.OFFER_NO_RESPONSE_DELAY
             ? parseFloat(process.env.OFFER_NO_RESPONSE_DELAY)
             : 15) *
@@ -776,6 +778,7 @@ export class OpportunitiesService {
       },
       {
         delay:
+          // delay difference between local and prod
           (process.env.OFFER_ARCHIVE_REMINDER_DELAY
             ? parseFloat(process.env.OFFER_ARCHIVE_REMINDER_DELAY)
             : 30) *
@@ -882,6 +885,7 @@ export class OpportunitiesService {
             },
             {
               delay:
+                // delay difference between local and prod
                 (process.env.OFFER_REMINDER_DELAY
                   ? parseFloat(process.env.OFFER_REMINDER_DELAY)
                   : 5) *
@@ -940,16 +944,16 @@ export class OpportunitiesService {
   async sendReminderAboutExternalOffers(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
 
-    let opportunitiesCreatedByCandidateOrCoach =
+    let opportunitiesCreatedByCandidateOrCoachNumber =
       await this.countExternalOpportunitiesCreatedByUser(candidateId);
 
     const coach = getCoachFromCandidate(candidate);
     if (coach) {
-      opportunitiesCreatedByCandidateOrCoach +=
+      opportunitiesCreatedByCandidateOrCoachNumber +=
         await this.countExternalOpportunitiesCreatedByUser(coach.id);
     }
 
-    if (opportunitiesCreatedByCandidateOrCoach === 0) {
+    if (opportunitiesCreatedByCandidateOrCoachNumber === 0) {
       return this.mailsService.sendExternalOffersReminderMails(
         candidate.toJSON()
       );
@@ -1053,7 +1057,7 @@ export class OpportunitiesService {
   }
 
   async sendContactEmployer(
-    type: string,
+    type: ContactEmployerType,
     candidateId: string,
     opportunity: Opportunity,
     description: string
