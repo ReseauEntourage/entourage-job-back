@@ -151,6 +151,11 @@ export class UserProfilesService {
           }
         : {};
 
+    // this query is made in 2 steps because it filters the where clause inside the include
+    // eg:
+    // you want all user having in his businesslines one specific businessline
+    // but you also want the request to response his businesslines list
+    // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
     const filteredProfiles = await this.userProfileModel.findAll({
       offset,
       limit,

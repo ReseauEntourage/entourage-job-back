@@ -46,6 +46,10 @@ import { ParseCVPipe } from './dto/parse-cv.pipe';
 export class CVsController {
   constructor(private readonly cvsService: CVsService) {}
 
+  /*
+  This route is used to create a new VERSION of the CV
+  there is no update of existing CV, only creation of a newer version
+  */
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
@@ -61,22 +65,8 @@ export class CVsController {
     @Body('autoSave') autoSave: boolean,
     @UploadedFile() file: Express.Multer.File
   ) {
-    // const FORMATIONS_LIMIT = 3;
-    // const EXPERIENCES_LIMIT = 5;
-
-    // if (createCVDto.formations?.length > FORMATIONS_LIMIT) {
-    //   throw new BadRequestException(
-    //     `Vous ne pouvez dépasser ${FORMATIONS_LIMIT} formations dans le CV`
-    //   );
-    // }
-
-    // if (createCVDto.experiences?.length > EXPERIENCES_LIMIT) {
-    //   throw new BadRequestException(
-    //     `Vous ne pouvez dépasser ${EXPERIENCES_LIMIT} expériences dans le CV`
-    //   );
-    // }
-
     if (isRoleIncluded(AllUserRoles, role)) {
+      // uniquement coach et candidat  => ne peuvent que créer un cv en mode "pending"
       if (
         createCVDto.status !== CVStatuses.PROGRESS.value &&
         createCVDto.status !== CVStatuses.PENDING.value
@@ -96,6 +86,7 @@ export class CVsController {
 
     let oldImg;
 
+    // enregistrement de l'image uniquement si ce n'est pas un autosave
     if (!autoSave && (createCVDto.urlImg || file)) {
       oldImg = createCVDto.urlImg;
       createCVDto.urlImg = urlImg;
@@ -108,6 +99,7 @@ export class CVsController {
 
     const { status } = createdCV;
 
+    // pour le coach, on envoie un email de notif à l'admin quand le cv est en attente de validation
     if (
       isRoleIncluded(CoachUserRoles, role) &&
       status === CVStatuses.PENDING.value
@@ -119,12 +111,14 @@ export class CVsController {
       );
     }
 
+    // uniquement pour la validation admin du CV
     if (!autoSave) {
       if (status === CVStatuses.PUBLISHED.value) {
         await this.cvsService.sendCacheCV(candidateId);
         await this.cvsService.sendCacheAllCVs();
         await this.cvsService.sendGenerateCVSearchString(candidateId);
 
+        // première validation => envoi de mail de notif au candidat et coach avec contenu pédago
         const hasPublishedAtLeastOnce =
           await this.cvsService.findHasAtLeastOnceStatusByCandidateId(
             candidateId,
@@ -146,6 +140,7 @@ export class CVsController {
         ? await this.cvsService.uploadCVImage(file, candidateId, status)
         : null;
 
+      // CV Preview => vignette utilisée pour l'image og:img (partage réseaux sociaux); exécution par lambda AWS
       await this.cvsService.sendGenerateCVPreview(
         candidateId,
         oldImg,
@@ -166,6 +161,7 @@ export class CVsController {
         isTwoPages = true;
       }
 
+      // génération du CV en version PDF; exécution par lambda AWS
       await this.cvsService.sendGenerateCVPDF(
         candidateId,
         token,
@@ -176,6 +172,9 @@ export class CVsController {
     return createdCV;
   }
 
+  /* 
+  récupérer une liste de CVs publiés aléatoirement pour la gallerie
+  */
   @Public()
   @Get('cards/random')
   async findAllPublishedCVs(

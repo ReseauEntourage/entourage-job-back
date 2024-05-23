@@ -143,9 +143,13 @@ export class AuthController {
     return updatedUser;
   }
 
+  /*
+    This route is used to get logged user data + verify if the user is still logged in
+  */
   @Throttle(60, 60)
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+    // we will update user to update lastConnection field
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
     });

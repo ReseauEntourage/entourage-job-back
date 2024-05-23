@@ -1,3 +1,5 @@
+// to be deleted soon
+
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import {

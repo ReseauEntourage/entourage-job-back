@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { getDepartmentFromPostalCode } from '../external-services/salesforce/salesforce.utils';
 import { ContactCompanyFormDto, ContactUsFormDto } from 'src/contacts/dto';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -7,7 +6,6 @@ import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
-import { InscriptionCandidateFormDto } from './dto/inscription-candidate-form.dto';
 
 @Injectable()
 export class ContactsService {
@@ -40,27 +38,6 @@ export class ContactsService {
     if (process.env.ENABLE_SF === 'true') {
       return this.salesforceService.createOrUpdateContactCandidateSalesforceLead(
         contactCandidateFormDto
-      );
-    }
-  }
-
-  async sendCandidateInscriptionToSalesforce(
-    inscriptionCandidateFormDto: InscriptionCandidateFormDto
-  ) {
-    const department = getDepartmentFromPostalCode(
-      inscriptionCandidateFormDto.location
-    );
-    const { location, ...inscriptionCandidateFormDtoWithoutLocation } =
-      inscriptionCandidateFormDto;
-
-    const candidateToCreate = {
-      ...inscriptionCandidateFormDtoWithoutLocation,
-      department,
-    };
-
-    if (process.env.ENABLE_SF === 'true') {
-      return this.salesforceService.createOrUpdateInscriptionCandidateSalesforceLead(
-        candidateToCreate
       );
     }
   }
