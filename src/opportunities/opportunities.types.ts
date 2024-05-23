@@ -178,3 +178,11 @@ export const EventTypeFilters: FilterConstant<EventType>[] = [
     value: 'end',
   },
 ];
+
+export const ContactEmployerTypes = {
+  CONTACT: 'contact',
+  RELANCE: 'relance',
+} as const;
+
+export type ContactEmployerType =
+  (typeof ContactEmployerTypes)[keyof typeof ContactEmployerTypes];

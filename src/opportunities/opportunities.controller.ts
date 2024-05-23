@@ -53,6 +53,8 @@ import {
   OfferFilterKey,
   OfferStatuses,
   OpportunityRestricted,
+  ContactEmployerType,
+  ContactEmployerTypes,
 } from './opportunities.types';
 import { OpportunityUsersService } from './opportunity-users.service';
 
@@ -90,6 +92,7 @@ export class OpportunitiesController {
       throw new ForbiddenException();
     }
 
+    // if not opportunity duplication, verify phone number
     if (
       !isCopy &&
       createOpportunityDto.recruiterPhone &&
@@ -271,6 +274,7 @@ export class OpportunitiesController {
         opportunityId
       );
 
+    // if role is not admin and opportunity is not validated or opportunity is private without link with the user
     if (
       ((!opportunity.isPublic && !opportunityUser) ||
         !opportunity.isValidated) &&
@@ -300,6 +304,7 @@ export class OpportunitiesController {
     return createdOrUpdatedOpportunityUser.toJSON();
   }
 
+  // events are made to track history of links between user and opportunity
   @LinkedUser('body.candidateId')
   @UseGuards(LinkedUserGuard)
   @Post('event')
@@ -397,6 +402,7 @@ export class OpportunitiesController {
     );
   }
 
+  // tab count is used in front to list in job board the number of offers in each status
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
@@ -417,7 +423,7 @@ export class OpportunitiesController {
     );
   }
 
-  // to be implemented
+  // to be implemented (specifically in front)
   // @UserPermissions(Permissions.ADMIN)
   // @UseGuards(UserPermissionsGuard)
   // @Get('/admin/tabCount')
@@ -432,6 +438,7 @@ export class OpportunitiesController {
   //   return this.opportunitiesService.adminCountOfferByType(type, search,businessLines, department, contracts);
   // }
 
+  // candidate gets opportunities (needs the userId because we want to send the linked UserOpportunity if exists)
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
@@ -448,6 +455,9 @@ export class OpportunitiesController {
     } & FilterParams<OfferFilterKey>
   ) {
     const { type, status } = query;
+
+    // if public: it's the page with the list of every opportunites, we want every statuses
+    // if private: it's the user's page with his opportunities, so we need a status (this page has a tab for each status)
     if (type !== OfferCandidateTypes.PUBLIC && !status) {
       throw new BadRequestException('status expected');
     }
@@ -466,6 +476,7 @@ export class OpportunitiesController {
     };
   }
 
+  // count pending refers to the opportunities that are not validated yet
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('admin/count')
@@ -473,6 +484,7 @@ export class OpportunitiesController {
     return this.opportunitiesService.countPending(zone);
   }
 
+  // count unseen refers to the opportunities that have not been dealt with by the candidate
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
@@ -510,6 +522,7 @@ export class OpportunitiesController {
     return opportunity;
   }
 
+  // for bulk update (many opportunities at the same time)
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('bulk')
@@ -647,6 +660,7 @@ export class OpportunitiesController {
 
     const candidateId = getCandidateIdFromCoachOrCandidate(user);
 
+    // the array is for external coach: they have a list of candidate Ids as they have many candidates
     if (
       Array.isArray(candidateId)
         ? !candidateId.includes(opportunityUser.UserId)
@@ -702,6 +716,7 @@ export class OpportunitiesController {
       throw new NotFoundException();
     }
 
+    // linked to the fact that old opportunities didn't verify phone format
     const shouldVerifyPhoneForRetroCompatibility =
       opportunity.isValidated === restOpportunity.isValidated &&
       opportunity.isArchived === restOpportunity.isArchived;
@@ -771,7 +786,7 @@ export class OpportunitiesController {
   @UseGuards(LinkedUserGuard)
   @Post('contactEmployer')
   async contactEmployer(
-    @Body('type') type: string,
+    @Body('type') type: ContactEmployerType,
     @Body('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Body('opportunityId', new ParseUUIDPipe()) opportunityId: string,
     @Body('description') description: string
@@ -811,7 +826,7 @@ export class OpportunitiesController {
       description
     );
 
-    if (type === 'contact') {
+    if (type === ContactEmployerTypes.CONTACT) {
       await this.opportunityUsersService.updateByCandidateIdAndOpportunityId(
         candidateId,
         opportunityId,
