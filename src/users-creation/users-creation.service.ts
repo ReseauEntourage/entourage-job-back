@@ -78,7 +78,7 @@ export class UsersCreationService {
   }
 
   async sendVerificationMail(user: User) {
-    const token = await this.authService.generateVerificationToken(user.id);
+    const token = await this.authService.generateVerificationToken(user);
     return this.mailsService.sendVerificationMail(user, token);
   }
 

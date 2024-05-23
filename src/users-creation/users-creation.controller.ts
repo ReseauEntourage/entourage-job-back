@@ -233,8 +233,6 @@ export class UsersCreationController {
         jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
       });
 
-      const loggedUser = await this.usersCreationService.loginUser(createdUser);
-
       if (createUserRegistrationDto.program === Programs.BOOST) {
         await this.usersCreationService.sendWelcomeMail({
           id: createdUser.id,
@@ -247,7 +245,7 @@ export class UsersCreationController {
 
       await this.usersCreationService.sendVerificationMail(createdUser);
 
-      return loggedUser;
+      return createdUser;
     } catch (err) {
       if (((err as Error).name = SequelizeUniqueConstraintError)) {
         throw new ConflictException();

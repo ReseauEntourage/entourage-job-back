@@ -223,9 +223,7 @@ export class AuthController {
       }
     }
 
-    const tokenToSend = await this.authService.generateVerificationToken(
-      user.id
-    );
+    const tokenToSend = await this.authService.generateVerificationToken(user);
 
     await this.authService.sendVerificationMail(user, tokenToSend);
 

@@ -1,8 +1,9 @@
-import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
+import { AuthService } from 'src/auth/auth.service';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
 import { getPublishedCVQuery } from 'src/cvs/cvs.utils';
@@ -45,7 +46,9 @@ export class UsersService {
     private userModel: typeof User,
     private queuesService: QueuesService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -492,5 +495,13 @@ export class UsersService {
   // TODO fix duplicate
   async cacheAllCVs() {
     await this.queuesService.addToWorkQueue(Jobs.CACHE_ALL_CVS, {});
+  }
+
+  async generateVerificationToken(user: User) {
+    return this.authService.generateVerificationToken(user);
+  }
+
+  async sendVerificationMail(user: User, token: string) {
+    return this.mailsService.sendVerificationMail(user, token);
   }
 }
