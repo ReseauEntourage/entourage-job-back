@@ -126,7 +126,6 @@ describe('Auth', () => {
         .post(`${route}/login`)
         .send({
           email: candidate.email,
-          password,
         });
       expect(response.status).toBe(401);
     });
