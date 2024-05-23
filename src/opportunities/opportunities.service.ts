@@ -660,7 +660,7 @@ export class OpportunitiesService {
       await this.opportunityUsersService.findAllByOpportunityId(opportunity.id);
 
     if (oldOpportunity && opportunityUsers && opportunityUsers.length > 0) {
-      // Case where the opportunity was not validate;d and has been validated, we send the mail to everybody
+      // Case where the opportunity was not validated and has been validated, we send the mail to everybody
       if (!oldOpportunity.isValidated && opportunity.isValidated) {
         return opportunity.isPublic
           ? opportunityUsers.filter((userOpp) => {
