@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.24.0",
+  "version": "2.25.0",
   "license": "ISC",
   "engines": {
     "node": "18.x"
@@ -83,7 +83,7 @@
     "validator": "^13.7.0"
   },
   "devDependencies": {
-    "@faker-js/faker": "^6.0.0",
+    "@faker-js/faker": "^7.0.0",
     "@nestjs/cli": "^9.5.0",
     "@nestjs/schematics": "^9.2.0",
     "@nestjs/testing": "^9.4.1",

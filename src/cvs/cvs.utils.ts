@@ -83,9 +83,9 @@ export function getCVOptions(filtersObj: FilterObject<CVFilterKey>): CVOptions {
 }
 
 export function getPublishedCVQuery(
-  employed?: { [Op.or]: typeof EmployedFilters[number]['value'][] },
-  locations?: { [Op.or]: typeof DepartmentFilters[number]['value'][] },
-  businessLines?: { [Op.or]: typeof BusinessLineFilters[number]['value'][] }
+  employed?: { [Op.or]: (typeof EmployedFilters)[number]['value'][] },
+  locations?: { [Op.or]: (typeof DepartmentFilters)[number]['value'][] },
+  businessLines?: { [Op.or]: (typeof BusinessLineFilters)[number]['value'][] }
 ) {
   const hasLocations = locations && locations[Op.or];
   const hasBusinessLines = businessLines && businessLines[Op.or];

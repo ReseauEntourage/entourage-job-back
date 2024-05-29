@@ -19,7 +19,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const user = await this.usersService.findOne(sub);
 
-    if (!user) {
+    /*
+          verify if 
+            - user exists
+            - if user has been deleted
+            - email is verified
+        */
+    if (user && !user.isEmailVerified) {
+      throw new UnauthorizedException('UNVERIFIED_EMAIL');
+    }
+    if (!user || !!user.deletedAt) {
       throw new UnauthorizedException();
     }
     return user.toJSON();

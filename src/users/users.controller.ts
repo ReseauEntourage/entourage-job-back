@@ -18,13 +18,14 @@ import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
-import { isValidPhone } from 'src/utils/misc';
-import { AdminZone, FilterParams } from 'src/utils/types';
 import {
+  UpdateUserDto,
   UpdateUserCandidatDto,
   UpdateUserRestrictedDto,
   UpdateUserRestrictedPipe,
-} from './dto';
+} from 'src/users/dto';
+import { isValidPhone } from 'src/utils/misc';
+import { AdminZone, FilterParams } from 'src/utils/types';
 import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
@@ -258,6 +259,7 @@ export class UsersController {
     return updatedUser;
   }
 
+  // for admin to modify multiple users at the same time
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('candidate/bulk')
@@ -320,6 +322,7 @@ export class UsersController {
     return updatedUserCandidat;
   }
 
+  // match coach and candidate
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Put('linkUser/:userId')
@@ -327,13 +330,14 @@ export class UsersController {
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body('userToLinkId') userToLinkId: string | string[]
   ) {
+    // check if users are already linked and remove existing link if needed
     const shouldRemoveLinkedUser =
       (Array.isArray(userToLinkId) && userToLinkId.length === 0) ||
       (!Array.isArray(userToLinkId) && userToLinkId === null);
 
     if (
       !shouldRemoveLinkedUser &&
-      (Array.isArray(userToLinkId)
+      (Array.isArray(userToLinkId) // external coach has possibly multiple candidates
         ? !userToLinkId.every((id) => uuidValidate(id))
         : !uuidValidate(userId))
     ) {
@@ -348,6 +352,7 @@ export class UsersController {
 
     if (
       !shouldRemoveLinkedUser &&
+      // only external coach can have multiple candidates
       ((user.role !== UserRoles.COACH_EXTERNAL &&
         Array.isArray(userToLinkId)) ||
         (user.role === UserRoles.COACH_EXTERNAL &&
@@ -478,6 +483,25 @@ export class UsersController {
 
     if (!updatedUser) {
       throw new NotFoundException();
+    }
+
+    // if the email is updated, we need to send a verification email
+    if (updateUserDto.email) {
+      const updateUserIsEmailVerified: UpdateUserDto = {
+        isEmailVerified: false,
+      };
+      const updatedUser = await this.usersService.update(
+        userId,
+        updateUserIsEmailVerified
+      );
+      if (!updatedUser) {
+        throw new NotFoundException();
+      }
+
+      const token = await this.usersService.generateVerificationToken(
+        updatedUser
+      );
+      this.usersService.sendVerificationMail(updatedUser, token);
     }
 
     return updatedUser;

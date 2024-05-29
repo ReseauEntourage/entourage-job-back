@@ -85,7 +85,7 @@ export function capitalizeNameAndTrim(name: string) {
 export function getRelatedUser(member: User) {
   if (member) {
     if (member.candidat && member.candidat.coach) {
-      return [member.candidat.coach];
+      return [member.candidat.coach]; // an array because of the external coaches
     }
     if (member.coaches && member.coaches.length > 0) {
       return member.coaches.map(({ candidat }) => {
@@ -178,6 +178,7 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
+            // TO DO: change switch to mapped object or if else
             switch (keys[i]) {
               case 'role':
                 whereOptions = [

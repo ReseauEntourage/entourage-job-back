@@ -37,9 +37,9 @@ export interface CVOptions {
 export type CVFilterKey = keyof CVOptions;
 
 export type CVConstantType =
-  | typeof DepartmentFilters[number]['value']
-  | typeof BusinessLineFilters[number]['value']
-  | typeof EmployedFilters[number]['value'];
+  | (typeof DepartmentFilters)[number]['value']
+  | (typeof BusinessLineFilters)[number]['value']
+  | (typeof EmployedFilters)[number]['value'];
 
 export const CVFilters: Filters<CVFilterKey> = [
   {

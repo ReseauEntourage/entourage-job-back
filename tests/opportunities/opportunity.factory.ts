@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
@@ -8,7 +8,10 @@ import phone from 'phone';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Departments } from 'src/common/locations/locations.types';
-import { Opportunity, OpportunityUser } from 'src/opportunities/models';
+import {
+  Opportunity,
+  // OpportunityUser
+} from 'src/opportunities/models';
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import { ExternalOfferOriginFilters } from 'src/opportunities/opportunities.types';
 import { Factory, WrapperModel } from 'src/utils/types';
@@ -31,15 +34,15 @@ export class OpportunityFactory implements Factory<Opportunity> {
   constructor(
     @InjectModel(Opportunity)
     private opportunityModel: typeof Opportunity,
-    @InjectModel(OpportunityUser)
-    private opportunityUserModel: typeof OpportunityUser,
+    // @InjectModel(OpportunityUser)
+    // private opportunityUserModel: typeof OpportunityUser,
     @InjectModel(BusinessLine)
     private businessLineModel: typeof BusinessLine,
     private opportunitiesService: OpportunitiesService
   ) {}
 
   generateOpportunity(props: Partial<Opportunity>): Partial<Opportunity> {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<Opportunity> = {
       title: faker.lorem.words(2),
@@ -47,7 +50,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       isExternal: faker.datatype.boolean(),
       isValidated: faker.datatype.boolean(),
       isArchived: faker.datatype.boolean(),
-      company: faker.company.companyName(2),
+      company: faker.company.name(2),
       companyDescription: faker.lorem.paragraphs(3),
       contactMail: '',
       recruiterName: faker.name.findName(),
@@ -55,12 +58,12 @@ export class OpportunityFactory implements Factory<Opportunity> {
       recruiterMail: faker.internet.email(),
       recruiterPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       recruiterPosition: faker.lorem.words(2),
-      department: faker.random.arrayElement(Departments).name,
+      department: faker.helpers.arrayElement(Departments).name,
       date: moment().toDate(),
       description: faker.lorem.paragraphs(3),
       prerequisites: faker.lorem.paragraphs(3),
       skills: faker.lorem.paragraphs(3),
-      contract: faker.random.arrayElement(ContractFilters).value,
+      contract: faker.helpers.arrayElement(ContractFilters).value,
       endOfContract: moment().toDate(),
       startOfContract: moment().toDate(),
       isPartTime: faker.datatype.boolean(),
@@ -68,7 +71,7 @@ export class OpportunityFactory implements Factory<Opportunity> {
       numberOfPositions: faker.datatype.number(),
       message: faker.lorem.paragraphs(3),
       link: faker.lorem.words(2),
-      externalOrigin: faker.random.arrayElement(ExternalOfferOriginFilters)
+      externalOrigin: faker.helpers.arrayElement(ExternalOfferOriginFilters)
         .value,
       address: faker.address.city(),
       driversLicense: faker.datatype.boolean(),

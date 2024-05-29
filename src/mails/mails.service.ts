@@ -17,6 +17,8 @@ import { InternalMessage } from 'src/messages/models';
 import { ExternalMessage } from 'src/messages/models/external-message.model';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
+  ContactEmployerType,
+  ContactEmployerTypes,
   OfferStatuses,
   OpportunityRestricted,
 } from 'src/opportunities/opportunities.types';
@@ -106,6 +108,18 @@ export class MailsService {
         },
       });
     }
+  }
+
+  async sendVerificationMail(user: User, token: string) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+      variables: {
+        firstname: user.firstName,
+        toEmail: user.email,
+        token,
+      },
+    });
   }
 
   async sendCVPreparationMail(candidate: User) {
@@ -535,7 +549,7 @@ export class MailsService {
   }
 
   async sendMailContactEmployer(
-    type: string,
+    type: ContactEmployerType,
     candidate: User,
     opportunity: Opportunity,
     description: string
@@ -544,8 +558,8 @@ export class MailsService {
       candidate.zone
     );
     const types: { [K in string]: MailjetTemplateKey } = {
-      contact: 'CONTACT_EMPLOYER',
-      relance: 'RELANCE_EMPLOYER',
+      [ContactEmployerTypes.CONTACT]: 'CONTACT_EMPLOYER',
+      [ContactEmployerTypes.RELANCE]: 'RELANCE_EMPLOYER',
     };
     const coach = getCoachFromCandidate(candidate);
     const emailCoach = coach?.email ? [coach?.email] : [];

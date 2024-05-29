@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transaction } from 'sequelize/types';
 import {
   AfterCreate,
   AfterUpdate,
@@ -16,7 +17,6 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Transaction } from 'sequelize/types';
 import { OfferStatus, OfferStatuses } from '../opportunities.types';
 import { User } from 'src/users/models';
 import { HistorizedModel } from 'src/utils/types';
