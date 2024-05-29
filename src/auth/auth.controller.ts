@@ -143,9 +143,13 @@ export class AuthController {
     return updatedUser;
   }
 
+  /*
+    This route is used to get logged user data + verify if the user is still logged in
+  */
   @Throttle(60, 60)
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+    // we will update user to update lastConnection field
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
     });
@@ -154,5 +158,79 @@ export class AuthController {
     }
 
     return updatedUser;
+  }
+
+  @Public()
+  @Post('verify-email')
+  async verifyEmail(@Body('token') token: string): Promise<void> {
+    // Need to ignore expiration date here when verifying the token to be able to check if the user emailis already verified
+    const decodedToken = this.authService.decodeJWT(token, true);
+    const { sub: userId, exp } = decodedToken;
+
+    const expirationDate = new Date(exp * 1000);
+    const currentDate = new Date();
+
+    if (!decodedToken || !exp || !userId) {
+      throw new BadRequestException('INVALID_TOKEN');
+    }
+    const user = await this.authService.findOneUserComplete(userId);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    if (user.isEmailVerified) {
+      throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+    if (expirationDate.getTime() < currentDate.getTime()) {
+      throw new BadRequestException('TOKEN_EXPIRED');
+    }
+
+    const updatedUser = await this.authService.updateUser(userId, {
+      isEmailVerified: true,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return;
+  }
+
+  @Throttle(60, 60)
+  @Public()
+  @Post('send-verify-email')
+  async sendVerifyEmail(
+    @Body('token') token?: string,
+    @Body('email') email?: string
+  ): Promise<void> {
+    if (!token && !email) {
+      throw new BadRequestException();
+    }
+
+    let user: User;
+
+    if (token) {
+      // Need to ignore expiration date to extract the user
+      const decodedToken = this.authService.decodeJWT(token, true);
+      const { sub: userId } = decodedToken;
+
+      if (!decodedToken || !userId) {
+        throw new BadRequestException();
+      }
+      user = await this.authService.findOneUserComplete(userId);
+      if (!user) {
+        throw new NotFoundException();
+      }
+    } else if (email) {
+      user = await this.authService.findOneUserByMail(email);
+      if (!user) {
+        throw new NotFoundException();
+      }
+    }
+
+    const tokenToSend = await this.authService.generateVerificationToken(user);
+
+    await this.authService.sendVerificationMail(user, tokenToSend);
+
+    return;
   }
 }

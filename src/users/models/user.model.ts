@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEmail as IsEmailClassValidator,
   IsNumber,
   IsOptional,
@@ -157,6 +158,11 @@ export class User extends HistorizedModel {
   @AllowNull(true)
   @Column
   zone: AdminZone;
+
+  @ApiProperty()
+  @IsBoolean()
+  @Column
+  isEmailVerified: boolean;
 
   @CreatedAt
   createdAt: Date;

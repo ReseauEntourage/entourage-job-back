@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as _ from 'lodash';
@@ -37,7 +37,7 @@ export class OpportunityUserEventFactory
     props: Partial<OpportunityUserEvent>
   ): Partial<OpportunityUserEvent> {
     const fakeData: Partial<OpportunityUserEvent> = {
-      type: faker.random.arrayElement(EventTypeFilters).value,
+      type: faker.helpers.arrayElement(EventTypeFilters).value,
       startDate: moment().toDate(),
       endDate: faker.date.future(),
       createdAt: moment().toDate(),

@@ -88,11 +88,12 @@ export const MailjetTemplates = {
   MESSAGE_RECEIVED: 4918707,
   INTERNAL_MESSAGE: 5625323,
   INTERNAL_MESSAGE_CONFIRMATION: 5625495,
+  USER_EMAIL_VERIFICATION: 5899611,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
-export type MailjetTemplate = typeof MailjetTemplates[MailjetTemplateKey];
+export type MailjetTemplate = (typeof MailjetTemplates)[MailjetTemplateKey];
 
 export const ContactStatuses = {
   INDIVIDUAL: 'PARTICULIER',
@@ -102,4 +103,4 @@ export const ContactStatuses = {
 } as const;
 
 export type ContactStatus =
-  typeof ContactStatuses[keyof typeof ContactStatuses];
+  (typeof ContactStatuses)[keyof typeof ContactStatuses];

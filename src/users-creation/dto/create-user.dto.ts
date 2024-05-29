@@ -13,6 +13,7 @@ export class CreateUserDto extends PickType(User, [
   'phone',
   'address',
   'zone',
+  'isEmailVerified',
 ] as const) {
   @ApiProperty()
   @IsOptional()

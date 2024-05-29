@@ -8,4 +8,4 @@ export const UserCandidatAttributes = [
   'lastModifiedBy',
 ] as const;
 
-export type UserCandidatAttribute = typeof UserCandidatAttributes[number];
+export type UserCandidatAttribute = (typeof UserCandidatAttributes)[number];

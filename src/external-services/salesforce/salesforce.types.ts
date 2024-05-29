@@ -59,7 +59,7 @@ export const ErrorCodes = {
   FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION:',
 } as const;
 
-export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 export interface SalesforceError {
   errorCode: ErrorCode;
@@ -89,7 +89,7 @@ export const ObjectNames = {
   USER: 'User',
 } as const;
 
-export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
+export type ObjectName = (typeof ObjectNames)[keyof typeof ObjectNames];
 
 type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.ACCOUNT]: SalesforceAccount;
@@ -126,7 +126,7 @@ export const LeadYesNoJNSPR: { [K in YesNoJNSPRValue]: string } = {
 } as const;
 
 export type ContactRecordType =
-  typeof ContactRecordTypesIds[keyof typeof ContactRecordTypesIds];
+  (typeof ContactRecordTypesIds)[keyof typeof ContactRecordTypesIds];
 
 export const LeadRecordTypesIds = {
   COACH: '0127Q000000UbQPQA0',
@@ -136,7 +136,7 @@ export const LeadRecordTypesIds = {
 } as const;
 
 export type LeadRecordType =
-  typeof LeadRecordTypesIds[keyof typeof LeadRecordTypesIds];
+  (typeof LeadRecordTypesIds)[keyof typeof LeadRecordTypesIds];
 
 export const AccountRecordTypesIds = {
   COMPANY: '0127Q000000TZ4YQAW',
@@ -145,7 +145,7 @@ export const AccountRecordTypesIds = {
 } as const;
 
 export type AccountRecordType =
-  typeof AccountRecordTypesIds[keyof typeof AccountRecordTypesIds];
+  (typeof AccountRecordTypesIds)[keyof typeof AccountRecordTypesIds];
 
 export const EventRecordTypesIds = {
   BINOME: '0127Q000000UhqeQAC',
@@ -153,7 +153,7 @@ export const EventRecordTypesIds = {
 } as const;
 
 export type EventRecordType =
-  typeof EventRecordTypesIds[keyof typeof EventRecordTypesIds];
+  (typeof EventRecordTypesIds)[keyof typeof EventRecordTypesIds];
 
 type LeadsProps = {
   [LeadRecordTypesIds.CANDIDATE]: CandidateLeadProps;

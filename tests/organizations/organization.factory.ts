@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
@@ -20,7 +20,7 @@ export class OrganizationFactory implements Factory<Organization> {
 
   generateOrganization(props: Partial<Organization>): Partial<Organization> {
     const fakeData: Partial<Organization> = {
-      name: faker.company.companyName(),
+      name: faker.company.name(),
       address: faker.address.streetAddress(),
       zone: AdminZones.PARIS,
     };
@@ -34,7 +34,7 @@ export class OrganizationFactory implements Factory<Organization> {
   generateOrganizationReferent(
     props: Partial<OrganizationReferent>
   ): Partial<OrganizationReferent> {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<OrganizationReferent> = {
       referentMail: faker.internet.email().toLowerCase(),

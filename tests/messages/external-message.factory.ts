@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import phone from 'phone';
@@ -22,19 +22,19 @@ export class ExternalMessageFactory implements Factory<ExternalMessage> {
   generateExternalMessage(
     props: Partial<ExternalMessage>
   ): Partial<ExternalMessage> {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<ExternalMessage> = {
       senderFirstName: faker.name.firstName(),
       senderLastName: faker.name.lastName(),
       senderEmail: faker.internet.email(),
       senderPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
-      subject: faker.random.arrayElement(
+      subject: faker.helpers.arrayElement(
         ExternalMessageSubjectFilters.map(({ value }) => value)
       ),
       optInNewsletter: faker.datatype.boolean(),
       message: faker.lorem.lines(3),
-      type: faker.random.arrayElement(
+      type: faker.helpers.arrayElement(
         ExternalMessageContactTypeFilters.map(({ value }) => value)
       ),
     };

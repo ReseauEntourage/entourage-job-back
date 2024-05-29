@@ -17,7 +17,7 @@ export const HeardAbout = {
   POLE_EMPLOI: 'pole_emploi',
 } as const;
 
-export type HeardAboutValue = typeof HeardAbout[keyof typeof HeardAbout];
+export type HeardAboutValue = (typeof HeardAbout)[keyof typeof HeardAbout];
 
 export const HeardAboutFilters: FilterConstant<HeardAboutValue>[] = [
   {
@@ -74,7 +74,7 @@ export const CompanyApproaches = {
 } as const;
 
 export type CompanyApproach =
-  typeof CompanyApproaches[keyof typeof CompanyApproaches];
+  (typeof CompanyApproaches)[keyof typeof CompanyApproaches];
 
 export type CompanyZone = AdminZone | 'NATIONAL';
 
@@ -88,7 +88,7 @@ export const CandidateHelpWith = {
 } as const;
 
 export type CandidateHelpWithValue =
-  typeof CandidateHelpWith[keyof typeof CandidateHelpWith];
+  (typeof CandidateHelpWith)[keyof typeof CandidateHelpWith];
 
 export const CandidateGenders = {
   MALE: 'male',
@@ -97,7 +97,7 @@ export const CandidateGenders = {
 } as const;
 
 export type CandidateGender =
-  typeof CandidateGenders[keyof typeof CandidateGenders];
+  (typeof CandidateGenders)[keyof typeof CandidateGenders];
 
 export const CandidateAdministrativeSituations = {
   ID_CARD_FR: 'id_card_fr',
@@ -110,7 +110,7 @@ export const CandidateAdministrativeSituations = {
 } as const;
 
 export type CandidateAdministrativeSituation =
-  typeof CandidateAdministrativeSituations[keyof typeof CandidateAdministrativeSituations];
+  (typeof CandidateAdministrativeSituations)[keyof typeof CandidateAdministrativeSituations];
 
 export const CandidateAccommodations = {
   PERSONAL: 'personal',
@@ -123,7 +123,7 @@ export const CandidateAccommodations = {
 } as const;
 
 export type CandidateAccommodation =
-  typeof CandidateAccommodations[keyof typeof CandidateAccommodations];
+  (typeof CandidateAccommodations)[keyof typeof CandidateAccommodations];
 
 export const CandidateProfessionalSituations = {
   UNEMPLOYED: 'unemployed',
@@ -137,7 +137,7 @@ export const CandidateProfessionalSituations = {
 } as const;
 
 export type CandidateProfessionalSituation =
-  typeof CandidateProfessionalSituations[keyof typeof CandidateProfessionalSituations];
+  (typeof CandidateProfessionalSituations)[keyof typeof CandidateProfessionalSituations];
 
 export const CandidateResources = {
   SALARY: 'salary',
@@ -151,7 +151,7 @@ export const CandidateResources = {
 } as const;
 
 export type CandidateResource =
-  typeof CandidateResources[keyof typeof CandidateResources];
+  (typeof CandidateResources)[keyof typeof CandidateResources];
 
 export const CandidateYesNo = {
   YES: 'yes',
@@ -159,7 +159,7 @@ export const CandidateYesNo = {
 } as const;
 
 export type CandidateYesNoValue =
-  typeof CandidateYesNo[keyof typeof CandidateYesNo];
+  (typeof CandidateYesNo)[keyof typeof CandidateYesNo];
 
 export const CandidateYesNoNSPP = {
   ...CandidateYesNo,
@@ -167,14 +167,14 @@ export const CandidateYesNoNSPP = {
 } as const;
 
 export type CandidateYesNoNSPPValue =
-  typeof CandidateYesNoNSPP[keyof typeof CandidateYesNoNSPP];
+  (typeof CandidateYesNoNSPP)[keyof typeof CandidateYesNoNSPP];
 
 export const YesNoJNSPR = {
   ...CandidateYesNo,
   JNSPR,
 };
 
-export type YesNoJNSPRValue = typeof YesNoJNSPR[keyof typeof YesNoJNSPR];
+export type YesNoJNSPRValue = (typeof YesNoJNSPR)[keyof typeof YesNoJNSPR];
 
 export const Nationalities = {
   FRENCH: 'french',
@@ -183,7 +183,7 @@ export const Nationalities = {
   STATELESS: 'stateless',
   JNSPR: JNSPR,
 } as const;
-export type Nationality = typeof Nationalities[keyof typeof Nationalities];
+export type Nationality = (typeof Nationalities)[keyof typeof Nationalities];
 
 export const JobSearchDurations = {
   LESS_THAN_3_MONTHS: 'less_than_3_months',
@@ -195,7 +195,7 @@ export const JobSearchDurations = {
   JNSPR: JNSPR,
 } as const;
 export type JobSearchDuration =
-  typeof JobSearchDurations[keyof typeof JobSearchDurations];
+  (typeof JobSearchDurations)[keyof typeof JobSearchDurations];
 
 export const WorkingExperienceYears = {
   LESS_THAN_3_YEAR: 'less_than_3_year',
@@ -204,7 +204,7 @@ export const WorkingExperienceYears = {
   JNSPR: JNSPR,
 };
 export type WorkingExperience =
-  typeof WorkingExperienceYears[keyof typeof WorkingExperienceYears];
+  (typeof WorkingExperienceYears)[keyof typeof WorkingExperienceYears];
 
 export const StudiesLevels = {
   NONE: 'none',
@@ -217,4 +217,4 @@ export const StudiesLevels = {
   JNSPR: JNSPR,
 } as const;
 
-export type StudiesLevel = typeof StudiesLevels[keyof typeof StudiesLevels];
+export type StudiesLevel = (typeof StudiesLevels)[keyof typeof StudiesLevels];
