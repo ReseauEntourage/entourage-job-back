@@ -37,9 +37,7 @@ import { UserProfileNetworkBusinessLine } from './user-profile-network-business-
 import { UserProfileSearchAmbition } from './user-profile-search-ambition.model';
 import { UserProfileSearchBusinessLine } from './user-profile-search-business-line.model';
 
-const LINKEDIN_URL_REGEX = new RegExp(
-  '^(https?://)?(www\\.)?linkedin\\.com/in/[^/]+/?$'
-);
+const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
 @Table({ tableName: 'User_Profiles' })
 export class UserProfile extends Model {
