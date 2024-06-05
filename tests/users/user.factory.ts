@@ -108,8 +108,9 @@ export class UserFactory implements Factory<User> {
       return dbUser.toJSON();
     }
     const builtUser = await this.userModel.build(userData);
-    const { id, ...builtUserWithoutId } = builtUser.toJSON();
-    return builtUserWithoutId as User;
+    const { id, isEmailVerified, ...builtUserWithoutIdAndIsEmailVerified } =
+      builtUser.toJSON();
+    return builtUserWithoutIdAndIsEmailVerified as User;
   }
 
   async delete(userId: string) {
