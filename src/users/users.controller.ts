@@ -472,6 +472,8 @@ export class UsersController {
       throw new BadRequestException();
     }
 
+    const oldUser = await this.usersService.findOne(userId);
+
     let updatedUser: User;
     try {
       updatedUser = await this.usersService.update(userId, updateUserDto);
@@ -486,7 +488,7 @@ export class UsersController {
     }
 
     // if the email is updated, we need to send a verification email
-    if (updateUserDto.email) {
+    if (updateUserDto.email !== oldUser.email) {
       const updateUserIsEmailVerified: UpdateUserDto = {
         isEmailVerified: false,
       };
