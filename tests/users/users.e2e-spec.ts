@@ -7318,6 +7318,7 @@ describe('Users', () => {
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
           const response: APIResponse<
@@ -7344,6 +7345,25 @@ describe('Users', () => {
           );
           expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
+        it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            department: 'Paris (75)',
+            isAvailable: false,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            linkedinUrl: 'https://www.linkdin.com/in/jean-dupont',
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(400);
+        });
         it('Should return 400, if candidate updates his profile with coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
@@ -7369,6 +7389,7 @@ describe('Users', () => {
             isAvailable: false,
             networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
+            linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
           const response: APIResponse<

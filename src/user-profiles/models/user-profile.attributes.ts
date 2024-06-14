@@ -3,6 +3,7 @@ export const UserProfilesAttributes = [
   'currentJob',
   'department',
   'isAvailable',
+  'linkedinUrl',
 ];
 
 export const UserProfilesUserAttributes = [
