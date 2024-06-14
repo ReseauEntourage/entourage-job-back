@@ -5,6 +5,7 @@ import {
   IsDate,
   IsOptional,
   IsString,
+  Matches,
 } from 'class-validator';
 import { Transaction } from 'sequelize';
 import {
@@ -35,6 +36,8 @@ import { HelpOffer } from './help-offer.model';
 import { UserProfileNetworkBusinessLine } from './user-profile-network-business-line.model';
 import { UserProfileSearchAmbition } from './user-profile-search-ambition.model';
 import { UserProfileSearchBusinessLine } from './user-profile-search-business-line.model';
+
+const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
 @Table({ tableName: 'User_Profiles' })
 export class UserProfile extends Model {
@@ -69,6 +72,13 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   currentJob: string;
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Matches(LINKEDIN_URL_REGEX)
+  @Column
+  linkedinUrl: string;
 
   @ApiProperty()
   @IsString()

@@ -39,6 +39,9 @@ export class UpdateUserProfilePipe
       return value;
     }
 
+    if (value.linkedinUrl && value.linkedinUrl.length === 0)
+      value.linkedinUrl = null;
+
     const { role } = this.request.user;
 
     if (hasPermission(Permissions.CANDIDATE, role)) {

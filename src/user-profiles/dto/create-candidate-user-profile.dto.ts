@@ -9,4 +9,5 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'searchBusinessLines',
   'searchAmbitions',
   'helpNeeds',
+  'linkedinUrl',
 ] as const) {}
