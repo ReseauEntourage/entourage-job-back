@@ -14,7 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { RequestWithAuthorizationHeader } from 'src/auth/auth.types';
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
@@ -27,7 +27,6 @@ import {
 import { User } from 'src/users/models';
 import {
   AllUserRoles,
-  CoachUserRoles,
   CVStatuses,
   Permissions,
   UserRole,
@@ -100,24 +99,19 @@ export class CVsController {
     const { status } = createdCV;
 
     // pour le coach, on envoie un email de notif à l'admin quand le cv est en attente de validation
-    if (
-      isRoleIncluded(CoachUserRoles, role) &&
-      status === CVStatuses.PENDING.value
-    ) {
+    if (status === CVStatuses.PENDING.value) {
       await this.cvsService.sendMailsAfterSubmitting(
         user,
         candidateId,
         createdCV
       );
     }
-
     // uniquement pour la validation admin du CV
     if (!autoSave) {
       if (status === CVStatuses.PUBLISHED.value) {
         await this.cvsService.sendCacheCV(candidateId);
         await this.cvsService.sendCacheAllCVs();
         await this.cvsService.sendGenerateCVSearchString(candidateId);
-
         // première validation => envoi de mail de notif au candidat et coach avec contenu pédago
         const hasPublishedAtLeastOnce =
           await this.cvsService.findHasAtLeastOnceStatusByCandidateId(
