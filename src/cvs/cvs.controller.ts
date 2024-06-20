@@ -98,7 +98,7 @@ export class CVsController {
 
     const { status } = createdCV;
 
-    // pour le coach, on envoie un email de notif à l'admin quand le cv est en attente de validation
+    // on envoie un email de notif a l'admin lorsqu'un cv est en attente de validation
     if (status === CVStatuses.PENDING.value) {
       await this.cvsService.sendMailsAfterSubmitting(
         user,

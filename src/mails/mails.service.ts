@@ -172,14 +172,31 @@ export class MailsService {
     });
   }
 
-  async sendCVSubmittedMail(coach: User, candidateId: string, cv: Partial<CV>) {
-    const candidate = getCandidateFromCoach(coach, candidateId);
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+  async sendCVSubmittedMail(
+    submittingUser: User,
+    candidateId: string,
+    cv: Partial<CV>
+  ) {
+    let candidate, coach: User;
+    let toEmail: string;
+    // if user is a a candidate then get the user as candidate
+    if (isRoleIncluded(CandidateUserRoles, submittingUser.role)) {
+      candidate = submittingUser;
+      coach = getCoachFromCandidate(candidate);
+      toEmail = candidate.email || '';
+    } else {
+      // if user is a coach then get the candidate from the coach
+      coach = submittingUser;
+      candidate = getCandidateFromCoach(coach, candidateId);
+      toEmail = getAdminMailsFromZone(candidate.zone).candidatesAdminMail;
+    }
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: candidatesAdminMail,
+      toEmail: toEmail,
       templateId: MailjetTemplates.CV_SUBMITTED,
       variables: {
+        role: submittingUser.role,
+        candidate: _.omitBy(candidate, _.isNil),
         coach: _.omitBy(coach, _.isNil),
         cv: _.omitBy(cv, _.isNil),
       },
