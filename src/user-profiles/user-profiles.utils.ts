@@ -28,6 +28,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     cvUrl: cvUrl,
     linkedinUrl: userProfile.linkedinUrl,
+    gotExternalCv: userProfile.gotExternalCv,
   };
 };
 
