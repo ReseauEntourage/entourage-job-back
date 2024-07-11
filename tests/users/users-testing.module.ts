@@ -3,6 +3,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { UserCandidatsHelper } from './user-candidats.helper';
+import { UserExternalCvsHelper } from './user-external-cvs.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
@@ -13,6 +14,7 @@ import { UsersHelper } from './users.helper';
     UsersHelper,
     UserCandidatsHelper,
     UserProfilesHelper,
+    UserExternalCvsHelper,
     UserFactory,
   ],
   exports: [UsersHelper, UserCandidatsHelper, UserProfilesHelper, UserFactory],
