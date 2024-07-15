@@ -102,20 +102,18 @@ describe('UserExternalCvsController', () => {
         .attach('file', testCvPath);
 
       const response: APIResponse<UserExternalCvsController['findExternalCv']> =
-        await request(server)
-          .get(`/user/current/external-cv`)
-          .set('authorization', `Token ${loggedInCandidate.token}`);
-
+        await request(server).get(
+          `/user/${loggedInCandidate.user.id}/external-cv`
+        );
       expect(response.body).toHaveProperty('url');
       expect(response.status).toBe(200);
     });
 
     it('should fail to find an external CV', async () => {
       const response: APIResponse<UserExternalCvsController['findExternalCv']> =
-        await request(server)
-          .get(`/user/current/external-cv`)
-          .set('authorization', `Token ${loggedInCandidate.token}`);
-
+        await request(server).get(
+          `/user/${loggedInCandidate.user.id}/external-cv`
+        );
       expect(response.status).toBe(404);
     });
   });
