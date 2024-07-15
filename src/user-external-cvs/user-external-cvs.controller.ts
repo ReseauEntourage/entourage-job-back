@@ -5,17 +5,18 @@ import {
   Get,
   InternalServerErrorException,
   NotFoundException,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UserPayload } from 'src/auth/guards';
+import { Public, UserPayload } from 'src/auth/guards';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UserExternalCvsService } from './user-external-cvs.service';
 
-@Controller('user/current/external-cv')
+@Controller('user')
 export class UserExternalCvsController {
   constructor(
     private readonly userExternalCvsService: UserExternalCvsService,
@@ -31,7 +32,7 @@ export class UserExternalCvsController {
    * @throws { InternalServerErrorException } - If the file could not be uploaded
    */
   @UseInterceptors(FileInterceptor('file', { dest: 'uploads/' }))
-  @Post()
+  @Post('current/external-cv')
   async uploadExternalCV(
     @UploadedFile() file: Express.Multer.File,
     @UserPayload() user: User
@@ -60,15 +61,16 @@ export class UserExternalCvsController {
   }
 
   /**
-   * GET /user/current/external-cv - Finds the external CV for the current user
+   * GET /user/:userId/external-cv - Finds the external CV for the current user
    * @param user - The current user signed in
    * @returns cvFile
    * @throws { InternalServerErrorException } - If the file could not be found
    * @throws { NotFoundException } - If the user does not have an external CV
    */
-  @Get()
-  async findExternalCv(@UserPayload() user: User) {
-    const userProfile = await this.userProfilesService.findOneByUserId(user.id);
+  @Get(':userId/external-cv')
+  @Public()
+  async findExternalCv(@Param('userId') userId: string) {
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
     if (!userProfile) {
       throw new InternalServerErrorException();
     }
@@ -76,7 +78,7 @@ export class UserExternalCvsController {
       throw new NotFoundException();
     }
     const cvFile = await this.userExternalCvsService.findExternalCv(
-      `files/external-cvs/${user.id}.pdf`
+      `files/external-cvs/${userId}.pdf`
     );
     return { url: cvFile };
   }
@@ -85,7 +87,7 @@ export class UserExternalCvsController {
    * DELETE /user/current/external-cv - Deletes the external CV for the current user
    * @param user - The current user signed in
    */
-  @Delete()
+  @Delete('current/external-cv')
   async deleteExternalCv(@UserPayload() user: User) {
     await this.userExternalCvsService.deleteExternalCv(user.id);
   }
