@@ -831,11 +831,11 @@ export class CVsService {
   }
 
   async sendMailsAfterSubmitting(
-    coach: User,
+    user: User,
     candidateId: string,
     cv: Partial<CV>
   ) {
-    await this.mailsService.sendCVSubmittedMail(coach, candidateId, cv);
+    await this.mailsService.sendCVSubmittedMail(user, candidateId, cv);
   }
 
   async sendMailsAfterPublishing(candidateId: string) {
