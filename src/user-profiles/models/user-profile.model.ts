@@ -84,7 +84,7 @@ export class UserProfile extends Model {
   @IsBoolean()
   @Default(false)
   @Column
-  gotExternalCv: boolean;
+  hasExternalCv: boolean;
 
   @ApiProperty()
   @IsString()

@@ -48,5 +48,5 @@ export type PublicProfile = {
   lastReceivedMessage: Date;
   cvUrl?: string;
   linkedinUrl?: string;
-  gotExternalCv: boolean;
+  hasExternalCv: boolean;
 };

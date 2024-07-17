@@ -74,7 +74,7 @@ describe('UserExternalCvsController', () => {
       const response: APIResponse<
         UserExternalCvsController['uploadExternalCV']
       > = await request(server)
-        .post(`/user/current/external-cv`)
+        .post(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`)
         .set('Content-Type', 'multipart/form-data')
         .attach('file', testCvPath);
@@ -87,7 +87,7 @@ describe('UserExternalCvsController', () => {
       const response: APIResponse<
         UserExternalCvsController['uploadExternalCV']
       > = await request(server)
-        .post(`/user/current/external-cv`)
+        .post(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`);
 
       expect(response.status).toBe(400);
@@ -98,23 +98,23 @@ describe('UserExternalCvsController', () => {
     it('should successfully find an external CV', async () => {
       const testCvPath = userExternalCvsHelper.getTestImagePath();
       await request(server)
-        .post(`/user/current/external-cv`)
+        .post(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`)
         .attach('file', testCvPath);
 
       const response: APIResponse<UserExternalCvsController['findExternalCv']> =
-        await request(server).get(
-          `/user/${loggedInCandidate.user.id}/external-cv`
-        );
+        await request(server)
+          .get(`/external-cv/${loggedInCandidate.user.id}`)
+          .set('authorization', `Token ${loggedInCandidate.token}`);
       expect(response.body).toHaveProperty('url');
       expect(response.status).toBe(200);
     });
 
     it('should fail to find an external CV', async () => {
       const response: APIResponse<UserExternalCvsController['findExternalCv']> =
-        await request(server).get(
-          `/user/${loggedInCandidate.user.id}/external-cv`
-        );
+        await request(server)
+          .get(`/external-cv/${loggedInCandidate.user.id}`)
+          .set('authorization', `Token ${loggedInCandidate.token}`);
       expect(response.status).toBe(404);
     });
   });
@@ -124,7 +124,7 @@ describe('UserExternalCvsController', () => {
       // Create the external CV to delete
       const testCvPath = userExternalCvsHelper.getTestImagePath();
       await request(server)
-        .post(`/user/current/external-cv`)
+        .post(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`)
         .attach('file', testCvPath);
 
@@ -132,7 +132,7 @@ describe('UserExternalCvsController', () => {
       const response: APIResponse<
         UserExternalCvsController['deleteExternalCv']
       > = await request(server)
-        .delete(`/user/current/external-cv`)
+        .delete(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`);
 
       // Compute the user profile
@@ -141,7 +141,7 @@ describe('UserExternalCvsController', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(profile.gotExternalCv).toBe(false);
+      expect(profile.hasExternalCv).toBe(false);
     });
   });
 });
