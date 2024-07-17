@@ -17,13 +17,13 @@ import { UsersHelper } from './users.helper';
 
 describe('UserExternalCvsController', () => {
   let app: INestApplication;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let server: any;
+
   let databaseHelper: DatabaseHelper;
   let usersHelper: UsersHelper;
   let userExternalCvsHelper: UserExternalCvsHelper;
   let userProfilesHelper: UserProfilesHelper;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let server: any;
-
   let loggedInCandidate: LoggedUser;
 
   beforeAll(async () => {
@@ -76,6 +76,7 @@ describe('UserExternalCvsController', () => {
       > = await request(server)
         .post(`/user/current/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`)
+        .set('Content-Type', 'multipart/form-data')
         .attach('file', testCvPath);
 
       expect(response.status).toBe(201);
