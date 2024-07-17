@@ -77,7 +77,13 @@ describe('UserExternalCvsController', () => {
         .post(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`)
         .set('Content-Type', 'multipart/form-data')
-        .attach('file', testCvPath);
+        .attach('file', testCvPath)
+        .end((err, res) => {
+          if (err) {
+            console.error('error', err);
+            console.error('res.error', res.error);
+          }
+        });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('url');
