@@ -27,7 +27,7 @@ export class UserExternalCvsService {
         `external-cvs/${userId}.pdf`
       );
       await this.userProfileService.updateByUserId(userId, {
-        gotExternalCv: true,
+        hasExternalCv: true,
       });
       return uploadedCV;
     } catch (error) {
@@ -63,7 +63,7 @@ export class UserExternalCvsService {
    */
   async deleteExternalCv(userId: string) {
     await this.userProfileService.updateByUserId(userId, {
-      gotExternalCv: false,
+      hasExternalCv: false,
     });
   }
 }

@@ -4,7 +4,7 @@ export const UserProfilesAttributes = [
   'department',
   'isAvailable',
   'linkedinUrl',
-  'gotExternalCv',
+  'hasExternalCv',
 ];
 
 export const UserProfilesUserAttributes = [
