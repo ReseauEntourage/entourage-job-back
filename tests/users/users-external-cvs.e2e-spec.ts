@@ -64,20 +64,15 @@ describe('UserExternalCvsController', () => {
   });
 
   describe('uploadExternalCV', () => {
-    let testCvPath: string;
-
-    beforeEach(async () => {
-      testCvPath = userExternalCvsHelper.getTestImagePath();
-    });
-
     it('should successfully upload an external CV', async () => {
+      const buffer = Buffer.from('PDFFileContent');
       const response: APIResponse<
         UserExternalCvsController['uploadExternalCV']
       > = await request(server)
         .post(`/external-cv`)
         .set('authorization', `Token ${loggedInCandidate.token}`)
         .set('Content-Type', 'multipart/form-data')
-        .attach('file', testCvPath);
+        .attach('file', buffer, 'test.pdf');
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('url');
