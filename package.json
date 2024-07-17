@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.25.2",
+  "version": "2.25.3",
   "license": "ISC",
   "engines": {
     "node": "18.x"
