@@ -78,7 +78,6 @@ describe('UserExternalCvsController', () => {
         .set('authorization', `Token ${loggedInCandidate.token}`)
         .set('Content-Type', 'multipart/form-data')
         .attach('file', testCvPath);
-      console.error(response);
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('url');
