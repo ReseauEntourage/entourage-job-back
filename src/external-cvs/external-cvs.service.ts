@@ -4,7 +4,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
 @Injectable()
-export class UserExternalCvsService {
+export class ExternalCvsService {
   constructor(
     private s3Service: S3Service,
     private userProfileService: UserProfilesService

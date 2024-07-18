@@ -5,8 +5,8 @@ import { AWSModule } from 'src/external-services/aws/aws.module';
 import { MessagesModule } from 'src/messages/messages.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
-import { UserExternalCvsController } from './user-external-cvs.controller';
-import { UserExternalCvsService } from './user-external-cvs.service';
+import { ExternalCvsController } from './external-cvs.controller';
+import { ExternalCvsService } from './external-cvs.service';
 
 @Module({
   imports: [
@@ -17,8 +17,8 @@ import { UserExternalCvsService } from './user-external-cvs.service';
     AWSModule,
     MessagesModule,
   ],
-  controllers: [UserExternalCvsController],
-  providers: [UserExternalCvsService],
-  exports: [UserExternalCvsService],
+  controllers: [ExternalCvsController],
+  providers: [ExternalCvsService],
+  exports: [ExternalCvsService],
 })
-export class UserExternalCvsModule {}
+export class ExternalCvsModule {}

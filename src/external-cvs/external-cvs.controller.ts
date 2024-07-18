@@ -14,12 +14,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UserPayload } from 'src/auth/guards';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
-import { UserExternalCvsService } from './user-external-cvs.service';
+import { ExternalCvsService } from './external-cvs.service';
 
 @Controller('external-cv')
-export class UserExternalCvsController {
+export class ExternalCvsController {
   constructor(
-    private readonly userExternalCvsService: UserExternalCvsService,
+    private readonly externalCvsService: ExternalCvsService,
     private readonly userProfilesService: UserProfilesService
   ) {}
 
@@ -44,14 +44,14 @@ export class UserExternalCvsController {
       throw new BadRequestException();
     }
 
-    const externalCvS3Key = await this.userExternalCvsService.uploadExternalCV(
+    const externalCvS3Key = await this.externalCvsService.uploadExternalCV(
       user.id,
       file
     );
     if (!externalCvS3Key) {
       throw new InternalServerErrorException();
     }
-    const cvFile = await this.userExternalCvsService.findExternalCv(
+    const cvFile = await this.externalCvsService.findExternalCv(
       externalCvS3Key
     );
     if (!cvFile) {
@@ -76,7 +76,7 @@ export class UserExternalCvsController {
     if (!userProfile.hasExternalCv) {
       throw new NotFoundException();
     }
-    const cvFile = await this.userExternalCvsService.findExternalCv(
+    const cvFile = await this.externalCvsService.findExternalCv(
       `files/external-cvs/${userId}.pdf`
     );
     return { url: cvFile };
@@ -88,6 +88,6 @@ export class UserExternalCvsController {
    */
   @Delete()
   async deleteExternalCv(@UserPayload() user: User) {
-    await this.userExternalCvsService.deleteExternalCv(user.id);
+    await this.externalCvsService.deleteExternalCv(user.id);
   }
 }
