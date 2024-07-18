@@ -23,6 +23,7 @@ describe('ExternalCvsController', () => {
   let usersHelper: UsersHelper;
   let userProfilesHelper: UserProfilesHelper;
   let loggedInCandidate: LoggedUser;
+  let loggedInCandidateWithCv: LoggedUser;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -56,6 +57,16 @@ describe('ExternalCvsController', () => {
     loggedInCandidate = await usersHelper.createLoggedInUser({
       role: UserRoles.CANDIDATE,
     });
+
+    // Create a candidate with an external CV
+    loggedInCandidateWithCv = await usersHelper.createLoggedInUser(
+      { role: UserRoles.CANDIDATE },
+      {
+        userProfile: {
+          hasExternalCv: true,
+        },
+      }
+    );
   });
 
   describe('uploadExternalCV', () => {
@@ -84,19 +95,10 @@ describe('ExternalCvsController', () => {
 
   describe('findExternalCv', () => {
     it('should successfully find an external CV', async () => {
-      const candidateWithExternalCv = await usersHelper.createLoggedInUser(
-        { role: UserRoles.CANDIDATE },
-        {
-          userProfile: {
-            hasExternalCv: true,
-          },
-        }
-      );
-
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
-          .get(`/external-cv/${candidateWithExternalCv.user.id}`)
-          .set('authorization', `Token ${candidateWithExternalCv.token}`);
+          .get(`/external-cv/${loggedInCandidateWithCv.user.id}`)
+          .set('authorization', `Token ${loggedInCandidateWithCv.token}`);
       expect(response.body).toHaveProperty('url');
       expect(response.status).toBe(200);
     });
@@ -112,25 +114,15 @@ describe('ExternalCvsController', () => {
 
   describe('deleteExternalCv', () => {
     it('should successfully delete an external CV', async () => {
-      // Create a candidate with an external CV
-      const candidateWithExternalCv = await usersHelper.createLoggedInUser(
-        { role: UserRoles.CANDIDATE },
-        {
-          userProfile: {
-            hasExternalCv: true,
-          },
-        }
-      );
-
       // Delete the external CV
       const response: APIResponse<ExternalCvsController['deleteExternalCv']> =
         await request(server)
           .delete(`/external-cv`)
-          .set('authorization', `Token ${candidateWithExternalCv.token}`);
+          .set('authorization', `Token ${loggedInCandidateWithCv.token}`);
 
       // Compute the user profile
       const profile = await userProfilesHelper.findOneProfileByUserId(
-        candidateWithExternalCv.user.id
+        loggedInCandidateWithCv.user.id
       );
 
       expect(response.status).toBe(200);
