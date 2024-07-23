@@ -4890,6 +4890,7 @@ describe('Users', () => {
           beforeEach(async () => {
             loggedInCandidate = await usersHelper.createLoggedInUser({
               role: UserRoles.CANDIDATE,
+              lastConnection: moment().subtract(15, 'day').toDate(),
             });
 
             const userProfileCandidate: Partial<UserProfile> = {
@@ -4977,6 +4978,22 @@ describe('Users', () => {
               { userProfile: userProfileCoach }
             );
           });
+
+          it('Should return 200 and contains own profile', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=1&offset=5&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.CANDIDATE,
+            ]);
+            expect(response.body[0].id).toEqual(loggedInCandidate.user.id);
+          });
+
           it('Should return 200 and 2 first candidates profiles', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
@@ -5033,7 +5050,7 @@ describe('Users', () => {
               )
             );
           });
-          it('Should return 200 and the 3rd and 4th candidate', async () => {
+          it('Should return 200 and loggedInCandidate and 2nd candidate', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
