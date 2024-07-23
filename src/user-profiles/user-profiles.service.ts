@@ -170,7 +170,6 @@ export class UserProfilesService {
           attributes: ['lastConnection'],
           where: {
             role,
-            id: { [Op.not]: userId },
             lastConnection: { [Op.ne]: null },
             ...searchOptions,
           },
