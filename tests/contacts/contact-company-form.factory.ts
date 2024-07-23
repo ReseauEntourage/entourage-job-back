@@ -20,7 +20,7 @@ export class ContactCompanyFormFactory
       lastName: faker.name.lastName(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
-      company: faker.company.name(2),
+      company: faker.company.name(),
       position: faker.word.noun(2),
       zone: faker.helpers.arrayElement(
         AdminZoneFilters.map(({ value }) => value)

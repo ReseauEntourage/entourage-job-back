@@ -81,6 +81,12 @@ export class UserProfile extends Model {
   linkedinUrl: string;
 
   @ApiProperty()
+  @IsBoolean()
+  @Default(false)
+  @Column
+  hasExternalCv: boolean;
+
+  @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column
