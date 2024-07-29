@@ -5050,7 +5050,7 @@ describe('Users', () => {
               )
             );
           });
-          it('Should return 200 and loggedInCandidate and 2nd candidate', async () => {
+          it('Should return 200 and the 3rd and 4th candidate', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
