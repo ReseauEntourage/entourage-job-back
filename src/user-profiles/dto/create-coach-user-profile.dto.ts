@@ -9,4 +9,5 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'isAvailable',
   'networkBusinessLines',
   'helpOffers',
+  'linkedinUrl',
 ] as const) {}

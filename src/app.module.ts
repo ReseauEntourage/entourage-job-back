@@ -20,6 +20,7 @@ import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { CVsModule } from './cvs/cvs.module';
+import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
@@ -104,6 +105,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersCreationModule,
     AuthModule,
     CVsModule,
+    ExternalCvsModule,
     OpportunitiesModule,
     BusinessLinesModule,
     LocationsModule,
