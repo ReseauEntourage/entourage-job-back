@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Public, UserPayload } from 'src/auth/guards';
 import { CandidateUserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
@@ -64,6 +65,8 @@ export class MessagesController {
   }
 
   @Post('internal')
+  @Throttle(10, 86400)
+  // No more than 10 internal messages per day per IP
   async createInternalMessage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateInternalMessagePipe())
