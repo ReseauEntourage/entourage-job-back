@@ -166,7 +166,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
-    SlackModule,
     SMSModule,
     BitlyModule,
     ContactsModule,
