@@ -25,6 +25,7 @@ import { ExternalDatabasesModule } from './external-databases/external-databases
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
+import { SlackModule } from './external-services/slack/slack.module';
 import { MailsModule } from './mails/mails.module';
 import { MessagesModule } from './messages/messages.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
@@ -121,6 +122,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
+    SlackModule,
     SMSModule,
     BitlyModule,
     ContactsModule,
@@ -164,6 +166,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
+    SlackModule,
     SMSModule,
     BitlyModule,
     ContactsModule,
