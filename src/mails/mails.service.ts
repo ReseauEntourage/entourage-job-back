@@ -704,6 +704,7 @@ export class MailsService {
         message: message.message,
         zone: addresseeUser.zone,
         subject: message.subject,
+        role: senderRole,
       },
     });
 
@@ -718,6 +719,7 @@ export class MailsService {
         senderEmail: senderUser.email,
         zone: senderUser.zone,
         subject: message.subject,
+        role: senderUser,
       },
     });
   }
