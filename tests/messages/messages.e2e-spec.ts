@@ -2,9 +2,15 @@ import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { CacheMocks, QueueMocks, SalesforceMocks } from '../mocks.types';
+import {
+  CacheMocks,
+  QueueMocks,
+  SalesforceMocks,
+  SlackMocks,
+} from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagesController } from 'src/messages/messages.controller';
 import { Queues } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
@@ -43,6 +49,8 @@ describe('Messages', () => {
       .useValue(CacheMocks)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
+      .overrideProvider(SlackService)
+      .useValue(SlackMocks)
       .compile();
 
     app = moduleFixture.createNestApplication();
