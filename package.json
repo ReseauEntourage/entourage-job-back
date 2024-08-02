@@ -42,6 +42,7 @@
     "@nestjs/sequelize": "^9.0.2",
     "@nestjs/swagger": "^6.3.0",
     "@nestjs/throttler": "^4.0.0",
+    "@slack/bolt": "^3.19.0",
     "@vonage/server-sdk": "^2.11.2",
     "bitly": "^7.1.2",
     "bull": "^4.7.0",
