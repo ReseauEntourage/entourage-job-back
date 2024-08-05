@@ -1,46 +1,61 @@
 # LinkedOut Backend
 
+Document mis à jour le 02/08/2024
+
+[![LinkedOut Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
+
 ## Modules principaux & versions
 
-> Node 18.x.x
+| App            | Version |
+| -------------- | ------- |
+| **Node**       | 18.x.x  |
+| **NestJS**     | 9.4.1   |
+| **Sequelize**  | 9.0.2   |
+| **ESLint**     | 8.0.1   |
+| **TypeScript** | 4.3.5   |
+| **esLint**     | 8.0.1   |
 
-> NestJS 8.0.0
-
-> Sequelize 6.21.4
-
-> ESLint 8.0.1
-
-> TypeScript 4.3.5
-
-## Architecture (TO UPDATE)
+## Architecture
 
 - `.github`: configuration de la CI avec **_Github Actions_**
 - `.husky` : scripts de hook de commit avec **_Husky_**
 - `/public` : stockage des ressources non dynamique accessible publiquement
-- `/src`
-  - `/constants` : fichiers de constantes
-  - `/controllers` : logiques métier de chaque use case de l'application
-  - `/helpers` : fichier d'utilitaire lié aux use cases
-  - `/jobs` : configuration des jobs asynchrones et gestions des jobs entrants
-  - `/routes` : configuration des routes avec **Express.js**
-    - `/db` : configuration de la base de données avec **Sequelize**
-      - `/config` : configuration d'accès à la base de données
-      - `/migrations`: fichiers de migration de la structure de la base
-      - `/models` : fichiers modèles des objets en base
+- `/src` : dossier contenant toutes les sources des différents modules de l'application
+  - `/db` : configuration de la base de données avec **Sequelize**
+    - `/config` : configuration d'accès à la base de données
+    - `/migrations`: fichiers de migration de la structure de la base
+    - `/seeders` : fichiers de seeds pour générer des données dans la base de donnée
+    - (...) Les modules de l'application
   - `/utils` : fonctions utilitaires communes
-  - `app.js`: point d'entrée de lancement du serveur
-  - `mainWorker.js`: point d'entrée de lancement du worker
-  - `server.js`: gestion du serveur
-- `.babelrc` : configuration pour **_Babel_**
-- `.editorconfig` : configuration par défaut de la syntaxe du code de l'éditeur
+  - `app.module.ts`: Module global de l'application
+  - `tracer.ts`: fichier d'initialisation de la connexion à DataDog
+  - `main.ts`: point d'entrée de lancement du serveur
+  - `worker.ts`: point d'entrée de lancement du worker
+  - `worker.module.ts`: Module global du worker
+- `/tests`: L'ensemble des tests e2e par module
+  - (...) Les différents modules testés
+  - custom-testing.module.ts: Le module de test
+  - database.helper.ts: Helper permettant les interactions avec la base de donnée
+  - jest-e2e.json: Fichier de configuration de Jest
+  - mocks.types.ts: Fichier de définition des Mock de services
+- `.dockerignore`: Les fichiers qui seront ignorés dans Docker
 - `.env` : à ajouter pour gérer les variables d'environnements ([cf. exemple](#fichier-env-minimal))
-- `.eslintignore` : configuration pour **_ESLint_**
-- `.eslintrc.json` : configuration pour **_ESLint_**
-- `.prettierignore` : configuration pour **_Prettier_**
+- `.env.test` : à ajouter pour gérer les variables d'environnements dans le cadre des tests en local
+- `.env.dist`: fichier de distribution des variables d'env
+- `.eslintrc.js` : configuration pour **_eslint_**
+- `.gitignore` : Configuration des fichiers qui ignorés par Git
+- `.lintstagedrc.js` : configuration pour **_lint-stagged_**
 - `.prettierrc.json` : configuration pour **_Prettier_**
 - `.sequelizerc` : configuration pour **Sequelize**
-- `.slugignore` : dossiers ou fichiers à exclure du package finale pendant la compilation
+- `docker-compose.yml`: Définition des différents containers Docker pour le développement local
+- `docker-entrypoint.sh`: Point d'entrée de lancement de l'app avec Docker
+- `Dockerfile`: configuration du container Docker de l'application
+- `nest-cli.json`: configuration de *_nest_* pour l'app
+- `nest-cli.worker.json`: configuration de *_nest_* pour le worker
+- `package.json`: configuration du projet et des dépendances
 - `Procfile` : configuration des process **_Heroku_** à lancer après déploiement
+- `tsconfig.json`: configuration pour *_typescript_*
+- `yarn.lock`: définitions des dépendances et sous dépendances et leur version
 
 ## Configuration
 
@@ -48,33 +63,43 @@
 
 Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJs**.
 
-### Installation des modules sans Docker
+### Définition des variables d'environnement
 
+Veuillez consulter le fichier .env.dist pour connaitre les variables d'environnement utilisés dans le projet.
+Vous devez définir deux nouveaux fichiers de variables d'environnement :
+  - un fichier `.env` pour les variables d'environnement de l'application en mode `run`
+  - un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
+
+### Initialisation des containers
+
+Création des containers de l'application
 ```
-yarn
-```
-
-### Initialisation des modules avec Docker
-
-Attention: il faut bien ajouter le fichier .env avec les variables d'environnement avant de lancer le build sur docker.
-
-```
-yarn
 docker-compose up --build
 ```
 
-Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein du
-container:
+Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein des
+containers:
 
 ```
-docker exec -it api_new bash
+docker exec -it linkedout-api-worker sh
 rm -r node_modules/sharp/
 npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
+exit
+```
+
+```
+docker exec -it linkedout-api-test sh
+rm -r node_modules/sharp/
+npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
+exit
 ```
 
 ### Initialisation de la BDD
 
-#### Sans Docker
+Entrez dans votre container
+```
+docker exec -it linkedout-api-worker bash
+```
 
 Pour créer la DB:
 
@@ -95,14 +120,6 @@ utilisateurs :
 yarn db:seed
 ```
 
-#### Avec Docker
-
-La même chose que sans Docker, mais vous devez précéder les commandes par la suivante, et ne pas lancer la commande de
-création de DB:
-
-```
-docker exec -it api bash
-```
 
 ### Une fois la DB initialisée
 
@@ -114,52 +131,32 @@ Les identifiants de l'administrateur crée sont :
 
 ### Remplir la DB avec un dump
 
-#### Sans Docker
-
 ```
+docker exec -it linkedout-db sh
 psql -d linkedout -p 5432 -U linkedout -W
 ```
 
-Entrez le mdp de la BD (dans le docker-compose: "linkedout"), puis exécutez la commande SQL.
-
-#### Avec Docker
-
-Même chose que sans Docker, mais précédez par la commande suivante pour entrer dans le container de la DB:
-
-```
-docker exec -it db sh
-```
+Entrez le mdp de la BD (dans le docker compose: "linkedout"), puis exécutez la commande SQL.
 
 ### Lancer le projet en mode développement
 
-#### Sans docker
-
 ```
-yarn start:dev
-```
-
-#### Avec docker
-
-```
-docker-compose up
+docker compose up
 ```
 
 ### Lancer le projet en mode production
 
+Compiler l'applicaiton
 ```
 yarn build
+```
+
+Démarrer l'applicatin précédemment compilé
+```
 yarn start
 ```
 
-### Lancement du worker (si vous n'utilisez pas Docker)
-
-#### Mode développement
-
-Pour pouvoir utiliser le worker en local il faut lancer une instance de **_Redis_** en
-local : https://redis.io/docs/getting-started
-
-Il faut également enlever les variables d'environnement _REDIS_URL_ et _REDIS_TLS_URL_ afin que les modules **_Redis_**
-et **_Bull_** utilisent leur configuration par défaut pour se connecter à _**Redis**_ en local (`127.0.0.1:6379`)
+Démarrer le worker
 
 ```
 yarn worker:start:dev
@@ -178,74 +175,6 @@ yarn test:eslint
 ```
 
 Ces deux commandes sont lancées par les hooks de commit.
-
-### Fichier `.env` minimal
-
-```.dotenv
-ACTIONS_REMINDER_DELAY=
-ADMIN_CANDIDATES_HZ=
-ADMIN_CANDIDATES_LILLE=
-ADMIN_CANDIDATES_LORIENT=
-ADMIN_CANDIDATES_LYON=
-ADMIN_CANDIDATES_PARIS=
-ADMIN_CANDIDATES_RENNES=
-ADMIN_COMPANIES_HZ=
-ADMIN_COMPANIES_LILLE=
-ADMIN_COMPANIES_LORIENT=
-ADMIN_COMPANIES_LYON=
-ADMIN_COMPANIES_PARIS=
-ADMIN_COMPANIES_RENNES=
-AWS_LAMBDA_URL=
-AWSS3_BUCKET_NAME=
-AWSS3_FILE_DIRECTORY=
-AWSS3_ID=
-AWSS3_IMAGE_DIRECTORY=
-AWSS3_SECRET=
-BITLY_TOKEN=
-CDN_ID=
-CV_10_REMINDER_DELAY=
-CV_20_REMINDER_DELAY=
-CV_PDF_GENERATION_AWS_URL=
-CV_START_DELAY=
-DATABASE_URL=
-DEBUG_JOBS=
-ENABLE_SF=
-EXTERNAL_OFFERS_REMINDER_DELAY=
-FRONT_URL=
-INTERVIEW_TRAINING_REMINDER_DELAY
-JWT_SECRET=
-MAILJET_CONTACT_EMAIL=
-MAILJET_FROM_EMAIL=
-MAILJET_FROM_NAME=
-MAILJET_NEWSLETTER_LIST_ID=
-MAILJET_NEWSLETTER_PUB=
-MAILJET_NEWSLETTER_SEC=
-MAILJET_PUB=
-MAILJET_SEC=
-MAILJET_SUPPORT_EMAIL=
-OFFER_ARCHIVE_REMINDER_DELAY=
-OFFER_NO_RESPONSE_DELAY=
-OFFER_REMINDER_DELAY=
-PUSHER_API_KEY=
-PUSHER_API_SECRET=
-PUSHER_APP_ID=
-PUSHER_URL=
-REDIS_URL=
-SALESFORCE_CLIENT_ID=
-SALESFORCE_CLIENT_SECRET=
-SALESFORCE_LOGIN_URL=
-SALESFORCE_PASSWORD=
-SALESFORCE_REDIRECT_URI=
-SALESFORCE_SECURITY_TOKEN=
-SALESFORCE_USERNAME=
-SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH_DELAY=
-SERVER_TIMEOUT=
-SF_INFOCO_CAMPAIGN_ID=
-SF_WEBINAIRE_CAMPAIGN_ID=
-SF_ORGANIZATION_ID=
-SMS_SENDER_ID=
-VIDEO_REMINDER_DELAY=
-```
 
 ## Tests
 
@@ -275,7 +204,8 @@ Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-
 
 Si un commit est poussé sur `master`, l'application sera déployé sur la production : \* \*[https://api.linkedout.fr](https://api.linkedout.fr)\*\*
 
-Les tests sont effectués sur **_Github Actions_** avant de déployer le projet sur **_Heroku_**.
+Les tests sont effectués sur **_Github Actions_** avant de déployer le projet sur **_Heroku_**
+(Les variables nécessaires pour executer les tests sont définies dans main.yaml et set dans les paramètres de secrets du repository sur GitHub)
 
 ## Stack technique
 
