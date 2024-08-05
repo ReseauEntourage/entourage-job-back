@@ -17,19 +17,14 @@ async function bootstrap() {
     SwaggerModule.setup('api', app, document);
   }
 
-  app.enableCors();
-  /*
-      {
-        origin:
-        [
-          `${process.env.FRONT_URL}`,
-          /\.webflow\.io$/,
-          /\.entourage\.social$/,
-          /\.linkedout\.fr$/,
-        ],
-      }
-    */
-
+  app.enableCors({
+    origin: [
+      `${process.env.FRONT_URL}`,
+      /\.webflow\.io$/,
+      /\.entourage\.social$/,
+      /\.entourage-pro\.fr$/,
+    ],
+  });
   await app.listen(process.env.PORT || 3000);
 }
 
