@@ -719,7 +719,7 @@ export class MailsService {
         senderEmail: senderUser.email,
         zone: senderUser.zone,
         subject: message.subject,
-        role: senderUser,
+        role: senderRole,
       },
     });
   }
