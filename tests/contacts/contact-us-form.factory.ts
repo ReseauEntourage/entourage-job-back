@@ -18,7 +18,7 @@ export class ContactUsFormFactory implements Factory<ContactUsFormDto> {
       lastName: faker.name.lastName(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
-      structure: faker.company.name(2),
+      structure: faker.company.name(),
       message: faker.lorem.paragraphs(3, '\n'),
       heardAbout: faker.helpers.objectValue(HeardAbout),
       cgu: true,

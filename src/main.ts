@@ -19,17 +19,15 @@ async function bootstrap() {
 
   app.enableCors();
   /*
-      {
-        origin:
-        [
-          `${process.env.FRONT_URL}`,
-          /\.webflow\.io$/,
-          /\.entourage\.social$/,
-          /\.linkedout\.fr$/,
-        ],
-      }
-    */
-
+  {
+    origin: [
+      `${process.env.FRONT_URL}`,
+      /\.webflow\.io$/,
+      /\.entourage\.social$/,
+      /\.entourage-pro\.fr$/,
+    ],
+  }
+  */
   await app.listen(process.env.PORT || 3000);
 }
 

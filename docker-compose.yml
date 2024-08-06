@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ## LINKEDOUT BACKEND API
   linkedout-api-worker:

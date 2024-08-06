@@ -5,8 +5,10 @@ import {
   NotFoundException,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { Public, UserPayload } from 'src/auth/guards';
+import { ThrottleUserIdGuard } from 'src/users/guards/throttle-user-id.guard';
 import { CandidateUserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
@@ -64,6 +66,7 @@ export class MessagesController {
   }
 
   @Post('internal')
+  @UseGuards(ThrottleUserIdGuard) // No more than 10 internal messages per day per userId
   async createInternalMessage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateInternalMessagePipe())
