@@ -488,7 +488,7 @@ export class UsersController {
     }
 
     // if the email is updated, we need to send a verification email
-    if (updateUserDto.email !== oldUser.email) {
+    if (updateUserDto.email && updateUserDto.email !== oldUser.email) {
       const updateUserIsEmailVerified: UpdateUserDto = {
         isEmailVerified: false,
       };

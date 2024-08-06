@@ -4890,6 +4890,7 @@ describe('Users', () => {
           beforeEach(async () => {
             loggedInCandidate = await usersHelper.createLoggedInUser({
               role: UserRoles.CANDIDATE,
+              lastConnection: moment().subtract(15, 'day').toDate(),
             });
 
             const userProfileCandidate: Partial<UserProfile> = {
@@ -4977,6 +4978,22 @@ describe('Users', () => {
               { userProfile: userProfileCoach }
             );
           });
+
+          it('Should return 200 and contains own profile', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=1&offset=5&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Token ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(response.body.map(({ role }) => role)).toStrictEqual([
+              UserRoles.CANDIDATE,
+            ]);
+            expect(response.body[0].id).toEqual(loggedInCandidate.user.id);
+          });
+
           it('Should return 200 and 2 first candidates profiles', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
@@ -5947,6 +5964,8 @@ describe('Users', () => {
                 phone: updates.phone,
                 address: updates.address,
                 email: updates.email,
+                firstName: updates.firstName,
+                lastName: updates.lastName,
               });
           expect(response.status).toBe(200);
           expect(response.body.phone).toEqual(updates.phone);
@@ -5972,6 +5991,8 @@ describe('Users', () => {
                 phone: updates.phone,
                 address: updates.address,
                 email: updates.email,
+                firstName: updates.firstName,
+                lastName: updates.lastName,
               });
           expect(response.status).toBe(200);
           expect(response.body.phone).toEqual(updates.phone);
@@ -5983,28 +6004,6 @@ describe('Users', () => {
               .set('authorization', `Token ${loggedInCoach.token}`)
               .send({
                 phone: '1234',
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 when candidat other than phone, address, email', async () => {
-          const updates = await userFactory.create({}, {}, false);
-          const response: APIResponse<UsersController['updateUser']> =
-            await request(server)
-              .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
-              .send({
-                firstName: updates.firstName,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 when coach updates other than phone, address, email', async () => {
-          const updates = await userFactory.create({}, {}, false);
-          const response: APIResponse<UsersController['updateUser']> =
-            await request(server)
-              .put(`${route}/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
-              .send({
-                lastName: updates.lastName,
               });
           expect(response.status).toBe(400);
         });
