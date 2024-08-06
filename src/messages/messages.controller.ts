@@ -66,7 +66,7 @@ export class MessagesController {
   }
 
   @Post('internal')
-  @UseGuards(ThrottleUserIdGuard) // No more than 10 internal messages per day per IP
+  @UseGuards(ThrottleUserIdGuard) // No more than 10 internal messages per day per userId
   async createInternalMessage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateInternalMessagePipe())
