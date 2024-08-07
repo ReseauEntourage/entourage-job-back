@@ -95,22 +95,23 @@ export class MessagesService {
     message: InternalMessage,
     forbiddenExpressionsFound: string[]
   ) {
+    const adminConfirmSendMessageUrl = `${process.env.FRONT_URL}/backoffice/admin/internal-messages/${message.id}/re-send`;
+
     return this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       [
         {
           type: 'section',
           text: {
-            type: 'plain_text',
-            emoji: true,
-            text: 'Message suspect détecté sur Entourage-Pro',
+            type: 'mrkdwn',
+            text: '*Message suspect détecté sur Entourage-Pro*',
           },
         },
         {
           type: 'section',
           text: {
             type: 'plain_text',
-            text: `Environnement: ${process.env.NODE_ENV}`,
+            text: `Environnement: ${process.env.HEROKU_APP_NAME}`,
           },
         },
         {
@@ -170,8 +171,84 @@ export class MessagesService {
             text: message.message,
           },
         },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: "🚨 Forcer l'envoi du message ⚠️",
+                emoji: true,
+              },
+              value: `force-send-message-${message.id}`,
+              url: adminConfirmSendMessageUrl,
+            },
+          ],
+        },
       ],
       'Message suspect détecté (InternalMessage : ' + message.id + ')'
+    );
+  }
+
+  async sendInternalMessageResendSlackNotification(
+    internalMessage: InternalMessage,
+    adminUser: User,
+    senderUser: User,
+    addresseeUser: User
+  ) {
+    return this.slackService.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '*Un message interne a été réenvoyé par un administrateur*',
+          },
+        },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `Environnement: ${process.env.HEROKU_APP_NAME}`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `Administrateur: ${adminUser.firstName} ${adminUser.lastName} (${adminUser.email})`,
+            },
+            {
+              type: 'mrkdwn',
+              text: `InternalMessageId: ${internalMessage.id}`,
+            },
+          ],
+        },
+        {
+          type: 'divider',
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*Expéditeur*\n${senderUser.email}`,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*Destinataire*\n${addresseeUser.email}`,
+          },
+        },
+        {
+          type: 'divider',
+        },
+      ],
+      `Le message interne ${internalMessage.id} a été renvoyé par un administrateur`
     );
   }
 

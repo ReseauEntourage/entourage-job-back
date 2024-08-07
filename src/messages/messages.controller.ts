@@ -2,14 +2,17 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   NotFoundException,
+  Param,
   ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
 import { ThrottleUserIdGuard } from 'src/users/guards/throttle-user-id.guard';
-import { CandidateUserRoles } from 'src/users/users.types';
+import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { isValidPhone } from 'src/utils/misc';
 import {
@@ -94,5 +97,49 @@ export class MessagesController {
     );
 
     return createdMessage;
+  }
+
+  @Public()
+  @Post('internal/:internalMessageId/send')
+  async createInternalMessageForce(
+    @UserPayload('role') role: UserRole,
+    @Param('internalMessageId', new ParseUUIDPipe()) internalMessageId: string,
+    @UserPayload('id') userId?: string
+  ) {
+    if (userId && !uuidValidate(userId)) {
+      throw new BadRequestException();
+    }
+    const isLoggedAsAdmin = role === UserRoles.ADMIN;
+
+    if (!isLoggedAsAdmin) {
+      throw new ForbiddenException();
+    }
+    const loggedInAdminUser = await this.messagesService.findOneUser(userId);
+
+    const internalMessage = await this.messagesService.findOneInternalMessage(
+      internalMessageId
+    );
+    const senderUser = await this.messagesService.findOneUser(
+      internalMessage.senderUserId
+    );
+    const addresseeUser = await this.messagesService.findOneUser(
+      internalMessage.addresseeUserId
+    );
+    await this.messagesService.sendInternalMessageByMail(
+      senderUser,
+      addresseeUser,
+      internalMessage
+    );
+
+    await this.messagesService.sendInternalMessageResendSlackNotification(
+      internalMessage,
+      loggedInAdminUser,
+      senderUser,
+      addresseeUser
+    );
+
+    return {
+      message: `Internal message ${internalMessageId} sent`,
+    };
   }
 }
