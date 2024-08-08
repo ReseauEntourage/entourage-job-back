@@ -6,7 +6,11 @@ import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { forbiddenExpressionsInMessage } from './messages.utils';
+import {
+  forbiddenExpressionsInMessage,
+  generateSlackMsgConfigMessageResent,
+  generateSlackMsgConfigSuspiciousMessageDetected,
+} from './messages.utils';
 import { ExternalMessage, InternalMessage } from './models';
 
 @Injectable()
@@ -69,18 +73,21 @@ export class MessagesService {
   async sendInternalMessageByMail(
     senderUser: User,
     addresseeUser: User,
-    message: InternalMessage
+    message: InternalMessage,
+    checkForbiddenExpressions = true
   ) {
-    const forbiddenExpressionsFound = forbiddenExpressionsInMessage(
-      message.message
-    );
-    if (forbiddenExpressionsFound.length > 0) {
-      return this.sendSuspiciousMessageSlackNotification(
-        senderUser,
-        addresseeUser,
-        message,
-        forbiddenExpressionsFound
+    if (checkForbiddenExpressions) {
+      const forbiddenExpressionsFound = forbiddenExpressionsInMessage(
+        message.message
       );
+      if (forbiddenExpressionsFound.length > 0) {
+        return this.sendSuspiciousMessageSlackNotification(
+          senderUser,
+          addresseeUser,
+          message,
+          forbiddenExpressionsFound
+        );
+      }
     }
     return this.mailsService.sendInternalMessageByMail(
       senderUser,
@@ -95,83 +102,37 @@ export class MessagesService {
     message: InternalMessage,
     forbiddenExpressionsFound: string[]
   ) {
+    const slackMsgConfig = generateSlackMsgConfigSuspiciousMessageDetected(
+      message,
+      senderUser,
+      addresseeUser,
+      forbiddenExpressionsFound
+    );
+    const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
     return this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
-      [
-        {
-          type: 'section',
-          text: {
-            type: 'plain_text',
-            emoji: true,
-            text: 'Message suspect détecté sur Entourage-Pro',
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'plain_text',
-            text: `Environnement: ${process.env.NODE_ENV}`,
-          },
-        },
-        {
-          type: 'divider',
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*Expéditeur*\n${senderUser.email}`,
-          },
-        },
-        {
-          type: 'divider',
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*Destinataire*\n${addresseeUser.email}`,
-          },
-        },
-        {
-          type: 'divider',
-        },
-        {
-          type: 'context',
-          elements: [
-            {
-              type: 'image',
-              image_url:
-                'https://api.slack.com/img/blocks/bkb_template_images/notificationsWarningIcon.png',
-              alt_text: 'warning icon',
-            },
-            {
-              type: 'mrkdwn',
-              text: "*Le message n'a pas été envoyé à son destinataire car il contenait des mots interdits*",
-            },
-            {
-              type: 'mrkdwn',
-              text:
-                '*Mots interdits :* ' + forbiddenExpressionsFound.join(', '),
-            },
-          ],
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `*Objet : ${message.subject}*`,
-          },
-        },
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: message.message,
-          },
-        },
-      ],
+      slackBlocks,
       'Message suspect détecté (InternalMessage : ' + message.id + ')'
+    );
+  }
+
+  async sendInternalMessageResendSlackNotification(
+    internalMessage: InternalMessage,
+    adminUser: User,
+    senderUser: User,
+    addresseeUser: User
+  ) {
+    const slackMsgConfig = generateSlackMsgConfigMessageResent(
+      internalMessage,
+      adminUser,
+      senderUser,
+      addresseeUser
+    );
+    const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
+    return this.slackService.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      slackBlocks,
+      `Le message interne ${internalMessage.id} a été renvoyé par un administrateur`
     );
   }
 
