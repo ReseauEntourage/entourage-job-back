@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
-import { SlackBlockBuilderService } from 'src/external-services/slack/slack-block-builder.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
@@ -24,8 +23,7 @@ export class MessagesService {
     private mailsService: MailsService,
     private slackService: SlackService,
     private usersService: UsersService,
-    private externalDatabasesService: ExternalDatabasesService,
-    private slackBlockBuilderService: SlackBlockBuilderService
+    private externalDatabasesService: ExternalDatabasesService
   ) {}
 
   async createExternalMessage(createMessageDto: Partial<ExternalMessage>) {
@@ -110,8 +108,7 @@ export class MessagesService {
       addresseeUser,
       forbiddenExpressionsFound
     );
-    const slackBlocks =
-      this.slackBlockBuilderService.generateSlackBlockMsg(slackMsgConfig);
+    const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
     return this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       slackBlocks,
@@ -131,8 +128,7 @@ export class MessagesService {
       senderUser,
       addresseeUser
     );
-    const slackBlocks =
-      this.slackBlockBuilderService.generateSlackBlockMsg(slackMsgConfig);
+    const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
     return this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       slackBlocks,

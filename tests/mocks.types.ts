@@ -121,4 +121,5 @@ export const MailjetMock: ProviderMock<MailjetService> = {
 
 export const SlackMocks: ProviderMock<SlackService> = {
   sendMessage: jest.fn(),
+  generateSlackBlockMsg: jest.fn(),
 } as const;
