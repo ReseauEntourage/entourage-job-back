@@ -43,6 +43,11 @@ export class SlackService {
     }
   };
 
+  /**
+   * Generate a the slack blocks for a message
+   * @param param0 message configuration
+   * @returns blocks for the message
+   */
   generateSlackBlockMsg = ({
     title,
     context,
