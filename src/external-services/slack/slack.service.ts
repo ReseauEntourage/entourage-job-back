@@ -11,6 +11,7 @@ export class SlackService {
       signingSecret: process.env.SLACK_SIGNING_SECRET,
     });
   }
+
   sendMessage = async (
     channel: string,
     blocks: (Block | KnownBlock)[],
