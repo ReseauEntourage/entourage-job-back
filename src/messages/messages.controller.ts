@@ -128,7 +128,8 @@ export class MessagesController {
     await this.messagesService.sendInternalMessageByMail(
       senderUser,
       addresseeUser,
-      internalMessage
+      internalMessage,
+      false
     );
 
     await this.messagesService.sendInternalMessageResendSlackNotification(
