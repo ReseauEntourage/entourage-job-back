@@ -24,6 +24,9 @@ export const forbiddenExpressions = [
   'de bonne renommée',
   'collecter les loyers',
   'vous serez à mon service',
+  ' CB ', // spaces added to exclude words with `cb` inside
+  'carte bleu',
+  'carte bleue',
 ];
 
 export const forbiddenExpressionsInMessage = (message: string): string[] => {
