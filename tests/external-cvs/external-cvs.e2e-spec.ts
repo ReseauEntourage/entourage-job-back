@@ -75,7 +75,7 @@ describe('ExternalCvsController', () => {
       const response: APIResponse<ExternalCvsController['uploadExternalCV']> =
         await request(server)
           .post(`/external-cv`)
-          .set('authorization', `Token ${loggedInCandidate.token}`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
           .set('Content-Type', 'multipart/form-data')
           .attach('file', buffer, 'test.pdf');
 
@@ -87,7 +87,7 @@ describe('ExternalCvsController', () => {
       const response: APIResponse<ExternalCvsController['uploadExternalCV']> =
         await request(server)
           .post(`/external-cv`)
-          .set('authorization', `Token ${loggedInCandidate.token}`);
+          .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
       expect(response.status).toBe(400);
     });
@@ -98,7 +98,7 @@ describe('ExternalCvsController', () => {
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
           .get(`/external-cv/${loggedInCandidateWithCv.user.id}`)
-          .set('authorization', `Token ${loggedInCandidateWithCv.token}`);
+          .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
       expect(response.body).toHaveProperty('url');
       expect(response.status).toBe(200);
     });
@@ -107,7 +107,7 @@ describe('ExternalCvsController', () => {
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
           .get(`/external-cv/${loggedInCandidate.user.id}`)
-          .set('authorization', `Token ${loggedInCandidate.token}`);
+          .set('authorization', `Bearer ${loggedInCandidate.token}`);
       expect(response.status).toBe(404);
     });
   });
@@ -118,7 +118,7 @@ describe('ExternalCvsController', () => {
       const response: APIResponse<ExternalCvsController['deleteExternalCv']> =
         await request(server)
           .delete(`/external-cv`)
-          .set('authorization', `Token ${loggedInCandidateWithCv.token}`);
+          .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
 
       // Compute the user profile
       const profile = await userProfilesHelper.findOneProfileByUserId(
