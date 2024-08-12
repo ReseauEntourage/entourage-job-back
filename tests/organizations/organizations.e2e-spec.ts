@@ -91,7 +91,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['create']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(organizationToCreate);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -112,7 +112,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['create']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(organizationToCreate);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -135,7 +135,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['create']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(wrongData);
           expect(response.status).toBe(400);
         });
@@ -153,7 +153,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['create']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(wrongData);
           expect(response.status).toBe(400);
         });
@@ -176,7 +176,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['create']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send(organizationToCreate);
           expect(response.status).toBe(403);
         });
@@ -189,7 +189,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['create']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send(organizationToCreate);
           expect(response.status).toBe(403);
         });
@@ -220,7 +220,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findOne']> =
             await request(server)
               .get(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -242,7 +242,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findOne']> =
             await request(server)
               .get(`${route}/${uuid()}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 401 when the user is not logged in', async () => {
@@ -254,14 +254,14 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findOne']> =
             await request(server)
               .get(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 when the user is a coach', async () => {
           const response: APIResponse<OrganizationsController['findOne']> =
             await request(server)
               .get(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -286,7 +286,7 @@ describe('Organizations', () => {
         const response: APIResponse<OrganizationsController['findAll']> =
           await request(server)
             .get(`${route}/?search=X`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(403);
       });
       it('Should return 403 when the user is a coach', async () => {
@@ -302,7 +302,7 @@ describe('Organizations', () => {
         const response: APIResponse<OrganizationsController['findAll']> =
           await request(server)
             .get(`${route}/?search=X`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(403);
       });
 
@@ -333,7 +333,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}/?limit=2&offset=0`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(2);
           expect(response.body[0].name).toMatch('A');
@@ -343,7 +343,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}/?limit=3&offset=0`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(3);
           expect(response.body[0].name).toMatch('A');
@@ -354,7 +354,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}/?limit=2&offset=2`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(2);
           expect(response.body[0].name).toMatch('C');
@@ -421,7 +421,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}?limit=50&offset=0&search=X`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);
           expect(expectedOrganizationsId).toEqual(
@@ -436,7 +436,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}?limit=50&offset=0&zone[]=${AdminZones.PARIS}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);
           expect(expectedOrganizationsId).toEqual(
@@ -447,7 +447,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}/?limit=50&offset=0`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.arrayContaining([
@@ -462,7 +462,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}/?limit=50&offset=0`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(11);
         });
@@ -470,7 +470,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server)
               .get(`${route}/?limit=50&offset=0&search=Z`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(0);
         });
@@ -502,7 +502,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['update']> =
             await request(server)
               .put(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 name: updates.name,
                 address: updates.address,
@@ -520,7 +520,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['update']> =
             await request(server)
               .put(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 referentPhone: '123',
               });
@@ -531,7 +531,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['update']> =
             await request(server)
               .put(`${route}/${uuid()}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 name: updates.name,
                 address: updates.address,
@@ -555,7 +555,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['update']> =
             await request(server)
               .put(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 name: updates.name,
                 address: updates.address,
@@ -569,7 +569,7 @@ describe('Organizations', () => {
           const response: APIResponse<OrganizationsController['update']> =
             await request(server)
               .put(`${route}/${organization.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 name: updates.name,
                 address: updates.address,

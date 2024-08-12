@@ -235,7 +235,7 @@ describe('Messages', () => {
             MessagesController['createInternalMessage']
           > = await request(server)
             .post(`${routeInternalMessage}`)
-            .set('authorization', `Token ${senderUser.token}`)
+            .set('authorization', `Bearer ${senderUser.token}`)
             .send(messageToCreate);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(expect.objectContaining(message));
@@ -260,7 +260,7 @@ describe('Messages', () => {
             MessagesController['createExternalMessage']
           > = await request(server)
             .post(`${routeInternalMessage}`)
-            .set('authorization', `Token ${senderUser.token}`)
+            .set('authorization', `Bearer ${senderUser.token}`)
             .send(messageToCreate);
           expect(response.status).toBe(400);
         });
