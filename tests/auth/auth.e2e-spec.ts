@@ -153,7 +153,7 @@ describe('Auth', () => {
         server
       )
         .post(`${route}/logout`)
-        .set('authorization', `Token ${loggedInCandidat.token}`);
+        .set('authorization', `Bearer ${loggedInCandidat.token}`);
 
       expect(response.status).toBe(302);
     });
@@ -312,7 +312,7 @@ describe('Auth', () => {
         server
       )
         .get(`${route}/current`)
-        .set('authorization', `Token ${loggedInCandidat.token}`);
+        .set('authorization', `Bearer ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
         ...loggedInCandidat.user,
@@ -332,7 +332,7 @@ describe('Auth', () => {
         server
       )
         .get(`${route}/current`)
-        .set('authorization', `Token ${invalidToken}`);
+        .set('authorization', `Bearer ${invalidToken}`);
       expect(response.status).toBe(401);
     });
     it('Should return 401, if deleted user', async () => {
@@ -345,7 +345,7 @@ describe('Auth', () => {
         server
       )
         .get(`${route}/current`)
-        .set('authorization', `Token ${loggedInCandidat.token}`);
+        .set('authorization', `Bearer ${loggedInCandidat.token}`);
       expect(response.status).toBe(401);
     });
   });
