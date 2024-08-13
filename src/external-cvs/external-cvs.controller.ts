@@ -11,11 +11,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { ExternalCvsService } from './external-cvs.service';
 
+@ApiBearerAuth()
 @Controller('external-cv')
 export class ExternalCvsController {
   constructor(

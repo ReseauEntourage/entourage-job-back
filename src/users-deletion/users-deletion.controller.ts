@@ -6,12 +6,14 @@ import {
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { v4 as uuid } from 'uuid';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { UsersDeletionService } from './users-deletion.service';
 
 // TODO change to users
+@ApiBearerAuth()
 @Controller('user')
 export class UsersDeletionController {
   constructor(private readonly usersDeletionService: UsersDeletionService) {}
