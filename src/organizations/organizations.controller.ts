@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
@@ -26,6 +27,7 @@ import { Organization } from './models';
 import { OrganizationReferentsService } from './organization-referents.service';
 import { OrganizationsService } from './organizations.service';
 
+@ApiBearerAuth()
 @Controller('organization')
 export class OrganizationsController {
   constructor(
