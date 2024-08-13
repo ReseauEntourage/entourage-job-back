@@ -33,6 +33,13 @@ export class MessagingController {
     this.messagingService.createConversation(participants);
   }
 
+  @Get('conversations')
+  async getConversations(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    return this.messagingService.getConversations(userId);
+  }
+
   // Can only fetch the conversation if the user is a participant
   @Get('conversations/:conversationId')
   async getConversation(

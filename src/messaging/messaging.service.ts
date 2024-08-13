@@ -26,6 +26,49 @@ export class MessagingService {
   ) {}
 
   /**
+   * Get all conversations for a user
+   */
+  async getConversations(userId: string) {
+    // Get all conversations where ConversationParticipant exists for the given user
+    const conversationParticipants =
+      await this.conversationParticipantModel.findAll({
+        where: {
+          userId,
+        },
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [
+              {
+                model: Message,
+                as: 'messages',
+                attributes: ['id', 'content', 'createdAt'],
+                include: [
+                  {
+                    model: User,
+                    as: 'author',
+                    attributes: ['id', 'firstName', 'lastName'],
+                  },
+                ],
+                order: [['createdAt', 'DESC']],
+                limit: 1,
+              },
+              {
+                model: User,
+                as: 'participants',
+                attributes: ['id', 'firstName', 'lastName'],
+              },
+            ],
+            order: [['messages', 'createdAt', 'ASC']],
+          },
+        ],
+      });
+    // Return the conversations
+    return conversationParticipants.map((cp) => cp.conversation);
+  }
+
+  /**
    * Create a new conversation with the given participants
    * @param participantIds
    */
