@@ -82,6 +82,10 @@ export class UsersCreationService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
+  async sendProfileCompletionMail(user: User) {
+    return this.mailsService.sendProfileCompletionMail(user);
+  }
+
   async sendMailsAfterMatching(candidateId: string) {
     return this.usersService.sendMailsAfterMatching(candidateId);
   }
