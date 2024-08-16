@@ -15,6 +15,7 @@ async function bootstrap() {
       .setTitle('LinkedOut Backend')
       .setDescription('LinkedOut API description')
       .setVersion('2.0')
+      .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);

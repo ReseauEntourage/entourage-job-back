@@ -14,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import _ from 'lodash';
 import { RequestWithAuthorizationHeader } from 'src/auth/auth.types';
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
@@ -49,6 +50,7 @@ export class CVsController {
   This route is used to create a new VERSION of the CV
   there is no update of existing CV, only creation of a newer version
   */
+  @ApiBearerAuth()
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
@@ -181,6 +183,7 @@ export class CVsController {
     return this.cvsService.findAllPublished(query);
   }
 
+  @ApiBearerAuth()
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('lastVersion/:candidateId')
@@ -197,6 +200,7 @@ export class CVsController {
     return { lastCvVersion };
   }
 
+  @ApiBearerAuth()
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get('pdf/:candidateId')
@@ -240,6 +244,7 @@ export class CVsController {
     return { nbPublishedCVs };
   }
 
+  @ApiBearerAuth()
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
   @UseGuards(UserPermissionsGuard)
   @LinkedUser('params.candidateId')
@@ -258,6 +263,7 @@ export class CVsController {
     };
   }
 
+  @ApiBearerAuth()
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
@@ -303,6 +309,7 @@ export class CVsController {
     };
   }
 
+  @ApiBearerAuth()
   @LinkedUser('params.candidateId')
   @UseGuards(LinkedUserGuard)
   @Get(':candidateId')

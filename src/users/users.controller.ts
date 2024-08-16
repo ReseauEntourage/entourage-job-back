@@ -13,6 +13,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { passwordStrength } from 'check-password-strength';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
@@ -56,6 +57,7 @@ import {
 } from './users.utils';
 
 // TODO change to /users
+@ApiBearerAuth()
 @Controller('user')
 export class UsersController {
   constructor(
