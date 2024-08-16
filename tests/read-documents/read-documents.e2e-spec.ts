@@ -71,7 +71,7 @@ describe('Read Documents', () => {
           ReadDocumentsController['createReadDocument']
         > = await request(server)
           .post(`${routeReadDocuments}/read/${user.user.id}`)
-          .set('authorization', `Token ${user.token}`)
+          .set('authorization', `Bearer ${user.token}`)
           .send({
             documentName: 'CharteEthique',
           });
@@ -83,7 +83,7 @@ describe('Read Documents', () => {
           ReadDocumentsController['createReadDocument']
         > = await request(server)
           .post(`${routeReadDocuments}/read/${user.user.id}`)
-          .set('authorization', `Token ${user.token}`)
+          .set('authorization', `Bearer ${user.token}`)
           .send({
             documentName: 'test',
           });
@@ -95,7 +95,7 @@ describe('Read Documents', () => {
           ReadDocumentsController['createReadDocument']
         > = await request(server)
           .post(`${routeReadDocuments}/read/${userBis.id}`)
-          .set('authorization', `Token ${user.token}`)
+          .set('authorization', `Bearer ${user.token}`)
           .send({
             documentName: 'CharteEthique',
           });

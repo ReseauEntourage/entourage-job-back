@@ -150,7 +150,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['createCV']> =
             await request(server)
               .post(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .set('Content-Type', 'multipart/form-data')
               .field('cv', JSON.stringify(cv))
               .attach('profileImage', path);
@@ -183,7 +183,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['createCV']> =
             await request(server)
               .post(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .field('cv', JSON.stringify(cv))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -212,7 +212,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['createCV']> =
             await request(server)
               .post(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .field('cv', JSON.stringify(cvResponse))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -241,7 +241,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['createCV']> =
             await request(server)
               .post(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .field('cv', JSON.stringify(cvResponse))
               .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -265,7 +265,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['createCV']> =
             await request(server)
               .post(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({ cv });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(expect.objectContaining(cvResponse));
@@ -287,7 +287,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['createCV']> =
             await request(server)
               .post(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({ cv });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(expect.objectContaining(cvResponse));
@@ -332,7 +332,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
         });
@@ -346,7 +346,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
         });
@@ -354,7 +354,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.UserId).toBe(loggedInCandidate.user.id);
         });
@@ -366,7 +366,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${candidatNoCv.user.id}`)
-              .set('authorization', `Token ${candidatNoCv.token}`);
+              .set('authorization', `Bearer ${candidatNoCv.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
@@ -399,7 +399,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${loggedCandidatNoCv.user.id}`)
-              .set('authorization', `Token ${loggedCoachNoCv.token}`);
+              .set('authorization', `Bearer ${loggedCoachNoCv.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
@@ -411,7 +411,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${candidatNoCv.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual({});
         });
@@ -432,14 +432,14 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+              .set('authorization', `Bearer ${loggedInOtherCandidat.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if valid user id provided and logged in as other coach', async () => {
           const response: APIResponse<CVsController['findCVByCandidateId']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -478,7 +478,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findLastCVVersion']> =
             await request(server)
               .get(`${route}/lastVersion/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastCvVersion).toBe(3);
         });
@@ -492,7 +492,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findLastCVVersion']> =
             await request(server)
               .get(`${route}/lastVersion/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastCvVersion).toBe(3);
         });
@@ -500,7 +500,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findLastCVVersion']> =
             await request(server)
               .get(`${route}/lastVersion/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastCvVersion).toBe(3);
         });
@@ -511,14 +511,14 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findLastCVVersion']> =
             await request(server)
               .get(`${route}/lastVersion/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+              .set('authorization', `Bearer ${loggedInOtherCandidat.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 and last CV version if valid user id provided and logged in as other coach', async () => {
           const response: APIResponse<CVsController['findLastCVVersion']> =
             await request(server)
               .get(`${route}/lastVersion/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -634,7 +634,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInOtherCandidat.token}`);
+              .set('authorization', `Bearer ${loggedInOtherCandidat.token}`);
           expect(response.status).toBe(403);
         });
 
@@ -642,7 +642,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
 
@@ -650,7 +650,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -665,7 +665,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -674,7 +674,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -686,7 +686,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -704,7 +704,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -716,7 +716,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['findCVInPDF']> =
             await request(server)
               .get(`${route}/pdf/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pdfUrl).toMatch('url');
         });
@@ -1256,7 +1256,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(server)
               .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and cvHasBeenModified, if coach checks if CV has been updated and candidate is the last one to have modified it', async () => {
@@ -1267,7 +1267,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(server)
               .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(true);
         });
@@ -1279,7 +1279,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(server)
               .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(false);
         });
@@ -1291,7 +1291,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(server)
               .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(true);
         });
@@ -1303,7 +1303,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['checkCVHasBeenModified']> =
             await request(server)
               .get(`${route}/checkUpdate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.cvHasBeenModified).toBe(false);
         });
@@ -1337,21 +1337,21 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 404 if coach sets that he has read the last updates but candidate has no CV', async () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 404 if candidat sets that he has read the last updates but candidate has no CV', async () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 403 if coach sets that he has read the last updates made by another candidate', async () => {
@@ -1364,7 +1364,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${candidat.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if candidat sets that he has read the last updates made by another candidate', async () => {
@@ -1377,7 +1377,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${candidat.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200, if coach sets that he has read the last updates made by candidate', async () => {
@@ -1388,7 +1388,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           const cv = await cvsHelper.findCVByCandidateId(
             loggedInCandidate.user.id
@@ -1403,7 +1403,7 @@ describe('CVs', () => {
           const response: APIResponse<CVsController['setCVHasBeenRead']> =
             await request(server)
               .put(`${route}/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           const cv = await cvsHelper.findCVByCandidateId(
             loggedInCandidate.user.id
