@@ -89,6 +89,7 @@ export const MailjetTemplates = {
   INTERNAL_MESSAGE: 5625323,
   INTERNAL_MESSAGE_CONFIRMATION: 5625495,
   USER_EMAIL_VERIFICATION: 5899611,
+  USER_PROFILE_COMPLETION: 6129711,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
