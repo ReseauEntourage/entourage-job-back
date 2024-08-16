@@ -17,6 +17,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const span = tracer.scope().active();
 
     if (span) {
+      span.setTag('resource.name', 'LoggingInterceptor'); // this is what will be shown in the UI beside the span name
       span.setTag('http.client_ip', clientIp);
     }
 
