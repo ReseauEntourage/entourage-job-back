@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
 import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
+import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MessagesModule } from 'src/messages/messages.module';
 import { UsersModule } from 'src/users/users.module';
 import {
@@ -33,6 +34,7 @@ import { UserProfilesService } from './user-profiles.service';
     BusinessLinesModule,
     AWSModule,
     MessagesModule,
+    SlackModule,
   ],
   controllers: [UserProfilesController],
   providers: [UserProfilesService],
