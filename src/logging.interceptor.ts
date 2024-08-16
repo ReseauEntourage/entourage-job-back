@@ -20,7 +20,8 @@ export class LoggingInterceptor implements NestInterceptor {
     console.log('clientIp', clientIp);
     if (span) {
       console.log('span', span);
-      span.setTag('http.client_ip', clientIp);
+      const res = span.setTag('http.client_ip', clientIp);
+      console.log('res', res);
     }
 
     return next.handle();
