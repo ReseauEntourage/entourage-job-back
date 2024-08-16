@@ -11,6 +11,7 @@ import { Department, Departments } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
+import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
@@ -75,7 +76,8 @@ export class UserProfilesService {
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private messagesService: MessagesService,
-    private slackService: SlackService
+    private slackService: SlackService,
+    private mailsService: MailsService
   ) {}
 
   async findOne(id: string) {
@@ -667,6 +669,11 @@ export class UserProfilesService {
     userReported: User
   ) {
     return this.sendReportedUserNotification(
+      report,
+      userReporter,
+      userReported
+    );
+    return this.mailsService.sendUserReportedMail(
       report,
       userReporter,
       userReported
