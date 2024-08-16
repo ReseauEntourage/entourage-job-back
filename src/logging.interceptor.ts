@@ -6,6 +6,7 @@ import {
   CallHandler,
 } from '@nestjs/common';
 import tracer from 'dd-trace';
+import { tap } from 'rxjs/operators';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -24,6 +25,21 @@ export class LoggingInterceptor implements NestInterceptor {
       console.log('res', res);
     }
 
-    return next.handle();
+    return next.handle().pipe(
+      tap({
+        next: () => {
+          if (span) {
+            span.finish();
+          }
+        },
+        error: (error) => {
+          if (span) {
+            span.setTag('error', true);
+            span.setTag('error.message', error.message);
+            span.finish();
+          }
+        },
+      })
+    );
   }
 }
