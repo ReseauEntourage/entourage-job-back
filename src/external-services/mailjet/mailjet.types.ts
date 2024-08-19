@@ -90,6 +90,7 @@ export const MailjetTemplates = {
   INTERNAL_MESSAGE_CONFIRMATION: 5625495,
   USER_EMAIL_VERIFICATION: 5899611,
   USER_REPORTED_ADMIN: 0, // TODO : Demande du template ID
+  USER_PROFILE_COMPLETION: 6129711,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

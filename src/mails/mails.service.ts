@@ -123,6 +123,21 @@ export class MailsService {
     });
   }
 
+  async sendProfileCompletionMail(user: User) {
+    return this.queuesService.addToWorkQueue(
+      Jobs.SEND_MAIL,
+      {
+        toEmail: user.email,
+        templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+        variables: { firstName: user.firstName },
+      },
+      {
+        //trois jours après la création du compte
+        delay: 3600000 * 24 * 3,
+      }
+    );
+  }
+
   async sendCVPreparationMail(candidate: User) {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 

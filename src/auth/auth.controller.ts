@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { User } from 'src/users/models';
@@ -147,6 +148,7 @@ export class AuthController {
     This route is used to get logged user data + verify if the user is still logged in
   */
   @Throttle(60, 60)
+  @ApiBearerAuth()
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
     // we will update user to update lastConnection field
