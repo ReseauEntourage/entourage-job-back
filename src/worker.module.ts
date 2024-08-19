@@ -2,8 +2,10 @@ import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
 
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';
 import { ConsumersModule } from 'src/queues/consumers';
@@ -39,6 +41,16 @@ import { getRedisOptions, getSequelizeOptions } from './app.module';
       ...getRedisOptions(),
     }),
     ConsumersModule,
+    ThrottlerModule.forRoot({
+      ttl: 60,
+      limit: 100,
+    }),
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class WorkerModule {}

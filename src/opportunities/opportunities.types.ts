@@ -59,7 +59,7 @@ export const OfferStatuses = {
 } as const;
 
 type OfferStatusKey = keyof typeof OfferStatuses;
-export type OfferStatus = typeof OfferStatuses[OfferStatusKey]['value'];
+export type OfferStatus = (typeof OfferStatuses)[OfferStatusKey]['value'];
 
 export const OfferStatusFilters: FilterConstant<OfferStatus>[] = [
   OfferStatuses.TO_PROCESS,
@@ -88,7 +88,7 @@ export const OfferAdminTabs = {
 } as const;
 
 type OfferAdminTabKey = keyof typeof OfferAdminTabs;
-export type OfferAdminTab = typeof OfferAdminTabs[OfferAdminTabKey];
+export type OfferAdminTab = (typeof OfferAdminTabs)[OfferAdminTabKey];
 
 export const OfferCandidateTypes = {
   PUBLIC: 'public',
@@ -97,7 +97,7 @@ export const OfferCandidateTypes = {
 
 type OfferCandidateTypeKey = keyof typeof OfferCandidateTypes;
 export type OfferCandidateType =
-  typeof OfferCandidateTypes[OfferCandidateTypeKey];
+  (typeof OfferCandidateTypes)[OfferCandidateTypeKey];
 export const OfferFilters: Filters<OfferFilterKey> = [
   {
     key: 'isPublic',
@@ -146,7 +146,7 @@ export const EventTypes = {
   END: 'end',
 } as const;
 
-export type EventType = typeof EventTypes[keyof typeof EventTypes];
+export type EventType = (typeof EventTypes)[keyof typeof EventTypes];
 
 export const EventTypeFilters: FilterConstant<EventType>[] = [
   {
@@ -178,3 +178,11 @@ export const EventTypeFilters: FilterConstant<EventType>[] = [
     value: 'end',
   },
 ];
+
+export const ContactEmployerTypes = {
+  CONTACT: 'contact',
+  RELANCE: 'relance',
+} as const;
+
+export type ContactEmployerType =
+  (typeof ContactEmployerTypes)[keyof typeof ContactEmployerTypes];

@@ -17,6 +17,8 @@ import { InternalMessage } from 'src/messages/models';
 import { ExternalMessage } from 'src/messages/models/external-message.model';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
+  ContactEmployerType,
+  ContactEmployerTypes,
   OfferStatuses,
   OpportunityRestricted,
 } from 'src/opportunities/opportunities.types';
@@ -108,6 +110,33 @@ export class MailsService {
     }
   }
 
+  async sendVerificationMail(user: User, token: string) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+      variables: {
+        firstname: user.firstName,
+        toEmail: user.email,
+        token,
+      },
+    });
+  }
+
+  async sendProfileCompletionMail(user: User) {
+    return this.queuesService.addToWorkQueue(
+      Jobs.SEND_MAIL,
+      {
+        toEmail: user.email,
+        templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+        variables: { firstName: user.firstName },
+      },
+      {
+        //trois jours après la création du compte
+        delay: 3600000 * 24 * 3,
+      }
+    );
+  }
+
   async sendCVPreparationMail(candidate: User) {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 
@@ -158,14 +187,31 @@ export class MailsService {
     });
   }
 
-  async sendCVSubmittedMail(coach: User, candidateId: string, cv: Partial<CV>) {
-    const candidate = getCandidateFromCoach(coach, candidateId);
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
+  async sendCVSubmittedMail(
+    submittingUser: User,
+    candidateId: string,
+    cv: Partial<CV>
+  ) {
+    let candidate, coach: User;
+    let toEmail: string;
+    // if user is a a candidate then get the user as candidate
+    if (isRoleIncluded(CandidateUserRoles, submittingUser.role)) {
+      candidate = submittingUser;
+      coach = getCoachFromCandidate(candidate);
+      toEmail = candidate.email || '';
+    } else {
+      // if user is a coach then get the candidate from the coach
+      coach = submittingUser;
+      candidate = getCandidateFromCoach(coach, candidateId);
+      toEmail = getAdminMailsFromZone(candidate.zone).candidatesAdminMail;
+    }
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: candidatesAdminMail,
+      toEmail: toEmail,
       templateId: MailjetTemplates.CV_SUBMITTED,
       variables: {
+        role: submittingUser.role,
+        candidate: _.omitBy(candidate, _.isNil),
         coach: _.omitBy(coach, _.isNil),
         cv: _.omitBy(cv, _.isNil),
       },
@@ -535,7 +581,7 @@ export class MailsService {
   }
 
   async sendMailContactEmployer(
-    type: string,
+    type: ContactEmployerType,
     candidate: User,
     opportunity: Opportunity,
     description: string
@@ -544,8 +590,8 @@ export class MailsService {
       candidate.zone
     );
     const types: { [K in string]: MailjetTemplateKey } = {
-      contact: 'CONTACT_EMPLOYER',
-      relance: 'RELANCE_EMPLOYER',
+      [ContactEmployerTypes.CONTACT]: 'CONTACT_EMPLOYER',
+      [ContactEmployerTypes.RELANCE]: 'RELANCE_EMPLOYER',
     };
     const coach = getCoachFromCandidate(candidate);
     const emailCoach = coach?.email ? [coach?.email] : [];
@@ -673,6 +719,7 @@ export class MailsService {
         message: message.message,
         zone: addresseeUser.zone,
         subject: message.subject,
+        role: senderRole,
       },
     });
 
@@ -687,6 +734,7 @@ export class MailsService {
         senderEmail: senderUser.email,
         zone: senderUser.zone,
         subject: message.subject,
+        role: senderRole,
       },
     });
   }

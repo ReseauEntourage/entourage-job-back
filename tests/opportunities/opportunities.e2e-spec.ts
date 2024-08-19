@@ -38,6 +38,8 @@ import { OpportunityFactory } from './opportunity.factory';
 
 describe('Opportunities', () => {
   let app: INestApplication;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let server: any;
 
   const route = '/opportunity';
 
@@ -67,6 +69,7 @@ describe('Opportunities', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    server = app.getHttpServer();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     opportunityFactory =
@@ -90,6 +93,7 @@ describe('Opportunities', () => {
   afterAll(async () => {
     await databaseHelper.resetTestDB();
     await app.close();
+    server.close();
   });
 
   beforeEach(async () => {
@@ -138,9 +142,7 @@ describe('Opportunities', () => {
           } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
-            await request(app.getHttpServer())
-              .post(`${route}`)
-              .send(restOpportunity);
+            await request(server).post(`${route}`).send(restOpportunity);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -165,9 +167,9 @@ describe('Opportunities', () => {
           } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
-            await request(app.getHttpServer())
+            await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(restOpportunity);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -194,7 +196,7 @@ describe('Opportunities', () => {
           } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
-            await request(app.getHttpServer())
+            await request(server)
               .post(`${route}`)
               .send({ ...restOpportunity, isAdmin: true });
           expect(response.status).toBe(403);
@@ -223,7 +225,7 @@ describe('Opportunities', () => {
           } = opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
-            await request(app.getHttpServer())
+            await request(server)
               .post(`${route}`)
               .send({
                 ...restOpportunity,
@@ -260,9 +262,7 @@ describe('Opportunities', () => {
             opportunity;
 
           const response: APIResponse<OpportunitiesController['create']> =
-            await request(app.getHttpServer())
-              .post(`${route}`)
-              .send(restOpportunity);
+            await request(server).post(`${route}`).send(restOpportunity);
           expect(response.status).toBe(400);
         });
       });
@@ -312,9 +312,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({ candidateId, ...newOpportunity });
           expect(response.status).toBe(400);
         });
@@ -337,9 +337,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({ candidateId, ...newOpportunity });
 
           expect(response.status).toBe(400);
@@ -362,9 +362,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({ candidateId, coachNotification: true, ...newOpportunity });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -398,9 +398,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({ candidateId, ...newOpportunity });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -435,9 +435,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({ candidateId, ...newOpportunity });
           expect(response.status).toBe(400);
         });
@@ -461,9 +461,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({ candidateId, ...newOpportunity });
 
           expect(response.status).toBe(400);
@@ -486,9 +486,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({ candidateId, coachNotification: true, ...newOpportunity });
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -525,9 +525,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({ candidateId, newOpportunity });
 
           expect(response.status).toBe(403);
@@ -551,9 +551,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({ candidateId, ...newOpportunity });
 
           expect(response.status).toBe(201);
@@ -590,15 +590,15 @@ describe('Opportunities', () => {
           delete newOpportunity.title;
           const response: APIResponse<
             OpportunitiesController['createExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/external`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(newOpportunity);
           expect(response.status).toBe(400);
         });
         it('Should return 401, if not logged in', async () => {
           const opportunity = await opportunityFactory.create({}, {}, false);
-          const response = await request(app.getHttpServer())
+          const response = await request(server)
             .post(`${route}/external`)
             .send(opportunity);
           expect(response.status).toBe(401);
@@ -656,9 +656,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(body);
           expect(response.status).toBe(201);
           expect(response.body.OpportunityId).toEqual(opportunityId);
@@ -672,9 +672,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(201);
           expect(response.body.OpportunityId).toEqual(opportunityId);
@@ -688,9 +688,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(201);
           expect(response.body.OpportunityId).toEqual(opportunityId);
@@ -705,9 +705,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(400);
         });
@@ -719,9 +719,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(404);
         });
@@ -733,9 +733,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(body);
           expect(response.status).toBe(403);
         });
@@ -747,9 +747,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(403);
         });
@@ -761,9 +761,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(body);
           expect(response.status).toBe(403);
         });
@@ -775,9 +775,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(403);
         });
@@ -789,9 +789,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(body);
           expect(response.status).toBe(403);
         });
@@ -803,9 +803,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['createOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/join`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(body);
           expect(response.status).toBe(403);
         });
@@ -890,9 +890,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: associatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -926,9 +926,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               opportunityId: associatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -962,9 +962,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               opportunityId: associatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -999,9 +999,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               opportunityId: notValidatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1035,9 +1035,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: notValidatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1062,9 +1062,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               opportunityId: notValidatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1090,9 +1090,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: '1111-invalid-99999',
               candidateId: loggedInCandidate.user.id,
@@ -1116,9 +1116,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: uuid(),
               candidateId: loggedInCandidate.user.id,
@@ -1141,9 +1141,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: associatedOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1168,9 +1168,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: otherOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1194,9 +1194,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               opportunityId: otherOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1220,9 +1220,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               opportunityId: otherOpportunity.id,
               candidateId: candidate.id,
@@ -1246,9 +1246,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               opportunityId: otherOpportunity.id,
               candidateId: candidate.id,
@@ -1272,9 +1272,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['createOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/event`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               opportunityId: otherOpportunity.id,
               candidateId: loggedInCandidate.user.id,
@@ -1382,9 +1382,9 @@ describe('Opportunities', () => {
 
         it('Should return 200, if candidate reads one of his opportunity', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${privateOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
           const {
             beContacted,
@@ -1431,9 +1431,9 @@ describe('Opportunities', () => {
         });
         it("Should return 200, if a coach reads his associated candidate's opportunity", async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${privateOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
 
           const {
             beContacted,
@@ -1482,9 +1482,9 @@ describe('Opportunities', () => {
         });
         it('Should return 200, if admin reads a private opportunity', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${privateOpportunity.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           const { revision, deletedAt, ...restPrivateOpportunityUser } =
             privateOpportunityUser;
@@ -1528,9 +1528,9 @@ describe('Opportunities', () => {
         });
         it('Should return 200, if candidate reads a public opportunity', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${publicOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
           const {
             beContacted,
@@ -1553,9 +1553,9 @@ describe('Opportunities', () => {
         });
         it('Should return 200, if coach reads a public opportunity', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${publicOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
 
           const {
             beContacted,
@@ -1578,9 +1578,9 @@ describe('Opportunities', () => {
         });
         it('Should return 200, if admin reads a public opportunity', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${publicOpportunity.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -1594,37 +1594,35 @@ describe('Opportunities', () => {
         });
         it('Should return 404, if candidate reads an opportunity not associated to him', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${otherPrivateOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 404, if coach reads an opportunity of another candidate', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${otherPrivateOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 404, if candidate reads an opportunity associated to him but not validated and not external', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${notValidatedOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 404, if coach reads an opportunity associated to his candidate but not validated and not external', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/${notValidatedOpportunity.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(404);
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<OpportunitiesController['findOne']> =
-            await request(app.getHttpServer()).get(
-              `${route}/${privateOpportunity.id}`
-            );
+            await request(server).get(`${route}/${privateOpportunity.id}`);
           expect(response.status).toBe(401);
         });
       });
@@ -1646,15 +1644,15 @@ describe('Opportunities', () => {
 
         it('Should return 401, if user is not logged in', async () => {
           const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer()).get(`${route}/admin`);
+            await request(server).get(`${route}/admin`);
           expect(response.status).toBe(401);
         });
 
         it('Should return 403, if user is not logged as admin', async () => {
           const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/admin`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and a list of all opportunities, if logged in admin and no filters', async () => {
@@ -1671,9 +1669,9 @@ describe('Opportunities', () => {
           ];
 
           const response: APIResponse<OpportunitiesController['findAll']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/admin`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(3);
           expect(expectedOpportunitiesId).toEqual(
@@ -1696,9 +1694,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?limit=2&offset=0`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1720,9 +1718,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?limit=2&offset=1`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1748,9 +1746,9 @@ describe('Opportunities', () => {
             const expectedOpportunitiesId = [searchedOpportunity.id];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?search=XXXXX`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(1);
             expect(expectedOpportunitiesId).toEqual(
@@ -1782,9 +1780,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?type=${OfferAdminTabs.PENDING}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1815,9 +1813,9 @@ describe('Opportunities', () => {
               secondValidatedOpportunity.id,
             ];
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?type=validated`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1843,9 +1841,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?type=${OfferAdminTabs.EXTERNAL}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1871,9 +1869,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?type=${OfferAdminTabs.ARCHIVED}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1904,11 +1902,11 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(
                   `${route}/admin?department[]=Rhône (69)&department[]=Nord (59)`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
             expect(expectedOpportunitiesId).toEqual(
@@ -1934,9 +1932,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?isPublic[]=true`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -1968,9 +1966,9 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(`${route}/admin?businessLines[]=id&businessLines[]=bat`)
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
             expect(expectedOpportunitiesId).toEqual(
@@ -2014,11 +2012,11 @@ describe('Opportunities', () => {
             ];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(
                   `${route}/admin?status[]=${OfferStatuses.INTERVIEW.value}&status[]=${OfferStatuses.HIRED.value}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -2075,11 +2073,11 @@ describe('Opportunities', () => {
             const expectedOpportunitiesId = [opportunity.id];
 
             const response: APIResponse<OpportunitiesController['findAll']> =
-              await request(app.getHttpServer())
+              await request(server)
                 .get(
                   `${route}/admin?offset=0&limit=50&search=XXX&type=validated&businessLines[]=bat&status[]=${OfferStatuses.CONTACTED.value}&isPublic[]=true&department[]=Paris (75)`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(1);
             expect(expectedOpportunitiesId).toEqual(
@@ -2116,18 +2114,18 @@ describe('Opportunities', () => {
           it('Should return 200 and count of all pending opportunities, if logged in admin', async () => {
             const response: APIResponse<
               OpportunitiesController['countPending']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(`${route}/admin/count`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.pendingOpportunities).toBe(3);
           });
           it('Should return 403, if not logged in admin', async () => {
             const response: APIResponse<
               OpportunitiesController['countPending']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(`${route}/admin/count`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(403);
           });
         });
@@ -2160,25 +2158,25 @@ describe('Opportunities', () => {
         it('Should return 403, if candidate reads his opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/private/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if a coach reads his associated candidate opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/private/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 400, if invalid user id', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/private/1111-invalid-99999`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(400);
         });
         it("Should return 200, if a admin reads candidate's opportunities without filters", async () => {
@@ -2198,9 +2196,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/private/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(3);
           expect(expectedOpportunitiesId).toEqual(
@@ -2239,11 +2237,11 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(
               `${route}/candidate/private/${loggedInCandidate.user.id}?isPublic[]=true`
             )
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(2);
           expect(expectedOpportunitiesId).toEqual(
@@ -2294,11 +2292,11 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(
               `${route}/candidate/private/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)`
             )
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(3);
           expect(expectedOpportunitiesId).toEqual(
@@ -2334,11 +2332,11 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(
               `${route}/candidate/private/${loggedInCandidate.user.id}?status[]=1&status[]=2`
             )
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(2);
           expect(expectedOpportunitiesId).toEqual(
@@ -2385,11 +2383,11 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(
               `${route}/candidate/private/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat`
             )
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(3);
           expect(expectedOpportunitiesId).toEqual(
@@ -2419,11 +2417,11 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllUserOpportunitiesAsAdmin']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(
               `${route}/candidate/private/${loggedInCandidate.user.id}?search=XXXXX`
             )
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(1);
           expect(expectedOpportunitiesId).toEqual(
@@ -2460,33 +2458,33 @@ describe('Opportunities', () => {
         it('Should return 403, if a admin reads a candidates opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/all/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 400, if invalid user id', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/all/1111-invalid-99999`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if candidate reads an other candidate opportunities', async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/all/${candidate.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if a coach reads not associate candidate's opportunities", async () => {
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/all/${candidate.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 400, if candidate reads his opportunities without filters', async () => {
@@ -2504,9 +2502,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/all/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
         it('Should return 400, if a coach reads his associated candidate opportunities without filters', async () => {
@@ -2524,9 +2522,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['findAllAsCandidate']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/all/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(400);
         });
 
@@ -2570,11 +2568,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -2619,11 +2617,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?type=public&status[]=-1`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -2678,11 +2676,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&department[]=Nord (59)&type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(3);
             expect(expectedOpportunitiesId).toEqual(
@@ -2729,11 +2727,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?businessLines[]=id&businessLines[]=bat&type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(3);
             expect(expectedOpportunitiesId).toEqual(
@@ -2793,11 +2791,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?department[]=Rhône (69)&type=private`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(2);
             expect(response.body.otherOffers.length).toBe(2);
@@ -2855,11 +2853,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?contracts[]=cdi&type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(2);
             expect(expectedOpportunitiesId).toEqual(
@@ -2892,11 +2890,11 @@ describe('Opportunities', () => {
 
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?search=XXXXX&type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(1);
             expect(expectedOpportunitiesId).toEqual(
@@ -2953,11 +2951,11 @@ describe('Opportunities', () => {
           it('Should return 200 and 2 first opportunities', async () => {
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?limit=2&offset=0&type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(2);
             expect(response.body.offers[0].title).toMatch('A');
@@ -2966,11 +2964,11 @@ describe('Opportunities', () => {
           it('Should return 200 and the 3rd and 4th opportunity', async () => {
             const response: APIResponse<
               OpportunitiesController['findAllAsCandidate']
-            > = await request(app.getHttpServer())
+            > = await request(server)
               .get(
                 `${route}/candidate/all/${loggedInCandidate.user.id}?limit=2&offset=1&type=public`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.offers.length).toBe(2);
             expect(response.body.offers[0].title).toMatch('C');
@@ -3038,35 +3036,35 @@ describe('Opportunities', () => {
         it('Should return 200, with the correct array if candidate counts his opportunities according to status', async () => {
           const response: APIResponse<
             OpportunitiesController['candidateCountOffersByStatus']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(7);
         });
         it("Should return 200, if a coach counts his associated candidate's opportunities according to status", async () => {
           const response: APIResponse<
             OpportunitiesController['candidateCountOffersByStatus']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(7);
         });
         it("Should return 403, if a admin counts a candidate's opportunities according to status", async () => {
           const response: APIResponse<
             OpportunitiesController['candidateCountOffersByStatus']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/tabCount/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if candidate counts an other candidate's opportunities according to status", async () => {
           const response: APIResponse<
             OpportunitiesController['candidateCountOffersByStatus']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .get(`${route}/candidate/tabCount/${candidate.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -3129,32 +3127,32 @@ describe('Opportunities', () => {
 
         it('Should return 200, if candidate counts his unseen private opportunities', async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/candidate/count/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.unseenOpportunities).toBe(3);
         });
         it("Should return 200, if a coach counts his associated candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/candidate/count/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.unseenOpportunities).toBe(3);
         });
         it("Should return 403, if a admin counts a candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/candidate/count/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if candidate counts an other candidate's unseen opportunities", async () => {
           const response: APIResponse<OpportunitiesController['countUnseen']> =
-            await request(app.getHttpServer())
+            await request(server)
               .get(`${route}/candidate/count/${candidate.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -3181,9 +3179,9 @@ describe('Opportunities', () => {
             title: 'updated title',
           };
           const response: APIResponse<OpportunitiesController['update']> =
-            await request(app.getHttpServer())
+            await request(server)
               .put(`${route}/${opportunity.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(update);
           expect(response.status).toBe(200);
           expect(response.body.title).toBe('updated title');
@@ -3194,9 +3192,9 @@ describe('Opportunities', () => {
             candidatesIds: [loggedInCandidate.user.id],
           };
           const response: APIResponse<OpportunitiesController['update']> =
-            await request(app.getHttpServer())
+            await request(server)
               .put(`${route}/${opportunity.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(update);
           expect(response.status).toBe(200);
           expect(
@@ -3211,9 +3209,9 @@ describe('Opportunities', () => {
             title: 'updated title',
           };
           const response: APIResponse<OpportunitiesController['update']> =
-            await request(app.getHttpServer())
+            await request(server)
               .put(`${route}/${opportunity.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send(update);
           expect(response.status).toBe(403);
         });
@@ -3266,9 +3264,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -3298,9 +3296,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(400);
         });
@@ -3325,9 +3323,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(403);
         });
@@ -3349,9 +3347,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(404);
         });
@@ -3377,9 +3375,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -3407,9 +3405,9 @@ describe('Opportunities', () => {
           };
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(400);
         });
@@ -3434,9 +3432,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(403);
         });
@@ -3462,9 +3460,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
@@ -3490,9 +3488,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(404);
         });
@@ -3515,9 +3513,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(404);
         });
@@ -3542,7 +3540,7 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateExternal']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/external/${opportunity.id}/${candidateId}`)
             .send(updatedOpportunity);
           expect(response.status).toBe(401);
@@ -3595,9 +3593,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.note).toBe('noteUpdate');
@@ -3623,9 +3621,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.note).toBe('noteUpdate');
@@ -3650,9 +3648,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.seen).toBe(true);
@@ -3677,9 +3675,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.bookmarked).toBe(true);
@@ -3704,9 +3702,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.bookmarked).toBe(true);
@@ -3731,9 +3729,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(update);
           expect(response.status).toBe(200);
           expect(response.body.bookmarked).toBe(true);
@@ -3758,9 +3756,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(update);
           expect(response.status).toBe(403);
         });
@@ -3784,9 +3782,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(403);
         });
@@ -3810,9 +3808,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(403);
         });
@@ -3836,9 +3834,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(update);
           expect(response.status).toBe(403);
         });
@@ -3862,9 +3860,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUser']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/join/${opportunity.id}/${candidateId}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(update);
           expect(response.status).toBe(403);
         });
@@ -3915,9 +3913,9 @@ describe('Opportunities', () => {
         it('Should return 201 if candidates uses the route with description', async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: opportunity.id,
@@ -3929,9 +3927,9 @@ describe('Opportunities', () => {
         it('Should return 201 if candidates uses the route without description', async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: opportunity.id,
@@ -3942,9 +3940,9 @@ describe('Opportunities', () => {
         it('Should return 201 if coach uses the route', async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: opportunity.id,
@@ -3956,9 +3954,9 @@ describe('Opportunities', () => {
         it('Should return 403 if admin uses the route', async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: opportunity.id,
@@ -3970,9 +3968,9 @@ describe('Opportunities', () => {
         it('Should return 403 if candidates is not associated to the opportunity', async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: otherOpportunity.id,
@@ -3983,9 +3981,9 @@ describe('Opportunities', () => {
         it("Should return 403 if coach's candidate is not associated to the opportunity", async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: otherOpportunity.id,
@@ -3997,9 +3995,9 @@ describe('Opportunities', () => {
         it("Should return 403 if coach's candidate is not associated to the opportunity", async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: otherOpportunity.id,
@@ -4021,9 +4019,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: externalOpportunity.id,
@@ -4045,9 +4043,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: notValidatedOpportunity.id,
@@ -4059,9 +4057,9 @@ describe('Opportunities', () => {
         it('Should return 404 if opportunity doesnt exist', async () => {
           const response: APIResponse<
             OpportunitiesController['contactEmployer']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .post(`${route}/contactEmployer`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               candidateId: loggedInCandidate.user.id,
               opportunityId: uuid(),
@@ -4116,9 +4114,9 @@ describe('Opportunities', () => {
           );
 
           const response: APIResponse<OpportunitiesController['update']> =
-            await request(app.getHttpServer())
+            await request(server)
               .put(`${route}/bulk`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 attributes: {
                   isArchived: true,
@@ -4170,9 +4168,9 @@ describe('Opportunities', () => {
           );
 
           const response: APIResponse<OpportunitiesController['update']> =
-            await request(app.getHttpServer())
+            await request(server)
               .put(`${route}/bulk`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 attributes: {
                   isArchived: true,
@@ -4293,9 +4291,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${associatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(200);
@@ -4325,9 +4323,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${associatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(200);
@@ -4357,9 +4355,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${associatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(200);
@@ -4390,9 +4388,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${notValidatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(200);
@@ -4422,9 +4420,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${notValidatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(403);
@@ -4445,9 +4443,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${notValidatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(403);
@@ -4469,9 +4467,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/1111-invalid-99999`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedEvent);
           expect(response.status).toBe(400);
         });
@@ -4491,9 +4489,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${uuid()}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(404);
@@ -4515,9 +4513,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${otherAssociatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(200);
@@ -4547,9 +4545,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${otherAssociatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(403);
@@ -4570,9 +4568,9 @@ describe('Opportunities', () => {
 
           const response: APIResponse<
             OpportunitiesController['updateOpportunityUserEvent']
-          > = await request(app.getHttpServer())
+          > = await request(server)
             .put(`${route}/event/${otherAssociatedOpportunityUserEvent.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedEvent);
 
           expect(response.status).toBe(403);
@@ -4609,9 +4607,9 @@ describe('Opportunities', () => {
         });
         const response: APIResponse<
           OpportunitiesController['postSendReminderArchive']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${route}/sendReminderArchive`)
-          .set('authorization', `Token ${loggedInAdmin.token}`)
+          .set('authorization', `Bearer ${loggedInAdmin.token}`)
           .send({ ids: originalOpportunitiesIds });
         expect(response.status).toBe(201);
       });
@@ -4629,9 +4627,9 @@ describe('Opportunities', () => {
         });
         const response: APIResponse<
           OpportunitiesController['postSendReminderArchive']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${route}/sendReminderArchive`)
-          .set('authorization', `Token ${loggedInCoach.token}`)
+          .set('authorization', `Bearer ${loggedInCoach.token}`)
           .send({ ids: originalOpportunitiesIds });
         expect(response.status).toBe(403);
       });
@@ -4649,9 +4647,9 @@ describe('Opportunities', () => {
         });
         const response: APIResponse<
           OpportunitiesController['postSendReminderArchive']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${route}/sendReminderArchive`)
-          .set('authorization', `Token ${loggedInCandidate.token}`)
+          .set('authorization', `Bearer ${loggedInCandidate.token}`)
           .send({ ids: originalOpportunitiesIds });
         expect(response.status).toBe(403);
       });

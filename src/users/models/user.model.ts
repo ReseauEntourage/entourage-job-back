@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 import {
+  IsBoolean,
   IsEmail as IsEmailClassValidator,
   IsNumber,
   IsOptional,
@@ -51,6 +53,7 @@ import { ReadDocument } from 'src/read-documents/models';
 import { Share } from 'src/shares/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
+import { WhatsappByZone } from 'src/utils/types/WhatsappZone';
 import { UserCandidat } from './user-candidat.model';
 
 @Table({ tableName: 'Users' })
@@ -158,6 +161,11 @@ export class User extends HistorizedModel {
   @Column
   zone: AdminZone;
 
+  @ApiProperty()
+  @IsBoolean()
+  @Column
+  isEmailVerified: boolean;
+
   @CreatedAt
   createdAt: Date;
 
@@ -203,6 +211,11 @@ export class User extends HistorizedModel {
 
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
+
+  @Expose()
+  get whatsappJoinUrl() {
+    return WhatsappByZone[this.zone];
+  }
 
   @BeforeCreate
   @BeforeUpdate

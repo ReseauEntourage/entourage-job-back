@@ -5,6 +5,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { BitlyService } from 'src/external-services/bitly/bitly.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { SlackService } from 'src/external-services/slack/slack.service';
 
 type ProviderMock<T> = { [K in keyof T]: jest.Mock };
 
@@ -116,4 +117,9 @@ export const MailjetMock: ProviderMock<MailjetService> = {
   sendMail: jest.fn(),
   sendContact: jest.fn(),
   refreshInstances: jest.fn(),
+} as const;
+
+export const SlackMocks: ProviderMock<SlackService> = {
+  sendMessage: jest.fn(),
+  generateSlackBlockMsg: jest.fn(),
 } as const;

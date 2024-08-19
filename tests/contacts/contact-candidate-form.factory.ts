@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
 import { BusinessLineFilters } from 'src/common/business-lines/business-lines.types';
@@ -23,7 +23,7 @@ export class ContactCandidateFormFactory
   generateContactCandidateFormAnswers(
     props: Partial<ContactCandidateFormDto>
   ): ContactCandidateFormDto {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData = {
       firstName: faker.name.firstName(),
@@ -31,7 +31,7 @@ export class ContactCandidateFormFactory
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
       birthDate: faker.date.past(),
-      structure: faker.company.companyName(2),
+      structure: faker.company.name(),
       postalCode: faker.address.zipCode('#####'),
       city: faker.address.city(),
       address: faker.address.city(),
@@ -40,28 +40,28 @@ export class ContactCandidateFormFactory
       workerPhone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       workerEmail: faker.internet.email(),
       workerPosition: faker.name.jobTitle(),
-      helpWith: [faker.random.objectElement(CandidateHelpWith)],
-      gender: faker.random.objectElement(CandidateGenders),
-      professionalSituation: faker.random.objectElement(
+      helpWith: [faker.helpers.objectValue(CandidateHelpWith)],
+      gender: faker.helpers.objectValue(CandidateGenders),
+      professionalSituation: faker.helpers.objectValue(
         CandidateProfessionalSituations
       ),
-      resources: faker.random.objectElement(CandidateResources),
-      businessLines: faker.random
+      resources: faker.helpers.objectValue(CandidateResources),
+      businessLines: faker.helpers
         .arrayElements(BusinessLineFilters)
         .map(({ value }) => value),
-      handicapped: faker.random.objectElement(CandidateYesNo),
-      registeredUnemploymentOffice: faker.random.objectElement(CandidateYesNo),
-      administrativeSituation: faker.random.objectElement(
+      handicapped: faker.helpers.objectValue(CandidateYesNo),
+      registeredUnemploymentOffice: faker.helpers.objectValue(CandidateYesNo),
+      administrativeSituation: faker.helpers.objectValue(
         CandidateAdministrativeSituations
       ),
-      workingRight: faker.random.objectElement(CandidateYesNo),
-      accommodation: faker.random.objectElement(CandidateAccommodations),
-      domiciliation: faker.random.objectElement(CandidateYesNo),
-      socialSecurity: faker.random.objectElement(CandidateYesNo),
-      bankAccount: faker.random.objectElement(CandidateYesNo),
+      workingRight: faker.helpers.objectValue(CandidateYesNo),
+      accommodation: faker.helpers.objectValue(CandidateAccommodations),
+      domiciliation: faker.helpers.objectValue(CandidateYesNo),
+      socialSecurity: faker.helpers.objectValue(CandidateYesNo),
+      bankAccount: faker.helpers.objectValue(CandidateYesNo),
       diagnostic: faker.lorem.paragraphs(3, '\n'),
       description: faker.lorem.paragraphs(3, '\n'),
-      heardAbout: faker.random.objectElement(HeardAbout),
+      heardAbout: faker.helpers.objectValue(HeardAbout),
       contactWithCoach: faker.datatype.boolean(),
     };
 

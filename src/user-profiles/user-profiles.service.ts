@@ -151,21 +151,26 @@ export class UserProfilesService {
           }
         : {};
 
+    // this query is made in 2 steps because it filters the where clause inside the include
+    // eg:
+    // you want all user having in his businesslines one specific businessline
+    // but you also want the request to response his businesslines list
+    // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
     const filteredProfiles = await this.userProfileModel.findAll({
       offset,
       limit,
       attributes: ['id'],
-      order: sequelize.literal('"user.createdAt" DESC'),
+      order: sequelize.literal('"user.lastConnection" DESC'),
       ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
         ...getUserProfileInclude(role, businessLinesOptions, helpsOptions),
         {
           model: User,
           as: 'user',
-          attributes: ['createdAt'],
+          attributes: ['lastConnection'],
           where: {
             role,
-            id: { [Op.not]: userId },
+            lastConnection: { [Op.ne]: null },
             ...searchOptions,
           },
         },
@@ -174,7 +179,7 @@ export class UserProfilesService {
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
-      order: sequelize.literal('"user.createdAt" DESC'),
+      order: sequelize.literal('"user.lastConnection" DESC'),
       where: {
         id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
       },

@@ -28,7 +28,18 @@ export class UsersCreationService {
     createdUserId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      'program' | 'workingRight' | 'campaign' | 'birthDate'
+      | 'program'
+      | 'workingRight'
+      | 'campaign'
+      | 'birthDate'
+      | 'nationality'
+      | 'accommodation'
+      | 'hasSocialWorker'
+      | 'resources'
+      | 'studiesLevel'
+      | 'workingExperience'
+      | 'jobSearchDuration'
+      | 'workingRight'
     >
   ) {
     return this.externalDatabasesService.createExternalDBUser(
@@ -64,6 +75,15 @@ export class UsersCreationService {
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
   ) {
     return this.mailsService.sendWelcomeMail(user);
+  }
+
+  async sendVerificationMail(user: User) {
+    const token = await this.authService.generateVerificationToken(user);
+    return this.mailsService.sendVerificationMail(user, token);
+  }
+
+  async sendProfileCompletionMail(user: User) {
+    return this.mailsService.sendProfileCompletionMail(user);
   }
 
   async sendMailsAfterMatching(candidateId: string) {

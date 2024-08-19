@@ -3,6 +3,8 @@ export const UserProfilesAttributes = [
   'currentJob',
   'department',
   'isAvailable',
+  'linkedinUrl',
+  'hasExternalCv',
 ];
 
 export const UserProfilesUserAttributes = [
@@ -10,5 +12,6 @@ export const UserProfilesUserAttributes = [
   'firstName',
   'lastName',
   'role',
+  'lastConnection',
   'createdAt',
 ];

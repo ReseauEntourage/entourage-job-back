@@ -16,6 +16,8 @@ import { UsersHelper } from 'tests/users/users.helper';
 
 describe('Read Documents', () => {
   let app: INestApplication;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let server: any;
 
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
@@ -37,6 +39,7 @@ describe('Read Documents', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+    server = app.getHttpServer();
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
@@ -46,6 +49,7 @@ describe('Read Documents', () => {
   afterAll(async () => {
     await databaseHelper.resetTestDB();
     await app.close();
+    server.close();
   });
 
   beforeEach(async () => {
@@ -65,9 +69,9 @@ describe('Read Documents', () => {
       it('Should return 201 when right user is logged', async () => {
         const response: APIResponse<
           ReadDocumentsController['createReadDocument']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${routeReadDocuments}/read/${user.user.id}`)
-          .set('authorization', `Token ${user.token}`)
+          .set('authorization', `Bearer ${user.token}`)
           .send({
             documentName: 'CharteEthique',
           });
@@ -77,9 +81,9 @@ describe('Read Documents', () => {
       it('Should return 400 when document name is not valid', async () => {
         const response: APIResponse<
           ReadDocumentsController['createReadDocument']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${routeReadDocuments}/read/${user.user.id}`)
-          .set('authorization', `Token ${user.token}`)
+          .set('authorization', `Bearer ${user.token}`)
           .send({
             documentName: 'test',
           });
@@ -89,9 +93,9 @@ describe('Read Documents', () => {
       it('Should return 403 when wrong user is logged', async () => {
         const response: APIResponse<
           ReadDocumentsController['createReadDocument']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${routeReadDocuments}/read/${userBis.id}`)
-          .set('authorization', `Token ${user.token}`)
+          .set('authorization', `Bearer ${user.token}`)
           .send({
             documentName: 'CharteEthique',
           });
@@ -101,7 +105,7 @@ describe('Read Documents', () => {
       it('Should return 401 if no user logged', async () => {
         const response: APIResponse<
           ReadDocumentsController['createReadDocument']
-        > = await request(app.getHttpServer())
+        > = await request(server)
           .post(`${routeReadDocuments}/read/${userBis.id}`)
           .send({
             documentName: 'CharteEthique',

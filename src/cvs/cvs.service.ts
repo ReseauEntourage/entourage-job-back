@@ -92,6 +92,7 @@ export class CVsService {
   ) {}
 
   async create(createCVDto: CreateCVDto, userId: string) {
+    // create = newerVersion => needs to increment the version
     const maxVersion = await this.findLastVersionByCandidateId(
       createCVDto.UserId
     );
@@ -379,6 +380,7 @@ export class CVsService {
   }
 
   async findOneByUrl(url: string): Promise<CV> {
+    // check if the CV exists in the cache otherwise get the CV in the DB and cache it
     const redisKey = RedisKeys.CV_PREFIX + url;
     const redisCV: string = await this.cacheManager.get(redisKey);
     return redisCV ? JSON.parse(redisCV) : await this.findAndCacheOneByUrl(url);
@@ -451,6 +453,7 @@ export class CVsService {
 
     const escapedQuery = escapeQuery(search);
 
+    // map object
     const filtersObj = getFiltersObjectsFromQueryParams<
       CVFilterKey,
       CVConstantType
@@ -471,6 +474,7 @@ export class CVsService {
       }
     } else {
       const { employed, ...restOptions } = options;
+      // using native query to avoid sequelize and used params
       const dbQuery = escapedQuery
         ? `
                   with publishedCVs as (${getPublishedCVQuery(employed)})
@@ -488,6 +492,7 @@ export class CVsService {
         dbQuery ? restOptions : options
       );
 
+      // if no results with the filters, we remove the businessLines filter
       if (modelCVs.length <= 0) {
         if (
           filtersObj &&
@@ -518,6 +523,8 @@ export class CVsService {
     }
 
     const totalSharesPerUser: { CandidatId: string; totalshares: number }[] =
+      // using native query to sum all shares
+      // gets the sum of every social network of every version of the CV for each candidate
       await this.cvModel.sequelize.query(
         `
             select shares."CandidatId",
@@ -549,10 +556,12 @@ export class CVsService {
       }
     );
 
+    // group by month
     const groupedCVsByMonth = _.groupBy(finalCVList, (cv) => {
       return moment(cv.updatedAt).startOf('month').format('YYYY/MM');
     });
 
+    // sort by share number
     const sortedGroupedCvsByMonth = _.mapValues(groupedCVsByMonth, (arr) => {
       return arr
         .sort(() => {
@@ -563,6 +572,7 @@ export class CVsService {
         });
     });
 
+    // sort by date
     const sortedKeys = Object.keys(sortedGroupedCvsByMonth).sort(
       (date1, date2) => {
         return moment(date2, 'YYYY/MM').diff(moment(date1, 'YYYY/MM'));
@@ -821,16 +831,17 @@ export class CVsService {
   }
 
   async sendMailsAfterSubmitting(
-    coach: User,
+    user: User,
     candidateId: string,
     cv: Partial<CV>
   ) {
-    await this.mailsService.sendCVSubmittedMail(coach, candidateId, cv);
+    await this.mailsService.sendCVSubmittedMail(user, candidateId, cv);
   }
 
   async sendMailsAfterPublishing(candidateId: string) {
     const candidate = await this.usersService.findOne(candidateId);
 
+    // notify candidate that his CV has been published
     await this.mailsService.sendCVPublishedMail(candidate.toJSON());
 
     await this.queuesService.addToWorkQueue(
@@ -893,7 +904,7 @@ export class CVsService {
   }
 
   async sendReminderAboutCV(candidateId: string, is20Days = false) {
-    const firstOfMarch2022 = '2022-03-01';
+    const firstOfMarch2022 = '2022-03-01'; // certainly to avoid backfill errors => outdated
     const candidate = (await this.usersService.findOne(candidateId)).toJSON();
     if (
       moment(candidate.createdAt).isAfter(

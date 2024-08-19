@@ -27,6 +27,16 @@ import {
   CompanyZone,
   HeardAbout,
   HeardAboutValue,
+  JobSearchDuration,
+  JobSearchDurations,
+  Nationalities,
+  Nationality,
+  StudiesLevel,
+  StudiesLevels,
+  WorkingExperience,
+  WorkingExperienceYears,
+  YesNoJNSPR,
+  YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
 
 import {
@@ -49,7 +59,7 @@ export const ErrorCodes = {
   FIELD_CUSTOM_VALIDATION_EXCEPTION: 'FIELD_CUSTOM_VALIDATION_EXCEPTION:',
 } as const;
 
-export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 export interface SalesforceError {
   errorCode: ErrorCode;
@@ -79,7 +89,7 @@ export const ObjectNames = {
   USER: 'User',
 } as const;
 
-export type ObjectName = typeof ObjectNames[keyof typeof ObjectNames];
+export type ObjectName = (typeof ObjectNames)[keyof typeof ObjectNames];
 
 type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.ACCOUNT]: SalesforceAccount;
@@ -109,8 +119,14 @@ export const ContactRecordTypesIds = {
   NEIGHBOR: '012Jv000000wYfeIAE',
 } as const;
 
+export const LeadYesNoJNSPR: { [K in YesNoJNSPRValue]: string } = {
+  [YesNoJNSPR.YES]: 'Oui',
+  [YesNoJNSPR.NO]: 'Non',
+  [YesNoJNSPR.JNSPR]: '',
+} as const;
+
 export type ContactRecordType =
-  typeof ContactRecordTypesIds[keyof typeof ContactRecordTypesIds];
+  (typeof ContactRecordTypesIds)[keyof typeof ContactRecordTypesIds];
 
 export const LeadRecordTypesIds = {
   COACH: '0127Q000000UbQPQA0',
@@ -120,7 +136,7 @@ export const LeadRecordTypesIds = {
 } as const;
 
 export type LeadRecordType =
-  typeof LeadRecordTypesIds[keyof typeof LeadRecordTypesIds];
+  (typeof LeadRecordTypesIds)[keyof typeof LeadRecordTypesIds];
 
 export const AccountRecordTypesIds = {
   COMPANY: '0127Q000000TZ4YQAW',
@@ -129,7 +145,7 @@ export const AccountRecordTypesIds = {
 } as const;
 
 export type AccountRecordType =
-  typeof AccountRecordTypesIds[keyof typeof AccountRecordTypesIds];
+  (typeof AccountRecordTypesIds)[keyof typeof AccountRecordTypesIds];
 
 export const EventRecordTypesIds = {
   BINOME: '0127Q000000UhqeQAC',
@@ -137,7 +153,7 @@ export const EventRecordTypesIds = {
 } as const;
 
 export type EventRecordType =
-  typeof EventRecordTypesIds[keyof typeof EventRecordTypesIds];
+  (typeof EventRecordTypesIds)[keyof typeof EventRecordTypesIds];
 
 type LeadsProps = {
   [LeadRecordTypesIds.CANDIDATE]: CandidateLeadProps;
@@ -208,7 +224,47 @@ export const LeadResources: { [K in CandidateResource]: string } = {
   [CandidateResources.AAH]: 'AAH',
   [CandidateResources.OTHER]: 'Autre',
   [CandidateResources.NONE]: 'Aucune',
+  [CandidateResources.JNSPR]: '',
 } as const;
+
+export const LeadNationalities: { [K in Nationality]: string } = {
+  [Nationalities.FRENCH]: 'Française',
+  [Nationalities.EUROPEAN]: 'Union Européenne	',
+  [Nationalities.EXTRA_EUROPEAN]: 'Hors Union Européenne',
+  [Nationalities.STATELESS]: 'Apatride',
+  [Nationalities.JNSPR]: '',
+} as const;
+
+export const LeadJobSearchDurations: {
+  [K in JobSearchDuration]: string;
+} = {
+  [JobSearchDurations.LESS_THAN_3_MONTHS]: '0-3 mois',
+  [JobSearchDurations.BETWEEN_3_AND_6_MONTHS]: '3-6 mois',
+  [JobSearchDurations.BETWEEN_6_AND_12_MONTHS]: '6-12 mois',
+  [JobSearchDurations.BETWEEN_12_AND_24_MONTHS]: '12-24 mois',
+  [JobSearchDurations.BETWEEN_24_AND_36_MONTHS]: '24-36 mois',
+  [JobSearchDurations.MORE_THAN_36_MONTHS]: 'Plus de 36 mois',
+  [JobSearchDurations.JNSPR]: '',
+} as const;
+
+export const LeadStudiesLevels: { [K in StudiesLevel]: string } = {
+  [StudiesLevels.NONE]: 'Aucun',
+  [StudiesLevels.CAP_BEP]: '3 CAP/BEP',
+  [StudiesLevels.BAC]: '4 Baccalauréat',
+  [StudiesLevels.BAC_PLUS_2]: '5 Bac +2',
+  [StudiesLevels.BAC_PLUS_3]: '6 Bac +3 - licence',
+  [StudiesLevels.BAC_PLUS_5]: '7 Bac + 4/5 - master',
+  [StudiesLevels.BAC_PLUS_8]: '8 Doctorat',
+  [StudiesLevels.JNSPR]: '',
+} as const;
+
+export const LeadWorkingExperienceYears: { [K in WorkingExperience]: string } =
+  {
+    [WorkingExperienceYears.LESS_THAN_3_YEAR]: '	Moins de 3 ans',
+    [WorkingExperienceYears.BETWEEN_3_AND_10_YEARS]: 'Entre 3 et 10 ans',
+    [WorkingExperienceYears.MORE_THAN_10_YEARS]: 'Plus de 10 ans',
+    [WorkingExperienceYears.JNSPR]: '',
+  } as const;
 
 export const LeadProfessionalSituation: {
   [K in CandidateProfessionalSituation]: string;
@@ -250,6 +306,7 @@ export const LeadAccomodations: {
   [CandidateAccommodations.STREET]:
     'Rue ou abri de fortune (squat, voiture, camping...)',
   [CandidateAccommodations.OTHER]: 'Autre',
+  [CandidateAccommodations.JNSPR]: '',
 } as const;
 
 export const LeadGender: {
@@ -545,6 +602,13 @@ export interface ContactProps {
   department: Department;
   companySfId?: string;
   casquette: Casquette;
+  nationality?: Nationality;
+  accommodation?: CandidateAccommodation;
+  hasSocialWorker?: YesNoJNSPRValue;
+  resources?: CandidateResource;
+  studiesLevel?: StudiesLevel;
+  workingExperience?: WorkingExperience;
+  jobSearchDuration?: JobSearchDuration;
 }
 
 export interface SalesforceContact {
@@ -563,6 +627,13 @@ export interface SalesforceContact {
   MailingPostalCode?: string;
   ID_App_Entourage_Pro__c?: string;
   Source__c: 'Lead entrant';
+  Nationalit__c: string;
+  Accompagnement_social_O_N__c: string;
+  Plus_haut_niveau_de_formation_attein__c: string;
+  Ann_es_d_exp_rience_professionnelle__c: string;
+  Dur_e_de_recherche_d_emploi__c: string;
+  Situation_d_h_bergement__c: string;
+  Type_de_ressources__c?: string;
 }
 
 export interface CompanyLeadProps {
@@ -632,6 +703,11 @@ export interface CandidateLeadProps {
   location?: string;
   autreSource?: 'Formulaire_Sourcing_Page_Travailler';
   tsPrescripteur?: string;
+  nationality?: Nationality;
+  hasSocialWorker?: YesNoJNSPRValue;
+  studiesLevel?: StudiesLevel;
+  workingExperience?: WorkingExperience;
+  jobSearchDuration?: JobSearchDuration;
 }
 
 export interface CoachLeadProps {
@@ -741,6 +817,11 @@ export interface CandidateSalesforceLead {
   Autre_source_LinkedOut__c: 'Formulaire_Sourcing_Page_Travailler';
   TS_du_Candidat__c: string;
   Comment_vous_nous_avez_connu__c: string;
+  Nationalite__c: string;
+  Accompagnement_social_O_N__c: string;
+  Plus_haut_niveau_de_formation_atteint__c: string;
+  annees_d_experiences_professionnelles__c: string;
+  Duree_de_recherche_d_emploi__c: string;
 }
 
 export interface WorkerSalesforceLead {
@@ -758,6 +839,13 @@ export interface WorkerSalesforceLead {
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
+  Nationalit__c?: string;
+  Accompagnement_social_O_N__c?: string;
+  Plus_haut_niveau_de_formation_attein__c?: string;
+  Ann_es_d_exp_rience_professionnelle__c?: string;
+  Dur_e_de_recherche_d_emploi__c?: string;
+  Type_de_ressources__c?: string;
+  Situation_d_h_bergement__c?: string;
 }
 
 export interface CoachSalesforceLead {
@@ -787,4 +875,11 @@ export interface UserProps {
   program: string;
   workingRight?: CandidateYesNoNSPPValue;
   campaign?: string;
+  nationality?: Nationality;
+  accommodation?: CandidateAccommodation;
+  hasSocialWorker?: YesNoJNSPRValue;
+  resources?: CandidateResource;
+  studiesLevel?: StudiesLevel;
+  workingExperience?: WorkingExperience;
+  jobSearchDuration?: JobSearchDuration;
 }

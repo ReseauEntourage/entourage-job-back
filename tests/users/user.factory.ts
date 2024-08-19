@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment/moment';
@@ -34,14 +34,14 @@ export class UserFactory implements Factory<User> {
       props.password || faker.internet.password()
     );
 
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData: Partial<User> = {
       email: faker.internet.email().toLowerCase(),
       firstName: capitalizeNameAndTrim(faker.name.firstName()),
       lastName: capitalizeNameAndTrim(faker.name.lastName()),
       role: UserRoles.CANDIDATE,
-      gender: faker.random.arrayElement([0, 1]) as Gender,
+      gender: faker.helpers.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       address: faker.address.streetAddress(),
       lastConnection: new Date(),
@@ -68,6 +68,7 @@ export class UserFactory implements Factory<User> {
     } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<User> {
+    props.isEmailVerified = true;
     const userData = this.generateUser(props);
     const userId = faker.datatype.uuid();
     if (insertInDB) {
@@ -107,7 +108,20 @@ export class UserFactory implements Factory<User> {
       return dbUser.toJSON();
     }
     const builtUser = await this.userModel.build(userData);
-    const { id, ...builtUserWithoutId } = builtUser.toJSON();
-    return builtUserWithoutId as User;
+    const { id, isEmailVerified, ...builtUserWithoutIdAndIsEmailVerified } =
+      builtUser.toJSON();
+    return builtUserWithoutIdAndIsEmailVerified as User;
   }
+
+  async delete(userId: string) {
+    await this.usersService.update(userId, { deletedAt: new Date() });
+  }
+
+  // async createAndDelete(props: Partial<User> = {}) {
+  //   const createdUser = await this.create(props);
+  //   const deletedUser = await this.usersService.update(createdUser.id, {
+  //     deletedAt: new Date(),
+  //   });
+  //   return deletedUser.toJSON();
+  // }
 }

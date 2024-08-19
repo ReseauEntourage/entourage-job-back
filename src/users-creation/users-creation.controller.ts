@@ -208,6 +208,8 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
         helpNeeds: createUserRegistrationDto.helpNeeds,
+        searchBusinessLines: createUserRegistrationDto.searchBusinessLines,
+        searchAmbitions: createUserRegistrationDto.searchAmbitions,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
@@ -222,9 +224,14 @@ export class UsersCreationController {
             ? createUserRegistrationDto.campaign
             : undefined,
         workingRight: createUserRegistrationDto.workingRight,
+        nationality: createUserRegistrationDto.nationality,
+        accommodation: createUserRegistrationDto.accommodation,
+        hasSocialWorker: createUserRegistrationDto.hasSocialWorker,
+        resources: createUserRegistrationDto.resources,
+        studiesLevel: createUserRegistrationDto.studiesLevel,
+        workingExperience: createUserRegistrationDto.workingExperience,
+        jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
       });
-
-      const loggedUser = await this.usersCreationService.loginUser(createdUser);
 
       if (createUserRegistrationDto.program === Programs.BOOST) {
         await this.usersCreationService.sendWelcomeMail({
@@ -236,7 +243,11 @@ export class UsersCreationController {
         });
       }
 
-      return loggedUser;
+      await this.usersCreationService.sendVerificationMail(createdUser);
+
+      await this.usersCreationService.sendProfileCompletionMail(createdUser);
+
+      return createdUser;
     } catch (err) {
       if (((err as Error).name = SequelizeUniqueConstraintError)) {
         throw new ConflictException();

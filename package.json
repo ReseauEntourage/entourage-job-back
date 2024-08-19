@@ -1,9 +1,9 @@
 {
   "name": "linkedout-backend",
-  "version": "2.23.0",
+  "version": "2.25.6",
   "license": "ISC",
   "engines": {
-    "node": "16.x"
+    "node": "18.x"
   },
   "scripts": {
     "prebuild": "rimraf dist",
@@ -42,6 +42,7 @@
     "@nestjs/sequelize": "^9.0.2",
     "@nestjs/swagger": "^6.3.0",
     "@nestjs/throttler": "^4.0.0",
+    "@slack/bolt": "^3.19.0",
     "@vonage/server-sdk": "^2.11.2",
     "bitly": "^7.1.2",
     "bull": "^4.7.0",
@@ -83,7 +84,7 @@
     "validator": "^13.7.0"
   },
   "devDependencies": {
-    "@faker-js/faker": "^6.0.0",
+    "@faker-js/faker": "^7.0.0",
     "@nestjs/cli": "^9.5.0",
     "@nestjs/schematics": "^9.2.0",
     "@nestjs/testing": "^9.4.1",

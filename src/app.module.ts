@@ -1,30 +1,26 @@
 import { BullModule } from '@nestjs/bull';
-import { CacheModule, Module } from '@nestjs/common';
-
+import { Module, CacheModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { SequelizeModule, SequelizeModuleOptions } from '@nestjs/sequelize';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
-import type { ClientOpts } from 'redis';
-import { AuthModule } from 'src/auth/auth.module';
-import { JwtAuthGuard } from 'src/auth/guards';
-import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
-import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
-import { ContractsModule } from 'src/common/contracts/contracts.module';
-import { ExperiencesModule } from 'src/common/experiences/experiences.module';
-import { FormationsModule } from 'src/common/formations/formations.module';
-import { LanguagesModule } from 'src/common/languages/languages.module';
-import { LocationsModule } from 'src/common/locations/locations.module';
-import { PassionsModule } from 'src/common/passions/passions.module';
-import { ReviewsModule } from 'src/common/reviews/reviews.module';
-import { SkillsModule } from 'src/common/skills/skills.module';
-import { CVsModule } from 'src/cvs/cvs.module';
-import { SharesModule } from 'src/shares/shares.module';
-import { UsersCreationModule } from 'src/users-creation/users-creation.module';
-import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
-import { UsersModule } from 'src/users/users.module';
+import { ClientOpts } from 'redis';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/guards';
+import { AmbitionsModule } from './common/ambitions/ambitions.module';
+import { BusinessLinesModule } from './common/business-lines/business-lines.module';
+import { ContractsModule } from './common/contracts/contracts.module';
+import { ExperiencesModule } from './common/experiences/experiences.module';
+import { FormationsModule } from './common/formations/formations.module';
+import { LanguagesModule } from './common/languages/languages.module';
+import { LocationsModule } from './common/locations/locations.module';
+import { PassionsModule } from './common/passions/passions.module';
+import { ReviewsModule } from './common/reviews/reviews.module';
+import { SkillsModule } from './common/skills/skills.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { CVsModule } from './cvs/cvs.module';
+import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
@@ -35,8 +31,12 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RevisionsModule } from './revisions/revisions.module';
+import { SharesModule } from './shares/shares.module';
 import { SMSModule } from './sms/sms.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
+import { UsersModule } from './users/users.module';
+import { UsersCreationModule } from './users-creation/users-creation.module';
+import { UsersDeletionModule } from './users-deletion/users-deletion.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -105,6 +105,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersCreationModule,
     AuthModule,
     CVsModule,
+    ExternalCvsModule,
     OpportunitiesModule,
     BusinessLinesModule,
     LocationsModule,

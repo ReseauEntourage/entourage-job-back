@@ -424,9 +424,16 @@ export class WorkQueueProcessor {
     if (process.env.ENABLE_SF === 'true') {
       await this.salesforceService.createOrUpdateSalesforceUser(data.userId, {
         program: data.program,
-        workingRight: data.workingRight,
         campaign: data.campaign,
         birthDate: data.birthDate,
+        nationality: data.nationality,
+        accommodation: data.accommodation,
+        hasSocialWorker: data.hasSocialWorker,
+        resources: data.resources,
+        studiesLevel: data.studiesLevel,
+        workingExperience: data.workingExperience,
+        jobSearchDuration: data.jobSearchDuration,
+        workingRight: data.workingRight,
       });
       return `Salesforce : created or updated user '${data.userId}'`;
     }

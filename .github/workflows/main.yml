@@ -2,8 +2,8 @@ name: LinkedOut Backend Test
 
 on:
   push:
-    branches: [ master, develop ]
-  pull_request: { }
+    branches: [master, develop]
+  pull_request: {}
   workflow_dispatch:
 
 jobs:
@@ -31,12 +31,14 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '16.x'
+          node-version: '18.x'
       - run: yarn install
       - run: yarn db:migrate
       - run: yarn test:e2e

@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import { SlackService } from 'src/external-services/slack/slack.service';
+import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import {
+  forbiddenExpressionsInMessage,
+  generateSlackMsgConfigMessageResent,
+  generateSlackMsgConfigSuspiciousMessageDetected,
+} from './messages.utils';
 import { ExternalMessage, InternalMessage } from './models';
 
 @Injectable()
@@ -14,6 +21,7 @@ export class MessagesService {
     @InjectModel(InternalMessage)
     private internalMessageModel: typeof InternalMessage,
     private mailsService: MailsService,
+    private slackService: SlackService,
     private usersService: UsersService,
     private externalDatabasesService: ExternalDatabasesService
   ) {}
@@ -65,12 +73,66 @@ export class MessagesService {
   async sendInternalMessageByMail(
     senderUser: User,
     addresseeUser: User,
-    message: InternalMessage
+    message: InternalMessage,
+    checkForbiddenExpressions = true
   ) {
+    if (checkForbiddenExpressions) {
+      const forbiddenExpressionsFound = forbiddenExpressionsInMessage(
+        message.message
+      );
+      if (forbiddenExpressionsFound.length > 0) {
+        return this.sendSuspiciousMessageSlackNotification(
+          senderUser,
+          addresseeUser,
+          message,
+          forbiddenExpressionsFound
+        );
+      }
+    }
     return this.mailsService.sendInternalMessageByMail(
       senderUser,
       addresseeUser,
       message
+    );
+  }
+
+  async sendSuspiciousMessageSlackNotification(
+    senderUser: User,
+    addresseeUser: User,
+    message: InternalMessage,
+    forbiddenExpressionsFound: string[]
+  ) {
+    const slackMsgConfig = generateSlackMsgConfigSuspiciousMessageDetected(
+      message,
+      senderUser,
+      addresseeUser,
+      forbiddenExpressionsFound
+    );
+    const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
+    return this.slackService.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      slackBlocks,
+      'Message suspect détecté (InternalMessage : ' + message.id + ')'
+    );
+  }
+
+  async sendInternalMessageResendSlackNotification(
+    internalMessage: InternalMessage,
+    adminUser: User,
+    senderUser: User,
+    addresseeUser: User
+  ) {
+    const slackMsgConfig = generateSlackMsgConfigMessageResent(
+      internalMessage,
+      adminUser,
+      senderUser,
+      addresseeUser
+    );
+    const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
+    return this.slackService.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      slackBlocks,
+      `Le message interne ${internalMessage.id} a été renvoyé par un administrateur`
     );
   }
 

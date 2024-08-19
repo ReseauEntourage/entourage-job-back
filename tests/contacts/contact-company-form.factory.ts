@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-unresolved
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
 import { CompanyApproaches, HeardAbout } from 'src/contacts/contacts.types';
@@ -13,20 +13,20 @@ export class ContactCompanyFormFactory
   generateContactCompanyFormAnswers(
     props: Partial<ContactCompanyFormDto>
   ): ContactCompanyFormDto {
-    const fakePhoneNumber = faker.phone.phoneNumber('+336 ## ## ## ##');
+    const fakePhoneNumber = faker.phone.number('+336 ## ## ## ##');
 
     const fakeData = {
       firstName: faker.name.firstName(),
       lastName: faker.name.lastName(),
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       email: faker.internet.email(),
-      company: faker.company.companyName(2),
+      company: faker.company.name(),
       position: faker.word.noun(2),
-      zone: faker.random.arrayElement(
+      zone: faker.helpers.arrayElement(
         AdminZoneFilters.map(({ value }) => value)
       ),
-      approach: faker.random.objectElement(CompanyApproaches),
-      heardAbout: faker.random.objectElement(HeardAbout),
+      approach: faker.helpers.objectValue(CompanyApproaches),
+      heardAbout: faker.helpers.objectValue(HeardAbout),
       message: faker.lorem.lines(3),
     };
 
