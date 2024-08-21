@@ -668,16 +668,13 @@ export class UserProfilesService {
     userReporter: User,
     userReported: User
   ) {
-    return this.sendReportedUserNotification(
-      report,
-      userReporter,
-      userReported
-    );
-    return this.mailsService.sendUserReportedMail(
-      report,
-      userReporter,
-      userReported
-    );
-    // TODO: send email to admin in charge of moderation
+    await Promise.all([
+      this.sendReportedUserNotification(report, userReporter, userReported),
+      this.mailsService.sendUserReportedMail(
+        report,
+        userReporter,
+        userReported
+      ),
+    ]);
   }
 }
