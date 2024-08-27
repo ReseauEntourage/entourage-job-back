@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import { CV } from 'src/cvs/models';
@@ -29,7 +29,6 @@ import { User } from 'src/users/models';
 import {
   CandidateUserRoles,
   CoachUserRoles,
-  UserRole,
   UserRoles,
 } from 'src/users/users.types';
 import {
@@ -120,6 +119,36 @@ export class MailsService {
         token,
       },
     });
+  }
+
+  async sendOnboardingJ3ProfileCompletionMail(user: User) {
+    return this.queuesService.addToWorkQueue(
+      Jobs.SEND_MAIL,
+      {
+        toEmail: user.email,
+        templateId: MailjetTemplates.ONBOARDING_J3_PROFILE_COMPLETION,
+        variables: { firstName: user.firstName },
+      },
+      {
+        //trois jours après la création du compte
+        delay: 3600000 * 24 * 3,
+      }
+    );
+  }
+
+  async sendOnboardingJ1BAOMail(user: User) {
+    return this.queuesService.addToWorkQueue(
+      Jobs.SEND_MAIL,
+      {
+        toEmail: user.email,
+        templateId: MailjetTemplates.ONBOARDING_J1_BAO,
+        variables: { firstName: user.firstName, role: getRoleString(user) },
+      },
+      {
+        // un jour après la création du compte
+        delay: 3600000 * 24 * 1,
+      }
+    );
   }
 
   async sendCVPreparationMail(candidate: User) {
@@ -681,15 +710,6 @@ export class MailsService {
     addresseeUser: User,
     message: InternalMessage
   ) {
-    let senderRole: UserRole;
-    if (isRoleIncluded(CandidateUserRoles, senderUser.role)) {
-      senderRole = 'Candidat';
-    } else if (isRoleIncluded(CoachUserRoles, senderUser.role)) {
-      senderRole = 'Coach';
-    } else {
-      senderRole = 'Admin';
-    }
-
     // envoi du mail au destinataire
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: addresseeUser.email,
@@ -699,12 +719,11 @@ export class MailsService {
         senderId: senderUser.id,
         senderName: `${senderUser.firstName} ${senderUser.lastName}`,
         addresseeName: `${addresseeUser.firstName} ${addresseeUser.lastName}`,
-        senderRole,
         senderEmail: senderUser.email,
         message: message.message,
         zone: addresseeUser.zone,
         subject: message.subject,
-        role: senderRole,
+        role: getRoleString(senderUser),
       },
     });
 
@@ -719,8 +738,18 @@ export class MailsService {
         senderEmail: senderUser.email,
         zone: senderUser.zone,
         subject: message.subject,
-        role: senderRole,
+        role: getRoleString(senderUser),
       },
     });
   }
 }
+
+const getRoleString = (user: User): string => {
+  if (isRoleIncluded(CandidateUserRoles, user.role)) {
+    return 'Candidat';
+  } else if (isRoleIncluded(CoachUserRoles, user.role)) {
+    return 'Coach';
+  } else {
+    return 'Admin';
+  }
+};
