@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
 import {
@@ -59,6 +60,7 @@ import {
 import { OpportunityUsersService } from './opportunity-users.service';
 
 // TODO change to /opportunitites
+@ApiBearerAuth()
 @Controller('opportunity')
 export class OpportunitiesController {
   constructor(
