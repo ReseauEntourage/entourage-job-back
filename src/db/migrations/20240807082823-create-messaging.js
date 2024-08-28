@@ -2,7 +2,7 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Conversations', {
       id: {
         allowNull: false,
@@ -84,6 +84,11 @@ module.exports = {
           key: 'id',
         },
       },
+      seenAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: null,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -97,9 +102,9 @@ module.exports = {
     });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('ConversationParticipants');
     await queryInterface.dropTable('Messages');
     await queryInterface.dropTable('Conversations');
-  }
+  },
 };

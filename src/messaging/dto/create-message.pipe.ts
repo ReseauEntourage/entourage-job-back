@@ -28,6 +28,7 @@ export class CreateMessagePipe
       whitelist: true,
       forbidNonWhitelisted: true,
       forbidUnknownValues: true,
+      skipMissingProperties: true,
     });
 
     if (errors.length > 0) {

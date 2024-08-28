@@ -8,6 +8,7 @@ import {
   DataType,
   Default,
   ForeignKey,
+  IsDate,
   IsUUID,
   Model,
   PrimaryKey,
@@ -30,6 +31,11 @@ export class ConversationParticipant extends Model {
 
   @UpdatedAt
   updatedAt: Date;
+
+  @IsDate
+  @Default(null)
+  @Column
+  seenAt: Date;
 
   @ApiProperty()
   @IsString()
