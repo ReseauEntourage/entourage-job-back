@@ -36,6 +36,18 @@ export class MessagingService {
       await this.conversationParticipantModel.findAll({
         where: {
           userId,
+          [Op.or]: [
+            {
+              '$conversation.participants.firstName$': {
+                [Op.iLike]: `%${query}%`,
+              },
+            },
+            {
+              '$conversation.participants.lastName$': {
+                [Op.iLike]: `%${query}%`,
+              },
+            },
+          ],
         },
         include: [
           {
@@ -60,12 +72,6 @@ export class MessagingService {
                 model: User,
                 as: 'participants',
                 attributes: ['id', 'firstName', 'lastName'],
-                where: {
-                  [Op.or]: [
-                    { firstName: { [Op.iLike]: `%${query}%` } },
-                    { lastName: { [Op.iLike]: `%${query}%` } },
-                  ],
-                },
               },
             ],
             order: [['messages', 'createdAt', 'ASC']],
