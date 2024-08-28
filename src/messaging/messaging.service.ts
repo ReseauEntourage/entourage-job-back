@@ -1,13 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
   slackChannels,
 } from 'src/external-services/slack/slack.types';
+import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { generateSlackMsgConfigMessageReported } from './messaging.utils';
+import { generateSlackMsgConfigConversationReported } from './messaging.utils';
 import { ConversationParticipant } from './models';
 import { Conversation } from './models/conversation.model';
 import { Message } from './models/message.model';
@@ -28,7 +30,7 @@ export class MessagingService {
   /**
    * Get all conversations for a user
    */
-  async getConversations(userId: string) {
+  async getConversationsForUser(userId: string, query: string) {
     // Get all conversations where ConversationParticipant exists for the given user
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
@@ -58,6 +60,12 @@ export class MessagingService {
                 model: User,
                 as: 'participants',
                 attributes: ['id', 'firstName', 'lastName'],
+                where: {
+                  [Op.or]: [
+                    { firstName: { [Op.iLike]: `%${query}%` } },
+                    { lastName: { [Op.iLike]: `%${query}%` } },
+                  ],
+                },
               },
             ],
             order: [['messages', 'createdAt', 'ASC']],
@@ -74,7 +82,8 @@ export class MessagingService {
    */
   async createConversation(participantIds: string[]) {
     const conversation = await this.conversationModel.create({});
-    this.addMembersToConversation(conversation.id, participantIds);
+    await this.addMembersToConversation(conversation.id, participantIds);
+    return conversation;
   }
 
   /**
@@ -105,7 +114,7 @@ export class MessagingService {
    * @param userId - The ID of the user fetching the conversation
    * @returns The conversation if the user is a participant, otherwise null
    */
-  async getConversation(conversationId: string, userId: string) {
+  async getConversationForUser(conversationId: string, userId: string) {
     if (!(await this.isUserInConversation(conversationId, userId))) {
       return null;
     }
@@ -127,6 +136,12 @@ export class MessagingService {
           model: User,
           as: 'participants',
           attributes: ['id', 'firstName', 'lastName', 'gender'],
+          include: [
+            {
+              model: UserProfile,
+              attributes: ['id', 'isAvailable'],
+            },
+          ],
         },
       ],
       order: [['messages', 'createdAt', 'ASC']],
@@ -139,19 +154,42 @@ export class MessagingService {
     return conversation;
   }
 
-  async reportMessageAbuse(
-    messageId: string,
+  async findConversation(conversationId: string) {
+    return this.conversationModel.findByPk(conversationId, {
+      include: [
+        {
+          model: Message,
+          as: 'messages',
+          include: [
+            {
+              model: User,
+              as: 'author',
+              attributes: ['id', 'firstName', 'lastName', 'email'],
+            },
+          ],
+          order: [['createdAt', 'DESC']],
+          limit: 1,
+        },
+        {
+          model: User,
+          as: 'participants',
+          attributes: ['id', 'firstName', 'lastName', 'email'],
+        },
+      ],
+    });
+  }
+
+  async reportConversation(
+    conversationId: string,
     reason: string,
     reporterUserId: string
   ) {
-    const message = await this.findOneMessage(messageId);
-    const senderUser = await this.userService.findOne(message.authorId);
+    const conversation = await this.findConversation(conversationId);
     const reporterUser = await this.userService.findOne(reporterUserId);
     const slackMsgConfig: SlackBlockConfig =
-      generateSlackMsgConfigMessageReported(
-        message,
+      generateSlackMsgConfigConversationReported(
+        conversation,
         reason,
-        senderUser,
         reporterUser
       );
     const slackMessage =
@@ -159,7 +197,7 @@ export class MessagingService {
     this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       slackMessage,
-      'Message signalé'
+      'Conversation de la messagerie signalée'
     );
   }
 

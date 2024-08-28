@@ -1,37 +1,28 @@
 import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
-import { Message } from './models';
+import { Conversation } from './models';
 
-export const generateSlackMsgConfigMessageReported = (
-  message: Message,
+export const generateSlackMsgConfigConversationReported = (
+  conversation: Conversation,
   reason: string,
-  senderUser: User,
   reporterUser: User
 ): SlackBlockConfig => {
   return {
-    title: '🚨 Un message a été signalé',
+    title: '🚨 Une conversation a été signalée',
     context: [
       {
-        title: 'Conversation ID',
-        content: message.conversationId,
-      },
-      {
-        title: 'Participants à la conversations\n',
-        content: message.conversation.participants
-          .map((participant: User) => participant.email)
-          .join(', '),
-      },
-      {
-        title: 'Utilisateur ayant signalé le message',
+        title: 'Utilisateur ayant signalé la conversation',
         content: `${reporterUser.firstName} ${reporterUser.lastName} <${reporterUser.email}>`,
       },
     ],
     msgParts: [
       {
-        content: `*Expéditeur du message :*\n${senderUser.email}`,
+        content: `*Conversation signalée* :\n${conversation.id}`,
       },
       {
-        content: `*Contenu du message signalé* :\n${message.content}`,
+        content: `*Participants à la conversation* :\n${conversation.participants
+          .map((participant: User) => participant.email)
+          .join(', ')}`,
       },
       {
         content: `*Raison du signalement* :\n${reason}`,
