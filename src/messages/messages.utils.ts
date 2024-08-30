@@ -2,32 +2,9 @@ import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
 import { InternalMessage } from './models';
 
-export const forbiddenExpressions = [
-  'compte bancaire',
-  'coordonnées bancaires',
-  'carte d’identité',
-  'carte vitale',
-  'numéro de sécurité social',
-  'passeport',
-  'titre de séjour',
-  'chez moi',
-  'sexe',
-  'politique',
-  'carte de résident',
-  'visa',
-  'attestation',
-  'récépissé',
-  'mot de passe',
-  'porno',
-  'complément de revenu',
-  'banque',
-  'de bonne renommée',
-  'collecter les loyers',
-  'vous serez à mon service',
-  ' CB ', // spaces added to exclude words with `cb` inside
-  'carte bleu',
-  'carte bleue',
-];
+export const forbiddenExpressions = process.env.MESSAGING_FORBIDDEN_EXPRESSIONS
+  ? process.env.MESSAGING_FORBIDDEN_EXPRESSIONS.split(',')
+  : [];
 
 export const forbiddenExpressionsInMessage = (message: string): string[] => {
   return forbiddenExpressions.filter((expression) =>
