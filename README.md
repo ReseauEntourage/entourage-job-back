@@ -113,7 +113,7 @@ Pour lancer les migrations :
 yarn db:migrate
 ```
 
-APour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
+Pour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
 utilisateurs :
 
 ```
