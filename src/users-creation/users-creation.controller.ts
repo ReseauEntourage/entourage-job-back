@@ -245,7 +245,11 @@ export class UsersCreationController {
 
       await this.usersCreationService.sendVerificationMail(createdUser);
 
-      await this.usersCreationService.sendProfileCompletionMail(createdUser);
+      await this.usersCreationService.sendOnboardingJ1BAOMail(createdUser);
+
+      await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
+        createdUser
+      );
 
       return createdUser;
     } catch (err) {
