@@ -114,7 +114,7 @@ export class MailsService {
       toEmail: user.email,
       templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
       variables: {
-        firstname: user.firstName,
+        firstName: user.firstName,
         toEmail: user.email,
         token,
       },
