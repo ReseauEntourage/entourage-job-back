@@ -10,7 +10,6 @@ import { BusinessLine } from 'src/common/business-lines/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
-import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { InternalMessage } from 'src/messages/models';
@@ -630,46 +629,18 @@ export class UserProfilesService {
     });
   }
 
-  async sendReportedUserNotification(
-    report: ReportAbuseUserProfileDto,
-    userReporter: User,
-    userReported: User
-  ) {
-    const message = `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`;
-
-    return this.slackService.sendMessage(
-      slackChannels.ENTOURAGE_PRO_MODERATION,
-      this.slackService.generateSlackBlockMsg({
-        title: '🚨 Un profil a été signalé',
-        context: [
-          {
-            title: 'Signalé par',
-            content: `\n${userReporter.firstName} ${userReporter.lastName} <${userReporter.email}>`,
-          },
-        ],
-        msgParts: [
-          {
-            content: `Profil signalé : ${userReported.firstName} ${userReported.lastName} <${userReported.email}>`,
-          },
-          {
-            content: `Raison du signalement : ${report.reason}`,
-          },
-          {
-            content: `Commentaire : ${report.comment}`,
-          },
-        ],
-      }),
-      message
-    );
-  }
-
   async reportAbuse(
     report: ReportAbuseUserProfileDto,
     userReporter: User,
     userReported: User
   ) {
     await Promise.all([
-      this.sendReportedUserNotification(report, userReporter, userReported),
+      this.slackService.sendMessageUserReported(
+        userReporter,
+        userReported,
+        report.reason,
+        report.comment
+      ),
       this.mailsService.sendUserReportedMail(
         report,
         userReporter,

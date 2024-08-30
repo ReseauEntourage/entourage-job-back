@@ -80,7 +80,7 @@ export class UserProfilesController {
     return updatedUserProfile;
   }
 
-  @Post('/:userId/abuse')
+  @Post('/:userId/report')
   async reportAbuse(
     @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
     @Param('userId', new ParseUUIDPipe()) userId: string,
