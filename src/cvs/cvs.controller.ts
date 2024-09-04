@@ -16,6 +16,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import _ from 'lodash';
+import { diskStorage } from 'multer';
 import { RequestWithAuthorizationHeader } from 'src/auth/auth.types';
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
@@ -45,6 +46,25 @@ import { ParseCVPipe } from './dto/parse-cv.pipe';
 @Controller('cv')
 export class CVsController {
   constructor(private readonly cvsService: CVsService) {}
+
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: 'uploads/',
+        filename: (req, file, callback) => {
+          // Conserver le nom original du fichier
+          const originalName = file.originalname;
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(null, `${originalName}-${uniqueSuffix}`);
+        },
+      }),
+    })
+  )
+  @Post('generate-from-file')
+  async createCVFromFile(@UploadedFile() file: Express.Multer.File) {
+    this.cvsService.createCVFromFile(file);
+  }
 
   /*
   This route is used to create a new VERSION of the CV
@@ -168,7 +188,7 @@ export class CVsController {
     return createdCV;
   }
 
-  /* 
+  /*
   récupérer une liste de CVs publiés aléatoirement pour la gallerie
   */
   @Public()

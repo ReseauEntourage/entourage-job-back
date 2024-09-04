@@ -11,6 +11,7 @@ import { PassionsModule } from 'src/common/passions/passions.module';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { SkillsModule } from 'src/common/skills/skills.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
+import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
 import { UsersModule } from 'src/users/users.module';
@@ -55,6 +56,7 @@ import {
     QueuesModule,
     MailsModule,
     AWSModule,
+    OpenAiModule,
   ],
   providers: [CVsService],
   controllers: [CVsController],

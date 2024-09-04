@@ -28,6 +28,7 @@ import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -88,7 +89,8 @@ export class CVsService {
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
-    private s3Service: S3Service
+    private s3Service: S3Service,
+    private openAiService: OpenAiService
   ) {}
 
   async create(createCVDto: CreateCVDto, userId: string) {
@@ -1184,5 +1186,44 @@ export class CVsService {
           24,
       }
     );
+  }
+
+  async createCVFromFile(uploadedFile: Express.Multer.File) {
+    const { path } = uploadedFile;
+    const file = await this.openAiService.createFile(path);
+
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
+    const thread = await this.openAiService.createThread([
+      {
+        role: 'user',
+        content:
+          'Voici un fichier CV. Extrait les informations de ce fichier au format JSON.',
+        attachments: [
+          {
+            file_id: file.id,
+            tools: [
+              {
+                type: 'file_search',
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+    await this.openAiService.runThread(
+      thread.id,
+      'asst_6Lj7MxXUupH2EsGDaCQFsPhC'
+    );
+    const messages = await this.openAiService.listMessages(thread.id);
+    messages.data.forEach((m) => {
+      // eslint-disable-next-line no-console
+      console.log('content', m.content);
+      // eslint-disable-next-line no-console
+      console.log(
+        'attachements',
+        m.attachments.map((a) => a.file_id)
+      );
+    });
   }
 }
