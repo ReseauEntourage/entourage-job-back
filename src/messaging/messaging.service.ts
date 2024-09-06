@@ -57,7 +57,7 @@ export class MessagingService {
               {
                 model: Message,
                 as: 'messages',
-                attributes: ['id', 'content', 'createdAt'],
+                attributes: ['id', 'content', 'createdAt', 'authorId'],
                 include: [
                   {
                     model: User,
@@ -71,12 +71,12 @@ export class MessagingService {
               {
                 model: User,
                 as: 'participants',
-                attributes: ['id', 'firstName', 'lastName'],
+                attributes: ['id', 'firstName', 'lastName', 'role'],
               },
             ],
-            order: [['messages', 'createdAt', 'ASC']],
           },
         ],
+        order: [['conversation', 'createdAt', 'DESC']],
       });
     // Return the conversations
     return conversationParticipants.map((cp) => cp.conversation);
