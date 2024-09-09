@@ -114,6 +114,20 @@ export class MessagingService {
     return this.messageModel.create(createMessageDto);
   }
 
+  async setConversationHasSeen(conversationId: string, userId: string) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findOne({
+        where: {
+          conversationId,
+          userId,
+        },
+      });
+    if (conversationParticipant) {
+      conversationParticipant.seenAt = new Date();
+      await conversationParticipant.save();
+    }
+  }
+
   /**
    * Get a conversation by its ID
    * @param conversationId - The ID of the conversation to fetch
@@ -141,7 +155,7 @@ export class MessagingService {
         {
           model: User,
           as: 'participants',
-          attributes: ['id', 'firstName', 'lastName', 'gender'],
+          attributes: ['id', 'firstName', 'lastName', 'gender', 'role'],
           include: [
             {
               model: UserProfile,
@@ -207,7 +221,7 @@ export class MessagingService {
     );
   }
 
-  private async findOneMessage(messageId: string) {
+  async findOneMessage(messageId: string) {
     return this.messageModel.findByPk(messageId, {
       include: [
         {

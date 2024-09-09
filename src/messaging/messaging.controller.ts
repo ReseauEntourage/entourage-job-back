@@ -33,6 +33,7 @@ export class MessagingController {
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string
   ) {
+    await this.messagingService.setConversationHasSeen(conversationId, userId);
     return this.messagingService.getConversationForUser(conversationId, userId);
   }
 
@@ -61,7 +62,16 @@ export class MessagingController {
         // Add createMessageDto properties without participantIds
         ...createMessageDto,
       });
-      return createdMessage;
+      // Set conversation as seen because the user has sent a message
+      await this.messagingService.setConversationHasSeen(
+        createMessageDto.conversationId,
+        userId
+      );
+      // Fetch the message to return it
+      const message = await this.messagingService.findOneMessage(
+        createdMessage.id
+      );
+      return message;
     } catch (error) {
       console.error(error);
     }
