@@ -5,6 +5,7 @@ import { Conversation } from './models';
 export const generateSlackMsgConfigConversationReported = (
   conversation: Conversation,
   reason: string,
+  comment: string,
   reporterUser: User
 ): SlackBlockConfig => {
   return {
@@ -25,7 +26,10 @@ export const generateSlackMsgConfigConversationReported = (
           .join(', ')}`,
       },
       {
-        content: `*Raison du signalement* :\n${reason}`,
+        content: `Raison du signalement : ${reason}`,
+      },
+      {
+        content: `Commentaire : ${comment}`,
       },
     ],
   };
