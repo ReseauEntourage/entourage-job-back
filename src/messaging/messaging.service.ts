@@ -202,6 +202,7 @@ export class MessagingService {
   async reportConversation(
     conversationId: string,
     reason: string,
+    comment: string,
     reporterUserId: string
   ) {
     const conversation = await this.findConversation(conversationId);
@@ -210,6 +211,7 @@ export class MessagingService {
       generateSlackMsgConfigConversationReported(
         conversation,
         reason,
+        comment,
         reporterUser
       );
     const slackMessage =
