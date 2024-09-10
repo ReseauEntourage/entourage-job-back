@@ -15,6 +15,8 @@ import {
 } from 'src/messages/messages.types';
 import { InternalMessage } from 'src/messages/models';
 import { ExternalMessage } from 'src/messages/models/external-message.model';
+import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto';
+import { Conversation } from 'src/messaging/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
   ContactEmployerType,
@@ -763,6 +765,24 @@ export class MailsService {
         reporterLastName: reporterUser.lastName,
         reporterEmail: reporterUser.email,
         ...reportAbuseUserProfileDto,
+      },
+    });
+  }
+
+  async sendConversationReportedMail(
+    reportConversationDto: ReportConversationDto,
+    reportedConversation: Conversation,
+    reporterUser: User
+  ) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: process.env.ADMIN_NATIONAL || 'contact@entourage-pro.fr',
+      templateId: MailjetTemplates.CONVERSATION_REPORTED_ADMIN,
+      variables: {
+        reporterFirstName: reporterUser.firstName,
+        reporterLastName: reporterUser.lastName,
+        reporterEmail: reporterUser.email,
+        reportedConversationId: reportedConversation.id,
+        ...reportConversationDto,
       },
     });
   }

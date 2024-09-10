@@ -10,8 +10,8 @@ import {
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { CreateMessagePipe, CreateMessageDto } from './dto';
-import { ReportDto } from './dto/report.dto';
-import { ReportAbusePipe } from './dto/report.pipe';
+import { ReportConversationDto } from './dto/report-conversation.dto';
+import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { MessagingService } from './messaging.service';
 
 @ApiBearerAuth()
@@ -82,12 +82,11 @@ export class MessagingController {
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
     @Body(new ReportAbusePipe())
-    reportDto: ReportDto
+    reportConversationDto: ReportConversationDto
   ) {
     return this.messagingService.reportConversation(
       conversationId,
-      reportDto.reason,
-      reportDto.comment,
+      reportConversationDto,
       userId
     );
   }
