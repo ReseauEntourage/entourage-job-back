@@ -6,9 +6,11 @@ import {
   SlackBlockConfig,
   slackChannels,
 } from 'src/external-services/slack/slack.types';
+import { MailsService } from 'src/mails/mails.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { ReportConversationDto } from './dto/report-conversation.dto';
 import { generateSlackMsgConfigConversationReported } from './messaging.utils';
 import { ConversationParticipant } from './models';
 import { Conversation } from './models/conversation.model';
@@ -24,7 +26,8 @@ export class MessagingService {
     @InjectModel(ConversationParticipant)
     private conversationParticipantModel: typeof ConversationParticipant,
     private slackService: SlackService,
-    private userService: UsersService
+    private userService: UsersService,
+    private mailsService: MailsService
   ) {}
 
   /**
@@ -201,8 +204,7 @@ export class MessagingService {
 
   async reportConversation(
     conversationId: string,
-    reason: string,
-    comment: string,
+    reportConversationDto: ReportConversationDto,
     reporterUserId: string
   ) {
     const conversation = await this.findConversation(conversationId);
@@ -210,8 +212,8 @@ export class MessagingService {
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
-        reason,
-        comment,
+        reportConversationDto.reason,
+        reportConversationDto.comment,
         reporterUser
       );
     const slackMessage =
@@ -220,6 +222,11 @@ export class MessagingService {
       slackChannels.ENTOURAGE_PRO_MODERATION,
       slackMessage,
       'Conversation de la messagerie signalée'
+    );
+    this.mailsService.sendConversationReportedMail(
+      reportConversationDto,
+      conversation,
+      reporterUser
     );
   }
 
