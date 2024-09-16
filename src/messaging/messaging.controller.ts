@@ -38,7 +38,7 @@ export class MessagingController {
   }
 
   @Post('messages')
-  async createInternalMessage(
+  async postMessage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateMessagePipe())
     createMessageDto: CreateMessageDto
