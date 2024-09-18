@@ -5,8 +5,10 @@ import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
 import fetch from 'node-fetch';
+import { TextContentBlock } from 'openai/resources/beta/threads/messages';
 import { col, fn, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
+import z from 'zod';
 import { Ambition } from 'src/common/ambitions/models';
 import {
   BusinessLineFilters,
@@ -1216,14 +1218,61 @@ export class CVsService {
       'asst_6Lj7MxXUupH2EsGDaCQFsPhC'
     );
     const messages = await this.openAiService.listMessages(thread.id);
-    messages.data.forEach((m) => {
-      // eslint-disable-next-line no-console
-      console.log('content', m.content);
-      // eslint-disable-next-line no-console
-      console.log(
-        'attachements',
-        m.attachments.map((a) => a.file_id)
-      );
+    // retrieve last message, as string JSON
+    const newMessage = (messages.data[0].content[0] as TextContentBlock).text
+      .value;
+    // Convert to string
+    const CvDataJson = z.object({
+      story: z.string(),
+      catchphrase: z.string(),
+      passion: z.array(
+        z.object({
+          name: z.string(),
+        })
+      ),
+      skills: z.array(
+        z.object({
+          name: z.string(),
+        })
+      ),
+      ambitions: z.array(
+        z.object({
+          name: z.string(),
+        })
+      ),
+      businessLines: z.array(
+        z.object({
+          name: z.string(),
+        })
+      ),
+      experiences: z.array(
+        z.object({
+          description: z.string(),
+          location: z.string(),
+          company: z.string(),
+          title: z.string(),
+          dateStartISO: z.string(),
+          endStartISO: z.string(),
+          skills: z.array(z.string()),
+        })
+      ),
+      formations: z.array(
+        z.object({
+          description: z.string(),
+          location: z.string(),
+          institution: z.string(),
+          title: z.string(),
+          dateStartISO: z.string(),
+          endStartISO: z.string(),
+          skills: z.array(z.string()),
+        })
+      ),
     });
+    const data = await this.openAiService.requestConvertDataIntoJSON(
+      newMessage,
+      CvDataJson,
+      'cvData'
+    );
+    return data;
   }
 }

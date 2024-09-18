@@ -47,6 +47,7 @@ import { ParseCVPipe } from './dto/parse-cv.pipe';
 export class CVsController {
   constructor(private readonly cvsService: CVsService) {}
 
+  @ApiBearerAuth()
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -54,16 +55,54 @@ export class CVsController {
         filename: (req, file, callback) => {
           // Conserver le nom original du fichier
           const originalName = file.originalname;
+          const ext = file.originalname.split('.').pop();
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
-          callback(null, `${originalName}-${uniqueSuffix}`);
+          callback(null, `${originalName}-${uniqueSuffix}.${ext}`);
         },
       }),
     })
   )
   @Post('generate-from-file')
-  async createCVFromFile(@UploadedFile() file: Express.Multer.File) {
-    this.cvsService.createCVFromFile(file);
+  async createCVFromFile(
+    @UploadedFile() file: Express.Multer.File,
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    this.cvsService.createCVFromFile(file).then(async (cv) => {
+      await this.cvsService.create(
+        {
+          urlImg: `images/${userId}.${CVStatuses.PROGRESS}.jpg`,
+          UserId: userId,
+          passions: [],
+          formations: [],
+          experiences: [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          skills: cv.skills.map((skill: any, idx: number) => {
+            return {
+              name: skill.name,
+              order: idx,
+            };
+          }),
+          languages: [],
+          hobbies: [],
+          status: CVStatuses.PROGRESS.value,
+          intro: cv.intro,
+          catchphrase: cv.catchphrase,
+          availability: 'ASAP',
+          transport: 'B',
+          story: cv.story,
+          businessLines: [],
+          contracts: [],
+          ambitions: [],
+          reviews: [],
+          createdAt: new Date(),
+          UpdatedAt: new Date(),
+          deletedAt: null,
+        } as unknown as CreateCVDto,
+        userId
+      );
+    });
+    return 'processing';
   }
 
   /*
