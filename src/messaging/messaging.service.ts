@@ -74,7 +74,7 @@ export class MessagingService {
               {
                 model: User,
                 as: 'participants',
-                attributes: ['id', 'firstName', 'lastName', 'role'],
+                attributes: ['id', 'firstName', 'lastName', 'role', 'zone'],
               },
             ],
           },
@@ -114,7 +114,24 @@ export class MessagingService {
    * @param message - The message to create
    */
   async createMessage(createMessageDto: Partial<Message>) {
-    return this.messageModel.create(createMessageDto);
+    const createdMessage = await this.messageModel.create(createMessageDto);
+    // Set conversation as seen because the user has sent a message
+    await this.setConversationHasSeen(
+      createMessageDto.conversationId,
+      createMessageDto.authorId
+    );
+    const message = await this.findOneMessage(createdMessage.id);
+    // const conversation = await this.findConversation(
+    //   createdMessage.conversationId
+    // );
+
+    // Send notification message received to the other participants
+    const otherParticipants = message.conversation.participants.filter(
+      (participant) => participant.id !== createMessageDto.authorId
+    );
+    this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+    // Fetch the message to return it
+    return message;
   }
 
   async setConversationHasSeen(conversationId: string, userId: string) {
@@ -241,14 +258,21 @@ export class MessagingService {
             {
               model: User,
               as: 'participants',
-              attributes: ['id', 'firstName', 'lastName', 'email'],
+              attributes: [
+                'id',
+                'firstName',
+                'lastName',
+                'email',
+                'role',
+                'zone',
+              ],
             },
           ],
         },
         {
           model: User,
           as: 'author',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+          attributes: ['id', 'firstName', 'lastName', 'email', 'role', 'zone'],
         },
       ],
     });
