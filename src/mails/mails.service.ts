@@ -16,7 +16,7 @@ import {
 import { InternalMessage } from 'src/messages/models';
 import { ExternalMessage } from 'src/messages/models/external-message.model';
 import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto';
-import { Conversation } from 'src/messaging/models';
+import { Conversation, Message } from 'src/messaging/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
   ContactEmployerType,
@@ -785,6 +785,27 @@ export class MailsService {
         ...reportConversationDto,
       },
     });
+  }
+  async sendNewMessageNotifMail(message: Message, addressees: User[]) {
+    const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${message.authorId}`;
+
+    await Promise.all(
+      addressees.map((addressee) => {
+        return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+          toEmail: addressee.email,
+          templateId: MailjetTemplates.MESSAGING_MESSAGE,
+          variables: {
+            senderId: message.authorId,
+            senderName: `${message.author.firstName} ${message.author.lastName}`,
+            senderRole: message.author.role,
+            addresseeName: `${addressee.firstName} ${addressee.lastName}`,
+            zone: addressee.zone,
+            role: addressee.role,
+            conversationUrl,
+          },
+        });
+      })
+    );
   }
 }
 

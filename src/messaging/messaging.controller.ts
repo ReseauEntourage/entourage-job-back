@@ -57,21 +57,11 @@ export class MessagingController {
     delete createMessageDto.participantIds;
     try {
       // Remove the participantIds property
-      const createdMessage = await this.messagingService.createMessage({
+      return await this.messagingService.createMessage({
         authorId: userId,
         // Add createMessageDto properties without participantIds
         ...createMessageDto,
       });
-      // Set conversation as seen because the user has sent a message
-      await this.messagingService.setConversationHasSeen(
-        createMessageDto.conversationId,
-        userId
-      );
-      // Fetch the message to return it
-      const message = await this.messagingService.findOneMessage(
-        createdMessage.id
-      );
-      return message;
     } catch (error) {
       console.error(error);
     }
