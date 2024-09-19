@@ -9,6 +9,8 @@ import { BusinessLineValue } from 'src/common/business-lines/business-lines.type
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { SlackService } from 'src/external-services/slack/slack.service';
+import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
@@ -21,6 +23,7 @@ import {
   UserRoles,
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
+import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   HelpNeed,
   HelpOffer,
@@ -71,7 +74,9 @@ export class UserProfilesService {
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
-    private messagesService: MessagesService
+    private messagesService: MessagesService,
+    private slackService: SlackService,
+    private mailsService: MailsService
   ) {}
 
   async findOne(id: string) {
@@ -622,5 +627,25 @@ export class UserProfilesService {
       where: { UserId: userId },
       individualHooks: true,
     });
+  }
+
+  async reportAbuse(
+    report: ReportAbuseUserProfileDto,
+    userReporter: User,
+    userReported: User
+  ) {
+    await Promise.all([
+      this.slackService.sendMessageUserReported(
+        userReporter,
+        userReported,
+        report.reason,
+        report.comment
+      ),
+      this.mailsService.sendUserReportedMail(
+        report,
+        userReporter,
+        userReported
+      ),
+    ]);
   }
 }

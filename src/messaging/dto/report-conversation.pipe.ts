@@ -6,10 +6,11 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { ReportAbuseDto } from './report-abuse.dto';
+import { ReportConversationDto } from './report-conversation.dto';
 
 export class ReportAbusePipe
-  implements PipeTransform<ReportAbuseDto, Promise<ReportAbuseDto>>
+  implements
+    PipeTransform<ReportConversationDto, Promise<ReportConversationDto>>
 {
   private static toValidate(metatype: Function): boolean {
     const types: Function[] = [String, Boolean, Number, Array, Object];
@@ -17,9 +18,9 @@ export class ReportAbusePipe
   }
 
   async transform(
-    value: ReportAbuseDto,
+    value: ReportConversationDto,
     { metatype }: ArgumentMetadata
-  ): Promise<ReportAbuseDto> {
+  ): Promise<ReportConversationDto> {
     if (!metatype || !ReportAbusePipe.toValidate(metatype)) {
       return value;
     }

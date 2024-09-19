@@ -6,9 +6,11 @@ import {
   SlackBlockConfig,
   slackChannels,
 } from 'src/external-services/slack/slack.types';
+import { MailsService } from 'src/mails/mails.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { ReportConversationDto } from './dto/report-conversation.dto';
 import { generateSlackMsgConfigConversationReported } from './messaging.utils';
 import { ConversationParticipant } from './models';
 import { Conversation } from './models/conversation.model';
@@ -24,7 +26,8 @@ export class MessagingService {
     @InjectModel(ConversationParticipant)
     private conversationParticipantModel: typeof ConversationParticipant,
     private slackService: SlackService,
-    private userService: UsersService
+    private userService: UsersService,
+    private mailsService: MailsService
   ) {}
 
   /**
@@ -57,7 +60,7 @@ export class MessagingService {
               {
                 model: Message,
                 as: 'messages',
-                attributes: ['id', 'content', 'createdAt'],
+                attributes: ['id', 'content', 'createdAt', 'authorId'],
                 include: [
                   {
                     model: User,
@@ -71,12 +74,12 @@ export class MessagingService {
               {
                 model: User,
                 as: 'participants',
-                attributes: ['id', 'firstName', 'lastName'],
+                attributes: ['id', 'firstName', 'lastName', 'role', 'zone'],
               },
             ],
-            order: [['messages', 'createdAt', 'ASC']],
           },
         ],
+        order: [['conversation', 'createdAt', 'DESC']],
       });
     // Return the conversations
     return conversationParticipants.map((cp) => cp.conversation);
@@ -111,7 +114,38 @@ export class MessagingService {
    * @param message - The message to create
    */
   async createMessage(createMessageDto: Partial<Message>) {
-    return this.messageModel.create(createMessageDto);
+    const createdMessage = await this.messageModel.create(createMessageDto);
+    // Set conversation as seen because the user has sent a message
+    await this.setConversationHasSeen(
+      createMessageDto.conversationId,
+      createMessageDto.authorId
+    );
+    const message = await this.findOneMessage(createdMessage.id);
+    // const conversation = await this.findConversation(
+    //   createdMessage.conversationId
+    // );
+
+    // Send notification message received to the other participants
+    const otherParticipants = message.conversation.participants.filter(
+      (participant) => participant.id !== createMessageDto.authorId
+    );
+    this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+    // Fetch the message to return it
+    return message;
+  }
+
+  async setConversationHasSeen(conversationId: string, userId: string) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findOne({
+        where: {
+          conversationId,
+          userId,
+        },
+      });
+    if (conversationParticipant) {
+      conversationParticipant.seenAt = new Date();
+      await conversationParticipant.save();
+    }
   }
 
   /**
@@ -141,7 +175,7 @@ export class MessagingService {
         {
           model: User,
           as: 'participants',
-          attributes: ['id', 'firstName', 'lastName', 'gender'],
+          attributes: ['id', 'firstName', 'lastName', 'gender', 'role'],
           include: [
             {
               model: UserProfile,
@@ -187,7 +221,7 @@ export class MessagingService {
 
   async reportConversation(
     conversationId: string,
-    reason: string,
+    reportConversationDto: ReportConversationDto,
     reporterUserId: string
   ) {
     const conversation = await this.findConversation(conversationId);
@@ -195,7 +229,8 @@ export class MessagingService {
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
-        reason,
+        reportConversationDto.reason,
+        reportConversationDto.comment,
         reporterUser
       );
     const slackMessage =
@@ -205,9 +240,14 @@ export class MessagingService {
       slackMessage,
       'Conversation de la messagerie signalée'
     );
+    this.mailsService.sendConversationReportedMail(
+      reportConversationDto,
+      conversation,
+      reporterUser
+    );
   }
 
-  private async findOneMessage(messageId: string) {
+  async findOneMessage(messageId: string) {
     return this.messageModel.findByPk(messageId, {
       include: [
         {
@@ -218,14 +258,21 @@ export class MessagingService {
             {
               model: User,
               as: 'participants',
-              attributes: ['id', 'firstName', 'lastName', 'email'],
+              attributes: [
+                'id',
+                'firstName',
+                'lastName',
+                'email',
+                'role',
+                'zone',
+              ],
             },
           ],
         },
         {
           model: User,
           as: 'author',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+          attributes: ['id', 'firstName', 'lastName', 'email', 'role', 'zone'],
         },
       ],
     });

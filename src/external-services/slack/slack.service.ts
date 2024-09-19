@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { App, Block, KnownBlock } from '@slack/bolt';
+import { User } from 'src/users/models';
 import {
   SlackBlockConfig,
+  slackChannels,
   SlackMsgAction,
   SlackMsgContext,
   SlackMsgContextImage,
@@ -43,6 +45,24 @@ export class SlackService {
     }
   };
 
+  sendMessageUserReported = async (
+    userReporter: User,
+    userReported: User,
+    reason: string,
+    comment: string
+  ): Promise<void> => {
+    return this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      this.generateProfileReportedBlocks(
+        userReporter,
+        userReported,
+        reason,
+        comment
+      ),
+      `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
+    );
+  };
+
   /**
    * Generate a the slack blocks for a message
    * @param param0 message configuration
@@ -81,6 +101,46 @@ export class SlackService {
     }
     return blocksBuffer;
   };
+
+  /**
+   * Generate a slack message for a profile reported
+   * @param userReporter - The user who reported
+   * @param userReported - The user who was reported
+   * @param reason - The reason of the report
+   * @param comment - The comment of the report
+   * @returns blocks for the message
+   */
+  generateProfileReportedBlocks = (
+    userReporter: User,
+    userReported: User,
+    reason: string,
+    comment: string
+  ) => {
+    return this.generateSlackBlockMsg({
+      title: '🚨 Un profil a été signalé',
+      context: [
+        {
+          title: 'Signalé par',
+          content: `\n${userReporter.firstName} ${userReporter.lastName} <${userReporter.email}>`,
+        },
+      ],
+      msgParts: [
+        {
+          content: `Profil signalé : ${userReported.firstName} ${userReported.lastName} <${userReported.email}>`,
+        },
+        {
+          content: `Raison du signalement : ${reason}`,
+        },
+        {
+          content: `Commentaire : ${comment}`,
+        },
+      ],
+    });
+  };
+
+  /***************** */
+  /* Private methods */
+  /***************** */
 
   /**
    * Generate title block
