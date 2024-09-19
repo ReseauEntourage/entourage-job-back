@@ -25,6 +25,7 @@ import {
 import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/opportunities.utils';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import {
   CandidateUserRoles,
@@ -739,6 +740,29 @@ export class MailsService {
         zone: senderUser.zone,
         subject: message.subject,
         role: getRoleString(senderUser),
+      },
+    });
+  }
+
+  async sendUserReportedMail(
+    reportAbuseUserProfileDto: ReportAbuseUserProfileDto,
+    reportedUser: User,
+    reporterUser: User
+  ) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(reportedUser.zone);
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: candidatesAdminMail,
+      templateId: MailjetTemplates.USER_REPORTED_ADMIN,
+      replyTo: candidatesAdminMail,
+      variables: {
+        reportedFirstName: reportedUser.firstName,
+        reportedLastName: reportedUser.lastName,
+        reportedEmail: reportedUser.email,
+        reporterFirstName: reporterUser.firstName,
+        reporterLastName: reporterUser.lastName,
+        reporterEmail: reporterUser.email,
+        ...reportAbuseUserProfileDto,
       },
     });
   }
