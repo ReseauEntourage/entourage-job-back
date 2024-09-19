@@ -15,6 +15,8 @@ import {
 } from 'src/messages/messages.types';
 import { InternalMessage } from 'src/messages/models';
 import { ExternalMessage } from 'src/messages/models/external-message.model';
+import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto';
+import { Conversation, Message } from 'src/messaging/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import {
   ContactEmployerType,
@@ -25,6 +27,7 @@ import {
 import { getMailjetVariablesForPrivateOrPublicOffer } from 'src/opportunities/opportunities.utils';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import {
   CandidateUserRoles,
@@ -741,6 +744,68 @@ export class MailsService {
         role: getRoleString(senderUser),
       },
     });
+  }
+
+  async sendUserReportedMail(
+    reportAbuseUserProfileDto: ReportAbuseUserProfileDto,
+    reportedUser: User,
+    reporterUser: User
+  ) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(reportedUser.zone);
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: candidatesAdminMail,
+      templateId: MailjetTemplates.USER_REPORTED_ADMIN,
+      replyTo: candidatesAdminMail,
+      variables: {
+        reportedFirstName: reportedUser.firstName,
+        reportedLastName: reportedUser.lastName,
+        reportedEmail: reportedUser.email,
+        reporterFirstName: reporterUser.firstName,
+        reporterLastName: reporterUser.lastName,
+        reporterEmail: reporterUser.email,
+        ...reportAbuseUserProfileDto,
+      },
+    });
+  }
+
+  async sendConversationReportedMail(
+    reportConversationDto: ReportConversationDto,
+    reportedConversation: Conversation,
+    reporterUser: User
+  ) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: process.env.ADMIN_NATIONAL || 'contact@entourage-pro.fr',
+      templateId: MailjetTemplates.CONVERSATION_REPORTED_ADMIN,
+      variables: {
+        reporterFirstName: reporterUser.firstName,
+        reporterLastName: reporterUser.lastName,
+        reporterEmail: reporterUser.email,
+        reportedConversationId: reportedConversation.id,
+        ...reportConversationDto,
+      },
+    });
+  }
+  async sendNewMessageNotifMail(message: Message, addressees: User[]) {
+    const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${message.authorId}`;
+
+    await Promise.all(
+      addressees.map((addressee) => {
+        return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+          toEmail: addressee.email,
+          templateId: MailjetTemplates.MESSAGING_MESSAGE,
+          variables: {
+            senderId: message.authorId,
+            senderName: `${message.author.firstName} ${message.author.lastName}`,
+            senderRole: message.author.role,
+            addresseeName: `${addressee.firstName} ${addressee.lastName}`,
+            zone: addressee.zone,
+            role: addressee.role,
+            conversationUrl,
+          },
+        });
+      })
+    );
   }
 }
 

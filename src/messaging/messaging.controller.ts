@@ -10,8 +10,8 @@ import {
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { CreateMessagePipe, CreateMessageDto } from './dto';
-import { ReportAbuseDto } from './dto/report-abuse.dto';
-import { ReportAbusePipe } from './dto/report-abuse.pipe';
+import { ReportConversationDto } from './dto/report-conversation.dto';
+import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { MessagingService } from './messaging.service';
 
 @ApiBearerAuth()
@@ -33,11 +33,12 @@ export class MessagingController {
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string
   ) {
+    await this.messagingService.setConversationHasSeen(conversationId, userId);
     return this.messagingService.getConversationForUser(conversationId, userId);
   }
 
   @Post('messages')
-  async createInternalMessage(
+  async postMessage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateMessagePipe())
     createMessageDto: CreateMessageDto
@@ -56,27 +57,26 @@ export class MessagingController {
     delete createMessageDto.participantIds;
     try {
       // Remove the participantIds property
-      const createdMessage = await this.messagingService.createMessage({
+      return await this.messagingService.createMessage({
         authorId: userId,
         // Add createMessageDto properties without participantIds
         ...createMessageDto,
       });
-      return createdMessage;
     } catch (error) {
       console.error(error);
     }
   }
 
-  @Post('conversation/:conversationId/report')
+  @Post('conversations/:conversationId/report')
   async reportMessageAbuse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
     @Body(new ReportAbusePipe())
-    reportAbuseDto: ReportAbuseDto
+    reportConversationDto: ReportConversationDto
   ) {
     return this.messagingService.reportConversation(
       conversationId,
-      reportAbuseDto.reason,
+      reportConversationDto,
       userId
     );
   }
