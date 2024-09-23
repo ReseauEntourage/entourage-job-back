@@ -7,13 +7,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { CreateMessagePipe, CreateMessageDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { MessagingService } from './messaging.service';
 
+@ApiTags('Messaging')
 @ApiBearerAuth()
 @Controller('messaging')
 export class MessagingController {

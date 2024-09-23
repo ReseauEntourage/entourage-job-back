@@ -11,7 +11,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { User } from 'src/users/models';
@@ -19,6 +19,7 @@ import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
+@ApiTags('Auth')
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
