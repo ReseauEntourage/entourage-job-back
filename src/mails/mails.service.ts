@@ -128,7 +128,11 @@ export class MailsService {
       {
         toEmail: user.email,
         templateId: MailjetTemplates.ONBOARDING_J3_PROFILE_COMPLETION,
-        variables: { firstName: user.firstName },
+        variables: {
+          firstName: user.firstName,
+          role: getRoleString(user),
+          zone: user.zone,
+        },
       },
       {
         //trois jours après la création du compte
