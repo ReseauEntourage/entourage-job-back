@@ -127,7 +127,7 @@ export class MailsService {
       Jobs.SEND_MAIL,
       {
         toEmail: user.email,
-        templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+        templateId: MailjetTemplates.USER_PROFILE_COMPLETION,
         variables: { firstName: user.firstName },
       },
       {
