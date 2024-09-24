@@ -201,7 +201,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(user);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -226,7 +226,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(user);
           expect(response.status).toBe(201);
           expect(response.body).toEqual(
@@ -248,7 +248,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(wrongData);
           expect(response.status).toBe(400);
         });
@@ -261,7 +261,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(wrongData);
           expect(response.status).toBe(400);
         });
@@ -288,7 +288,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send(candidate);
           expect(response.status).toBe(403);
         });
@@ -322,7 +322,7 @@ describe('Users', () => {
           const response: APIResponse<UsersCreationController['createUser']> =
             await request(server)
               .post(`${route}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send(candidate);
           expect(response.status).toBe(409);
         });
@@ -347,7 +347,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send(candidate);
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
@@ -392,7 +392,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...candidate, userToLinkId: coach.id });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
@@ -426,7 +426,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...candidate, userToLinkId: uuid() });
             expect(response.status).toBe(404);
           });
@@ -447,7 +447,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send(coach);
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
@@ -492,7 +492,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...coach, userToLinkId: candidate.id });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
@@ -524,7 +524,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...coach, userToLinkId: uuid() });
 
             expect(response.status).toBe(404);
@@ -556,7 +556,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...candidate, userToLinkId: id });
             expect(response.status).toBe(400);
           });
@@ -582,7 +582,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...coach, userToLinkId: id });
             expect(response.status).toBe(400);
           });
@@ -618,7 +618,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   userToLinkId: [coach1Id, coach2Id],
@@ -652,7 +652,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   userToLinkId: [candidate1Id, candidate2Id],
@@ -680,7 +680,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   OrganizationId: organization.id,
@@ -703,7 +703,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   OrganizationId: organization.id,
@@ -738,7 +738,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   userToLinkId: externalCoach.id,
@@ -767,7 +767,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   userToLinkId: externalCandidate.id,
@@ -806,7 +806,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...candidate, OrganizationId: organization.id });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
@@ -902,7 +902,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...restCandidate,
                   OrganizationId: organization.id,
@@ -973,7 +973,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   OrganizationId: organization.id,
@@ -1011,7 +1011,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...coach, OrganizationId: organization.id });
             expect(response.status).toBe(201);
             expect(response.body).toEqual(
@@ -1075,7 +1075,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   OrganizationId: organization.id,
@@ -1120,7 +1120,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   OrganizationId: organization.id,
@@ -1161,7 +1161,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   OrganizationId: organization.id,
@@ -1200,7 +1200,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   OrganizationId: organization.id,
@@ -1248,7 +1248,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   OrganizationId: organization.id,
@@ -1277,7 +1277,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                 });
@@ -1303,7 +1303,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                 });
@@ -1359,7 +1359,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...candidate,
                   OrganizationId: organization.id,
@@ -1416,7 +1416,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...coach,
                   OrganizationId: organization.id,
@@ -1453,7 +1453,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...externalCandidate,
                   OrganizationId: organization.id,
@@ -1489,7 +1489,7 @@ describe('Users', () => {
             const response: APIResponse<UsersCreationController['createUser']> =
               await request(server)
                 .post(`${route}`)
-                .set('authorization', `Token ${loggedInAdmin.token}`)
+                .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({
                   ...externalCoach,
                   OrganizationId: organization.id,
@@ -1892,7 +1892,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.email).toEqual(loggedInCandidate.user.email);
         });
@@ -1900,7 +1900,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCoach.user.email}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.email).toEqual(loggedInCoach.user.email);
         });
@@ -1908,14 +1908,14 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and get a user by email when logged in as admin', async () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           const receivedUser = response.body;
           expect(receivedUser.email).toEqual(loggedInCandidate.user.email);
@@ -1924,7 +1924,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.id).toEqual(loggedInCandidate.user.id);
         });
@@ -1932,7 +1932,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${uuid()}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(404);
         });
       });
@@ -1961,7 +1961,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
               .get(`${route}/candidate`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .query({
                 coachId: loggedInCoach.user.id,
               });
@@ -1972,7 +1972,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
               .get(`${route}/candidate`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .query({
                 candidateId: loggedInCandidate.user.id,
               });
@@ -1994,7 +1994,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
               .get(`${route}/candidate`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .query({
                 candidateId: loggedInCandidate.user.id,
               });
@@ -2017,7 +2017,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
               .get(`${route}/candidate`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .query({
                 coachId: loggedInCoach.user.id,
               });
@@ -2132,7 +2132,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
               .get(`${route}/candidate`)
-              .set('authorization', `Token ${externalLoggedInCoach.token}`)
+              .set('authorization', `Bearer ${externalLoggedInCoach.token}`)
               .query({
                 coachId: externalLoggedInCoach.user.id,
               });
@@ -2167,7 +2167,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
               .get(`${route}/candidate`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(403);
         });
@@ -2289,7 +2289,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?query=${loggedInCandidate.user.firstName}&role[]=${UserRoles.CANDIDATE}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body).toStrictEqual([
@@ -2312,7 +2312,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
               .get(`${route}/search?&role[]=${UserRoles.CANDIDATE}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2328,7 +2328,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
               .get(`${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2348,7 +2348,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&role[]=${UserRoles.CANDIDATE}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2365,7 +2365,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
               .get(`${route}/search?&role[]=${UserRoles.COACH}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2381,7 +2381,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
               .get(`${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2401,7 +2401,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2417,7 +2417,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2432,7 +2432,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(expectedUsersId).toEqual(
@@ -2446,7 +2446,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?&role[]=${UserRoles.CANDIDATE}&organizationId=${organization.id}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(0);
@@ -2457,7 +2457,7 @@ describe('Users', () => {
               .get(
                 `${route}/search?&role[]=${UserRoles.COACH}&organizationId=${organization.id}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(0);
@@ -2467,14 +2467,14 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
               .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403 if user is logged in as coach', async () => {
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
               .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -2538,7 +2538,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['findMembers']> =
             await request(server)
               .get(`${route}/members`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         describe('/members?limit=&offset=&role[]= - Get paginated and alphabetically sorted users filtered by role', () => {
@@ -2595,7 +2595,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -2611,7 +2611,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=3&offset=0&role[]=${UserRoles.COACH}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -2629,7 +2629,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -2645,7 +2645,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=2&offset=2&role[]=${UserRoles.COACH}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -2690,7 +2690,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCandidates.map(({ id }) => id)).toEqual(
@@ -2721,7 +2721,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCoaches.map(({ id }) => id)).toEqual(
@@ -2773,7 +2773,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
@@ -2817,7 +2817,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCoachesIds).toEqual(
@@ -2855,7 +2855,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&hidden[]=true`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(hiddenCandidates.map(({ id }) => id)).toEqual(
@@ -2892,7 +2892,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&employed[]=true`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(employedCandidates.map(({ id }) => id)).toEqual(
@@ -2991,7 +2991,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
@@ -3132,7 +3132,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
@@ -3212,7 +3212,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&associatedUser[]=false`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(notAssociatedUserCandidates.map(({ id }) => id)).toEqual(
@@ -3254,7 +3254,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&associatedUser[]=false`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(notAssociatedUserCoaches.map(({ id }) => id)).toEqual(
@@ -3319,7 +3319,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&cvStatus[]=${CVStatuses.PUBLISHED.value}&businessLines[]=rh&associatedUser[]=true`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCandidatesIds).toEqual(
@@ -3363,7 +3363,7 @@ describe('Users', () => {
                 .get(
                   `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&role[]=${UserRoles.COACH_EXTERNAL}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCoachesIds).toEqual(
@@ -3381,7 +3381,7 @@ describe('Users', () => {
             UsersController['countSubmittedCVMembers']
           > = await request(server)
             .get(`${route}/members/count`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and count of members with pending CVs', async () => {
@@ -3426,7 +3426,7 @@ describe('Users', () => {
             UsersController['countSubmittedCVMembers']
           > = await request(server)
             .get(`${route}/members/count`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
           expect(response.body.pendingCVs).toBe(2);
         });
@@ -3461,7 +3461,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
               .get(`${route}/profile/${randomUser.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
+              .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(
@@ -3483,7 +3483,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
               .get(`${route}/profile/${randomUser.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
+              .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -3515,7 +3515,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
               .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
+              .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
@@ -3545,7 +3545,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
               .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
+              .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(
@@ -3571,7 +3571,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
               .get(`${route}/profile/${coach.id}`)
-              .set('authorization', `Token ${loggedInUser.token}`);
+              .set('authorization', `Bearer ${loggedInUser.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(
@@ -3639,7 +3639,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if admin gets his recommendations', async () => {
@@ -3647,7 +3647,7 @@ describe('Users', () => {
             UserProfilesController['findRecommendationsByUserId']
           > = await request(server)
             .get(`${route}/profile/recommendations/${loggedInAdmin.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it("Should return 403, if external coach get his candidate's recommendations", async () => {
@@ -3657,7 +3657,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInExternalCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInExternalCoach.token}`);
+            .set('authorization', `Bearer ${loggedInExternalCoach.token}`);
 
           expect(response.status).toBe(403);
         });
@@ -3668,7 +3668,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInExternalCoach.user.id}`
             )
-            .set('authorization', `Token ${loggedInExternalCoach.token}`);
+            .set('authorization', `Bearer ${loggedInExternalCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if coach gets recommendations for another user', async () => {
@@ -3678,7 +3678,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if candidate gets recommendations for another user', async () => {
@@ -3686,7 +3686,7 @@ describe('Users', () => {
             UserProfilesController['findRecommendationsByUserId']
           > = await request(server)
             .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
@@ -3738,7 +3738,7 @@ describe('Users', () => {
             UserProfilesController['findRecommendationsByUserId']
           > = await request(server)
             .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             usersToRecommend.map((user) =>
@@ -3836,7 +3836,7 @@ describe('Users', () => {
             UserProfilesController['findRecommendationsByUserId']
           > = await request(server)
             .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             usersToRecommend.map((user) =>
@@ -4224,7 +4224,7 @@ describe('Users', () => {
             UserProfilesController['findRecommendationsByUserId']
           > = await request(server)
             .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             newUsersToRecommend.map((user) =>
@@ -4285,7 +4285,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             usersToRecommend.map((user) =>
@@ -4385,7 +4385,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             usersToRecommend.map((user) =>
@@ -4775,7 +4775,7 @@ describe('Users', () => {
             .get(
               `${route}/profile/recommendations/${loggedInCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             newUsersToRecommend.map((user) =>
@@ -4803,7 +4803,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findAll']> =
             await request(server)
               .get(`${route}/profile`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
         it('Should return 200 if user is logged in as admin', async () => {
@@ -4815,7 +4815,7 @@ describe('Users', () => {
               .get(
                 `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
               )
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(200);
         });
         it('Should return 200 if user is logged in as candidate', async () => {
@@ -4827,7 +4827,7 @@ describe('Users', () => {
               .get(
                 `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
         });
         it('Should return 200 if user is logged in as coach', async () => {
@@ -4839,7 +4839,7 @@ describe('Users', () => {
               .get(
                 `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
               )
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
         });
         it('Should return 400 if no offset or limit parameter', async () => {
@@ -4849,7 +4849,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findAll']> =
             await request(server)
               .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
         it('Should return 400 if no role parameter', async () => {
@@ -4859,7 +4859,7 @@ describe('Users', () => {
           const response: APIResponse<UserProfilesController['findAll']> =
             await request(server)
               .get(`${route}/profile?offset=0&limit=25`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
         it('Should return 400 if external coach in role parameter', async () => {
@@ -4871,7 +4871,7 @@ describe('Users', () => {
               .get(
                 `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
               )
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(400);
         });
         describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
@@ -4985,7 +4985,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=1&offset=5&role[]=${UserRoles.CANDIDATE}`
                 )
-                .set('authorization', `Token ${loggedInCandidate.token}`);
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(1);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -5000,7 +5000,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
                 )
-                .set('authorization', `Token ${loggedInCandidate.token}`);
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -5026,7 +5026,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=3&offset=0&role[]=${UserRoles.COACH}`
                 )
-                .set('authorization', `Token ${loggedInCandidate.token}`);
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(3);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -5056,7 +5056,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
                 )
-                .set('authorization', `Token ${loggedInCandidate.token}`);
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -5083,7 +5083,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=2&offset=2&role[]=${UserRoles.COACH}`
                 )
-                .set('authorization', `Token ${loggedInCandidate.token}`);
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(response.body.map(({ role }) => role)).toStrictEqual([
@@ -5136,7 +5136,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&search=XXX`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCandidates.map(({ id }) => id)).toEqual(
@@ -5167,7 +5167,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&search=XXX`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCoaches.map(({ id }) => id)).toEqual(
@@ -5235,7 +5235,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
@@ -5299,7 +5299,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCoachesIds).toEqual(
@@ -5414,7 +5414,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
@@ -5528,7 +5528,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessLines[]=bat&businessLines[]=rh`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCoachesIds).toEqual(
@@ -5637,7 +5637,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&helps[]=cv&helps[]=interview`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCandidatesIds).toEqual(
@@ -5745,7 +5745,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&helps[]=cv&helps[]=interview`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(4);
             expect(expectedCoachesIds).toEqual(
@@ -5825,7 +5825,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCandidatesIds).toEqual(
@@ -5897,7 +5897,7 @@ describe('Users', () => {
                 .get(
                   `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
                 )
-                .set('authorization', `Token ${loggedInAdmin.token}`);
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
@@ -5947,7 +5947,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 phone: updates.phone,
                 firstName: updates.firstName,
@@ -5959,7 +5959,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 phone: updates.phone,
                 address: updates.address,
@@ -5975,7 +5975,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 phone: '1234',
               });
@@ -5986,7 +5986,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 phone: updates.phone,
                 address: updates.address,
@@ -6001,7 +6001,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 phone: '1234',
               });
@@ -6012,7 +6012,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 phone: updates.phone,
                 firstName: updates.firstName,
@@ -6027,7 +6027,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 phone: '1234',
               });
@@ -6043,7 +6043,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 role: UserRoles.COACH,
               });
@@ -6079,7 +6079,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
               .put(`${route}/changePwd`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 oldPassword: 'falsePassword123!',
                 newPassword: 'Candidat123?',
@@ -6090,7 +6090,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
               .put(`${route}/changePwd`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 oldPassword: password,
                 newPassword: 'candidat123?',
@@ -6101,7 +6101,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updatePassword']> =
             await request(server)
               .put(`${route}/changePwd`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 email: loggedInCandidate.user.email,
                 oldPassword: password,
@@ -6144,7 +6144,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${otherCandidat.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 employed: false,
                 note: 'updated note by other',
@@ -6155,7 +6155,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 employed: false,
                 note: 'updated note by not associated coach',
@@ -6166,7 +6166,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 coachId: loggedInCoach.user.id,
               });
@@ -6176,7 +6176,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 candidatId: loggedInCandidate.user.id,
               });
@@ -6193,7 +6193,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 employed: false,
                 note: updatedNote,
@@ -6213,7 +6213,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 hidden: false,
                 note: updatedNote,
@@ -6233,7 +6233,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
               .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 employed: false,
                 note: updatedNote,
@@ -6293,7 +6293,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
               });
@@ -6304,7 +6304,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: uuid(),
               });
@@ -6314,7 +6314,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: uuid(),
               });
@@ -6344,7 +6344,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
               });
@@ -6384,7 +6384,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCandidate.user.id,
               });
@@ -6424,7 +6424,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: null,
               });
@@ -6459,7 +6459,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: null,
               });
@@ -6482,7 +6482,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [loggedInCoach.user.id, otherCoach.id],
               });
@@ -6497,7 +6497,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [loggedInCandidate.user.id, otherCandidate.id],
               });
@@ -6557,7 +6557,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: externalCoach.id,
               });
@@ -6639,7 +6639,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [
                   externalCandidate.id,
@@ -6688,7 +6688,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: null,
               });
@@ -6724,7 +6724,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: null,
               });
@@ -6747,7 +6747,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: [externalCoach.id, otherExternalCoach.id],
               });
@@ -6764,7 +6764,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherCandidate.id,
               });
@@ -6782,7 +6782,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${otherCoach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherCoach.id,
               });
@@ -6802,7 +6802,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCandidate.id,
               });
@@ -6821,7 +6821,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCoach.id,
               });
@@ -6837,7 +6837,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: externalCoach.id,
               });
@@ -6853,7 +6853,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: externalCandidate.id,
               });
@@ -6864,7 +6864,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCoach.user.id,
               });
@@ -6874,7 +6874,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: loggedInCandidate.user.id,
               });
@@ -6899,7 +6899,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCoach.id,
               });
@@ -6924,7 +6924,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['linkUser']> =
             await request(server)
               .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 userToLinkId: otherExternalCandidate.id,
               });
@@ -6972,7 +6972,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`);
+            .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
@@ -6984,7 +6984,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
         });
@@ -6998,7 +6998,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
         });
@@ -7012,7 +7012,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`);
+            .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
         });
@@ -7026,7 +7026,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(true);
         });
@@ -7040,7 +7040,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
         });
@@ -7054,7 +7054,7 @@ describe('Users', () => {
             UsersController['checkNoteHasBeenModified']
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`);
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
         });
@@ -7087,21 +7087,21 @@ describe('Users', () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if coach sets the note has been read on candidate not related', async () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200, if candidat sets the note and is not related to a coach', async () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastModifiedBy).toBe(null);
         });
@@ -7119,7 +7119,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastModifiedBy).toBe(null);
         });
@@ -7137,7 +7137,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['setNoteHasBeenRead']> =
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Token ${loggedInCandidate.token}`);
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.lastModifiedBy).toBe(null);
         });
@@ -7236,7 +7236,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInAdmin.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7249,7 +7249,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7262,7 +7262,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInExternalCoach.user.id}`)
-            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7275,7 +7275,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInExternalCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7288,7 +7288,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7301,7 +7301,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7324,7 +7324,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
 
           const updatedUser = await usersHelper.findUser(
@@ -7359,7 +7359,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
           expect(response.status).toBe(400);
         });
@@ -7376,7 +7376,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send(updatedProfile);
           expect(response.status).toBe(400);
         });
@@ -7395,7 +7395,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedProfile);
 
           const updatedUser = await usersHelper.findUser(loggedInCoach.user.id);
@@ -7425,7 +7425,7 @@ describe('Users', () => {
             UserProfilesController['updateByUserId']
           > = await request(server)
             .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send(updatedProfile);
           expect(response.status).toBe(400);
         });
@@ -7490,7 +7490,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -7500,7 +7500,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInAdmin.token}`)
+            .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(403);
@@ -7512,7 +7512,7 @@ describe('Users', () => {
             .post(
               `${route}/profile/uploadImage/${loggedInExternalCoach.user.id}`
             )
-            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -7524,7 +7524,7 @@ describe('Users', () => {
             .post(
               `${route}/profile/uploadImage/${loggedInExternalCandidate.user.id}`
             )
-            .set('authorization', `Token ${loggedInExternalCoach.token}`)
+            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(403);
@@ -7534,7 +7534,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(403);
@@ -7544,7 +7544,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(403);
@@ -7554,7 +7554,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -7564,7 +7564,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Token ${loggedInCandidate.token}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
         });
@@ -7573,7 +7573,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -7583,7 +7583,7 @@ describe('Users', () => {
             UserProfilesController['uploadProfileImage']
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Token ${loggedInCoach.token}`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
         });
@@ -7624,7 +7624,7 @@ describe('Users', () => {
           const response: APIResponse<UsersController['updateAll']> =
             await request(server)
               .put(`${route}/candidate/bulk`)
-              .set('authorization', `Token ${loggedInAdmin.token}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`)
               .send({
                 attributes: {
                   hidden: true,
@@ -7672,7 +7672,7 @@ describe('Users', () => {
           const responseCandidate: APIResponse<UsersController['updateAll']> =
             await request(server)
               .put(`${route}/candidate/bulk`)
-              .set('authorization', `Token ${loggedInCandidate.token}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 attributes: {
                   hidden: true,
@@ -7698,7 +7698,7 @@ describe('Users', () => {
           const responseCoach: APIResponse<UsersController['updateAll']> =
             await request(server)
               .put(`${route}/candidate/bulk`)
-              .set('authorization', `Token ${loggedInCoach.token}`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 attributes: {
                   hidden: true,
@@ -7795,14 +7795,14 @@ describe('Users', () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
             await request(server)
               .delete(`${route}/${candidate.id}`)
-              .set('authorization', `Token ${loggedInCoach.token}`);
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 if logged in as admin and deletes candidate', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
             await request(server)
               .delete(`${route}/${candidate.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body.usersDeleted).toBe(1);
@@ -7925,7 +7925,7 @@ describe('Users', () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
             await request(server)
               .delete(`${route}/${coach.id}`)
-              .set('authorization', `Token ${loggedInAdmin.token}`);
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
           expect(response.body.usersDeleted).toBe(1);
