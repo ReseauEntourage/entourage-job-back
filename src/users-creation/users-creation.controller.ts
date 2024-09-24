@@ -245,6 +245,12 @@ export class UsersCreationController {
 
       await this.usersCreationService.sendVerificationMail(createdUser);
 
+      await this.usersCreationService.sendOnboardingJ1BAOMail(createdUser);
+
+      await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
+        createdUser
+      );
+
       return createdUser;
     } catch (err) {
       if (((err as Error).name = SequelizeUniqueConstraintError)) {

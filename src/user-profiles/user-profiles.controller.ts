@@ -16,6 +16,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
@@ -35,6 +36,8 @@ import {
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
+import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
+import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
@@ -42,6 +45,7 @@ import { UserProfilesService } from './user-profiles.service';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
+@ApiBearerAuth()
 @Controller('user/profile')
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
@@ -74,6 +78,31 @@ export class UserProfilesController {
     }
 
     return updatedUserProfile;
+  }
+
+  @Post('/:userId/report')
+  async reportAbuse(
+    @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Body(new ReportAbuseUserProfilePipe())
+    reportAbuseDto: ReportAbuseUserProfileDto
+  ): Promise<void> {
+    // Set the reportedUser and reporterUser
+    const userReported = await this.userProfilesService.findOneUser(userId);
+    const userReporter = await this.userProfilesService.findOneUser(
+      currentUserId
+    );
+
+    // Check users exists
+    if (!userReported || !userReporter) {
+      throw new NotFoundException();
+    }
+
+    return await this.userProfilesService.reportAbuse(
+      reportAbuseDto,
+      userReporter,
+      userReported
+    );
   }
 
   @Get()
