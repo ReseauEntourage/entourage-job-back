@@ -391,7 +391,6 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     RecordTypeId: recordType,
     Antenne__c: formatRegions(zone),
     Source__c: 'Lead entrant',
-    // Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
   } as Pick<
     SalesforceLead<T>,
     | 'LastName'
@@ -402,7 +401,6 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     | 'RecordTypeId'
     | 'Antenne__c'
     | 'Source__c'
-    // | 'Genre__c'
   >;
 
   if (
@@ -426,7 +424,6 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       ),
       Message_For__c: message,
       Abonnements_Plezi__c: newsletter,
-      // Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
     } as SalesforceLead<T>;
   }
 
