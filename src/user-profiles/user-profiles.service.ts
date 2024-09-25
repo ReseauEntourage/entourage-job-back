@@ -643,8 +643,8 @@ export class UserProfilesService {
       ),
       this.mailsService.sendUserReportedMail(
         report,
-        userReporter,
-        userReported
+        userReported,
+        userReporter
       ),
     ]);
   }
