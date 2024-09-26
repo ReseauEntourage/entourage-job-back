@@ -40,6 +40,7 @@ export class UsersCreationService {
       | 'workingExperience'
       | 'jobSearchDuration'
       | 'workingRight'
+      | 'gender'
     >
   ) {
     return this.externalDatabasesService.createExternalDBUser(
