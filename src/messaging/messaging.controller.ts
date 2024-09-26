@@ -6,12 +6,15 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { CreateMessagePipe, CreateMessageDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
+import { CanParticipate } from './guards/can-participate.guard';
+import { UserInConversation } from './guards/user-in-conversation';
 import { MessagingService } from './messaging.service';
 
 @ApiTags('Messaging')
@@ -23,12 +26,12 @@ export class MessagingController {
   @Get('conversations')
   async getConversations(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Query('query') query?: string
+    @Query('query') query = ''
   ) {
     return this.messagingService.getConversationsForUser(userId, query);
   }
 
-  // Can only fetch the conversation if the user is a participant
+  @UseGuards(UserInConversation)
   @Get('conversations/:conversationId')
   async getConversation(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
@@ -39,6 +42,7 @@ export class MessagingController {
   }
 
   @Post('messages')
+  @UseGuards(CanParticipate)
   async postMessage(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateMessagePipe())
@@ -68,6 +72,7 @@ export class MessagingController {
     }
   }
 
+  @UseGuards(UserInConversation)
   @Post('conversations/:conversationId/report')
   async reportMessageAbuse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,

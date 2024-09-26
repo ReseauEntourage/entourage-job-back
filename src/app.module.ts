@@ -171,6 +171,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ContactsModule,
     OrganizationsModule,
     MessagesModule,
+    MessagingModule,
   ],
 })
 export class AppModule {}
