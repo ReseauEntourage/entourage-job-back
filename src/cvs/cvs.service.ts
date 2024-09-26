@@ -657,8 +657,7 @@ export class CVsService {
   async generatePDFFromCV(
     candidateId: string,
     token: string,
-    /*paths: string[],*/ fileName: string,
-    isTwoPages: boolean
+    fileName: string
   ) {
     const response = await fetch(`${process.env.CV_PDF_GENERATION_AWS_URL}`, {
       headers: {
@@ -670,7 +669,6 @@ export class CVsService {
         candidateId,
         token,
         fileName,
-        isTwoPages,
       }),
     });
 
@@ -1108,14 +1106,12 @@ export class CVsService {
   async sendGenerateCVPDF(
     candidateId: string,
     token: string,
-    fileName: string,
-    isTwoPages: boolean
+    fileName: string
   ) {
     await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PDF, {
       candidateId,
       token,
       fileName,
-      isTwoPages,
     });
   }
 
