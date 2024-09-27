@@ -162,7 +162,7 @@ export class AuthController {
       updatedUser.email
     );
 
-    return currentUser.toJSON();
+    return currentUser;
   }
 
   @Public()

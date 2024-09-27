@@ -178,21 +178,21 @@ export class User extends HistorizedModel {
   get whatsappZoneCoachName(): string {
     const zone = this.getDataValue('zone') as AdminZone;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
-    return isCoach && WhatsappByZone[zone] ? WhatsappByZone[zone].name : null;
+    return isCoach && zone ? WhatsappByZone[zone].name : '';
   }
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneCoachUrl(): string {
     const zone = this.getDataValue('zone') as AdminZone;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
-    return isCoach && WhatsappByZone[zone] ? WhatsappByZone[zone].url : null;
+    return isCoach && zone ? WhatsappByZone[zone].url : '';
   }
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneCoachQR(): string {
     const zone = this.getDataValue('zone') as AdminZone;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
-    return isCoach && WhatsappByZone[zone] ? WhatsappByZone[zone].qr : null;
+    return isCoach && zone ? WhatsappByZone[zone].qr : '';
   }
 
   @BelongsToMany(
