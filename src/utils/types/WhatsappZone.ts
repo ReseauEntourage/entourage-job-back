@@ -19,7 +19,7 @@ export const WhatsappByZone = {
   [AdminZones.RENNES]: {
     name: 'Bretagne // Rennes & Lorient',
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-rennes-lorient.png',
-    url: process.env.WHATSAPP_COACH_URL_RENNES_ORIENT as string,
+    url: process.env.WHATSAPP_COACH_URL_RENNES_LORIENT as string,
   },
   [AdminZones.LORIENT]: {
     name: 'Bretagne // Rennes & Lorient',
