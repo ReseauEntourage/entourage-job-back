@@ -2,6 +2,7 @@ import { BusinessLine } from 'src/common/business-lines/models';
 import { Location } from 'src/common/locations/models';
 import {
   CandidateAccommodation,
+  CandidateGender,
   CandidateResource,
   CandidateYesNoNSPPValue,
   JobSearchDuration,
@@ -126,7 +127,6 @@ export interface GenerateCVPDFJob {
   candidateId: string;
   token: string;
   fileName: string;
-  isTwoPages: boolean;
 }
 
 export interface GenerateCVPreviewJob {
@@ -165,6 +165,7 @@ export interface CreateOrUpdateSalesforceUserJob {
   workingExperience?: WorkingExperience;
   jobSearchDuration?: JobSearchDuration;
   workingRight?: CandidateYesNoNSPPValue;
+  gender?: CandidateGender;
 }
 
 export interface SendOffersEmailAfterCVPublishJob {
