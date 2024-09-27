@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail as IsEmailClassValidator,
@@ -175,6 +174,27 @@ export class User extends HistorizedModel {
   @DeletedAt
   deletedAt: Date;
 
+  @Column(DataType.VIRTUAL)
+  get whatsappZoneCoachName(): string {
+    const zone = this.getDataValue('zone') as AdminZone;
+    const isCoach = this.getDataValue('role') === UserRoles.COACH;
+    return isCoach && WhatsappByZone[zone] ? WhatsappByZone[zone].name : null;
+  }
+
+  @Column(DataType.VIRTUAL)
+  get whatsappZoneCoachUrl(): string {
+    const zone = this.getDataValue('zone') as AdminZone;
+    const isCoach = this.getDataValue('role') === UserRoles.COACH;
+    return isCoach && WhatsappByZone[zone] ? WhatsappByZone[zone].url : null;
+  }
+
+  @Column(DataType.VIRTUAL)
+  get whatsappZoneCoachQR(): string {
+    const zone = this.getDataValue('zone') as AdminZone;
+    const isCoach = this.getDataValue('role') === UserRoles.COACH;
+    return isCoach && WhatsappByZone[zone] ? WhatsappByZone[zone].qr : null;
+  }
+
   @BelongsToMany(
     () => Opportunity,
     () => OpportunityUser,
@@ -211,11 +231,6 @@ export class User extends HistorizedModel {
 
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
-
-  @Expose()
-  get whatsappJoinUrl() {
-    return WhatsappByZone[this.zone];
-  }
 
   @BeforeCreate
   @BeforeUpdate
