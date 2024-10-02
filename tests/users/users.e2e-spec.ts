@@ -6535,11 +6535,14 @@ describe('Users', () => {
             ));
 
           const {
-            candidat: coachCandidat,
-            coaches: coachCoaches,
-            lastConnection: lastConnectionCoach,
-            createdAt: createdAtCoach,
-            organization: coachOrganization,
+            candidat,
+            coaches,
+            lastConnection,
+            createdAt,
+            organization,
+            whatsappZoneCoachName,
+            whatsappZoneCoachUrl,
+            whatsappZoneCoachQR,
             ...restCoach
           } = loggedInCoach.user;
 
