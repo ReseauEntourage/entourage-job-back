@@ -401,6 +401,9 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
+              whatsappZoneCoachName: coachWhatsappZoneCoachName,
+              whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
+              whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -6415,6 +6418,9 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization,
+            whatsappZoneCoachName,
+            whatsappZoneCoachUrl,
+            whatsappZoneCoachQR,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6425,6 +6431,9 @@ describe('Users', () => {
             createdAt: createdAtCoach,
             organization: coachOrganization,
             readDocuments,
+            whatsappZoneCoachName: coachWhatsappZoneCoachName,
+            whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
+            whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -6456,6 +6465,9 @@ describe('Users', () => {
             createdAt,
             organization,
             readDocuments,
+            whatsappZoneCoachName,
+            whatsappZoneCoachUrl,
+            whatsappZoneCoachQR,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6465,6 +6477,9 @@ describe('Users', () => {
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
+            whatsappZoneCoachName: coachWhatsappZoneCoachName,
+            whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
+            whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
             ...restCoach
           } = loggedInCoach.user;
 
