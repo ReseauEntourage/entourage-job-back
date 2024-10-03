@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -439,6 +441,7 @@ export class UserProfilesService {
   }
 
   async updateRecommendationsByUserId(userId: string) {
+    console.log('updateRecommendationsByUserId', userId);
     const user = await this.findOneUser(userId);
     const userProfile = await this.findOneByUserId(userId);
 
@@ -469,6 +472,8 @@ export class UserProfilesService {
             },
           }
         : {};
+
+    console.log('----------------------------');
 
     const filteredProfiles = await this.userProfileModel.findAll({
       attributes: ['id'],
@@ -532,7 +537,18 @@ export class UserProfilesService {
           },
         },
       ],
+      // limit: 3,
+      logging(sql, timing) {
+        console.log('Filtered profiles');
+        console.log(sql, timing);
+      },
+      benchmark: true,
     });
+
+    console.log('filteredProfiles LENGTH', filteredProfiles.length);
+    console.log('filteredProfiles', filteredProfiles);
+
+    console.log('----------------------------');
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
@@ -547,7 +563,15 @@ export class UserProfilesService {
           attributes: UserProfilesUserAttributes,
         },
       ],
+      logging(sql, timing) {
+        console.log('Profiles');
+        console.log(sql, timing);
+      },
+      benchmark: true,
     });
+
+    console.log('PROFILES LENGTH', filteredProfiles.length);
+    console.log('PROFILES', filteredProfiles);
 
     const sortedProfiles = _.orderBy(
       profiles,
