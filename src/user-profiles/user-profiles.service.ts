@@ -444,6 +444,7 @@ export class UserProfilesService {
       this.findOneByUserId(userId),
     ]);
 
+
     const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
       ? [UserRoles.COACH]
       : CandidateUserRoles;
@@ -518,6 +519,7 @@ export class UserProfilesService {
     });
 
     // Tri des profils
+
     const sortedProfiles = _.orderBy(
       profiles,
       [

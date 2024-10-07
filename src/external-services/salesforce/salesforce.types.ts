@@ -609,6 +609,7 @@ export interface ContactProps {
   studiesLevel?: StudiesLevel;
   workingExperience?: WorkingExperience;
   jobSearchDuration?: JobSearchDuration;
+  gender?: CandidateGender;
 }
 
 export interface SalesforceContact {
@@ -634,6 +635,7 @@ export interface SalesforceContact {
   Dur_e_de_recherche_d_emploi__c: string;
   Situation_d_h_bergement__c: string;
   Type_de_ressources__c?: string;
+  Genre__c: string;
 }
 
 export interface CompanyLeadProps {
@@ -861,6 +863,7 @@ export interface CoachSalesforceLead {
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
+  Genre__c: CandidateGender | null;
 }
 
 export interface UserProps {
@@ -882,4 +885,5 @@ export interface UserProps {
   studiesLevel?: StudiesLevel;
   workingExperience?: WorkingExperience;
   jobSearchDuration?: JobSearchDuration;
+  gender?: CandidateGender;
 }

@@ -231,6 +231,7 @@ export class UsersCreationController {
         studiesLevel: createUserRegistrationDto.studiesLevel,
         workingExperience: createUserRegistrationDto.workingExperience,
         jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
+        gender: createUserRegistrationDto.gender,
       });
 
       if (createUserRegistrationDto.program === Programs.BOOST) {
