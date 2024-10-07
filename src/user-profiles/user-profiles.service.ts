@@ -38,7 +38,11 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
+import {
+  getUserProfileAmbitionsInclude,
+  getUserProfileBusinessLinesInclude,
+  getUserProfileInclude,
+} from './models/user-profile.include';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -444,7 +448,6 @@ export class UserProfilesService {
       this.findOneByUserId(userId),
     ]);
 
-
     const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
       ? [UserRoles.COACH]
       : CandidateUserRoles;
@@ -485,6 +488,8 @@ export class UserProfilesService {
         },
       },
       include: [
+        ...getUserProfileAmbitionsInclude(),
+        ...getUserProfileBusinessLinesInclude(),
         {
           model: HelpNeed,
           as: 'helpNeeds',
