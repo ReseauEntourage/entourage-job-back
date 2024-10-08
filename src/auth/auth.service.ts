@@ -29,7 +29,7 @@ export class AuthService {
         await this.usersService.findOneComplete(user.id);
 
       if (validatePassword(password, userPassword, userSalt)) {
-        return user.toJSON();
+        return user;
       }
     }
 
