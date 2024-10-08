@@ -14,6 +14,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
+import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
@@ -441,8 +442,6 @@ export class UserProfilesService {
 
   // V3
   async updateRecommendationsByUserId(userId: string) {
-    console.log('updateRecommendationsByUserId', userId);
-
     const [user, userProfile] = await Promise.all([
       this.findOneUser(userId),
       this.findOneByUserId(userId),
@@ -474,10 +473,12 @@ export class UserProfilesService {
 
     // Requête combinée pour récupérer les profils filtrés et leurs détails
     const profiles = await this.userProfileModel.findAll({
-      attributes: ['id', ...UserProfilesAttributes],
+      attributes: ['id'],
       where: {
         isAvailable: true,
         department: sameRegionDepartmentsOptions,
+        '$user.receivedMessages.id$': null,
+        '$user.sentMessages.id$': null,
         [Op.not]: {
           ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
             ? { '$helpNeeds.id$': null }
@@ -494,7 +495,7 @@ export class UserProfilesService {
           model: HelpNeed,
           as: 'helpNeeds',
           required: false,
-          attributes: ['id'],
+          attributes: ['name'],
           where: isRoleIncluded(CandidateUserRoles, rolesToFind)
             ? helpsOptions
             : {},
@@ -503,7 +504,7 @@ export class UserProfilesService {
           model: HelpOffer,
           as: 'helpOffers',
           required: false,
-          attributes: ['id'],
+          attributes: ['name'],
           where: isRoleIncluded(CoachUserRoles, rolesToFind)
             ? helpsOptions
             : {},
@@ -511,16 +512,27 @@ export class UserProfilesService {
         {
           model: User,
           as: 'user',
-          attributes: ['id', ...UserProfilesUserAttributes],
+          include: [
+            {
+              model: InternalMessage,
+              as: 'receivedMessages',
+              required: false,
+              attributes: ['id'],
+              where: { senderUserId: userId },
+            },
+            {
+              model: InternalMessage,
+              as: 'sentMessages',
+              required: false,
+              attributes: ['id'],
+              where: { addresseeUserId: userId },
+            },
+          ],
+
+          attributes: ['id'],
           where: { role: rolesToFind },
         },
       ],
-      order: [[{ model: User, as: 'user' }, 'lastConnection', 'DESC']],
-      logging(sql, timing) {
-        console.log('Combined query profiles');
-        console.log(sql, timing);
-      },
-      benchmark: true,
     });
 
     // Tri des profils
@@ -530,28 +542,29 @@ export class UserProfilesService {
       [
         (profile) => {
           const profileBusinessLines = [
-            ...(Array.isArray(profile.searchBusinessLines)
-              ? profile.searchBusinessLines
-              : []),
-            ...(Array.isArray(profile.networkBusinessLines)
-              ? profile.networkBusinessLines
-              : []),
+            ...profile.searchBusinessLines,
+            ...profile.networkBusinessLines,
           ];
-          const businessLinesMatching =
-            _.intersection(
-              businessLines.map(({ name }) => name),
-              profileBusinessLines.map(({ name }) => name)
-            ).length * UserProfileRecommendationsWeights.BUSINESS_LINES;
 
-          const profileHelps = [
-            ...(Array.isArray(profile.helpOffers) ? profile.helpOffers : []),
-            ...(Array.isArray(profile.helpNeeds) ? profile.helpNeeds : []),
-          ];
+          const businessLinesDifference = _.difference(
+            businessLines.map(({ name }) => name),
+            profileBusinessLines.map(({ name }) => name)
+          );
+
+          const businessLinesMatching =
+            (businessLines.length - businessLinesDifference.length) *
+            UserProfileRecommendationsWeights.BUSINESS_LINES;
+
+          const profileHelps = [...profile.helpOffers, ...profile.helpNeeds];
+
+          const helpsDifferences = _.difference(
+            helps.map(({ name }) => name),
+            profileHelps.map(({ name }) => name)
+          );
+
           const helpsMatching =
-            _.intersection(
-              helps.map(({ name }) => name),
-              profileHelps.map(({ name }) => name)
-            ).length * UserProfileRecommendationsWeights.HELPS;
+            (helps.length - helpsDifferences.length) *
+            UserProfileRecommendationsWeights.HELPS;
 
           return businessLinesMatching + helpsMatching;
         },
