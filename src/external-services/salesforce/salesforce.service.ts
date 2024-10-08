@@ -5,6 +5,7 @@ import moment from 'moment-timezone';
 
 import {
   CandidateAccommodation,
+  CandidateGender,
   CandidateResource,
   CandidateYesNoNSPPValue,
   JobSearchDuration,
@@ -1190,6 +1191,7 @@ export class SalesforceService {
     workingExperience,
     workingRight,
     jobSearchDuration,
+    gender,
   }: UserProps) {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
@@ -1220,6 +1222,7 @@ export class SalesforceService {
         workingExperience,
         jobSearchDuration,
         workingRight,
+        gender,
       };
 
       const leadSfId = (await this.findOrCreateLead(
@@ -1283,6 +1286,7 @@ export class SalesforceService {
         studiesLevel,
         workingExperience,
         jobSearchDuration,
+        gender,
       };
 
       contactSfId = (await this.createContact(
@@ -1813,6 +1817,7 @@ export class SalesforceService {
       studiesLevel?: StudiesLevel;
       workingExperience?: WorkingExperience;
       jobSearchDuration?: JobSearchDuration;
+      gender?: CandidateGender;
     }
   ) {
     this.setIsWorker(true);
@@ -1832,6 +1837,7 @@ export class SalesforceService {
       studiesLevel: otherInfo.studiesLevel,
       workingExperience: otherInfo.workingExperience,
       jobSearchDuration: otherInfo.jobSearchDuration,
+      gender: otherInfo.gender,
     });
   }
 

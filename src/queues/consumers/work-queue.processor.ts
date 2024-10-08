@@ -433,6 +433,7 @@ export class WorkQueueProcessor {
         workingExperience: data.workingExperience,
         jobSearchDuration: data.jobSearchDuration,
         workingRight: data.workingRight,
+        gender: data.gender,
       });
       return `Salesforce : created or updated user '${data.userId}'`;
     }
