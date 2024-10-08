@@ -147,7 +147,11 @@ export class MailsService {
       {
         toEmail: user.email,
         templateId: MailjetTemplates.ONBOARDING_J1_BAO,
-        variables: { firstName: user.firstName, role: getRoleString(user) },
+        variables: {
+          firstName: user.firstName,
+          role: getRoleString(user),
+          zone: user.zone,
+        },
       },
       {
         // un jour après la création du compte
