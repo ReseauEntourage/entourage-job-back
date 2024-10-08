@@ -163,10 +163,7 @@ export class AuthController {
       updatedUser.email
     );
 
-    return {
-      ...currentUser.toJSON(),
-      whatsappJoinUrl: currentUser.whatsappJoinUrl,
-    };
+    return currentUser;
   }
 
   @Public()

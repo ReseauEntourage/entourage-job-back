@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserRegistrationDto } from '../users-creation/dto';
+import { CandidateGender, CandidateGenders } from 'src/contacts/contacts.types';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { Genders } from 'src/users/users.types';
 
 @Injectable()
 export class ExternalDatabasesService {
@@ -50,13 +52,30 @@ export class ExternalDatabasesService {
       | 'workingExperience'
       | 'jobSearchDuration'
       | 'workingRight'
+      | 'gender'
     >
   ) {
+    let conertedGenderType: CandidateGender;
+    switch (otherInfo.gender) {
+      case Genders.MALE:
+        conertedGenderType = CandidateGenders.MALE;
+        break;
+      case Genders.FEMALE:
+        conertedGenderType = CandidateGenders.FEMALE;
+        break;
+      case Genders.OTHER:
+        conertedGenderType = CandidateGenders.OTHER;
+        break;
+      default:
+        throw new Error('Invalid gender value');
+    }
+
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_USER,
       {
         userId,
         ...otherInfo,
+        gender: conertedGenderType,
       }
     );
   }

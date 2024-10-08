@@ -618,6 +618,7 @@ export const mapSalesforceContactFields = (
     studiesLevel,
     workingExperience,
     jobSearchDuration,
+    gender,
   }: ContactProps,
   recordType: ContactRecordType
 ): SalesforceContact => {
@@ -667,6 +668,7 @@ export const mapSalesforceContactFields = (
       resources,
       LeadResources
     ),
+    Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
   };
 };
 
