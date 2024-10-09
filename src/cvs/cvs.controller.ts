@@ -34,7 +34,7 @@ import {
   UserRoles,
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
-import { AdminZone, FilterParams } from 'src/utils/types';
+import { FilterParams } from 'src/utils/types';
 import { CVsService } from './cvs.service';
 import { CVFilterKey } from './cvs.types';
 import { getPDFPaths } from './cvs.utils';
@@ -60,7 +60,6 @@ export class CVsController {
     @UserPayload() user: User,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UserPayload('role') role: UserRole,
-    @UserPayload('zone') zone: AdminZone,
     @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
     @Body('cv', new ParseCVPipe()) createCVDto: CreateCVDto,
     @Body('autoSave') autoSave: boolean,
@@ -147,28 +146,17 @@ export class CVsController {
 
       const token = getTokenFromHeaders(req);
 
-      let isTwoPages = false;
-
-      if (
-        (createCVDto.experiences?.length || 0) +
-          (createCVDto.formations?.length || 0) >
-        4
-      ) {
-        isTwoPages = true;
-      }
-
       // génération du CV en version PDF; exécution par lambda AWS
       await this.cvsService.sendGenerateCVPDF(
         candidateId,
         token,
-        `${firstName}_${lastName}`,
-        isTwoPages
+        `${firstName}_${lastName}`
       );
     }
     return createdCV;
   }
 
-  /* 
+  /*
   récupérer une liste de CVs publiés aléatoirement pour la gallerie
   */
   @Public()
@@ -216,17 +204,11 @@ export class CVsController {
 
     const pdfUrl = await this.cvsService.findPDF(s3Key);
 
-    const cv = await this.cvsService.findOneByCandidateId(candidateId);
-
-    let isTwoPages = false;
-    if (cv.experiences?.length + cv.formations?.length > 4) isTwoPages = true;
-
     if (!pdfUrl) {
       const createdPdfUrl = await this.cvsService.generatePDFFromCV(
         candidateId,
         getTokenFromHeaders(req),
-        fileName,
-        isTwoPages
+        fileName
       );
       return {
         pdfUrl: createdPdfUrl,
