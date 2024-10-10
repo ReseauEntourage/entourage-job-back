@@ -17,7 +17,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
@@ -46,6 +46,7 @@ import { UserProfilesService } from './user-profiles.service';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
+@ApiTags('UserProfiles')
 @ApiBearerAuth()
 @Controller('user/profile')
 export class UserProfilesController {
