@@ -470,80 +470,75 @@ export class UserProfilesService {
         : {};
 
     const profiles = await this.userProfileModel.findAll({
-      attributes: ['id'],
+      attributes: ['id'], // Sélectionner uniquement l'id des profils
       where: {
-        isAvailable: true,
-        department: sameRegionDepartmentsOptions,
-        [Op.and]: [
-          {
-            // Appliquer les filtres sur les messages plus tôt
-            '$user.receivedMessages.id$': { [Op.is]: null },
-            '$user.sentMessages.id$': { [Op.is]: null },
-          },
-          isRoleIncluded(CandidateUserRoles, rolesToFind)
-            ? { '$helpNeeds.id$': { [Op.is]: null } }
-            : {},
-          isRoleIncluded(CoachUserRoles, rolesToFind)
-            ? { '$helpOffers.id$': { [Op.is]: null } }
-            : {},
-        ],
+        isAvailable: true, // Appliquer le filtre de disponibilité
+        department: sameRegionDepartmentsOptions, // Appliquer le filtre sur le département
+        '$user.receivedMessages.id$': { [Op.is]: null },
+        '$user.sentMessages.id$': { [Op.is]: null },
+        [Op.not]: {
+          ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+            ? { '$helpNeeds.id$': null }
+            : {}),
+          ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+            ? { '$helpOffers.id$': null }
+            : {}),
+        },
       },
       include: [
-        ...getUserProfileAmbitionsInclude(),
-        ...getUserProfileBusinessLinesInclude(),
+        ...getUserProfileAmbitionsInclude(), // Inclure les ambitions du profil utilisateur
+        ...getUserProfileBusinessLinesInclude(), // Inclure les lignes de métier du profil utilisateur
         {
           model: HelpNeed,
           as: 'helpNeeds',
           required: false,
-          attributes: ['id'],
+          attributes: ['name'], // Ne récupérer que l'ID des helpNeeds
           where: isRoleIncluded(CandidateUserRoles, rolesToFind)
-            ? helpsOptions
-            : null, // Appliquer les filtres uniquement si le rôle est concerné
+            ? helpsOptions // Appliquer des filtres supplémentaires si le rôle le nécessite
+            : null,
         },
         {
           model: HelpOffer,
           as: 'helpOffers',
           required: false,
-          attributes: ['id'],
+          attributes: ['name'], // Ne récupérer que l'ID des helpOffers
           where: isRoleIncluded(CoachUserRoles, rolesToFind)
-            ? helpsOptions
-            : null, // Appliquer les filtres uniquement si le rôle est concerné
+            ? helpsOptions // Appliquer des filtres supplémentaires si le rôle le nécessite
+            : null,
         },
         {
           model: User,
           as: 'user',
-          attributes: ['id'],
-          required: true, // Forcer la jointure pour optimiser
+          attributes: ['id', 'role'], // Sélectionner l'ID et le rôle de l'utilisateur
+          required: true, // Forcer la jointure avec la table User pour ne récupérer que les utilisateurs existants
           where: {
-            role: rolesToFind, // Appliquer le filtre sur le rôle dans le modèle User
+            role: rolesToFind, // Appliquer le filtre sur les rôles uniquement dans la table User
           },
           include: [
             {
               model: InternalMessage,
               as: 'receivedMessages',
               required: false,
-              attributes: ['id'],
+              attributes: ['id'], // Ne récupérer que l'ID des messages reçus
               where: {
-                senderUserId: userId, // Appliquer ce filtre plus tôt pour réduire les lignes
-                deletedAt: { [Op.is]: null }, // Filtrer les messages supprimés dès ici
+                senderUserId: userId, // Appliquer le filtre sur l'expéditeur
+                deletedAt: { [Op.is]: null }, // Exclure les messages supprimés
               },
             },
             {
               model: InternalMessage,
               as: 'sentMessages',
               required: false,
-              attributes: ['id'],
+              attributes: ['id'], // Ne récupérer que l'ID des messages envoyés
               where: {
-                addresseeUserId: userId, // Appliquer ce filtre plus tôt pour réduire les lignes
-                deletedAt: { [Op.is]: null }, // Filtrer les messages supprimés dès ici
+                addresseeUserId: userId, // Appliquer le filtre sur le destinataire
+                deletedAt: { [Op.is]: null }, // Exclure les messages supprimés
               },
             },
           ],
         },
       ],
     });
-
-    // Tri des profils
 
     const sortedProfiles = _.orderBy(
       profiles,
