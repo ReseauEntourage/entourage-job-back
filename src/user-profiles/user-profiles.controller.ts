@@ -132,7 +132,7 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    if (role.includes(UserRoles.COACH_EXTERNAL)) {
+    if (role.includes(UserRoles.REFERRER)) {
       throw new BadRequestException();
     }
 

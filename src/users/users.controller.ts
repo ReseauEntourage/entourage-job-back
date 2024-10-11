@@ -152,7 +152,7 @@ export class UsersController {
       coachId: isRoleIncluded(CoachUserRoles, role) ? userId : undefined,
     };
 
-    if (role === UserRoles.COACH_EXTERNAL) {
+    if (role === UserRoles.REFERRER) {
       const userCandidates = await this.userCandidatsService.findAllByCoachId(
         ids.coachId
       );
@@ -330,7 +330,7 @@ export class UsersController {
   @Put('linkUser/:userId')
   async linkUser(
     @Param('userId', new ParseUUIDPipe()) userId: string,
-    @Body('userToLinkId') userToLinkId: string | string[]
+    @Body('userToLinkId') userToLinkId: string
   ) {
     // check if users are already linked and remove existing link if needed
     const shouldRemoveLinkedUser =
@@ -350,17 +350,6 @@ export class UsersController {
 
     if (!user) {
       throw new NotFoundException();
-    }
-
-    if (
-      !shouldRemoveLinkedUser &&
-      // only external coach can have multiple candidates
-      ((user.role !== UserRoles.COACH_EXTERNAL &&
-        Array.isArray(userToLinkId)) ||
-        (user.role === UserRoles.COACH_EXTERNAL &&
-          !Array.isArray(userToLinkId)))
-    ) {
-      throw new BadRequestException();
     }
 
     const usersToLinkIds = Array.isArray(userToLinkId)
@@ -403,7 +392,6 @@ export class UsersController {
       const updatedUserCandidates =
         await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
           userCandidatesToUpdate,
-          user.role === UserRoles.CANDIDATE_EXTERNAL,
           shouldRemoveLinkedUser
         );
 
