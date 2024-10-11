@@ -13,7 +13,6 @@ import {
   CandidateUserRoles,
   CoachUserRoles,
   CVStatuses,
-  ExternalUserRoles,
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
@@ -124,9 +123,14 @@ export function getCandidateIdFromCoachOrCandidate(member: User) {
     if (isRoleIncluded(CandidateUserRoles, member.role)) {
       return member.id;
     }
+    if (isRoleIncluded([UserRoles.REFERRER], member.role)) {
+      return member.referredCandidates.map(({ candidat }) => {
+        return candidat.candidat.id;
+      });
+    }
 
     if (
-      isRoleIncluded(CoachUserRoles, member.role) &&
+      isRoleIncluded([UserRoles.COACH], member.role) &&
       member.coaches &&
       member.coaches.length > 0
     ) {
@@ -387,16 +391,6 @@ export function getCandidateAndCoachIdDependingOnRoles(
     return {
       candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
       coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
-    };
-  } else if (
-    isRoleIncluded(ExternalUserRoles, [user.role, userToLink.role]) &&
-    user.role !== userToLink.role &&
-    user.OrganizationId === userToLink.OrganizationId
-  ) {
-    return {
-      candidateId:
-        user.role === UserRoles.CANDIDATE_EXTERNAL ? user.id : userToLink.id,
-      coachId: user.role === UserRoles.COACH_EXTERNAL ? user.id : userToLink.id,
     };
   } else if (shouldRemoveLinkedUser) {
     return {

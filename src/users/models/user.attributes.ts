@@ -13,6 +13,7 @@ export const UserAttributes = [
   'lastConnection',
   'isEmailVerified',
   'createdAt',
+  'referrerId',
   /*'updatedAt',*/
   'deletedAt',
   'whatsappZoneCoachName',

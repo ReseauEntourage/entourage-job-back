@@ -34,9 +34,9 @@ import {
   AdminRole,
   CandidateUserRoles,
   CoachUserRoles,
-  ExternalUserRoles,
   Gender,
   Genders,
+  RolesWithOrganization,
   UserRole,
   UserRoles,
 } from '../users.types';
@@ -71,6 +71,15 @@ export class User extends HistorizedModel {
   @AllowNull(true)
   @Column
   OrganizationId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  @IsUUID(4)
+  @ForeignKey(() => User)
+  @AllowNull(true)
+  @Column
+  referrerId: string;
 
   @ApiProperty()
   @IsString()
@@ -217,6 +226,9 @@ export class User extends HistorizedModel {
   @BelongsTo(() => Organization, 'OrganizationId')
   organization?: Organization;
 
+  @BelongsTo(() => User, 'referrerId')
+  referrer?: User;
+
   @HasOne(() => UserProfile, {
     foreignKey: 'UserId',
     hooks: true,
@@ -231,6 +243,9 @@ export class User extends HistorizedModel {
 
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
+
+  @HasMany(() => User, 'referrerId')
+  referredCandidates: User[];
 
   @BeforeCreate
   @BeforeUpdate
@@ -318,8 +333,8 @@ export class User extends HistorizedModel {
       }
 
       if (
-        isRoleIncluded(ExternalUserRoles, previousUserValues.role) &&
-        !isRoleIncluded(ExternalUserRoles, userToUpdate.role)
+        isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
+        !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
       ) {
         await User.update(
           {
