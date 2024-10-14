@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -34,24 +34,29 @@ export class MessagingService {
    * Get all conversations for a user
    */
   async getConversationsForUser(userId: string, query: string) {
+    const whereClause: WhereOptions = {
+      userId,
+    };
+
+    if (query && query !== '') {
+      whereClause[Op.or as keyof WhereOptions] = [
+        {
+          '$conversation.participants.firstName$': {
+            [Op.iLike]: `%${query}%`,
+          },
+        },
+        {
+          '$conversation.participants.lastName$': {
+            [Op.iLike]: `%${query}%`,
+          },
+        },
+      ];
+    }
+
     // Get all conversations where ConversationParticipant exists for the given user
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
-        where: {
-          userId,
-          [Op.or]: [
-            {
-              '$conversation.participants.firstName$': {
-                [Op.iLike]: `%${query}%`,
-              },
-            },
-            {
-              '$conversation.participants.lastName$': {
-                [Op.iLike]: `%${query}%`,
-              },
-            },
-          ],
-        },
+        where: whereClause,
         include: [
           {
             model: Conversation,
