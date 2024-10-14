@@ -12,8 +12,10 @@ async function bootstrap() {
 
   if (process.env.ENABLE_SWAGGER === 'true') {
     const config = new DocumentBuilder()
-      .setTitle('LinkedOut Backend')
-      .setDescription('LinkedOut API description')
+      .setTitle('Entourage Pro API')
+      .setDescription(
+        "Webapp de recrutement pour le processus de réinsertion des personnes en manque de réseau professionnel. L'objectif est de guider et accompagner le candidat tout au long du parcours de recherche et du recrutement."
+      )
       .setVersion('2.0')
       .addBearerAuth()
       .build();
