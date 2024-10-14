@@ -8,7 +8,9 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
+        defaultValue: () => {
+          return UUID.v4();
+        },
       },
       createdAt: {
         allowNull: false,
@@ -27,7 +29,9 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
+        defaultValue: () => {
+          return UUID.v4();
+        },
       },
       createdAt: {
         allowNull: false,
@@ -66,7 +70,9 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4,
+        defaultValue: () => {
+          return UUID.v4();
+        },
       },
       conversationId: {
         type: Sequelize.UUID,
