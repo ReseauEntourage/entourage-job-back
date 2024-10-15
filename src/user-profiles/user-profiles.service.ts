@@ -2,7 +2,7 @@ import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
-import sequelize, { Op, WhereOptions } from 'sequelize';
+import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
@@ -12,16 +12,10 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
-import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  UserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
@@ -37,11 +31,7 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import {
-  getUserProfileAmbitionsInclude,
-  getUserProfileBusinessLinesInclude,
-  getUserProfileInclude,
-} from './models/user-profile.include';
+import { getUserProfileInclude } from './models/user-profile.include';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -464,105 +454,125 @@ export class UserProfilesService {
       ...userProfile.networkBusinessLines,
     ];
 
-    const helpsOptions =
-      helps.length > 0
-        ? { name: { [Op.or]: helps.map(({ name }) => name) } }
-        : {};
+    interface UserRecommendationSQL {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      department: Department;
+      currentJob: string;
+      role: UserRole;
+      lastConnection: Date;
+      createdAt: Date;
+      ambitions: string;
+      profileBusinessLines: string;
+      profileHelps: string;
+    }
 
-    const profiles = await this.userProfileModel.findAll({
-      attributes: ['id'], // Sélectionner uniquement l'id des profils
-      where: {
-        isAvailable: true, // Appliquer le filtre de disponibilité
-        department: sameRegionDepartmentsOptions, // Appliquer le filtre sur le département
-        '$user.receivedMessages.id$': { [Op.is]: null },
-        '$user.sentMessages.id$': { [Op.is]: null },
-        [Op.not]: {
-          ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
-            ? { '$helpNeeds.id$': null }
-            : {}),
-          ...(isRoleIncluded(CoachUserRoles, rolesToFind)
-            ? { '$helpOffers.id$': null }
-            : {}),
+    const sql = `
+    SELECT
+      u.id,
+      u."firstName",
+      u."lastName",
+      u.email,
+      up.department,
+      up."currentJob",
+      u.role,
+      u."lastConnection",
+      u."createdAt" as "createdAt",
+      string_agg(DISTINCT a.name, ', ') as ambitions,
+      string_agg(DISTINCT COALESCE(sb.name, nb.name), ', ') as "profileBusinessLines",  
+      string_agg(DISTINCT COALESCE(ho.name, hn.name), ', ') as "profileHelps"
+    
+    FROM "Users" u
+    LEFT JOIN "User_Profiles" up 
+      ON u.id = up."UserId"
+    
+    LEFT JOIN "User_Profile_Search_Ambitions" upsa
+      ON up.id = upsa."UserProfileId"
+    LEFT JOIN "Ambitions" a
+      ON a.id = upsa."AmbitionId"
+    
+    LEFT JOIN "User_Profile_Search_BusinessLines" upsb
+      ON up.id = upsb."UserProfileId"
+    LEFT JOIN "BusinessLines" sb
+      ON sb.id = upsb."BusinessLineId"
+    
+    LEFT JOIN "User_Profile_Network_BusinessLines" upnb
+      ON up.id = upnb."UserProfileId"
+    LEFT JOIN "BusinessLines" nb
+      ON nb.id = upnb."BusinessLineId"
+    
+    LEFT JOIN "Help_Needs" hn 
+      ON up.id = hn."UserProfileId"
+    LEFT JOIN "Help_Offers" ho
+      ON up.id = ho."UserProfileId"
+    
+    WHERE u."deletedAt" IS NULL
+    AND up."isAvailable" IS TRUE
+    AND up.department IN (${sameRegionDepartmentsOptions.map(
+      (department) => `'${department}'`
+    )})
+    AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
+    AND u."lastConnection" IS NOT NULL
+
+    -- InternalMessages join optimisation
+    AND u.id NOT IN (
+      SELECT
+        "addresseeUserId"
+      FROM
+        "InternalMessages"
+      WHERE
+        "senderUserId" = '${userId}'
+    )
+    AND u.id NOT IN (
+      SELECT
+        "senderUserId"
+      FROM
+        "InternalMessages"
+      WHERE
+        "addresseeUserId" = '${userId}'
+    )
+        
+    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
+    ;`;
+
+    const profiles: UserRecommendationSQL[] =
+      await this.userProfileModel.sequelize.query(sql, {
+        type: QueryTypes.SELECT,
+        logging(sql, timing) {
+          /* eslint-disable no-console */
+          console.log(sql);
+          console.log('Timing: ', timing);
+          /* eslint-enable no-console */
         },
-      },
-      include: [
-        ...getUserProfileAmbitionsInclude(), // Inclure les ambitions du profil utilisateur
-        ...getUserProfileBusinessLinesInclude(), // Inclure les lignes de métier du profil utilisateur
-        {
-          model: HelpNeed,
-          as: 'helpNeeds',
-          required: false,
-          attributes: ['name'], // Ne récupérer que l'ID des helpNeeds
-          where: isRoleIncluded(CandidateUserRoles, rolesToFind)
-            ? helpsOptions // Appliquer des filtres supplémentaires si le rôle le nécessite
-            : null,
-        },
-        {
-          model: HelpOffer,
-          as: 'helpOffers',
-          required: false,
-          attributes: ['name'], // Ne récupérer que l'ID des helpOffers
-          where: isRoleIncluded(CoachUserRoles, rolesToFind)
-            ? helpsOptions // Appliquer des filtres supplémentaires si le rôle le nécessite
-            : null,
-        },
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'role'], // Sélectionner l'ID et le rôle de l'utilisateur
-          required: true, // Forcer la jointure avec la table User pour ne récupérer que les utilisateurs existants
-          where: {
-            role: rolesToFind, // Appliquer le filtre sur les rôles uniquement dans la table User
-          },
-          include: [
-            {
-              model: InternalMessage,
-              as: 'receivedMessages',
-              required: false,
-              attributes: ['id'], // Ne récupérer que l'ID des messages reçus
-              where: {
-                senderUserId: userId, // Appliquer le filtre sur l'expéditeur
-                deletedAt: { [Op.is]: null }, // Exclure les messages supprimés
-              },
-            },
-            {
-              model: InternalMessage,
-              as: 'sentMessages',
-              required: false,
-              attributes: ['id'], // Ne récupérer que l'ID des messages envoyés
-              where: {
-                addresseeUserId: userId, // Appliquer le filtre sur le destinataire
-                deletedAt: { [Op.is]: null }, // Exclure les messages supprimés
-              },
-            },
-          ],
-        },
-      ],
-    });
+        benchmark: true,
+      });
 
     const sortedProfiles = _.orderBy(
       profiles,
       [
         (profile) => {
-          const profileBusinessLines = [
-            ...profile.searchBusinessLines,
-            ...profile.networkBusinessLines,
-          ];
+          const profileBusinessLines = profile.profileBusinessLines.length
+            ? profile.profileBusinessLines.split(', ')
+            : [];
 
           const businessLinesDifference = _.difference(
             businessLines.map(({ name }) => name),
-            profileBusinessLines.map(({ name }) => name)
+            profileBusinessLines
           );
 
           const businessLinesMatching =
             (businessLines.length - businessLinesDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_LINES;
 
-          const profileHelps = [...profile.helpOffers, ...profile.helpNeeds];
+          const profileHelps = profile.profileHelps.length
+            ? profile.profileHelps.split(', ')
+            : [];
 
           const helpsDifferences = _.difference(
             helps.map(({ name }) => name),
-            profileHelps.map(({ name }) => name)
+            profileHelps
           );
 
           const helpsMatching =
@@ -572,14 +582,14 @@ export class UserProfilesService {
           return businessLinesMatching + helpsMatching;
         },
         ({ department }) => department === userProfile.department,
-        ({ user: { createdAt } }) => createdAt,
+        ({ createdAt }) => createdAt,
       ],
       ['desc', 'asc', 'desc']
     );
 
     return this.createRecommendations(
       userId,
-      sortedProfiles.slice(0, 3).map((profile) => profile.user.id)
+      sortedProfiles.slice(0, 3).map((profile) => profile.id)
     );
   }
 
