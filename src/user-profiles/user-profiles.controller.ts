@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {
   BadRequestException,
   Body,
@@ -187,7 +186,6 @@ export class UserProfilesController {
   async findRecommendationsByUserId(
     @Param('userId', new ParseUUIDPipe()) userId: string
   ): Promise<PublicProfile[]> {
-    console.log('Find recommendations');
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
 
@@ -205,49 +203,14 @@ export class UserProfilesController {
         return !recommendedProfile?.recommendedUser?.userProfile?.isAvailable;
       });
 
-    console.log(
-      'Last recommendation date',
-      userProfile.lastRecommendationsDate
-    );
-    console.log(
-      'Is recommendation date ?',
-      !userProfile.lastRecommendationsDate
-    );
-    console.log(
-      'Is last recommendation date before one week ? ',
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo)
-    );
-    console.log(
-      'currentRecommendedProfiles.length  < 3 ?',
-      currentRecommendedProfiles.length < 3
-    );
-    console.log(
-      'oneOfCurrentRecommendedProfilesIsNotAvailable ?',
-      oneOfCurrentRecommendedProfilesIsNotAvailable
-    );
-    console.log(
-      'final condition',
-      !userProfile.lastRecommendationsDate ||
-        moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-        currentRecommendedProfiles.length < 3 ||
-        oneOfCurrentRecommendedProfilesIsNotAvailable
-    );
-
-    console.log(moment().toDate());
-
-    console.log('--------------------------');
-
     if (
       !userProfile.lastRecommendationsDate ||
       moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
       currentRecommendedProfiles.length < 3 ||
       oneOfCurrentRecommendedProfilesIsNotAvailable
     ) {
-      console.log('Updating recommendations for user', userId);
       await this.userProfilesService.removeRecommendationsByUserId(userId);
-
       await this.userProfilesService.updateRecommendationsByUserId(userId);
-
       await this.userProfilesService.updateByUserId(userId, {
         lastRecommendationsDate: moment().toDate(),
       });
@@ -255,9 +218,6 @@ export class UserProfilesController {
 
     const recommendedProfiles =
       await this.userProfilesService.findRecommendationsByUserId(userId);
-
-    console.log('Recommended profiles length', recommendedProfiles.length);
-    console.log('Recommended profiles', recommendedProfiles);
 
     return Promise.all(
       recommendedProfiles.map(
