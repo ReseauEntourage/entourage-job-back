@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -538,6 +539,12 @@ export class UserProfilesService {
           ],
         },
       ],
+      logging: (sql, timing) => {
+        console.log('Recommendations SQL query:');
+        console.log(sql);
+        console.log(timing);
+      },
+      benchmark: true,
     });
 
     const sortedProfiles = _.orderBy(
