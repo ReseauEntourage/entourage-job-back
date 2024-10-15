@@ -540,6 +540,7 @@ export class UserProfilesService {
         },
       ],
       logging: (sql, timing) => {
+        console.log('Recommendations SQL query:');
         console.log(sql);
         console.log(timing);
       },
