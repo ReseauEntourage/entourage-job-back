@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
