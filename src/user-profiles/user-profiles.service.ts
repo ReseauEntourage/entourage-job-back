@@ -512,7 +512,8 @@ export class UserProfilesService {
     WHERE u."deletedAt" IS NULL
     AND up."isAvailable" IS TRUE
     AND up.department IN (${sameRegionDepartmentsOptions.map(
-      (department) => `'${department}'`
+      // remplacer un appostrophe par deux appostrophes
+      (department) => `'${department.replace(/'/g, "''")}'`
     )})
     AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
     AND u."lastConnection" IS NOT NULL
@@ -566,7 +567,7 @@ export class UserProfilesService {
           const businessLinesMatching =
             (businessLines.length - businessLinesDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_LINES;
-          
+
           const profileHelps = profile.profileHelps
             ? profile.profileHelps.split(', ')
             : [];
