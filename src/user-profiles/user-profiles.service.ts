@@ -512,7 +512,8 @@ export class UserProfilesService {
     WHERE u."deletedAt" IS NULL
     AND up."isAvailable" IS TRUE
     AND up.department IN (${sameRegionDepartmentsOptions.map(
-      (department) => `'${department}'`
+      // remplacer un appostrophe par deux appostrophes
+      (department) => `'${department.replace(/'/g, "''")}'`
     )})
     AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
     AND u."lastConnection" IS NOT NULL
@@ -537,6 +538,8 @@ export class UserProfilesService {
         
     GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
     ;`;
+
+    console.log(sql);
 
     const profiles: UserRecommendationSQL[] =
       await this.userProfileModel.sequelize.query(sql, {
@@ -566,7 +569,7 @@ export class UserProfilesService {
           const businessLinesMatching =
             (businessLines.length - businessLinesDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_LINES;
-          
+
           const profileHelps = profile.profileHelps
             ? profile.profileHelps.split(', ')
             : [];
