@@ -554,7 +554,7 @@ export class UserProfilesService {
       profiles,
       [
         (profile) => {
-          const profileBusinessLines = profile.profileBusinessLines.length
+          const profileBusinessLines = profile.profileBusinessLines
             ? profile.profileBusinessLines.split(', ')
             : [];
 
@@ -566,8 +566,8 @@ export class UserProfilesService {
           const businessLinesMatching =
             (businessLines.length - businessLinesDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_LINES;
-
-          const profileHelps = profile.profileHelps.length
+          
+          const profileHelps = profile.profileHelps
             ? profile.profileHelps.split(', ')
             : [];
 
