@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -565,7 +566,7 @@ export class UserProfilesService {
           const businessLinesMatching =
             (businessLines.length - businessLinesDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_LINES;
-
+          
           const profileHelps = profile.profileHelps
             ? profile.profileHelps.split(', ')
             : [];
