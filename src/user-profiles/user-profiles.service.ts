@@ -539,8 +539,6 @@ export class UserProfilesService {
     GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
     ;`;
 
-    console.log(sql);
-
     const profiles: UserRecommendationSQL[] =
       await this.userProfileModel.sequelize.query(sql, {
         type: QueryTypes.SELECT,
