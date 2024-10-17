@@ -31,6 +31,13 @@ export class MessagingController {
     return this.messagingService.getConversationsForUser(userId, query);
   }
 
+  @Get('conversations/unseen-count')
+  async getUnseenConversationsCount(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    return this.messagingService.getUnseenConversationsCount(userId);
+  }
+
   @UseGuards(UserInConversation)
   @Get('conversations/:conversationId')
   async getConversation(
