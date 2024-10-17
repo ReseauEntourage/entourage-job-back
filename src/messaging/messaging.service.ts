@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { Op, Sequelize, WhereOptions } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -72,6 +72,37 @@ export class MessagingService {
       });
     // Return the conversations
     return conversationParticipants.map((cp) => cp.conversation);
+  }
+
+  async getUnseenConversationsCount(userId: string) {
+    return this.conversationParticipantModel.count({
+      where: {
+        [Op.or]: [
+          {
+            seenAt: {
+              [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
+            },
+          },
+          {
+            seenAt: null,
+          },
+        ],
+        userId,
+      },
+      include: [
+        {
+          model: Conversation,
+          as: 'conversation',
+          include: [
+            {
+              model: Message,
+              as: 'messages',
+              attributes: ['createdAt'],
+            },
+          ],
+        },
+      ],
+    });
   }
 
   /**
