@@ -2,6 +2,7 @@ export const userAttributes = [
   'id',
   'firstName',
   'lastName',
+  'email',
   'gender',
   'role',
   'zone',
