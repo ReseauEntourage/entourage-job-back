@@ -772,6 +772,24 @@ export class MailsService {
       },
     });
   }
+
+  // TODO: Call this method after completing the referer onboarding
+  async sendRefererOnboardingConfirmationMail(referer: User, candidate: User) {
+    const { candidatesAdminMail } = getAdminMailsFromZone(referer.zone);
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: referer.email,
+      templateId: MailjetTemplates.REFERER_ONBOARDING_CONFIRMATION,
+      replyTo: candidatesAdminMail,
+      variables: {
+        refererFirstName: referer.firstName,
+        candidateFirstName: candidate.firstName,
+        candidateLastName: candidate.lastName,
+        loginUrl: `${process.env.FRONTEND_URL}/login`,
+        zone: referer.zone,
+      },
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {
