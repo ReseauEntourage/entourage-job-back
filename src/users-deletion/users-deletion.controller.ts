@@ -76,8 +76,9 @@ export class UsersDeletionController {
 
     await this.usersDeletionService.removeUserProfile(userId);
 
-    const userDeleted = await this.usersDeletionService.removeUser(userId);
+    // Todo change to userDeleted
+    const usersDeleted = await this.usersDeletionService.removeUser(userId);
 
-    return { userDeleted, cvsDeleted };
+    return { usersDeleted, cvsDeleted };
   }
 }
