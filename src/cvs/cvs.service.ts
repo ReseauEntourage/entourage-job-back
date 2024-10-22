@@ -634,6 +634,7 @@ export class CVsService {
     return this.cvModel.destroy({
       where: { UserId: candidateId },
       individualHooks: true,
+      cascade: true,
     });
   }
 
