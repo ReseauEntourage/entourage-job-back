@@ -1,4 +1,4 @@
-import { Includeable } from 'sequelize/types';
+import { Includeable } from 'sequelize';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import {
