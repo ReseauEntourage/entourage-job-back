@@ -46,7 +46,6 @@ import {
   isRoleIncluded,
 } from '../users.utils';
 import { InternalMessage } from 'src/messages/models';
-import { Conversation, ConversationParticipant } from 'src/messaging/models';
 import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
@@ -229,9 +228,6 @@ export class User extends HistorizedModel {
 
   @HasMany(() => InternalMessage, 'senderUserId')
   sentMessages: InternalMessage[];
-
-  @BelongsToMany(() => Conversation, () => ConversationParticipant)
-  conversations: Conversation[];
 
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
