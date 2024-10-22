@@ -542,13 +542,6 @@ export class UserProfilesService {
     const profiles: UserRecommendationSQL[] =
       await this.userProfileModel.sequelize.query(sql, {
         type: QueryTypes.SELECT,
-        logging(sql, timing) {
-          /* eslint-disable no-console */
-          console.log(sql);
-          console.log('Timing: ', timing);
-          /* eslint-enable no-console */
-        },
-        benchmark: true,
       });
 
     const sortedProfiles = _.orderBy(
