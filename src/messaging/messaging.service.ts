@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize, WhereOptions } from 'sequelize';
+import { Includeable, Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -38,40 +38,33 @@ export class MessagingService {
    * Get all conversations for a user
    */
   async getConversationsForUser(userId: string, query: string) {
-    const whereClause: WhereOptions = {
-      userId,
+    const conversationInclude: Includeable = {
+      model: Conversation,
+      as: 'conversation',
+      include: [...messagingConversationIncludes(1)],
     };
 
-    if (query && query !== '') {
-      whereClause[Op.or as keyof WhereOptions] = [
-        {
-          '$conversation.participants.firstName$': {
-            [Op.iLike]: `%${query}%`,
-          },
-        },
-        {
-          '$conversation.participants.lastName$': {
-            [Op.iLike]: `%${query}%`,
-          },
-        },
-      ];
-    }
-
-    // Get all conversations where ConversationParticipant exists for the given user
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
-        where: whereClause,
-        include: [
-          {
-            model: Conversation,
-            as: 'conversation',
-            include: messagingConversationIncludes(1),
-          },
-        ],
+        where: {
+          userId,
+        },
+        include: [conversationInclude],
         order: [['conversation', 'createdAt', 'DESC']],
       });
-    // Return the conversations
-    return conversationParticipants.map((cp) => cp.conversation);
+
+    return conversationParticipants
+      .filter(
+        (cp) =>
+          cp.conversation &&
+          (query === '' ||
+            cp.conversation.participants.some(
+              (p) =>
+                p.id !== userId &&
+                (p.firstName.includes(query) || p.lastName.includes(query))
+            ))
+      )
+      .map((cp) => cp.conversation);
   }
 
   async getUnseenConversationsCount(userId: string) {
