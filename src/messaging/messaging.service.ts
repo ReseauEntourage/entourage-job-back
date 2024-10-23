@@ -1,16 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Includeable, Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
   slackChannels,
 } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
-import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { ReportConversationDto } from './dto/report-conversation.dto';
+import { userAttributes } from './messaging.attributes';
+import {
+  messagingConversationIncludes,
+  messagingMessageIncludes,
+} from './messaging.includes';
 import { generateSlackMsgConfigConversationReported } from './messaging.utils';
 import { ConversationParticipant } from './models';
 import { Conversation } from './models/conversation.model';
@@ -34,55 +38,64 @@ export class MessagingService {
    * Get all conversations for a user
    */
   async getConversationsForUser(userId: string, query: string) {
-    // Get all conversations where ConversationParticipant exists for the given user
+    const conversationInclude: Includeable = {
+      model: Conversation,
+      as: 'conversation',
+      include: [...messagingConversationIncludes(1)],
+    };
+
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
         where: {
           userId,
-          [Op.or]: [
-            {
-              '$conversation.participants.firstName$': {
-                [Op.iLike]: `%${query}%`,
-              },
+        },
+        include: [conversationInclude],
+        order: [['conversation', 'createdAt', 'DESC']],
+      });
+
+    return conversationParticipants
+      .filter(
+        (cp) =>
+          cp.conversation &&
+          (query === '' ||
+            cp.conversation.participants.some(
+              (p) =>
+                p.id !== userId &&
+                (p.firstName.includes(query) || p.lastName.includes(query))
+            ))
+      )
+      .map((cp) => cp.conversation);
+  }
+
+  async getUnseenConversationsCount(userId: string) {
+    return this.conversationParticipantModel.count({
+      where: {
+        [Op.or]: [
+          {
+            seenAt: {
+              [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
             },
+          },
+          {
+            seenAt: null,
+          },
+        ],
+        userId,
+      },
+      include: [
+        {
+          model: Conversation,
+          as: 'conversation',
+          include: [
             {
-              '$conversation.participants.lastName$': {
-                [Op.iLike]: `%${query}%`,
-              },
+              model: Message,
+              as: 'messages',
+              attributes: ['createdAt'],
             },
           ],
         },
-        include: [
-          {
-            model: Conversation,
-            as: 'conversation',
-            include: [
-              {
-                model: Message,
-                as: 'messages',
-                attributes: ['id', 'content', 'createdAt', 'authorId'],
-                include: [
-                  {
-                    model: User,
-                    as: 'author',
-                    attributes: ['id', 'firstName', 'lastName'],
-                  },
-                ],
-                order: [['createdAt', 'DESC']],
-                limit: 1,
-              },
-              {
-                model: User,
-                as: 'participants',
-                attributes: ['id', 'firstName', 'lastName', 'role', 'zone'],
-              },
-            ],
-          },
-        ],
-        order: [['conversation', 'createdAt', 'DESC']],
-      });
-    // Return the conversations
-    return conversationParticipants.map((cp) => cp.conversation);
+      ],
+    });
   }
 
   /**
@@ -121,9 +134,6 @@ export class MessagingService {
       createMessageDto.authorId
     );
     const message = await this.findOneMessage(createdMessage.id);
-    // const conversation = await this.findConversation(
-    //   createdMessage.conversationId
-    // );
 
     // Send notification message received to the other participants
     const otherParticipants = message.conversation.participants.filter(
@@ -159,31 +169,7 @@ export class MessagingService {
       return null;
     }
     const conversation = await this.conversationModel.findByPk(conversationId, {
-      include: [
-        {
-          model: Message,
-          as: 'messages',
-          include: [
-            {
-              model: User,
-              as: 'author',
-              attributes: ['id', 'firstName', 'lastName', 'gender'],
-            },
-          ],
-          attributes: ['id', 'content', 'createdAt'],
-        },
-        {
-          model: User,
-          as: 'participants',
-          attributes: ['id', 'firstName', 'lastName', 'gender', 'role'],
-          include: [
-            {
-              model: UserProfile,
-              attributes: ['id', 'isAvailable'],
-            },
-          ],
-        },
-      ],
+      include: messagingConversationIncludes(),
       order: [['messages', 'createdAt', 'ASC']],
     });
 
@@ -204,7 +190,8 @@ export class MessagingService {
             {
               model: User,
               as: 'author',
-              attributes: ['id', 'firstName', 'lastName', 'email'],
+              attributes: userAttributes,
+              paranoid: false,
             },
           ],
           order: [['createdAt', 'DESC']],
@@ -213,7 +200,8 @@ export class MessagingService {
         {
           model: User,
           as: 'participants',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+          attributes: userAttributes,
+          paranoid: false,
         },
       ],
     });
@@ -249,32 +237,7 @@ export class MessagingService {
 
   async findOneMessage(messageId: string) {
     return this.messageModel.findByPk(messageId, {
-      include: [
-        {
-          model: Conversation,
-          as: 'conversation',
-          attributes: ['id'],
-          include: [
-            {
-              model: User,
-              as: 'participants',
-              attributes: [
-                'id',
-                'firstName',
-                'lastName',
-                'email',
-                'role',
-                'zone',
-              ],
-            },
-          ],
-        },
-        {
-          model: User,
-          as: 'author',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'role', 'zone'],
-        },
-      ],
+      include: messagingMessageIncludes,
     });
   }
 
