@@ -30,7 +30,6 @@ import {
 } from 'src/users/guards';
 import {
   AllUserRoles,
-  CandidateUserRoles,
   Permissions,
   UserRole,
   UserRoles,
@@ -314,7 +313,7 @@ export class UserProfilesController {
       currentUserId
     );
 
-    if (isRoleIncluded(CandidateUserRoles, user.role)) {
+    if (user.role === UserRoles.CANDIDATE) {
       const userCandidate =
         await this.userProfilesService.findUserCandidateByCandidateId(
           userIdToGet

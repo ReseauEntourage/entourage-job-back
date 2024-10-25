@@ -42,8 +42,6 @@ import { User, UserCandidat } from './models';
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import {
-  CandidateUserRoles,
-  CoachUserRoles,
   MemberFilterKey,
   Permissions,
   SequelizeUniqueConstraintError,
@@ -84,20 +82,20 @@ export class UsersController {
       throw new BadRequestException();
     }
 
-    if (isRoleIncluded(CandidateUserRoles, role)) {
+    if (isRoleIncluded([UserRoles.CANDIDATE], role)) {
       return this.usersService.findAllCandidateMembers({
         ...query,
-        role: role as typeof CandidateUserRoles,
+        role: [UserRoles.CANDIDATE],
         limit,
         offset,
         search,
       });
     }
 
-    if (isRoleIncluded(CoachUserRoles, role)) {
+    if (isRoleIncluded([UserRoles.COACH], role)) {
       return this.usersService.findAllCoachMembers({
         ...query,
-        role: role as typeof CoachUserRoles,
+        role: [UserRoles.COACH],
         limit,
         offset,
         search,
@@ -146,10 +144,8 @@ export class UsersController {
     @UserPayload('role') role: UserRole
   ) {
     const ids = {
-      candidateId: isRoleIncluded(CandidateUserRoles, role)
-        ? userId
-        : undefined,
-      coachId: isRoleIncluded(CoachUserRoles, role) ? userId : undefined,
+      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
+      coachId: role === UserRoles.COACH ? userId : undefined,
     };
 
     if (role === UserRoles.REFERRER) {

@@ -32,8 +32,6 @@ import {
 } from 'sequelize-typescript';
 import {
   AdminRole,
-  CandidateUserRoles,
-  CoachUserRoles,
   Gender,
   Genders,
   RolesWithOrganization,
@@ -259,7 +257,7 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (isRoleIncluded(CandidateUserRoles, createdUser.role)) {
+    if (createdUser.role === UserRoles.CANDIDATE) {
       await UserCandidat.create(
         {
           candidatId: createdUser.id,
@@ -292,8 +290,8 @@ export class User extends HistorizedModel {
       previousUserValues.role !== userToUpdate.role
     ) {
       if (
-        isRoleIncluded(CandidateUserRoles, previousUserValues.role) &&
-        !isRoleIncluded(CandidateUserRoles, userToUpdate.role)
+        previousUserValues.role === UserRoles.CANDIDATE &&
+        userToUpdate.role !== UserRoles.CANDIDATE
       ) {
         await UserCandidat.destroy({
           where: {
@@ -301,10 +299,10 @@ export class User extends HistorizedModel {
           },
         });
       } else if (
-        !isRoleIncluded(CandidateUserRoles, previousUserValues.role) &&
-        isRoleIncluded(CandidateUserRoles, userToUpdate.role)
+        previousUserValues.role !== UserRoles.CANDIDATE &&
+        userToUpdate.role === UserRoles.CANDIDATE
       ) {
-        if (isRoleIncluded(CoachUserRoles, previousUserValues.role)) {
+        if (previousUserValues.role === UserRoles.COACH) {
           await UserCandidat.update(
             {
               coachId: null,
@@ -355,7 +353,7 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
-      isRoleIncluded(CandidateUserRoles, userToUpdate.role) &&
+      userToUpdate.role === UserRoles.CANDIDATE &&
       previousUserValues &&
       previousUserValues.firstName != undefined &&
       previousUserValues.firstName !== userToUpdate.firstName
@@ -381,9 +379,8 @@ export class User extends HistorizedModel {
       },
       {
         where: {
-          [isRoleIncluded(CoachUserRoles, destroyedUser.role)
-            ? 'coachId'
-            : 'candidatId']: destroyedUser.id,
+          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
+            destroyedUser.id,
         },
       }
     );
