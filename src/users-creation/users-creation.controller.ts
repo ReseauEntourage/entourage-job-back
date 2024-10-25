@@ -13,11 +13,12 @@ import { Public } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
-  NormalUserRoles,
   Permissions,
   Programs,
+  RegistrableUserRoles,
   RolesWithOrganization,
   SequelizeUniqueConstraintError,
+  UserRoles,
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
@@ -105,7 +106,14 @@ export class UsersCreationController {
   ) {
     if (
       !isValidPhone(createUserRegistrationDto.phone) ||
-      !isRoleIncluded(NormalUserRoles, createUserRegistrationDto.role)
+      !isRoleIncluded(RegistrableUserRoles, createUserRegistrationDto.role)
+    ) {
+      throw new BadRequestException();
+    }
+
+    if (
+      !isRoleIncluded([UserRoles.REFERRER], createUserRegistrationDto.role) &&
+      !createUserRegistrationDto.program
     ) {
       throw new BadRequestException();
     }
@@ -121,7 +129,7 @@ export class UsersCreationController {
       role: createUserRegistrationDto.role,
       gender: createUserRegistrationDto.gender,
       phone: createUserRegistrationDto.phone,
-      OrganizationId: null,
+      OrganizationId: createUserRegistrationDto.organizationId,
       address: null,
       adminRole: null,
       zone,

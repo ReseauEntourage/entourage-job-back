@@ -13,6 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { Public } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
@@ -35,7 +37,7 @@ export class OrganizationsController {
     private readonly organizationReferentsService: OrganizationReferentsService
   ) {}
 
-  @UserPermissions(Permissions.ADMIN)
+  @Public()
   @UseGuards(UserPermissionsGuard)
   @Get()
   async findAll(
@@ -81,7 +83,8 @@ export class OrganizationsController {
     return organization;
   }
 
-  @UserPermissions(Permissions.ADMIN)
+  @Public()
+  @Throttle(5, 60)
   @UseGuards(UserPermissionsGuard)
   @Post()
   async create(
