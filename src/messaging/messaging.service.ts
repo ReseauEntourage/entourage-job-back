@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Includeable, Op, Sequelize } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -39,19 +39,28 @@ export class MessagingService {
    */
   async getConversationsForUser(userId: string, query: string) {
     const lowerQuery = query.toLowerCase();
-    const conversationInclude: Includeable = {
-      model: Conversation,
-      as: 'conversation',
-      include: [...messagingConversationIncludes(1)],
-    };
-
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
         where: {
           userId,
         },
-        include: [conversationInclude],
-        order: [['conversation', 'createdAt', 'DESC']],
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [...messagingConversationIncludes(1)],
+          },
+        ],
+        // Les conversations contiennent des messages. Je souhaite que les conversations soient triées par date de dernier message créé dans cette conversation
+        // Ajout des includes nécessaires pour les conversations
+        order: [
+          [
+            Sequelize.literal(
+              '(SELECT MAX("createdAt") FROM "Messages" WHERE "Messages"."conversationId" = "conversation"."id")'
+            ),
+            'DESC',
+          ],
+        ],
       });
 
     return conversationParticipants
