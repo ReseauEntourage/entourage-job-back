@@ -38,6 +38,7 @@ export class MessagingService {
    * Get all conversations for a user
    */
   async getConversationsForUser(userId: string, query: string) {
+    const lowerQuery = query.toLowerCase();
     const conversationInclude: Includeable = {
       model: Conversation,
       as: 'conversation',
@@ -61,7 +62,8 @@ export class MessagingService {
             cp.conversation.participants.some(
               (p) =>
                 p.id !== userId &&
-                (p.firstName.includes(query) || p.lastName.includes(query))
+                (p.firstName.toLowerCase().includes(lowerQuery) ||
+                  p.lastName.toLowerCase().includes(lowerQuery))
             ))
       )
       .map((cp) => cp.conversation);
