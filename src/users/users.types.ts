@@ -46,17 +46,9 @@ export const NormalUserRoles: NormalUserRole[] = [
   UserRoles.COACH,
 ];
 
-export type CandidateUserRole = typeof UserRoles.CANDIDATE;
-export const CandidateUserRoles: CandidateUserRole[] = [UserRoles.CANDIDATE];
 export const RolesWithOrganization: UserRole[] = [UserRoles.REFERRER];
 
-export type CoachUserRole = typeof UserRoles.COACH;
-
-export const CoachUserRoles: CoachUserRole[] = [UserRoles.COACH];
-export const AllUserRoles: (CandidateUserRole | CoachUserRole)[] = [
-  ...CandidateUserRoles,
-  ...CoachUserRoles,
-];
+export const AllUserRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
 
 export const AdminRoles = {
   CANDIDATES: 'Candidats',

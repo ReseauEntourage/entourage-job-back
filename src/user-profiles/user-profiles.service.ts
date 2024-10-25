@@ -18,12 +18,7 @@ import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  UserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
@@ -447,9 +442,10 @@ export class UserProfilesService {
       this.findOneByUserId(userId),
     ]);
 
-    const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
-      ? [UserRoles.COACH]
-      : CandidateUserRoles;
+    const rolesToFind =
+      user.role === UserRoles.CANDIDATE
+        ? [UserRoles.COACH]
+        : [UserRoles.CANDIDATE];
 
     const sameRegionDepartmentsOptions = userProfile.department
       ? Departments.filter(
@@ -480,10 +476,10 @@ export class UserProfilesService {
         '$user.receivedMessages.id$': null,
         '$user.sentMessages.id$': null,
         [Op.not]: {
-          ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+          ...(isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
             ? { '$helpNeeds.id$': null }
             : {}),
-          ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+          ...(isRoleIncluded([UserRoles.COACH], rolesToFind)
             ? { '$helpOffers.id$': null }
             : {}),
         },
@@ -496,7 +492,7 @@ export class UserProfilesService {
           as: 'helpNeeds',
           required: false,
           attributes: ['name'],
-          where: isRoleIncluded(CandidateUserRoles, rolesToFind)
+          where: isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
             ? helpsOptions
             : {},
         },
@@ -505,7 +501,7 @@ export class UserProfilesService {
           as: 'helpOffers',
           required: false,
           attributes: ['name'],
-          where: isRoleIncluded(CoachUserRoles, rolesToFind)
+          where: isRoleIncluded([UserRoles.COACH], rolesToFind)
             ? helpsOptions
             : {},
         },
@@ -590,9 +586,9 @@ export class UserProfilesService {
   //     this.findOneByUserId(userId),
   //   ]);
 
-  //   const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
+  //   const rolesToFind = isRoleIncluded([UserRoles.CANDIDATE], user.role)
   //     ? [UserRoles.COACH]
-  //     : CandidateUserRoles;
+  //     : [UserRoles.CANDIDATE];
 
   //   const sameRegionDepartmentsOptions = userProfile.department
   //     ? Departments.filter(
@@ -623,10 +619,10 @@ export class UserProfilesService {
   //       isAvailable: true,
   //       department: sameRegionDepartmentsOptions,
   //       [Op.not]: {
-  //         ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+  //         ...(isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
   //           ? { '$helpNeeds.id$': null }
   //           : {}),
-  //         ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+  //         ...(isRoleIncluded([UserRoles.COACH], rolesToFind)
   //           ? { '$helpOffers.id$': null }
   //           : {}),
   //       },
@@ -637,7 +633,7 @@ export class UserProfilesService {
   //         as: 'helpNeeds',
   //         required: false,
   //         attributes: ['id'],
-  //         where: isRoleIncluded(CandidateUserRoles, rolesToFind)
+  //         where: isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
   //           ? helpsOptions
   //           : {},
   //       },
@@ -646,7 +642,7 @@ export class UserProfilesService {
   //         as: 'helpOffers',
   //         required: false,
   //         attributes: ['id'],
-  //         where: isRoleIncluded(CoachUserRoles, rolesToFind)
+  //         where: isRoleIncluded([UserRoles.COACH], rolesToFind)
   //           ? helpsOptions
   //           : {},
   //       },
@@ -730,9 +726,9 @@ export class UserProfilesService {
   //   const user = await this.findOneUser(userId);
   //   const userProfile = await this.findOneByUserId(userId);
 
-  //   const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
+  //   const rolesToFind = isRoleIncluded([UserRoles.CANDIDATE], user.role)
   //     ? [UserRoles.COACH]
-  //     : CandidateUserRoles;
+  //     : [UserRoles.CANDIDATE];
 
   //   const sameRegionDepartmentsOptions = userProfile.department
   //     ? Departments.filter(
@@ -768,10 +764,10 @@ export class UserProfilesService {
   //   //     '$user.receivedMessages.id$': null,
   //   //     '$user.sentMessages.id$': null,
   //   //     [Op.not]: {
-  //   //       ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+  //   //       ...(isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
   //   //         ? { '$helpNeeds.id$': null }
   //   //         : {}),
-  //   //       ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+  //   //       ...(isRoleIncluded([UserRoles.COACH] rolesToFind)
   //   //         ? { '$helpOffers.id$': null }
   //   //         : {}),
   //   //     },
@@ -784,7 +780,7 @@ export class UserProfilesService {
   //   //       as: 'helpNeeds',
   //   //       required: false,
   //   //       attributes: ['id'],
-  //   //       ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+  //   //       ...(isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
   //   //         ? { where: helpsOptions }
   //   //         : {}),
   //   //     },
@@ -793,7 +789,7 @@ export class UserProfilesService {
   //   //       as: 'helpOffers',
   //   //       required: false,
   //   //       attributes: ['id'],
-  //   //       ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+  //   //       ...(isRoleIncluded([UserRoles.COACH] rolesToFind)
   //   //         ? { where: helpsOptions }
   //   //         : {}),
   //   //     },
@@ -834,13 +830,13 @@ export class UserProfilesService {
   //     department: sameRegionDepartmentsOptions,
   //     '$user.receivedMessages.id$': null as null,
   //     '$user.sentMessages.id$': null as null, // Explicitly define the type as null
-  //     ...((isRoleIncluded(CandidateUserRoles, rolesToFind) ||
-  //       isRoleIncluded(CoachUserRoles, rolesToFind)) && {
+  //     ...((isRoleIncluded([UserRoles.CANDIDATE], rolesToFind) ||
+  //       isRoleIncluded([UserRoles.COACH], rolesToFind)) && {
   //       [Op.not]: {
-  //         ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
+  //         ...(isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
   //           ? { '$helpNeeds.id$': null }
   //           : {}),
-  //         ...(isRoleIncluded(CoachUserRoles, rolesToFind)
+  //         ...(isRoleIncluded([UserRoles.COACH], rolesToFind)
   //           ? { '$helpOffers.id$': null }
   //           : {}),
   //       },
@@ -855,7 +851,7 @@ export class UserProfilesService {
   //       as: 'helpNeeds',
   //       required: false,
   //       attributes: ['id'],
-  //       where: isRoleIncluded(CandidateUserRoles, rolesToFind)
+  //       where: isRoleIncluded([UserRoles.CANDIDATE], rolesToFind)
   //         ? helpsOptions
   //         : undefined,
   //     },
@@ -864,7 +860,7 @@ export class UserProfilesService {
   //       as: 'helpOffers',
   //       required: false,
   //       attributes: ['id'],
-  //       where: isRoleIncluded(CoachUserRoles, rolesToFind)
+  //       where: isRoleIncluded([UserRoles.COACH], rolesToFind)
   //         ? helpsOptions
   //         : undefined,
   //     },

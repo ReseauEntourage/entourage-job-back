@@ -27,15 +27,10 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  UserRoles,
-} from 'src/users/users.types';
+import { UserRoles } from 'src/users/users.types';
 import {
   getCandidateFromCoach,
   getCoachFromCandidate,
-  isRoleIncluded,
 } from 'src/users/users.utils';
 import {
   getAdminMailsFromDepartment,
@@ -218,7 +213,7 @@ export class MailsService {
     let candidate, coach: User;
     let toEmail: string;
     // if user is a a candidate then get the coach from the candidate
-    if (isRoleIncluded(CandidateUserRoles, submittingUser.role)) {
+    if (submittingUser.role === UserRoles.CANDIDATE) {
       coach = getCoachFromCandidate(submittingUser);
       toEmail = getAdminMailsFromZone(submittingUser.zone).candidatesAdminMail;
     } else {
@@ -793,9 +788,9 @@ export class MailsService {
 }
 
 const getRoleString = (user: User): string => {
-  if (isRoleIncluded(CandidateUserRoles, user.role)) {
+  if (user.role === UserRoles.CANDIDATE) {
     return 'Candidat';
-  } else if (isRoleIncluded(CoachUserRoles, user.role)) {
+  } else if (user.role === UserRoles.COACH) {
     return 'Coach';
   } else {
     return 'Admin';

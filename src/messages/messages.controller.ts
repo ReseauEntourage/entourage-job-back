@@ -12,8 +12,7 @@ import {
 import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
 import { ThrottleUserIdGuard } from 'src/users/guards/throttle-user-id.guard';
-import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
 import {
   CreateExternalMessageDto,
@@ -45,7 +44,7 @@ export class MessagesController {
     if (
       (createMessageDto.senderPhone &&
         !isValidPhone(createMessageDto.senderPhone)) ||
-      !isRoleIncluded(CandidateUserRoles, candidate.role)
+      candidate.role !== UserRoles.CANDIDATE
     ) {
       throw new BadRequestException();
     }
