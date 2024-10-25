@@ -51,8 +51,6 @@ export class MessagingService {
             include: [...messagingConversationIncludes(1)],
           },
         ],
-        // Les conversations contiennent des messages. Je souhaite que les conversations soient triées par date de dernier message créé dans cette conversation
-        // Ajout des includes nécessaires pour les conversations
         order: [
           [
             Sequelize.literal(
