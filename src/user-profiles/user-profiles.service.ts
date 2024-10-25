@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
-
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
-import sequelize, { Op, WhereOptions } from 'sequelize';
+import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
@@ -14,16 +13,10 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
-import { InternalMessage } from 'src/messages/models';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  UserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
@@ -39,11 +32,7 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import {
-  getUserProfileAmbitionsInclude,
-  getUserProfileBusinessLinesInclude,
-  getUserProfileInclude,
-} from './models/user-profile.include';
+import { getUserProfileInclude } from './models/user-profile.include';
 import { HelpValue, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -466,100 +455,119 @@ export class UserProfilesService {
       ...userProfile.networkBusinessLines,
     ];
 
-    const helpsOptions =
-      helps.length > 0
-        ? { name: { [Op.or]: helps.map(({ name }) => name) } }
-        : {};
+    interface UserRecommendationSQL {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      department: Department;
+      currentJob: string;
+      role: UserRole;
+      lastConnection: Date;
+      createdAt: Date;
+      ambitions: string;
+      profileBusinessLines: string;
+      profileHelps: string;
+    }
 
-    // Requête combinée pour récupérer les profils filtrés et leurs détails
-    const profiles = await this.userProfileModel.findAll({
-      attributes: ['id'],
-      where: {
-        isAvailable: true,
-        department: sameRegionDepartmentsOptions,
-        '$user.receivedMessages.id$': null,
-        '$user.sentMessages.id$': null,
-        [Op.not]: {
-          ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
-            ? { '$helpNeeds.id$': null }
-            : {}),
-          ...(isRoleIncluded(CoachUserRoles, rolesToFind)
-            ? { '$helpOffers.id$': null }
-            : {}),
-        },
-      },
-      include: [
-        ...getUserProfileAmbitionsInclude(),
-        ...getUserProfileBusinessLinesInclude(),
-        {
-          model: HelpNeed,
-          as: 'helpNeeds',
-          required: false,
-          attributes: ['name'],
-          where: isRoleIncluded(CandidateUserRoles, rolesToFind)
-            ? helpsOptions
-            : {},
-        },
-        {
-          model: HelpOffer,
-          as: 'helpOffers',
-          required: false,
-          attributes: ['name'],
-          where: isRoleIncluded(CoachUserRoles, rolesToFind)
-            ? helpsOptions
-            : {},
-        },
-        {
-          model: User,
-          as: 'user',
-          include: [
-            {
-              model: InternalMessage,
-              as: 'receivedMessages',
-              required: false,
-              attributes: ['id'],
-              where: { senderUserId: userId },
-            },
-            {
-              model: InternalMessage,
-              as: 'sentMessages',
-              required: false,
-              attributes: ['id'],
-              where: { addresseeUserId: userId },
-            },
-          ],
+    const sql = `
+    SELECT
+      u.id,
+      u."firstName",
+      u."lastName",
+      u.email,
+      up.department,
+      up."currentJob",
+      u.role,
+      u."lastConnection",
+      u."createdAt" as "createdAt",
+      string_agg(DISTINCT a.name, ', ') as ambitions,
+      string_agg(DISTINCT COALESCE(sb.name, nb.name), ', ') as "profileBusinessLines",  
+      string_agg(DISTINCT COALESCE(ho.name, hn.name), ', ') as "profileHelps"
+    
+    FROM "Users" u
+    LEFT JOIN "User_Profiles" up 
+      ON u.id = up."UserId"
+    
+    LEFT JOIN "User_Profile_Search_Ambitions" upsa
+      ON up.id = upsa."UserProfileId"
+    LEFT JOIN "Ambitions" a
+      ON a.id = upsa."AmbitionId"
+    
+    LEFT JOIN "User_Profile_Search_BusinessLines" upsb
+      ON up.id = upsb."UserProfileId"
+    LEFT JOIN "BusinessLines" sb
+      ON sb.id = upsb."BusinessLineId"
+    
+    LEFT JOIN "User_Profile_Network_BusinessLines" upnb
+      ON up.id = upnb."UserProfileId"
+    LEFT JOIN "BusinessLines" nb
+      ON nb.id = upnb."BusinessLineId"
+    
+    LEFT JOIN "Help_Needs" hn 
+      ON up.id = hn."UserProfileId"
+    LEFT JOIN "Help_Offers" ho
+      ON up.id = ho."UserProfileId"
+    
+    WHERE u."deletedAt" IS NULL
+    AND up."isAvailable" IS TRUE
+    AND up.department IN (${sameRegionDepartmentsOptions.map(
+      // remplacer un appostrophe par deux appostrophes
+      (department) => `'${department.replace(/'/g, "''")}'`
+    )})
+    AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
+    AND u."lastConnection" IS NOT NULL
 
-          attributes: ['id'],
-          where: { role: rolesToFind },
-        },
-      ],
-    });
+    -- InternalMessages join optimisation
+    AND u.id NOT IN (
+      SELECT
+        "addresseeUserId"
+      FROM
+        "InternalMessages"
+      WHERE
+        "senderUserId" = '${userId}'
+    )
+    AND u.id NOT IN (
+      SELECT
+        "senderUserId"
+      FROM
+        "InternalMessages"
+      WHERE
+        "addresseeUserId" = '${userId}'
+    )
+        
+    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
+    ;`;
 
-    // Tri des profils
+    const profiles: UserRecommendationSQL[] =
+      await this.userProfileModel.sequelize.query(sql, {
+        type: QueryTypes.SELECT,
+      });
 
     const sortedProfiles = _.orderBy(
       profiles,
       [
         (profile) => {
-          const profileBusinessLines = [
-            ...profile.searchBusinessLines,
-            ...profile.networkBusinessLines,
-          ];
+          const profileBusinessLines = profile.profileBusinessLines
+            ? profile.profileBusinessLines.split(', ')
+            : [];
 
           const businessLinesDifference = _.difference(
             businessLines.map(({ name }) => name),
-            profileBusinessLines.map(({ name }) => name)
+            profileBusinessLines
           );
 
           const businessLinesMatching =
             (businessLines.length - businessLinesDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_LINES;
 
-          const profileHelps = [...profile.helpOffers, ...profile.helpNeeds];
+          const profileHelps = profile.profileHelps
+            ? profile.profileHelps.split(', ')
+            : [];
 
           const helpsDifferences = _.difference(
             helps.map(({ name }) => name),
-            profileHelps.map(({ name }) => name)
+            profileHelps
           );
 
           const helpsMatching =
@@ -569,414 +577,16 @@ export class UserProfilesService {
           return businessLinesMatching + helpsMatching;
         },
         ({ department }) => department === userProfile.department,
-        ({ user: { createdAt } }) => createdAt,
+        ({ createdAt }) => createdAt,
       ],
       ['desc', 'asc', 'desc']
     );
 
     return this.createRecommendations(
       userId,
-      sortedProfiles.slice(0, 3).map((profile) => profile.user.id)
+      sortedProfiles.slice(0, 3).map((profile) => profile.id)
     );
   }
-
-  // V2
-  // async updateRecommendationsByUserId(userId: string) {
-  //   console.log('updateRecommendationsByUserId', userId);
-
-  //   // Récupérer les informations utilisateur et profil en parallèle
-  //   const [user, userProfile] = await Promise.all([
-  //     this.findOneUser(userId),
-  //     this.findOneByUserId(userId),
-  //   ]);
-
-  //   const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
-  //     ? [UserRoles.COACH]
-  //     : CandidateUserRoles;
-
-  //   const sameRegionDepartmentsOptions = userProfile.department
-  //     ? Departments.filter(
-  //         ({ region }) =>
-  //           region ===
-  //           Departments.find(({ name }) => userProfile.department === name)
-  //             .region
-  //       ).map(({ name }) => name)
-  //     : Departments.map(({ name }) => name);
-
-  //   const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
-  //   const businessLines = [
-  //     ...userProfile.searchBusinessLines,
-  //     ...userProfile.networkBusinessLines,
-  //   ];
-
-  //   const helpsOptions =
-  //     helps.length > 0
-  //       ? { name: { [Op.or]: helps.map(({ name }) => name) } }
-  //       : {};
-
-  //   // Récupération des profils filtrés
-  //   const filteredProfiles = await this.userProfileModel.findAll({
-  //     // ...getUserProfileAmbitionsInclude(),
-  //     // ...getUserProfileBusinessLinesInclude(),
-  //     attributes: ['id'],
-  //     where: {
-  //       isAvailable: true,
-  //       department: sameRegionDepartmentsOptions,
-  //       [Op.not]: {
-  //         ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
-  //           ? { '$helpNeeds.id$': null }
-  //           : {}),
-  //         ...(isRoleIncluded(CoachUserRoles, rolesToFind)
-  //           ? { '$helpOffers.id$': null }
-  //           : {}),
-  //       },
-  //     },
-  //     include: [
-  //       {
-  //         model: HelpNeed,
-  //         as: 'helpNeeds',
-  //         required: false,
-  //         attributes: ['id'],
-  //         where: isRoleIncluded(CandidateUserRoles, rolesToFind)
-  //           ? helpsOptions
-  //           : {},
-  //       },
-  //       {
-  //         model: HelpOffer,
-  //         as: 'helpOffers',
-  //         required: false,
-  //         attributes: ['id'],
-  //         where: isRoleIncluded(CoachUserRoles, rolesToFind)
-  //           ? helpsOptions
-  //           : {},
-  //       },
-  //       {
-  //         model: User,
-  //         as: 'user',
-  //         attributes: ['id'],
-  //         where: { role: rolesToFind },
-  //       },
-  //     ],
-  //     order: [[{ model: User, as: 'user' }, 'lastConnection', 'DESC']],
-  //     limit: 100,
-  //     subQuery: false,
-  //     logging(sql, timing) {
-  //       console.log('Filtered profiles');
-  //       console.log(sql, timing);
-  //     },
-  //     benchmark: true,
-  //   });
-
-  //   console.log('filteredProfiles LENGTH', filteredProfiles.length);
-
-  //   const profiles = await this.userProfileModel.findAll({
-  //     attributes: UserProfilesAttributes,
-  //     where: {
-  //       id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
-  //     },
-  //     include: [
-  //       ...getUserProfileInclude(),
-  //       {
-  //         model: User,
-  //         as: 'user',
-  //         attributes: UserProfilesUserAttributes,
-  //       },
-  //     ],
-  //     logging(sql, timing) {
-  //       console.log('Filtered profiles');
-  //       console.log(sql, timing);
-  //     },
-  //     benchmark: true,
-  //   });
-
-  //   const sortedProfiles = _.orderBy(
-  //     profiles,
-  //     [
-  //       (profile) => {
-  //         const profileBusinessLines = [
-  //           ...profile.searchBusinessLines,
-  //           ...profile.networkBusinessLines,
-  //         ];
-  //         const businessLinesMatching =
-  //           _.intersection(
-  //             businessLines.map(({ name }) => name),
-  //             profileBusinessLines.map(({ name }) => name)
-  //           ).length * UserProfileRecommendationsWeights.BUSINESS_LINES;
-
-  //         const profileHelps = [...profile.helpOffers, ...profile.helpNeeds];
-  //         const helpsMatching =
-  //           _.intersection(
-  //             helps.map(({ name }) => name),
-  //             profileHelps.map(({ name }) => name)
-  //           ).length * UserProfileRecommendationsWeights.HELPS;
-
-  //         return businessLinesMatching + helpsMatching;
-  //       },
-  //       ({ department }) => department === userProfile.department,
-  //       ({ user: { createdAt } }) => createdAt,
-  //     ],
-  //     ['desc', 'asc', 'desc']
-  //   );
-
-  //   return this.createRecommendations(
-  //     userId,
-  //     sortedProfiles.slice(0, 3).map((profile) => profile.user.id)
-  //   );
-  // }
-
-  // Old Version just in case
-  // async updateRecommendationsByUserId(userId: string) {
-  //   console.log('updateRecommendationsByUserId', userId);
-  //   const user = await this.findOneUser(userId);
-  //   const userProfile = await this.findOneByUserId(userId);
-
-  //   const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
-  //     ? [UserRoles.COACH]
-  //     : CandidateUserRoles;
-
-  //   const sameRegionDepartmentsOptions = userProfile.department
-  //     ? Departments.filter(
-  //         ({ region }) =>
-  //           region ===
-  //           Departments.find(({ name }) => userProfile.department === name)
-  //             .region
-  //       ).map(({ name }) => name)
-  //     : Departments.map(({ name }) => name);
-
-  //   const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
-  //   const businessLines = [
-  //     ...userProfile.searchBusinessLines,
-  //     ...userProfile.networkBusinessLines,
-  //   ];
-
-  //   const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
-  //     helps?.length > 0
-  //       ? {
-  //           name: {
-  //             [Op.or]: helps.map(({ name }) => name),
-  //           },
-  //         }
-  //       : {};
-
-  //   console.log('----------------------------');
-
-  //   // const filteredProfiles = await this.userProfileModel.findAll({
-  //   //   attributes: ['id'],
-  //   //   where: {
-  //   //     isAvailable: true,
-  //   //     department: sameRegionDepartmentsOptions,
-  //   //     '$user.receivedMessages.id$': null,
-  //   //     '$user.sentMessages.id$': null,
-  //   //     [Op.not]: {
-  //   //       ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
-  //   //         ? { '$helpNeeds.id$': null }
-  //   //         : {}),
-  //   //       ...(isRoleIncluded(CoachUserRoles, rolesToFind)
-  //   //         ? { '$helpOffers.id$': null }
-  //   //         : {}),
-  //   //     },
-  //   //   },
-  //   //   include: [
-  //   //     ...getUserProfileAmbitionsInclude(),
-  //   //     ...getUserProfileBusinessLinesInclude(),
-  //   //     {
-  //   //       model: HelpNeed,
-  //   //       as: 'helpNeeds',
-  //   //       required: false,
-  //   //       attributes: ['id'],
-  //   //       ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
-  //   //         ? { where: helpsOptions }
-  //   //         : {}),
-  //   //     },
-  //   //     {
-  //   //       model: HelpOffer,
-  //   //       as: 'helpOffers',
-  //   //       required: false,
-  //   //       attributes: ['id'],
-  //   //       ...(isRoleIncluded(CoachUserRoles, rolesToFind)
-  //   //         ? { where: helpsOptions }
-  //   //         : {}),
-  //   //     },
-  //   //     {
-  //   //       model: User,
-  //   //       as: 'user',
-  //   //       attributes: ['id'],
-  //   //       include: [
-  //   //         {
-  //   //           model: InternalMessage,
-  //   //           as: 'receivedMessages',
-  //   //           required: false,
-  //   //           attributes: ['id'],
-  //   //           where: { senderUserId: userId },
-  //   //         },
-  //   //         {
-  //   //           model: InternalMessage,
-  //   //           as: 'sentMessages',
-  //   //           required: false,
-  //   //           attributes: ['id'],
-  //   //           where: { addresseeUserId: userId },
-  //   //         },
-  //   //       ],
-  //   //       where: {
-  //   //         role: rolesToFind,
-  //   //       },
-  //   //     },
-  //   //   ],
-  //   //   // limit: 3,
-  //   //   logging(sql, timing) {
-  //   //     console.log('Filtered profiles');
-  //   //     console.log(sql, timing);
-  //   //   },
-  //   //   benchmark: true,
-  //   // });
-  //   const whereConditions = {
-  //     isAvailable: true,
-  //     department: sameRegionDepartmentsOptions,
-  //     '$user.receivedMessages.id$': null as null,
-  //     '$user.sentMessages.id$': null as null, // Explicitly define the type as null
-  //     ...((isRoleIncluded(CandidateUserRoles, rolesToFind) ||
-  //       isRoleIncluded(CoachUserRoles, rolesToFind)) && {
-  //       [Op.not]: {
-  //         ...(isRoleIncluded(CandidateUserRoles, rolesToFind)
-  //           ? { '$helpNeeds.id$': null }
-  //           : {}),
-  //         ...(isRoleIncluded(CoachUserRoles, rolesToFind)
-  //           ? { '$helpOffers.id$': null }
-  //           : {}),
-  //       },
-  //     }),
-  //   };
-
-  //   const includeConditions = [
-  //     ...getUserProfileAmbitionsInclude(),
-  //     ...getUserProfileBusinessLinesInclude(),
-  //     {
-  //       model: HelpNeed,
-  //       as: 'helpNeeds',
-  //       required: false,
-  //       attributes: ['id'],
-  //       where: isRoleIncluded(CandidateUserRoles, rolesToFind)
-  //         ? helpsOptions
-  //         : undefined,
-  //     },
-  //     {
-  //       model: HelpOffer,
-  //       as: 'helpOffers',
-  //       required: false,
-  //       attributes: ['id'],
-  //       where: isRoleIncluded(CoachUserRoles, rolesToFind)
-  //         ? helpsOptions
-  //         : undefined,
-  //     },
-  //     {
-  //       model: User,
-  //       as: 'user',
-  //       attributes: ['id'],
-  //       where: {
-  //         role: rolesToFind,
-  //       },
-  //       include: [
-  //         {
-  //           model: InternalMessage,
-  //           as: 'receivedMessages',
-  //           required: false,
-  //           attributes: ['id'],
-  //           where: { senderUserId: userId },
-  //         },
-  //         {
-  //           model: InternalMessage,
-  //           as: 'sentMessages',
-  //           required: false,
-  //           attributes: ['id'],
-  //           where: { addresseeUserId: userId },
-  //         },
-  //       ],
-  //     },
-  //   ];
-
-  //   const filteredProfiles = await this.userProfileModel.findAll({
-  //     attributes: ['id'],
-  //     where: whereConditions,
-  //     include: includeConditions,
-  //     // limit: 3,
-  //     logging(sql, timing) {
-  //       console.log('Filtered profiles');
-  //       console.log(sql, timing);
-  //     },
-  //     benchmark: true,
-  //     // Ajoutez des indexations ou des options de performance supplémentaires ici si nécessaire
-  //   });
-
-  //   console.log('filteredProfiles LENGTH', filteredProfiles.length);
-  //   console.log('filteredProfiles', filteredProfiles);
-
-  //   console.log('----------------------------');
-
-  //   const profiles = await this.userProfileModel.findAll({
-  //     attributes: UserProfilesAttributes,
-  //     where: {
-  //       id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
-  //     },
-  //     include: [
-  //       ...getUserProfileInclude(),
-  //       {
-  //         model: User,
-  //         as: 'user',
-  //         attributes: UserProfilesUserAttributes,
-  //       },
-  //     ],
-  //     logging(sql, timing) {
-  //       console.log('Profiles');
-  //       console.log(sql, timing);
-  //     },
-  //     benchmark: true,
-  //   });
-
-  //   console.log('PROFILES LENGTH', filteredProfiles.length);
-  //   console.log('PROFILES', filteredProfiles);
-
-  //   const sortedProfiles = _.orderBy(
-  //     profiles,
-  //     [
-  //       (profile) => {
-  //         const profileBusinessLines = [
-  //           ...profile.searchBusinessLines,
-  //           ...profile.networkBusinessLines,
-  //         ];
-
-  //         const businessLinesDifference = _.difference(
-  //           businessLines.map(({ name }) => name),
-  //           profileBusinessLines.map(({ name }) => name)
-  //         );
-
-  //         const businessLinesMatching =
-  //           (businessLines.length - businessLinesDifference.length) *
-  //           UserProfileRecommendationsWeights.BUSINESS_LINES;
-
-  //         const profileHelps = [...profile.helpOffers, ...profile.helpNeeds];
-
-  //         const helpsDifferences = _.difference(
-  //           helps.map(({ name }) => name),
-  //           profileHelps.map(({ name }) => name)
-  //         );
-
-  //         const helpsMatching =
-  //           (helps.length - helpsDifferences.length) *
-  //           UserProfileRecommendationsWeights.HELPS;
-
-  //         return businessLinesMatching + helpsMatching;
-  //       },
-  //       ({ department }) => department === userProfile.department,
-  //       ({ user: { createdAt } }) => createdAt,
-  //     ],
-  //     ['desc', 'asc', 'desc']
-  //   );
-
-  //   return this.createRecommendations(
-  //     userId,
-  //     sortedProfiles.slice(0, 3).map((profile) => profile.user.id)
-  //   );
-  // }
 
   async uploadProfileImage(userId: string, file: Express.Multer.File) {
     const { path } = file;
