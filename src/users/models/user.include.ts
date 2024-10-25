@@ -57,12 +57,6 @@ export const UserCandidatInclude: Includeable[] = [
     as: 'referredCandidates',
     attributes: [...UserAttributes],
     include: [
-      // {
-      //   model: UserProfile,
-      //   as: 'userProfile',
-      //   attributes: UserProfilesAttributes,
-      //   include: getUserProfileInclude(),
-      // },
       {
         model: UserCandidat,
         as: 'candidat',
@@ -73,14 +67,6 @@ export const UserCandidatInclude: Includeable[] = [
             model: User,
             as: 'candidat',
             attributes: [...UserAttributes],
-            // include: [
-            //   {
-            //     model: UserProfile,
-            //     as: 'userProfile',
-            //     attributes: UserProfilesAttributes,
-            //     include: getUserProfileInclude(),
-            //   },
-            // ],
           },
         ],
       },
