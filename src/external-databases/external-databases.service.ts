@@ -66,6 +66,9 @@ export class ExternalDatabasesService {
       case Genders.OTHER:
         conertedGenderType = CandidateGenders.OTHER;
         break;
+      case undefined:
+        conertedGenderType = null;
+        break;
       default:
         throw new Error('Invalid gender value');
     }

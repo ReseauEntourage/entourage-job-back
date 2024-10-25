@@ -46,6 +46,17 @@ export const NormalUserRoles: NormalUserRole[] = [
   UserRoles.COACH,
 ];
 
+export type RegistrableUserRole =
+  | typeof UserRoles.CANDIDATE
+  | typeof UserRoles.COACH
+  | typeof UserRoles.REFERRER;
+
+export const RegistrableUserRoles: RegistrableUserRole[] = [
+  UserRoles.CANDIDATE,
+  UserRoles.COACH,
+  UserRoles.REFERRER,
+];
+
 export type CandidateUserRole = typeof UserRoles.CANDIDATE;
 export const CandidateUserRoles: CandidateUserRole[] = [UserRoles.CANDIDATE];
 export const RolesWithOrganization: UserRole[] = [UserRoles.REFERRER];

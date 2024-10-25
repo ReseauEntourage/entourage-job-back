@@ -111,13 +111,18 @@ export class MailsService {
   }
 
   async sendVerificationMail(user: User, token: string) {
+    const templateId =
+      user.role === UserRoles.REFERRER
+        ? MailjetTemplates.USER_EMAIL_VERIFICATION_REFERRER
+        : MailjetTemplates.USER_EMAIL_VERIFICATION;
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
-      templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
+      templateId,
       variables: {
         firstName: user.firstName,
         toEmail: user.email,
         token,
+        zone: user.zone,
       },
     });
   }
