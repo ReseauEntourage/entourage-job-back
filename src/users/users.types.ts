@@ -48,7 +48,11 @@ export const NormalUserRoles: NormalUserRole[] = [
 
 export const RolesWithOrganization: UserRole[] = [UserRoles.REFERRER];
 
-export const AllUserRoles = [UserRoles.CANDIDATE, UserRoles.COACH];
+export const AllUserRoles = [
+  UserRoles.CANDIDATE,
+  UserRoles.COACH,
+  UserRoles.REFERRER,
+];
 
 export const AdminRoles = {
   CANDIDATES: 'Candidats',
