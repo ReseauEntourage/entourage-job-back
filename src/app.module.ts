@@ -27,6 +27,7 @@ import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MessagesModule } from './messages/messages.module';
+import { MessagingModule } from './messaging/messaging.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
@@ -127,6 +128,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OrganizationsModule,
     MessagesModule,
     ReadDocumentsModule,
+    MessagingModule,
   ],
   providers: [
     {
@@ -169,6 +171,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ContactsModule,
     OrganizationsModule,
     MessagesModule,
+    MessagingModule,
   ],
 })
 export class AppModule {}

@@ -18,6 +18,7 @@ import { CVsTestingModule } from './cvs/cvs-testing.module';
 import { DatabaseHelper } from './database.helper';
 import { ExternalCvsTestingModule } from './external-cvs/external-cvs-testing.module';
 import { MessagesTestingModule } from './messages/messages-testing.module';
+import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { OpportunitiesTestingModule } from './opportunities/opportunities-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
@@ -45,6 +46,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     OrganizationsTestingModule,
     MessagesTestingModule,
     ExternalCvsTestingModule,
+    MessagingTestingModule,
   ],
   providers: [DatabaseHelper],
 })

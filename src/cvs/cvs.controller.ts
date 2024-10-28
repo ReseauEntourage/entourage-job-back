@@ -14,7 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import _ from 'lodash';
 import { RequestWithAuthorizationHeader } from 'src/auth/auth.types';
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
@@ -42,6 +42,7 @@ import { CreateCVDto } from './dto';
 import { ParseCVPipe } from './dto/parse-cv.pipe';
 
 // TODO change to /cvs
+@ApiTags('CVs')
 @Controller('cv')
 export class CVsController {
   constructor(private readonly cvsService: CVsService) {}
