@@ -6267,7 +6267,7 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
-          expect(response.body.usersDeleted).toBe(1);
+          expect(response.body.userDeleted).toBe(1);
           expect(response.body.cvsDeleted).toBe(1);
 
           const user = await usersHelper.findUser(candidate.id);
@@ -6390,7 +6390,7 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
-          expect(response.body.usersDeleted).toBe(1);
+          expect(response.body.userDeleted).toBe(1);
           expect(response.body.cvsDeleted).toBe(0);
 
           const user = await usersHelper.findUser(coach.id);

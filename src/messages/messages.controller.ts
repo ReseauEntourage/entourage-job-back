@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { Public, UserPayload } from 'src/auth/guards';
 import { ThrottleUserIdGuard } from 'src/users/guards/throttle-user-id.guard';
@@ -23,6 +24,7 @@ import {
 import { MessagesService } from './messages.service';
 import { ExternalMessageSubjects } from './messages.types';
 
+@ApiTags('Message')
 @Controller('message')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
