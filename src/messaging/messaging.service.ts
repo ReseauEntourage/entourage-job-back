@@ -37,8 +37,7 @@ export class MessagingService {
   /**
    * Get all conversations for a user
    */
-  async getConversationsForUser(userId: string, query: string) {
-    const lowerQuery = query.toLowerCase();
+  async getConversationsForUser(userId: string) {
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
         where: {
@@ -62,17 +61,7 @@ export class MessagingService {
       });
 
     return conversationParticipants
-      .filter(
-        (cp) =>
-          cp.conversation &&
-          (query === '' ||
-            cp.conversation.participants.some(
-              (p) =>
-                p.id !== userId &&
-                (p.firstName.toLowerCase().includes(lowerQuery) ||
-                  p.lastName.toLowerCase().includes(lowerQuery))
-            ))
-      )
+      .filter((cp) => cp.conversation)
       .map((cp) => cp.conversation);
   }
 
