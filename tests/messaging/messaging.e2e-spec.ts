@@ -229,7 +229,7 @@ describe('MESSAGING', () => {
       });
     });
 
-    describe('R - Read conversations - /messaging/conversations/?query=', () => {
+    describe('R - Read conversations - /messaging/conversations', () => {
       beforeEach(async () => {
         // Create the conversations
         const conversations = await databaseHelper.createEntities(
@@ -257,7 +257,7 @@ describe('MESSAGING', () => {
         await Promise.all(messagePromises);
       });
 
-      it('should return all results when no query provided', async () => {
+      it('should return all conversations', async () => {
         const response: APIResponse<MessagingController['getConversations']> =
           await request(server)
             .get(`/messaging/conversations`)
@@ -265,36 +265,6 @@ describe('MESSAGING', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.length).toBe(NB_CONVERSATIONS);
-      });
-
-      it('should return only the conversations matching the query (by the firstname)', async () => {
-        const response: APIResponse<MessagingController['getConversations']> =
-          await request(server)
-            .get(`/messaging/conversations?query=${coachs[0].firstName}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-      });
-
-      it('should return only the conversations matching the query (by the lastname)', async () => {
-        const response: APIResponse<MessagingController['getConversations']> =
-          await request(server)
-            .get(`/messaging/conversations?query=${coachs[0].lastName}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(1);
-      });
-
-      it('should return an empty array if no conversation match the query', async () => {
-        const response: APIResponse<MessagingController['getConversations']> =
-          await request(server)
-            .get(`/messaging/conversations?query=abracadabra`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-
-        expect(response.status).toBe(200);
-        expect(response.body.length).toBe(0);
       });
 
       it('should return 401 if no token provided', async () => {
