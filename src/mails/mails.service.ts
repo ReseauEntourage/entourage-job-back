@@ -831,6 +831,29 @@ export class MailsService {
       },
     });
   }
+
+  // TODO: Call this method after completing refering funnel
+  // Generate a token with
+  // const token = await this.authService.generateVerificationToken(candidate);
+  async sendReferedCandidateFinalizeAccountMail(
+    referer: User,
+    candidate: User,
+    token: string
+  ) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: referer.email,
+      templateId: MailjetTemplates.REFERED_CANDIDATE_FINALIZE_ACCOUNT,
+      variables: {
+        candidateFirstName: candidate.firstName,
+        refererFirstName: referer.firstName,
+        refererLastName: referer.lastName,
+        // TODO add structure with new UserWithOrganization ?
+        // structure: referer.structure,
+        finalizeAccountUrl: `${process.env.FRONTEND_URL}/finaliser?token=${token}`,
+        zone: candidate.zone,
+      },
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {
