@@ -222,7 +222,7 @@ export class MailsService {
     // if user is a a candidate then get the user as candidate
     if (isRoleIncluded(CandidateUserRoles, submittingUser.role)) {
       candidate = submittingUser;
-      coach = getCoachFromCandidate(submittingUser);
+      coach = getCoachFromCandidate(candidate);
       toEmail = getAdminMailsFromZone(submittingUser.zone).candidatesAdminMail;
     } else {
       // if user is a coach then get the candidate from the coach
