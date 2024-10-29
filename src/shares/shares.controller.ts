@@ -6,9 +6,11 @@ import {
   ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/guards';
 import { SharesService, ShareType } from './shares.service';
 
+@ApiTags('CVs')
 @Controller('cv')
 export class SharesController {
   constructor(private readonly sharesService: SharesService) {}

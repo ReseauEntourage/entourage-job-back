@@ -12,7 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
@@ -29,6 +29,7 @@ import { Organization } from './models';
 import { OrganizationReferentsService } from './organization-referents.service';
 import { OrganizationsService } from './organizations.service';
 
+@ApiTags('Organizations')
 @ApiBearerAuth()
 @Controller('organization')
 export class OrganizationsController {

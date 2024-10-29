@@ -6,13 +6,14 @@ import {
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { v4 as uuid } from 'uuid';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { UsersDeletionService } from './users-deletion.service';
 
 // TODO change to users
+@ApiTags('Users')
 @ApiBearerAuth()
 @Controller('user')
 export class UsersDeletionController {
@@ -76,9 +77,8 @@ export class UsersDeletionController {
 
     await this.usersDeletionService.removeUserProfile(userId);
 
-    // Todo change to userDeleted
-    const usersDeleted = await this.usersDeletionService.removeUser(userId);
+    const userDeleted = await this.usersDeletionService.removeUser(userId);
 
-    return { usersDeleted, cvsDeleted };
+    return { userDeleted, cvsDeleted };
   }
 }
