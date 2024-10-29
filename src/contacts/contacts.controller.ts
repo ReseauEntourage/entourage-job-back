@@ -5,6 +5,7 @@ import {
   Get,
   Post,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import validator from 'validator';
 import { Public } from 'src/auth/guards';
@@ -22,6 +23,7 @@ import { ContactCandidateFormDto } from './dto/contact-candidate-form.dto';
 import { ContactCandidateFormPipe } from './dto/contact-candidate-form.pipe';
 
 // TODO change to /contacts
+@ApiTags('Contacts')
 @Throttle(20, 60)
 @Controller('contact')
 export class ContactsController {

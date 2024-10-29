@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { Public } from 'src/auth/guards';
@@ -35,6 +36,7 @@ function generateFakePassword() {
 }
 
 // TODO change to users
+@ApiTags('Users')
 @Controller('user')
 export class UsersCreationController {
   constructor(private readonly usersCreationService: UsersCreationService) {}

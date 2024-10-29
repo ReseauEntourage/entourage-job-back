@@ -23,6 +23,11 @@ import {
   CVSkill,
 } from 'src/cvs/models';
 import {
+  Conversation,
+  ConversationParticipant,
+  Message,
+} from 'src/messaging/models';
+import {
   Opportunity,
   OpportunityBusinessLine,
   OpportunityUser,
@@ -127,7 +132,13 @@ export class DatabaseHelper {
     @InjectModel(Revision)
     private revisionModel: typeof Revision,
     @InjectModel(RevisionChange)
-    private revisionChangeModel: typeof RevisionChange
+    private revisionChangeModel: typeof RevisionChange,
+    @InjectModel(Message)
+    private messageModel: typeof Message,
+    @InjectModel(Conversation)
+    private conversationModel: typeof Conversation,
+    @InjectModel(Message)
+    private conversationParticipantModel: typeof ConversationParticipant
   ) {}
 
   async resetTestDB() {
@@ -136,6 +147,9 @@ export class DatabaseHelper {
       force: true,
     };
     try {
+      await this.messageModel.truncate(destroyOptions);
+      await this.conversationParticipantModel.truncate(destroyOptions);
+      await this.conversationModel.truncate(destroyOptions);
       await this.revisionChangeModel.truncate(destroyOptions);
       await this.revisionModel.truncate(destroyOptions);
       await this.userProfileNetworkBusinessLineModel.truncate(destroyOptions);

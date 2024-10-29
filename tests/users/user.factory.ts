@@ -9,13 +9,8 @@ import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  Gender,
-  UserRoles,
-} from 'src/users/users.types';
-import { capitalizeNameAndTrim, isRoleIncluded } from 'src/users/users.utils';
+import { Gender, UserRoles } from 'src/users/users.types';
+import { capitalizeNameAndTrim } from 'src/users/users.utils';
 import { AdminZones, Factory } from 'src/utils/types';
 
 @Injectable()
@@ -74,7 +69,7 @@ export class UserFactory implements Factory<User> {
     if (insertInDB) {
       await this.userModel.create({ ...userData, id: userId }, { hooks: true });
       if (userAssociationsProps?.userCandidat) {
-        if (isRoleIncluded(CandidateUserRoles, userData.role)) {
+        if (userData.role === UserRoles.CANDIDATE) {
           await this.userCandidatModel.update(
             { ...userAssociationsProps.userCandidat },
             {
@@ -84,7 +79,7 @@ export class UserFactory implements Factory<User> {
               individualHooks: true,
             }
           );
-        } else if (isRoleIncluded(CoachUserRoles, userData.role)) {
+        } else if (userData.role === UserRoles.COACH) {
           await this.userCandidatModel.update(
             { ...userAssociationsProps.userCandidat },
             {
