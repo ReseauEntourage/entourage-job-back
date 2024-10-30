@@ -107,34 +107,49 @@ export class UsersService {
     const candidatesIds: { nameAndId: string; userId: string }[] =
       await this.userModel.sequelize.query(
         `
-            SELECT DISTINCT("User"."firstName", "User"."id") as "nameAndId", "User"."id" as "userId"
-            FROM "Users" AS "User"
-                     LEFT OUTER JOIN "User_Candidats" AS "candidat" ON "User"."id" = "candidat"."candidatId"
-                     LEFT OUTER JOIN "CVs" AS "candidat->cvs" ON "candidat"."candidatId" = "candidat->cvs"."UserId" AND
-                                                                 "candidat->cvs"."deletedAt" IS NULL ${getRawLastCVVersionWhereOptions(
-                                                                   lastCVVersions
-                                                                 )}
-                   LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
-            ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
-                LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
-                LEFT OUTER JOIN "Users" AS "candidat->coach"
-                ON "candidat"."coachId" = "candidat->coach"."id" AND
-                ("candidat->coach"."deletedAt" IS NULL)
-                LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
-                ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
-                LEFT OUTER JOIN "Organizations" AS "organization" ON "User"."OrganizationId" = "organization"."id"
-            WHERE "User"."deletedAt" IS NULL
-              AND ${filterOptions.join(' AND ')} ${
+        SELECT 
+          DISTINCT("User"."firstName", "User"."id") as "nameAndId",
+          "User"."id" as "userId"
+
+        FROM "Users" AS "User"
+        LEFT OUTER JOIN "User_Candidats" AS "candidat" 
+          ON "User"."id" = "candidat"."candidatId"
+        LEFT OUTER JOIN "CVs" AS "candidat->cvs" 
+          ON "candidat"."candidatId" = "candidat->cvs"."UserId" 
+          AND
+          "candidat->cvs"."deletedAt" IS NULL ${getRawLastCVVersionWhereOptions(
+            lastCVVersions
+          )}
+        LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
+          ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
+        LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" 
+          ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
+        LEFT OUTER JOIN "Users" AS "candidat->coach"
+          ON "candidat"."coachId" = "candidat->coach"."id" 
+          AND ("candidat->coach"."deletedAt" IS NULL)
+        LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
+          ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
+        LEFT OUTER JOIN "Organizations" AS "organization" 
+          ON "User"."OrganizationId" = "organization"."id"
+
+        WHERE 
+          "User"."deletedAt" IS NULL
+          AND ${filterOptions.join(' AND ')} ${
           search ? `AND ${userSearchQueryRaw(search, true)}` : ''
         }
-            ORDER BY ("User"."firstName", "User"."id") ASC
-                LIMIT ${limit}
-            OFFSET ${offset}
+
+        ORDER BY ("User"."firstName", "User"."id") ASC
+        LIMIT ${limit}
+        OFFSET ${offset}
         `,
         {
           type: QueryTypes.SELECT,
           raw: true,
           replacements,
+          /* eslint-disable no-console */
+          logging: console.log,
+          benchmark: true,
+          /* eslint-enable no-console */
         }
       );
 
@@ -191,6 +206,10 @@ export class UsersService {
           required: false,
         },
       ],
+      /* eslint-disable no-console */
+      logging: console.log,
+      benchmark: true,
+      /* eslint-enable no-console */
     });
   }
 
