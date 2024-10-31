@@ -126,7 +126,7 @@ export class UserCandidat extends Model {
       previousUserCandidatValues &&
       previousUserCandidatValues.coachId !== undefined &&
       previousUserCandidatValues.coachId !== userCandidatToUpdate.coachId &&
-      coach.role !== UserRoles.REFERRER
+      coach.role !== UserRoles.REFERER
     ) {
       await UserCandidat.update(
         { coachId: null },

@@ -415,17 +415,17 @@ export class UsersService {
       },
     });
 
-    const { count: referrersCount } = await this.userModel.findAndCountAll({
+    const { count: referersCount } = await this.userModel.findAndCountAll({
       where: {
         OrganizationId: organizationId,
-        role: UserRoles.REFERRER,
+        role: UserRoles.REFERER,
       },
     });
 
     return {
       candidatesCount,
       coachesCount,
-      referrersCount,
+      referersCount,
     };
   }
 

@@ -109,8 +109,8 @@ export class MailsService {
 
   async sendVerificationMail(user: User, token: string) {
     const templateId =
-      user.role === UserRoles.REFERRER
-        ? MailjetTemplates.USER_EMAIL_VERIFICATION_REFERRER
+      user.role === UserRoles.REFERER
+        ? MailjetTemplates.USER_EMAIL_VERIFICATION_REFERER
         : MailjetTemplates.USER_EMAIL_VERIFICATION;
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
@@ -166,7 +166,7 @@ export class MailsService {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 
     const coach = getCoachFromCandidate(candidate);
-    if (coach && coach.role !== UserRoles.REFERRER) {
+    if (coach && coach.role !== UserRoles.REFERER) {
       toEmail.cc = coach.email;
     }
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -196,7 +196,7 @@ export class MailsService {
     const coach = getCoachFromCandidate(candidate);
 
     const toEmail: CustomMailParams['toEmail'] =
-      coach && coach.role !== UserRoles.REFERRER
+      coach && coach.role !== UserRoles.REFERER
         ? { to: candidate.email, cc: coach.email }
         : { to: candidate.email };
 
@@ -249,7 +249,7 @@ export class MailsService {
     };
 
     const coach = getCoachFromCandidate(candidate);
-    if (coach && coach.role !== UserRoles.REFERRER) {
+    if (coach && coach.role !== UserRoles.REFERER) {
       toEmail.cc = coach.email;
     }
 
@@ -276,7 +276,7 @@ export class MailsService {
         to: candidate.email,
       };
       const coach = getCoachFromCandidate(candidate);
-      if (coach && coach.role !== UserRoles.REFERRER) {
+      if (coach && coach.role !== UserRoles.REFERER) {
         toEmail.cc = coach.email;
       }
       const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
