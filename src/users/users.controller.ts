@@ -149,7 +149,7 @@ export class UsersController {
       coachId: role === UserRoles.COACH ? userId : undefined,
     };
 
-    if (role === UserRoles.REFERRER) {
+    if (role === UserRoles.REFERER) {
       const userCandidates = await this.userCandidatsService.findAllByCoachId(
         ids.coachId
       );

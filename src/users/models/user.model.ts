@@ -77,7 +77,7 @@ export class User extends HistorizedModel {
   @ForeignKey(() => User)
   @AllowNull(true)
   @Column
-  referrerId: string;
+  refererId: string;
 
   @ApiProperty()
   @IsString()
@@ -224,8 +224,8 @@ export class User extends HistorizedModel {
   @BelongsTo(() => Organization, 'OrganizationId')
   organization?: Organization;
 
-  @BelongsTo(() => User, 'referrerId')
-  referrer?: User;
+  @BelongsTo(() => User, 'refererId')
+  referer?: User;
 
   @HasOne(() => UserProfile, {
     foreignKey: 'UserId',
@@ -242,7 +242,7 @@ export class User extends HistorizedModel {
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
 
-  @HasMany(() => User, 'referrerId')
+  @HasMany(() => User, 'refererId')
   referredCandidates: User[];
 
   @BeforeCreate

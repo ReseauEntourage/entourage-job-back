@@ -121,7 +121,7 @@ export function getCandidateIdFromCoachOrCandidate(member: User) {
     if (member.role === UserRoles.CANDIDATE) {
       return member.id;
     }
-    if (isRoleIncluded([UserRoles.REFERRER], member.role)) {
+    if (isRoleIncluded([UserRoles.REFERER], member.role)) {
       return member.referredCandidates.map(({ candidat }) => {
         return candidat.candidat.id;
       });

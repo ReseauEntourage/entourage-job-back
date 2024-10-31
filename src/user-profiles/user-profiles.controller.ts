@@ -131,7 +131,7 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    if (role.includes(UserRoles.REFERRER)) {
+    if (role.includes(UserRoles.REFERER)) {
       throw new BadRequestException();
     }
 

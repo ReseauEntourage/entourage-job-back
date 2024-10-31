@@ -497,7 +497,7 @@ describe('Users', () => {
               whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
               referredCandidates: coachReferredCandidates,
-              referrerId: coachReferrerId,
+              refererId: coachRefererId,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -517,7 +517,7 @@ describe('Users', () => {
               whatsappZoneCoachName: candidateWhatappZoneCoachName,
               whatsappZoneCoachUrl: candidateWhatappZoneCoachUrl,
               whatsappZoneCoachQR: candidateWhatappZoneCoachQR,
-              referrerId: candidateReferrerId,
+              refererId: candidateRefererId,
               referredCandidates: candidateReferredCandidates,
               ...candidate
             } = await userFactory.create(
@@ -1260,7 +1260,7 @@ describe('Users', () => {
             whatsappZoneCoachName: loggedInCandidate.user.whatsappZoneCoachName,
             whatsappZoneCoachUrl: loggedInCandidate.user.whatsappZoneCoachUrl,
             whatsappZoneCoachQR: loggedInCandidate.user.whatsappZoneCoachQR,
-            referrerId: loggedInCandidate.user.referrerId,
+            refererId: loggedInCandidate.user.refererId,
             organization: null,
           };
 
@@ -5163,7 +5163,7 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
-            referrerId,
+            refererId,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -5177,7 +5177,7 @@ describe('Users', () => {
             whatsappZoneCoachName: coachWhatsappZoneCoachName,
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
-            referrerId: coachReferrerId,
+            refererId: coachRefererId,
             referredCandidates: coachReferredCandidates,
             ...restCoach
           } = loggedInCoach.user;
@@ -5213,7 +5213,7 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
-            referrerId,
+            refererId,
             referredCandidates,
             ...restCandidate
           } = loggedInCandidate.user;

@@ -172,7 +172,7 @@ export class UsersCreationController {
     }
 
     if (
-      !isRoleIncluded([UserRoles.REFERRER], createUserRegistrationDto.role) &&
+      !isRoleIncluded([UserRoles.REFERER], createUserRegistrationDto.role) &&
       !createUserRegistrationDto.program
     ) {
       throw new BadRequestException();

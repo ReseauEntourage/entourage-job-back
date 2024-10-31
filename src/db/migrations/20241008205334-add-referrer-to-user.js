@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('Users', 'referrerId', {
+    await queryInterface.addColumn('Users', 'refererId', {
       type: Sequelize.UUID,
       allowNull: true,
       defaultValue: null,
@@ -11,6 +11,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('Users', 'referrerId');
+    await queryInterface.removeColumn('Users', 'refererId');
   },
 };

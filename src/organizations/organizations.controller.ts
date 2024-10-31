@@ -39,7 +39,6 @@ export class OrganizationsController {
   ) {}
 
   @Public()
-  @UseGuards(UserPermissionsGuard)
   @Get()
   async findAll(
     @Query('limit', new ParseIntPipe()) limit: number,
@@ -56,25 +55,24 @@ export class OrganizationsController {
 
     return Promise.all(
       organizations.map(async (organization) => {
-        const { candidatesCount, coachesCount, referrersCount } =
+        const { candidatesCount, coachesCount, referersCount } =
           await this.organizationsService.countAssociatedUsers(organization.id);
 
         return {
           ...(organization.toJSON() as Organization),
           candidatesCount,
           coachesCount,
-          referrersCount,
+          referersCount,
         } as Organization & {
           candidatesCount: number;
           coachesCount: number;
-          referrersCount: number;
+          referersCount: number;
         };
       })
     );
   }
 
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
+  @Public()
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     const organization = await this.organizationsService.findOne(id);
@@ -86,7 +84,6 @@ export class OrganizationsController {
 
   @Public()
   @Throttle(5, 60)
-  @UseGuards(UserPermissionsGuard)
   @Post()
   async create(
     @Body(new CreateOrganizationPipe())
