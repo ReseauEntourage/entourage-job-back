@@ -381,6 +381,7 @@ describe('Users', () => {
               whatsappZoneCoachName,
               whatsappZoneCoachUrl,
               whatsappZoneCoachQR,
+              OrganizationId,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -404,6 +405,8 @@ describe('Users', () => {
               whatsappZoneCoachName: coachWhatsappZoneCoachName,
               whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+              OrganizationId: coachOrganizationId,
+              referredCandidates: coachReferredCandidates,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -493,6 +496,8 @@ describe('Users', () => {
               whatsappZoneCoachName: coachWhatsappZoneCoachName,
               whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+              referredCandidates: coachReferredCandidates,
+              referrerId: coachReferrerId,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -509,9 +514,11 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
-              whatsappZoneCoachName: candidatWhatappZoneCoachName,
-              whatsappZoneCoachUrl: candidatWhatappZoneCoachUrl,
-              whatsappZoneCoachQR: candidatWhatappZoneCoachQR,
+              whatsappZoneCoachName: candidateWhatappZoneCoachName,
+              whatsappZoneCoachUrl: candidateWhatappZoneCoachUrl,
+              whatsappZoneCoachQR: candidateWhatappZoneCoachQR,
+              referrerId: candidateReferrerId,
+              referredCandidates: candidateReferredCandidates,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -623,85 +630,6 @@ describe('Users', () => {
                 .post(`${route}`)
                 .set('authorization', `Bearer ${loggedInAdmin.token}`)
                 .send({ ...coach, userToLinkId: id });
-            expect(response.status).toBe(400);
-          });
-
-          it('Should return 400 if candidate with multiple coaches', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              false
-            );
-
-            const { id: coach1Id } = await userFactory.create(
-              { role: UserRoles.COACH },
-              {},
-              true
-            );
-            const { id: coach2Id } = await userFactory.create(
-              { role: UserRoles.COACH },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  userToLinkId: [coach1Id, coach2Id],
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if coach with multiple candidates', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-            const { id: candidate1Id } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              true
-            );
-            const { id: candidate2Id } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  userToLinkId: [candidate1Id, candidate2Id],
-                });
             expect(response.status).toBe(400);
           });
 
@@ -1050,41 +978,7 @@ describe('Users', () => {
             .send(userToSend);
           expect(response.status).toBe(400);
         });
-        it('Should return 400 when user has wrong role', async () => {
-          const user = await userFactory.create(
-            { role: UserRoles.COACH },
-            {},
-            false
-          );
 
-          const userValues = {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            gender: user.gender,
-          };
-
-          const userProfileValues = {
-            department: 'Paris (75)' as Department,
-          };
-
-          const userToSend = {
-            ...userValues,
-            ...userProfileValues,
-            password: user.password,
-            program: Programs.THREE_SIXTY,
-            birthDate: '1996-24-04',
-          };
-
-          const response: APIResponse<
-            UsersCreationController['createUserRegistration']
-          > = await request(server)
-            .post(`${route}/registration`)
-            .send(userToSend);
-          expect(response.status).toBe(400);
-        });
         it('Should return 409 when the email already exist', async () => {
           const existingUser = await userFactory.create({}, {}, true);
 
@@ -1366,6 +1260,7 @@ describe('Users', () => {
             whatsappZoneCoachName: loggedInCandidate.user.whatsappZoneCoachName,
             whatsappZoneCoachUrl: loggedInCandidate.user.whatsappZoneCoachUrl,
             whatsappZoneCoachQR: loggedInCandidate.user.whatsappZoneCoachQR,
+            referrerId: loggedInCandidate.user.referrerId,
             organization: null,
           };
 
@@ -5268,6 +5163,7 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
+            referrerId,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -5281,6 +5177,8 @@ describe('Users', () => {
             whatsappZoneCoachName: coachWhatsappZoneCoachName,
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+            referrerId: coachReferrerId,
+            referredCandidates: coachReferredCandidates,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -5315,6 +5213,8 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
+            referrerId,
+            referredCandidates,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -5327,6 +5227,7 @@ describe('Users', () => {
             whatsappZoneCoachName: coachWhatsappZoneCoachName,
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+            referredCandidates: coachReferredCandidates,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -5422,38 +5323,6 @@ describe('Users', () => {
               coaches: [],
             })
           );
-        });
-
-        it('Should return 400 if admin updates linked multiple coaches for candidate', async () => {
-          const otherCoach = await userFactory.create(
-            { role: UserRoles.COACH },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: [loggedInCoach.user.id, otherCoach.id],
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates linked multiple candidates for coach', async () => {
-          const otherCandidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            true
-          );
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: [loggedInCandidate.user.id, otherCandidate.id],
-              });
-          expect(response.status).toBe(400);
         });
 
         it('Should return 400 if admin updates normal candidate with another normal candidate as coach', async () => {

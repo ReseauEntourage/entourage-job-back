@@ -105,6 +105,14 @@ export class UsersCreationService {
     );
   }
 
+  async updateAllUserCandidatLinkedUserByCandidateId(
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
+  ): Promise<UserCandidat[]> {
+    return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
+      candidatesAndCoachesIds
+    );
+  }
+
   async updateUserProfileByUserId(
     userId: string,
     updateUserProfileDto: Partial<UserProfile>

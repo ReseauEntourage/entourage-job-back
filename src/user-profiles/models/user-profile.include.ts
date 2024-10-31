@@ -43,7 +43,7 @@ export function getUserProfileBusinessLinesInclude(
   const isCandidateBusinessLines =
     isBusinessLinesRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
   const isCoachBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
+    isBusinessLinesRequired && isRoleIncluded([UserRoles.COACH], role);
 
   return [
     {
