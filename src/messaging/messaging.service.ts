@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Includeable, Op, Sequelize } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -37,33 +37,31 @@ export class MessagingService {
   /**
    * Get all conversations for a user
    */
-  async getConversationsForUser(userId: string, query: string) {
-    const conversationInclude: Includeable = {
-      model: Conversation,
-      as: 'conversation',
-      include: [...messagingConversationIncludes(1)],
-    };
-
+  async getConversationsForUser(userId: string) {
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
         where: {
           userId,
         },
-        include: [conversationInclude],
-        order: [['conversation', 'createdAt', 'DESC']],
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [...messagingConversationIncludes(1)],
+          },
+        ],
+        order: [
+          [
+            Sequelize.literal(
+              '(SELECT MAX("createdAt") FROM "Messages" WHERE "Messages"."conversationId" = "conversation"."id")'
+            ),
+            'DESC',
+          ],
+        ],
       });
 
     return conversationParticipants
-      .filter(
-        (cp) =>
-          cp.conversation &&
-          (query === '' ||
-            cp.conversation.participants.some(
-              (p) =>
-                p.id !== userId &&
-                (p.firstName.includes(query) || p.lastName.includes(query))
-            ))
-      )
+      .filter((cp) => cp.conversation)
       .map((cp) => cp.conversation);
   }
 
