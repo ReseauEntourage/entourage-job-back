@@ -5,7 +5,6 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -25,10 +24,9 @@ export class MessagingController {
 
   @Get('conversations')
   async getConversations(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Query('query') query = ''
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {
-    return this.messagingService.getConversationsForUser(userId, query);
+    return this.messagingService.getConversationsForUser(userId);
   }
 
   @Get('conversations/unseen-count')

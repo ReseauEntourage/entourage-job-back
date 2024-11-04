@@ -221,11 +221,13 @@ export class MailsService {
     let toEmail: string;
     // if user is a a candidate then get the coach from the candidate
     if (submittingUser.role === UserRoles.CANDIDATE) {
-      coach = getCoachFromCandidate(submittingUser);
+      candidate = submittingUser;
+      coach = getCoachFromCandidate(candidate);
       toEmail = getAdminMailsFromZone(submittingUser.zone).candidatesAdminMail;
     } else {
       // if user is a coach then get the candidate from the coach
-      candidate = getCandidateFromCoach(submittingUser, candidateId);
+      coach = submittingUser;
+      candidate = getCandidateFromCoach(coach, candidateId);
       toEmail = getAdminMailsFromZone(candidate.zone).candidatesAdminMail;
     }
 
