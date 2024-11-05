@@ -242,11 +242,11 @@ export class AuthController {
 
   @Throttle(60, 60)
   @Public()
-  @Post('verify-email-set-password')
-  async verifyEmailSetPassword(
+  @Post('finalize-refered-user')
+  async finalizeReferedUser(
     @Body('token') token?: string,
     @Body('password') password?: string
-  ): Promise<void> {
+  ): Promise<string> {
     if (!token || !password) {
       throw new BadRequestException();
     }
@@ -264,22 +264,27 @@ export class AuthController {
     if (!user) {
       throw new NotFoundException();
     }
-    if (expirationDate.getTime() < currentDate.getTime()) {
-      throw new BadRequestException('TOKEN_EXPIRED');
-    }
     if (user.isEmailVerified && user.password) {
       throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
     }
+    if (expirationDate.getTime() < currentDate.getTime()) {
+      throw new BadRequestException('TOKEN_EXPIRED');
+    }
+
+    const { hash, salt } = encryptPassword(password);
 
     const updatedUser = await this.authService.updateUser(userId, {
       isEmailVerified: true,
-      password: password,
+      password: hash,
+      salt,
+      hashReset: null,
+      saltReset: null,
     });
 
     if (!updatedUser) {
       throw new NotFoundException();
     }
 
-    return;
+    return updatedUser.email;
   }
 }

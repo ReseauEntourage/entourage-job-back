@@ -849,7 +849,7 @@ export class MailsService {
         refererLastName: referer.lastName,
         // TODO add structure with new UserWithOrganization ?
         // structure: referer.structure,
-        finalizeAccountUrl: `${process.env.FRONTEND_URL}/finaliser?token=${token}`,
+        finalizeAccountUrl: `${process.env.FRONTEND_URL}/finaliser-compte-oriente?token=${token}`,
         zone: candidate.zone,
       },
     });
