@@ -219,7 +219,7 @@ export class MailsService {
   ) {
     let candidate, coach: User;
     let toEmail: string;
-    // if user is a a candidate then get the coach from the candidate
+    // if user is a a candidate then get the user as candidate
     if (submittingUser.role === UserRoles.CANDIDATE) {
       candidate = submittingUser;
       coach = getCoachFromCandidate(candidate);
