@@ -849,7 +849,7 @@ export class MailsService {
         candidateFirstName: candidate.firstName,
         refererFirstName: referer.firstName,
         refererLastName: referer.lastName,
-        organizationName: referer.organization.name,
+        // organizationName: referer.organization.name,
         // TODO after merge
         // structure: referer.structure,
         finalizeAccountUrl: `${process.env.FRONTEND_URL}/finaliser-compte-oriente?token=${token}`,
