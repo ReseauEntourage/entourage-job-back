@@ -383,7 +383,7 @@ describe('Organizations', () => {
             userFactory,
             3,
             {
-              role: UserRoles.CANDIDATE_EXTERNAL,
+              role: UserRoles.CANDIDATE,
               OrganizationId: organization.id,
             },
             {},
@@ -393,7 +393,7 @@ describe('Organizations', () => {
           await databaseHelper.createEntities(
             userFactory,
             7,
-            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
+            { role: UserRoles.COACH, OrganizationId: organization.id },
             {},
             true
           );

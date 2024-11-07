@@ -32,11 +32,9 @@ import {
 } from 'sequelize-typescript';
 import {
   AdminRole,
-  CandidateUserRoles,
-  CoachUserRoles,
-  ExternalUserRoles,
   Gender,
   Genders,
+  RolesWithOrganization,
   UserRole,
   UserRoles,
 } from '../users.types';
@@ -71,6 +69,15 @@ export class User extends HistorizedModel {
   @AllowNull(true)
   @Column
   OrganizationId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  @IsUUID(4)
+  @ForeignKey(() => User)
+  @AllowNull(true)
+  @Column
+  referrerId: string;
 
   @ApiProperty()
   @IsString()
@@ -217,6 +224,9 @@ export class User extends HistorizedModel {
   @BelongsTo(() => Organization, 'OrganizationId')
   organization?: Organization;
 
+  @BelongsTo(() => User, 'referrerId')
+  referrer?: User;
+
   @HasOne(() => UserProfile, {
     foreignKey: 'UserId',
     hooks: true,
@@ -232,6 +242,9 @@ export class User extends HistorizedModel {
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
 
+  @HasMany(() => User, 'referrerId')
+  referredCandidates: User[];
+
   @BeforeCreate
   @BeforeUpdate
   static trimValues(user: User) {
@@ -244,7 +257,7 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (isRoleIncluded(CandidateUserRoles, createdUser.role)) {
+    if (createdUser.role === UserRoles.CANDIDATE) {
       await UserCandidat.create(
         {
           candidatId: createdUser.id,
@@ -277,8 +290,8 @@ export class User extends HistorizedModel {
       previousUserValues.role !== userToUpdate.role
     ) {
       if (
-        isRoleIncluded(CandidateUserRoles, previousUserValues.role) &&
-        !isRoleIncluded(CandidateUserRoles, userToUpdate.role)
+        previousUserValues.role === UserRoles.CANDIDATE &&
+        userToUpdate.role !== UserRoles.CANDIDATE
       ) {
         await UserCandidat.destroy({
           where: {
@@ -286,10 +299,10 @@ export class User extends HistorizedModel {
           },
         });
       } else if (
-        !isRoleIncluded(CandidateUserRoles, previousUserValues.role) &&
-        isRoleIncluded(CandidateUserRoles, userToUpdate.role)
+        previousUserValues.role !== UserRoles.CANDIDATE &&
+        userToUpdate.role === UserRoles.CANDIDATE
       ) {
-        if (isRoleIncluded(CoachUserRoles, previousUserValues.role)) {
+        if (previousUserValues.role === UserRoles.COACH) {
           await UserCandidat.update(
             {
               coachId: null,
@@ -318,8 +331,8 @@ export class User extends HistorizedModel {
       }
 
       if (
-        isRoleIncluded(ExternalUserRoles, previousUserValues.role) &&
-        !isRoleIncluded(ExternalUserRoles, userToUpdate.role)
+        isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
+        !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
       ) {
         await User.update(
           {
@@ -340,7 +353,7 @@ export class User extends HistorizedModel {
     const previousUserValues = userToUpdate.previous();
     if (
       userToUpdate &&
-      isRoleIncluded(CandidateUserRoles, userToUpdate.role) &&
+      userToUpdate.role === UserRoles.CANDIDATE &&
       previousUserValues &&
       previousUserValues.firstName != undefined &&
       previousUserValues.firstName !== userToUpdate.firstName
@@ -366,9 +379,8 @@ export class User extends HistorizedModel {
       },
       {
         where: {
-          [isRoleIncluded(CoachUserRoles, destroyedUser.role)
-            ? 'coachId'
-            : 'candidatId']: destroyedUser.id,
+          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
+            destroyedUser.id,
         },
       }
     );
