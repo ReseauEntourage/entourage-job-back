@@ -92,13 +92,14 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      role: (typeof UserRoles.CANDIDATE)[];
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { filterOptions, replacements } =
-      getCommonMembersFilterOptions(restParams);
+    const { filterOptions, replacements } = getCommonMembersFilterOptions({
+      ...restParams,
+      role: [UserRoles.CANDIDATE],
+    });
 
     const lastCVVersions = await this.findAllLastCVVersions();
 
@@ -216,13 +217,14 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      role: (typeof UserRoles.COACH)[];
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { replacements, filterOptions } =
-      getCommonMembersFilterOptions(restParams);
+    const { replacements, filterOptions } = getCommonMembersFilterOptions({
+      ...restParams,
+      role: [UserRoles.COACH],
+    });
 
     const coachesIds: { nameAndId: string; userId: string }[] =
       await this.userModel.sequelize.query(
@@ -434,17 +436,17 @@ export class UsersService {
       },
     });
 
-    const { count: referrersCount } = await this.userModel.findAndCountAll({
+    const { count: referersCount } = await this.userModel.findAndCountAll({
       where: {
         OrganizationId: organizationId,
-        role: UserRoles.REFERRER,
+        role: UserRoles.REFERER,
       },
     });
 
     return {
       candidatesCount,
       coachesCount,
-      referrersCount,
+      referersCount,
     };
   }
 

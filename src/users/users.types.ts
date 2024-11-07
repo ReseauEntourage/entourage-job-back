@@ -14,14 +14,14 @@ import {
 export const UserRoles = {
   CANDIDATE: 'Candidat',
   COACH: 'Coach',
-  REFERRER: 'Orienteur',
+  REFERER: 'Orienteur',
   ADMIN: 'Admin',
 } as const;
 
 export type UserRole = (typeof UserRoles)[keyof typeof UserRoles];
 
 export const Permissions = {
-  REFERRER: 'Orienteur',
+  REFERER: 'Orienteur',
   CANDIDATE: 'Candidat',
   COACH: 'Coach',
   RESTRICTED_COACH: 'Restricted_Coach',
@@ -32,7 +32,7 @@ export type Permission = (typeof Permissions)[keyof typeof Permissions];
 
 export const UserPermissions: { [K in UserRole]: Permission | Permission[] } = {
   [UserRoles.CANDIDATE]: Permissions.CANDIDATE,
-  [UserRoles.REFERRER]: Permissions.COACH,
+  [UserRoles.REFERER]: Permissions.COACH,
   [UserRoles.COACH]: [Permissions.COACH, Permissions.RESTRICTED_COACH],
   [UserRoles.ADMIN]: Permissions.ADMIN,
 };
@@ -46,12 +46,23 @@ export const NormalUserRoles: NormalUserRole[] = [
   UserRoles.COACH,
 ];
 
-export const RolesWithOrganization: UserRole[] = [UserRoles.REFERRER];
+export type RegistrableUserRole =
+  | typeof UserRoles.CANDIDATE
+  | typeof UserRoles.COACH
+  | typeof UserRoles.REFERER;
+
+export const RegistrableUserRoles: RegistrableUserRole[] = [
+  UserRoles.CANDIDATE,
+  UserRoles.COACH,
+  UserRoles.REFERER,
+];
+
+export const RolesWithOrganization: UserRole[] = [UserRoles.REFERER];
 
 export const AllUserRoles = [
   UserRoles.CANDIDATE,
   UserRoles.COACH,
-  UserRoles.REFERRER,
+  UserRoles.REFERER,
 ];
 
 export const AdminRoles = {
@@ -64,7 +75,7 @@ export type AdminRole = (typeof AdminRoles)[keyof typeof AdminRoles];
 export const UserRolesFilters = [
   { value: UserRoles.CANDIDATE, label: `${UserRoles.CANDIDATE} LKO` },
   { value: UserRoles.COACH, label: `${UserRoles.COACH} LKO` },
-  { value: UserRoles.REFERRER, label: UserRoles.REFERRER },
+  { value: UserRoles.REFERER, label: UserRoles.REFERER },
   { value: UserRoles.ADMIN, label: UserRoles.ADMIN },
 ];
 

@@ -4,6 +4,7 @@ import {
   Body,
   ConflictException,
   Controller,
+  NotFoundException,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -14,13 +15,17 @@ import { Public } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
-  NormalUserRoles,
   Permissions,
   Programs,
+  RegistrableUserRoles,
   RolesWithOrganization,
   SequelizeUniqueConstraintError,
+  UserRoles,
 } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import {
+  getCandidateAndCoachIdDependingOnRoles,
+  isRoleIncluded,
+} from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
 import {
   CreateUserDto,
@@ -95,6 +100,60 @@ export class UsersCreationController {
       jwtToken
     );
 
+    if (userToCreate.userToLinkId) {
+      const usersToLinkIds = [userToCreate.userToLinkId];
+
+      const userCandidatesToUpdate = await Promise.all(
+        usersToLinkIds.map(async (userToLinkId) => {
+          const userToLink = await this.usersCreationService.findOneUser(
+            userToLinkId
+          );
+
+          if (!userToLink) {
+            throw new NotFoundException();
+          }
+
+          const { candidateId, coachId } =
+            getCandidateAndCoachIdDependingOnRoles(createdUser, userToLink);
+
+          const userCandidate =
+            await this.usersCreationService.findOneUserCandidatByCandidateId(
+              candidateId
+            );
+
+          if (!userCandidate) {
+            throw new NotFoundException();
+          }
+
+          return { candidateId: candidateId, coachId: coachId };
+        })
+      );
+
+      const updatedUserCandidates =
+        await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
+          userCandidatesToUpdate
+        );
+
+      if (!updatedUserCandidates) {
+        throw new NotFoundException();
+      }
+
+      await Promise.all(
+        updatedUserCandidates.map(async (updatedUserCandidate) => {
+          const previousCoach = updatedUserCandidate.previous('coach');
+          if (
+            updatedUserCandidate.coach &&
+            updatedUserCandidate.coach.id !== previousCoach?.id
+          ) {
+            await this.usersCreationService.sendMailsAfterMatching(
+              updatedUserCandidate.candidat.id
+            );
+          }
+          return updatedUserCandidate.toJSON();
+        })
+      );
+    }
+
     return this.usersCreationService.findOneUser(createdUser.id);
   }
 
@@ -107,7 +166,14 @@ export class UsersCreationController {
   ) {
     if (
       !isValidPhone(createUserRegistrationDto.phone) ||
-      !isRoleIncluded(NormalUserRoles, createUserRegistrationDto.role)
+      !isRoleIncluded(RegistrableUserRoles, createUserRegistrationDto.role)
+    ) {
+      throw new BadRequestException();
+    }
+
+    if (
+      !isRoleIncluded([UserRoles.REFERER], createUserRegistrationDto.role) &&
+      !createUserRegistrationDto.program
     ) {
       throw new BadRequestException();
     }
@@ -123,7 +189,7 @@ export class UsersCreationController {
       role: createUserRegistrationDto.role,
       gender: createUserRegistrationDto.gender,
       phone: createUserRegistrationDto.phone,
-      OrganizationId: null,
+      OrganizationId: createUserRegistrationDto.organizationId,
       address: null,
       adminRole: null,
       zone,
