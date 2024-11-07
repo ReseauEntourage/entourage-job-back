@@ -836,6 +836,8 @@ export class MailsService {
   // Generate a token with
   // const token = await this.authService.generateVerificationToken(candidate);
   async sendReferedCandidateFinalizeAccountMail(
+    // TODO after merge
+    // referer: UserWithOrganization,
     referer: User,
     candidate: User,
     token: string
@@ -847,7 +849,8 @@ export class MailsService {
         candidateFirstName: candidate.firstName,
         refererFirstName: referer.firstName,
         refererLastName: referer.lastName,
-        // TODO add structure with new UserWithOrganization ?
+        organizationName: referer.organization.name,
+        // TODO after merge
         // structure: referer.structure,
         finalizeAccountUrl: `${process.env.FRONTEND_URL}/finaliser-compte-oriente?token=${token}`,
         zone: candidate.zone,
