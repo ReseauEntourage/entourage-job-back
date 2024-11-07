@@ -86,7 +86,6 @@ export class UsersController {
     if (isRoleIncluded([UserRoles.CANDIDATE], role)) {
       return this.usersService.findAllCandidateMembers({
         ...query,
-        role: [UserRoles.CANDIDATE],
         limit,
         offset,
         search,
@@ -96,7 +95,6 @@ export class UsersController {
     if (isRoleIncluded([UserRoles.COACH], role)) {
       return this.usersService.findAllCoachMembers({
         ...query,
-        role: [UserRoles.COACH],
         limit,
         offset,
         search,
