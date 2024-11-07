@@ -23,8 +23,6 @@ import {
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
-  CandidateUserRoles,
-  CoachUserRoles,
   CVStatuses,
   MemberFilterKey,
   UserRole,
@@ -94,7 +92,7 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      role: typeof CandidateUserRoles;
+      role: (typeof UserRoles.CANDIDATE)[];
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
@@ -218,7 +216,7 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      role: typeof CoachUserRoles;
+      role: (typeof UserRoles.COACH)[];
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
@@ -390,7 +388,7 @@ export class UsersService {
     const options: FindOptions<User> = {
       where: {
         ...whereOptions,
-        role: CandidateUserRoles,
+        role: UserRoles.CANDIDATE,
       } as WhereOptions<User>,
       attributes: [],
       include: [
@@ -425,20 +423,28 @@ export class UsersService {
     const { count: candidatesCount } = await this.userModel.findAndCountAll({
       where: {
         OrganizationId: organizationId,
-        role: UserRoles.CANDIDATE_EXTERNAL,
+        role: UserRoles.CANDIDATE,
       },
     });
 
     const { count: coachesCount } = await this.userModel.findAndCountAll({
       where: {
         OrganizationId: organizationId,
-        role: UserRoles.COACH_EXTERNAL,
+        role: UserRoles.COACH,
+      },
+    });
+
+    const { count: referrersCount } = await this.userModel.findAndCountAll({
+      where: {
+        OrganizationId: organizationId,
+        role: UserRoles.REFERRER,
       },
     });
 
     return {
       candidatesCount,
       coachesCount,
+      referrersCount,
     };
   }
 

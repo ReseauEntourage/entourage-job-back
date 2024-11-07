@@ -53,6 +53,26 @@ export const UserCandidatInclude: Includeable[] = [
     ],
   },
   {
+    model: User,
+    as: 'referredCandidates',
+    attributes: [...UserAttributes],
+    include: [
+      {
+        model: UserCandidat,
+        as: 'candidat',
+        attributes: [...UserCandidatAttributes],
+        paranoid: false,
+        include: [
+          {
+            model: User,
+            as: 'candidat',
+            attributes: [...UserAttributes],
+          },
+        ],
+      },
+    ],
+  },
+  {
     model: Organization,
     as: 'organization',
     attributes: ['id', 'name', 'address', 'zone'],

@@ -54,14 +54,19 @@ export class OrganizationsController {
 
     return Promise.all(
       organizations.map(async (organization) => {
-        const { candidatesCount, coachesCount } =
+        const { candidatesCount, coachesCount, referrersCount } =
           await this.organizationsService.countAssociatedUsers(organization.id);
 
         return {
           ...(organization.toJSON() as Organization),
           candidatesCount,
           coachesCount,
-        } as Organization & { candidatesCount: number; coachesCount: number };
+          referrersCount,
+        } as Organization & {
+          candidatesCount: number;
+          coachesCount: number;
+          referrersCount: number;
+        };
       })
     );
   }

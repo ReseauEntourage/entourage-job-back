@@ -16,8 +16,7 @@ import { MessagesService } from 'src/messages/messages.service';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   HelpNeed,
@@ -436,9 +435,10 @@ export class UserProfilesService {
       this.findOneByUserId(userId),
     ]);
 
-    const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
-      ? [UserRoles.COACH]
-      : CandidateUserRoles;
+    const rolesToFind =
+      user.role === UserRoles.CANDIDATE
+        ? [UserRoles.COACH]
+        : [UserRoles.CANDIDATE];
 
     const sameRegionDepartmentsOptions = userProfile.department
       ? Departments.filter(
