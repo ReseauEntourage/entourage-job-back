@@ -239,4 +239,52 @@ export class AuthController {
 
     return;
   }
+
+  @Throttle(60, 60)
+  @Public()
+  @Post('finalize-refered-user')
+  async finalizeReferedUser(
+    @Body('token') token?: string,
+    @Body('password') password?: string
+  ): Promise<string> {
+    if (!token || !password) {
+      throw new BadRequestException();
+    }
+
+    const decodedToken = this.authService.decodeJWT(token, true);
+    const { sub: userId, exp } = decodedToken;
+
+    const expirationDate = new Date(exp * 1000);
+    const currentDate = new Date();
+
+    if (!decodedToken || !exp || !userId) {
+      throw new BadRequestException('INVALID_TOKEN');
+    }
+    const user = await this.authService.findOneUserComplete(userId);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    if (user.isEmailVerified && user.password) {
+      throw new BadRequestException('EMAIL_ALREADY_VERIFIED');
+    }
+    if (expirationDate.getTime() < currentDate.getTime()) {
+      throw new BadRequestException('TOKEN_EXPIRED');
+    }
+
+    const { hash, salt } = encryptPassword(password);
+
+    const updatedUser = await this.authService.updateUser(userId, {
+      isEmailVerified: true,
+      password: hash,
+      salt,
+      hashReset: null,
+      saltReset: null,
+    });
+
+    if (!updatedUser) {
+      throw new NotFoundException();
+    }
+
+    return updatedUser.email;
+  }
 }
