@@ -31,7 +31,6 @@ import {
 
 import {
   getCommonMembersFilterOptions,
-  getRawLastCVVersionWhereOptions,
   lastCVVersionWhereOptions,
   userSearchQuery,
   userSearchQueryRaw,
@@ -74,19 +73,6 @@ export class UsersService {
     });
   }
 
-  async findAllLastCVVersions(): Promise<
-    { candidateId: string; maxVersion: number }[]
-  > {
-    return this.userModel.sequelize.query(
-      `SELECT "CVs"."UserId" as "candidateId", MAX("CVs"."version") as "maxVersion"
-       FROM "CVs"
-       GROUP BY "CVs"."UserId"`,
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
-  }
-
   async findAllCandidateMembers(
     params: {
       limit: number;
@@ -101,24 +87,26 @@ export class UsersService {
       role: [UserRoles.CANDIDATE],
     });
 
-    const lastCVVersions = await this.findAllLastCVVersions();
-
-    const candidatesIds: { nameAndId: string; userId: string }[] =
+    const candidatesIds: { userId: string }[] =
       await this.userModel.sequelize.query(
         `
         SELECT 
-          DISTINCT("User"."firstName", "User"."id") as "nameAndId",
           "User"."id" as "userId"
 
         FROM "Users" AS "User"
+
         LEFT OUTER JOIN "User_Candidats" AS "candidat" 
           ON "User"."id" = "candidat"."candidatId"
         LEFT OUTER JOIN "CVs" AS "candidat->cvs" 
           ON "candidat"."candidatId" = "candidat->cvs"."UserId" 
-          AND
-          "candidat->cvs"."deletedAt" IS NULL ${getRawLastCVVersionWhereOptions(
-            lastCVVersions
-          )}
+          AND "candidat->cvs"."deletedAt" IS NULL 
+          AND ("UserId", "version") IN (
+            SELECT
+              "CVs"."UserId" AS "candidateId", MAX("CVs"."version") AS "maxVersion" 
+            FROM "CVs"
+            GROUP BY
+              "CVs"."UserId"
+          )
         LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
           ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
         LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" 
@@ -137,7 +125,8 @@ export class UsersService {
           search ? `AND ${userSearchQueryRaw(search, true)}` : ''
         }
 
-        ORDER BY ("User"."firstName", "User"."id") ASC
+        GROUP BY "User"."id"
+        ORDER BY "User"."firstName" ASC
         LIMIT ${limit}
         OFFSET ${offset}
         `,
@@ -226,25 +215,33 @@ export class UsersService {
       role: [UserRoles.COACH],
     });
 
-    const coachesIds: { nameAndId: string; userId: string }[] =
+    const coachesIds: { userId: string }[] =
       await this.userModel.sequelize.query(
         `
-            SELECT DISTINCT("User"."firstName", "User"."id") as "nameAndId", "User"."id" as "userId"
-            FROM "Users" as "User"
-                     LEFT OUTER JOIN "User_Candidats" AS "coaches" ON "User"."id" = "coaches"."coachId"
-                     LEFT OUTER JOIN "Users" AS "coaches->candidat"
-                                     ON "coaches"."candidatId" = "coaches->candidat"."id" AND
-                                        ("coaches->candidat"."deletedAt" IS NULL)
-                     LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
-                                     ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
-                     LEFT OUTER JOIN "Organizations" AS "organization" ON "User"."OrganizationId" = "organization"."id"
-            WHERE "User"."deletedAt" IS NULL
-              AND ${filterOptions.join(' AND ')} ${
+        SELECT 
+          "User"."id" as "userId"
+
+        FROM "Users" as "User"
+                     
+        LEFT OUTER JOIN "User_Candidats" AS "coaches" 
+          ON "User"."id" = "coaches"."coachId"
+        LEFT OUTER JOIN "Users" AS "coaches->candidat"
+          ON "coaches"."candidatId" = "coaches->candidat"."id" 
+          AND ("coaches->candidat"."deletedAt" IS NULL)
+        LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
+          ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
+        LEFT OUTER JOIN "Organizations" AS "organization" 
+          ON "User"."OrganizationId" = "organization"."id"
+            
+        WHERE "User"."deletedAt" IS NULL
+          AND ${filterOptions.join(' AND ')} ${
           search ? `AND ${userSearchQueryRaw(search, true)}` : ''
         }
-            ORDER BY ("User"."firstName", "User"."id") ASC
-                LIMIT ${limit}
-            OFFSET ${offset}
+        
+        GROUP BY "User"."id"
+        ORDER BY "User"."firstName" ASC
+        LIMIT ${limit}
+        OFFSET ${offset}
         `,
         {
           type: QueryTypes.SELECT,

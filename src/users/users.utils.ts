@@ -333,27 +333,6 @@ export function userSearchQueryRaw(query = '', withOrganizationName = false) {
   )`;
 }
 
-export function getRawLastCVVersionWhereOptions(
-  maxVersions: {
-    candidateId: string;
-    maxVersion: number;
-  }[]
-) {
-  if (maxVersions && maxVersions.length > 0) {
-    return `
-      AND ("UserId","version") IN (
-        ${maxVersions
-          .map(({ candidateId, maxVersion }) => {
-            return `('${candidateId}','${maxVersion}')`;
-          })
-          .join(',')}
-        )
-    `;
-  }
-
-  return '';
-}
-
 export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
   version: {
     [Op.in]: [
