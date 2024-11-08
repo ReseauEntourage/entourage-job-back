@@ -106,12 +106,10 @@ export class UsersCreationService {
   }
 
   async updateAllUserCandidatLinkedUserByCandidateId(
-    candidatesAndCoachesIds: { candidateId: string; coachId: string }[],
-    isExternalCandidate: boolean
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
   ): Promise<UserCandidat[]> {
     return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
-      candidatesAndCoachesIds,
-      isExternalCandidate
+      candidatesAndCoachesIds
     );
   }
 

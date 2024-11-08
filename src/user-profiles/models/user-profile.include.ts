@@ -2,11 +2,7 @@ import _ from 'lodash';
 import { Includeable, WhereOptions } from 'sequelize';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  UserRole,
-} from 'src/users/users.types';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
@@ -17,8 +13,9 @@ export function getUserProfileHelpsInclude(
 ) {
   const isHelpsRequired = role && !_.isEmpty(helpsOptions);
   const isCandidateHelps =
-    isHelpsRequired && isRoleIncluded(CandidateUserRoles, role);
-  const isCoachHelps = isHelpsRequired && isRoleIncluded(CoachUserRoles, role);
+    isHelpsRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
+  const isCoachHelps =
+    isHelpsRequired && isRoleIncluded([UserRoles.COACH], role);
 
   return [
     {
@@ -44,9 +41,9 @@ export function getUserProfileBusinessLinesInclude(
 ) {
   const isBusinessLinesRequired = role && !_.isEmpty(businessLinesOptions);
   const isCandidateBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded(CandidateUserRoles, role);
+    isBusinessLinesRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
   const isCoachBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded(CoachUserRoles, role);
+    isBusinessLinesRequired && isRoleIncluded([UserRoles.COACH], role);
 
   return [
     {

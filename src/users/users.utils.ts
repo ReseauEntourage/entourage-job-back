@@ -10,10 +10,7 @@ import {
 import { FilterObject, FilterParams } from 'src/utils/types';
 import { User, UserCandidat } from './models';
 import {
-  CandidateUserRoles,
-  CoachUserRoles,
   CVStatuses,
-  ExternalUserRoles,
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
@@ -98,7 +95,7 @@ export function getRelatedUser(member: User) {
 }
 
 export function getCoachFromCandidate(candidate: User) {
-  if (candidate && isRoleIncluded(CandidateUserRoles, candidate.role)) {
+  if (candidate && candidate.role === UserRoles.CANDIDATE) {
     if (candidate.candidat && candidate.candidat.coach) {
       return candidate.candidat.coach;
     }
@@ -108,7 +105,7 @@ export function getCoachFromCandidate(candidate: User) {
 }
 
 export function getCandidateFromCoach(coach: User, candidateId: string) {
-  if (coach && isRoleIncluded(CoachUserRoles, coach.role)) {
+  if (coach && coach.role === UserRoles.COACH) {
     if (coach.coaches && coach.coaches.length > 0) {
       return coach.coaches.find(({ candidat }) => {
         return candidat.id === candidateId;
@@ -121,12 +118,17 @@ export function getCandidateFromCoach(coach: User, candidateId: string) {
 
 export function getCandidateIdFromCoachOrCandidate(member: User) {
   if (member) {
-    if (isRoleIncluded(CandidateUserRoles, member.role)) {
+    if (member.role === UserRoles.CANDIDATE) {
       return member.id;
+    }
+    if (isRoleIncluded([UserRoles.REFERER], member.role)) {
+      return member.referredCandidates.map(({ candidat }) => {
+        return candidat.candidat.id;
+      });
     }
 
     if (
-      isRoleIncluded(CoachUserRoles, member.role) &&
+      isRoleIncluded([UserRoles.COACH], member.role) &&
       member.coaches &&
       member.coaches.length > 0
     ) {
@@ -157,9 +159,9 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   let associatedUserOptionKey: string;
   const rolesFilters = filtersObj.role.map(({ value }) => value);
 
-  if (isRoleIncluded(CandidateUserRoles, rolesFilters)) {
+  if (isRoleIncluded([UserRoles.CANDIDATE], rolesFilters)) {
     associatedUserOptionKey = '"candidat"."coachId"';
-  } else if (isRoleIncluded(CoachUserRoles, rolesFilters)) {
+  } else if (isRoleIncluded([UserRoles.COACH], rolesFilters)) {
     associatedUserOptionKey = '"coaches"."candidatId"';
   } else {
     return [];
@@ -388,24 +390,10 @@ export function getCandidateAndCoachIdDependingOnRoles(
       candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
       coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
     };
-  } else if (
-    isRoleIncluded(ExternalUserRoles, [user.role, userToLink.role]) &&
-    user.role !== userToLink.role &&
-    user.OrganizationId === userToLink.OrganizationId
-  ) {
-    return {
-      candidateId:
-        user.role === UserRoles.CANDIDATE_EXTERNAL ? user.id : userToLink.id,
-      coachId: user.role === UserRoles.COACH_EXTERNAL ? user.id : userToLink.id,
-    };
   } else if (shouldRemoveLinkedUser) {
     return {
-      candidateId: isRoleIncluded(CandidateUserRoles, user.role)
-        ? user.id
-        : userToLink.id,
-      coachId: isRoleIncluded(CoachUserRoles, user.role)
-        ? user.id
-        : userToLink.id,
+      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
+      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
     };
   } else {
     throw new BadRequestException();

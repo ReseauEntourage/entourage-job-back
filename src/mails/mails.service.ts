@@ -29,15 +29,10 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
-import {
-  CandidateUserRoles,
-  CoachUserRoles,
-  UserRoles,
-} from 'src/users/users.types';
+import { UserRoles } from 'src/users/users.types';
 import {
   getCandidateFromCoach,
   getCoachFromCandidate,
-  isRoleIncluded,
 } from 'src/users/users.utils';
 import {
   getAdminMailsFromDepartment,
@@ -120,6 +115,7 @@ export class MailsService {
         firstName: user.firstName,
         toEmail: user.email,
         token,
+        zone: user.zone,
       },
     });
   }
@@ -166,7 +162,7 @@ export class MailsService {
     const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
 
     const coach = getCoachFromCandidate(candidate);
-    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
+    if (coach && coach.role !== UserRoles.REFERER) {
       toEmail.cc = coach.email;
     }
     const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -196,7 +192,7 @@ export class MailsService {
     const coach = getCoachFromCandidate(candidate);
 
     const toEmail: CustomMailParams['toEmail'] =
-      coach && coach.role !== UserRoles.COACH_EXTERNAL
+      coach && coach.role !== UserRoles.REFERER
         ? { to: candidate.email, cc: coach.email }
         : { to: candidate.email };
 
@@ -219,13 +215,15 @@ export class MailsService {
   ) {
     let candidate, coach: User;
     let toEmail: string;
-    // if user is a a candidate then get the coach from the candidate
-    if (isRoleIncluded(CandidateUserRoles, submittingUser.role)) {
-      coach = getCoachFromCandidate(submittingUser);
+    // if user is a a candidate then get the user as candidate
+    if (submittingUser.role === UserRoles.CANDIDATE) {
+      candidate = submittingUser;
+      coach = getCoachFromCandidate(candidate);
       toEmail = getAdminMailsFromZone(submittingUser.zone).candidatesAdminMail;
     } else {
       // if user is a coach then get the candidate from the coach
-      candidate = getCandidateFromCoach(submittingUser, candidateId);
+      coach = submittingUser;
+      candidate = getCandidateFromCoach(coach, candidateId);
       toEmail = getAdminMailsFromZone(candidate.zone).candidatesAdminMail;
     }
 
@@ -249,7 +247,7 @@ export class MailsService {
     };
 
     const coach = getCoachFromCandidate(candidate);
-    if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
+    if (coach && coach.role !== UserRoles.REFERER) {
       toEmail.cc = coach.email;
     }
 
@@ -276,7 +274,7 @@ export class MailsService {
         to: candidate.email,
       };
       const coach = getCoachFromCandidate(candidate);
-      if (coach && coach.role !== UserRoles.COACH_EXTERNAL) {
+      if (coach && coach.role !== UserRoles.REFERER) {
         toEmail.cc = coach.email;
       }
       const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
@@ -860,9 +858,9 @@ export class MailsService {
 }
 
 const getRoleString = (user: User): string => {
-  if (isRoleIncluded(CandidateUserRoles, user.role)) {
+  if (user.role === UserRoles.CANDIDATE) {
     return 'Candidat';
-  } else if (isRoleIncluded(CoachUserRoles, user.role)) {
+  } else if (user.role === UserRoles.COACH) {
     return 'Coach';
   } else {
     return 'Admin';

@@ -13,6 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { Public } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
@@ -36,8 +38,7 @@ export class OrganizationsController {
     private readonly organizationReferentsService: OrganizationReferentsService
   ) {}
 
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
+  @Public()
   @Get()
   async findAll(
     @Query('limit', new ParseIntPipe()) limit: number,
@@ -54,20 +55,24 @@ export class OrganizationsController {
 
     return Promise.all(
       organizations.map(async (organization) => {
-        const { candidatesCount, coachesCount } =
+        const { candidatesCount, coachesCount, referersCount } =
           await this.organizationsService.countAssociatedUsers(organization.id);
 
         return {
           ...(organization.toJSON() as Organization),
           candidatesCount,
           coachesCount,
-        } as Organization & { candidatesCount: number; coachesCount: number };
+          referersCount,
+        } as Organization & {
+          candidatesCount: number;
+          coachesCount: number;
+          referersCount: number;
+        };
       })
     );
   }
 
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
+  @Public()
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     const organization = await this.organizationsService.findOne(id);
@@ -77,8 +82,8 @@ export class OrganizationsController {
     return organization;
   }
 
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
+  @Public()
+  @Throttle(5, 60)
   @Post()
   async create(
     @Body(new CreateOrganizationPipe())

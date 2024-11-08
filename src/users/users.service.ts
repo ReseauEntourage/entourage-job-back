@@ -23,8 +23,6 @@ import {
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
 import {
-  CandidateUserRoles,
-  CoachUserRoles,
   CVStatuses,
   MemberFilterKey,
   UserRole,
@@ -94,47 +92,63 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      role: typeof CandidateUserRoles;
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { filterOptions, replacements } =
-      getCommonMembersFilterOptions(restParams);
+    const { filterOptions, replacements } = getCommonMembersFilterOptions({
+      ...restParams,
+      role: [UserRoles.CANDIDATE],
+    });
 
     const lastCVVersions = await this.findAllLastCVVersions();
 
     const candidatesIds: { nameAndId: string; userId: string }[] =
       await this.userModel.sequelize.query(
         `
-            SELECT DISTINCT("User"."firstName", "User"."id") as "nameAndId", "User"."id" as "userId"
-            FROM "Users" AS "User"
-                     LEFT OUTER JOIN "User_Candidats" AS "candidat" ON "User"."id" = "candidat"."candidatId"
-                     LEFT OUTER JOIN "CVs" AS "candidat->cvs" ON "candidat"."candidatId" = "candidat->cvs"."UserId" AND
-                                                                 "candidat->cvs"."deletedAt" IS NULL ${getRawLastCVVersionWhereOptions(
-                                                                   lastCVVersions
-                                                                 )}
-                   LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
-            ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
-                LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
-                LEFT OUTER JOIN "Users" AS "candidat->coach"
-                ON "candidat"."coachId" = "candidat->coach"."id" AND
-                ("candidat->coach"."deletedAt" IS NULL)
-                LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
-                ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
-                LEFT OUTER JOIN "Organizations" AS "organization" ON "User"."OrganizationId" = "organization"."id"
-            WHERE "User"."deletedAt" IS NULL
-              AND ${filterOptions.join(' AND ')} ${
+        SELECT 
+          DISTINCT("User"."firstName", "User"."id") as "nameAndId",
+          "User"."id" as "userId"
+
+        FROM "Users" AS "User"
+        LEFT OUTER JOIN "User_Candidats" AS "candidat" 
+          ON "User"."id" = "candidat"."candidatId"
+        LEFT OUTER JOIN "CVs" AS "candidat->cvs" 
+          ON "candidat"."candidatId" = "candidat->cvs"."UserId" 
+          AND
+          "candidat->cvs"."deletedAt" IS NULL ${getRawLastCVVersionWhereOptions(
+            lastCVVersions
+          )}
+        LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
+          ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
+        LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" 
+          ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
+        LEFT OUTER JOIN "Users" AS "candidat->coach"
+          ON "candidat"."coachId" = "candidat->coach"."id" 
+          AND ("candidat->coach"."deletedAt" IS NULL)
+        LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
+          ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
+        LEFT OUTER JOIN "Organizations" AS "organization" 
+          ON "User"."OrganizationId" = "organization"."id"
+
+        WHERE 
+          "User"."deletedAt" IS NULL
+          AND ${filterOptions.join(' AND ')} ${
           search ? `AND ${userSearchQueryRaw(search, true)}` : ''
         }
-            ORDER BY ("User"."firstName", "User"."id") ASC
-                LIMIT ${limit}
-            OFFSET ${offset}
+
+        ORDER BY ("User"."firstName", "User"."id") ASC
+        LIMIT ${limit}
+        OFFSET ${offset}
         `,
         {
           type: QueryTypes.SELECT,
           raw: true,
           replacements,
+          /* eslint-disable no-console */
+          logging: console.log,
+          benchmark: true,
+          /* eslint-enable no-console */
         }
       );
 
@@ -191,6 +205,10 @@ export class UsersService {
           required: false,
         },
       ],
+      /* eslint-disable no-console */
+      logging: console.log,
+      benchmark: true,
+      /* eslint-enable no-console */
     });
   }
 
@@ -199,13 +217,14 @@ export class UsersService {
       limit: number;
       offset: number;
       search: string;
-      role: typeof CoachUserRoles;
     } & FilterParams<MemberFilterKey>
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { replacements, filterOptions } =
-      getCommonMembersFilterOptions(restParams);
+    const { replacements, filterOptions } = getCommonMembersFilterOptions({
+      ...restParams,
+      role: [UserRoles.COACH],
+    });
 
     const coachesIds: { nameAndId: string; userId: string }[] =
       await this.userModel.sequelize.query(
@@ -371,7 +390,7 @@ export class UsersService {
     const options: FindOptions<User> = {
       where: {
         ...whereOptions,
-        role: CandidateUserRoles,
+        role: UserRoles.CANDIDATE,
       } as WhereOptions<User>,
       attributes: [],
       include: [
@@ -406,20 +425,28 @@ export class UsersService {
     const { count: candidatesCount } = await this.userModel.findAndCountAll({
       where: {
         OrganizationId: organizationId,
-        role: UserRoles.CANDIDATE_EXTERNAL,
+        role: UserRoles.CANDIDATE,
       },
     });
 
     const { count: coachesCount } = await this.userModel.findAndCountAll({
       where: {
         OrganizationId: organizationId,
-        role: UserRoles.COACH_EXTERNAL,
+        role: UserRoles.COACH,
+      },
+    });
+
+    const { count: referersCount } = await this.userModel.findAndCountAll({
+      where: {
+        OrganizationId: organizationId,
+        role: UserRoles.REFERER,
       },
     });
 
     return {
       candidatesCount,
       coachesCount,
+      referersCount,
     };
   }
 
