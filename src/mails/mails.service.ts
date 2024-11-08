@@ -105,6 +105,17 @@ export class MailsService {
         },
       });
     }
+
+    if (user.role === UserRoles.REFERER) {
+      return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+        toEmail: user.email,
+        replyTo: candidatesAdminMail,
+        templateId: MailjetTemplates.WELCOME_REFERER,
+        variables: {
+          ..._.omitBy(user, _.isNil),
+        },
+      });
+    }
   }
 
   async sendVerificationMail(user: User, token: string) {
