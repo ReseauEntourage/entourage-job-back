@@ -835,33 +835,27 @@ export class MailsService {
         refererFirstName: referer.firstName,
         candidateFirstName: candidate.firstName,
         candidateLastName: candidate.lastName,
-        loginUrl: `${process.env.FRONTEND_URL}/login`,
+        loginUrl: `${process.env.FRONT_URL}/login`,
         zone: referer.zone,
       },
     });
   }
 
-  // TODO: Call this method after completing refering funnel
-  // Generate a token with
-  // const token = await this.authService.generateVerificationToken(candidate);
   async sendReferedCandidateFinalizeAccountMail(
-    // TODO after merge
-    // referer: UserWithOrganization,
     referer: User,
     candidate: User,
     token: string
   ) {
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: referer.email,
+      toEmail: candidate.email,
       templateId: MailjetTemplates.REFERED_CANDIDATE_FINALIZE_ACCOUNT,
       variables: {
+        id: candidate.id,
         candidateFirstName: candidate.firstName,
         refererFirstName: referer.firstName,
         refererLastName: referer.lastName,
-        // organizationName: referer.organization.name,
-        // TODO after merge
-        // structure: referer.structure,
-        finalizeAccountUrl: `${process.env.FRONTEND_URL}/finaliser-compte-oriente?token=${token}`,
+        organizationName: referer.organization.name,
+        finalizeAccountUrl: `${process.env.FRONT_URL}/finaliser-compte-oriente?token=${token}`,
         zone: candidate.zone,
       },
     });
