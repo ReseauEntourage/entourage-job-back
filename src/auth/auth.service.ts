@@ -146,4 +146,18 @@ export class AuthService {
       }
     );
   }
+
+  async sendWelcomeMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
+    return this.mailsService.sendWelcomeMail(user);
+  }
+
+  async sendOnboardingJ1BAOMail(user: User) {
+    return this.mailsService.sendOnboardingJ1BAOMail(user);
+  }
+
+  async sendOnboardingJ3ProfileCompletionMail(user: User) {
+    return this.mailsService.sendOnboardingJ3ProfileCompletionMail(user);
+  }
 }
