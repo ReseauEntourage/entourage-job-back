@@ -114,10 +114,19 @@ export class UserProfilesService {
       helps: HelpValue[];
       departments: Department[];
       businessLines: BusinessLineValue[];
+      refererId: string;
     }
   ): Promise<PublicProfile[]> {
-    const { role, offset, limit, search, helps, departments, businessLines } =
-      query;
+    const {
+      role,
+      offset,
+      limit,
+      search,
+      helps,
+      departments,
+      businessLines,
+      refererId,
+    } = query;
 
     const searchOptions = search
       ? { [Op.or]: userProfileSearchQuery(search) }
@@ -136,6 +145,12 @@ export class UserProfilesService {
             name: { [Op.or]: businessLines },
           }
         : {};
+
+    const refererIdOptions: WhereOptions<User> = refererId
+      ? {
+          refererId,
+        }
+      : {};
 
     const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
       helps?.length > 0
@@ -167,6 +182,7 @@ export class UserProfilesService {
             role,
             lastConnection: { [Op.ne]: null },
             ...searchOptions,
+            ...refererIdOptions,
           },
         },
       ],

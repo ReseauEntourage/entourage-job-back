@@ -121,7 +121,9 @@ export class UserProfilesController {
     @Query('departments')
     departments: Department[],
     @Query('businessLines')
-    businessLines: BusinessLineValue[]
+    businessLines: BusinessLineValue[],
+    @Query('refererId')
+    refererId: string
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -143,6 +145,7 @@ export class UserProfilesController {
       helps,
       departments,
       businessLines,
+      refererId,
     });
   }
 
