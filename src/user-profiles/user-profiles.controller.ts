@@ -121,9 +121,7 @@ export class UserProfilesController {
     @Query('departments')
     departments: Department[],
     @Query('businessLines')
-    businessLines: BusinessLineValue[],
-    @Query('refererId')
-    refererId: string
+    businessLines: BusinessLineValue[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -145,7 +143,21 @@ export class UserProfilesController {
       helps,
       departments,
       businessLines,
-      refererId,
+    });
+  }
+
+  @UserPermissions(Permissions.REFERER)
+  @Get('refered')
+  async findReferedCandidates(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number
+  ) {
+    return this.userProfilesService.findAllReferedCandidates(userId, {
+      offset,
+      limit,
     });
   }
 
