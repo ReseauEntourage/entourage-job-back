@@ -114,19 +114,10 @@ export class UserProfilesService {
       helps: HelpValue[];
       departments: Department[];
       businessLines: BusinessLineValue[];
-      refererId: string;
     }
   ): Promise<PublicProfile[]> {
-    const {
-      role,
-      offset,
-      limit,
-      search,
-      helps,
-      departments,
-      businessLines,
-      refererId,
-    } = query;
+    const { role, offset, limit, search, helps, departments, businessLines } =
+      query;
 
     const searchOptions = search
       ? { [Op.or]: userProfileSearchQuery(search) }
@@ -145,12 +136,6 @@ export class UserProfilesService {
             name: { [Op.or]: businessLines },
           }
         : {};
-
-    const refererIdOptions: WhereOptions<User> = refererId
-      ? {
-          refererId,
-        }
-      : {};
 
     const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
       helps?.length > 0
@@ -182,7 +167,6 @@ export class UserProfilesService {
             role,
             lastConnection: { [Op.ne]: null },
             ...searchOptions,
-            ...refererIdOptions,
           },
         },
       ],
@@ -202,6 +186,55 @@ export class UserProfilesService {
           attributes: UserProfilesUserAttributes,
         },
       ],
+    });
+
+    return Promise.all(
+      profiles.map(async (profile): Promise<PublicProfile> => {
+        const lastSentMessage = await this.getLastContact(
+          userId,
+          profile.user.id
+        );
+        const lastReceivedMessage = await this.getLastContact(
+          profile.user.id,
+          userId
+        );
+
+        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          lastSentMessage: lastSentMessage?.createdAt || null,
+          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+        };
+      })
+    );
+  }
+
+  async findAllReferedCandidates(
+    userId: string,
+    query: {
+      offset: number;
+      limit: number;
+    }
+  ): Promise<PublicProfile[]> {
+    const { offset, limit } = query;
+
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.createdAt" DESC'),
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+          where: {
+            refererId: userId,
+          },
+        },
+      ],
+      limit,
+      offset,
     });
 
     return Promise.all(
