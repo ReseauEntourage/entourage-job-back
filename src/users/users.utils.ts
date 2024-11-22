@@ -163,6 +163,8 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
     associatedUserOptionKey = '"candidat"."coachId"';
   } else if (isRoleIncluded([UserRoles.COACH], rolesFilters)) {
     associatedUserOptionKey = '"coaches"."candidatId"';
+  } else if (isRoleIncluded([UserRoles.REFERER], rolesFilters)) {
+    associatedUserOptionKey = '"referredCandidates"."candidatId"';
   } else {
     return [];
   }
