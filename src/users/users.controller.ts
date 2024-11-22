@@ -101,6 +101,15 @@ export class UsersController {
       });
     }
 
+    if (isRoleIncluded([UserRoles.REFERER], role)) {
+      return this.usersService.findAllRefererMembers({
+        ...query,
+        limit,
+        offset,
+        search,
+      });
+    }
+
     throw new BadRequestException();
   }
 
