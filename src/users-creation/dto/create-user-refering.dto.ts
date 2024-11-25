@@ -27,17 +27,14 @@ export class CreateUserReferingDto extends PickType(User, [
 ] as const) {
   @ApiProperty()
   @IsNumber()
-  @IsOptional()
   gender: Gender;
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   program: Program;
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   birthDate: Date;
 
   @ApiProperty()
@@ -51,12 +48,10 @@ export class CreateUserReferingDto extends PickType(User, [
 
   @ApiProperty()
   @IsArray()
-  @IsOptional()
   helpNeeds?: HelpNeed[];
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   workingRight?: CandidateYesNoNSPPValue;
 
   @ApiProperty()
