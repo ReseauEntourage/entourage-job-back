@@ -14,14 +14,14 @@ import {
 export const UserRoles = {
   CANDIDATE: 'Candidat',
   COACH: 'Coach',
-  REFERER: 'Orienteur',
+  REFERER: 'Prescripteur',
   ADMIN: 'Admin',
 } as const;
 
 export type UserRole = (typeof UserRoles)[keyof typeof UserRoles];
 
 export const Permissions = {
-  REFERER: 'Orienteur',
+  REFERER: 'Prescripteur',
   CANDIDATE: 'Candidat',
   COACH: 'Coach',
   RESTRICTED_COACH: 'Restricted_Coach',
