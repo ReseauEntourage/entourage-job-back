@@ -293,7 +293,7 @@ describe('Organizations', () => {
             expect.arrayContaining([
               expect.objectContaining({
                 candidatesCount: 3,
-                refererCount: 7,
+                referersCount: 7,
               }),
             ])
           );
