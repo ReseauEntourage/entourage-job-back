@@ -79,9 +79,7 @@ export class MailsService {
     });
   }
 
-  async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
-  ) {
+  async sendWelcomeMail(user: User) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
     if (user.role === UserRoles.COACH) {
@@ -879,6 +877,19 @@ export class MailsService {
         candidateLastName: candidate.lastName,
         refererFirstName: referer.firstName,
         zone: candidate.zone,
+      },
+    });
+  }
+
+  async sendAdminNewRefererNotificationMail(referer: User) {
+    const adminFromZone = getAdminMailsFromZone(referer.zone);
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: adminFromZone.candidatesAdminMail,
+      templateId: MailjetTemplates.ADMIN_NEW_REFERER_NOTIFICATION,
+      variables: {
+        refererFirstName: referer.firstName,
+        refererLastName: referer.lastName,
+        refererProfileUrl: `${process.env.FRONTEND_URL}/backoffice/admin/membres/${referer.id}`,
       },
     });
   }
