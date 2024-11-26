@@ -97,6 +97,7 @@ export const MailjetTemplates = {
   ONBOARDING_J3_PROFILE_COMPLETION: 6129711,
   REFERER_ONBOARDING_CONFIRMATION: 6324339,
   REFERED_CANDIDATE_FINALIZE_ACCOUNT: 6324039,
+  ADMIN_NEW_REFERER_NOTIFICATION: 6328158,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

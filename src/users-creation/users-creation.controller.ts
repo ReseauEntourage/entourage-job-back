@@ -231,17 +231,14 @@ export class UsersCreationController {
         gender: createUserRegistrationDto.gender,
       });
 
-      if (
-        createUserRegistrationDto.program === Programs.BOOST ||
-        createUserRegistrationDto.role === UserRoles.REFERER
-      ) {
-        await this.usersCreationService.sendWelcomeMail({
-          id: createdUser.id,
-          firstName: createdUser.firstName,
-          role: createdUser.role,
-          zone: createdUser.zone,
-          email: createdUser.email,
-        });
+      if (createUserRegistrationDto.program === Programs.BOOST) {
+        await this.usersCreationService.sendWelcomeMail(createdUser);
+      }
+
+      if (createUserRegistrationDto.role === UserRoles.REFERER) {
+        await this.usersCreationService.sendAdminNewRefererNotificationMail(
+          createdUser
+        );
       }
 
       await this.usersCreationService.sendVerificationMail(createdUser);
