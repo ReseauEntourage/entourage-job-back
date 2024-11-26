@@ -865,6 +865,22 @@ export class MailsService {
     });
   }
 
+  async sendRefererCandidateHasVerifiedAccountMail(
+    referer: User,
+    candidate: User
+  ) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: referer.email,
+      templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
+      variables: {
+        candidateFirstName: candidate.firstName,
+        candidateLastName: candidate.lastName,
+        refererFirstName: referer.firstName,
+        zone: candidate.zone,
+      },
+    });
+  }
+
   async sendAdminNewRefererNotificationMail(referer: User) {
     const adminFromZone = getAdminMailsFromZone(referer.zone);
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {

@@ -285,6 +285,11 @@ export class AuthController {
       throw new NotFoundException();
     }
 
+    await this.authService.sendRefererCandidateHasVerifiedAccountMail(
+      updatedUser.referer,
+      updatedUser
+    );
+
     return updatedUser.email;
   }
 }
