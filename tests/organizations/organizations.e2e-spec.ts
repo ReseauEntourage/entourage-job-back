@@ -237,7 +237,7 @@ describe('Organizations', () => {
           await databaseHelper.createEntities(
             userFactory,
             7,
-            { role: UserRoles.COACH, OrganizationId: organization.id },
+            { role: UserRoles.REFERER, OrganizationId: organization.id },
             {},
             true
           );
@@ -285,15 +285,15 @@ describe('Organizations', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and all organizations candidates and coaches count when admin gets organizations ', async () => {
+        it('Should return 200 and all organizations candidates and referers count when admin gets organizations ', async () => {
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server).get(`${route}/?limit=50&offset=0`);
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.arrayContaining([
               expect.objectContaining({
-                coachesCount: 7,
                 candidatesCount: 3,
+                refererCount: 7,
               }),
             ])
           );
