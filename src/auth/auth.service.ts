@@ -137,6 +137,16 @@ export class AuthService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
+  async sendRefererCandidateHasVerifiedAccountMail(
+    referer: User,
+    candidate: User
+  ) {
+    return this.mailsService.sendRefererCandidateHasVerifiedAccountMail(
+      referer,
+      candidate
+    );
+  }
+
   async generateVerificationToken(user: User) {
     return this.jwtService.sign(
       { sub: user.id },

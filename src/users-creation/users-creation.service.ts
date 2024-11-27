@@ -72,9 +72,7 @@ export class UsersCreationService {
     return this.mailsService.sendNewAccountMail(user, token);
   }
 
-  async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
-  ) {
+  async sendWelcomeMail(user: User) {
     return this.mailsService.sendWelcomeMail(user);
   }
 
@@ -102,6 +100,10 @@ export class UsersCreationService {
 
   async sendMailsAfterMatching(candidateId: string) {
     return this.usersService.sendMailsAfterMatching(candidateId);
+  }
+
+  async sendAdminNewRefererNotificationMail(referer: User) {
+    return this.mailsService.sendAdminNewRefererNotificationMail(referer);
   }
 
   async updateUserCandidatByCandidateId(
