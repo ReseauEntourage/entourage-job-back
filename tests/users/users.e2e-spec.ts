@@ -2390,14 +2390,33 @@ describe('Users', () => {
             );
           });
 
-          it('Should return 400, when try to list members with role referer', async () => {
+          it('Should return 200, and all the referers that match all the filters', async () => {
+            const organization = await organizationFactory.create({}, {}, true);
+
+            const referers = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.REFERER,
+                zone: AdminZones.LYON,
+                OrganizationId: organization.id,
+              }
+            );
+
+            const expectedCoachesIds = [...referers.map(({ id }) => id)];
+
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.REFERER}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.REFERER}&query=XXX&zone[]=${AdminZones.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(400);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
           });
         });
       });
