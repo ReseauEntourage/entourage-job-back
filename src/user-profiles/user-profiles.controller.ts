@@ -146,6 +146,21 @@ export class UserProfilesController {
     });
   }
 
+  @UserPermissions(Permissions.REFERER)
+  @Get('refered')
+  async findReferedCandidates(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number
+  ) {
+    return this.userProfilesService.findAllReferedCandidates(userId, {
+      offset,
+      limit,
+    });
+  }
+
   @Self('params.userId')
   @UseGuards(SelfGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
