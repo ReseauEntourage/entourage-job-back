@@ -79,7 +79,9 @@ export class MailsService {
     });
   }
 
-  async sendWelcomeMail(user: User) {
+  async sendWelcomeMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
     if (user.role === UserRoles.COACH) {
