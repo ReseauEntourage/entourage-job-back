@@ -210,6 +210,55 @@ export class UserProfilesService {
     );
   }
 
+  async findAllReferedCandidates(
+    userId: string,
+    query: {
+      offset: number;
+      limit: number;
+    }
+  ): Promise<PublicProfile[]> {
+    const { offset, limit } = query;
+
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.createdAt" DESC'),
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+          where: {
+            refererId: userId,
+          },
+        },
+      ],
+      limit,
+      offset,
+    });
+
+    return Promise.all(
+      profiles.map(async (profile): Promise<PublicProfile> => {
+        const lastSentMessage = await this.getLastContact(
+          userId,
+          profile.user.id
+        );
+        const lastReceivedMessage = await this.getLastContact(
+          profile.user.id,
+          userId
+        );
+
+        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          lastSentMessage: lastSentMessage?.createdAt || null,
+          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+        };
+      })
+    );
+  }
+
   async findRecommendationsByUserId(
     userId: string
   ): Promise<UserProfileRecommendation[]> {
