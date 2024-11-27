@@ -81,6 +81,15 @@ export class UsersCreationService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
+  async sendFinalizeAccountReferedUser(candidate: User, referer: User) {
+    const token = await this.authService.generateVerificationToken(candidate);
+    return this.mailsService.sendReferedCandidateFinalizeAccountMail(
+      referer,
+      candidate,
+      token
+    );
+  }
+
   async sendOnboardingJ3ProfileCompletionMail(user: User) {
     return this.mailsService.sendOnboardingJ3ProfileCompletionMail(user);
   }

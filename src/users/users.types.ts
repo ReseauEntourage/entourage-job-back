@@ -32,7 +32,7 @@ export type Permission = (typeof Permissions)[keyof typeof Permissions];
 
 export const UserPermissions: { [K in UserRole]: Permission | Permission[] } = {
   [UserRoles.CANDIDATE]: Permissions.CANDIDATE,
-  [UserRoles.REFERER]: Permissions.COACH,
+  [UserRoles.REFERER]: Permissions.REFERER,
   [UserRoles.COACH]: [Permissions.COACH, Permissions.RESTRICTED_COACH],
   [UserRoles.ADMIN]: Permissions.ADMIN,
 };
