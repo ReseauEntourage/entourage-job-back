@@ -1103,6 +1103,499 @@ describe('Users', () => {
           expect(response.status).toBe(409);
         });
       });
+      describe('/refering - Create user through refering', () => {
+        let loggedInReferer: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let organization: Organization;
+
+        beforeEach(async () => {
+          organization = await organizationFactory.create({}, {}, true);
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
+            OrganizationId: organization.id,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            OrganizationId: organization.id,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+            OrganizationId: organization.id,
+          });
+        });
+
+        it('Should return 200 and a created candidate if valid candidate data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+                helpNeeds: expect.arrayContaining(
+                  userProfileValues.helpNeeds.map((expectation) =>
+                    expect.objectContaining(expectation)
+                  )
+                ),
+              }),
+            })
+          );
+        });
+
+        it('Should return 200 and a created candidate if valid candidate data with minimum data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            program: Programs.THREE_SIXTY,
+            workingRight: CandidateYesNoNSPP.YES,
+            birthDate: '1996-24-04',
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+                helpNeeds: expect.arrayContaining(
+                  userProfileValues.helpNeeds.map((expectation) =>
+                    expect.objectContaining(expectation)
+                  )
+                ),
+              }),
+            })
+          );
+        });
+
+        it('Should return 400 when has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 when has invalid email', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: 'email.fr', // This is the incorrect data
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 when has invalid email', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: 'email.fr', // This is the incorrect data
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 when has invalid phone', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: '1234', // This is the incorrect data
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 403 when a candidate referer another valid candidate', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 403 when a candidate referer another valid coach', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 409 when the email already exist', async () => {
+          const existingUser = await userFactory.create({}, {}, true);
+
+          const user = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              email: existingUser.email,
+            },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(409);
+        });
+      });
     });
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {
@@ -3846,6 +4339,18 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(200);
         });
+        it('Should return 200 if user is logged in as referer', async () => {
+          const loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
+          });
+          const response: APIResponse<UserProfilesController['findAll']> =
+            await request(server)
+              .get(
+                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+              )
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+          expect(response.status).toBe(200);
+        });
         it('Should return 400 if no offset or limit parameter', async () => {
           const loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,
@@ -4914,6 +5419,7 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -4924,6 +5430,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
         it('Should return 401 if user is not logged in', async () => {
@@ -4961,6 +5470,23 @@ describe('Users', () => {
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                phone: updates.phone,
+                address: updates.address,
+                email: updates.email,
+                firstName: updates.firstName,
+                lastName: updates.lastName,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body.phone).toEqual(updates.phone);
+          expect(response.body.address).toEqual(updates.address);
+        });
+        it('Should return 200 and updated user when a referer update himself', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInReferer.user.id}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`)
               .send({
                 phone: updates.phone,
                 address: updates.address,
@@ -5513,6 +6039,7 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -5524,6 +6051,9 @@ describe('Users', () => {
           const coach = await userFactory.create({
             role: UserRoles.COACH,
           });
+          const referer = await userFactory.create({
+            role: UserRoles.REFERER,
+          });
           await userCandidatsHelper.associateCoachAndCandidate(coach, candidat);
           loggedInCandidate = await usersHelper.createLoggedInUser(
             candidat,
@@ -5532,6 +6062,11 @@ describe('Users', () => {
           );
           loggedInCoach = await usersHelper.createLoggedInUser(
             coach,
+            {},
+            false
+          );
+          loggedInReferer = await usersHelper.createLoggedInUser(
+            referer,
             {},
             false
           );
@@ -5551,6 +6086,14 @@ describe('Users', () => {
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if referer checks if note has been updated', async () => {
+          const response: APIResponse<
+            UsersController['checkNoteHasBeenModified']
+          > = await request(server)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
@@ -5641,6 +6184,7 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -5651,6 +6195,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
         it('Should return 401, if user not logged in', async () => {
@@ -5666,6 +6213,13 @@ describe('Users', () => {
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if referer sets the note has been read', async () => {
+          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
+            await request(server)
+              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if coach sets the note has been read on candidate not related', async () => {
@@ -6132,6 +6686,7 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -6142,6 +6697,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
 
@@ -6193,7 +6751,7 @@ describe('Users', () => {
             ])
           );
         });
-        it('Should return 403, if not logged in as candidate', async () => {
+        it('Should return 403, if logged in as candidate', async () => {
           const originalUsers = await databaseHelper.createEntities(
             userFactory,
             5,
@@ -6219,7 +6777,7 @@ describe('Users', () => {
               });
           expect(responseCandidate.status).toBe(403);
         });
-        it('Should return 403, if not logged in as coach', async () => {
+        it('Should return 403, if logged in as coach', async () => {
           const originalUsers = await databaseHelper.createEntities(
             userFactory,
             5,
@@ -6237,6 +6795,33 @@ describe('Users', () => {
             await request(server)
               .put(`${route}/candidate/bulk`)
               .set('authorization', `Bearer ${loggedInCoach.token}`)
+              .send({
+                attributes: {
+                  hidden: true,
+                },
+                ids: originalUsersIds,
+              });
+          expect(responseCoach.status).toBe(403);
+        });
+
+        it('Should return 403, if logged in as referer', async () => {
+          const originalUsers = await databaseHelper.createEntities(
+            userFactory,
+            5,
+            {
+              role: UserRoles.CANDIDATE,
+            },
+            {
+              userCandidat: { hidden: true },
+            }
+          );
+          const originalUsersIds = originalUsers.map(({ id }) => {
+            return id;
+          });
+          const responseCoach: APIResponse<UsersController['updateAll']> =
+            await request(server)
+              .put(`${route}/candidate/bulk`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`)
               .send({
                 attributes: {
                   hidden: true,
