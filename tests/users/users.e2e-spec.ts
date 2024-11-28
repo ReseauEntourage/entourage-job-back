@@ -402,6 +402,7 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
+              referer,
               whatsappZoneCoachName: coachWhatsappZoneCoachName,
               whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
@@ -514,6 +515,7 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
+              referer,
               whatsappZoneCoachName: candidateWhatappZoneCoachName,
               whatsappZoneCoachUrl: candidateWhatappZoneCoachUrl,
               whatsappZoneCoachQR: candidateWhatappZoneCoachQR,
@@ -5325,6 +5327,7 @@ describe('Users', () => {
           const {
             candidat,
             coaches,
+            referer,
             lastConnection,
             createdAt,
             organization,
@@ -5338,6 +5341,7 @@ describe('Users', () => {
           const {
             candidat: coachCandidat,
             coaches: coachCoaches,
+            referer: coachReferer,
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
@@ -5383,12 +5387,14 @@ describe('Users', () => {
             whatsappZoneCoachQR,
             refererId,
             referredCandidates,
+            referer,
             ...restCandidate
           } = loggedInCandidate.user;
 
           const {
             candidat: coachCandidat,
             coaches: coachCoaches,
+            referer: coachReferer,
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
@@ -5436,6 +5442,7 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization,
+            referer,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -5468,6 +5475,7 @@ describe('Users', () => {
           const {
             candidat,
             coaches,
+            referer,
             lastConnection,
             createdAt,
             organization,
