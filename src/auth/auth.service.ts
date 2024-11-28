@@ -137,12 +137,8 @@ export class AuthService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
-  async sendRefererCandidateHasVerifiedAccountMail(
-    referer: User,
-    candidate: User
-  ) {
+  async sendRefererCandidateHasVerifiedAccountMail(candidate: User) {
     return this.mailsService.sendRefererCandidateHasVerifiedAccountMail(
-      referer,
       candidate
     );
   }

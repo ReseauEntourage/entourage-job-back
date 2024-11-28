@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
@@ -861,17 +861,18 @@ export class MailsService {
     });
   }
 
-  async sendRefererCandidateHasVerifiedAccountMail(
-    referer: User,
-    candidate: User
-  ) {
+  async sendRefererCandidateHasVerifiedAccountMail(candidate: User) {
+    if (candidate.referer === null) {
+      throw new NotFoundException();
+    }
+
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: referer.email,
+      toEmail: candidate.referer.email,
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
         candidateFirstName: candidate.firstName,
         candidateLastName: candidate.lastName,
-        refererFirstName: referer.firstName,
+        refererFirstName: candidate.referer.firstName,
         zone: candidate.zone,
         loginUrl: `${process.env.FRONT_URL}/login`,
       },
