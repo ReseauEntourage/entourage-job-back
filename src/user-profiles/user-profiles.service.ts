@@ -16,8 +16,7 @@ import { MessagesService } from 'src/messages/messages.service';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { CandidateUserRoles, UserRole, UserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   HelpNeed,
@@ -187,6 +186,55 @@ export class UserProfilesService {
           attributes: UserProfilesUserAttributes,
         },
       ],
+    });
+
+    return Promise.all(
+      profiles.map(async (profile): Promise<PublicProfile> => {
+        const lastSentMessage = await this.getLastContact(
+          userId,
+          profile.user.id
+        );
+        const lastReceivedMessage = await this.getLastContact(
+          profile.user.id,
+          userId
+        );
+
+        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          lastSentMessage: lastSentMessage?.createdAt || null,
+          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+        };
+      })
+    );
+  }
+
+  async findAllReferedCandidates(
+    userId: string,
+    query: {
+      offset: number;
+      limit: number;
+    }
+  ): Promise<PublicProfile[]> {
+    const { offset, limit } = query;
+
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.createdAt" DESC'),
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+          where: {
+            refererId: userId,
+          },
+        },
+      ],
+      limit,
+      offset,
     });
 
     return Promise.all(
@@ -436,9 +484,10 @@ export class UserProfilesService {
       this.findOneByUserId(userId),
     ]);
 
-    const rolesToFind = isRoleIncluded(CandidateUserRoles, user.role)
-      ? [UserRoles.COACH]
-      : CandidateUserRoles;
+    const rolesToFind =
+      user.role === UserRoles.CANDIDATE
+        ? [UserRoles.COACH]
+        : [UserRoles.CANDIDATE];
 
     const sameRegionDepartmentsOptions = userProfile.department
       ? Departments.filter(

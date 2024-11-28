@@ -42,8 +42,6 @@ import { User, UserCandidat } from './models';
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import {
-  CandidateUserRoles,
-  CoachUserRoles,
   MemberFilterKey,
   Permissions,
   SequelizeUniqueConstraintError,
@@ -85,20 +83,27 @@ export class UsersController {
       throw new BadRequestException();
     }
 
-    if (isRoleIncluded(CandidateUserRoles, role)) {
+    if (isRoleIncluded([UserRoles.CANDIDATE], role)) {
       return this.usersService.findAllCandidateMembers({
         ...query,
-        role: role as typeof CandidateUserRoles,
         limit,
         offset,
         search,
       });
     }
 
-    if (isRoleIncluded(CoachUserRoles, role)) {
+    if (isRoleIncluded([UserRoles.COACH], role)) {
       return this.usersService.findAllCoachMembers({
         ...query,
-        role: role as typeof CoachUserRoles,
+        limit,
+        offset,
+        search,
+      });
+    }
+
+    if (isRoleIncluded([UserRoles.REFERER], role)) {
+      return this.usersService.findAllRefererMembers({
+        ...query,
         limit,
         offset,
         search,
@@ -147,13 +152,11 @@ export class UsersController {
     @UserPayload('role') role: UserRole
   ) {
     const ids = {
-      candidateId: isRoleIncluded(CandidateUserRoles, role)
-        ? userId
-        : undefined,
-      coachId: isRoleIncluded(CoachUserRoles, role) ? userId : undefined,
+      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
+      coachId: role === UserRoles.COACH ? userId : undefined,
     };
 
-    if (role === UserRoles.COACH_EXTERNAL) {
+    if (role === UserRoles.REFERER) {
       const userCandidates = await this.userCandidatsService.findAllByCoachId(
         ids.coachId
       );
@@ -331,19 +334,11 @@ export class UsersController {
   @Put('linkUser/:userId')
   async linkUser(
     @Param('userId', new ParseUUIDPipe()) userId: string,
-    @Body('userToLinkId') userToLinkId: string | string[]
+    @Body('userToLinkId') userToLinkId: string
   ) {
-    // check if users are already linked and remove existing link if needed
-    const shouldRemoveLinkedUser =
-      (Array.isArray(userToLinkId) && userToLinkId.length === 0) ||
-      (!Array.isArray(userToLinkId) && userToLinkId === null);
+    const shouldRemoveLinkedUser = userToLinkId === null;
 
-    if (
-      !shouldRemoveLinkedUser &&
-      (Array.isArray(userToLinkId) // external coach has possibly multiple candidates
-        ? !userToLinkId.every((id) => uuidValidate(id))
-        : !uuidValidate(userId))
-    ) {
+    if (!shouldRemoveLinkedUser && !uuidValidate(userId)) {
       throw new BadRequestException();
     }
 
@@ -353,20 +348,7 @@ export class UsersController {
       throw new NotFoundException();
     }
 
-    if (
-      !shouldRemoveLinkedUser &&
-      // only external coach can have multiple candidates
-      ((user.role !== UserRoles.COACH_EXTERNAL &&
-        Array.isArray(userToLinkId)) ||
-        (user.role === UserRoles.COACH_EXTERNAL &&
-          !Array.isArray(userToLinkId)))
-    ) {
-      throw new BadRequestException();
-    }
-
-    const usersToLinkIds = Array.isArray(userToLinkId)
-      ? userToLinkId
-      : [userToLinkId];
+    const usersToLinkIds = [userToLinkId];
 
     const usersToLinkOrToRemoveIds = shouldRemoveLinkedUser
       ? getRelatedUser(user)?.map(({ id }) => id)
@@ -404,7 +386,6 @@ export class UsersController {
       const updatedUserCandidates =
         await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
           userCandidatesToUpdate,
-          user.role === UserRoles.CANDIDATE_EXTERNAL,
           shouldRemoveLinkedUser
         );
 

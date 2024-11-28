@@ -29,7 +29,6 @@ import {
 } from 'src/users/guards';
 import {
   AllUserRoles,
-  CandidateUserRoles,
   Permissions,
   UserRole,
   UserRoles,
@@ -132,7 +131,7 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    if (role.includes(UserRoles.COACH_EXTERNAL)) {
+    if (role.includes(UserRoles.REFERER)) {
       throw new BadRequestException();
     }
 
@@ -144,6 +143,21 @@ export class UserProfilesController {
       helps,
       departments,
       businessLines,
+    });
+  }
+
+  @UserPermissions(Permissions.REFERER)
+  @Get('refered')
+  async findReferedCandidates(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Query('limit', new ParseIntPipe())
+    limit: number,
+    @Query('offset', new ParseIntPipe())
+    offset: number
+  ) {
+    return this.userProfilesService.findAllReferedCandidates(userId, {
+      offset,
+      limit,
     });
   }
 
@@ -275,7 +289,7 @@ export class UserProfilesController {
       currentUserId
     );
 
-    if (isRoleIncluded(CandidateUserRoles, user.role)) {
+    if (user.role === UserRoles.CANDIDATE) {
       const userCandidate =
         await this.userProfilesService.findUserCandidateByCandidateId(
           userIdToGet

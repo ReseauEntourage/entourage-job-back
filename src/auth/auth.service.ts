@@ -137,6 +137,16 @@ export class AuthService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
+  async sendRefererCandidateHasVerifiedAccountMail(
+    referer: User,
+    candidate: User
+  ) {
+    return this.mailsService.sendRefererCandidateHasVerifiedAccountMail(
+      referer,
+      candidate
+    );
+  }
+
   async generateVerificationToken(user: User) {
     return this.jwtService.sign(
       { sub: user.id },
@@ -145,5 +155,19 @@ export class AuthService {
         expiresIn: '7d',
       }
     );
+  }
+
+  async sendWelcomeMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
+    return this.mailsService.sendWelcomeMail(user);
+  }
+
+  async sendOnboardingJ1BAOMail(user: User) {
+    return this.mailsService.sendOnboardingJ1BAOMail(user);
+  }
+
+  async sendOnboardingJ3ProfileCompletionMail(user: User) {
+    return this.mailsService.sendOnboardingJ3ProfileCompletionMail(user);
   }
 }

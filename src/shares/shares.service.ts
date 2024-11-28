@@ -3,8 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Sequelize } from 'sequelize';
 import { UsersService } from 'src/users/users.service';
-import { CandidateUserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import { UserRoles } from 'src/users/users.types';
 import { RedisKeys } from 'src/utils/types';
 import { Share } from './models';
 
@@ -28,7 +27,7 @@ export class SharesService {
 
   async updateByCandidateId(candidateId: string, type: ShareType) {
     const candidate = await this.usersService.findOne(candidateId);
-    if (!candidate || !isRoleIncluded(CandidateUserRoles, candidate.role)) {
+    if (!candidate || candidate.role !== UserRoles.CANDIDATE) {
       return null;
     }
     const candidatShares = await this.shareModel.findOne({
