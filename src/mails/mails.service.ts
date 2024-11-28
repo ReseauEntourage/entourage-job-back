@@ -873,6 +873,7 @@ export class MailsService {
         candidateLastName: candidate.lastName,
         refererFirstName: referer.firstName,
         zone: candidate.zone,
+        loginUrl: `${process.env.FRONT_URL}/login`,
       },
     });
   }
