@@ -15,38 +15,26 @@ import {
 } from 'src/contacts/contacts.types';
 import { HelpNeed } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
-import { Gender, Program, RegistrableUserRole } from 'src/users/users.types';
+import { Gender, Program } from 'src/users/users.types';
 
-export class CreateUserRegistrationDto extends PickType(User, [
+export class CreateUserReferingDto extends PickType(User, [
   'firstName',
   'lastName',
   'email',
-  'role',
   'gender',
   'phone',
   'password',
 ] as const) {
   @ApiProperty()
   @IsNumber()
-  @IsOptional()
   gender: Gender;
 
   @ApiProperty()
   @IsString()
-  role: RegistrableUserRole;
-
-  @ApiProperty()
-  @IsString()
-  password: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
   program: Program;
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   birthDate: Date;
 
   @ApiProperty()
@@ -56,21 +44,14 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsString()
   @IsOptional()
-  organizationId?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
   campaign?: string;
 
   @ApiProperty()
   @IsArray()
-  @IsOptional()
   helpNeeds?: HelpNeed[];
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
   workingRight?: CandidateYesNoNSPPValue;
 
   @ApiProperty()

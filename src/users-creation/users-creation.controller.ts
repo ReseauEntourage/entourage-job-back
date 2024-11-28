@@ -11,14 +11,14 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { encryptPassword } from 'src/auth/auth.utils';
-import { Public } from 'src/auth/guards';
+import { Public, UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
-  ExternalUserRoles,
-  NormalUserRoles,
   Permissions,
   Programs,
+  RegistrableUserRoles,
+  RolesWithOrganization,
   SequelizeUniqueConstraintError,
   UserRoles,
 } from 'src/users/users.types';
@@ -33,6 +33,8 @@ import {
   CreateUserRegistrationDto,
   CreateUserRegistrationPipe,
 } from './dto';
+import { CreateUserReferingDto } from './dto/create-user-refering.dto';
+import { CreateUserReferingPipe } from './dto/create-user-refering.pipe';
 import { UsersCreationService } from './users-creation.service';
 
 function generateFakePassword() {
@@ -51,9 +53,9 @@ export class UsersCreationController {
   async createUser(@Body(new CreateUserPipe()) createUserDto: CreateUserDto) {
     if (
       (createUserDto.OrganizationId &&
-        !isRoleIncluded(ExternalUserRoles, createUserDto.role)) ||
+        !isRoleIncluded(RolesWithOrganization, createUserDto.role)) ||
       (!createUserDto.OrganizationId &&
-        isRoleIncluded(ExternalUserRoles, createUserDto.role))
+        isRoleIncluded(RolesWithOrganization, createUserDto.role))
     ) {
       throw new BadRequestException();
     }
@@ -101,18 +103,7 @@ export class UsersCreationController {
     );
 
     if (userToCreate.userToLinkId) {
-      if (
-        (createdUser.role !== UserRoles.COACH_EXTERNAL &&
-          Array.isArray(userToCreate.userToLinkId)) ||
-        (createdUser.role === UserRoles.COACH_EXTERNAL &&
-          !Array.isArray(userToCreate.userToLinkId))
-      ) {
-        throw new BadRequestException();
-      }
-
-      const usersToLinkIds = Array.isArray(userToCreate.userToLinkId)
-        ? userToCreate.userToLinkId
-        : [userToCreate.userToLinkId];
+      const usersToLinkIds = [userToCreate.userToLinkId];
 
       const userCandidatesToUpdate = await Promise.all(
         usersToLinkIds.map(async (userToLinkId) => {
@@ -142,8 +133,7 @@ export class UsersCreationController {
 
       const updatedUserCandidates =
         await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
-          userCandidatesToUpdate,
-          createdUser.role === UserRoles.CANDIDATE_EXTERNAL
+          userCandidatesToUpdate
         );
 
       if (!updatedUserCandidates) {
@@ -178,7 +168,14 @@ export class UsersCreationController {
   ) {
     if (
       !isValidPhone(createUserRegistrationDto.phone) ||
-      !isRoleIncluded(NormalUserRoles, createUserRegistrationDto.role)
+      !isRoleIncluded(RegistrableUserRoles, createUserRegistrationDto.role)
+    ) {
+      throw new BadRequestException();
+    }
+
+    if (
+      !isRoleIncluded([UserRoles.REFERER], createUserRegistrationDto.role) &&
+      !createUserRegistrationDto.program
     ) {
       throw new BadRequestException();
     }
@@ -194,7 +191,7 @@ export class UsersCreationController {
       role: createUserRegistrationDto.role,
       gender: createUserRegistrationDto.gender,
       phone: createUserRegistrationDto.phone,
-      OrganizationId: null,
+      OrganizationId: createUserRegistrationDto.organizationId,
       address: null,
       adminRole: null,
       zone,
@@ -237,13 +234,13 @@ export class UsersCreationController {
       });
 
       if (createUserRegistrationDto.program === Programs.BOOST) {
-        await this.usersCreationService.sendWelcomeMail({
-          id: createdUser.id,
-          firstName: createdUser.firstName,
-          role: createdUser.role,
-          zone: createdUser.zone,
-          email: createdUser.email,
-        });
+        await this.usersCreationService.sendWelcomeMail(createdUser);
+      }
+
+      if (createUserRegistrationDto.role === UserRoles.REFERER) {
+        await this.usersCreationService.sendAdminNewRefererNotificationMail(
+          createdUser
+        );
       }
 
       await this.usersCreationService.sendVerificationMail(createdUser);
@@ -252,6 +249,92 @@ export class UsersCreationController {
 
       await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
         createdUser
+      );
+
+      return createdUser;
+    } catch (err) {
+      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+        throw new ConflictException();
+      }
+    }
+  }
+
+  @UserPermissions(Permissions.REFERER)
+  @UseGuards(UserPermissionsGuard)
+  @Throttle(10, 60)
+  @Post('refering')
+  async createUserRefering(
+    @Body(new CreateUserReferingPipe())
+    createUserReferingDto: CreateUserReferingDto,
+    @UserPayload()
+    referer: User
+  ) {
+    if (!isValidPhone(createUserReferingDto.phone)) {
+      throw new BadRequestException();
+    }
+
+    if (!createUserReferingDto.program) {
+      throw new BadRequestException();
+    }
+
+    const userRandomPassword = generateFakePassword();
+    const { hash, salt } = encryptPassword(userRandomPassword);
+
+    const zone = getZoneFromDepartment(createUserReferingDto.department);
+
+    const userToCreate: Partial<User> = {
+      refererId: referer.id,
+      OrganizationId: referer.OrganizationId,
+      firstName: createUserReferingDto.firstName,
+      lastName: createUserReferingDto.lastName,
+      email: createUserReferingDto.email,
+      role: UserRoles.CANDIDATE,
+      gender: createUserReferingDto.gender,
+      phone: createUserReferingDto.phone,
+      address: null,
+      adminRole: null,
+      zone,
+      password: hash,
+      salt,
+    };
+
+    try {
+      const { id: createdUserId } = await this.usersCreationService.createUser(
+        userToCreate
+      );
+
+      await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
+        department: createUserReferingDto.department,
+        helpNeeds: createUserReferingDto.helpNeeds,
+        searchBusinessLines: createUserReferingDto.searchBusinessLines,
+        searchAmbitions: createUserReferingDto.searchAmbitions,
+      });
+
+      const createdUser = await this.usersCreationService.findOneUser(
+        createdUserId
+      );
+
+      await this.usersCreationService.createExternalDBUser(createdUserId, {
+        program: createUserReferingDto.program,
+        birthDate: createUserReferingDto.birthDate,
+        campaign:
+          createUserReferingDto.program === Programs.THREE_SIXTY
+            ? createUserReferingDto.campaign
+            : undefined,
+        workingRight: createUserReferingDto.workingRight,
+        nationality: createUserReferingDto.nationality,
+        accommodation: createUserReferingDto.accommodation,
+        hasSocialWorker: createUserReferingDto.hasSocialWorker,
+        resources: createUserReferingDto.resources,
+        studiesLevel: createUserReferingDto.studiesLevel,
+        workingExperience: createUserReferingDto.workingExperience,
+        jobSearchDuration: createUserReferingDto.jobSearchDuration,
+        gender: createUserReferingDto.gender,
+      });
+
+      await this.usersCreationService.sendFinalizeAccountReferedUser(
+        createdUser,
+        referer
       );
 
       return createdUser;
