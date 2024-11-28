@@ -32,6 +32,20 @@ export const UserCandidatInclude: Includeable[] = [
     ],
   },
   {
+    model: User,
+    as: 'referer',
+    attributes: [...UserAttributes],
+    paranoid: false,
+    include: [
+      {
+        model: UserProfile,
+        as: 'userProfile',
+        attributes: UserProfilesAttributes,
+        include: getUserProfileInclude(),
+      },
+    ],
+  },
+  {
     model: UserCandidat,
     as: 'coaches',
     attributes: [...UserCandidatAttributes],
