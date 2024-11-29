@@ -4304,91 +4304,93 @@ describe('Users', () => {
       });
     });
     describe('R - Read many Profiles', () => {
-      describe('/profile - Read all profiles', () => {
-        it('Should return 401 if user is not logged in', async () => {
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server).get(
-              `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-            );
-          expect(response.status).toBe(401);
-        });
-        it('Should return 400 if no role parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(`${route}/profile`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
-        });
-        it('Should return 200 if user is logged in as admin', async () => {
-          const loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
+      describe('/profile', () => {
+        describe('/profile?limit=&offset= - Read all profiles', () => {
+          it('Should return 401 if user is not logged in', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server).get(
                 `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 200 if user is logged in as candidate', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+              );
+            expect(response.status).toBe(401);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 200 if user is logged in as coach', async () => {
-          const loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
+          it('Should return 400 if no role parameter', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(`${route}/profile`)
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 200 if user is logged in as referer', async () => {
-          const loggedInReferer = await usersHelper.createLoggedInUser({
-            role: UserRoles.REFERER,
+          it('Should return 200 if user is logged in as admin', async () => {
+            const loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInReferer.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 400 if no offset or limit parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+          it('Should return 200 if user is logged in as candidate', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if no role parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+          it('Should return 200 if user is logged in as coach', async () => {
+            const loggedInCoach = await usersHelper.createLoggedInUser({
+              role: UserRoles.COACH,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInCoach.token}`);
+            expect(response.status).toBe(200);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(`${route}/profile?offset=0&limit=25`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
+          it('Should return 200 if user is logged in as referer', async () => {
+            const loggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+          });
+          it('Should return 400 if no offset or limit parameter', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if no role parameter', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(`${route}/profile?offset=0&limit=25`)
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
+          });
         });
         describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
           let loggedInCandidate: LoggedUser;
@@ -5429,6 +5431,188 @@ describe('Users', () => {
             expect(expectedCoachesIds).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
+          });
+        });
+      });
+
+      describe('/profile/refered', () => {
+        describe('/profile/refered?limit=&offset= - Read only candidates that current user refered', () => {
+          let loggedInReferer: LoggedUser;
+          beforeEach(async () => {
+            loggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+          });
+
+          it('Should return 401 if user is not logged in', async () => {
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server).get(
+              `${route}/profile/refered?limit=25&offset=0`
+            );
+            expect(response.status).toBe(401);
+          });
+
+          it('Should return 200 and empty list if user is logged in as referer but has no candidate refered', async () => {
+            const loggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual([]);
+          });
+
+          it('Should return 200 and sorted list of candidates refered by current user', async () => {
+            // Initialize referableCandidates
+            const referedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+                refererId: loggedInReferer.user.id,
+              },
+              {}
+            );
+
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(referedCandidates.length);
+            expect(response.body).toEqual(
+              referedCandidates
+                .sort((userA, userB) =>
+                  moment(userB.createdAt).diff(userA.createdAt)
+                )
+                .map((user) =>
+                  expect.objectContaining(
+                    userProfilesHelper.mapUserProfileFromUser(user)
+                  )
+                )
+            );
+          });
+
+          it('Should return 200 and sorted list of candidates refered by current user with limit = 1 and offset = 1', async () => {
+            // Initialize referableCandidates
+            const referedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+                refererId: loggedInReferer.user.id,
+              },
+              {}
+            );
+
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=1&offset=1`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            const sortedReferedCandidates = referedCandidates.sort(
+              (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+            );
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(response.body).toEqual(
+              [sortedReferedCandidates[1]].map((user) =>
+                expect.objectContaining(
+                  userProfilesHelper.mapUserProfileFromUser(user)
+                )
+              )
+            );
+          });
+
+          it('Should return 200 and only own refered candidates', async () => {
+            // Candidates of referer
+            const referedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+                refererId: loggedInReferer.user.id,
+              },
+              {}
+            );
+
+            // Create other referer and his candidates
+            const otherLoggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+            await databaseHelper.createEntities(
+              userFactory,
+              5,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.PARIS,
+                refererId: otherLoggedInReferer.user.id,
+              },
+              {}
+            );
+
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(referedCandidates.length);
+            expect(response.body).toEqual(
+              referedCandidates
+                .sort((userA, userB) =>
+                  moment(userB.createdAt).diff(userA.createdAt)
+                )
+                .map((user) =>
+                  expect.objectContaining(
+                    userProfilesHelper.mapUserProfileFromUser(user)
+                  )
+                )
+            );
+          });
+
+          it('Should return 403 if user is logged in as candidate', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(403);
+          });
+
+          it('Should return 403 if user is logged in as coach', async () => {
+            const loggedInCoach = await usersHelper.createLoggedInUser({
+              role: UserRoles.COACH,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
+            expect(response.status).toBe(403);
+          });
+
+          it('Should return 403 if user is logged in as admin', async () => {
+            const loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(403);
           });
         });
       });
