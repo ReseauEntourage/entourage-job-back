@@ -147,6 +147,7 @@ export class UserProfilesController {
   }
 
   @UserPermissions(Permissions.REFERER)
+  @UseGuards(UserPermissionsGuard)
   @Get('refered')
   async findReferedCandidates(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
