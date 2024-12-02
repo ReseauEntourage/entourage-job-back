@@ -407,6 +407,7 @@ describe('Users', () => {
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
               OrganizationId: coachOrganizationId,
               referredCandidates: coachReferredCandidates,
+              referer: coachReferer,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -519,6 +520,7 @@ describe('Users', () => {
               whatsappZoneCoachQR: candidateWhatappZoneCoachQR,
               refererId: candidateRefererId,
               referredCandidates: candidateReferredCandidates,
+              referer: candidateReferer,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -6056,6 +6058,7 @@ describe('Users', () => {
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
             refererId: coachRefererId,
+            referer: coachReferer,
             referredCandidates: coachReferredCandidates,
             ...restCoach
           } = loggedInCoach.user;
@@ -6092,6 +6095,7 @@ describe('Users', () => {
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
             refererId,
+            referer,
             referredCandidates,
             ...restCandidate
           } = loggedInCandidate.user;
