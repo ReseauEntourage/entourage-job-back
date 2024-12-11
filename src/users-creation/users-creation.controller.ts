@@ -233,7 +233,11 @@ export class UsersCreationController {
         gender: createUserRegistrationDto.gender,
       });
 
-      if (createUserRegistrationDto.program === Programs.BOOST) {
+      // Send welcome mail only for BOOST and REFERER
+      if (
+        createUserRegistrationDto.program === Programs.BOOST ||
+        createUserRegistrationDto.role === UserRoles.REFERER
+      ) {
         await this.usersCreationService.sendWelcomeMail(createdUser);
       }
 
