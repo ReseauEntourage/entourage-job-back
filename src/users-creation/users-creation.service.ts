@@ -72,8 +72,18 @@ export class UsersCreationService {
     return this.mailsService.sendNewAccountMail(user, token);
   }
 
-  async sendWelcomeMail(user: User) {
-    return this.mailsService.sendWelcomeMail(user);
+  async sendWelcomeMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
+    const { id, firstName, role, zone, email } = user;
+
+    return this.mailsService.sendWelcomeMail({
+      id,
+      firstName,
+      role,
+      zone,
+      email,
+    });
   }
 
   async sendVerificationMail(user: User) {
