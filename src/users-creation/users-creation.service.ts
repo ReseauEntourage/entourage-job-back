@@ -75,12 +75,29 @@ export class UsersCreationService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
   ) {
-    return this.mailsService.sendWelcomeMail(user);
+    const { id, firstName, role, zone, email } = user;
+
+    return this.mailsService.sendWelcomeMail({
+      id,
+      firstName,
+      role,
+      zone,
+      email,
+    });
   }
 
   async sendVerificationMail(user: User) {
     const token = await this.authService.generateVerificationToken(user);
     return this.mailsService.sendVerificationMail(user, token);
+  }
+
+  async sendFinalizeAccountReferedUser(candidate: User, referer: User) {
+    const token = await this.authService.generateVerificationToken(candidate);
+    return this.mailsService.sendReferedCandidateFinalizeAccountMail(
+      referer,
+      candidate,
+      token
+    );
   }
 
   async sendOnboardingJ3ProfileCompletionMail(user: User) {
@@ -95,6 +112,10 @@ export class UsersCreationService {
     return this.usersService.sendMailsAfterMatching(candidateId);
   }
 
+  async sendAdminNewRefererNotificationMail(referer: User) {
+    return this.mailsService.sendAdminNewRefererNotificationMail(referer);
+  }
+
   async updateUserCandidatByCandidateId(
     candidateId: string,
     updateUserCandidatDto: Partial<UserCandidat>
@@ -106,12 +127,10 @@ export class UsersCreationService {
   }
 
   async updateAllUserCandidatLinkedUserByCandidateId(
-    candidatesAndCoachesIds: { candidateId: string; coachId: string }[],
-    isExternalCandidate: boolean
+    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
   ): Promise<UserCandidat[]> {
     return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
-      candidatesAndCoachesIds,
-      isExternalCandidate
+      candidatesAndCoachesIds
     );
   }
 

@@ -18,8 +18,8 @@ import { Jobs } from 'src/queues/queues.types';
 import { SMSService } from 'src/sms/sms.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { CandidateUserRoles } from 'src/users/users.types';
-import { getCoachFromCandidate, isRoleIncluded } from 'src/users/users.utils';
+import { UserRoles } from 'src/users/users.types';
+import { getCoachFromCandidate } from 'src/users/users.utils';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { AdminZone, FilterParams } from 'src/utils/types';
 import {
@@ -352,7 +352,7 @@ export class OpportunitiesService {
 
   async findOneCandidate(candidateId: string) {
     const user = await this.usersService.findOne(candidateId);
-    if (!user || !isRoleIncluded(CandidateUserRoles, user.role)) {
+    if (!user || user.role !== UserRoles.CANDIDATE) {
       return null;
     }
     return user;

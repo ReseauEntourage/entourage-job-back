@@ -381,6 +381,7 @@ describe('Users', () => {
               whatsappZoneCoachName,
               whatsappZoneCoachUrl,
               whatsappZoneCoachQR,
+              OrganizationId,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -404,6 +405,9 @@ describe('Users', () => {
               whatsappZoneCoachName: coachWhatsappZoneCoachName,
               whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+              OrganizationId: coachOrganizationId,
+              referredCandidates: coachReferredCandidates,
+              referer: coachReferer,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -493,6 +497,8 @@ describe('Users', () => {
               whatsappZoneCoachName: coachWhatsappZoneCoachName,
               whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+              referredCandidates: coachReferredCandidates,
+              refererId: coachRefererId,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -509,9 +515,12 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
-              whatsappZoneCoachName: candidatWhatappZoneCoachName,
-              whatsappZoneCoachUrl: candidatWhatappZoneCoachUrl,
-              whatsappZoneCoachQR: candidatWhatappZoneCoachQR,
+              whatsappZoneCoachName: candidateWhatappZoneCoachName,
+              whatsappZoneCoachUrl: candidateWhatappZoneCoachUrl,
+              whatsappZoneCoachQR: candidateWhatappZoneCoachQR,
+              refererId: candidateRefererId,
+              referredCandidates: candidateReferredCandidates,
+              referer: candidateReferer,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -626,85 +635,6 @@ describe('Users', () => {
             expect(response.status).toBe(400);
           });
 
-          it('Should return 400 if candidate with multiple coaches', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              false
-            );
-
-            const { id: coach1Id } = await userFactory.create(
-              { role: UserRoles.COACH },
-              {},
-              true
-            );
-            const { id: coach2Id } = await userFactory.create(
-              { role: UserRoles.COACH },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  userToLinkId: [coach1Id, coach2Id],
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if coach with multiple candidates', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-            const { id: candidate1Id } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              true
-            );
-            const { id: candidate2Id } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  userToLinkId: [candidate1Id, candidate2Id],
-                });
-            expect(response.status).toBe(400);
-          });
-
           it('Should return 400 if candidate with organization', async () => {
             const {
               password,
@@ -760,828 +690,6 @@ describe('Users', () => {
                   OrganizationId: organization.id,
                 });
 
-            expect(response.status).toBe(400);
-          });
-
-          it('Should return 400 if candidate with external coach', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              false
-            );
-
-            const externalCoach = await userFactory.create(
-              { role: UserRoles.COACH_EXTERNAL },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  userToLinkId: externalCoach.id,
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if coach with external candidate', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-            const externalCandidate = await userFactory.create(
-              { role: UserRoles.CANDIDATE_EXTERNAL },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  userToLinkId: externalCandidate.id,
-                });
-            expect(response.status).toBe(400);
-          });
-        });
-        describe('/ - Create external candidate or coach', () => {
-          it('Should return 200 and a created external candidate without external coach', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              OrganizationId,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const {
-              createdAt: organizationCreatedAt,
-              updatedAt: organizationUpdatedAt,
-              organizationReferent,
-              ...restOrganization
-            } = organization;
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({ ...candidate, OrganizationId: organization.id });
-            expect(response.status).toBe(201);
-            expect(response.body).toEqual(
-              expect.objectContaining({
-                ...candidate,
-                organization: expect.objectContaining({ ...restOrganization }),
-              })
-            );
-          });
-          it('Should return 200 and a created external candidate with external coach', async () => {
-            const candidate = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            let coach = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-
-            const {
-              createdAt: organizationCreatedAt,
-              updatedAt: organizationUpdatedAt,
-              organizationReferent,
-              ...restOrganization
-            } = organization;
-
-            let otherExternalCandidate = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-
-            ({ coach: coach, candidate: otherExternalCandidate } =
-              await userCandidatsHelper.associateCoachAndCandidate(
-                coach,
-                otherExternalCandidate,
-                false
-              ));
-
-            const {
-              password: coachPassword,
-              hashReset: coachHashReset,
-              salt: coachSalt,
-              saltReset: coachSaltReset,
-              revision: coachRevision,
-              updatedAt: coachUpdatedAt,
-              createdAt: coachCreatedAt,
-              lastConnection: coachLastConnection,
-              candidat,
-              coaches,
-              organization: coachOrganization,
-              readDocuments: coachReadDocuments,
-              whatsappZoneCoachName: coachWhatsappZoneCoachName,
-              whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
-              whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
-              ...restCoach
-            } = coach;
-
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              candidat: candidateCandidat,
-              readDocuments: candidateReadDocuments,
-              whatsappZoneCoachName: candidatWhatsappZoneCoachName,
-              whatsappZoneCoachUrl: candidatWhatsappZoneCoachUrl,
-              whatsappZoneCoachQR: candidatWhatsappZoneCoachQR,
-              ...restCandidate
-            } = candidate;
-
-            const {
-              candidat: {
-                coach: otherExternalCandidateCoach,
-                ...restOtherExternalCandidateCandidat
-              },
-              coaches: otherExternalCandidateCoaches,
-              lastConnection: otherCandidateLastConnection,
-              organization: otherCandidateOrganization,
-              readDocuments: otherCandidateReadDocuments,
-              ...restOtherExternalCandidate
-            } = otherExternalCandidate;
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...restCandidate,
-                  OrganizationId: organization.id,
-                  userToLinkId: coach.id,
-                });
-
-            const coachFromDB = await usersHelper.findUser(coach.id);
-
-            expect(response.status).toBe(201);
-            expect(response.body).toEqual(
-              expect.objectContaining({
-                ...restCandidate,
-                candidat: expect.objectContaining({
-                  coach: expect.objectContaining({
-                    ...restCoach,
-                  }),
-                }),
-                organization: expect.objectContaining({
-                  ...restOrganization,
-                }),
-              })
-            );
-
-            const {
-              candidat: { coach: candidateCoach, ...restCandidateCandidat },
-            } = response.body;
-
-            expect(coachFromDB).toEqual(
-              expect.objectContaining({
-                // coachReadDocuments,
-                ...restCoach,
-                coaches: expect.arrayContaining([
-                  expect.objectContaining({
-                    ...restCandidateCandidat,
-                    candidat: expect.objectContaining({
-                      ...restCandidate,
-                    }),
-                  }),
-                  expect.objectContaining({
-                    ...restOtherExternalCandidateCandidat,
-                    candidat: expect.objectContaining({
-                      ...restOtherExternalCandidate,
-                    }),
-                  }),
-                ]),
-              })
-            );
-          });
-          it('Should return 404 if create external candidate with unexisting coach', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  OrganizationId: organization.id,
-                  userToLinkId: uuid(),
-                });
-            expect(response.status).toBe(404);
-          });
-
-          it('Should return 200 and a created external coach without external candidate', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const {
-              createdAt: organizationCreatedAt,
-              updatedAt: organizationUpdatedAt,
-              organizationReferent,
-              ...restOrganization
-            } = organization;
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({ ...coach, OrganizationId: organization.id });
-            expect(response.status).toBe(201);
-            expect(response.body).toEqual(
-              expect.objectContaining({
-                ...coach,
-                organization: expect.objectContaining({
-                  ...restOrganization,
-                }),
-              })
-            );
-          });
-          it('Should return 200 and a created external coach with external candidate', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const {
-              password: candidatePassword,
-              hashReset: candidateHashReset,
-              salt: candidateSalt,
-              saltReset: candidateSaltReset,
-              revision: candidateRevision,
-              updatedAt: candidateUpdatedAt,
-              createdAt: candidateCreatedAt,
-              lastConnection: candidateLastConnection,
-              candidat,
-              coaches,
-              organization: candidateOrganization,
-              readDocuments,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-
-            const {
-              createdAt: organizationCreatedAt,
-              updatedAt: organizationUpdatedAt,
-              organizationReferent,
-              ...restOrganization
-            } = organization;
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  OrganizationId: organization.id,
-                  userToLinkId: [candidate.id],
-                });
-            expect(response.status).toBe(201);
-            expect(response.body).toEqual(
-              expect.objectContaining({
-                ...coach,
-                coaches: [
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      ...candidate,
-                    }),
-                  }),
-                ],
-                organization: expect.objectContaining({
-                  ...restOrganization,
-                }),
-              })
-            );
-          });
-          it('Should return 404 if created external coach with unexisting candidate', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  OrganizationId: organization.id,
-                  userToLinkId: [uuid()],
-                });
-
-            expect(response.status).toBe(404);
-          });
-
-          it('Should return 400 if external candidate with another external candidate as coach', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const { id } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  OrganizationId: organization.id,
-                  userToLinkId: id,
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if external coach with another external coach as candidate', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...coach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const { id } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  OrganizationId: organization.id,
-                  userToLinkId: id,
-                });
-            expect(response.status).toBe(400);
-          });
-
-          it('Should return 400 if external candidate with multiple external coaches', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const { id: coach1Id } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-            const { id: coach2Id } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: organization.id,
-              },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  OrganizationId: organization.id,
-                  userToLinkId: [coach1Id, coach2Id],
-                });
-            expect(response.status).toBe(400);
-          });
-
-          it('Should return 400 if external candidate without organization', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...coach
-            } = await userFactory.create(
-              { role: UserRoles.COACH_EXTERNAL },
-              {},
-              false
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if external coach without organization', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              { role: UserRoles.CANDIDATE_EXTERNAL },
-              {},
-              false
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                });
-            expect(response.status).toBe(400);
-          });
-
-          it('Should return 400 if external candidate with external coach from another organization', async () => {
-            const otherOrganization = await organizationFactory.create(
-              {},
-              {},
-              true
-            );
-
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const {
-              password: coachPassword,
-              hashReset: coachHashReset,
-              salt: coachSalt,
-              saltReset: coachSaltReset,
-              revision: coachRevision,
-              updatedAt: coachUpdatedAt,
-              createdAt: coachCreatedAt,
-              lastConnection: coachLastConnection,
-              candidat,
-              coaches,
-              ...coach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-                OrganizationId: otherOrganization.id,
-              },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...candidate,
-                  OrganizationId: organization.id,
-                  userToLinkId: coach.id,
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if external coach with external candidate from another organization', async () => {
-            const otherOrganization = await organizationFactory.create(
-              {},
-              {},
-              true
-            );
-
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...coach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const {
-              password: candidatePassword,
-              hashReset: candidateHashReset,
-              salt: candidateSalt,
-              saltReset: candidateSaltReset,
-              revision: candidateRevision,
-              updatedAt: candidateUpdatedAt,
-              createdAt: candidateCreatedAt,
-              lastConnection: candidateLastConnection,
-              candidat,
-              coaches,
-              ...candidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-                OrganizationId: otherOrganization.id,
-              },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...coach,
-                  OrganizationId: organization.id,
-                  userToLinkId: candidate.id,
-                });
-            expect(response.status).toBe(400);
-          });
-
-          it('Should return 400 if external candidate with normal coach', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...externalCandidate
-            } = await userFactory.create(
-              {
-                role: UserRoles.CANDIDATE_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const normalCoach = await userFactory.create(
-              { role: UserRoles.COACH },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...externalCandidate,
-                  OrganizationId: organization.id,
-                  userToLinkId: normalCoach.id,
-                });
-            expect(response.status).toBe(400);
-          });
-          it('Should return 400 if external coach with normal candidate', async () => {
-            const {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              ...externalCoach
-            } = await userFactory.create(
-              {
-                role: UserRoles.COACH_EXTERNAL,
-              },
-              {},
-              false
-            );
-
-            const normalCandidate = await userFactory.create(
-              { role: UserRoles.CANDIDATE },
-              {},
-              true
-            );
-
-            const response: APIResponse<UsersCreationController['createUser']> =
-              await request(server)
-                .post(`${route}`)
-                .set('authorization', `Bearer ${loggedInAdmin.token}`)
-                .send({
-                  ...externalCoach,
-                  OrganizationId: organization.id,
-                  userToLinkId: normalCandidate.id,
-                });
             expect(response.status).toBe(400);
           });
         });
@@ -1698,6 +806,62 @@ describe('Users', () => {
             })
           );
         });
+        it('Should return 200 and a created referer if valid referer data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.REFERER },
+            {},
+            false
+          );
+
+          const organization = await organizationFactory.create({}, {}, true);
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            gender: user.gender,
+          };
+
+          const userOrganizationValues = {
+            organizationId: organization.id,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            ...userOrganizationValues,
+            password: user.password,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(server)
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              organization: {
+                id: organization.id,
+                name: organization.name,
+                zone: organization.zone,
+                address: organization.address,
+              },
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+              }),
+            })
+          );
+        });
         it('Should return 200 and a created candidate if missing optional fields', async () => {
           const user = await userFactory.create(
             { role: UserRoles.CANDIDATE },
@@ -1802,6 +966,36 @@ describe('Users', () => {
             .send(userToSend);
           expect(response.status).toBe(400);
         });
+        it('Should return 400 when referer has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.REFERER },
+            {},
+            false
+          );
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            password: user.password,
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRegistration']
+          > = await request(server)
+            .post(`${route}/registration`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
         it('Should return 400 when user has invalid email', async () => {
           const user = await userFactory.create(
             { role: UserRoles.COACH },
@@ -1872,41 +1066,7 @@ describe('Users', () => {
             .send(userToSend);
           expect(response.status).toBe(400);
         });
-        it('Should return 400 when user has wrong role', async () => {
-          const user = await userFactory.create(
-            { role: UserRoles.COACH_EXTERNAL },
-            {},
-            false
-          );
 
-          const userValues = {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            gender: user.gender,
-          };
-
-          const userProfileValues = {
-            department: 'Paris (75)' as Department,
-          };
-
-          const userToSend = {
-            ...userValues,
-            ...userProfileValues,
-            password: user.password,
-            program: Programs.THREE_SIXTY,
-            birthDate: '1996-24-04',
-          };
-
-          const response: APIResponse<
-            UsersCreationController['createUserRegistration']
-          > = await request(server)
-            .post(`${route}/registration`)
-            .send(userToSend);
-          expect(response.status).toBe(400);
-        });
         it('Should return 409 when the email already exist', async () => {
           const existingUser = await userFactory.create({}, {}, true);
 
@@ -1945,12 +1105,506 @@ describe('Users', () => {
           expect(response.status).toBe(409);
         });
       });
+      describe('/refering - Create user through refering', () => {
+        let loggedInReferer: LoggedUser;
+        let loggedInCandidate: LoggedUser;
+        let loggedInCoach: LoggedUser;
+        let organization: Organization;
+
+        beforeEach(async () => {
+          organization = await organizationFactory.create({}, {}, true);
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
+            OrganizationId: organization.id,
+          });
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            OrganizationId: organization.id,
+          });
+          loggedInCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+            OrganizationId: organization.id,
+          });
+        });
+
+        it('Should return 200 and a created candidate if valid candidate data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+                helpNeeds: expect.arrayContaining(
+                  userProfileValues.helpNeeds.map((expectation) =>
+                    expect.objectContaining(expectation)
+                  )
+                ),
+              }),
+            })
+          );
+        });
+
+        it('Should return 200 and a created candidate if valid candidate data with minimum data', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            program: Programs.THREE_SIXTY,
+            workingRight: CandidateYesNoNSPP.YES,
+            birthDate: '1996-24-04',
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(201);
+          expect(response.body).toEqual(
+            expect.objectContaining({
+              ...userValues,
+              zone: getZoneFromDepartment(userProfileValues.department),
+              userProfile: expect.objectContaining({
+                department: userProfileValues.department,
+                helpNeeds: expect.arrayContaining(
+                  userProfileValues.helpNeeds.map((expectation) =>
+                    expect.objectContaining(expectation)
+                  )
+                ),
+              }),
+            })
+          );
+        });
+
+        it('Should return 400 when has missing mandatory fields', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            birthDate: '1996-24-04',
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 when has invalid email', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: 'email.fr', // This is the incorrect data
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 when has invalid email', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: 'email.fr', // This is the incorrect data
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 400 when has invalid phone', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: '1234', // This is the incorrect data
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(400);
+        });
+
+        it('Should return 403 when a candidate referer another valid candidate', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 403 when a candidate referer another valid coach', async () => {
+          const user = await userFactory.create(
+            { role: UserRoles.CANDIDATE },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInCoach.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 409 when the email already exist', async () => {
+          const existingUser = await userFactory.create({}, {}, true);
+
+          const user = await userFactory.create(
+            {
+              role: UserRoles.CANDIDATE,
+              email: existingUser.email,
+            },
+            {},
+            false
+          );
+
+          const helpNeeds: { name: HelpValue }[] = [
+            { name: 'cv' },
+            { name: 'interview' },
+          ];
+
+          const userValues = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            gender: user.gender,
+          };
+
+          const userProfileValues = {
+            helpNeeds: helpNeeds,
+            department: 'Paris (75)' as Department,
+          };
+
+          const userToSend = {
+            ...userValues,
+            ...userProfileValues,
+            campaign: '1234',
+            workingRight: CandidateYesNoNSPP.YES,
+            program: Programs.THREE_SIXTY,
+            birthDate: '1996-24-04',
+            nationality: Nationalities.EUROPEAN,
+            accommodation: CandidateAccommodations.INSERTION,
+            hasSocialWorker: YesNoJNSPR.YES,
+            resources: CandidateResources.AAH,
+            studiesLevel: StudiesLevels.BAC,
+            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
+            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
+            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+          };
+
+          const response: APIResponse<
+            UsersCreationController['createUserRefering']
+          > = await request(server)
+            .post(`${route}/refering`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(userToSend);
+          expect(response.status).toBe(409);
+        });
+      });
     });
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -1961,6 +1615,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
         it('Should return 401 when the user is not logged in', async () => {
@@ -1991,11 +1648,26 @@ describe('Users', () => {
           expect(response.status).toBe(200);
           expect(response.body.email).toEqual(loggedInCoach.user.email);
         });
+        it('Should return 200 when logged in referer gets himself', async () => {
+          const response: APIResponse<UsersController['findUser']> =
+            await request(server)
+              .get(`${route}/${loggedInReferer.user.email}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+          expect(response.status).toBe(200);
+          expect(response.body.email).toEqual(loggedInReferer.user.email);
+        });
         it('Should return 403 when logged in coach get a candidate', async () => {
           const response: APIResponse<UsersController['findUser']> =
             await request(server)
               .get(`${route}/${loggedInCandidate.user.email}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403 when logged in referer get a candidate', async () => {
+          const response: APIResponse<UsersController['findUser']> =
+            await request(server)
+              .get(`${route}/${loggedInCandidate.user.email}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and get a user by email when logged in as admin', async () => {
@@ -2117,139 +1789,7 @@ describe('Users', () => {
           expect(response.body.coach.id).toBe(loggedInCoach.user.id);
           expect(response.body.candidat.id).toBe(loggedInCandidate.user.id);
         });
-        it('Should return 200 and related user candidates if external coach is associated to multiple candidate', async () => {
-          const organization = await organizationFactory.create({}, {}, true);
 
-          let externalLoggedInCoach = await usersHelper.createLoggedInUser(
-            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
-            {},
-            true
-          );
-
-          let externalLoggedInCandidate1 = await usersHelper.createLoggedInUser(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          let externalLoggedInCandidate2 = await usersHelper.createLoggedInUser(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          ({
-            loggedInCoach: externalLoggedInCoach,
-            loggedInCandidate: externalLoggedInCandidate1,
-          } = await userCandidatsHelper.associateCoachAndCandidate(
-            externalLoggedInCoach,
-            externalLoggedInCandidate1,
-            true
-          ));
-
-          ({
-            loggedInCoach: externalLoggedInCoach,
-            loggedInCandidate: externalLoggedInCandidate2,
-          } = await userCandidatsHelper.associateCoachAndCandidate(
-            externalLoggedInCoach,
-            externalLoggedInCandidate2,
-            true
-          ));
-
-          const {
-            user: {
-              password,
-              hashReset,
-              salt,
-              saltReset,
-              revision,
-              updatedAt,
-              createdAt,
-              lastConnection,
-              candidat,
-              coaches,
-              organization: coachOrganization,
-              readDocuments: coachReadDocuments,
-              ...restExternalLoggedInCoach
-            },
-          } = externalLoggedInCoach;
-
-          const {
-            user: {
-              password: candidate1Password,
-              hashReset: candidate1HashReset,
-              salt: candidate1Salt,
-              saltReset: candidate1SaltReset,
-              revision: candidate1Revision,
-              updatedAt: candidate1UpdatedAt,
-              createdAt: candidate1CreatedAt,
-              lastConnection: candidate1LastConnection,
-              candidat: candidate1Candidat,
-              coaches: candidate1Coaches,
-              organization: candidate1Organization,
-              readDocuments: candidate1ReadDocuments,
-              ...restExternalLoggedInCandidate1
-            },
-          } = externalLoggedInCandidate1;
-
-          const {
-            user: {
-              password: candidate2Password,
-              hashReset: candidate2HashReset,
-              salt: candidate2Salt,
-              saltReset: candidate2SaltReset,
-              revision: candidate2Revision,
-              updatedAt: candidate2UpdatedAt,
-              createdAt: candidate2CreatedAt,
-              lastConnection: candidate2LastConnection,
-              candidat: candidate2Candidat,
-              coaches: candidate2Coaches,
-              organization: candidate2Organization,
-              readDocuments: candidate2ReadDocuments,
-              ...restExternalLoggedInCandidate2
-            },
-          } = externalLoggedInCandidate2;
-
-          const response: APIResponse<UsersController['findRelatedUser']> =
-            await request(server)
-              .get(`${route}/candidate`)
-              .set('authorization', `Bearer ${externalLoggedInCoach.token}`)
-              .query({
-                coachId: externalLoggedInCoach.user.id,
-              });
-
-          expect(response.status).toBe(200);
-          expect(Array.isArray(response.body)).toBeTruthy();
-          assertCondition(Array.isArray(response.body));
-          expect(response.body).toEqual(
-            expect.arrayContaining([
-              expect.objectContaining({
-                ...candidate1Candidat,
-                coach: expect.objectContaining({
-                  ...restExternalLoggedInCoach,
-                }),
-                candidat: expect.objectContaining({
-                  ...restExternalLoggedInCandidate1,
-                }),
-              }),
-              expect.objectContaining({
-                ...candidate2Candidat,
-                coach: expect.objectContaining({
-                  ...restExternalLoggedInCoach,
-                }),
-                candidat: expect.objectContaining({
-                  ...restExternalLoggedInCandidate2,
-                }),
-              }),
-            ])
-          );
-        });
         it('Should return 403 if logged in user is admin ', async () => {
           const response: APIResponse<UsersController['findRelatedUser']> =
             await request(server)
@@ -2265,15 +1805,11 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         let candidates: User[];
-        let externalCandidates: User[];
         let coaches: User[];
-        let externalCoaches: User[];
         let organization: Organization;
-        let otherOrganization: Organization;
-        let otherExternalCandidates: User[];
-        let otherExternalCoaches: User[];
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -2284,6 +1820,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
           organization = await organizationFactory.create({}, {}, true);
 
@@ -2302,52 +1841,6 @@ describe('Users', () => {
             3,
             {
               role: UserRoles.COACH,
-            },
-            {},
-            true
-          );
-
-          externalCandidates = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          externalCoaches = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.COACH_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          otherOrganization = await organizationFactory.create({}, {}, true);
-
-          otherExternalCandidates = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: otherOrganization.id,
-            },
-            {},
-            true
-          );
-
-          otherExternalCoaches = await databaseHelper.createEntities(
-            userFactory,
-            3,
-            {
-              role: UserRoles.COACH_EXTERNAL,
-              OrganizationId: otherOrganization.id,
             },
             {},
             true
@@ -2371,6 +1864,7 @@ describe('Users', () => {
             whatsappZoneCoachName: loggedInCandidate.user.whatsappZoneCoachName,
             whatsappZoneCoachUrl: loggedInCandidate.user.whatsappZoneCoachUrl,
             whatsappZoneCoachQR: loggedInCandidate.user.whatsappZoneCoachQR,
+            refererId: loggedInCandidate.user.refererId,
             organization: null,
           };
 
@@ -2409,42 +1903,6 @@ describe('Users', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and external candidates if user is logged in as admin and filters by external candidates', async () => {
-          const expectedUsersId = [
-            ...externalCandidates.map(({ id }) => id),
-            ...otherExternalCandidates.map(({ id }) => id),
-          ];
-
-          const response: APIResponse<UsersController['findUsers']> =
-            await request(server)
-              .get(`${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-
-          expect(response.status).toBe(200);
-          expect(expectedUsersId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200 and all candidates if user is logged in as admin and filters by all candidates', async () => {
-          const expectedUsersId = [
-            ...candidates.map(({ id }) => id),
-            ...externalCandidates.map(({ id }) => id),
-            ...otherExternalCandidates.map(({ id }) => id),
-            loggedInCandidate.user.id,
-          ];
-
-          const response: APIResponse<UsersController['findUsers']> =
-            await request(server)
-              .get(
-                `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-
-          expect(response.status).toBe(200);
-          expect(expectedUsersId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
 
         it('Should return 200 and normal coaches if user is logged in as admin and filters by normal coaches', async () => {
           const expectedUsersId = [
@@ -2462,66 +1920,16 @@ describe('Users', () => {
             expect.arrayContaining(response.body.map(({ id }) => id))
           );
         });
-        it('Should return 200 and external coaches if user is logged in as admin and filters by external coaches', async () => {
-          const expectedUsersId = [
-            ...externalCoaches.map(({ id }) => id),
-            ...otherExternalCoaches.map(({ id }) => id),
-          ];
 
-          const response: APIResponse<UsersController['findUsers']> =
-            await request(server)
-              .get(`${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-
-          expect(response.status).toBe(200);
-          expect(expectedUsersId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
         it('Should return 200 and all coaches if user is logged in as admin and filters by all coaches', async () => {
           const expectedUsersId = [
             ...coaches.map(({ id }) => id),
-            ...externalCoaches.map(({ id }) => id),
-            ...otherExternalCoaches.map(({ id }) => id),
             loggedInCoach.user.id,
           ];
 
           const response: APIResponse<UsersController['findUsers']> =
             await request(server)
-              .get(
-                `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
-              )
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-
-          expect(response.status).toBe(200);
-          expect(expectedUsersId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-
-        it('Should return 200 and part of external candidates from specific organization if user is logged in as admin and filters by external candidates from an organization', async () => {
-          const expectedUsersId = externalCandidates.map(({ id }) => id);
-
-          const response: APIResponse<UsersController['findUsers']> =
-            await request(server)
-              .get(
-                `${route}/search?&role[]=${UserRoles.CANDIDATE_EXTERNAL}&organizationId=${organization.id}`
-              )
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-
-          expect(response.status).toBe(200);
-          expect(expectedUsersId).toEqual(
-            expect.arrayContaining(response.body.map(({ id }) => id))
-          );
-        });
-        it('Should return 200 and part of external coaches from specific organization if user is logged in as admin and filters by external coaches from an organization', async () => {
-          const expectedUsersId = externalCoaches.map(({ id }) => id);
-
-          const response: APIResponse<UsersController['findUsers']> =
-            await request(server)
-              .get(
-                `${route}/search?&role[]=${UserRoles.COACH_EXTERNAL}&organizationId=${organization.id}`
-              )
+              .get(`${route}/search?&role[]=${UserRoles.COACH}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
           expect(response.status).toBe(200);
@@ -2565,6 +1973,13 @@ describe('Users', () => {
             await request(server)
               .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403 if user is logged in as referer', async () => {
+          const response: APIResponse<UsersController['findUsers']> =
+            await request(server)
+              .get(`${route}/search?query=e&role[]=${UserRoles.CANDIDATE}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
       });
@@ -3362,24 +2777,27 @@ describe('Users', () => {
           it('Should return 200, and all the candidates that match all the filters', async () => {
             const organization = await organizationFactory.create({}, {}, true);
 
-            const lyonAssociatedExternalCoaches =
-              await databaseHelper.createEntities(userFactory, 2, {
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
                 firstName: 'XXX',
-                role: UserRoles.COACH_EXTERNAL,
+                role: UserRoles.COACH,
                 zone: AdminZones.LYON,
                 OrganizationId: organization.id,
-              });
+              }
+            );
 
-            const lyonAssociatedExternalCandidates =
+            const lyonAssociatedCandidates =
               await databaseHelper.createEntities(userFactory, 2, {
                 firstName: 'XXX',
-                role: UserRoles.CANDIDATE_EXTERNAL,
+                role: UserRoles.CANDIDATE,
                 zone: AdminZones.LYON,
                 OrganizationId: organization.id,
               });
 
             await Promise.all(
-              lyonAssociatedExternalCandidates.map(async ({ id }) => {
+              lyonAssociatedCandidates.map(async ({ id }) => {
                 return cvFactory.create(
                   {
                     UserId: id,
@@ -3392,22 +2810,22 @@ describe('Users', () => {
             );
 
             await Promise.all(
-              lyonAssociatedExternalCandidates.map(async (candidate, index) => {
+              lyonAssociatedCandidates.map(async (candidate, index) => {
                 return userCandidatsHelper.associateCoachAndCandidate(
-                  lyonAssociatedExternalCoaches[index],
+                  lyonAssociatedCoaches[index],
                   candidate
                 );
               })
             );
 
             const expectedCandidatesIds = [
-              ...lyonAssociatedExternalCandidates.map(({ id }) => id),
+              ...lyonAssociatedCandidates.map(({ id }) => id),
             ];
 
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&cvStatus[]=${CVStatuses.PUBLISHED.value}&businessLines[]=rh&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&cvStatus[]=${CVStatuses.PUBLISHED.value}&businessLines[]=rh&associatedUser[]=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -3419,39 +2837,74 @@ describe('Users', () => {
           it('Should return 200, and all the coaches that match all the filters', async () => {
             const organization = await organizationFactory.create({}, {}, true);
 
-            const lyonAssociatedExternalCoaches =
-              await databaseHelper.createEntities(userFactory, 2, {
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
                 firstName: 'XXX',
-                role: UserRoles.COACH_EXTERNAL,
+                role: UserRoles.COACH,
                 zone: AdminZones.LYON,
                 OrganizationId: organization.id,
-              });
+              }
+            );
 
-            const associatedExternalCandidates =
-              await databaseHelper.createEntities(userFactory, 2, {
+            const associatedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
                 firstName: 'XXX',
-                role: UserRoles.CANDIDATE_EXTERNAL,
+                role: UserRoles.CANDIDATE,
                 zone: AdminZones.LYON,
                 OrganizationId: organization.id,
-              });
+              }
+            );
 
             await Promise.all(
-              associatedExternalCandidates.map(async (candidate, index) => {
+              associatedCandidates.map(async (candidate, index) => {
                 return userCandidatsHelper.associateCoachAndCandidate(
-                  lyonAssociatedExternalCoaches[index],
+                  lyonAssociatedCoaches[index],
                   candidate
                 );
               })
             );
 
             const expectedCoachesIds = [
-              ...lyonAssociatedExternalCoaches.map(({ id }) => id),
+              ...lyonAssociatedCoaches.map(({ id }) => id),
             ];
 
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&role[]=${UserRoles.COACH_EXTERNAL}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200, and all the referers that match all the filters', async () => {
+            const organization = await organizationFactory.create({}, {}, true);
+
+            const referers = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.REFERER,
+                zone: AdminZones.LYON,
+                OrganizationId: organization.id,
+              }
+            );
+
+            const expectedCoachesIds = [...referers.map(({ id }) => id)];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(server)
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.REFERER}&query=XXX&zone[]=${AdminZones.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -3674,9 +3127,8 @@ describe('Users', () => {
       describe('/profile/recommendations/:userId - Get user recommendations', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
-        let loggedInExternalCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
-        let loggedInExternalCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -3688,12 +3140,8 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-
-          loggedInExternalCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE_EXTERNAL,
-          });
-          loggedInExternalCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH_EXTERNAL,
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
 
           ({ loggedInCoach, loggedInCandidate } =
@@ -3702,15 +3150,6 @@ describe('Users', () => {
               loggedInCandidate,
               true
             ));
-
-          ({
-            loggedInCoach: loggedInExternalCoach,
-            loggedInCandidate: loggedInExternalCandidate,
-          } = await userCandidatsHelper.associateCoachAndCandidate(
-            loggedInExternalCoach,
-            loggedInExternalCandidate,
-            true
-          ));
         });
 
         it('Should return 401, if user not logged in', async () => {
@@ -3740,27 +3179,6 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
-        it("Should return 403, if external coach get his candidate's recommendations", async () => {
-          const response: APIResponse<
-            UserProfilesController['findRecommendationsByUserId']
-          > = await request(server)
-            .get(
-              `${route}/profile/recommendations/${loggedInExternalCandidate.user.id}`
-            )
-            .set('authorization', `Bearer ${loggedInExternalCoach.token}`);
-
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if external coach gets recommendations for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['findRecommendationsByUserId']
-          > = await request(server)
-            .get(
-              `${route}/profile/recommendations/${loggedInExternalCoach.user.id}`
-            )
-            .set('authorization', `Bearer ${loggedInExternalCoach.token}`);
-          expect(response.status).toBe(403);
-        });
         it('Should return 403, if coach gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -3769,6 +3187,16 @@ describe('Users', () => {
               `${route}/profile/recommendations/${loggedInCandidate.user.id}`
             )
             .set('authorization', `Bearer ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if referer gets recommendations for another user', async () => {
+          const response: APIResponse<
+            UserProfilesController['findRecommendationsByUserId']
+          > = await request(server)
+            .get(
+              `${route}/profile/recommendations/${loggedInCandidate.user.id}`
+            )
+            .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if candidate gets recommendations for another user', async () => {
@@ -4878,91 +4306,93 @@ describe('Users', () => {
       });
     });
     describe('R - Read many Profiles', () => {
-      describe('/profile - Read all profiles', () => {
-        it('Should return 401 if user is not logged in', async () => {
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server).get(
-              `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-            );
-          expect(response.status).toBe(401);
-        });
-        it('Should return 400 if no role parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(`${route}/profile`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
-        });
-        it('Should return 200 if user is logged in as admin', async () => {
-          const loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
+      describe('/profile', () => {
+        describe('/profile?limit=&offset= - Read all profiles', () => {
+          it('Should return 401 if user is not logged in', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server).get(
                 `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 200 if user is logged in as candidate', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+              );
+            expect(response.status).toBe(401);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 200 if user is logged in as coach', async () => {
-          const loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
+          it('Should return 400 if no role parameter', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(`${route}/profile`)
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
-              )
-              .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-        });
-        it('Should return 400 if no offset or limit parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+          it('Should return 200 if user is logged in as admin', async () => {
+            const loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if no role parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+          it('Should return 200 if user is logged in as candidate', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(200);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(`${route}/profile?offset=0&limit=25`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if external coach in role parameter', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+          it('Should return 200 if user is logged in as coach', async () => {
+            const loggedInCoach = await usersHelper.createLoggedInUser({
+              role: UserRoles.COACH,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInCoach.token}`);
+            expect(response.status).toBe(200);
           });
-          const response: APIResponse<UserProfilesController['findAll']> =
-            await request(server)
-              .get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH_EXTERNAL}&role[]=${UserRoles.COACH}`
-              )
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(400);
+          it('Should return 200 if user is logged in as referer', async () => {
+            const loggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+          });
+          it('Should return 400 if no offset or limit parameter', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
+          });
+          it('Should return 400 if no role parameter', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(`${route}/profile?offset=0&limit=25`)
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
+          });
         });
         describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
           let loggedInCandidate: LoggedUser;
@@ -5109,6 +4539,15 @@ describe('Users', () => {
                 )
               )
             );
+          });
+          it('Should return 400, if search for referer profile', async () => {
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=2&offset=0&role[]=${UserRoles.REFERER}`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
           });
           it('Should return 200 and 3 first coaches', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
@@ -5913,7 +5352,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE_EXTERNAL}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5997,12 +5436,195 @@ describe('Users', () => {
           });
         });
       });
+
+      describe('/profile/refered', () => {
+        describe('/profile/refered?limit=&offset= - Read only candidates that current user refered', () => {
+          let loggedInReferer: LoggedUser;
+          beforeEach(async () => {
+            loggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+          });
+
+          it('Should return 401 if user is not logged in', async () => {
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server).get(
+              `${route}/profile/refered?limit=25&offset=0`
+            );
+            expect(response.status).toBe(401);
+          });
+
+          it('Should return 200 and empty list if user is logged in as referer but has no candidate refered', async () => {
+            const loggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual([]);
+          });
+
+          it('Should return 200 and sorted list of candidates refered by current user', async () => {
+            // Initialize referableCandidates
+            const referedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+                refererId: loggedInReferer.user.id,
+              },
+              {}
+            );
+
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(referedCandidates.length);
+            expect(response.body).toEqual(
+              referedCandidates
+                .sort((userA, userB) =>
+                  moment(userB.createdAt).diff(userA.createdAt)
+                )
+                .map((user) =>
+                  expect.objectContaining(
+                    userProfilesHelper.mapUserProfileFromUser(user)
+                  )
+                )
+            );
+          });
+
+          it('Should return 200 and sorted list of candidates refered by current user with limit = 1 and offset = 1', async () => {
+            // Initialize referableCandidates
+            const referedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+                refererId: loggedInReferer.user.id,
+              },
+              {}
+            );
+
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=1&offset=1`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            const sortedReferedCandidates = referedCandidates.sort(
+              (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+            );
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(1);
+            expect(response.body).toEqual(
+              [sortedReferedCandidates[1]].map((user) =>
+                expect.objectContaining(
+                  userProfilesHelper.mapUserProfileFromUser(user)
+                )
+              )
+            );
+          });
+
+          it('Should return 200 and only own refered candidates', async () => {
+            // Candidates of referer
+            const referedCandidates = await databaseHelper.createEntities(
+              userFactory,
+              3,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.LILLE,
+                refererId: loggedInReferer.user.id,
+              },
+              {}
+            );
+
+            // Create other referer and his candidates
+            const otherLoggedInReferer = await usersHelper.createLoggedInUser({
+              role: UserRoles.REFERER,
+            });
+            await databaseHelper.createEntities(
+              userFactory,
+              5,
+              {
+                role: UserRoles.CANDIDATE,
+                zone: AdminZones.PARIS,
+                refererId: otherLoggedInReferer.user.id,
+              },
+              {}
+            );
+
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(referedCandidates.length);
+            expect(response.body).toEqual(
+              referedCandidates
+                .sort((userA, userB) =>
+                  moment(userB.createdAt).diff(userA.createdAt)
+                )
+                .map((user) =>
+                  expect.objectContaining(
+                    userProfilesHelper.mapUserProfileFromUser(user)
+                  )
+                )
+            );
+          });
+
+          it('Should return 403 if user is logged in as candidate', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(403);
+          });
+
+          it('Should return 403 if user is logged in as coach', async () => {
+            const loggedInCoach = await usersHelper.createLoggedInUser({
+              role: UserRoles.COACH,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInCoach.token}`);
+            expect(response.status).toBe(403);
+          });
+
+          it('Should return 403 if user is logged in as admin', async () => {
+            const loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+            const response: APIResponse<
+              UserProfilesController['findReferedCandidates']
+            > = await request(server)
+              .get(`${route}/profile/refered?limit=25&offset=0`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(403);
+          });
+        });
+      });
     });
     describe('U - Update 1 User', () => {
       describe('/:id - Update user', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -6013,6 +5635,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
         it('Should return 401 if user is not logged in', async () => {
@@ -6050,6 +5675,23 @@ describe('Users', () => {
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                phone: updates.phone,
+                address: updates.address,
+                email: updates.email,
+                firstName: updates.firstName,
+                lastName: updates.lastName,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body.phone).toEqual(updates.phone);
+          expect(response.body.address).toEqual(updates.address);
+        });
+        it('Should return 200 and updated user when a referer update himself', async () => {
+          const updates = await userFactory.create({}, {}, false);
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInReferer.user.id}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`)
               .send({
                 phone: updates.phone,
                 address: updates.address,
@@ -6337,9 +5979,6 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
-        let externalCoach: User;
-        let externalCandidate: User;
-        let organization: Organization;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -6351,23 +5990,6 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-
-          organization = await organizationFactory.create({}, {}, true);
-
-          externalCoach = await userFactory.create(
-            { role: UserRoles.COACH_EXTERNAL, OrganizationId: organization.id },
-            {},
-            true
-          );
-
-          externalCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
         });
 
         it('Should return 401, if user not logged in', async () => {
@@ -6421,6 +6043,7 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
+            refererId,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6434,6 +6057,9 @@ describe('Users', () => {
             whatsappZoneCoachName: coachWhatsappZoneCoachName,
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+            refererId: coachRefererId,
+            referer: coachReferer,
+            referredCandidates: coachReferredCandidates,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -6468,6 +6094,9 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
+            refererId,
+            referer,
+            referredCandidates,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6480,6 +6109,7 @@ describe('Users', () => {
             whatsappZoneCoachName: coachWhatsappZoneCoachName,
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+            referredCandidates: coachReferredCandidates,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -6577,288 +6207,6 @@ describe('Users', () => {
           );
         });
 
-        it('Should return 400 if admin updates linked multiple coaches for candidate', async () => {
-          const otherCoach = await userFactory.create(
-            { role: UserRoles.COACH },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: [loggedInCoach.user.id, otherCoach.id],
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates linked multiple candidates for coach', async () => {
-          const otherCandidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            true
-          );
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: [loggedInCandidate.user.id, otherCandidate.id],
-              });
-          expect(response.status).toBe(400);
-        });
-
-        it('Should return 200 if admin updates linked external coach for external candidate with same organization', async () => {
-          const {
-            candidat: { coach, ...restExternalCandidateCandidat },
-            coaches,
-            lastConnection,
-            createdAt,
-            organization: candidateOrganization,
-            readDocuments: candidateReadDocuments,
-            ...restExternalCandidate
-          } = externalCandidate;
-
-          let otherExternalCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          ({ coach: externalCoach, candidate: otherExternalCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              externalCoach,
-              otherExternalCandidate,
-              false
-            ));
-
-          const {
-            candidat: {
-              coach: otherExternalCandidateCoach,
-              ...restOtherExternalCandidateCandidat
-            },
-            coaches: otherCandidateCoaches,
-            lastConnection: otherCandidateLastConnection,
-            createdAt: otherCandidateCreatedAt,
-            organization: otherCandidateOrganization,
-            readDocuments: otherCandidateReadDocuments,
-            ...restOtherExternalCandidate
-          } = otherExternalCandidate;
-
-          const {
-            candidat: coachCandidat,
-            coaches: coachCoaches,
-            lastConnection: lastConnectionCoach,
-            createdAt: createdAtCoach,
-            organization: coachOrganization,
-            readDocuments: externalCoachReadDocuments,
-            ...restExternalCoach
-          } = externalCoach;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: externalCoach.id,
-              });
-
-          const coachFromDB = await usersHelper.findUser(externalCoach.id);
-
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restExternalCandidate,
-              candidat: expect.objectContaining({
-                ...restExternalCandidateCandidat,
-                coach: expect.objectContaining({
-                  ...restExternalCoach,
-                }),
-              }),
-            })
-          );
-          expect(coachFromDB).toEqual(
-            expect.objectContaining({
-              ...restExternalCoach,
-              coaches: expect.arrayContaining([
-                expect.objectContaining({
-                  ...restExternalCandidateCandidat,
-                  candidat: expect.objectContaining({
-                    ...restExternalCandidate,
-                  }),
-                }),
-                expect.objectContaining({
-                  ...restOtherExternalCandidateCandidat,
-                  candidat: expect.objectContaining({
-                    ...restOtherExternalCandidate,
-                  }),
-                }),
-              ]),
-            })
-          );
-        });
-        it('Should return 200 if admin updates linked multiple external candidate for external coach with same organization', async () => {
-          const {
-            candidat: {
-              coach: otherExternalCandidateCoach,
-              ...restOtherExternalCandidateCandidat
-            },
-            coaches: otherCandidateCoaches,
-            lastConnection: otherCandidateLastConnection,
-            createdAt: otherCandidateCreatedAt,
-            organization: otherCandidateOrganization,
-            readDocuments: otherCandidateReadDocuments,
-            ...restOtherExternalCandidate
-          } = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          const {
-            candidat: { coach, ...restExternalCandidateCandidat },
-            coaches,
-            lastConnection,
-            createdAt,
-            organization: candidateOrganization,
-            readDocuments: candidateReadDocuments,
-            ...restExternalCandidate
-          } = externalCandidate;
-
-          const {
-            candidat: coachCandidat,
-            coaches: coachCoaches,
-            lastConnection: lastConnectionCoach,
-            createdAt: createdAtCoach,
-            organization: coachOrganization,
-            ...restExternalCoach
-          } = externalCoach;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: [
-                  externalCandidate.id,
-                  restOtherExternalCandidate.id,
-                ],
-              });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restExternalCoach,
-              coaches: expect.arrayContaining([
-                expect.objectContaining({
-                  ...restExternalCandidateCandidat,
-                  candidat: expect.objectContaining({
-                    ...restExternalCandidate,
-                  }),
-                }),
-                expect.objectContaining({
-                  ...restOtherExternalCandidateCandidat,
-                  candidat: expect.objectContaining({
-                    ...restOtherExternalCandidate,
-                  }),
-                }),
-              ]),
-            })
-          );
-        });
-
-        it('Should return 200 if admin removes linked external coach for external candidate', async () => {
-          ({ coach: externalCoach, candidate: externalCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              externalCoach,
-              externalCandidate,
-              false
-            ));
-
-          const {
-            candidat,
-            coaches,
-            lastConnection,
-            createdAt,
-            organization: candidateOrganization,
-            ...restExternalCandidate
-          } = externalCandidate;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: null,
-              });
-
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restExternalCandidate,
-              candidat: expect.objectContaining({
-                ...candidat,
-                coach: null,
-              }),
-            })
-          );
-        });
-        it('Should return 200 if admin removes linked multiple external candidate for external coach', async () => {
-          ({ coach: externalCoach, candidate: externalCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              externalCoach,
-              externalCandidate,
-              false
-            ));
-
-          const {
-            candidat: coachCandidat,
-            coaches: coachCoaches,
-            lastConnection: lastConnectionCoach,
-            createdAt: createdAtCoach,
-            organization: coachOrganization,
-            ...restExternalCoach
-          } = externalCoach;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: null,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restExternalCoach,
-              coaches: [],
-            })
-          );
-        });
-
-        it('Should return 400 if admin updates linked external multiple coaches for candidate', async () => {
-          const otherExternalCoach = await userFactory.create(
-            { role: UserRoles.COACH, OrganizationId: organization.id },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: [externalCoach.id, otherExternalCoach.id],
-              });
-          expect(response.status).toBe(400);
-        });
-
         it('Should return 400 if admin updates normal candidate with another normal candidate as coach', async () => {
           const otherCandidate = await userFactory.create(
             { role: UserRoles.CANDIDATE },
@@ -6893,153 +6241,12 @@ describe('Users', () => {
               });
           expect(response.status).toBe(400);
         });
-
-        it('Should return 400 if admin updates external candidate with another external candidate as coach', async () => {
-          const otherExternalCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: otherExternalCandidate.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates external coach with another external coach as candidate', async () => {
-          const otherExternalCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH_EXTERNAL,
-              OrganizationId: organization.id,
-            },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: otherExternalCoach.id,
-              });
-          expect(response.status).toBe(400);
-        });
-
-        it('Should return 400 if admin updates normal candidate with external coach', async () => {
-          const externalCoach = await userFactory.create(
-            { role: UserRoles.COACH_EXTERNAL },
-            {},
-            true
-          );
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: externalCoach.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates normal coach with external candidate', async () => {
-          const externalCandidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE_EXTERNAL },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: externalCandidate.id,
-              });
-          expect(response.status).toBe(400);
-        });
-
-        it('Should return 400 if admin updates external candidate with normal coach', async () => {
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: loggedInCoach.user.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates external coach with normal candidate', async () => {
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: loggedInCandidate.user.id,
-              });
-          expect(response.status).toBe(400);
-        });
-
-        it('Should return 400 if admin updates external candidate with external coach from another organization', async () => {
-          const otherOrganization = await organizationFactory.create(
-            {},
-            {},
-            true
-          );
-
-          const otherExternalCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH_EXTERNAL,
-              OrganizationId: otherOrganization.id,
-            },
-            {},
-            true
-          );
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCandidate.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: otherExternalCoach.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates external coach with external candidate from another organization', async () => {
-          const otherOrganization = await organizationFactory.create(
-            {},
-            {},
-            true
-          );
-
-          const otherExternalCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              OrganizationId: otherOrganization.id,
-            },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${externalCoach.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: otherExternalCandidate.id,
-              });
-          expect(response.status).toBe(400);
-        });
       });
       describe('/candidate/checkUpdate - Check if update has been made on userCandidat note', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -7051,6 +6258,9 @@ describe('Users', () => {
           const coach = await userFactory.create({
             role: UserRoles.COACH,
           });
+          const referer = await userFactory.create({
+            role: UserRoles.REFERER,
+          });
           await userCandidatsHelper.associateCoachAndCandidate(coach, candidat);
           loggedInCandidate = await usersHelper.createLoggedInUser(
             candidat,
@@ -7059,6 +6269,11 @@ describe('Users', () => {
           );
           loggedInCoach = await usersHelper.createLoggedInUser(
             coach,
+            {},
+            false
+          );
+          loggedInReferer = await usersHelper.createLoggedInUser(
+            referer,
             {},
             false
           );
@@ -7078,6 +6293,14 @@ describe('Users', () => {
           > = await request(server)
             .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if referer checks if note has been updated', async () => {
+          const response: APIResponse<
+            UsersController['checkNoteHasBeenModified']
+          > = await request(server)
+            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
@@ -7168,6 +6391,7 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -7178,6 +6402,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
         it('Should return 401, if user not logged in', async () => {
@@ -7193,6 +6420,13 @@ describe('Users', () => {
             await request(server)
               .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
               .set('authorization', `Bearer ${loggedInAdmin.token}`);
+          expect(response.status).toBe(403);
+        });
+        it('Should return 403, if referer sets the note has been read', async () => {
+          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
+            await request(server)
+              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 403, if coach sets the note has been read on candidate not related', async () => {
@@ -7252,9 +6486,8 @@ describe('Users', () => {
       describe('/profile/:userId - Update user profile', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
-        let loggedInExternalCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
-        let loggedInExternalCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -7291,24 +6524,8 @@ describe('Users', () => {
             }
           );
 
-          loggedInExternalCandidate = await usersHelper.createLoggedInUser(
-            {
-              role: UserRoles.CANDIDATE_EXTERNAL,
-              zone: AdminZones.LYON,
-            },
-            {
-              userProfile: {
-                department: 'Rhône (69)',
-                isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
-              },
-            }
-          );
-          loggedInExternalCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH_EXTERNAL,
-            zone: AdminZones.LYON,
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
 
           ({ loggedInCoach, loggedInCandidate } =
@@ -7317,15 +6534,6 @@ describe('Users', () => {
               loggedInCandidate,
               true
             ));
-
-          ({
-            loggedInCoach: loggedInExternalCoach,
-            loggedInCandidate: loggedInExternalCandidate,
-          } = await userCandidatsHelper.associateCoachAndCandidate(
-            loggedInExternalCoach,
-            loggedInExternalCandidate,
-            true
-          ));
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
@@ -7362,25 +6570,12 @@ describe('Users', () => {
             });
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if external coach updates his user profile', async () => {
+        it('Should return 403, if referer updates a profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
-            .put(`${route}/profile/${loggedInExternalCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
-            .send({
-              description: 'hello',
-              isAvailable: false,
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if external coach updates the profile for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInExternalCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
             .send({
               description: 'hello',
               isAvailable: false,
@@ -7516,6 +6711,22 @@ describe('Users', () => {
 
           expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
+        it('Should return 403, if referer updates his profile referer properties', async () => {
+          const updatedProfile: Partial<UserProfile> = {
+            description: 'hello',
+            department: 'Paris (75)',
+            isAvailable: false,
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInReferer.user.id}`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
+            .send(updatedProfile);
+
+          expect(response.status).toBe(403);
+        });
         it('Should return 400, if coach updates his profile with candidate properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
@@ -7540,9 +6751,8 @@ describe('Users', () => {
 
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
-        let loggedInExternalCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
-        let loggedInExternalCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           path = userProfilesHelper.getTestImagePath();
@@ -7556,11 +6766,8 @@ describe('Users', () => {
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
           });
-          loggedInExternalCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE_EXTERNAL,
-          });
-          loggedInExternalCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH_EXTERNAL,
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
 
           ({ loggedInCoach, loggedInCandidate } =
@@ -7569,15 +6776,6 @@ describe('Users', () => {
               loggedInCandidate,
               true
             ));
-
-          ({
-            loggedInCoach: loggedInExternalCoach,
-            loggedInCandidate: loggedInExternalCandidate,
-          } = await userCandidatsHelper.associateCoachAndCandidate(
-            loggedInExternalCoach,
-            loggedInExternalCandidate,
-            true
-          ));
         });
 
         it('Should return 401, if user not logged in', async () => {
@@ -7610,26 +6808,12 @@ describe('Users', () => {
             .attach('profileImage', path);
           expect(response.status).toBe(403);
         });
-        it('Should return 201, if external coach uploads his profile picture', async () => {
+        it('Should return 403, if referer uploads a profile picture for another user', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(
-              `${route}/profile/uploadImage/${loggedInExternalCoach.user.id}`
-            )
-            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(201);
-        });
-        it('Should return 403, if external coach uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(
-              `${route}/profile/uploadImage/${loggedInExternalCandidate.user.id}`
-            )
-            .set('authorization', `Bearer ${loggedInExternalCoach.token}`)
+            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(403);
@@ -7660,6 +6844,16 @@ describe('Users', () => {
           > = await request(server)
             .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .set('Content-Type', 'multipart/form-data')
+            .attach('profileImage', path);
+          expect(response.status).toBe(201);
+        });
+        it('Should return 201, if referer uploads his profile picture', async () => {
+          const response: APIResponse<
+            UserProfilesController['uploadProfileImage']
+          > = await request(server)
+            .post(`${route}/profile/uploadImage/${loggedInReferer.user.id}`)
+            .set('authorization', `Bearer ${loggedInReferer.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
@@ -7699,6 +6893,7 @@ describe('Users', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCandidate: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -7709,6 +6904,9 @@ describe('Users', () => {
           });
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
         });
 
@@ -7760,7 +6958,7 @@ describe('Users', () => {
             ])
           );
         });
-        it('Should return 403, if not logged in as candidate', async () => {
+        it('Should return 403, if logged in as candidate', async () => {
           const originalUsers = await databaseHelper.createEntities(
             userFactory,
             5,
@@ -7786,7 +6984,7 @@ describe('Users', () => {
               });
           expect(responseCandidate.status).toBe(403);
         });
-        it('Should return 403, if not logged in as coach', async () => {
+        it('Should return 403, if logged in as coach', async () => {
           const originalUsers = await databaseHelper.createEntities(
             userFactory,
             5,
@@ -7812,6 +7010,33 @@ describe('Users', () => {
               });
           expect(responseCoach.status).toBe(403);
         });
+
+        it('Should return 403, if logged in as referer', async () => {
+          const originalUsers = await databaseHelper.createEntities(
+            userFactory,
+            5,
+            {
+              role: UserRoles.CANDIDATE,
+            },
+            {
+              userCandidat: { hidden: true },
+            }
+          );
+          const originalUsersIds = originalUsers.map(({ id }) => {
+            return id;
+          });
+          const responseCoach: APIResponse<UsersController['updateAll']> =
+            await request(server)
+              .put(`${route}/candidate/bulk`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`)
+              .send({
+                attributes: {
+                  hidden: true,
+                },
+                ids: originalUsersIds,
+              });
+          expect(responseCoach.status).toBe(403);
+        });
       });
     });
     // TODO put in unit tests
@@ -7819,8 +7044,10 @@ describe('Users', () => {
       describe('/:id - Delete user and all associated dto', () => {
         let loggedInAdmin: LoggedUser;
         let loggedInCoach: LoggedUser;
+        let loggedInReferer: LoggedUser;
         let candidate: User;
         let coach: User;
+        let referer: User;
         const uniqIdToFind = uuid();
         const uniqId2ToFind = uuid();
         let cvId: string;
@@ -7839,6 +7066,10 @@ describe('Users', () => {
             role: UserRoles.COACH,
           });
 
+          referer = await userFactory.create({
+            role: UserRoles.REFERER,
+          });
+
           ({ candidate, coach } =
             await userCandidatsHelper.associateCoachAndCandidate(
               coach,
@@ -7848,6 +7079,10 @@ describe('Users', () => {
 
           loggedInCoach = await usersHelper.createLoggedInUser({
             role: UserRoles.COACH,
+          });
+
+          loggedInReferer = await usersHelper.createLoggedInUser({
+            role: UserRoles.REFERER,
           });
 
           ({
@@ -7896,11 +7131,19 @@ describe('Users', () => {
             true
           ));
         });
-        it('Should return 403 if not logged in admin', async () => {
+        it('Should return 403 if logged as coach', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
             await request(server)
               .delete(`${route}/${candidate.id}`)
               .set('authorization', `Bearer ${loggedInCoach.token}`);
+          expect(response.status).toBe(403);
+        });
+
+        it('Should return 403 if logged as referer', async () => {
+          const response: APIResponse<UsersDeletionController['removeUser']> =
+            await request(server)
+              .delete(`${route}/${candidate.id}`)
+              .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
         it('Should return 200 if logged in as admin and deletes candidate', async () => {
@@ -8059,6 +7302,25 @@ describe('Users', () => {
 
           const userProfile = await userProfilesHelper.findOneProfileByUserId(
             coach.id
+          );
+          expect(userProfile).toBeFalsy();
+        });
+
+        it('Should return 200 if logged in as admin and deletes referer', async () => {
+          const response: APIResponse<UsersDeletionController['removeUser']> =
+            await request(server)
+              .delete(`${route}/${referer.id}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(200);
+          expect(response.body.userDeleted).toBe(1);
+          expect(response.body.cvsDeleted).toBe(0);
+
+          const user = await usersHelper.findUser(referer.id);
+          expect(user).toBeFalsy();
+
+          const userProfile = await userProfilesHelper.findOneProfileByUserId(
+            referer.id
           );
           expect(userProfile).toBeFalsy();
         });
