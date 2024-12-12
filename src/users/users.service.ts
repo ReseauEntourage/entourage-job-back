@@ -134,10 +134,6 @@ export class UsersService {
           type: QueryTypes.SELECT,
           raw: true,
           replacements,
-          /* eslint-disable no-console */
-          logging: console.log,
-          benchmark: true,
-          /* eslint-enable no-console */
         }
       );
 
@@ -194,10 +190,6 @@ export class UsersService {
           required: false,
         },
       ],
-      /* eslint-disable no-console */
-      logging: console.log,
-      benchmark: true,
-      /* eslint-enable no-console */
     });
   }
 
