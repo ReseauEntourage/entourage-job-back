@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
+import { User } from 'src/users/models/user.model';
 import { CreateMessagePipe, CreateMessageDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
@@ -49,12 +50,20 @@ export class MessagingController {
   @Post('messages')
   @UseGuards(CanParticipate)
   async postMessage(
+    @UserPayload() user: User,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateMessagePipe())
     createMessageDto: CreateMessageDto
   ) {
     // Create the conversation if needed
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+      const countDailyConversation =
+        await this.messagingService.countDailyConversations(userId);
+      await this.messagingService.handleDailyConversationLimit(
+        user,
+        countDailyConversation,
+        createMessageDto.content
+      );
       const participants = [...createMessageDto.participantIds];
       // Add the current user to the participants
       participants.push(userId);
