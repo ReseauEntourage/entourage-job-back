@@ -34,3 +34,37 @@ export const generateSlackMsgConfigConversationReported = (
     ],
   };
 };
+
+export const generateSlackMsgConfigUserSuspiciousUser = (
+  user: User,
+  context: string,
+  message?: string
+): SlackBlockConfig => {
+  const adminUserProfileUrl = `${process.env.FRONT_URL}/backoffice/admin/membres/aeb196a0-9c51-4810-ac91-6850611394cd${user.id}`;
+
+  return {
+    title: '🔬 Comportement suspect detecté 👿',
+    context: [
+      {
+        title: `➡️ Que se passe-t-il ?`,
+        content: context,
+      },
+      {
+        title: '👿 Qui est-ce ?',
+        content: `${user.firstName} ${user.lastName} <${user.email}>`,
+      },
+    ],
+    msgParts: [
+      {
+        content: `*Message* :\n${message}`,
+      },
+    ],
+    actions: [
+      {
+        label: 'Voir le profil',
+        url: adminUserProfileUrl,
+        value: 'see-profile',
+      },
+    ],
+  };
+};

@@ -326,6 +326,90 @@ describe('MESSAGING', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(400);
       });
+
+      it('should return 429 when create an 8th conversation', async () => {
+        // Create the coachs
+        const coachs = await databaseHelper.createEntities(userFactory, 7, {
+          role: UserRoles.COACH,
+        });
+
+        // Create the conversations
+        const conversations = await databaseHelper.createEntities(
+          conversationFactory,
+          7
+        );
+        // And link the conversations to the coachs and the logged in candidate
+        const linkPromises = conversations.map((conversation, idx) =>
+          messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, coachs[idx].id]
+          )
+        );
+        await Promise.all(linkPromises);
+
+        // Add messages to the conversations
+        const messagePromises = conversations.map((conversation) =>
+          messagingHelper.addMessagesToConversation(
+            2,
+            conversation.id,
+            loggedInCandidate.user.id
+          )
+        );
+
+        await Promise.all(messagePromises);
+
+        const response: APIResponse<MessagingController['postMessage']> =
+          await request(server)
+            .post(`/messaging/messages`)
+            .send({
+              content: 'Super message',
+              participantIds: [loggedInCoach.user.id],
+            })
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+        expect(response.status).toBe(429);
+      });
+
+      it('should return 201 when create a 7th conversation', async () => {
+        // Create the coachs
+        const coachs = await databaseHelper.createEntities(userFactory, 6, {
+          role: UserRoles.COACH,
+        });
+
+        // Create the conversations
+        const conversations = await databaseHelper.createEntities(
+          conversationFactory,
+          6
+        );
+        // And link the conversations to the coachs and the logged in candidate
+        const linkPromises = conversations.map((conversation, idx) =>
+          messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, coachs[idx].id]
+          )
+        );
+        await Promise.all(linkPromises);
+
+        // Add messages to the conversations
+        const messagePromises = conversations.map((conversation) =>
+          messagingHelper.addMessagesToConversation(
+            2,
+            conversation.id,
+            loggedInCandidate.user.id
+          )
+        );
+
+        await Promise.all(messagePromises);
+
+        const response: APIResponse<MessagingController['postMessage']> =
+          await request(server)
+            .post(`/messaging/messages`)
+            .send({
+              content: 'Super message',
+              participantIds: [loggedInCoach.user.id],
+            })
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+        expect(response.status).toBe(201);
+      });
     });
   });
 
