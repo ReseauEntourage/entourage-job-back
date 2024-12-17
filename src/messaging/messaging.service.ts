@@ -253,11 +253,8 @@ export class MessagingService {
     });
   }
 
-  async handleDailyConversationLimit(
-    user: User,
-    countDailyConversation: number,
-    message: string
-  ) {
+  async handleDailyConversationLimit(user: User, message: string) {
+    const countDailyConversation = await this.countDailyConversations(user.id);
     if (countDailyConversation === 4 || countDailyConversation >= 7) {
       const slackMsgConfig: SlackBlockConfig =
         generateSlackMsgConfigUserSuspiciousUser(
