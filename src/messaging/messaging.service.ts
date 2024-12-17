@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -15,7 +15,10 @@ import {
   messagingConversationIncludes,
   messagingMessageIncludes,
 } from './messaging.includes';
-import { generateSlackMsgConfigConversationReported } from './messaging.utils';
+import {
+  generateSlackMsgConfigConversationReported,
+  generateSlackMsgConfigUserSuspiciousUser,
+} from './messaging.utils';
 import { ConversationParticipant } from './models';
 import { Conversation } from './models/conversation.model';
 import { Message } from './models/message.model';
@@ -237,6 +240,45 @@ export class MessagingService {
     return this.messageModel.findByPk(messageId, {
       include: messagingMessageIncludes,
     });
+  }
+
+  async countDailyConversations(userId: string) {
+    return this.conversationParticipantModel.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
+      },
+    });
+  }
+
+  async handleDailyConversationLimit(user: User, message: string) {
+    const countDailyConversation = await this.countDailyConversations(user.id);
+    if (countDailyConversation === 4 || countDailyConversation >= 7) {
+      const slackMsgConfig: SlackBlockConfig =
+        generateSlackMsgConfigUserSuspiciousUser(
+          user,
+          `Un utilisateur tente de créer sa ${
+            countDailyConversation + 1
+          }ème conversation aujourd\'hui`,
+          message
+        );
+      const slackMessage =
+        this.slackService.generateSlackBlockMsg(slackMsgConfig);
+      this.slackService.sendMessage(
+        slackChannels.ENTOURAGE_PRO_MODERATION,
+        slackMessage,
+        'Conversation de la messagerie signalée'
+      );
+    }
+
+    if (countDailyConversation >= 7) {
+      throw new HttpException(
+        'DAILY_CONVERSATION_LIMIT_REACHED',
+        HttpStatus.TOO_MANY_REQUESTS
+      );
+    }
   }
 
   private async isUserInConversation(conversationId: string, userId: string) {
