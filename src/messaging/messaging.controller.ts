@@ -57,11 +57,8 @@ export class MessagingController {
   ) {
     // Create the conversation if needed
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
-      const countDailyConversation =
-        await this.messagingService.countDailyConversations(userId);
       await this.messagingService.handleDailyConversationLimit(
         user,
-        countDailyConversation,
         createMessageDto.content
       );
       const participants = [...createMessageDto.participantIds];
