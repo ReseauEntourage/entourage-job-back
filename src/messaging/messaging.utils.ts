@@ -40,7 +40,7 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
   context: string,
   message?: string
 ): SlackBlockConfig => {
-  const adminUserProfileUrl = `${process.env.FRONT_URL}/backoffice/admin/membres/aeb196a0-9c51-4810-ac91-6850611394cd${user.id}`;
+  const adminUserProfileUrl = `${process.env.FRONT_URL}/backoffice/admin/membres/${user.id}`;
 
   return {
     title: '🔬 Comportement suspect detecté 👿',
