@@ -666,7 +666,7 @@ export class SalesforceService {
           ? parsedAddress.city.substring(0, 40)
           : parsedAddress.city,
       BillingPostalCode: parsedAddress.postalCode,
-      Reseaux__c: 'LinkedOut',
+      Reseaux__c: 'Entourage Pro',
       Antenne__c: formatDepartment(department),
       RecordTypeId: recordType,
       ParentId: mainAccountSfId,

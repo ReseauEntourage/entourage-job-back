@@ -387,7 +387,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, ''),
     Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-    Reseaux__c: 'LinkedOut',
+    Reseaux__c: 'Entourage Pro',
     RecordTypeId: recordType,
     Antenne__c: formatRegions(zone),
     Source__c: 'Lead entrant',
@@ -558,7 +558,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       TS_Prescripteur_Contact__c: workerSfIdAsContact,
       Prospect__c: workerSfIdAsProspect,
       Association_prescriptrice__c: associationSfId,
-      Company: 'Candidats LinkedOut',
+      Company: 'Candidats Entourage Pro',
       Comment_vous_nous_avez_connu__c: formatSalesforceValue<HeardAboutValue>(
         heardAbout,
         LeadHeardAbout
@@ -593,7 +593,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
 
     return {
       ...commonFields,
-      Company: company || 'Coachs LinkedOut',
+      Company: company || 'Coachs Entourage Pro',
       Title: position,
     } as SalesforceLead<T>;
   }
@@ -635,7 +635,7 @@ export const mapSalesforceContactFields = (
     AccountId: companySfId,
     Date_de_naissance__c: birthDate,
     Casquettes_r_les__c: casquette,
-    Reseaux__c: 'LinkedOut',
+    Reseaux__c: 'Entourage Pro',
     RecordTypeId: recordType,
     Antenne__c: formatDepartment(department),
     MailingPostalCode: getPostalCodeFromDepartment(department),

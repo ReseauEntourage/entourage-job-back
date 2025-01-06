@@ -111,8 +111,8 @@ export type SalesforceObject<
 > = SalesforceObjects<K>[T];
 
 export const ContactRecordTypesIds = {
-  COACH: '0127Q000000Ub9wQAC',
-  CANDIDATE: '0127Q000000UbNVQA0',
+  COACH: '0017Q0000031pRpQAI',
+  CANDIDATE: '001Jv000004iD0rIAE',
   COMPANY: '0127Q000000UomWQAS',
   ASSOCIATION: '0127Q000000Uhq0QAC',
   PRECARIOUS: '012Jv000000wYfdIAE',
@@ -549,7 +549,7 @@ export interface SalesforceAccount {
   BillingCity: string;
   BillingPostalCode: string;
   RecordTypeId: AccountRecordType;
-  Reseaux__c: 'LinkedOut';
+  Reseaux__c: 'Entourage Pro';
   Antenne__c: string;
   ParentId: string;
 }
@@ -622,7 +622,7 @@ export interface SalesforceContact {
   Title: string;
   AccountId: string;
   Casquettes_r_les__c: Casquette;
-  Reseaux__c: 'LinkedOut';
+  Reseaux__c: 'Entourage Pro';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
   MailingPostalCode?: string;
@@ -662,7 +662,7 @@ export interface CompanySalesforceLead {
   Title: string;
   Email: string;
   Phone?: string;
-  Reseaux__c: 'LinkedOut';
+  Reseaux__c: 'Entourage Pro';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Votre_demarche__c: string;
@@ -811,8 +811,8 @@ export interface CandidateSalesforceLead {
   Familles_de_m_tiers__c?: string;
   Message_For__c: string;
   Type_de_ressources__c?: string;
-  Company: 'Candidats LinkedOut';
-  Reseaux__c: 'LinkedOut';
+  Company: 'Candidats Entourage Pro';
+  Reseaux__c: 'Entourage Pro';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
@@ -837,7 +837,7 @@ export interface WorkerSalesforceLead {
   Company: string;
   Comment_vous_nous_avez_connu__c: string;
   TS_Mettre_en_relation_Coach__c: boolean;
-  Reseaux__c: 'LinkedOut';
+  Reseaux__c: 'Entourage Pro';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
@@ -855,11 +855,11 @@ export interface CoachSalesforceLead {
   OwnerId?: string;
   LastName: string;
   FirstName: string;
-  Company: 'Coachs LinkedOut' | string;
+  Company: 'Coachs Entourage Pro' | string;
   Title: string;
   Email: string;
   Phone?: string;
-  Reseaux__c: 'LinkedOut';
+  Reseaux__c: 'Entourage Pro';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
