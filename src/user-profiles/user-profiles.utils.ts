@@ -36,5 +36,6 @@ export function userProfileSearchQuery(query = '') {
   return [
     searchInColumnWhereOption('user.firstName', query),
     searchInColumnWhereOption('user.lastName', query),
+    searchInColumnWhereOption('searchAmbitions.name', query, true),
   ];
 }
