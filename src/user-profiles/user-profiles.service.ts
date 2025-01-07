@@ -637,6 +637,12 @@ export class UserProfilesService {
     );
   }
 
+  async updateHasPicture(userId: string, hasPicture: boolean) {
+    await this.updateByUserId(userId, {
+      hasPicture,
+    });
+  }
+
   async uploadProfileImage(userId: string, file: Express.Multer.File) {
     const { path } = file;
 
@@ -650,6 +656,7 @@ export class UserProfilesService {
         'image/jpeg',
         `${userId}.profile.jpg`
       );
+      await this.updateHasPicture(userId, true);
     } catch (error) {
       uploadedImg = null;
     } finally {
