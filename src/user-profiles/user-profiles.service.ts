@@ -166,10 +166,13 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
-            ...searchOptions,
           },
         },
       ],
+      where: {
+        ...searchOptions,
+      },
+      subQuery: false,
     });
 
     const profiles = await this.userProfileModel.findAll({
