@@ -215,23 +215,26 @@ export class UsersCreationController {
         createdUserId
       );
 
-      await this.usersCreationService.createExternalDBUser(createdUserId, {
-        program: createUserRegistrationDto.program,
-        birthDate: createUserRegistrationDto.birthDate,
-        campaign:
-          createUserRegistrationDto.program === Programs.THREE_SIXTY
-            ? createUserRegistrationDto.campaign
-            : undefined,
-        workingRight: createUserRegistrationDto.workingRight,
-        nationality: createUserRegistrationDto.nationality,
-        accommodation: createUserRegistrationDto.accommodation,
-        hasSocialWorker: createUserRegistrationDto.hasSocialWorker,
-        resources: createUserRegistrationDto.resources,
-        studiesLevel: createUserRegistrationDto.studiesLevel,
-        workingExperience: createUserRegistrationDto.workingExperience,
-        jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
-        gender: createUserRegistrationDto.gender,
-      });
+      // TODO: Remove this condition once we can send referer info to SF
+      if (createUserRegistrationDto.role !== UserRoles.REFERER) {
+        await this.usersCreationService.createExternalDBUser(createdUserId, {
+          program: createUserRegistrationDto.program,
+          birthDate: createUserRegistrationDto.birthDate,
+          campaign:
+            createUserRegistrationDto.program === Programs.THREE_SIXTY
+              ? createUserRegistrationDto.campaign
+              : undefined,
+          workingRight: createUserRegistrationDto.workingRight,
+          nationality: createUserRegistrationDto.nationality,
+          accommodation: createUserRegistrationDto.accommodation,
+          hasSocialWorker: createUserRegistrationDto.hasSocialWorker,
+          resources: createUserRegistrationDto.resources,
+          studiesLevel: createUserRegistrationDto.studiesLevel,
+          workingExperience: createUserRegistrationDto.workingExperience,
+          jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
+          gender: createUserRegistrationDto.gender,
+        });
+      }
 
       // Send welcome mail only for BOOST and REFERER
       if (
