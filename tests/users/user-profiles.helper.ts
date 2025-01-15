@@ -30,6 +30,7 @@ export class UserProfilesHelper {
       currentJob: user.userProfile.currentJob,
       department: user.userProfile.department,
       isAvailable: user.userProfile.isAvailable,
+      unavailabilityReason: user.userProfile.unavailabilityReason,
       lastReceivedMessage: null,
       lastSentMessage: null,
       networkBusinessLines: expect.arrayContaining(

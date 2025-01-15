@@ -71,6 +71,12 @@ export class UserProfile extends Model {
   @IsString()
   @AllowNull(true)
   @Column
+  unavailabilityReason: string;
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Column
   currentJob: string;
 
   @ApiProperty()
