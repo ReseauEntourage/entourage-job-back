@@ -21,7 +21,6 @@ import { Program } from 'src/users/users.types';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',
-  GENERATE_CV_PREVIEW: 'generate_cv_preview',
   CREATE_CV_SEARCH_STRING: 'create_cv_search_string',
   CACHE_CV: 'cache_cv',
   CACHE_ALL_CVS: 'cache_all_cvs',
@@ -49,7 +48,6 @@ export type Job = (typeof Jobs)[keyof typeof Jobs];
 
 type JobsData = {
   [Jobs.GENERATE_CV_PDF]: GenerateCVPDFJob;
-  [Jobs.GENERATE_CV_PREVIEW]: GenerateCVPreviewJob;
   [Jobs.CREATE_CV_SEARCH_STRING]: GenerateCVSearchStringJob;
   [Jobs.CACHE_CV]: CacheCVJob;
   [Jobs.CACHE_ALL_CVS]: CacheAllCVJob;
@@ -127,12 +125,6 @@ export interface GenerateCVPDFJob {
   candidateId: string;
   token: string;
   fileName: string;
-}
-
-export interface GenerateCVPreviewJob {
-  candidateId: string;
-  uploadedImg: string;
-  oldImg: string;
 }
 
 export interface GenerateCVSearchStringJob {

@@ -85,11 +85,8 @@ export class CVsController {
 
     const urlImg = `images/${candidateId}.${createCVDto.status}.jpg`;
 
-    let oldImg;
-
     // enregistrement de l'image uniquement si ce n'est pas un autosave
     if (!autoSave && (createCVDto.urlImg || file)) {
-      oldImg = createCVDto.urlImg;
       createCVDto.urlImg = urlImg;
     }
 
@@ -131,17 +128,6 @@ export class CVsController {
           // );
         }
       }
-
-      const uploadedImg = file
-        ? await this.cvsService.uploadCVImage(file, candidateId, status)
-        : null;
-
-      // CV Preview => vignette utilisée pour l'image og:img (partage réseaux sociaux); exécution par lambda AWS
-      await this.cvsService.sendGenerateCVPreview(
-        candidateId,
-        oldImg,
-        uploadedImg
-      );
 
       const { firstName, lastName } = createdCV.user.candidat;
 
