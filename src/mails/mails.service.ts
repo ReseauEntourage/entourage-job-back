@@ -908,7 +908,7 @@ export class MailsService {
       variables: {
         refererFirstName: referer.firstName,
         refererLastName: referer.lastName,
-        refererProfileUrl: `${process.env.FRONTEND_URL}/backoffice/admin/membres/${referer.id}`,
+        refererProfileUrl: `${process.env.FRONT_URL}/backoffice/admin/membres/${referer.id}`,
       },
     });
   }
