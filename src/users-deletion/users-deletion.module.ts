@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CVsModule } from 'src/cvs/cvs.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
+import { MailsModule } from 'src/mails/mails.module';
 import { OpportunitiesModule } from 'src/opportunities/opportunities.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
@@ -16,6 +17,7 @@ import { UsersDeletionService } from './users-deletion.service';
     AWSModule,
     OpportunitiesModule,
     RevisionsModule,
+    MailsModule,
   ],
   controllers: [UsersDeletionController],
   providers: [UsersDeletionService],

@@ -7,7 +7,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { v4 as uuid } from 'uuid';
+import { UserPayload } from 'src/auth/guards';
+import { MailsService } from 'src/mails/mails.service';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { UsersDeletionService } from './users-deletion.service';
@@ -17,7 +18,24 @@ import { UsersDeletionService } from './users-deletion.service';
 @ApiBearerAuth()
 @Controller('user')
 export class UsersDeletionController {
-  constructor(private readonly usersDeletionService: UsersDeletionService) {}
+  constructor(
+    private readonly usersDeletionService: UsersDeletionService,
+    private readonly mailService: MailsService
+  ) {}
+
+  @Delete('me')
+  async removeOwnUser(@UserPayload('id') userId: string) {
+    const user = await this.usersDeletionService.findOneUser(userId);
+    const userEmail = user.email;
+
+    const { userDeleted, cvsDeleted } =
+      await this.usersDeletionService.deleteCompleteUser(user);
+
+    if (userDeleted) {
+      await this.mailService.sendUserDeletionEmail(userEmail);
+    }
+    return { userDeleted, cvsDeleted };
+  }
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
@@ -29,55 +47,8 @@ export class UsersDeletionController {
       throw new NotFoundException();
     }
 
-    const { firstName, lastName, candidat } = user.toJSON();
-
-    await this.usersDeletionService.removeFiles(userId, firstName, lastName);
-
-    await this.usersDeletionService.updateUser(userId, {
-      firstName: 'Utilisateur',
-      lastName: 'supprimé',
-      email: `${Date.now()}@${uuid()}.deleted`,
-      phone: null,
-      address: null,
-    });
-
-    if (candidat?.url) {
-      await this.usersDeletionService.uncacheCandidateCV(candidat.url);
-    }
-
-    const cvsDeleted = await this.usersDeletionService.removeCandidateCVs(
-      userId
-    );
-
-    await this.usersDeletionService.updateUserCandidatByCandidatId(userId, {
-      note: null,
-      url: `deleted-${userId.substring(0, 8)}`,
-    });
-
-    await this.usersDeletionService.cacheAllCVs();
-
-    const opportunityUsers =
-      await this.usersDeletionService.findAllOpportunityUsersByCandidateId(
-        userId
-      );
-
-    await this.usersDeletionService.updateOpportunityUsersByCandidateId(
-      userId,
-      {
-        note: null,
-      }
-    );
-
-    await this.usersDeletionService.updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
-      userId,
-      opportunityUsers.map((opportunityUser) => {
-        return opportunityUser.id;
-      })
-    );
-
-    await this.usersDeletionService.removeUserProfile(userId);
-
-    const userDeleted = await this.usersDeletionService.removeUser(userId);
+    const { userDeleted, cvsDeleted } =
+      await this.usersDeletionService.deleteCompleteUser(user);
 
     return { userDeleted, cvsDeleted };
   }
