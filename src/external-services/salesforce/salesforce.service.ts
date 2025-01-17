@@ -21,7 +21,12 @@ import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-
 import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { UsersService } from 'src/users/users.service';
-import { NormalUserRole, Program, Programs } from 'src/users/users.types';
+import {
+  Program,
+  Programs,
+  RegistrableUserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import {
   AccountProps,
@@ -49,12 +54,11 @@ import {
   OfferProps,
   OfferPropsWithRecruiterId,
   ProcessProps,
-  ProgramString,
+  Casquette,
   SalesforceAccount,
   SalesforceBinome,
   SalesforceCampaign,
   SalesforceCampaignMember,
-  SalesforceContact,
   SalesforceError,
   SalesforceEvent,
   SalesforceLead,
@@ -72,6 +76,7 @@ import {
   formatBusinessLines,
   formatCompanyName,
   formatDepartment,
+  getCasquette,
   getDepartmentFromPostalCode,
   getPostalCodeFromDepartment,
   mapProcessFromOpportunityUser,
@@ -520,9 +525,11 @@ export class SalesforceService {
   async findContact(
     email: string,
     recordType?: ContactRecordType
-  ): Promise<{ Id: string; Casquettes_r_les__c: string } | null> {
+  ): Promise<{ Id: string; Casquettes_r_les__c: Casquette[] } | null> {
     await this.checkIfConnected();
-    const { records }: { records: Partial<SalesforceContact>[] } =
+    const {
+      records,
+    }: { records: { Id: string; Casquettes_r_les__c: string }[] } =
       await this.salesforce.query(
         `SELECT Id, Casquettes_r_les__c, AccountId
          FROM ${ObjectNames.CONTACT}
@@ -533,7 +540,8 @@ export class SalesforceService {
     return records[0]
       ? {
           Id: records[0]?.Id,
-          Casquettes_r_les__c: records[0]?.Casquettes_r_les__c,
+          Casquettes_r_les__c: ((records[0]?.Casquettes_r_les__c).split(';') ||
+            []) as Casquette[],
         }
       : null;
   }
@@ -666,7 +674,7 @@ export class SalesforceService {
           ? parsedAddress.city.substring(0, 40)
           : parsedAddress.city,
       BillingPostalCode: parsedAddress.postalCode,
-      Reseaux__c: 'Entourage Pro',
+      Reseaux__c: 'LinkedOut',
       Antenne__c: formatDepartment(department),
       RecordTypeId: recordType,
       ParentId: mainAccountSfId,
@@ -724,12 +732,12 @@ export class SalesforceService {
 
   async updateContactCasquetteAndAppId(
     contactSfId: string,
-    contactProps: Pick<ContactProps, 'casquette' | 'id'>
+    contactProps: Pick<ContactProps, 'casquettes' | 'id'>
   ) {
     return this.updateRecord(ObjectNames.CONTACT, {
       Id: contactSfId,
       ID_App_Entourage_Pro__c: contactProps.id,
-      Casquettes_r_les__c: contactProps.casquette,
+      Casquettes_r_les__c: contactProps.casquettes.join(';'),
     });
   }
 
@@ -800,6 +808,26 @@ export class SalesforceService {
     return companySfId;
   }
 
+  async findOrCreateAssociationAccount({
+    name,
+    address,
+    department,
+  }: AccountProps) {
+    let companySfId = await this.searchAccount(name);
+
+    if (!companySfId) {
+      companySfId = (await this.createAccount(
+        {
+          name,
+          address: address,
+          department: department,
+        },
+        AccountRecordTypesIds.ASSOCIATION
+      )) as string;
+    }
+    return companySfId;
+  }
+
   async findOrCreateAccount(
     { name, address, department, businessLines, mainAccountSfId }: AccountProps,
     recordType: AccountRecordType
@@ -857,7 +885,7 @@ export class SalesforceService {
               email: contactMail,
               department,
               companySfId: mainCompanySfId || companySfId,
-              casquette: 'Contact Entreprise/Financeur',
+              casquettes: [Casquette.CONTACT_ENTREPRISE_FINANCEUR],
             }
           : {
               firstName,
@@ -867,7 +895,7 @@ export class SalesforceService {
               position,
               department,
               companySfId: mainCompanySfId || companySfId,
-              casquette: 'Contact Entreprise/Financeur',
+              casquettes: [Casquette.CONTACT_ENTREPRISE_FINANCEUR],
             },
         recordType
       )) as string;
@@ -966,7 +994,7 @@ export class SalesforceService {
           department,
           companySfId,
           mainCompanySfId,
-          casquette: 'Contact Entreprise/Financeur',
+          casquettes: [Casquette.CONTACT_ENTREPRISE_FINANCEUR],
         },
         ContactRecordTypesIds.COMPANY
       )) as string;
@@ -1192,6 +1220,8 @@ export class SalesforceService {
     workingRight,
     jobSearchDuration,
     gender,
+    structure,
+    refererEmail,
   }: UserProps) {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
@@ -1255,19 +1285,28 @@ export class SalesforceService {
       }
     }
 
-    const programString: ProgramString =
-      program === Programs.THREE_SIXTY
-        ? `PRO ${role} 360`
-        : `PRO ${role} Coup de pouce`;
+    const casquette: Casquette = getCasquette(role, program);
 
+    const refererId = refererEmail
+      ? (await this.findContact(refererEmail))?.Id
+      : undefined;
+
+    // Contact doesnt exist in SF -> Create
     if (!contactSfId) {
       const leadSfId = await this.findLead(email);
 
-      const companySfId = await this.findOrCreateHouseholdAccount({
-        name: `${firstName} ${lastName} Foyer`,
-        department,
-        address: getPostalCodeFromDepartment(department),
-      });
+      const companySfId =
+        role === UserRoles.REFERER
+          ? await this.findOrCreateAssociationAccount({
+              name: structure,
+              department: department,
+              address: getPostalCodeFromDepartment(department),
+            })
+          : await this.findOrCreateHouseholdAccount({
+              name: `${firstName} ${lastName} Foyer`,
+              department,
+              address: getPostalCodeFromDepartment(department),
+            });
 
       const contactToCreate = {
         id,
@@ -1287,12 +1326,13 @@ export class SalesforceService {
         workingExperience,
         jobSearchDuration,
         gender,
+        refererId,
       };
 
       contactSfId = (await this.createContact(
         {
           ...contactToCreate,
-          casquette: programString,
+          casquettes: [casquette],
         },
         ContactRecordTypeFromRole[role]
       )) as string;
@@ -1302,11 +1342,15 @@ export class SalesforceService {
         await this.updateContactEmailAndPhone(contactSfId, { email, phone });
       }
     } else {
+      // Contact exist in SF -> Update
+      const uniqueCasquettes = contactSf.Casquettes_r_les__c;
+      if (!uniqueCasquettes.includes(casquette)) {
+        uniqueCasquettes.push(casquette);
+      }
+
       await this.updateContactCasquetteAndAppId(contactSfId, {
         id,
-        casquette: `${programString};${(
-          contactSf.Casquettes_r_les__c || ''
-        ).replace(programString, '')}`,
+        casquettes: uniqueCasquettes,
       });
     }
 
@@ -1733,7 +1777,7 @@ export class SalesforceService {
       email: userDb.email,
       phone: userDb.phone,
       department: userDb.userProfile.department,
-      role: userDb.role as NormalUserRole,
+      role: userDb.role as RegistrableUserRole,
     };
   }
 
@@ -1818,6 +1862,8 @@ export class SalesforceService {
       workingExperience?: WorkingExperience;
       jobSearchDuration?: JobSearchDuration;
       gender?: CandidateGender;
+      refererEmail?: string;
+      structure?: string;
     }
   ) {
     this.setIsWorker(true);
@@ -1838,6 +1884,8 @@ export class SalesforceService {
       workingExperience: otherInfo.workingExperience,
       jobSearchDuration: otherInfo.jobSearchDuration,
       gender: otherInfo.gender,
+      refererEmail: otherInfo.refererEmail,
+      structure: otherInfo.structure,
     });
   }
 

@@ -166,6 +166,8 @@ export interface CreateOrUpdateSalesforceUserJob {
   jobSearchDuration?: JobSearchDuration;
   workingRight?: CandidateYesNoNSPPValue;
   gender?: CandidateGender;
+  refererEmail?: string;
+  structure?: string;
 }
 
 export interface SendOffersEmailAfterCVPublishJob {

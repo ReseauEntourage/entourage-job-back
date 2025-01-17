@@ -44,7 +44,7 @@ import {
   ExternalOfferOrigin,
   OfferStatus,
 } from 'src/opportunities/opportunities.types';
-import { NormalUserRole, UserRoles } from 'src/users/users.types';
+import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -174,17 +174,19 @@ export type SalesforceLeads = {
 export type SalesforceLead<T extends LeadRecordType> = SalesforceLeads[T];
 
 export const ContactRecordTypeFromRole: {
-  [K in NormalUserRole]: ContactRecordType;
+  [K in RegistrableUserRole]: ContactRecordType;
 } = {
   [UserRoles.CANDIDATE]: ContactRecordTypesIds.PRECARIOUS,
   [UserRoles.COACH]: ContactRecordTypesIds.NEIGHBOR,
+  [UserRoles.REFERER]: ContactRecordTypesIds.ASSOCIATION,
 };
 
 export const LeadRecordTypeFromRole: {
-  [K in NormalUserRole]: LeadRecordType;
+  [K in RegistrableUserRole]: LeadRecordType;
 } = {
   [UserRoles.CANDIDATE]: LeadRecordTypesIds.CANDIDATE,
   [UserRoles.COACH]: LeadRecordTypesIds.COACH,
+  [UserRoles.REFERER]: LeadRecordTypesIds.ASSOCIATION,
 };
 
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
@@ -355,16 +357,14 @@ export const LeadBusinessLines: {
   sm: findConstantFromValue('sm', BusinessLineFilters).label,
 } as const;
 
-export type ProgramString =
-  | 'PRO Coach Coup de pouce'
-  | 'PRO Candidat Coup de pouce'
-  | 'PRO Coach 360'
-  | 'PRO Candidat 360';
-
-type Casquette = `${
-  | 'Contact Entreprise/Financeur'
-  | ProgramString
-  | 'PRO Candidat 360'}${`${string}` | undefined}`;
+export enum Casquette {
+  CONTACT_ENTREPRISE_FINANCEUR = 'Contact Entreprise/Financeur',
+  PRESCRIPTEUR = 'PRO Prescripteur',
+  COACH_COUP_DE_POUCE = 'PRO Coach Coup de pouce',
+  CANDIDAT_COUP_DE_POUCE = 'PRO Candidat Coup de pouce',
+  COACH_360 = 'PRO Coach 360',
+  CANDIDAT_360 = 'PRO Candidat 360',
+}
 
 export interface SalesforceBinome {
   Id?: string;
@@ -549,7 +549,7 @@ export interface SalesforceAccount {
   BillingCity: string;
   BillingPostalCode: string;
   RecordTypeId: AccountRecordType;
-  Reseaux__c: 'Entourage Pro';
+  Reseaux__c: 'LinkedOut';
   Antenne__c: string;
   ParentId: string;
 }
@@ -601,7 +601,7 @@ export interface ContactProps {
   position?: string;
   department: Department;
   companySfId?: string;
-  casquette: Casquette;
+  casquettes: Casquette[];
   nationality?: Nationality;
   accommodation?: CandidateAccommodation;
   hasSocialWorker?: YesNoJNSPRValue;
@@ -610,6 +610,7 @@ export interface ContactProps {
   workingExperience?: WorkingExperience;
   jobSearchDuration?: JobSearchDuration;
   gender?: CandidateGender;
+  refererId?: string;
 }
 
 export interface SalesforceContact {
@@ -621,8 +622,8 @@ export interface SalesforceContact {
   Phone: string;
   Title: string;
   AccountId: string;
-  Casquettes_r_les__c: Casquette;
-  Reseaux__c: 'Entourage Pro';
+  Casquettes_r_les__c: string;
+  Reseaux__c: 'LinkedOut';
   RecordTypeId: ContactRecordType;
   Antenne__c?: string;
   MailingPostalCode?: string;
@@ -636,6 +637,7 @@ export interface SalesforceContact {
   Situation_d_h_bergement__c: string;
   Type_de_ressources__c?: string;
   Genre__c: string;
+  TS_prescripteur__c?: string;
 }
 
 export interface CompanyLeadProps {
@@ -662,7 +664,7 @@ export interface CompanySalesforceLead {
   Title: string;
   Email: string;
   Phone?: string;
-  Reseaux__c: 'Entourage Pro';
+  Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Votre_demarche__c: string;
@@ -812,7 +814,7 @@ export interface CandidateSalesforceLead {
   Message_For__c: string;
   Type_de_ressources__c?: string;
   Company: 'Candidats Entourage Pro';
-  Reseaux__c: 'Entourage Pro';
+  Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
@@ -837,7 +839,7 @@ export interface WorkerSalesforceLead {
   Company: string;
   Comment_vous_nous_avez_connu__c: string;
   TS_Mettre_en_relation_Coach__c: boolean;
-  Reseaux__c: 'Entourage Pro';
+  Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
@@ -859,7 +861,7 @@ export interface CoachSalesforceLead {
   Title: string;
   Email: string;
   Phone?: string;
-  Reseaux__c: 'Entourage Pro';
+  Reseaux__c: 'LinkedOut';
   RecordTypeId: LeadRecordType;
   Antenne__c: string;
   Source__c: 'Lead entrant';
@@ -873,7 +875,7 @@ export interface UserProps {
   email: string;
   phone: string;
   department: Department;
-  role: NormalUserRole;
+  role: RegistrableUserRole;
   birthDate: Date;
   program: string;
   workingRight?: CandidateYesNoNSPPValue;
@@ -886,4 +888,6 @@ export interface UserProps {
   workingExperience?: WorkingExperience;
   jobSearchDuration?: JobSearchDuration;
   gender?: CandidateGender;
+  structure?: string;
+  refererEmail?: string;
 }

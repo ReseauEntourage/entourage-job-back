@@ -214,27 +214,27 @@ export class UsersCreationController {
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
-
-      // TODO: Remove this condition once we can send referer info to SF
-      if (createUserRegistrationDto.role !== UserRoles.REFERER) {
-        await this.usersCreationService.createExternalDBUser(createdUserId, {
-          program: createUserRegistrationDto.program,
-          birthDate: createUserRegistrationDto.birthDate,
-          campaign:
-            createUserRegistrationDto.program === Programs.THREE_SIXTY
-              ? createUserRegistrationDto.campaign
-              : undefined,
-          workingRight: createUserRegistrationDto.workingRight,
-          nationality: createUserRegistrationDto.nationality,
-          accommodation: createUserRegistrationDto.accommodation,
-          hasSocialWorker: createUserRegistrationDto.hasSocialWorker,
-          resources: createUserRegistrationDto.resources,
-          studiesLevel: createUserRegistrationDto.studiesLevel,
-          workingExperience: createUserRegistrationDto.workingExperience,
-          jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
-          gender: createUserRegistrationDto.gender,
-        });
-      }
+      await this.usersCreationService.createExternalDBUser(createdUserId, {
+        program: createUserRegistrationDto.program,
+        birthDate: createUserRegistrationDto.birthDate,
+        campaign:
+          createUserRegistrationDto.program === Programs.THREE_SIXTY
+            ? createUserRegistrationDto.campaign
+            : undefined,
+        workingRight: createUserRegistrationDto.workingRight,
+        nationality: createUserRegistrationDto.nationality,
+        accommodation: createUserRegistrationDto.accommodation,
+        hasSocialWorker: createUserRegistrationDto.hasSocialWorker,
+        resources: createUserRegistrationDto.resources,
+        studiesLevel: createUserRegistrationDto.studiesLevel,
+        workingExperience: createUserRegistrationDto.workingExperience,
+        jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
+        gender: createUserRegistrationDto.gender,
+        structure:
+          createdUser.role === UserRoles.REFERER
+            ? createdUser.organization.name
+            : undefined,
+      });
 
       // Send welcome mail only for BOOST and REFERER
       if (
@@ -337,6 +337,7 @@ export class UsersCreationController {
         workingExperience: createUserReferingDto.workingExperience,
         jobSearchDuration: createUserReferingDto.jobSearchDuration,
         gender: createUserReferingDto.gender,
+        refererEmail: referer.email,
       });
 
       await this.usersCreationService.sendFinalizeAccountReferedUser(
