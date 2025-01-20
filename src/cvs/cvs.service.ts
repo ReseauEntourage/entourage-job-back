@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { CACHE_MANAGER, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
@@ -6,7 +5,6 @@ import * as _ from 'lodash';
 import moment from 'moment/moment';
 import fetch from 'node-fetch';
 import { col, fn, Op, QueryTypes } from 'sequelize';
-import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
 import {
   BusinessLineFilters,
@@ -1092,18 +1090,6 @@ export class CVsService {
     });
   }
 
-  async sendGenerateCVPreview(
-    candidateId: string,
-    oldImg: string,
-    uploadedImg: string
-  ) {
-    await this.queuesService.addToWorkQueue(Jobs.GENERATE_CV_PREVIEW, {
-      candidateId,
-      oldImg,
-      uploadedImg,
-    });
-  }
-
   async sendGenerateCVPDF(
     candidateId: string,
     token: string,
@@ -1114,50 +1100,6 @@ export class CVsService {
       token,
       fileName,
     });
-  }
-
-  async uploadCVImage(
-    file: Express.Multer.File,
-    candidateId: string,
-    status: CVStatus
-  ) {
-    const { path } = file;
-
-    let uploadedImg: string;
-
-    try {
-      const fileBuffer = await sharp(path).jpeg({ quality: 75 }).toBuffer();
-
-      uploadedImg = await this.s3Service.upload(
-        fileBuffer,
-        'image/jpeg',
-        `${candidateId}.${status}.jpg`
-      );
-
-      /*
-        TO KEEP If ever we want to pre-resize the preview background image
-
-        const previewBuffer = await sharp(fileBuffer)
-          .resize(imageWidth, imageHeight, {
-            fit: 'cover',
-          })
-          .jpeg({quality: 75})
-          .toBuffer();
-
-        await S3.upload(
-          previewBuffer,
-          'image/jpeg',
-          `${createCVDto.UserId}.${createCVDto.status}.small.jpg`
-        );
-      */
-    } catch (error) {
-      uploadedImg = null;
-    } finally {
-      if (fs.existsSync(path)) {
-        fs.unlinkSync(path); // remove image locally after upload to S3
-      }
-    }
-    return uploadedImg;
   }
 
   async sendOffersAfterPublishing(
