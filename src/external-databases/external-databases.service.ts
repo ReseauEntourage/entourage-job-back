@@ -53,6 +53,7 @@ export class ExternalDatabasesService {
       | 'jobSearchDuration'
       | 'workingRight'
       | 'gender'
+      | 'refererEmail'
     >
   ) {
     let conertedGenderType: CandidateGender;

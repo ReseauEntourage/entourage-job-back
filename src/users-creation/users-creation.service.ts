@@ -41,6 +41,8 @@ export class UsersCreationService {
       | 'jobSearchDuration'
       | 'workingRight'
       | 'gender'
+      | 'structure'
+      | 'refererEmail'
     >
   ) {
     return this.externalDatabasesService.createExternalDBUser(

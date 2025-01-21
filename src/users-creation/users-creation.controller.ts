@@ -214,7 +214,6 @@ export class UsersCreationController {
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
-
       await this.usersCreationService.createExternalDBUser(createdUserId, {
         program: createUserRegistrationDto.program,
         birthDate: createUserRegistrationDto.birthDate,
@@ -231,6 +230,10 @@ export class UsersCreationController {
         workingExperience: createUserRegistrationDto.workingExperience,
         jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
         gender: createUserRegistrationDto.gender,
+        structure:
+          createdUser.role === UserRoles.REFERER
+            ? createdUser.organization.name
+            : undefined,
       });
 
       // Send welcome mail only for BOOST and REFERER
@@ -335,6 +338,7 @@ export class UsersCreationController {
         workingExperience: createUserReferingDto.workingExperience,
         jobSearchDuration: createUserReferingDto.jobSearchDuration,
         gender: createUserReferingDto.gender,
+        refererEmail: referer.email,
       });
 
       await this.usersCreationService.sendFinalizeAccountReferedUser(
