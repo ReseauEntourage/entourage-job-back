@@ -14,6 +14,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
+import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
@@ -23,13 +24,19 @@ import { LocalAuthGuard, Public, UserPayload } from './guards';
 @Throttle(10, 60)
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly sessionService: SessionsService
+  ) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@UserPayload() user: User) {
-    return this.authService.login(user);
+    // console.log('login', user.id);
+    const logegdInUser = await this.authService.login(user);
+    await this.sessionService.createOrUpdateSession(user.id);
+    return logegdInUser;
   }
 
   @Redirect(`${process.env.FRONT_URL}`, 302)
@@ -152,6 +159,7 @@ export class AuthController {
   @ApiBearerAuth()
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+    // console.log('current', id);
     // we will update user to update lastConnection field
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
@@ -162,6 +170,7 @@ export class AuthController {
     const currentUser = await this.authService.findOneUserByMail(
       updatedUser.email
     );
+    await this.sessionService.createOrUpdateSession(currentUser.id);
 
     return currentUser;
   }

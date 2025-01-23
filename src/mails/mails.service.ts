@@ -182,11 +182,11 @@ export class MailsService {
           toolboxCandidateUrl: process.env.TOOLBOX_CANDIDATE_URL,
           toolboxCoachUrl: process.env.TOOLBOX_COACH_URL,
         },
-      },
-      {
-        // 4 jours après la création du compte
-        delay: 3600000 * 24 * 4,
       }
+      // {
+      //   // 4 jours après la création du compte
+      //   delay: 3600000 * 24 * 4,
+      // }
     );
   }
 
