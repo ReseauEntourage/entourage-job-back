@@ -170,17 +170,24 @@ export class MailsService {
   }
 
   async sendOnboardingJ4ContactAdviceMail(user: User) {
+    const roleString = getRoleString(user);
     return this.queuesService.addToWorkQueue(
       Jobs.SEND_MAIL,
       {
         toEmail: user.email,
         templateId: MailjetTemplates.ONBOARDING_J4_CONTACT_ADVICE,
         variables: {
+          subject:
+            roleString === 'Candidat'
+              ? 'Et si tu demandais un coup de main ? ✋'
+              : '10 façons de devenir un super coach 💡',
           firstName: user.firstName,
-          role: getRoleString(user),
+          role: roleString,
           zone: user.zone,
-          toolboxCandidateUrl: process.env.TOOLBOX_CANDIDATE_URL,
-          toolboxCoachUrl: process.env.TOOLBOX_COACH_URL,
+          toolboxUrl:
+            roleString === 'Candidat'
+              ? process.env.TOOLBOX_CANDIDATE_URL
+              : process.env.TOOLBOX_COACH_URL,
         },
       },
       {
