@@ -117,4 +117,14 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @IsString()
   @IsOptional()
   jobSearchDuration?: JobSearchDuration;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  structure?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  refererEmail?: string;
 }

@@ -41,6 +41,8 @@ export class UsersCreationService {
       | 'jobSearchDuration'
       | 'workingRight'
       | 'gender'
+      | 'structure'
+      | 'refererEmail'
     >
   ) {
     return this.externalDatabasesService.createExternalDBUser(
@@ -100,12 +102,16 @@ export class UsersCreationService {
     );
   }
 
+  async sendOnboardingJ1BAOMail(user: User) {
+    return this.mailsService.sendOnboardingJ1BAOMail(user);
+  }
+
   async sendOnboardingJ3ProfileCompletionMail(user: User) {
     return this.mailsService.sendOnboardingJ3ProfileCompletionMail(user);
   }
 
-  async sendOnboardingJ1BAOMail(user: User) {
-    return this.mailsService.sendOnboardingJ1BAOMail(user);
+  async sendOnboardingJ4ContactAdviceMail(user: User) {
+    return this.mailsService.sendOnboardingJ4ContactAdviceMail(user);
   }
 
   async sendMailsAfterMatching(candidateId: string) {

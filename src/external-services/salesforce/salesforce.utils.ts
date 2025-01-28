@@ -31,10 +31,16 @@ import {
   ExternalOfferOriginFilters,
 } from 'src/opportunities/opportunities.types';
 import { findOfferStatus } from 'src/opportunities/opportunities.utils';
+import {
+  Programs,
+  RegistrableUserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones, AnyCantFix } from 'src/utils/types';
 import {
+  Casquette,
   ContactProps,
   ContactRecordType,
   EventPropsWithProcessAndBinomeAndRecruiterId,
@@ -558,7 +564,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       TS_Prescripteur_Contact__c: workerSfIdAsContact,
       Prospect__c: workerSfIdAsProspect,
       Association_prescriptrice__c: associationSfId,
-      Company: 'Candidats LinkedOut',
+      Company: 'Candidats Entourage Pro',
       Comment_vous_nous_avez_connu__c: formatSalesforceValue<HeardAboutValue>(
         heardAbout,
         LeadHeardAbout
@@ -593,7 +599,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
 
     return {
       ...commonFields,
-      Company: company || 'Coachs LinkedOut',
+      Company: company || 'Coachs Entourage Pro',
       Title: position,
     } as SalesforceLead<T>;
   }
@@ -609,7 +615,7 @@ export const mapSalesforceContactFields = (
     position,
     department,
     companySfId,
-    casquette,
+    casquettes,
     birthDate,
     nationality,
     accommodation,
@@ -619,6 +625,7 @@ export const mapSalesforceContactFields = (
     workingExperience,
     jobSearchDuration,
     gender,
+    refererId,
   }: ContactProps,
   recordType: ContactRecordType
 ): SalesforceContact => {
@@ -634,7 +641,7 @@ export const mapSalesforceContactFields = (
     Title: position,
     AccountId: companySfId,
     Date_de_naissance__c: birthDate,
-    Casquettes_r_les__c: casquette,
+    Casquettes_r_les__c: casquettes.join(';'),
     Reseaux__c: 'LinkedOut',
     RecordTypeId: recordType,
     Antenne__c: formatDepartment(department),
@@ -669,6 +676,7 @@ export const mapSalesforceContactFields = (
       LeadResources
     ),
     Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
+    TS_prescripteur__c: refererId,
   };
 };
 
@@ -727,4 +735,22 @@ export function escapeQuery(query: string) {
 
 export function prependDuplicateIfCondition(value: string, condition: boolean) {
   return condition ? `bis_${value}` : value;
+}
+
+export function getCasquette(
+  role: RegistrableUserRole,
+  program: string
+): Casquette {
+  switch (role) {
+    case UserRoles.CANDIDATE:
+      return program === Programs.THREE_SIXTY
+        ? Casquette.CANDIDAT_360
+        : Casquette.CANDIDAT_COUP_DE_POUCE;
+    case UserRoles.COACH:
+      return program === Programs.THREE_SIXTY
+        ? Casquette.COACH_360
+        : Casquette.COACH_COUP_DE_POUCE;
+    case UserRoles.REFERER:
+      return Casquette.PRESCRIPTEUR;
+  }
 }
