@@ -23,6 +23,7 @@
     "db:migrate": "sequelize db:migrate",
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
+    "db:dump": "./dump-db-schema.sh",
     "prepare": "husky install"
   },
   "dependencies": {
