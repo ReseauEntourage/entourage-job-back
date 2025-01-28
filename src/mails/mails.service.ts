@@ -131,25 +131,6 @@ export class MailsService {
     });
   }
 
-  async sendOnboardingJ3ProfileCompletionMail(user: User) {
-    return this.queuesService.addToWorkQueue(
-      Jobs.SEND_MAIL,
-      {
-        toEmail: user.email,
-        templateId: MailjetTemplates.ONBOARDING_J3_PROFILE_COMPLETION,
-        variables: {
-          firstName: user.firstName,
-          role: getRoleString(user),
-          zone: user.zone,
-        },
-      },
-      {
-        //trois jours après la création du compte
-        delay: 3600000 * 24 * 3,
-      }
-    );
-  }
-
   async sendOnboardingJ1BAOMail(user: User) {
     return this.queuesService.addToWorkQueue(
       Jobs.SEND_MAIL,
@@ -163,8 +144,55 @@ export class MailsService {
         },
       },
       {
-        // un jour après la création du compte
+        // 1 jour après la création du compte
         delay: 3600000 * 24 * 1,
+      }
+    );
+  }
+
+  async sendOnboardingJ3ProfileCompletionMail(user: User) {
+    return this.queuesService.addToWorkQueue(
+      Jobs.SEND_MAIL,
+      {
+        toEmail: user.email,
+        templateId: MailjetTemplates.ONBOARDING_J3_PROFILE_COMPLETION,
+        variables: {
+          firstName: user.firstName,
+          role: getRoleString(user),
+          zone: user.zone,
+        },
+      },
+      {
+        // 3 jours après la création du compte
+        delay: 3600000 * 24 * 3,
+      }
+    );
+  }
+
+  async sendOnboardingJ4ContactAdviceMail(user: User) {
+    const roleString = getRoleString(user);
+    return this.queuesService.addToWorkQueue(
+      Jobs.SEND_MAIL,
+      {
+        toEmail: user.email,
+        templateId: MailjetTemplates.ONBOARDING_J4_CONTACT_ADVICE,
+        variables: {
+          subject:
+            roleString === 'Candidat'
+              ? 'Et si tu demandais un coup de main ? ✋'
+              : '10 façons de devenir un super coach 💡',
+          firstName: user.firstName,
+          role: roleString,
+          zone: user.zone,
+          toolboxUrl:
+            roleString === 'Candidat'
+              ? process.env.TOOLBOX_CANDIDATE_URL
+              : process.env.TOOLBOX_COACH_URL,
+        },
+      },
+      {
+        // 4 jours après la création du compte
+        delay: 3600000 * 24 * 4,
       }
     );
   }
@@ -887,7 +915,7 @@ export class MailsService {
       variables: {
         refererFirstName: referer.firstName,
         refererLastName: referer.lastName,
-        refererProfileUrl: `${process.env.FRONTEND_URL}/backoffice/admin/membres/${referer.id}`,
+        refererProfileUrl: `${process.env.FRONT_URL}/backoffice/admin/membres/${referer.id}`,
       },
     });
   }

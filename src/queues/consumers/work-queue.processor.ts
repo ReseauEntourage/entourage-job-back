@@ -27,7 +27,6 @@ import {
   CreateOrUpdateSalesforceTaskJob,
   CreateOrUpdateSalesforceUserJob,
   GenerateCVPDFJob,
-  GenerateCVPreviewJob,
   GenerateCVSearchStringJob,
   Jobs,
   NewsletterSubscriptionJob,
@@ -335,27 +334,6 @@ export class WorkQueueProcessor {
     return `PDF generated for User ${data.candidateId} : ${data.fileName}`;
   }
 
-  @Process(Jobs.GENERATE_CV_PREVIEW)
-  async processGenerateCVPreview(job: Job<GenerateCVPreviewJob>) {
-    const { data } = job;
-
-    const previewUrl = await this.cvsService.generatePreviewFromCV(
-      data.candidateId,
-      data.uploadedImg,
-      data.oldImg
-    );
-
-    await this.pusherService.sendEvent(
-      PusherChannels.CV_PREVIEW,
-      PusherEvents.CV_PREVIEW_DONE,
-      {
-        candidateId: data.candidateId,
-      }
-    );
-
-    return `Preview generated for User ${data.candidateId} : ${previewUrl}`;
-  }
-
   @Process(Jobs.CREATE_CV_SEARCH_STRING)
   async processGenerateCVSearchString(job: Job<GenerateCVSearchStringJob>) {
     const { data } = job;
@@ -434,6 +412,8 @@ export class WorkQueueProcessor {
         jobSearchDuration: data.jobSearchDuration,
         workingRight: data.workingRight,
         gender: data.gender,
+        refererEmail: data.refererEmail,
+        structure: data.structure,
       });
       return `Salesforce : created or updated user '${data.userId}'`;
     }

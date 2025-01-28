@@ -87,6 +87,12 @@ export class UserProfile extends Model {
   hasExternalCv: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @Default(false)
+  @Column
+  hasPicture: boolean;
+
+  @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column

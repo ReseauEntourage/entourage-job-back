@@ -40,3 +40,6 @@ lerna-debug.log*
 !.env.dist
 package-lock.json
 .vscode
+
+# Generated files
+create_database_structure?*.sql

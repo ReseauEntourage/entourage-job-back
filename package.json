@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.26.8",
+  "version": "2.26.9",
   "license": "ISC",
   "engines": {
     "node": "18.x"
@@ -23,6 +23,7 @@
     "db:migrate": "sequelize db:migrate",
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
+    "db:dump": "./dump-db-schema.sh",
     "prepare": "husky install"
   },
   "dependencies": {
