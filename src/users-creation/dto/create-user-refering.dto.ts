@@ -60,9 +60,9 @@ export class CreateUserReferingDto extends PickType(User, [
 
   @ApiProperty()
   @IsString()
-  materialInsecurity?: CandidateYesNoValue;
+  materialInsecurity: CandidateYesNoValue;
 
   @ApiProperty()
   @IsString()
-  networkInsecurity?: CandidateYesNoValue;
+  networkInsecurity: CandidateYesNoValue;
 }

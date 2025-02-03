@@ -37,10 +37,11 @@ export class UserSocialSituationsController {
     @Body(UpdateUserSocialSituationPipe)
     updateUserSocialSituationDto: UpdateUserSocialSituationDto
   ) {
-    const user =
-      this.userSocialSituationsService.findOneByCandidateId(candidateId);
+    const user = await this.userSocialSituationsService.findOneByCandidateId(
+      candidateId
+    );
 
-    if (!user) {
+    if (!user || !user.candidateId) {
       throw new NotFoundException();
     }
 
