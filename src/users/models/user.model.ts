@@ -49,6 +49,7 @@ import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { Share } from 'src/shares/models';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserSocialSituation } from 'src/user-social-situations/models/user-social-situation.model';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
 import { WhatsappByZone } from 'src/utils/types/WhatsappZone';
 import { UserCandidat } from './user-candidat.model';
@@ -216,6 +217,12 @@ export class User extends HistorizedModel {
     hooks: true,
   })
   candidat?: UserCandidat;
+
+  @HasOne(() => UserSocialSituation, {
+    foreignKey: 'candidateId',
+    hooks: true,
+  })
+  socialSituation?: UserSocialSituation;
 
   // si coach regarder coach
   @HasMany(() => UserCandidat, 'coachId')
