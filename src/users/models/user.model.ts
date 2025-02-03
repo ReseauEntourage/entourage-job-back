@@ -222,7 +222,7 @@ export class User extends HistorizedModel {
     foreignKey: 'candidateId',
     hooks: true,
   })
-  socialSituation?: UserSocialSituation;
+  userSocialSituation?: UserSocialSituation;
 
   // si coach regarder coach
   @HasMany(() => UserCandidat, 'coachId')

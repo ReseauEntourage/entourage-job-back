@@ -24,8 +24,6 @@ export class UserSocialSituationsService {
     candidateId: string,
     updateUserSocialSituationDto: UpdateUserSocialSituationDto
   ) {
-    const userSocialSituation = await this.findOneByCandidateId(candidateId);
-
     // Prepare the data for the external database and the database
     const {
       networkInsecurity,
@@ -35,10 +33,7 @@ export class UserSocialSituationsService {
     } = updateUserSocialSituationDto;
 
     // Update the data in the external database
-    await this.updateSocialSituationExternalDBUser(
-      userSocialSituation.candidateId,
-      externalDBData
-    );
+    await this.updateSocialSituationExternalDBUser(candidateId, externalDBData);
 
     // Prepare the data for the database
     const userSocialSituationDbData = {
@@ -47,6 +42,8 @@ export class UserSocialSituationsService {
       materialInsecurity,
       hasCompletedSurvey,
     };
+
+    const userSocialSituation = await this.findOneByCandidateId(candidateId);
 
     // Create the userSocialSituation to be saved in salesforce if it doesn't exist
     if (!userSocialSituation) {

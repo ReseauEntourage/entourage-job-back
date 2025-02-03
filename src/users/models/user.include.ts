@@ -89,7 +89,7 @@ export const UserCandidatInclude: Includeable[] = [
   },
   {
     model: UserSocialSituation,
-    as: 'socialSituation',
+    as: 'userSocialSituation',
     attributes: ['hasCompletedSurvey'],
   },
   {
