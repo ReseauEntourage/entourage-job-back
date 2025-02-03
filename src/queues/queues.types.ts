@@ -146,8 +146,8 @@ export interface CreateOrUpdateSalesforceTaskJob {
 
 export interface CreateOrUpdateSalesforceUserJob {
   userId: string;
-  program: Program;
-  birthDate: Date;
+  program?: Program;
+  birthDate?: Date;
   campaign?: string;
   nationality?: Nationality;
   accommodation?: CandidateAccommodation;

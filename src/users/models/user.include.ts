@@ -1,4 +1,5 @@
 import { Includeable } from 'sequelize';
+import { UserSocialSituation } from '../../user-social-situations/models/user-social-situation.model';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
@@ -85,6 +86,11 @@ export const UserCandidatInclude: Includeable[] = [
         ],
       },
     ],
+  },
+  {
+    model: UserSocialSituation,
+    as: 'socialSituation',
+    attributes: ['hasCompletedSurvey'],
   },
   {
     model: Organization,
