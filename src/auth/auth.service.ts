@@ -166,8 +166,4 @@ export class AuthService {
   async sendOnboardingJ3ProfileCompletionMail(user: User) {
     return this.mailsService.sendOnboardingJ3ProfileCompletionMail(user);
   }
-
-  async updateSession(user: User) {
-    return this.mailsService.sendOnboardingJ3ProfileCompletionMail(user);
-  }
 }

@@ -33,7 +33,6 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@UserPayload() user: User) {
-    // console.log('login', user.id);
     const logegdInUser = await this.authService.login(user);
     await this.sessionService.createOrUpdateSession(user.id);
     return logegdInUser;
@@ -159,8 +158,7 @@ export class AuthController {
   @ApiBearerAuth()
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
-    // console.log('current', id);
-    // we will update user to update lastConnection field
+    // Updating current user last connection date
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
     });
