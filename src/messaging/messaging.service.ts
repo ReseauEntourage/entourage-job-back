@@ -254,6 +254,10 @@ export class MessagingService {
   }
 
   async handleDailyConversationLimit(user: User, message: string) {
+    if (user.role === 'Admin') {
+      // Admins can create as many conversations as they want
+      return;
+    }
     const countDailyConversation = await this.countDailyConversations(user.id);
     if (countDailyConversation === 4 || countDailyConversation >= 7) {
       const slackMsgConfig: SlackBlockConfig =
