@@ -919,6 +919,14 @@ export class MailsService {
       },
     });
   }
+
+  async sendUserDeletionEmail(email: string) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: email,
+      templateId: MailjetTemplates.USER_ACCOUNT_DELETED,
+      variables: {},
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {
