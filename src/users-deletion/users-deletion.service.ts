@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { v4 as uuid } from 'uuid';
 import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { UpdateOpportunityUserDto } from 'src/opportunities/dto/update-opportunity-user.dto';
@@ -7,7 +8,7 @@ import { RevisionChangesService } from 'src/revisions/revision-changes.service';
 import { RevisionsService } from 'src/revisions/revisions.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
-import { UserCandidat } from 'src/users/models';
+import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { generateImageNamesToDelete } from 'src/users/users.utils';
@@ -120,5 +121,57 @@ export class UsersDeletionService {
 
   async cacheAllCVs() {
     await this.cvsService.sendCacheAllCVs();
+  }
+
+  async deleteCompleteUser(
+    user: User
+  ): Promise<{ cvsDeleted: number; userDeleted: number }> {
+    const { id, firstName, lastName, candidat } = user.toJSON();
+
+    await this.removeFiles(id, firstName, lastName);
+
+    await this.updateUser(id, {
+      firstName: 'Utilisateur',
+      lastName: 'supprimé',
+      email: `${Date.now()}@${uuid()}.deleted`,
+      phone: null,
+      address: null,
+    });
+
+    if (candidat?.url) {
+      await this.uncacheCandidateCV(candidat.url);
+    }
+
+    const cvsDeleted = await this.removeCandidateCVs(id);
+
+    await this.updateUserCandidatByCandidatId(id, {
+      note: null,
+      url: `deleted-${id.substring(0, 8)}`,
+    });
+
+    await this.cacheAllCVs();
+
+    const opportunityUsers = await this.findAllOpportunityUsersByCandidateId(
+      id
+    );
+
+    await this.updateOpportunityUsersByCandidateId(id, {
+      note: null,
+    });
+
+    await this.updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
+      id,
+      opportunityUsers.map((opportunityUser) => {
+        return opportunityUser.id;
+      })
+    );
+
+    await this.removeUserProfile(id);
+
+    const userDeleted = await this.removeUser(id);
+    return {
+      userDeleted,
+      cvsDeleted,
+    };
   }
 }
