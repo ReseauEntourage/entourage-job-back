@@ -356,7 +356,6 @@ export class WorkQueueProcessor {
       );
       return `Salesforce : created or updated offer '${data.opportunityId}'`;
     }
-
     return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
   }
 
