@@ -74,6 +74,8 @@ export class ExternalDatabasesService {
         throw new Error('Invalid gender value');
     }
 
+    console.log('ExternalDBService - createExternalDBUser', userId, otherInfo);
+
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_USER,
       {

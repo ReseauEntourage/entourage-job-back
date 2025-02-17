@@ -356,7 +356,6 @@ export class WorkQueueProcessor {
       );
       return `Salesforce : created or updated offer '${data.opportunityId}'`;
     }
-
     return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
   }
 
@@ -397,6 +396,7 @@ export class WorkQueueProcessor {
     job: Job<CreateOrUpdateSalesforceUserJob>
   ) {
     const { data } = job;
+    console.log('CREATE_OR_UPDATE_SALESFORCE_USER', data);
 
     if (process.env.ENABLE_SF === 'true') {
       await this.salesforceService.createOrUpdateSalesforceUser(data.userId, {
