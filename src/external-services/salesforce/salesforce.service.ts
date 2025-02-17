@@ -531,9 +531,6 @@ export class SalesforceService {
       .replace(/\+/g, '.')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
-
-    console.log('findContact - email In', email);
-    console.log('findContact - email transformé', sfEmail);
     const {
       records,
     }: { records: { Id: string; Casquettes_r_les__c: string }[] } =
@@ -544,13 +541,6 @@ export class SalesforceService {
           recordType ? `AND RecordTypeId = '${recordType}'` : ''
         } LIMIT 1`
       );
-    // await this.salesforce.query(
-    //   `SELECT Id, Casquettes_r_les__c, AccountId
-    //   FROM Contact
-    //   WHERE Email = 'dorian.pizzato.referer8@entourage.social' LIMIT 1`
-    // );
-
-    console.log('records', records);
     return records[0]
       ? {
           Id: records[0]?.Id,
@@ -558,10 +548,6 @@ export class SalesforceService {
             []) as Casquette[],
         }
       : null;
-    // return {
-    //   Id: '003AU00000w56PVYAY',
-    //   Casquettes_r_les__c: [Casquette.PRESCRIPTEUR],
-    // };
   }
 
   async findLead<T extends LeadRecordType>(email: string, recordType?: T) {
@@ -1309,10 +1295,6 @@ export class SalesforceService {
       ? (await this.findContact(refererEmail))?.Id
       : undefined;
 
-    console.log('refererid ? ', refererId);
-
-    // const refererId = '003AU00000w56PVYAY';
-
     // Contact doesnt exist in SF -> Create
     if (!contactSfId) {
       const leadSfId = await this.findLead(email);
@@ -1358,8 +1340,6 @@ export class SalesforceService {
         },
         ContactRecordTypeFromRole[role]
       )) as string;
-
-      console.log('createdContact ?', contactSfId);
 
       if (leadSfId) {
         // Hack to have a contact with the same mail and phone as the prospect if it exists
@@ -1890,7 +1870,6 @@ export class SalesforceService {
       structure?: string;
     }
   ) {
-    console.log('createOrUpdateSalesforceUser', userId, otherInfo.refererEmail);
     this.setIsWorker(true);
 
     const userToCreate = await this.findContactFromUserId(userId);

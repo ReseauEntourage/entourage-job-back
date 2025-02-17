@@ -322,11 +322,6 @@ export class UsersCreationController {
         createdUserId
       );
 
-      console.log(
-        'UserCreationController - create external db user, ',
-        createUserReferingDto
-      );
-
       await this.usersCreationService.createExternalDBUser(createdUserId, {
         program: createUserReferingDto.program,
         birthDate: createUserReferingDto.birthDate,
