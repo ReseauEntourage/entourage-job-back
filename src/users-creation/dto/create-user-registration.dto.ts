@@ -4,14 +4,8 @@ import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
 import {
-  CandidateAccommodation,
-  CandidateResource,
   CandidateYesNoNSPPValue,
-  JobSearchDuration,
-  Nationality,
-  StudiesLevel,
-  WorkingExperience,
-  YesNoJNSPRValue,
+  CandidateYesNoValue,
 } from 'src/contacts/contacts.types';
 import { HelpNeed } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
@@ -85,38 +79,11 @@ export class CreateUserRegistrationDto extends PickType(User, [
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
-  nationality?: Nationality;
+  materialInsecurity?: CandidateYesNoValue;
 
   @ApiProperty()
   @IsString()
-  @IsOptional()
-  accommodation?: CandidateAccommodation;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  hasSocialWorker?: YesNoJNSPRValue;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  resources?: CandidateResource;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  studiesLevel?: StudiesLevel;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  workingExperience?: WorkingExperience;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  jobSearchDuration?: JobSearchDuration;
+  networkInsecurity?: CandidateYesNoValue;
 
   @ApiProperty()
   @IsString()

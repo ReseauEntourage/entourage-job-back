@@ -47,7 +47,7 @@ import {
   UserProfileSearchBusinessLine,
 } from 'src/user-profiles/models';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
-import { User, UserCandidat } from 'src/users/models';
+import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
@@ -138,7 +138,9 @@ export class DatabaseHelper {
     @InjectModel(Conversation)
     private conversationModel: typeof Conversation,
     @InjectModel(Message)
-    private conversationParticipantModel: typeof ConversationParticipant
+    private conversationParticipantModel: typeof ConversationParticipant,
+    @InjectModel(UserSocialSituation)
+    private userSocialSituationModel: typeof UserSocialSituation
   ) {}
 
   async resetTestDB() {
@@ -189,6 +191,7 @@ export class DatabaseHelper {
       await this.organizationModel.truncate(destroyOptions);
       await this.organizationReferentModel.truncate(destroyOptions);
       await this.userCandidatModel.truncate(destroyOptions);
+      await this.userSocialSituationModel.truncate(destroyOptions);
       await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
     } catch (err) {
