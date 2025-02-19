@@ -205,6 +205,8 @@ export class AuthController {
       throw new NotFoundException();
     }
 
+    await this.authService.sendWelcomeMail(updatedUser);
+
     return;
   }
 
@@ -292,13 +294,7 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    await this.authService.sendWelcomeMail({
-      id: updatedUser.id,
-      firstName: updatedUser.firstName,
-      role: updatedUser.role,
-      zone: updatedUser.zone,
-      email: updatedUser.email,
-    });
+    await this.authService.sendWelcomeMail(updatedUser);
     await this.authService.sendOnboardingJ1BAOMail(updatedUser);
     await this.authService.sendOnboardingJ3ProfileCompletionMail(updatedUser);
     await this.authService.sendRefererCandidateHasVerifiedAccountMail(
