@@ -26,13 +26,12 @@ export class UsersDeletionController {
   @Delete('me')
   async removeOwnUser(@UserPayload('id') userId: string) {
     const user = await this.usersDeletionService.findOneUser(userId);
-    const userEmail = user.email;
 
     const { userDeleted, cvsDeleted } =
       await this.usersDeletionService.deleteCompleteUser(user);
 
     if (userDeleted) {
-      await this.mailService.sendUserDeletionEmail(userEmail);
+      await this.mailService.sendUserDeletionEmail(user);
     }
     return { userDeleted, cvsDeleted };
   }
