@@ -236,14 +236,6 @@ export class UsersCreationController {
             : undefined,
       });
 
-      // Send welcome mail only for BOOST and REFERER
-      if (
-        createUserRegistrationDto.program === Programs.BOOST ||
-        createUserRegistrationDto.role === UserRoles.REFERER
-      ) {
-        await this.usersCreationService.sendWelcomeMail(createdUser);
-      }
-
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
         await this.usersCreationService.sendAdminNewRefererNotificationMail(
           createdUser
