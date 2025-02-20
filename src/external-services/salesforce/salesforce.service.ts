@@ -527,13 +527,17 @@ export class SalesforceService {
     recordType?: ContactRecordType
   ): Promise<{ Id: string; Casquettes_r_les__c: Casquette[] } | null> {
     await this.checkIfConnected();
+    const sfEmail = email
+      .replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
     const {
       records,
     }: { records: { Id: string; Casquettes_r_les__c: string }[] } =
       await this.salesforce.query(
         `SELECT Id, Casquettes_r_les__c, AccountId
          FROM ${ObjectNames.CONTACT}
-         WHERE Email = '${email}' ${
+         WHERE Email = '${sfEmail}' ${
           recordType ? `AND RecordTypeId = '${recordType}'` : ''
         } LIMIT 1`
       );

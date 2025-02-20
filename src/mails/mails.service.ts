@@ -919,14 +919,27 @@ export class MailsService {
       },
     });
   }
+
+  async sendUserDeletionEmail(user: User) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.USER_ACCOUNT_DELETED,
+      variables: { role: getRoleString(user) },
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {
-  if (user.role === UserRoles.CANDIDATE) {
-    return 'Candidat';
-  } else if (user.role === UserRoles.COACH) {
-    return 'Coach';
-  } else {
-    return 'Admin';
+  switch (user.role) {
+    case UserRoles.CANDIDATE:
+      return 'Candidat';
+    case UserRoles.COACH:
+      return 'Coach';
+    case UserRoles.REFERER:
+      return 'Prescripteur';
+    case UserRoles.ADMIN:
+      return 'Admin';
+    default:
+      throw new Error('Unknown role');
   }
 };
