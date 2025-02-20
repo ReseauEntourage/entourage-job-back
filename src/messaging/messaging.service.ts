@@ -9,6 +9,7 @@ import {
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
 import {
@@ -254,7 +255,7 @@ export class MessagingService {
   }
 
   async handleDailyConversationLimit(user: User, message: string) {
-    if (user.role === 'Admin') {
+    if (user.role === UserRoles.ADMIN) {
       // Admins can create as many conversations as they want
       return;
     }
