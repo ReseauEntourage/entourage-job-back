@@ -29,25 +29,23 @@ export class UserSocialSituationsController {
 
   @UserPermissions(Permissions.CANDIDATE)
   @UseGuards(UserPermissionsGuard)
-  @Self('params.candidateId')
+  @Self('params.userId')
   @UseGuards(SelfGuard)
-  @Put('/:candidateId')
+  @Put('/:userId')
   async updateByUserId(
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body(UpdateUserSocialSituationPipe)
     updateUserSocialSituationDto: UpdateUserSocialSituationDto
   ) {
-    const user = await this.userSocialSituationsService.findOneByCandidateId(
-      candidateId
-    );
+    const user = await this.userSocialSituationsService.findOneByUserId(userId);
 
-    if (!user || !user.candidateId) {
+    if (!user || !user.userId) {
       throw new NotFoundException();
     }
 
     const updatedUserSocialSituation =
       await this.userSocialSituationsService.createOrUpdateSocialSituation(
-        candidateId,
+        userId,
         updateUserSocialSituationDto
       );
 

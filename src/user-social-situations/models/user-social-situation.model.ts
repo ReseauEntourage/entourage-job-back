@@ -20,7 +20,7 @@ export class UserSocialSituation extends Model {
   @PrimaryKey
   @ForeignKey(() => User)
   @Column
-  candidateId: string;
+  userId: string;
 
   @ApiProperty()
   @AllowNull(true)
