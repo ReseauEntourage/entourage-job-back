@@ -20,10 +20,15 @@ function escapeColumn(column: string) {
   return fn('replace', fn('lower', fn('unaccent', col(column))), '-', ' ');
 }
 
-export function searchInColumnWhereOption(column: string, query: string) {
+export function searchInColumnWhereOption(
+  column: string,
+  query: string,
+  caseInsensitive = false
+) {
   const escapedQuery = escapeQuery(query);
+  const operator = caseInsensitive ? Op.iLike : Op.like;
   return where(escapeColumn(column), {
-    [Op.like]: `%${escapedQuery}%`,
+    [operator]: `%${escapedQuery}%`,
   });
 }
 
