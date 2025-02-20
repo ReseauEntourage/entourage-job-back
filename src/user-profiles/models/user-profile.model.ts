@@ -3,6 +3,7 @@ import {
   IsArray,
   IsBoolean,
   IsDate,
+  IsEnum,
   IsOptional,
   IsString,
   Matches,
@@ -39,6 +40,13 @@ import { UserProfileSearchBusinessLine } from './user-profile-search-business-li
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
+export enum UnavailabilityReason {
+  NO_MORE_TIME = 'no_more_time',
+  VACATION = 'vacation',
+  ALREADY_FULL = 'already_full',
+  NO_MORE_HELP = 'no_more_help',
+}
+
 @Table({ tableName: 'User_Profiles' })
 export class UserProfile extends Model {
   @IsUUID(4)
@@ -66,6 +74,12 @@ export class UserProfile extends Model {
   @Default(true)
   @Column
   isAvailable: boolean;
+
+  @ApiProperty({ enum: UnavailabilityReason })
+  @IsEnum(UnavailabilityReason)
+  @AllowNull(true)
+  @Column
+  unavailabilityReason: UnavailabilityReason;
 
   @ApiProperty()
   @IsString()
