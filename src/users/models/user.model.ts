@@ -219,7 +219,7 @@ export class User extends HistorizedModel {
   candidat?: UserCandidat;
 
   @HasOne(() => UserSocialSituation, {
-    foreignKey: 'candidateId',
+    foreignKey: 'userId',
     hooks: true,
   })
   userSocialSituation?: UserSocialSituation;

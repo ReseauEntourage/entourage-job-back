@@ -81,6 +81,7 @@ import {
   getPostalCodeFromDepartment,
   mapProcessFromOpportunityUser,
   mapSalesforceContactFields,
+  mapSalesforceContactSocialSituationFields,
   mapSalesforceEventFields,
   mapSalesforceLeadFields,
   mapSalesforceOfferFields,
@@ -734,6 +735,27 @@ export class SalesforceService {
     });
   }
 
+  async updateContactSocialSituation(
+    contactSfId: string,
+    contactProps: Pick<
+      ContactProps,
+      | 'nationality'
+      | 'accommodation'
+      | 'hasSocialWorker'
+      | 'resources'
+      | 'studiesLevel'
+      | 'workingExperience'
+      | 'jobSearchDuration'
+    >
+  ) {
+    const socialSituationSfFields =
+      mapSalesforceContactSocialSituationFields(contactProps);
+    return this.updateRecord(ObjectNames.CONTACT, {
+      Id: contactSfId,
+      ...socialSituationSfFields,
+    });
+  }
+
   async updateContactCasquetteAndAppId(
     contactSfId: string,
     contactProps: Pick<ContactProps, 'casquettes' | 'id'>
@@ -1347,6 +1369,8 @@ export class SalesforceService {
       }
     } else {
       // Contact exist in SF -> Update
+
+      // Update the casquette field
       const uniqueCasquettes = contactSf.Casquettes_r_les__c;
       if (!uniqueCasquettes.includes(casquette)) {
         uniqueCasquettes.push(casquette);
@@ -1356,6 +1380,17 @@ export class SalesforceService {
         id,
         casquettes: uniqueCasquettes,
       });
+
+      // Update the socialSituation fields
+      contactSfId = (await this.updateContactSocialSituation(contactSfId, {
+        nationality,
+        accommodation,
+        hasSocialWorker,
+        resources,
+        studiesLevel,
+        workingExperience,
+        jobSearchDuration,
+      })) as string;
     }
 
     return contactSfId;
