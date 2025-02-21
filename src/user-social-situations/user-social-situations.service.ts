@@ -47,7 +47,7 @@ export class UserSocialSituationsService {
     if (!userSocialSituation) {
       return this.userSocialSituationModel.create({
         userId,
-        userSocialSituationDbData,
+        ...userSocialSituationDbData,
       });
     }
 
