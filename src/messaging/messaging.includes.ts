@@ -63,3 +63,25 @@ export const messagingMessageIncludes: Includeable[] = [
     paranoid: false,
   },
 ];
+
+// export const messagingConversationFeedbackIncludes: Includeable[] = [
+//   {
+//     model: Conversation,
+//     as: 'conversation',
+//     attributes: ['id'],
+//     include: [
+//       {
+//         model: User,
+//         as: 'participants',
+//         attributes: userAttributes,
+//         paranoid: false,
+//       },
+//     ],
+//   },
+//   {
+//     model: User,
+//     as: 'author',
+//     attributes: userAttributes,
+//     paranoid: false,
+//   },
+// ];
