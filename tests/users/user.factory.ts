@@ -7,7 +7,8 @@ import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
-import { User, UserCandidat } from 'src/users/models';
+import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
+import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Gender, UserRoles } from 'src/users/users.types';
 import { capitalizeNameAndTrim } from 'src/users/users.utils';
@@ -21,7 +22,8 @@ export class UserFactory implements Factory<User> {
     @InjectModel(UserCandidat)
     private userCandidatModel: typeof UserCandidat,
     private usersService: UsersService,
-    private userProfilesService: UserProfilesService
+    private userProfilesService: UserProfilesService,
+    private userSocialSituationsService: UserSocialSituationsService
   ) {}
 
   generateUser(props: Partial<User>): Partial<User> {
@@ -60,7 +62,8 @@ export class UserFactory implements Factory<User> {
     userAssociationsProps: {
       userCandidat?: Partial<UserCandidat>;
       userProfile?: Partial<UserProfile>;
-    } = { userCandidat: {}, userProfile: {} },
+      userSocialCondition?: Partial<UserSocialSituation>;
+    } = { userCandidat: {}, userProfile: {}, userSocialCondition: {} },
     insertInDB = true
   ): Promise<User> {
     props.isEmailVerified = true;
@@ -96,6 +99,13 @@ export class UserFactory implements Factory<User> {
         await this.userProfilesService.updateByUserId(userId, {
           ...userAssociationsProps.userProfile,
         });
+      }
+
+      if (userAssociationsProps?.userSocialCondition) {
+        await this.userSocialSituationsService.createOrUpdateSocialSituation(
+          userId,
+          userAssociationsProps.userSocialCondition
+        );
       }
     }
     const dbUser = await this.usersService.findOne(userData.id || userId);

@@ -27,6 +27,7 @@ import {
   isRoleIncluded,
 } from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
+import { convertYesNoToBoolean } from 'src/utils/yesNo';
 import {
   CreateUserDto,
   CreateUserPipe,
@@ -211,6 +212,18 @@ export class UsersCreationController {
         searchAmbitions: createUserRegistrationDto.searchAmbitions,
       });
 
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.networkInsecurity
+          ),
+        }
+      );
+
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
@@ -222,13 +235,6 @@ export class UsersCreationController {
             ? createUserRegistrationDto.campaign
             : undefined,
         workingRight: createUserRegistrationDto.workingRight,
-        nationality: createUserRegistrationDto.nationality,
-        accommodation: createUserRegistrationDto.accommodation,
-        hasSocialWorker: createUserRegistrationDto.hasSocialWorker,
-        resources: createUserRegistrationDto.resources,
-        studiesLevel: createUserRegistrationDto.studiesLevel,
-        workingExperience: createUserRegistrationDto.workingExperience,
-        jobSearchDuration: createUserRegistrationDto.jobSearchDuration,
         gender: createUserRegistrationDto.gender,
         structure:
           createdUser.role === UserRoles.REFERER
@@ -310,6 +316,18 @@ export class UsersCreationController {
         searchAmbitions: createUserReferingDto.searchAmbitions,
       });
 
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserReferingDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserReferingDto.networkInsecurity
+          ),
+        }
+      );
+
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
@@ -322,13 +340,6 @@ export class UsersCreationController {
             ? createUserReferingDto.campaign
             : undefined,
         workingRight: createUserReferingDto.workingRight,
-        nationality: createUserReferingDto.nationality,
-        accommodation: createUserReferingDto.accommodation,
-        hasSocialWorker: createUserReferingDto.hasSocialWorker,
-        resources: createUserReferingDto.resources,
-        studiesLevel: createUserReferingDto.studiesLevel,
-        workingExperience: createUserReferingDto.workingExperience,
-        jobSearchDuration: createUserReferingDto.jobSearchDuration,
         gender: createUserReferingDto.gender,
         refererEmail: referer.email,
       });
