@@ -140,14 +140,10 @@ export class CVsController {
         await this.cvsService.uploadCVImage(file, candidateId, status);
       } else if (oldImg) {
         // Else if there is an old image,we copy it to the new one status
-        try {
-          await this.s3Service.copyFile(
-            oldImg,
-            `${createCVDto.UserId}.${createCVDto.status}.jpg`
-          );
-        } catch (error) {
-          console.error('Error copying image', error);
-        }
+        await this.s3Service.copyFile(
+          oldImg,
+          `${createCVDto.UserId}.${createCVDto.status}.jpg`
+        );
       }
 
       const { firstName, lastName } = createdCV.user.candidat;
