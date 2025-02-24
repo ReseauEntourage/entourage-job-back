@@ -52,6 +52,11 @@ export class S3Service {
     return key;
   }
 
+  async copyFile(sourceKey: string, destKey: string) {
+    const { Body } = await this.download(sourceKey);
+    await this.upload(Body, 'image/jpeg', destKey);
+  }
+
   async deleteFiles(keys: string | string[]) {
     if (!Array.isArray(keys)) {
       keys = [keys];
@@ -89,5 +94,13 @@ export class S3Service {
     return s3GetSignedUrl(this.s3, getObjectCommand, {
       expiresIn: 60,
     });
+  }
+
+  private async download(key: string) {
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: process.env.AWSS3_BUCKET_NAME,
+      Key: key,
+    });
+    return this.s3.send(getObjectCommand);
   }
 }
