@@ -19,6 +19,7 @@ import _ from 'lodash';
 import { RequestWithAuthorizationHeader } from 'src/auth/auth.types';
 import { getTokenFromHeaders } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
+import { S3Service } from 'src/external-services/aws/s3.service';
 import {
   LinkedUser,
   LinkedUserGuard,
@@ -45,7 +46,10 @@ import { ParseCVPipe } from './dto/parse-cv.pipe';
 @ApiTags('CVs')
 @Controller('cv')
 export class CVsController {
-  constructor(private readonly cvsService: CVsService) {}
+  constructor(
+    private readonly cvsService: CVsService,
+    private readonly s3Service: S3Service
+  ) {}
 
   /*
   This route is used to create a new VERSION of the CV
@@ -85,8 +89,11 @@ export class CVsController {
 
     const urlImg = `images/${candidateId}.${createCVDto.status}.jpg`;
 
+    let oldImg;
+
     // enregistrement de l'image uniquement si ce n'est pas un autosave
     if (!autoSave && (createCVDto.urlImg || file)) {
+      oldImg = createCVDto.urlImg;
       createCVDto.urlImg = urlImg;
     }
 
@@ -126,6 +133,20 @@ export class CVsController {
           //   createCVDto.locations,
           //   createCVDto.businessLines
           // );
+        }
+      }
+
+      if (file) {
+        await this.cvsService.uploadCVImage(file, candidateId, status);
+      } else if (oldImg) {
+        // Else if there is an old image,we copy it to the new one status
+        try {
+          await this.s3Service.copyFile(
+            oldImg,
+            `${createCVDto.UserId}.${createCVDto.status}.jpg`
+          );
+        } catch (error) {
+          console.error('Error copying image', error);
         }
       }
 
