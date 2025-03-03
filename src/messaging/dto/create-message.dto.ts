@@ -12,4 +12,10 @@ export class CreateMessageDto extends PickType(Message, ['content'] as const) {
   @ApiProperty()
   @IsString()
   conversationId?: string;
+
+  @ApiProperty()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsOptional()
+  files?: string[];
 }
