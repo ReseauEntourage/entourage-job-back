@@ -3,6 +3,7 @@ import { IsString, MaxLength, MinLength } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -14,8 +15,10 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { Conversation } from './conversation.model';
+import { MessageMedia } from './message-media.model';
 
 @Table({ tableName: 'Messages' })
 export class Message extends Model {
@@ -60,4 +63,7 @@ export class Message extends Model {
 
   @BelongsTo(() => Conversation, 'conversationId')
   conversation: Conversation;
+
+  @BelongsToMany(() => Media, () => MessageMedia, 'messageId', 'mediaId')
+  medias: Media[];
 }

@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -7,8 +13,10 @@ import {
   slackChannels,
 } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
+import { MediasService } from 'src/medias/medias.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { CreateMessageDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
 import {
@@ -19,7 +27,7 @@ import {
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
 } from './messaging.utils';
-import { ConversationParticipant } from './models';
+import { ConversationParticipant, MessageMedia } from './models';
 import { Conversation } from './models/conversation.model';
 import { Message } from './models/message.model';
 
@@ -32,10 +40,44 @@ export class MessagingService {
     private conversationModel: typeof Conversation,
     @InjectModel(ConversationParticipant)
     private conversationParticipantModel: typeof ConversationParticipant,
+    @InjectModel(MessageMedia)
+    private messageMediaModel: typeof MessageMedia,
     private slackService: SlackService,
     private userService: UsersService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private mediaService: MediasService
   ) {}
+
+  /**
+   * User can participate to a conversation
+   */
+  async canParticipate(userId: string, createMessageDto: CreateMessageDto) {
+    if (!createMessageDto.conversationId && !createMessageDto.participantIds) {
+      throw new BadRequestException(
+        'Vous devez fournir un identifiant de conversation ou une liste de participants.'
+      );
+    }
+
+    // Ignore if the conversationId is not provided but the participantIds are
+    if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+      return true;
+    }
+
+    const conversation = await this.findConversation(
+      createMessageDto.conversationId
+    );
+    if (
+      !conversation.participants.some(
+        (participant) => participant.id === userId
+      )
+    ) {
+      throw new UnauthorizedException(
+        'Vous ne faites pas partie de cette conversation.'
+      );
+    }
+
+    return true;
+  }
 
   /**
    * Get all conversations for a user
@@ -127,8 +169,28 @@ export class MessagingService {
    * Create a new message
    * @param message - The message to create
    */
-  async createMessage(createMessageDto: Partial<Message>) {
+  async createMessage(
+    createMessageDto: Partial<
+      Message & {
+        files: Express.Multer.File[];
+        mediaIds?: string[];
+      }
+    >
+  ) {
+    if (createMessageDto.files) {
+      const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
+        createMessageDto.files,
+        createMessageDto.authorId
+      );
+      createMessageDto.mediaIds = mediaRecords.map((media) => media.id);
+    }
     const createdMessage = await this.messageModel.create(createMessageDto);
+    if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
+      await this.addMediasToMessage(
+        createdMessage.id,
+        createMessageDto.mediaIds
+      );
+    }
     // Set conversation as seen because the user has sent a message
     await this.setConversationHasSeen(
       createMessageDto.conversationId,
@@ -143,6 +205,18 @@ export class MessagingService {
     this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
     // Fetch the message to return it
     return message;
+  }
+
+  async addMediasToMessage(messageId: string, mediasId: string[]) {
+    if (mediasId.length === 0) {
+      return;
+    }
+    await this.messageMediaModel.bulkCreate(
+      mediasId.map((mediaId) => ({
+        messageId,
+        mediaId,
+      }))
+    );
   }
 
   async setConversationHasSeen(conversationId: string, userId: string) {
@@ -174,6 +248,17 @@ export class MessagingService {
       order: [['messages', 'createdAt', 'ASC']],
     });
 
+    const conversationMedias = await this.findMediasByConversationId(
+      conversationId
+    );
+
+    conversation.messages.forEach((message) => {
+      const messageMedias = conversationMedias.filter((media) =>
+        message.medias.map((m) => m.id).includes(media.id)
+      );
+      message.setDataValue('medias', messageMedias);
+    });
+
     if (!conversation) {
       return null;
     }
@@ -187,14 +272,7 @@ export class MessagingService {
         {
           model: Message,
           as: 'messages',
-          include: [
-            {
-              model: User,
-              as: 'author',
-              attributes: userAttributes,
-              paranoid: false,
-            },
-          ],
+          include: messagingMessageIncludes,
           order: [['createdAt', 'DESC']],
           limit: 1,
         },
@@ -237,9 +315,13 @@ export class MessagingService {
   }
 
   async findOneMessage(messageId: string) {
-    return this.messageModel.findByPk(messageId, {
+    const message = await this.messageModel.findByPk(messageId, {
       include: messagingMessageIncludes,
     });
+    const medias = await this.mediaService.findMediaByMessageId(messageId);
+    // Link medias to the message
+    message.setDataValue('medias', medias);
+    return message;
   }
 
   async countDailyConversations(userId: string) {
@@ -280,6 +362,14 @@ export class MessagingService {
       );
     }
   }
+
+  async findMediasByConversationId(conversationId: string) {
+    return this.mediaService.findMediasByConversationId(conversationId);
+  }
+
+  /////////////////////
+  // Private methods //
+  /////////////////////
 
   private async isUserInConversation(conversationId: string, userId: string) {
     return this.conversationParticipantModel.findOne({

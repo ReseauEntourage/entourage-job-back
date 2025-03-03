@@ -26,6 +26,7 @@ import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
+import { MediasModule } from './medias/medias.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
@@ -131,6 +132,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ReadDocumentsModule,
     MessagingModule,
     UserSocialSituationsModule,
+    MediasModule,
   ],
   providers: [
     {
@@ -174,6 +176,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OrganizationsModule,
     MessagesModule,
     MessagingModule,
+    MediasModule,
     UserSocialSituationsModule,
   ],
 })
