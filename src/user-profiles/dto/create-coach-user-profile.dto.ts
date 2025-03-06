@@ -7,6 +7,7 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'department',
   'currentJob',
   'isAvailable',
+  'unavailabilityReason',
   'networkBusinessLines',
   'helpOffers',
   'linkedinUrl',

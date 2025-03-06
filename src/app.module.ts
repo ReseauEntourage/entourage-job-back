@@ -35,6 +35,7 @@ import { RevisionsModule } from './revisions/revisions.module';
 import { SharesModule } from './shares/shares.module';
 import { SMSModule } from './sms/sms.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
+import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
 import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
@@ -129,6 +130,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MessagesModule,
     ReadDocumentsModule,
     MessagingModule,
+    UserSocialSituationsModule,
   ],
   providers: [
     {
@@ -172,6 +174,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OrganizationsModule,
     MessagesModule,
     MessagingModule,
+    UserSocialSituationsModule,
   ],
 })
 export class AppModule {}

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UpdateUserSocialSituationDto } from '../user-social-situations/dto/update-user-social-situation.dto';
 import { CreateUserRegistrationDto } from '../users-creation/dto';
 import { CandidateGender, CandidateGenders } from 'src/contacts/contacts.types';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -44,13 +45,6 @@ export class ExternalDatabasesService {
       | 'program'
       | 'campaign'
       | 'birthDate'
-      | 'nationality'
-      | 'accommodation'
-      | 'hasSocialWorker'
-      | 'resources'
-      | 'studiesLevel'
-      | 'workingExperience'
-      | 'jobSearchDuration'
       | 'workingRight'
       | 'gender'
       | 'refererEmail'
@@ -80,6 +74,27 @@ export class ExternalDatabasesService {
         userId,
         ...otherInfo,
         gender: conertedGenderType,
+      }
+    );
+  }
+
+  async updateExternalDBUserSocialSituation(
+    userId: string,
+    data: Pick<
+      UpdateUserSocialSituationDto,
+      | 'nationality'
+      | 'accommodation'
+      | 'resources'
+      | 'studiesLevel'
+      | 'workingExperience'
+      | 'jobSearchDuration'
+    >
+  ) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_USER,
+      {
+        userId,
+        ...data,
       }
     );
   }
