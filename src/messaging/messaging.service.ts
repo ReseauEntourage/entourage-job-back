@@ -16,6 +16,7 @@ import {
   messagingMessageIncludes,
 } from './messaging.includes';
 import {
+  determineIfShoudGiveFeedback,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
 } from './messaging.utils';
@@ -50,9 +51,10 @@ export class MessagingService {
           {
             model: Conversation,
             as: 'conversation',
-            include: [...messagingConversationIncludes(1)],
+            include: [...messagingConversationIncludes(10)],
           },
         ],
+        // attributes: ['createdAt', 'updatedAt', 'seenAt'],
         order: [
           [
             Sequelize.literal(
@@ -65,38 +67,112 @@ export class MessagingService {
 
     return conversationParticipants
       .filter((cp) => cp.conversation)
-      .map((cp) => cp.conversation);
+      .map((cp) => {
+        // const shouldGiveFeedback = determineIfShoudGiveFeedback(
+        //   cp.conversation,
+        //   cp.conversationFeedbackId
+        // );
+
+        return {
+          ...cp.conversation.toJSON(),
+          createdAt: cp.createdAt,
+          updatedAt: cp.updatedAt,
+          seenAt: cp.seenAt,
+          // TODO: change
+          shouldGiveFeedback: true,
+        };
+      });
+  }
+
+  /**
+   * Get a conversation by its ID
+   * @param conversationId - The ID of the conversation to fetch
+   * @param userId - The ID of the user fetching the conversation
+   * @returns The conversation if the user is a participant, otherwise null
+   */
+  async getConversationById(conversationId: string, userId: string) {
+    const conversationParticipants =
+      await this.conversationParticipantModel.findAll({
+        where: {
+          userId,
+          conversationId,
+        },
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [...messagingConversationIncludes()],
+          },
+        ],
+      });
+
+    const cp = conversationParticipants[0];
+
+    if (!cp) {
+      return null;
+    }
+
+    const shouldGiveFeedback = determineIfShoudGiveFeedback(
+      cp.conversation,
+      cp.conversationFeedbackId
+    );
+
+    return {
+      ...cp.conversation.toJSON(),
+      createdAt: cp.createdAt,
+      updatedAt: cp.updatedAt,
+      seenAt: cp.seenAt,
+      shouldGiveFeedback,
+    };
   }
 
   async getUnseenConversationsCount(userId: string) {
-    return this.conversationParticipantModel.count({
-      where: {
-        [Op.or]: [
-          {
-            seenAt: {
-              [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
-            },
-          },
-          {
-            seenAt: null,
-          },
-        ],
-        userId,
-      },
-      include: [
-        {
-          model: Conversation,
-          as: 'conversation',
-          include: [
+    const unseenConversations = await this.conversationParticipantModel.findAll(
+      {
+        where: {
+          [Op.or]: [
             {
-              model: Message,
-              as: 'messages',
-              attributes: ['createdAt'],
+              seenAt: {
+                [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
+              },
+            },
+            {
+              seenAt: null,
             },
           ],
+          userId,
         },
-      ],
-    });
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [
+              {
+                model: Message,
+                as: 'messages',
+                attributes: ['createdAt'],
+              },
+            ],
+          },
+        ],
+      }
+    );
+    const useenConversationIds = unseenConversations.map(
+      (c) => c.conversationId
+    );
+
+    const userConversations = await this.getConversationsForUser(userId);
+
+    // extract conversation ids where conversation.shouldGiveFeedback is true
+    const conversationsWithFeedbackRequired = userConversations
+      .filter((conv) => conv.shouldGiveFeedback)
+      .map((conv) => conv.id);
+
+    // count unique conversations ids in unseenConversationIds ad conversationsWithFeedbackRequired
+    return new Set([
+      ...useenConversationIds,
+      ...conversationsWithFeedbackRequired,
+    ]).size;
   }
 
   /**
@@ -157,28 +233,6 @@ export class MessagingService {
       conversationParticipant.seenAt = new Date();
       await conversationParticipant.save();
     }
-  }
-
-  /**
-   * Get a conversation by its ID
-   * @param conversationId - The ID of the conversation to fetch
-   * @param userId - The ID of the user fetching the conversation
-   * @returns The conversation if the user is a participant, otherwise null
-   */
-  async getConversationForUser(conversationId: string, userId: string) {
-    if (!(await this.isUserInConversation(conversationId, userId))) {
-      return null;
-    }
-    const conversation = await this.conversationModel.findByPk(conversationId, {
-      include: messagingConversationIncludes(),
-      order: [['messages', 'createdAt', 'ASC']],
-    });
-
-    if (!conversation) {
-      return null;
-    }
-
-    return conversation;
   }
 
   async findConversation(conversationId: string) {

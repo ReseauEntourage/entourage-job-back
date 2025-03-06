@@ -16,6 +16,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
+import { ConversationFeedback } from './conversation-feedback.model';
 import { Conversation } from './conversation.model';
 
 @Table({ tableName: 'ConversationParticipants' })
@@ -53,9 +54,20 @@ export class ConversationParticipant extends Model {
   @Column
   conversationId: string;
 
+  @ApiProperty()
+  @IsString()
+  @IsUUID(4)
+  @ForeignKey(() => ConversationFeedback)
+  @AllowNull(true)
+  @Column
+  conversationFeedbackId: string;
+
   @BelongsTo(() => User, 'userId')
   user: User;
 
   @BelongsTo(() => Conversation, 'conversationId')
   conversation: Conversation;
+
+  @BelongsTo(() => ConversationFeedback, 'conversationFeedbackId')
+  feedback: ConversationFeedback;
 }

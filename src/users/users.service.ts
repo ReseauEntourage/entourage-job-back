@@ -55,7 +55,7 @@ export class UsersService {
   async findOne(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
+      // include: UserCandidatInclude,
     });
   }
 

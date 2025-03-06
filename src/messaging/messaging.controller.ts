@@ -44,7 +44,7 @@ export class MessagingController {
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string
   ) {
     await this.messagingService.setConversationHasSeen(conversationId, userId);
-    return this.messagingService.getConversationForUser(conversationId, userId);
+    return this.messagingService.getConversationById(conversationId, userId);
   }
 
   @Post('messages')
@@ -55,23 +55,22 @@ export class MessagingController {
     @Body(new CreateMessagePipe())
     createMessageDto: CreateMessageDto
   ) {
-    // Create the conversation if needed
-    if (!createMessageDto.conversationId && createMessageDto.participantIds) {
-      await this.messagingService.handleDailyConversationLimit(
-        user,
-        createMessageDto.content
-      );
-      const participants = [...createMessageDto.participantIds];
-      // Add the current user to the participants
-      participants.push(userId);
-
-      const conversation = await this.messagingService.createConversation(
-        participants
-      );
-      createMessageDto.conversationId = conversation.id;
-    }
-    delete createMessageDto.participantIds;
     try {
+      // Create the conversation if needed
+      if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+        await this.messagingService.handleDailyConversationLimit(
+          user,
+          createMessageDto.content
+        );
+        const participants = [...createMessageDto.participantIds];
+        // Add the current user to the participants
+        participants.push(userId);
+
+        const conversation = await this.messagingService.createConversation(
+          participants
+        );
+        createMessageDto.conversationId = conversation.id;
+      }
       // Remove the participantIds property
       return await this.messagingService.createMessage({
         authorId: userId,

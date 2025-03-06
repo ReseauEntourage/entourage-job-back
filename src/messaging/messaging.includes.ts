@@ -3,6 +3,7 @@ import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import {
   messageAttributes,
+  conversationParticipantAttributes,
   userAttributes,
   userProfileAttributes,
 } from './messaging.attributes';
@@ -35,8 +36,12 @@ export const messagingConversationIncludes = (
     {
       model: User,
       as: 'participants',
-      paranoid: false,
       attributes: userAttributes,
+      paranoid: false,
+      through: {
+        attributes: conversationParticipantAttributes,
+        as: 'conversationParticipant',
+      },
       include: [messagingParticipantsInclude],
     },
   ];
@@ -53,6 +58,10 @@ export const messagingMessageIncludes: Includeable[] = [
         as: 'participants',
         attributes: userAttributes,
         paranoid: false,
+        through: {
+          attributes: conversationParticipantAttributes,
+          as: 'conversationParticipant',
+        },
       },
     ],
   },

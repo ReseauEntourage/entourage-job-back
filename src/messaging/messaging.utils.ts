@@ -68,3 +68,34 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
     ],
   };
 };
+
+export const determineIfShoudGiveFeedback = (
+  conversation: Conversation,
+  feedbackId: string | null
+): boolean => {
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+
+  const lastMessageDate = conversation.messages?.[0]?.createdAt;
+  const isLastMessageOlderThanThirtyDays = lastMessageDate
+    ? new Date(lastMessageDate) < thirtyDaysAgo
+    : true;
+
+  const hasAllParticipantsSentMessage = conversation.participants.every(
+    (participant) => {
+      return conversation.messages.some(
+        (message) => message.authorId === participant.id
+      );
+    }
+  );
+
+  const hasConversationFeedback = feedbackId !== null;
+
+  const shouldGiveFeedback =
+    isLastMessageOlderThanThirtyDays &&
+    hasAllParticipantsSentMessage &&
+    !hasConversationFeedback;
+
+  return shouldGiveFeedback;
+};

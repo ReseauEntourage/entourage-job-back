@@ -74,7 +74,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     database: pathname.replace('/', ''),
     autoLoadModels: true,
     synchronize: true,
-    logging: false,
+    logging: true,
   };
 }
 
