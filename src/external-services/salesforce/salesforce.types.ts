@@ -595,13 +595,13 @@ export interface ContactProps {
   id?: string;
   firstName?: string;
   lastName?: string;
-  email: string;
+  email?: string;
   phone?: string;
   birthDate?: Date;
   position?: string;
-  department: Department;
+  department?: Department;
   companySfId?: string;
-  casquettes: Casquette[];
+  casquettes?: Casquette[];
   nationality?: Nationality;
   accommodation?: CandidateAccommodation;
   hasSocialWorker?: YesNoJNSPRValue;

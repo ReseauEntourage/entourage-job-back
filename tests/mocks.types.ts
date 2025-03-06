@@ -23,6 +23,9 @@ export const S3Mocks: ProviderMock<S3Service> = {
   upload: jest.fn(async () => {
     return 'key';
   }),
+  copyFile: jest.fn(async () => {
+    return {};
+  }),
   deleteFiles: jest.fn(async () => {
     return {};
   }),
@@ -72,6 +75,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createAccount: jest.fn(),
   createContact: jest.fn(),
   updateContact: jest.fn(),
+  updateContactSocialSituation: jest.fn(),
   updateContactEmailAndPhone: jest.fn(),
   updateLeadPhoneAndRecordType: jest.fn(),
   createLead: jest.fn(),

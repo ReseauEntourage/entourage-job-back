@@ -605,49 +605,25 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
   }
 }
 
-export const mapSalesforceContactFields = (
-  {
-    id,
-    firstName,
-    lastName,
-    email,
-    phone,
-    position,
-    department,
-    companySfId,
-    casquettes,
-    birthDate,
-    nationality,
-    accommodation,
-    hasSocialWorker,
-    resources,
-    studiesLevel,
-    workingExperience,
-    jobSearchDuration,
-    gender,
-    refererId,
-  }: ContactProps,
-  recordType: ContactRecordType
-): SalesforceContact => {
+export const mapSalesforceContactSocialSituationFields = ({
+  nationality,
+  accommodation,
+  hasSocialWorker,
+  resources,
+  studiesLevel,
+  workingExperience,
+  jobSearchDuration,
+}: ContactProps): Pick<
+  SalesforceContact,
+  | 'Nationalit__c'
+  | 'Accompagnement_social_O_N__c'
+  | 'Plus_haut_niveau_de_formation_attein__c'
+  | 'Ann_es_d_exp_rience_professionnelle__c'
+  | 'Dur_e_de_recherche_d_emploi__c'
+  | 'Situation_d_h_bergement__c'
+  | 'Type_de_ressources__c'
+> => {
   return {
-    LastName:
-      lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
-    FirstName: firstName,
-    Email: email
-      ?.replace(/\+/g, '.')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''),
-    Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-    Title: position,
-    AccountId: companySfId,
-    Date_de_naissance__c: birthDate,
-    Casquettes_r_les__c: casquettes.join(';'),
-    Reseaux__c: 'LinkedOut',
-    RecordTypeId: recordType,
-    Antenne__c: formatDepartment(department),
-    MailingPostalCode: getPostalCodeFromDepartment(department),
-    ID_App_Entourage_Pro__c: id || '',
-    Source__c: 'Lead entrant',
     Nationalit__c: formatSalesforceValue<Nationality>(
       nationality,
       LeadNationalities
@@ -675,6 +651,63 @@ export const mapSalesforceContactFields = (
       resources,
       LeadResources
     ),
+  };
+};
+
+export const mapSalesforceContactFields = (
+  {
+    id,
+    firstName,
+    lastName,
+    email,
+    phone,
+    position,
+    department,
+    companySfId,
+    casquettes,
+    birthDate,
+    nationality,
+    accommodation,
+    hasSocialWorker,
+    resources,
+    studiesLevel,
+    workingExperience,
+    jobSearchDuration,
+    gender,
+    refererId,
+  }: ContactProps,
+  recordType: ContactRecordType
+): SalesforceContact => {
+  const socialSituationFields = mapSalesforceContactSocialSituationFields({
+    nationality,
+    accommodation,
+    hasSocialWorker,
+    resources,
+    studiesLevel,
+    workingExperience,
+    jobSearchDuration,
+  });
+
+  return {
+    LastName:
+      lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
+    FirstName: firstName,
+    Email: email
+      ?.replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''),
+    Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
+    Title: position,
+    AccountId: companySfId,
+    Date_de_naissance__c: birthDate,
+    Casquettes_r_les__c: casquettes.join(';'),
+    Reseaux__c: 'LinkedOut',
+    RecordTypeId: recordType,
+    Antenne__c: formatDepartment(department),
+    MailingPostalCode: getPostalCodeFromDepartment(department),
+    ID_App_Entourage_Pro__c: id || '',
+    Source__c: 'Lead entrant',
+    ...socialSituationFields,
     Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
     TS_prescripteur__c: refererId,
   };

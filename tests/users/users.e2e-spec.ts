@@ -13,14 +13,8 @@ import { Department } from 'src/common/locations/locations.types';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import {
-  CandidateResources,
   CandidateYesNoNSPP,
-  Nationalities,
-  YesNoJNSPR,
-  CandidateAccommodations,
-  StudiesLevels,
-  WorkingExperienceYears,
-  JobSearchDurations,
+  CandidateYesNo,
 } from 'src/contacts/contacts.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
@@ -319,6 +313,7 @@ describe('Users', () => {
             whatsappZoneCoachName,
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
+            userSocialSituation,
             ...candidate
           } = await userFactory.create(
             {
@@ -382,6 +377,7 @@ describe('Users', () => {
               whatsappZoneCoachUrl,
               whatsappZoneCoachQR,
               OrganizationId,
+              userSocialSituation,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -408,6 +404,7 @@ describe('Users', () => {
               OrganizationId: coachOrganizationId,
               referredCandidates: coachReferredCandidates,
               referer: coachReferer,
+              userSocialSituation: coachUserSocialSituation,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -499,6 +496,7 @@ describe('Users', () => {
               whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
               referredCandidates: coachReferredCandidates,
               refererId: coachRefererId,
+              userSocialSituation: coachUserSocialSituation,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -521,6 +519,7 @@ describe('Users', () => {
               refererId: candidateRefererId,
               referredCandidates: candidateReferredCandidates,
               referer: candidateReferer,
+              userSocialSituation: candidateUserSocialSituation,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -727,15 +726,10 @@ describe('Users', () => {
             password: user.password,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
@@ -788,6 +782,8 @@ describe('Users', () => {
             campaign: '1234',
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
           };
 
           const response: APIResponse<
@@ -838,6 +834,8 @@ describe('Users', () => {
             ...userOrganizationValues,
             password: user.password,
             birthDate: '1996-24-04',
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
           };
 
           const response: APIResponse<
@@ -862,7 +860,7 @@ describe('Users', () => {
             })
           );
         });
-        it('Should return 200 and a created candidate if missing optional fields', async () => {
+        it('Should return 201 and a created candidate if missing optional fields', async () => {
           const user = await userFactory.create(
             { role: UserRoles.CANDIDATE },
             {},
@@ -888,6 +886,8 @@ describe('Users', () => {
             password: user.password,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
           };
 
           const response: APIResponse<
@@ -1094,6 +1094,8 @@ describe('Users', () => {
             ...userProfileValues,
             password: user.password,
             program: Programs.THREE_SIXTY,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             birthDate: '1996-24-04',
           };
 
@@ -1157,15 +1159,10 @@ describe('Users', () => {
             ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
@@ -1220,6 +1217,8 @@ describe('Users', () => {
             ...userProfileValues,
             program: Programs.THREE_SIXTY,
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             birthDate: '1996-24-04',
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
           };
@@ -1314,15 +1313,10 @@ describe('Users', () => {
             ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
 
@@ -1365,15 +1359,10 @@ describe('Users', () => {
             ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
 
@@ -1416,15 +1405,10 @@ describe('Users', () => {
             ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
 
@@ -1467,15 +1451,10 @@ describe('Users', () => {
             ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
@@ -1519,15 +1498,10 @@ describe('Users', () => {
             ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
@@ -1558,33 +1532,20 @@ describe('Users', () => {
             { name: 'interview' },
           ];
 
-          const userValues = {
+          const userToSend = {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
             phone: user.phone,
             gender: user.gender,
-          };
-
-          const userProfileValues = {
             helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
-          };
-
-          const userToSend = {
-            ...userValues,
-            ...userProfileValues,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
+            materialInsecurity: CandidateYesNo.YES,
+            networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            nationality: Nationalities.EUROPEAN,
-            accommodation: CandidateAccommodations.INSERTION,
-            hasSocialWorker: YesNoJNSPR.YES,
-            resources: CandidateResources.AAH,
-            studiesLevel: StudiesLevels.BAC,
-            workingExperience: WorkingExperienceYears.BETWEEN_3_AND_10_YEARS,
-            jobSearchDuration: JobSearchDurations.BETWEEN_12_AND_24_MONTHS,
             searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
             searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
@@ -6044,6 +6005,7 @@ describe('Users', () => {
             whatsappZoneCoachUrl,
             whatsappZoneCoachQR,
             refererId,
+            userSocialSituation,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6060,6 +6022,7 @@ describe('Users', () => {
             refererId: coachRefererId,
             referer: coachReferer,
             referredCandidates: coachReferredCandidates,
+            userSocialSituation: coachUserSocialSituation,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -6097,6 +6060,7 @@ describe('Users', () => {
             refererId,
             referer,
             referredCandidates,
+            userSocialSituation,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -6110,6 +6074,7 @@ describe('Users', () => {
             whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
             whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
             referredCandidates: coachReferredCandidates,
+            userSocialSituation: coachUserSocialSituation,
             ...restCoach
           } = loggedInCoach.user;
 

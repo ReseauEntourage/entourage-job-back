@@ -4,7 +4,8 @@ import { ExternalDatabasesService } from 'src/external-databases/external-databa
 import { MailsService } from 'src/mails/mails.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
-import { User, UserCandidat } from 'src/users/models';
+import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
+import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { CreateUserRegistrationDto } from './dto';
@@ -17,7 +18,8 @@ export class UsersCreationService {
     private userProfilesService: UserProfilesService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
-    private externalDatabasesService: ExternalDatabasesService
+    private externalDatabasesService: ExternalDatabasesService,
+    private userSocialSituationService: UserSocialSituationsService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -32,13 +34,6 @@ export class UsersCreationService {
       | 'workingRight'
       | 'campaign'
       | 'birthDate'
-      | 'nationality'
-      | 'accommodation'
-      | 'hasSocialWorker'
-      | 'resources'
-      | 'studiesLevel'
-      | 'workingExperience'
-      | 'jobSearchDuration'
       | 'workingRight'
       | 'gender'
       | 'structure'
@@ -72,20 +67,6 @@ export class UsersCreationService {
     token: string
   ) {
     return this.mailsService.sendNewAccountMail(user, token);
-  }
-
-  async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
-  ) {
-    const { id, firstName, role, zone, email } = user;
-
-    return this.mailsService.sendWelcomeMail({
-      id,
-      firstName,
-      role,
-      zone,
-      email,
-    });
   }
 
   async sendVerificationMail(user: User) {
@@ -147,6 +128,19 @@ export class UsersCreationService {
     return this.userProfilesService.updateByUserId(
       userId,
       updateUserProfileDto
+    );
+  }
+
+  async updateUserSocialSituationByUserId(
+    userId: string,
+    updateUserSocialSituationDto: Partial<UserSocialSituation>
+  ) {
+    return this.userSocialSituationService.createOrUpdateSocialSituation(
+      userId,
+      {
+        networkInsecurity: updateUserSocialSituationDto.networkInsecurity,
+        materialInsecurity: updateUserSocialSituationDto.materialInsecurity,
+      }
     );
   }
 }

@@ -81,6 +81,7 @@ import {
   getPostalCodeFromDepartment,
   mapProcessFromOpportunityUser,
   mapSalesforceContactFields,
+  mapSalesforceContactSocialSituationFields,
   mapSalesforceEventFields,
   mapSalesforceLeadFields,
   mapSalesforceOfferFields,
@@ -527,13 +528,17 @@ export class SalesforceService {
     recordType?: ContactRecordType
   ): Promise<{ Id: string; Casquettes_r_les__c: Casquette[] } | null> {
     await this.checkIfConnected();
+    const sfEmail = email
+      .replace(/\+/g, '.')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
     const {
       records,
     }: { records: { Id: string; Casquettes_r_les__c: string }[] } =
       await this.salesforce.query(
         `SELECT Id, Casquettes_r_les__c, AccountId
          FROM ${ObjectNames.CONTACT}
-         WHERE Email = '${email}' ${
+         WHERE Email = '${sfEmail}' ${
           recordType ? `AND RecordTypeId = '${recordType}'` : ''
         } LIMIT 1`
       );
@@ -727,6 +732,27 @@ export class SalesforceService {
     return this.updateRecord(ObjectNames.CONTACT, {
       Id: contactSfId,
       ...record,
+    });
+  }
+
+  async updateContactSocialSituation(
+    contactSfId: string,
+    contactProps: Pick<
+      ContactProps,
+      | 'nationality'
+      | 'accommodation'
+      | 'hasSocialWorker'
+      | 'resources'
+      | 'studiesLevel'
+      | 'workingExperience'
+      | 'jobSearchDuration'
+    >
+  ) {
+    const socialSituationSfFields =
+      mapSalesforceContactSocialSituationFields(contactProps);
+    return this.updateRecord(ObjectNames.CONTACT, {
+      Id: contactSfId,
+      ...socialSituationSfFields,
     });
   }
 
@@ -1343,6 +1369,8 @@ export class SalesforceService {
       }
     } else {
       // Contact exist in SF -> Update
+
+      // Update the casquette field
       const uniqueCasquettes = contactSf.Casquettes_r_les__c;
       if (!uniqueCasquettes.includes(casquette)) {
         uniqueCasquettes.push(casquette);
@@ -1352,6 +1380,17 @@ export class SalesforceService {
         id,
         casquettes: uniqueCasquettes,
       });
+
+      // Update the socialSituation fields
+      contactSfId = (await this.updateContactSocialSituation(contactSfId, {
+        nationality,
+        accommodation,
+        hasSocialWorker,
+        resources,
+        studiesLevel,
+        workingExperience,
+        jobSearchDuration,
+      })) as string;
     }
 
     return contactSfId;
