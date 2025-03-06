@@ -16,6 +16,7 @@ import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
+import { CurrentUserInclude } from 'src/users/models/user.include';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
@@ -162,17 +163,18 @@ export class AuthController {
     // const startDate = new Date().getTime();
 
     // Updating current user last connection date
-    const currentUser = await this.authService.updateUser(id, {
+    const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
     });
-    if (!currentUser) {
+    if (!updatedUser) {
       throw new NotFoundException();
     }
 
     // console.log('after update user ', new Date().getTime() - startDate);
-    // const currentUser = await this.authService.findOneUserByMail(
-    //   updatedUser.email
-    // );
+    const currentUser = await this.authService.findOneUserByMail(
+      updatedUser.email,
+      CurrentUserInclude
+    );
     // console.log('after find user ', new Date().getTime() - startDate);
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
