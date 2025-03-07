@@ -156,6 +156,7 @@ export class UserProfilesService {
       limit,
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
+      ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
         ...getUserProfileInclude(role, businessLinesOptions, helpsOptions),
         {
@@ -165,14 +166,10 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
+            ...searchOptions,
           },
         },
       ],
-      where: {
-        ...searchOptions,
-        ...departmentsOptions,
-      },
-      subQuery: false,
     });
 
     const profiles = await this.userProfileModel.findAll({
