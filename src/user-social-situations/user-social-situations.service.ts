@@ -43,16 +43,16 @@ export class UserSocialSituationsService {
 
     const userSocialSituation = await this.findOneByUserId(userId);
 
-    // Create the userSocialSituation to be saved in salesforce if it doesn't exist
+    // Create the userSocialSituation to be saved in the database
     if (!userSocialSituation) {
-      return this.userSocialSituationModel.create({
+      return await this.userSocialSituationModel.create({
         userId,
         ...userSocialSituationDbData,
       });
     }
 
     // Update the data in the database
-    return userSocialSituation.update(userSocialSituationDbData);
+    return await userSocialSituation.update(userSocialSituationDbData);
   }
 
   private async updateSocialSituationExternalDBUser(
