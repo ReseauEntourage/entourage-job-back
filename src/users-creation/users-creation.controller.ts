@@ -212,18 +212,6 @@ export class UsersCreationController {
         searchAmbitions: createUserRegistrationDto.searchAmbitions,
       });
 
-      await this.usersCreationService.updateUserSocialSituationByUserId(
-        createdUserId,
-        {
-          materialInsecurity: convertYesNoToBoolean(
-            createUserRegistrationDto.materialInsecurity
-          ),
-          networkInsecurity: convertYesNoToBoolean(
-            createUserRegistrationDto.networkInsecurity
-          ),
-        }
-      );
-
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
@@ -241,6 +229,18 @@ export class UsersCreationController {
             ? createdUser.organization.name
             : undefined,
       });
+
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.networkInsecurity
+          ),
+        }
+      );
 
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
         await this.usersCreationService.sendAdminNewRefererNotificationMail(
@@ -316,18 +316,6 @@ export class UsersCreationController {
         searchAmbitions: createUserReferingDto.searchAmbitions,
       });
 
-      await this.usersCreationService.updateUserSocialSituationByUserId(
-        createdUserId,
-        {
-          materialInsecurity: convertYesNoToBoolean(
-            createUserReferingDto.materialInsecurity
-          ),
-          networkInsecurity: convertYesNoToBoolean(
-            createUserReferingDto.networkInsecurity
-          ),
-        }
-      );
-
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
@@ -343,6 +331,18 @@ export class UsersCreationController {
         gender: createUserReferingDto.gender,
         refererEmail: referer.email,
       });
+
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserReferingDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserReferingDto.networkInsecurity
+          ),
+        }
+      );
 
       await this.usersCreationService.sendFinalizeAccountReferedUser(
         createdUser,
