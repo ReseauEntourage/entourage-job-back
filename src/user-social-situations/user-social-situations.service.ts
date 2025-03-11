@@ -31,7 +31,8 @@ export class UserSocialSituationsService {
     } = updateUserSocialSituationDto;
 
     // Update the data in the external database
-    await this.updateSocialSituationExternalDBUser(userId, externalDBData);
+    if (Object.keys(externalDBData).length > 0)
+      await this.updateSocialSituationExternalDBUser(userId, externalDBData);
 
     // Prepare the data for the database
     const userSocialSituationDbData = {
