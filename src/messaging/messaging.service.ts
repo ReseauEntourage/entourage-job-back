@@ -9,6 +9,7 @@ import {
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
 import {
@@ -54,7 +55,6 @@ export class MessagingService {
             include: [...messagingConversationIncludes(10)],
           },
         ],
-        // attributes: ['createdAt', 'updatedAt', 'seenAt'],
         order: [
           [
             Sequelize.literal(
@@ -68,18 +68,17 @@ export class MessagingService {
     return conversationParticipants
       .filter((cp) => cp.conversation)
       .map((cp) => {
-        // const shouldGiveFeedback = determineIfShoudGiveFeedback(
-        //   cp.conversation,
-        //   cp.conversationFeedbackId
-        // );
-
+        const shouldGiveFeedback = determineIfShoudGiveFeedback(
+          cp.conversation,
+          cp.feedbackRating,
+          cp.feedbackDate
+        );
         return {
           ...cp.conversation.toJSON(),
+          shouldGiveFeedback,
           createdAt: cp.createdAt,
           updatedAt: cp.updatedAt,
           seenAt: cp.seenAt,
-          // TODO: change
-          shouldGiveFeedback: true,
         };
       });
   }
@@ -114,15 +113,16 @@ export class MessagingService {
 
     const shouldGiveFeedback = determineIfShoudGiveFeedback(
       cp.conversation,
-      cp.conversationFeedbackId
+      cp.feedbackRating,
+      cp.feedbackDate
     );
 
     return {
       ...cp.conversation.toJSON(),
+      shouldGiveFeedback,
       createdAt: cp.createdAt,
       updatedAt: cp.updatedAt,
       seenAt: cp.seenAt,
-      shouldGiveFeedback,
     };
   }
 
@@ -213,9 +213,9 @@ export class MessagingService {
     const message = await this.findOneMessage(createdMessage.id);
 
     // Send notification message received to the other participants
-    const otherParticipants = message.conversation.participants.filter(
-      (participant) => participant.id !== createMessageDto.authorId
-    );
+    const otherParticipants = message.conversation.participants
+      .filter((participant) => participant.id !== createMessageDto.authorId)
+      .map((participant) => participant.user);
     this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
     // Fetch the message to return it
     return message;
@@ -335,12 +335,24 @@ export class MessagingService {
     }
   }
 
-  private async isUserInConversation(conversationId: string, userId: string) {
-    return this.conversationParticipantModel.findOne({
-      where: {
-        conversationId,
-        userId,
-      },
+  /**
+   * Post a feedback on a conversation
+   */
+  async postFeedback(postFeedbackDto: PostFeedbackDto) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findByPk(
+        postFeedbackDto.conversationParticipantId
+      );
+
+    if (!conversationParticipant) {
+      return;
+    }
+
+    const updatedParticipant = await conversationParticipant.update({
+      feedbackRating: postFeedbackDto.rating,
+      feedbackDate: new Date(),
     });
+
+    return updatedParticipant;
   }
 }

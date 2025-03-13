@@ -9,10 +9,12 @@ export const userAttributes = [
 ];
 
 export const conversationParticipantAttributes = [
+  'id',
   'seenAt',
   'createdAt',
   'updatedAt',
-  'conversationFeedbackId',
+  'feedbackRating',
+  'feedbackDate',
 ];
 
 export const messageAttributes = ['id', 'content', 'createdAt', 'authorId'];

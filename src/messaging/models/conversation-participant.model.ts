@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsDateString, IsNumber, IsString } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -16,7 +16,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
-import { ConversationFeedback } from './conversation-feedback.model';
+// import { ConversationFeedback } from './conversation-feedback.model';
 import { Conversation } from './conversation.model';
 
 @Table({ tableName: 'ConversationParticipants' })
@@ -55,19 +55,18 @@ export class ConversationParticipant extends Model {
   conversationId: string;
 
   @ApiProperty()
-  @IsString()
-  @IsUUID(4)
-  @ForeignKey(() => ConversationFeedback)
+  @IsNumber()
   @AllowNull(true)
   @Column
-  conversationFeedbackId: string;
+  feedbackRating: number | null;
+
+  @Column
+  @IsDateString()
+  feedbackDate: Date;
 
   @BelongsTo(() => User, 'userId')
   user: User;
 
   @BelongsTo(() => Conversation, 'conversationId')
   conversation: Conversation;
-
-  @BelongsTo(() => ConversationFeedback, 'conversationFeedbackId')
-  feedback: ConversationFeedback;
 }

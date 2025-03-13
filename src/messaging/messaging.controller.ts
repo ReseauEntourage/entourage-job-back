@@ -10,7 +10,12 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { User } from 'src/users/models/user.model';
-import { CreateMessagePipe, CreateMessageDto } from './dto';
+import {
+  CreateMessagePipe,
+  CreateMessageDto,
+  PostFeedbackPipe,
+  PostFeedbackDto,
+} from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { CanParticipate } from './guards/can-participate.guard';
@@ -95,5 +100,17 @@ export class MessagingController {
       reportConversationDto,
       userId
     );
+  }
+
+  @Post('conversations/feedback')
+  async postConversationFeedback(
+    @Body(new PostFeedbackPipe())
+    postFeedbackDto: PostFeedbackDto
+  ) {
+    try {
+      return this.messagingService.postFeedback(postFeedbackDto);
+    } catch (error) {
+      console.error(error);
+    }
   }
 }

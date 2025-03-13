@@ -22,7 +22,7 @@ export const generateSlackMsgConfigConversationReported = (
       },
       {
         content: `*Participants à la conversation* :\n${conversation.participants
-          .map((participant: User) => participant.email)
+          .map((participant) => participant.user.email)
           .join(', ')}`,
       },
       {
@@ -69,18 +69,26 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
   };
 };
 
+/**
+ * Determine if the user can give feedback on a conversation
+ * 3 conditions :
+ *  - The last message in the conversation is older than 30 days
+ *  - All participants have sent at least one message
+ *  - The user has not already given feedback
+ */
 export const determineIfShoudGiveFeedback = (
   conversation: Conversation,
-  feedbackId: string | null
+  feedbackRating: number | null,
+  feedbackDate: Date | null
 ): boolean => {
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(now.getDate() - 30);
 
-  const lastMessageDate = conversation.messages?.[0]?.createdAt;
-  const isLastMessageOlderThanThirtyDays = lastMessageDate
-    ? new Date(lastMessageDate) < thirtyDaysAgo
-    : true;
+  const lastConversationMessageDate = conversation.messages?.[0]?.createdAt;
+  const isLastMessageOlderThanThirtyDays = lastConversationMessageDate
+    ? new Date(lastConversationMessageDate) < thirtyDaysAgo
+    : false;
 
   const hasAllParticipantsSentMessage = conversation.participants.every(
     (participant) => {
@@ -90,12 +98,12 @@ export const determineIfShoudGiveFeedback = (
     }
   );
 
-  const hasConversationFeedback = feedbackId !== null;
+  const userHasGivenFeedback = feedbackRating !== null || feedbackDate !== null;
 
   const shouldGiveFeedback =
     isLastMessageOlderThanThirtyDays &&
     hasAllParticipantsSentMessage &&
-    !hasConversationFeedback;
+    !userHasGivenFeedback;
 
   return shouldGiveFeedback;
 };

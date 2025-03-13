@@ -5,12 +5,7 @@ import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
 import { MessagingController } from './messaging.controller';
 import { MessagingService } from './messaging.service';
-import {
-  Message,
-  Conversation,
-  ConversationParticipant,
-  ConversationFeedback,
-} from './models';
+import { Message, Conversation, ConversationParticipant } from './models';
 
 @Module({
   imports: [
@@ -18,7 +13,6 @@ import {
       Conversation,
       Message,
       ConversationParticipant,
-      ConversationFeedback,
     ]),
     SlackModule,
     MailsModule,

@@ -30,7 +30,7 @@ export const messagingConversationIncludes = (
         },
       ],
       attributes: messageAttributes,
-      order: [['createdAt', 'DESC']],
+      // order: [['createdAt', 'DESC']],
       limit: limit,
     },
     {

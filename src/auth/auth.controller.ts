@@ -159,9 +159,6 @@ export class AuthController {
   @ApiBearerAuth()
   @Get('current')
   async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
-    // console.log('curernt');
-    // const startDate = new Date().getTime();
-
     // Updating current user last connection date
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
@@ -170,15 +167,11 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    // console.log('after update user ', new Date().getTime() - startDate);
     const currentUser = await this.authService.findOneUserByMail(
       updatedUser.email,
       CurrentUserInclude
     );
-    // console.log('after find user ', new Date().getTime() - startDate);
     await this.sessionService.createOrUpdateSession(currentUser.id);
-
-    // console.log('after session ', new Date().getTime() - startDate);
 
     return currentUser;
   }
