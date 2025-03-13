@@ -16,7 +16,6 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
-// import { ConversationFeedback } from './conversation-feedback.model';
 import { Conversation } from './conversation.model';
 
 @Table({ tableName: 'ConversationParticipants' })

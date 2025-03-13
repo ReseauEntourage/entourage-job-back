@@ -74,14 +74,14 @@ export class MessagingController {
         const conversation = await this.messagingService.createConversation(
           participants
         );
+
         createMessageDto.conversationId = conversation.id;
+
+        return await this.messagingService.createMessage({
+          authorId: userId,
+          ...createMessageDto,
+        });
       }
-      // Remove the participantIds property
-      return await this.messagingService.createMessage({
-        authorId: userId,
-        // Add createMessageDto properties without participantIds
-        ...createMessageDto,
-      });
     } catch (error) {
       console.error(error);
     }
