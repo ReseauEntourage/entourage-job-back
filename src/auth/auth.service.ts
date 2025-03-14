@@ -6,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Includeable } from 'sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
@@ -123,8 +122,8 @@ export class AuthService {
     return this.usersService.findOneComplete(id);
   }
 
-  async findOneUserByMail(email: string, include?: Includeable[]) {
-    return this.usersService.findOneByMail(email, include);
+  async findOneUserByMail(email: string) {
+    return this.usersService.findOneByMail(email);
   }
 
   async sendPasswordResetLinkMail(
