@@ -165,6 +165,7 @@ export class AuthController {
     if (!updatedUser) {
       throw new NotFoundException();
     }
+
     const currentUser = await this.authService.findOneUserByMail(
       updatedUser.email
     );
