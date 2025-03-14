@@ -79,10 +79,12 @@ export class CreateUserRegistrationDto extends PickType(User, [
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   materialInsecurity?: CandidateYesNoValue;
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   networkInsecurity?: CandidateYesNoValue;
 
   @ApiProperty()

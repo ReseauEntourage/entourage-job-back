@@ -23,6 +23,9 @@ export const S3Mocks: ProviderMock<S3Service> = {
   upload: jest.fn(async () => {
     return 'key';
   }),
+  copyFile: jest.fn(async () => {
+    return {};
+  }),
   deleteFiles: jest.fn(async () => {
     return {};
   }),

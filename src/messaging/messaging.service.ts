@@ -10,6 +10,7 @@ import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { PostFeedbackDto } from './dto';
+import { UserRoles } from 'src/users/users.types';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
 import {
@@ -308,6 +309,10 @@ export class MessagingService {
   }
 
   async handleDailyConversationLimit(user: User, message: string) {
+    if (user.role === UserRoles.ADMIN) {
+      // Admins can create as many conversations as they want
+      return;
+    }
     const countDailyConversation = await this.countDailyConversations(user.id);
     if (countDailyConversation === 4 || countDailyConversation >= 7) {
       const slackMsgConfig: SlackBlockConfig =
