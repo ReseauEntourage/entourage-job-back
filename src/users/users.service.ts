@@ -2,7 +2,7 @@ import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import { Op, QueryTypes, WhereOptions } from 'sequelize';
-import { FindOptions } from 'sequelize/types/model';
+import { FindOptions, Includeable } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
@@ -59,11 +59,11 @@ export class UsersService {
     });
   }
 
-  async findOneByMail(email: string) {
+  async findOneByMail(email: string, include?: Includeable[]) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
+      include: include || UserCandidatInclude,
     });
   }
 
