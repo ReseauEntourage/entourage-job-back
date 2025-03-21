@@ -895,7 +895,10 @@ export class MailsService {
     }
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: candidate.referer.email,
+      toEmail: {
+        to: candidate.referer.email,
+        bcc: getAdminMailsFromZone(candidate.zone).candidatesAdminMail,
+      },
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
         candidateFirstName: candidate.firstName,
