@@ -33,5 +33,5 @@ export class Conversation extends Model {
   messages: Message[];
 
   @BelongsToMany(() => User, () => ConversationParticipant)
-  participants: ConversationParticipant[];
+  participants: User[];
 }

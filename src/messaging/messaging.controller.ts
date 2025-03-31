@@ -60,28 +60,27 @@ export class MessagingController {
     @Body(new CreateMessagePipe())
     createMessageDto: CreateMessageDto
   ) {
+    // Create the conversation if needed
+    if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+      await this.messagingService.handleDailyConversationLimit(
+        user,
+        createMessageDto.content
+      );
+      const participants = [...createMessageDto.participantIds];
+      // Add the current user to the participants
+      participants.push(userId);
+
+      const conversation = await this.messagingService.createConversation(
+        participants
+      );
+
+      createMessageDto.conversationId = conversation.id;
+    }
     try {
-      // Create the conversation if needed
-      if (!createMessageDto.conversationId && createMessageDto.participantIds) {
-        await this.messagingService.handleDailyConversationLimit(
-          user,
-          createMessageDto.content
-        );
-        const participants = [...createMessageDto.participantIds];
-        // Add the current user to the participants
-        participants.push(userId);
-
-        const conversation = await this.messagingService.createConversation(
-          participants
-        );
-
-        createMessageDto.conversationId = conversation.id;
-
-        return await this.messagingService.createMessage({
-          authorId: userId,
-          ...createMessageDto,
-        });
-      }
+      return await this.messagingService.createMessage({
+        authorId: userId,
+        ...createMessageDto,
+      });
     } catch (error) {
       console.error(error);
     }

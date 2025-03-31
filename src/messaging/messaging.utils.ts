@@ -22,7 +22,7 @@ export const generateSlackMsgConfigConversationReported = (
       },
       {
         content: `*Participants à la conversation* :\n${conversation.participants
-          .map((participant) => participant.user.email)
+          .map((participant) => participant.email)
           .join(', ')}`,
       },
       {

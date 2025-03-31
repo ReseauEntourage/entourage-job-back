@@ -214,9 +214,9 @@ export class MessagingService {
     const message = await this.findOneMessage(createdMessage.id);
 
     // Send notification message received to the other participants
-    const otherParticipants = message.conversation.participants
-      .filter((participant) => participant.id !== createMessageDto.authorId)
-      .map((participant) => participant.user);
+    const otherParticipants = message.conversation.participants.filter(
+      (participant) => participant.id !== createMessageDto.authorId
+    );
     this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
     // Fetch the message to return it
     return message;
