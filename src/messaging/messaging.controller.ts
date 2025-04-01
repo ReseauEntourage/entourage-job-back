@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -60,9 +61,18 @@ export class MessagingController {
     @UploadedFiles() files?: Express.Multer.File[]
   ) {
     // Check if user can participate
-    if (!this.messagingService.canParticipate(userId, createMessageDto)) {
+    const canParticipate = await this.messagingService.canParticipate(
+      userId,
+      createMessageDto
+    );
+    if (!canParticipate) {
       throw new UnauthorizedException(
         'Vous ne pouvez pas participer à cette conversation.'
+      );
+    }
+    if (createMessageDto.content.length < 1) {
+      throw new BadRequestException(
+        'Le message doit contenir au moins un caractère.'
       );
     }
 
