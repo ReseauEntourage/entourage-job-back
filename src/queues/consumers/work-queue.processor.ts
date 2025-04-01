@@ -17,13 +17,9 @@ import {
   PusherEvents,
 } from 'src/external-services/pusher/pusher.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
-import { VonageService } from 'src/external-services/vonage/vonage.service';
-import { OpportunitiesService } from 'src/opportunities/opportunities.service';
 import {
   CacheAllCVJob,
   CacheCVJob,
-  CreateOrUpdateSalesforceEventJob,
-  CreateOrUpdateSalesforceOpportunityJob,
   CreateOrUpdateSalesforceTaskJob,
   CreateOrUpdateSalesforceUserJob,
   GenerateCVPDFJob,
@@ -32,16 +28,10 @@ import {
   NewsletterSubscriptionJob,
   Queues,
   SendMailJob,
-  SendNoResponseOfferJob,
-  SendOfferArchiveReminder,
-  SendOffersEmailAfterCVPublishJob,
   SendReminderActionsJob,
   SendReminderCVJob,
-  SendReminderExternalOffersJob,
   SendReminderInterviewTrainingJob,
-  SendReminderOfferJob,
   SendReminderVideoJob,
-  SendSMSJob,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -49,10 +39,8 @@ import { AnyCantFix } from 'src/utils/types';
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
-    private vonageService: VonageService,
     private pusherService: PusherService,
     private cvsService: CVsService,
-    private opportunitiesService: OpportunitiesService,
     private salesforceService: SalesforceService
   ) {}
 
@@ -129,67 +117,6 @@ export class WorkQueueProcessor {
     await this.mailjetService.sendContact(data);
 
     return `Contact '${data.email}' subscribed to newsletter`;
-  }
-
-  @Process(Jobs.SEND_SMS)
-  async processSendSMS(job: Job<SendSMSJob | SendSMSJob[]>) {
-    const { data } = job;
-
-    let sms: SendSMSJob[];
-
-    if (Array.isArray(data)) {
-      sms = data;
-    } else {
-      sms = [data];
-    }
-
-    await this.vonageService.sendSMS(sms);
-
-    return `SMS sent to '${JSON.stringify(
-      sms.map(({ toPhone }) => {
-        return toPhone;
-      })
-    )}'`;
-  }
-
-  @Process(Jobs.REMINDER_OFFER)
-  async processSendReminderOffer(job: Job<SendReminderOfferJob>) {
-    const { data } = job;
-
-    const sentToReminderOffer =
-      await this.opportunitiesService.sendReminderAboutOffer(
-        data.opportunityId,
-        data.candidateId
-      );
-
-    return sentToReminderOffer
-      ? `Reminder about opportunity '${data.opportunityId}' sent to '${
-          data.candidateId
-        }' (${JSON.stringify(sentToReminderOffer)})`
-      : `No reminder about opportunity '${data.opportunityId}' sent to '${data.candidateId}'`;
-  }
-
-  @Process(Jobs.NO_RESPONSE_OFFER)
-  async processSendNoResponseOffer(job: Job<SendNoResponseOfferJob>) {
-    const { data } = job;
-
-    const sentToNoResponseOffer =
-      await this.opportunitiesService.sendNoResponseOffer(data.opportunityId);
-
-    return sentToNoResponseOffer
-      ? `Mail sent to recruiter because no response on opportunity '${
-          data.opportunityId
-        }' (${JSON.stringify(sentToNoResponseOffer)})`
-      : `No mail sent to recruiter because no response on opportunity '${data.opportunityId}'`;
-  }
-
-  @Process(Jobs.OFFER_ARCHIVE_REMINDER)
-  async processArchiveReminder(job: Job<SendOfferArchiveReminder>) {
-    const { data } = job;
-
-    return await this.opportunitiesService.validateAndExecuteArchiveReminder(
-      data.opportunityId
-    );
   }
 
   @Process(Jobs.REMINDER_CV_10)
@@ -270,24 +197,6 @@ export class WorkQueueProcessor {
       : `No reminder about actions sent to '${data.candidateId}'`;
   }
 
-  @Process(Jobs.REMINDER_EXTERNAL_OFFERS)
-  async processSendReminderExternalOffers(
-    job: Job<SendReminderExternalOffersJob>
-  ) {
-    const { data } = job;
-
-    const sentToReminderExternalOffers =
-      await this.opportunitiesService.sendReminderAboutExternalOffers(
-        data.candidateId
-      );
-
-    return sentToReminderExternalOffers
-      ? `Reminder about external offers sent to '${
-          data.candidateId
-        }' (${JSON.stringify(sentToReminderExternalOffers)})`
-      : `No reminder about external offers sent to '${data.candidateId}'`;
-  }
-
   @Process(Jobs.CACHE_CV)
   async processCacheCV(job: Job<CacheCVJob>) {
     const { data } = job;
@@ -343,38 +252,6 @@ export class WorkQueueProcessor {
     return `CV search string created for User ${data.candidateId}`;
   }
 
-  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY)
-  async processCreateOrUpdateSalesforceOpportunity(
-    job: Job<CreateOrUpdateSalesforceOpportunityJob>
-  ) {
-    const { data } = job;
-
-    if (process.env.ENABLE_SF === 'true') {
-      await this.salesforceService.createOrUpdateSalesforceOpportunity(
-        data.opportunityId,
-        data.isSameOpportunity
-      );
-      return `Salesforce : created or updated offer '${data.opportunityId}'`;
-    }
-    return `Salesforce job ignored : creation or update of offer '${data.opportunityId}'`;
-  }
-
-  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT)
-  async processCreateOrUpdateSalesforceEvent(
-    job: Job<CreateOrUpdateSalesforceEventJob>
-  ) {
-    const { data } = job;
-
-    if (process.env.ENABLE_SF === 'true') {
-      await this.salesforceService.createOrUpdateSalesforceOpportunityUserEvent(
-        data.opportunityUserEventId
-      );
-      return `Salesforce : created or updated event '${data.opportunityUserEventId}'`;
-    }
-
-    return `Salesforce job ignored : creation or update of event '${data.opportunityUserEventId}'`;
-  }
-
   @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK)
   async processCreateOrUpdateSalesforceTask(
     job: Job<CreateOrUpdateSalesforceTaskJob>
@@ -418,20 +295,5 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of user '${data.userId}'`;
-  }
-
-  @Process(Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH)
-  async processSendOffersEmailAfterCVPublish(
-    job: Job<SendOffersEmailAfterCVPublishJob>
-  ) {
-    const { data } = job;
-    const sendOpportunity =
-      await this.opportunitiesService.sendRelevantOpportunities(
-        data.candidateId,
-        data.locations,
-        data.businessLines
-      );
-
-    console.log(sendOpportunity);
   }
 }

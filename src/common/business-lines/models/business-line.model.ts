@@ -12,7 +12,6 @@ import {
 } from 'sequelize-typescript';
 import { BusinessLineValue } from '../business-lines.types';
 import { CV, CVBusinessLine } from 'src/cvs/models';
-import { Opportunity, OpportunityBusinessLine } from 'src/opportunities/models';
 import {
   UserProfile,
   UserProfileNetworkBusinessLine,
@@ -45,14 +44,6 @@ export class BusinessLine extends WrapperModel {
 
   @BelongsToMany(() => CV, () => CVBusinessLine, 'BusinessLineId', 'CVId')
   CVs: CV[];
-
-  @BelongsToMany(
-    () => CV,
-    () => OpportunityBusinessLine,
-    'BusinessLineId',
-    'OpportunityId'
-  )
-  Opportunities: Opportunity[];
 
   @BelongsToMany(
     () => UserProfile,
