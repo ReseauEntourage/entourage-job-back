@@ -37,11 +37,16 @@ export class UserSocialSituationsController {
     @Body(UpdateUserSocialSituationPipe)
     updateUserSocialSituationDto: UpdateUserSocialSituationDto
   ) {
-    const user = await this.userSocialSituationsService.findOneByUserId(userId);
+    // Disabling checks:
+    // We moved social situation questions from the onboarding to the registration
+    // If a user had created an account before the move, but did not complete the onboarding before the move, then he could not complete the onboarding
+    // Thats because no social situation was created for him, the method would return a 404 and blocking the frontend
+    // If a user is in this case, we will create a social situation for him with NULL values for materialInsecurity and networkInsecurity
 
-    if (!user || !user.userId) {
-      throw new NotFoundException();
-    }
+    // const user = await this.userSocialSituationsService.findOneByUserId(userId);
+    // if (!user || !user.userId) {
+    //   throw new NotFoundException();
+    // }
 
     const updatedUserSocialSituation =
       await this.userSocialSituationsService.createOrUpdateSocialSituation(
