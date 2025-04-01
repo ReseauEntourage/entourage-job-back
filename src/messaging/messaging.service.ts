@@ -3,7 +3,6 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
@@ -72,9 +71,7 @@ export class MessagingService {
         (participant) => participant.id === userId
       )
     ) {
-      throw new UnauthorizedException(
-        'Vous ne faites pas partie de cette conversation.'
-      );
+      return false;
     }
 
     return true;
