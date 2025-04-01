@@ -60,13 +60,11 @@ export class MessagesService {
 
   async sendExternalMessageReceivedMail(
     candidate: User,
-    message: ExternalMessage,
-    isHiringOffer: boolean
+    message: ExternalMessage
   ) {
     return this.mailsService.sendExternalMessageReceivedMail(
       candidate,
-      message,
-      isHiringOffer
+      message
     );
   }
 

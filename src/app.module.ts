@@ -22,18 +22,15 @@ import { ContactsModule } from './contacts/contacts.module';
 import { CVsModule } from './cvs/cvs.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
-import { BitlyModule } from './external-services/bitly/bitly.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
-import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { SharesModule } from './shares/shares.module';
-import { SMSModule } from './sms/sms.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
 import { UsersModule } from './users/users.module';
@@ -108,7 +105,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     AuthModule,
     CVsModule,
     ExternalCvsModule,
-    OpportunitiesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -123,8 +119,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
-    SMSModule,
-    BitlyModule,
     ContactsModule,
     OrganizationsModule,
     MessagesModule,
@@ -153,7 +147,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersCreationModule,
     AuthModule,
     CVsModule,
-    OpportunitiesModule,
     BusinessLinesModule,
     LocationsModule,
     AmbitionsModule,
@@ -168,8 +161,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
-    SMSModule,
-    BitlyModule,
     ContactsModule,
     OrganizationsModule,
     MessagesModule,

@@ -27,13 +27,6 @@ import {
   ConversationParticipant,
   Message,
 } from 'src/messaging/models';
-import {
-  Opportunity,
-  OpportunityBusinessLine,
-  OpportunityUser,
-  OpportunityUserStatusChange,
-} from 'src/opportunities/models';
-import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
 import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { Revision, RevisionChange } from 'src/revisions/models';
@@ -81,16 +74,6 @@ export class DatabaseHelper {
     private businessLineModel: typeof BusinessLine,
     @InjectModel(CVBusinessLine)
     private cvBusinessLineModel: typeof CVBusinessLine,
-    @InjectModel(OpportunityBusinessLine)
-    private opportunityBusinessLineModel: typeof OpportunityBusinessLine,
-    @InjectModel(Opportunity)
-    private opportunityModel: typeof Opportunity,
-    @InjectModel(OpportunityUser)
-    private opportunityUserModel: typeof OpportunityUser,
-    @InjectModel(OpportunityUserEvent)
-    private opportunityUserEventModel: typeof OpportunityUserEvent,
-    @InjectModel(OpportunityUserStatusChange)
-    private opportunityUserStatusChangeModel: typeof OpportunityUserStatusChange,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
     @InjectModel(CVSkill)
@@ -167,7 +150,6 @@ export class DatabaseHelper {
       await this.cvContractModel.truncate(destroyOptions);
       await this.cvAmbitionModel.truncate(destroyOptions);
       await this.cvPassionModel.truncate(destroyOptions);
-      await this.opportunityBusinessLineModel.truncate(destroyOptions);
       await this.experienceSkillModel.truncate(destroyOptions);
       await this.formationModel.truncate(destroyOptions);
       await this.formationSkillModel.truncate(destroyOptions);
@@ -183,10 +165,6 @@ export class DatabaseHelper {
       await this.cvSearchModel.truncate(destroyOptions);
       await this.reviewModel.truncate(destroyOptions);
       await this.shareModel.truncate(destroyOptions);
-      await this.opportunityUserEventModel.truncate(destroyOptions);
-      await this.opportunityUserStatusChangeModel.truncate(destroyOptions);
-      await this.opportunityUserModel.truncate(destroyOptions);
-      await this.opportunityModel.truncate(destroyOptions);
       await this.cvModel.truncate(destroyOptions);
       await this.organizationModel.truncate(destroyOptions);
       await this.organizationReferentModel.truncate(destroyOptions);
