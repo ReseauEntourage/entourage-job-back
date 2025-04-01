@@ -15,6 +15,7 @@ import { Public, UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
+  NormalUserRoles,
   Permissions,
   Programs,
   RegistrableUserRoles,
@@ -212,18 +213,6 @@ export class UsersCreationController {
         searchAmbitions: createUserRegistrationDto.searchAmbitions,
       });
 
-      await this.usersCreationService.updateUserSocialSituationByUserId(
-        createdUserId,
-        {
-          materialInsecurity: convertYesNoToBoolean(
-            createUserRegistrationDto.materialInsecurity
-          ),
-          networkInsecurity: convertYesNoToBoolean(
-            createUserRegistrationDto.networkInsecurity
-          ),
-        }
-      );
-
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
@@ -242,20 +231,37 @@ export class UsersCreationController {
             : undefined,
       });
 
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.networkInsecurity
+          ),
+        }
+      );
+
+      // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
         await this.usersCreationService.sendAdminNewRefererNotificationMail(
           createdUser
         );
       }
 
+      // Coach or Candidate
+      if (isRoleIncluded(NormalUserRoles, createUserRegistrationDto.role)) {
+        await this.usersCreationService.sendOnboardingJ1BAOMail(createdUser);
+        await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
+          createdUser
+        );
+        await this.usersCreationService.sendOnboardingJ4ContactAdviceMail(
+          createdUser
+        );
+      }
+
       await this.usersCreationService.sendVerificationMail(createdUser);
-      await this.usersCreationService.sendOnboardingJ1BAOMail(createdUser);
-      await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
-        createdUser
-      );
-      await this.usersCreationService.sendOnboardingJ4ContactAdviceMail(
-        createdUser
-      );
 
       return createdUser;
     } catch (err) {
@@ -316,18 +322,6 @@ export class UsersCreationController {
         searchAmbitions: createUserReferingDto.searchAmbitions,
       });
 
-      await this.usersCreationService.updateUserSocialSituationByUserId(
-        createdUserId,
-        {
-          materialInsecurity: convertYesNoToBoolean(
-            createUserReferingDto.materialInsecurity
-          ),
-          networkInsecurity: convertYesNoToBoolean(
-            createUserReferingDto.networkInsecurity
-          ),
-        }
-      );
-
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
@@ -343,6 +337,18 @@ export class UsersCreationController {
         gender: createUserReferingDto.gender,
         refererEmail: referer.email,
       });
+
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserReferingDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserReferingDto.networkInsecurity
+          ),
+        }
+      );
 
       await this.usersCreationService.sendFinalizeAccountReferedUser(
         createdUser,
