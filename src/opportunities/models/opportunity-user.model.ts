@@ -133,24 +133,4 @@ export class OpportunityUser extends HistorizedModel {
       );
     }
   }
-
-  // kept in case => for now not working
-  // @AfterDestroy
-  // static async destroyAssociations(
-  //   destroyedOpportunityUser: OpportunityUser,
-  //   options: { transaction: Transaction }
-  // ) {
-  //   console.log('destruction opp: ')
-  //   console.log(destroyedOpportunityUser);
-  //   await OpportunityUserStatusChange.create(
-  //     {
-  //       oldStatus: destroyedOpportunityUser.status,
-  //       newStatus: null,
-  //       OpportunityUserId: destroyedOpportunityUser.id,
-  //       UserId: destroyedOpportunityUser.UserId,
-  //       OpportunityId: destroyedOpportunityUser.OpportunityId,
-  //     },
-  //     options?.transaction ? { transaction: options.transaction } : {}
-  //   );
-  // }
 }
