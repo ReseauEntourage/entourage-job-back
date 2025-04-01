@@ -22,7 +22,6 @@ import {
   CreateInternalMessageDto,
 } from './dto';
 import { MessagesService } from './messages.service';
-import { ExternalMessageSubjects } from './messages.types';
 
 @ApiTags('Message')
 @Controller('message')
@@ -55,13 +54,9 @@ export class MessagesController {
       createMessageDto
     );
 
-    const isHiringOffer =
-      createMessageDto.subject === ExternalMessageSubjects.HIRING;
-
     await this.messagesService.sendExternalMessageReceivedMail(
       candidate,
-      createdMessage,
-      isHiringOffer
+      createdMessage
     );
 
     await this.messagesService.createOrUpdateExternalDBTask(createdMessage.id);

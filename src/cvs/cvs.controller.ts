@@ -127,12 +127,6 @@ export class CVsController {
 
         if (!hasPublishedAtLeastOnce) {
           await this.cvsService.sendMailsAfterPublishing(candidateId);
-          // disable automatic recommandation
-          // await this.cvsService.sendOffersAfterPublishing(
-          //   candidateId,
-          //   createCVDto.locations,
-          //   createCVDto.businessLines
-          // );
         }
       }
 

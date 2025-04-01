@@ -2,7 +2,6 @@ import { Queue } from 'bull';
 import { Cache } from 'cache-manager';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { BitlyService } from 'src/external-services/bitly/bitly.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -43,22 +42,12 @@ export const CloudFrontMocks: ProviderMock<CloudFrontService> = {
   }),
 } as const;
 
-export const BitlyMocks: ProviderMock<BitlyService> = {
-  getShortenedOfferURL: jest.fn(async () => {
-    return 'url';
-  }),
-} as const;
-
 export const SalesforceMocks: ProviderMock<SalesforceService> = {
   loginToSalesforce: jest.fn(),
   refreshSalesforceInstance: jest.fn(),
   createRecord: jest.fn(),
   updateRecord: jest.fn(),
   upsertRecord: jest.fn(),
-  createOrUpdateProcess: jest.fn(),
-  createOrUpdateOffer: jest.fn(),
-  createOrUpdateOfferWithRecruiter: jest.fn(),
-  createOrUpdateEvent: jest.fn(),
   createOrUpdateTask: jest.fn(),
   searchAccountByName: jest.fn(),
   searchAccount: jest.fn(),
@@ -66,10 +55,6 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findContact: jest.fn(),
   findLead: jest.fn(),
   findBinomeByCandidateSfId: jest.fn(),
-  findEventById: jest.fn(),
-  findOfferById: jest.fn(),
-  findOfferRelationsById: jest.fn(),
-  findProcessById: jest.fn(),
   findTaskById: jest.fn(),
   findOwnerByLeadSfId: jest.fn(),
   createAccount: jest.fn(),
@@ -84,21 +69,12 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findOrCreateAccount: jest.fn(),
   findOrCreateCompanyContact: jest.fn(),
   findOrCreateLead: jest.fn(),
-  findOrCreateCompanyAndContactFromOffer: jest.fn(),
   findOrCreateLeadFromCompanyForm: jest.fn(),
   findOrCreateLeadFromContactCandidateForm: jest.fn(),
   findOrCreateHouseholdAccount: jest.fn(),
-  getProcessToCreate: jest.fn(),
-  createOrUpdateSalesforceProcess: jest.fn(),
-  createOrUpdateSalesforceOffer: jest.fn(),
-  createOrUpdateSalesforceEvent: jest.fn(),
-  createOrUpdateSalesforceOpportunityUserEvent: jest.fn(),
   createOrUpdateSalesforceExternalMessage: jest.fn(),
-  findOfferFromOpportunityId: jest.fn(),
-  findEventFromOpportunityUserEventId: jest.fn(),
   findTaskFromExternalMessageId: jest.fn(),
   findContactFromUserId: jest.fn(),
-  createOrUpdateSalesforceOpportunity: jest.fn(),
   createOrUpdateCompanySalesforceLead: jest.fn(),
   createOrUpdateSalesforceTask: jest.fn(),
   createOrUpdateContactCandidateSalesforceLead: jest.fn(),

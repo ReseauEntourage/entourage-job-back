@@ -3,7 +3,6 @@ import {
   BusinessLineValue,
 } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
-import { ContractValue } from 'src/common/contracts/contracts.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
@@ -39,11 +38,6 @@ import {
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
 
-import {
-  EventType,
-  ExternalOfferOrigin,
-  OfferStatus,
-} from 'src/opportunities/opportunities.types';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AnyCantFix } from 'src/utils/types';
@@ -78,11 +72,8 @@ export interface SalesforceError {
 export const ObjectNames = {
   ACCOUNT: 'Account',
   LEAD: 'Lead',
-  PROCESS: 'Processus_d_offres__c',
-  OFFER: 'Offre_d_emploi__c',
   CONTACT: 'Contact',
   BINOME: 'Binome__c',
-  EVENT: 'Event',
   CAMPAIGN: 'Campaign',
   CAMPAIGN_MEMBER: 'CampaignMember',
   TASK: 'Task',
@@ -94,11 +85,8 @@ export type ObjectName = (typeof ObjectNames)[keyof typeof ObjectNames];
 type SalesforceObjects<K extends LeadRecordType> = {
   [ObjectNames.ACCOUNT]: SalesforceAccount;
   [ObjectNames.LEAD]: SalesforceLead<K>;
-  [ObjectNames.PROCESS]: SalesforceProcess;
-  [ObjectNames.OFFER]: SalesforceOffer;
   [ObjectNames.CONTACT]: SalesforceContact;
   [ObjectNames.BINOME]: SalesforceBinome;
-  [ObjectNames.EVENT]: SalesforceEvent;
   [ObjectNames.CAMPAIGN]: SalesforceCampaign;
   [ObjectNames.CAMPAIGN_MEMBER]: SalesforceCampaignMember;
   [ObjectNames.TASK]: SalesforceTask;
@@ -149,7 +137,6 @@ export type AccountRecordType =
 
 export const EventRecordTypesIds = {
   BINOME: '0127Q000000UhqeQAC',
-  EVENT: '0127Q000000UhpqQAC',
 } as const;
 
 export type EventRecordType =
@@ -368,147 +355,6 @@ export enum Casquette {
 
 export interface SalesforceBinome {
   Id?: string;
-}
-
-export interface OfferAndProcessProps {
-  offer: OfferProps;
-  process: ProcessProps[];
-}
-
-export interface ProcessProps {
-  id: string;
-  firstName: string;
-  lastName: string;
-  company: string;
-  isPublic: boolean;
-  status: OfferStatus;
-  seen: boolean;
-  bookmarked: boolean;
-  archived: boolean;
-  recommended: boolean;
-  offerTitle: string;
-  offerId?: string;
-  binomeSfId?: string;
-  offerSfId?: string;
-}
-
-export interface SalesforceProcess {
-  Id?: string;
-  ID_Externe__c: string;
-  Name: string;
-  Statut__c: string;
-  Vue__c: boolean;
-  Favoris__c: boolean;
-  Archivee__c: boolean;
-  Recommandee__c: boolean;
-  Binome__c: string;
-  Offre_d_emploi__c: string;
-}
-
-export type OfferPropsWithRecruiterId = OfferProps & { recruiterSfId: string };
-
-export interface OfferProps {
-  id: string;
-  company: string;
-  title: string;
-  businessLines: BusinessLine[];
-  contract: ContractValue;
-  isPartTime: boolean;
-  isPublic: boolean;
-  isExternal: boolean;
-  link: string;
-  isValidated: boolean;
-  isArchived: boolean;
-  department: Department;
-  address: string;
-  workingHours: string;
-  salary: string;
-  message: string;
-  companyDescription: string;
-  description: string;
-  otherInfo: string;
-  driversLicense: boolean;
-  externalOrigin: ExternalOfferOrigin;
-  recruiterFirstName: string;
-  recruiterName: string;
-  recruiterMail: string;
-  recruiterPhone: string;
-  recruiterPosition: string;
-  contactMail: string;
-  date: Date;
-  companySfId?: string;
-  recruiterSfIdAsProspect?: string;
-  recruiterSfIdAsContact?: string;
-}
-
-export interface SalesforceOffer {
-  Id?: string;
-  ID__c: string;
-  Name: string;
-  Titre__c: string;
-  Entreprise_Recruteuse__c: string;
-  Secteur_d_activite_de_l_offre__c: string;
-  Type_de_contrat__c: string;
-  Temps_partiel__c: boolean;
-  Offre_publique__c: boolean;
-  Offre_externe__c: boolean;
-  Offre_archivee__c: boolean;
-  Offre_valid_e__c: boolean;
-  Lien_externe__c: string;
-  Lien_Offre_Backoffice__c: string;
-  Departement__c: Department | 'Inconnu';
-  Adresse_de_l_offre__c: string;
-  Jours_et_horaires_de_travail__c: string;
-  Salaire_et_complement__c: string;
-  Message_au_candidat__c: string;
-  Presentation_de_l_entreprise__c: string;
-  Descriptif_des_missions_proposees__c: string;
-  Autre_precision_sur_votre_besoin__c: string;
-  Permis_de_conduire_necessaire__c: boolean;
-  Source_de_l_offre__c: string;
-  Nom__c: string;
-  Prenom__c: string;
-  Mail_du_recruteur__c: string;
-  Telephone_du_recruteur__c: string;
-  Fonction_du_recruteur__c: string;
-  Mail_de_contact__c: string;
-  Date_de_cr_ation__c: Date;
-  Prenom_Nom_du_recruteur__c?: string;
-  Prenom_Nom_du_recruteur_Prospect__c?: string;
-  Contact_cree_existant__c: true;
-  Antenne__c: string;
-}
-
-export interface EventProps {
-  id: string;
-  department: Department;
-  type: EventType;
-  startDate: Date;
-  endDate: Date;
-  offerTitle: string;
-  candidateFirstName: string;
-  candidateMail?: string;
-  processId?: string;
-  recruiterMail?: string;
-}
-
-export type EventPropsWithProcessAndBinomeAndRecruiterId = EventProps & {
-  processSfId: string;
-  binomeSfId: string;
-  recruiterSfId: string;
-};
-
-export interface SalesforceEvent {
-  Id?: string;
-  WhoId: string;
-  WhatId: string;
-  ID_Externe__c: string;
-  Processus_d_offre__c: string;
-  Subject: string;
-  StartDateTime: Date;
-  IsAllDayEvent: boolean;
-  Antenne__c: string;
-  RecordTypeId: EventRecordType;
 }
 
 export interface TaskProps {
