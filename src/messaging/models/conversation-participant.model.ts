@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsDateString, IsNumber, IsString } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -52,6 +52,16 @@ export class ConversationParticipant extends Model {
   @AllowNull(false)
   @Column
   conversationId: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @AllowNull(true)
+  @Column
+  feedbackRating: number | null;
+
+  @Column
+  @IsDateString()
+  feedbackDate: Date;
 
   @BelongsTo(() => User, 'userId')
   user: User;
