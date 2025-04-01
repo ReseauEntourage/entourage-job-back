@@ -296,7 +296,7 @@ export class AuthController {
 
     await this.authService.sendWelcomeMail(updatedUser);
     await this.authService.sendOnboardingJ1BAOMail(updatedUser);
-    await this.authService.sendOnboardingJ3ProfileCompletionMail(updatedUser);
+    await this.authService.sendOnboardingJ3WebinarMail(updatedUser);
     await this.authService.sendRefererCandidateHasVerifiedAccountMail(
       updatedUser
     );
