@@ -10,7 +10,6 @@ import {
   DataType,
   Default,
   ForeignKey,
-  HasMany,
   IsUUID,
   Model,
   PrimaryKey,
@@ -19,7 +18,6 @@ import {
 } from 'sequelize-typescript';
 
 import { UserRoles } from '../users.types';
-import { CV } from 'src/cvs/models';
 import { User } from './user.model';
 
 @Table({ tableName: 'User_Candidats' })
@@ -87,12 +85,6 @@ export class UserCandidat extends Model {
 
   @BelongsTo(() => User, 'coachId')
   coach: User;
-
-  @HasMany(() => CV, {
-    sourceKey: 'candidatId',
-    foreignKey: 'UserId',
-  })
-  cvs: CV[];
 
   @BeforeCreate
   @BeforeUpdate

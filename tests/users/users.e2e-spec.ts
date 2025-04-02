@@ -6,12 +6,9 @@ import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
-import { Experience } from 'src/common/experiences/models';
+import { BusinessSector } from 'src/common/businessSectors/models';
 import { Department } from 'src/common/locations/locations.types';
-import { Review } from 'src/common/reviews/models';
-import { Skill } from 'src/common/skills/models';
+import { Occupation } from 'src/common/occupations/models';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
@@ -24,34 +21,14 @@ import { UserProfilesController } from 'src/user-profiles/user-profiles.controll
 import { HelpValue } from 'src/user-profiles/user-profiles.types';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
-import { CVStatuses, Programs, UserRoles } from 'src/users/users.types';
+import { Programs, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
-import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
-import { BusinessLinesHelper } from 'tests/common/business-lines/business-lines.helper';
-import { ContractsHelper } from 'tests/common/contracts/contracts.helper';
-import { ExperiencesSkillsHelper } from 'tests/common/experiences/experiences-skills.helper';
-import { ExperiencesHelper } from 'tests/common/experiences/experiences.helper';
-import { FormationsHelper } from 'tests/common/formations/formations.helper';
-import { LanguagesHelper } from 'tests/common/languages/languages.helper';
-import { LocationsHelper } from 'tests/common/locations/locations.helper';
-import { PassionsHelper } from 'tests/common/passions/passions.helper';
-import { ReviewsHelper } from 'tests/common/reviews/reviews.helper';
 import { SkillsHelper } from 'tests/common/skills/skills.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
-import { CVAmbitionsHelper } from 'tests/cvs/cv-ambitions.helper';
-import { CVBusinessLinesHelper } from 'tests/cvs/cv-business-lines.helper';
-import { CVContractsHelper } from 'tests/cvs/cv-contracts.helper';
-import { CVLanguagesHelper } from 'tests/cvs/cv-languages.helper';
-import { CVLocationsHelper } from 'tests/cvs/cv-locations.helper';
-import { CVPassionsHelper } from 'tests/cvs/cv-passions.helper';
-import { CVSearchesHelper } from 'tests/cvs/cv-searches.helper';
-import { CVSkillsHelper } from 'tests/cvs/cv-skills.helper';
-import { CVFactory } from 'tests/cvs/cv.factory';
-import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
@@ -70,27 +47,7 @@ describe('Users', () => {
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
   let userProfilesHelper: UserProfilesHelper;
-  let cvsHelper: CVsHelper;
-  let cvFactory: CVFactory;
-  let cvBusinessLinesHelper: CVBusinessLinesHelper;
-  let cvLocationsHelper: CVLocationsHelper;
-  let cvPassionsHelper: CVPassionsHelper;
-  let cvAmbitionsHelper: CVAmbitionsHelper;
-  let cvContractsHelper: CVContractsHelper;
-  let cvLanguagesHelper: CVLanguagesHelper;
-  let cvSkillsHelper: CVSkillsHelper;
-  let cvSearchesHelper: CVSearchesHelper;
-  let experiencesHelper: ExperiencesHelper;
-  let formationsHelper: FormationsHelper;
-  let businessLinesHelper: BusinessLinesHelper;
-  let locationsHelper: LocationsHelper;
-  let passionsHelper: PassionsHelper;
-  let ambitionsHelper: AmbitionsHelper;
-  let contractsHelper: ContractsHelper;
-  let languagesHelper: LanguagesHelper;
   let skillsHelper: SkillsHelper;
-  let experiencesSkillsHelper: ExperiencesSkillsHelper;
-  let reviewsHelper: ReviewsHelper;
   let organizationFactory: OrganizationFactory;
   let internalMessageFactory: InternalMessageFactory;
 
@@ -119,32 +76,6 @@ describe('Users', () => {
     userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
-    cvFactory = moduleFixture.get<CVFactory>(CVFactory);
-    cvBusinessLinesHelper = moduleFixture.get<CVBusinessLinesHelper>(
-      CVBusinessLinesHelper
-    );
-    cvLocationsHelper = moduleFixture.get<CVLocationsHelper>(CVLocationsHelper);
-    cvPassionsHelper = moduleFixture.get<CVPassionsHelper>(CVPassionsHelper);
-    cvAmbitionsHelper = moduleFixture.get<CVAmbitionsHelper>(CVAmbitionsHelper);
-    cvContractsHelper = moduleFixture.get<CVContractsHelper>(CVContractsHelper);
-    cvLanguagesHelper = moduleFixture.get<CVLanguagesHelper>(CVLanguagesHelper);
-    cvSkillsHelper = moduleFixture.get<CVSkillsHelper>(CVSkillsHelper);
-    experiencesHelper = moduleFixture.get<ExperiencesHelper>(ExperiencesHelper);
-    formationsHelper = moduleFixture.get<FormationsHelper>(FormationsHelper);
-    cvSearchesHelper = moduleFixture.get<CVSearchesHelper>(CVSearchesHelper);
-    businessLinesHelper =
-      moduleFixture.get<BusinessLinesHelper>(BusinessLinesHelper);
-    locationsHelper = moduleFixture.get<LocationsHelper>(LocationsHelper);
-    passionsHelper = moduleFixture.get<PassionsHelper>(PassionsHelper);
-    ambitionsHelper = moduleFixture.get<AmbitionsHelper>(AmbitionsHelper);
-    contractsHelper = moduleFixture.get<ContractsHelper>(ContractsHelper);
-    languagesHelper = moduleFixture.get<LanguagesHelper>(LanguagesHelper);
-    skillsHelper = moduleFixture.get<SkillsHelper>(SkillsHelper);
-    experiencesSkillsHelper = moduleFixture.get<ExperiencesSkillsHelper>(
-      ExperiencesSkillsHelper
-    );
-    reviewsHelper = moduleFixture.get<ReviewsHelper>(ReviewsHelper);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
     internalMessageFactory = moduleFixture.get<InternalMessageFactory>(
@@ -730,8 +661,8 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1163,8 +1094,8 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSector: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1220,7 +1151,7 @@ describe('Users', () => {
             materialInsecurity: CandidateYesNo.YES,
             networkInsecurity: CandidateYesNo.NO,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
           };
 
           const response: APIResponse<
@@ -1317,7 +1248,7 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1363,7 +1294,7 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1409,7 +1340,7 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1455,8 +1386,8 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1502,8 +1433,8 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1546,8 +1477,8 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1944,52 +1875,6 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
       });
-      describe('/search/candidates?query= - Search a public candidate where query string in email, first name or last name', () => {
-        let candidate: User;
-
-        beforeEach(async () => {
-          candidate = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-        });
-        it('Should return 200 and part of candidates if candidates have a published CV', async () => {
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PUBLISHED.value,
-          });
-
-          const publicCandidateInfo = [
-            {
-              id: candidate.id,
-              firstName: candidate.firstName,
-              lastName: candidate.lastName,
-              role: candidate.role,
-            },
-          ];
-
-          const response: APIResponse<UsersController['findCandidates']> =
-            await request(server).get(
-              `${route}/search/candidates?query=${candidate.firstName}`
-            );
-
-          expect(response.status).toBe(200);
-          expect(response.body).toStrictEqual(publicCandidateInfo);
-        });
-        it('Should return 200 and no candidates if candidates have not a published CV', async () => {
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PROGRESS.value,
-          });
-
-          const response: APIResponse<UsersController['findCandidates']> =
-            await request(server).get(
-              `${route}/search/candidates?query=${candidate.firstName}`
-            );
-
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(0);
-        });
-      });
       describe('/members - Read all members', () => {
         it('Should return 401 if user is not logged in', async () => {
           const response: APIResponse<UsersController['findMembers']> =
@@ -2195,7 +2080,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/members?zone[]=&employed[]=&hidden[]=&businessLines[]=&associatedUser[]=&cvStatus[]= - Read all members as admin with filters', () => {
+        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]=&associatedUser[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -2365,286 +2250,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the cvStatus filters', async () => {
-            const publishedCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const pendingCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const progressCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            await Promise.all(
-              publishedCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PENDING.value,
-                  version: 1,
-                });
-              })
-            );
-            const publishedLatestCVs = await Promise.all(
-              publishedCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PUBLISHED.value,
-                  version: 3,
-                });
-              })
-            );
-
-            await Promise.all(
-              pendingCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PUBLISHED.value,
-                  version: 3,
-                });
-              })
-            );
-            const pendingLatestCVs = await Promise.all(
-              pendingCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PENDING.value,
-                  version: 6,
-                });
-              })
-            );
-
-            await Promise.all(
-              progressCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PUBLISHED.value,
-                  version: 7,
-                });
-              })
-            );
-            await Promise.all(
-              progressCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PROGRESS.value,
-                  version: 10,
-                });
-              })
-            );
-
-            const expectedCandidatesIds = [
-              ...publishedCandidates.map(({ id }) => id),
-              ...pendingCandidates.map(({ id }) => id),
-            ];
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(4);
-            expect(expectedCandidatesIds).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-            expect(response.body).toEqual(
-              expect.arrayContaining([
-                ...pendingLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-                ...publishedLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-              ])
-            );
-          });
-          it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
-            const batCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const rhCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const aaCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            await Promise.all(
-              rhCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 1,
-                  },
-                  { businessLines: ['id'] }
-                );
-              })
-            );
-            const rhLatestCVs = await Promise.all(
-              rhCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 4,
-                  },
-                  { businessLines: ['rh', 'aa'] }
-                );
-              })
-            );
-
-            await Promise.all(
-              batCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 2,
-                  },
-                  { businessLines: ['id'] }
-                );
-              })
-            );
-            const batLatestCVs = await Promise.all(
-              batCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 7,
-                  },
-                  { businessLines: ['bat', 'asp'] }
-                );
-              })
-            );
-            await Promise.all(
-              aaCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 5,
-                  },
-                  { businessLines: ['id'] }
-                );
-              })
-            );
-
-            await Promise.all(
-              aaCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 6,
-                  },
-                  { businessLines: ['aa', 'pr'] }
-                );
-              })
-            );
-
-            const expectedCandidatesIds = [
-              ...batCandidates.map(({ id }) => id),
-              ...rhCandidates.map(({ id }) => id),
-            ];
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(4);
-            expect(expectedCandidatesIds).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-            expect(response.body).toEqual(
-              expect.arrayContaining([
-                ...rhLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          businessLines: expect.arrayContaining([
-                            expect.objectContaining({
-                              name: 'rh',
-                            }),
-                          ]),
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-                ...batLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          businessLines: expect.arrayContaining([
-                            expect.objectContaining({
-                              name: 'bat',
-                            }),
-                          ]),
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-              ])
-            );
-          });
           it('Should return 200, and all the candidates that matches the associatedUser filters', async () => {
             const coaches = await databaseHelper.createEntities(
               userFactory,
@@ -2758,19 +2363,6 @@ describe('Users', () => {
               });
 
             await Promise.all(
-              lyonAssociatedCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 4,
-                    status: CVStatuses.PUBLISHED.value,
-                  },
-                  { businessLines: ['rh', 'aa'] }
-                );
-              })
-            );
-
-            await Promise.all(
               lyonAssociatedCandidates.map(async (candidate, index) => {
                 return userCandidatsHelper.associateCoachAndCandidate(
                   lyonAssociatedCoaches[index],
@@ -2786,7 +2378,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&cvStatus[]=${CVStatuses.PUBLISHED.value}&businessLines[]=rh&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&businessSectors[]=rh&associatedUser[]=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2876,65 +2468,6 @@ describe('Users', () => {
           });
         });
       });
-      describe('/members/count - Count all pending members', () => {
-        it('Should return 403 if user is not a logged in admin', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          const response: APIResponse<
-            UsersController['countSubmittedCVMembers']
-          > = await request(server)
-            .get(`${route}/members/count`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 200 and count of members with pending CVs', async () => {
-          const loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-
-          const pendingCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            }
-          );
-
-          const progressCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            }
-          );
-
-          await Promise.all(
-            pendingCandidates.map(async ({ id }) => {
-              return cvFactory.create({
-                UserId: id,
-                status: CVStatuses.PENDING.value,
-              });
-            })
-          );
-          await Promise.all(
-            progressCandidates.map(async ({ id }) => {
-              return cvFactory.create({
-                UserId: id,
-                status: CVStatuses.PROGRESS.value,
-              });
-            })
-          );
-
-          const response: APIResponse<
-            UsersController['countSubmittedCVMembers']
-          > = await request(server)
-            .get(`${route}/members/count`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.pendingCVs).toBe(2);
-        });
-      });
     });
     describe('R - Read 1 Profile', () => {
       describe('/profile/:userId - Get user profile', () => {
@@ -2947,9 +2480,8 @@ describe('Users', () => {
             {
               userProfile: {
                 department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+                businessSectors: [{ name: 'id' }] as BusinessSector[],
+                occupations: [{ name: 'développeur' }] as Occupation[],
                 helpNeeds: [{ name: 'network' }] as HelpNeed[],
                 helpOffers: [{ name: 'network' }] as HelpOffer[],
               },
@@ -2997,92 +2529,6 @@ describe('Users', () => {
               lastSentMessage: internalMessageSent.createdAt.toISOString(),
             })
           );
-        });
-        it('Should return 200, and cvUrl if user profile is a candidate not hidden CV', async () => {
-          const candidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-              userCandidat: {
-                hidden: false,
-              },
-            }
-          );
-
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server)
-              .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Bearer ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...userProfilesHelper.mapUserProfileFromUser(candidate),
-              cvUrl: candidate.candidat.url,
-            })
-          );
-        });
-        it('Should return 200, and no cvUrl if user profile is a candidate with hidden CV', async () => {
-          const candidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-              userCandidat: {
-                hidden: true,
-              },
-            }
-          );
-
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server)
-              .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Bearer ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(candidate)
-            )
-          );
-          expect(response.body.cvUrl).toBeFalsy();
-        });
-        it('Should return 200, and no cvUrl if user profile is not a candidate', async () => {
-          const coach = await userFactory.create(
-            { role: UserRoles.COACH },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-            }
-          );
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server)
-              .get(`${route}/profile/${coach.id}`)
-              .set('authorization', `Bearer ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(coach)
-            )
-          );
-          expect(response.body.cvUrl).toBeFalsy();
         });
       });
       describe('/profile/recommendations/:userId - Get user recommendations', () => {
@@ -3179,7 +2625,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
@@ -3198,8 +2644,8 @@ describe('Users', () => {
                 userProfile: {
                   department: 'Rhône (69)',
                   isAvailable: true,
-                  searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                  searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  occupations: [{ name: 'peintre' }] as Occupation[],
+                  businessSectors: [{ name: 'bat' }] as BusinessSector[],
                   helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 },
               }
@@ -3238,7 +2684,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
@@ -3256,8 +2702,8 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                occupations: [{ name: 'peintre' }] as Occupation[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
@@ -3272,8 +2718,8 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: false,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                occupations: [{ name: 'peintre' }] as Occupation[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
@@ -3295,8 +2741,8 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                occupations: [{ name: 'peintre' }] as Occupation[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
@@ -3336,11 +2782,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3360,12 +2806,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Aisne (02)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3375,7 +2821,7 @@ describe('Users', () => {
             }
           );
 
-          const candidate2BusinessLinesInCommon = await userFactory.create(
+          const candidate2BusinessSectorsInCommon = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
               zone: AdminZones.LILLE,
@@ -3384,12 +2830,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'cd' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3408,12 +2854,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3425,7 +2871,7 @@ describe('Users', () => {
 
           const newUsersToRecommend = [
             candidateSameRegion,
-            candidate2BusinessLinesInCommon,
+            candidate2BusinessSectorsInCommon,
             candidate2HelpsInCommon,
           ].sort((userA, userB) =>
             moment(userB.createdAt).diff(userA.createdAt)
@@ -3441,12 +2887,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Paris (75)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3466,12 +2912,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'interview' },
                   { name: 'cv' },
@@ -3490,12 +2936,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'interview' },
@@ -3515,12 +2961,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'aa' },
                   { name: 'aev' },
                   { name: 'asp' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3540,12 +2986,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aev' },
                   { name: 'asp' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3565,12 +3011,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: false,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3591,11 +3037,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3615,12 +3061,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3645,12 +3091,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3665,7 +3111,7 @@ describe('Users', () => {
             addresseeUserId: receivedMessageCandidate.id,
           });
 
-          const oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon =
+          const oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon =
             await databaseHelper.createEntities(
               userFactory,
               3,
@@ -3677,12 +3123,12 @@ describe('Users', () => {
                 userProfile: {
                   department: 'Nord (59)',
                   isAvailable: true,
-                  searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                  searchBusinessLines: [
+                  occupations: [{ name: 'Développeur' }] as Occupation[],
+                  businessSectors: [
                     { name: 'id' },
                     { name: 'aa' },
                     { name: 'cm' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                   helpNeeds: [
                     { name: 'network' },
                     { name: 'tips' },
@@ -3694,7 +3140,7 @@ describe('Users', () => {
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCoach.user.id,
-            oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon.map(
+            oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon.map(
               ({ id }) => id
             )
           );
@@ -3723,8 +3169,8 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
+                occupations: [{ name: 'menuisier' }] as Occupation[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
@@ -3744,7 +3190,7 @@ describe('Users', () => {
                   department: 'Rhône (69)',
                   isAvailable: true,
                   currentJob: 'menuisier',
-                  networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                  businessSectors: [{ name: 'bat' }] as BusinessSector[],
                   helpOffers: [{ name: 'interview' }] as HelpOffer[],
                 },
               }
@@ -3784,8 +3230,8 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
+                occupations: [{ name: 'menuisier' }] as Occupation[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
@@ -3804,7 +3250,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: true,
                 currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
@@ -3820,7 +3266,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: false,
                 currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
@@ -3848,7 +3294,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: true,
                 currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
@@ -3884,12 +3330,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3910,11 +3356,11 @@ describe('Users', () => {
                 department: 'Aisne (02)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3924,7 +3370,7 @@ describe('Users', () => {
             }
           );
 
-          const coach2BusinessLinesInCommon = await userFactory.create(
+          const coach2BusinessSectorsInCommon = await userFactory.create(
             {
               role: UserRoles.COACH,
               zone: AdminZones.LILLE,
@@ -3934,11 +3380,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'cd' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3958,11 +3404,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -3974,7 +3420,7 @@ describe('Users', () => {
 
           const newUsersToRecommend = [
             coachSameRegion,
-            coach2BusinessLinesInCommon,
+            coach2BusinessSectorsInCommon,
             coach2HelpsInCommon,
           ].sort((userA, userB) =>
             moment(userB.createdAt).diff(userA.createdAt)
@@ -3991,11 +3437,11 @@ describe('Users', () => {
                 department: 'Paris (75)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4016,11 +3462,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'interview' },
                   { name: 'cv' },
@@ -4040,11 +3486,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'interview' },
@@ -4065,11 +3511,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'aa' },
                   { name: 'aev' },
                   { name: 'asp' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4090,11 +3536,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aev' },
                   { name: 'asp' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4115,11 +3561,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: false,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4139,12 +3585,12 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
+                occupations: [{ name: 'Développeur' }] as Occupation[],
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpNeeds: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4165,11 +3611,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4195,11 +3641,11 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
+                businessSectors: [
                   { name: 'id' },
                   { name: 'aa' },
                   { name: 'art' },
-                ] as BusinessLine[],
+                ] as BusinessSector[],
                 helpOffers: [
                   { name: 'network' },
                   { name: 'tips' },
@@ -4214,7 +3660,7 @@ describe('Users', () => {
             addresseeUserId: receivedMessageCoach.id,
           });
 
-          const oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon =
+          const oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon =
             await databaseHelper.createEntities(
               userFactory,
               3,
@@ -4227,11 +3673,11 @@ describe('Users', () => {
                   department: 'Nord (59)',
                   isAvailable: true,
                   currentJob: 'Développeur',
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'id' },
                     { name: 'aa' },
                     { name: 'cm' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                   helpOffers: [
                     { name: 'network' },
                     { name: 'tips' },
@@ -4243,7 +3689,7 @@ describe('Users', () => {
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCandidate.user.id,
-            oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon.map(
+            oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon.map(
               ({ id }) => id
             )
           );
@@ -4375,15 +3821,15 @@ describe('Users', () => {
             });
 
             const userProfileCandidate: Partial<UserProfile> = {
-              searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-              searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+              businessSectors: [{ name: 'bat' }] as BusinessSector[],
+              occupations: [{ name: 'menuisier' }] as Occupation[],
               helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               description: 'hello',
               department: 'Paris (75)',
             };
             const userProfileCoach: Partial<UserProfile> = {
               currentJob: 'peintre',
-              networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+              businessSectors: [{ name: 'bat' }] as BusinessSector[],
               helpOffers: [{ name: 'interview' }] as HelpOffer[],
               description: 'hello',
               department: 'Paris (75)',
@@ -4665,7 +4111,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/profile?departments[]=&businessLines[]=&helps[]= - Read all profiles with filters', () => {
+        describe('/profile?departments[]=&businessSectors[]=&helps[]= - Read all profiles with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -4797,7 +4243,7 @@ describe('Users', () => {
             );
           });
 
-          it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
+          it('Should return 200, and all the candidates that matches the businessSectors filters', async () => {
             const batCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4806,10 +4252,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
+                  businessSectors: [
                     { name: 'bat' },
                     { name: 'asp' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4822,10 +4268,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
+                  businessSectors: [
                     { name: 'rh' },
                     { name: 'aa' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4838,10 +4284,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'aa' },
                     { name: 'pr' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4854,10 +4300,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'bat' },
                     { name: 'asp' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4870,10 +4316,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'rh' },
                     { name: 'aa' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4886,10 +4332,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'aa' },
                     { name: 'pr' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4902,7 +4348,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectors[]=bat&businessSectors[]=rh`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4911,7 +4357,7 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the coaches that matches the businessLines filters', async () => {
+          it('Should return 200, and all the coaches that matches the businessSectors filters', async () => {
             await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4920,10 +4366,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
+                  businessSectors: [
                     { name: 'bat' },
                     { name: 'asp' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4936,10 +4382,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
+                  businessSectors: [
                     { name: 'rh' },
                     { name: 'aa' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4952,10 +4398,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'aa' },
                     { name: 'pr' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4968,10 +4414,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'bat' },
                     { name: 'asp' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -4984,10 +4430,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'rh' },
                     { name: 'aa' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -5000,10 +4446,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'aa' },
                     { name: 'pr' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
                 },
               }
             );
@@ -5016,7 +4462,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessLines[]=bat&businessLines[]=rh`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessSectors[]=bat&businessSectors[]=rh`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5261,10 +4707,10 @@ describe('Users', () => {
               {
                 userProfile: {
                   department: 'Rhône (69)',
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'rh' },
                     { name: 'aa' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
 
                   helpOffers: [
                     { name: 'cv' },
@@ -5285,10 +4731,10 @@ describe('Users', () => {
                 {
                   userProfile: {
                     department: 'Rhône (69)',
-                    searchBusinessLines: [
+                    businessSectors: [
                       { name: 'rh' },
                       { name: 'aa' },
-                    ] as BusinessLine[],
+                    ] as BusinessSector[],
                     helpNeeds: [
                       { name: 'cv' },
                       { name: 'network' },
@@ -5313,7 +4759,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessSectors[]=rh&helps[]=network`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5333,10 +4779,10 @@ describe('Users', () => {
               {
                 userProfile: {
                   department: 'Rhône (69)',
-                  networkBusinessLines: [
+                  businessSectors: [
                     { name: 'rh' },
                     { name: 'aa' },
-                  ] as BusinessLine[],
+                  ] as BusinessSector[],
 
                   helpOffers: [
                     { name: 'cv' },
@@ -5357,10 +4803,10 @@ describe('Users', () => {
                 {
                   userProfile: {
                     department: 'Rhône (69)',
-                    searchBusinessLines: [
+                    businessSectors: [
                       { name: 'rh' },
                       { name: 'aa' },
-                    ] as BusinessLine[],
+                    ] as BusinessSector[],
                     helpNeeds: [
                       { name: 'cv' },
                       { name: 'network' },
@@ -5385,7 +4831,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessSectors[]=rh&helps[]=network`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -6467,8 +5913,8 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
+                occupations: [{ name: 'menuisier' }] as Occupation[],
                 helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
@@ -6483,7 +5929,7 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
+                businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
@@ -6579,8 +6025,8 @@ describe('Users', () => {
             description: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
@@ -6600,10 +6046,8 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-              searchAmbitions: [
-                expect.objectContaining({ name: 'développeur' }),
-              ],
+              businessSectors: [expect.objectContaining({ name: 'id' })],
+              occupations: [expect.objectContaining({ name: 'développeur' })],
               helpNeeds: [expect.objectContaining({ name: 'network' })],
             })
           );
@@ -6614,8 +6058,8 @@ describe('Users', () => {
             description: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
             linkedinUrl: 'https://www.linkdin.com/in/jean-dupont',
           };
@@ -6634,7 +6078,7 @@ describe('Users', () => {
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
-            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
           const response: APIResponse<
@@ -6651,7 +6095,7 @@ describe('Users', () => {
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
-            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
             helpOffers: [{ name: 'network' }] as HelpOffer[],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
@@ -6669,7 +6113,7 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              networkBusinessLines: [expect.objectContaining({ name: 'id' })],
+              businessSectors: [expect.objectContaining({ name: 'id' })],
               helpOffers: [expect.objectContaining({ name: 'network' })],
             })
           );
@@ -6697,8 +6141,8 @@ describe('Users', () => {
             description: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
+            occupations: [{ name: 'développeur' }] as Occupation[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
             helpNeeds: [{ name: 'network' }] as HelpNeed[],
           };
 
@@ -7014,9 +6458,6 @@ describe('Users', () => {
         let coach: User;
         let referer: User;
         const uniqIdToFind = uuid();
-        const uniqId2ToFind = uuid();
-        let cvId: string;
-        let experienceId: string;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -7049,52 +6490,6 @@ describe('Users', () => {
           loggedInReferer = await usersHelper.createLoggedInUser({
             role: UserRoles.REFERER,
           });
-
-          ({
-            id: cvId,
-            experiences: [{ id: experienceId }],
-          } = await cvFactory.create(
-            {
-              UserId: candidate.id,
-              urlImg: `images/${candidate.id}.Published.jpg`,
-              intro: null,
-              story: 'test',
-              availability: 'En semaine',
-              transport: 'Permis B',
-              catchphrase: 'Helloooooo',
-              status: 'Progress',
-            },
-            {
-              contracts: [uniqIdToFind],
-              languages: [uniqIdToFind],
-              passions: [uniqIdToFind],
-              skills: [uniqIdToFind],
-              ambitions: [
-                { prefix: 'dans', name: uniqIdToFind, order: 0 } as Ambition,
-                { prefix: 'dans', name: uniqId2ToFind, order: 1 } as Ambition,
-              ],
-              businessLines: [
-                { name: uniqIdToFind, order: 0 } as BusinessLine,
-                { name: uniqId2ToFind, order: 1 } as BusinessLine,
-              ],
-              locations: [uniqIdToFind],
-              experiences: [
-                {
-                  description: uniqIdToFind,
-                  skills: [{ name: uniqId2ToFind } as Skill],
-                  order: 0,
-                } as Experience,
-              ],
-              reviews: [
-                {
-                  text: uniqIdToFind,
-                  status: uniqIdToFind,
-                  name: uniqIdToFind,
-                } as Review,
-              ],
-            },
-            true
-          ));
         });
         it('Should return 403 if logged as coach', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
@@ -7119,7 +6514,6 @@ describe('Users', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.userDeleted).toBe(1);
-          expect(response.body.cvsDeleted).toBe(1);
 
           const user = await usersHelper.findUser(candidate.id);
           expect(user).toBeFalsy();
@@ -7147,92 +6541,10 @@ describe('Users', () => {
           );
           expect(userProfile).toBeFalsy();
 
-          const cvs = await cvsHelper.findAllCVsByCandidateId(candidate.id);
-          expect(cvs.length).toBeFalsy();
-
-          const locationsCount = await locationsHelper.countLocationByName(
-            uniqIdToFind
-          );
-          const cvLocationsCount =
-            await cvLocationsHelper.countCVLocationsByCVId(cvId);
-          expect(locationsCount).toBe(1);
-          expect(cvLocationsCount).toBe(0);
-
-          const businessLinesCount =
-            await businessLinesHelper.countBusinessLinesByName([
-              uniqIdToFind,
-              uniqId2ToFind,
-            ]);
-          const cvBusinessLinesCount =
-            await cvBusinessLinesHelper.countCVBusinessLinesByCVId(cvId);
-          expect(businessLinesCount).toBe(2);
-          expect(cvBusinessLinesCount).toBe(0);
-
-          const ambitionsCount = await ambitionsHelper.countAmbitionsByName([
-            uniqIdToFind,
-            uniqId2ToFind,
-          ]);
-          const cvAmbitionsCount =
-            await cvAmbitionsHelper.countCVAmbitionsByCVId(cvId);
-          expect(ambitionsCount).toBe(2);
-          expect(cvAmbitionsCount).toBe(0);
-
-          const contractsCount = await contractsHelper.countContractsByName(
-            uniqIdToFind
-          );
-          const cvContractsCount =
-            await cvContractsHelper.countCVContractsByCVId(cvId);
-          expect(contractsCount).toBe(1);
-          expect(cvContractsCount).toBe(0);
-
-          const languagesCount = await languagesHelper.countLanguagesByName(
-            uniqIdToFind
-          );
-          const cvLanguagesCount =
-            await cvLanguagesHelper.countCVLanguagesByCVId(cvId);
-          expect(languagesCount).toBe(1);
-          expect(cvLanguagesCount).toBe(0);
-
-          const passionsCount = await passionsHelper.countPassionsByName(
-            uniqIdToFind
-          );
-          const cvPassionsCount = await cvPassionsHelper.countCVPassionsByCVId(
-            cvId
-          );
-          expect(passionsCount).toBe(1);
-          expect(cvPassionsCount).toBe(0);
-
-          const skillsCount = await skillsHelper.countSkillsByName(
-            uniqIdToFind
-          );
-          const cvSkillsCount = await cvSkillsHelper.countCVSkillsByCVId(cvId);
-          expect(skillsCount).toBe(1);
-          expect(cvSkillsCount).toBe(0);
-
           const expSkillsCount = await skillsHelper.countSkillsByName(
-            uniqId2ToFind
+            uniqIdToFind
           );
-          const cvFormationsCount =
-            await formationsHelper.countFormationsByCVId(cvId);
-          const cvExperiencesCount =
-            await experiencesHelper.countExperiencesByCVId(cvId);
-          const cvExpSkillsCount =
-            await experiencesSkillsHelper.countExperienceSkillsByExperienceId(
-              experienceId
-            );
-
-          expect(cvExperiencesCount).toBe(0);
-          expect(cvFormationsCount).toBe(0);
-          expect(cvExpSkillsCount).toBe(0);
           expect(expSkillsCount).toBe(1);
-
-          const searchesCount = await cvSearchesHelper.countCVSearchesByCVId(
-            cvId
-          );
-          expect(searchesCount).toBe(0);
-
-          const reviewsCount = await reviewsHelper.countReviewsByCVId(cvId);
-          expect(reviewsCount).toBe(0);
         });
         it('Should return 200 if logged in as admin and deletes coach', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
@@ -7242,7 +6554,6 @@ describe('Users', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.userDeleted).toBe(1);
-          expect(response.body.cvsDeleted).toBe(0);
 
           const user = await usersHelper.findUser(coach.id);
           expect(user).toBeFalsy();
@@ -7279,7 +6590,6 @@ describe('Users', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.userDeleted).toBe(1);
-          expect(response.body.cvsDeleted).toBe(0);
 
           const user = await usersHelper.findUser(referer.id);
           expect(user).toBeFalsy();

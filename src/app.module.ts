@@ -8,8 +8,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
-import { AmbitionsModule } from './common/ambitions/ambitions.module';
-import { BusinessLinesModule } from './common/business-lines/business-lines.module';
+import { BusinessSectorsModule } from './common/businessSectors/businessSectors.module';
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';
@@ -19,7 +18,6 @@ import { PassionsModule } from './common/passions/passions.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { ContactsModule } from './contacts/contacts.module';
-import { CVsModule } from './cvs/cvs.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
@@ -30,7 +28,6 @@ import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RevisionsModule } from './revisions/revisions.module';
-import { SharesModule } from './shares/shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
 import { UsersModule } from './users/users.module';
@@ -97,17 +94,13 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
     AuthModule,
-    CVsModule,
     ExternalCvsModule,
-    BusinessLinesModule,
+    BusinessSectorsModule,
     LocationsModule,
-    AmbitionsModule,
     ContractsModule,
     LanguagesModule,
     PassionsModule,
@@ -140,16 +133,12 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
     AuthModule,
-    CVsModule,
-    BusinessLinesModule,
+    BusinessSectorsModule,
     LocationsModule,
-    AmbitionsModule,
     ContractsModule,
     LanguagesModule,
     PassionsModule,

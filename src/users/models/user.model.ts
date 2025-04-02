@@ -45,7 +45,6 @@ import {
 import { InternalMessage } from 'src/messages/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
-import { Share } from 'src/shares/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserSocialSituation } from 'src/user-social-situations/models/user-social-situation.model';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
@@ -225,7 +224,7 @@ export class User extends HistorizedModel {
   referer?: User;
 
   @HasOne(() => UserProfile, {
-    foreignKey: 'UserId',
+    foreignKey: 'userId',
     hooks: true,
   })
   userProfile: UserProfile;
@@ -261,16 +260,10 @@ export class User extends HistorizedModel {
         },
         { hooks: true }
       );
-      await Share.create(
-        {
-          CandidatId: createdUser.id,
-        },
-        { hooks: true }
-      );
     }
     await UserProfile.create(
       {
-        UserId: createdUser.id,
+        userId: createdUser.id,
       },
       { hooks: true }
     );
@@ -319,12 +312,6 @@ export class User extends HistorizedModel {
           },
           { hooks: true }
         );
-        await Share.findOrCreate({
-          where: {
-            CandidatId: userToUpdate.id,
-          },
-          hooks: true,
-        });
       }
 
       if (

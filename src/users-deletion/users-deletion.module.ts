@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { CVsModule } from 'src/cvs/cvs.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
@@ -10,7 +9,6 @@ import { UsersDeletionService } from './users-deletion.service';
 
 @Module({
   imports: [
-    CVsModule,
     UserProfilesModule,
     UsersModule,
     AWSModule,

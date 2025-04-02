@@ -1,19 +1,17 @@
 import {
   AllowNull,
   Column,
-  CreatedAt,
   DataType,
   Default,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
-  UpdatedAt,
 } from 'sequelize-typescript';
-import { Department } from '../locations.types';
-import { WrapperModel } from 'src/utils/types';
+import { BusinessSectorValue } from '../businessSectors.types';
 
-@Table({ tableName: 'Locations' })
-export class Location extends WrapperModel {
+@Table({ tableName: 'BusinessSectors', timestamps: false })
+export class BusinessSector extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -22,16 +20,10 @@ export class Location extends WrapperModel {
 
   @AllowNull(false)
   @Column
-  name: Department;
+  name: BusinessSectorValue;
 
   @AllowNull(false)
   @Default(-1)
   @Column
   order: number;
-
-  @CreatedAt
-  createdAt: Date;
-
-  @UpdatedAt
-  updatedAt: Date;
 }

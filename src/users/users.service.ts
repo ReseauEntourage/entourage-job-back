@@ -1,18 +1,13 @@
 import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
-import { Op, QueryTypes, WhereOptions } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
-import { BusinessLine } from 'src/common/business-lines/models';
-import { Department } from 'src/common/locations/locations.types';
-import { getPublishedCVQuery } from 'src/cvs/cvs.utils';
-import { CV } from 'src/cvs/models';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { Jobs } from 'src/queues/queues.types';
-import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
+import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
   PublicUserAttributes,
@@ -22,16 +17,10 @@ import {
   UserCandidatAttributes,
 } from './models';
 import { UserCandidatInclude } from './models/user.include';
-import {
-  CVStatuses,
-  MemberFilterKey,
-  UserRole,
-  UserRoles,
-} from './users.types';
+import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
 import {
   getCommonMembersFilterOptions,
-  lastCVVersionWhereOptions,
   userSearchQuery,
   userSearchQueryRaw,
 } from './users.utils';
@@ -107,10 +96,10 @@ export class UsersService {
             GROUP BY
               "CVs"."UserId"
           )
-        LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
-          ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
-        LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" 
-          ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
+        LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessSectors->CVBusinessLine"
+          ON "candidat->cvs"."id" = "candidat->cvs->businessSectors->CVBusinessLine"."CVId"
+        LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessSectors" 
+          ON "candidat->cvs->businessSectors"."id" = "candidat->cvs->businessSectors->CVBusinessLine"."BusinessLineId"
         LEFT OUTER JOIN "Users" AS "candidat->coach"
           ON "candidat"."coachId" = "candidat->coach"."id" 
           AND ("candidat->coach"."deletedAt" IS NULL)
@@ -150,23 +139,6 @@ export class UsersService {
           attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
           required: false,
           include: [
-            {
-              model: CV,
-              as: 'cvs',
-              attributes: ['version', 'status', 'urlImg'],
-              where: {
-                ...lastCVVersionWhereOptions,
-              },
-              required: false,
-              include: [
-                {
-                  model: BusinessLine,
-                  as: 'businessLines',
-                  attributes: ['name', 'order'],
-                  required: false,
-                },
-              ],
-            },
             {
               model: User,
               as: 'coach',
@@ -397,21 +369,10 @@ export class UsersService {
   }
 
   async findAllCandidates(search: string) {
-    const publishedCVs: CV[] = await this.userModel.sequelize.query(
-      getPublishedCVQuery({ [Op.or]: [false] }),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
     const options = {
       attributes: [...PublicUserAttributes],
       where: {
         [Op.and]: [
-          {
-            id: publishedCVs.map((publishedCV) => {
-              return publishedCV.UserId;
-            }),
-          },
           {
             [Op.or]: userSearchQuery(search),
           },
@@ -419,81 +380,6 @@ export class UsersService {
       },
     };
     return this.userModel.findAll(options);
-  }
-
-  async findAllPublishedCandidatesByDepartmentAndBusinessLines(
-    department: Department,
-    businessLines: BusinessLine[]
-  ) {
-    const publishedCVs: CV[] = await this.userModel.sequelize.query(
-      getPublishedCVQuery(
-        { [Op.or]: [false] },
-        { [Op.or]: [department] },
-        {
-          [Op.or]: businessLines.map(({ name }) => {
-            return name;
-          }),
-        }
-      ),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
-
-    const options = {
-      attributes: [...UserAttributes],
-      where: {
-        [Op.and]: [
-          {
-            id: publishedCVs.map((publishedCV) => {
-              return publishedCV.UserId;
-            }),
-          },
-        ],
-      },
-      include: UserCandidatInclude,
-    };
-
-    return this.userModel.findAll(options);
-  }
-
-  async countSubmittedCVMembers(zone: AdminZone) {
-    const whereOptions: WhereOptions<CV> = zone
-      ? ({ zone } as WhereOptions<CV>)
-      : {};
-
-    const options: FindOptions<User> = {
-      where: {
-        ...whereOptions,
-        role: UserRoles.CANDIDATE,
-      } as WhereOptions<User>,
-      attributes: [],
-      include: [
-        {
-          model: UserCandidat,
-          as: 'candidat',
-          attributes: [],
-          required: true,
-          include: [
-            {
-              model: CV,
-              as: 'cvs',
-              attributes: [],
-              where: {
-                ...lastCVVersionWhereOptions,
-                status: CVStatuses.PENDING.value,
-              },
-            },
-          ],
-        },
-      ],
-    };
-
-    const { count: pendingCVs } = await this.userModel.findAndCountAll(options);
-
-    return {
-      pendingCVs,
-    };
   }
 
   async countOrganizationAssociatedUsers(organizationId: string) {
@@ -537,60 +423,6 @@ export class UsersService {
       where: { id },
       individualHooks: true,
     });
-  }
-
-  async sendMailsAfterMatching(candidateId: string) {
-    const candidate = await this.findOne(candidateId);
-
-    await this.mailsService.sendCVPreparationMail(candidate.toJSON());
-
-    await this.queuesService.addToWorkQueue(
-      Jobs.REMINDER_CV_10,
-      {
-        candidateId,
-      },
-      {
-        delay:
-          // delay depending on environment to make it faster in local
-          (process.env.CV_10_REMINDER_DELAY
-            ? parseFloat(process.env.CV_10_REMINDER_DELAY)
-            : 10) *
-          3600000 *
-          24,
-      }
-    );
-    await this.queuesService.addToWorkQueue(
-      Jobs.REMINDER_CV_20,
-      {
-        candidateId,
-      },
-      {
-        delay:
-          (process.env.CV_20_REMINDER_DELAY
-            ? // delay depending on environment to make it faster in local
-              parseFloat(process.env.CV_20_REMINDER_DELAY)
-            : 20) *
-          3600000 *
-          24,
-      }
-    );
-  }
-
-  // TODO fix duplicate
-  async uncacheCandidateCV(url: string) {
-    await this.cacheManager.del(RedisKeys.CV_PREFIX + url);
-  }
-
-  // TODO fix duplicate
-  async cacheCandidateCV(candidateId: string) {
-    await this.queuesService.addToWorkQueue(Jobs.CACHE_CV, {
-      candidateId,
-    });
-  }
-
-  // TODO fix duplicate
-  async cacheAllCVs() {
-    await this.queuesService.addToWorkQueue(Jobs.CACHE_ALL_CVS, {});
   }
 
   async generateVerificationToken(user: User) {

@@ -14,7 +14,6 @@ export const UserAttributes = [
   'isEmailVerified',
   'createdAt',
   'refererId',
-  /*'updatedAt',*/
   'deletedAt',
   'whatsappZoneCoachName',
   'whatsappZoneCoachUrl',

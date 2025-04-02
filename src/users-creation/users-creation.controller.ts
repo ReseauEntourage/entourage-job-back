@@ -141,21 +141,6 @@ export class UsersCreationController {
       if (!updatedUserCandidates) {
         throw new NotFoundException();
       }
-
-      await Promise.all(
-        updatedUserCandidates.map(async (updatedUserCandidate) => {
-          const previousCoach = updatedUserCandidate.previous('coach');
-          if (
-            updatedUserCandidate.coach &&
-            updatedUserCandidate.coach.id !== previousCoach?.id
-          ) {
-            await this.usersCreationService.sendMailsAfterMatching(
-              updatedUserCandidate.candidat.id
-            );
-          }
-          return updatedUserCandidate.toJSON();
-        })
-      );
     }
 
     return this.usersCreationService.findOneUser(createdUser.id);
@@ -209,8 +194,8 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
         helpNeeds: createUserRegistrationDto.helpNeeds,
-        searchBusinessLines: createUserRegistrationDto.searchBusinessLines,
-        searchAmbitions: createUserRegistrationDto.searchAmbitions,
+        businessSectors: createUserRegistrationDto.businessSectors,
+        occupations: createUserRegistrationDto.occupations,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
@@ -318,8 +303,8 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
         helpNeeds: createUserReferingDto.helpNeeds,
-        searchBusinessLines: createUserReferingDto.searchBusinessLines,
-        searchAmbitions: createUserReferingDto.searchAmbitions,
+        businessSectors: createUserReferingDto.businessSectors,
+        occupations: createUserReferingDto.occupations,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(

@@ -2,13 +2,13 @@ import { PickType } from '@nestjs/swagger';
 import { UserProfile } from '../models';
 
 export class CreateCoachUserProfileDto extends PickType(UserProfile, [
-  'UserId',
+  'userId',
   'description',
   'department',
   'currentJob',
   'isAvailable',
   'unavailabilityReason',
-  'networkBusinessLines',
+  'businessSectors',
   'helpOffers',
   'linkedinUrl',
 ] as const) {}

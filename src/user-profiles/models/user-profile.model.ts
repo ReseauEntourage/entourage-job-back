@@ -27,16 +27,15 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/businessSectors/models';
 import { Department } from 'src/common/locations/locations.types';
+import { Occupation } from 'src/common/occupations/models';
 import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
-import { UserProfileNetworkBusinessLine } from './user-profile-network-business-line.model';
-import { UserProfileSearchAmbition } from './user-profile-search-ambition.model';
-import { UserProfileSearchBusinessLine } from './user-profile-search-business-line.model';
+import { UserProfileBusinessSector } from './user-profile-business-sector.model';
+import { UserProfileOccupation } from './user-profile-occupation.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
@@ -48,7 +47,7 @@ export enum UnavailabilityReason {
   OTHER_SUPPORT = 'other_support',
 }
 
-@Table({ tableName: 'User_Profiles' })
+@Table({ tableName: 'UserProfiles' })
 export class UserProfile extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -61,7 +60,7 @@ export class UserProfile extends Model {
   @ForeignKey(() => User)
   @AllowNull(false)
   @Column
-  UserId: string;
+  userId: string;
 
   @ApiProperty()
   @IsString()
@@ -127,50 +126,36 @@ export class UserProfile extends Model {
   @DeletedAt
   deletedAt: Date;
 
-  @BelongsTo(() => User, 'UserId')
+  @BelongsTo(() => User, 'userId')
   user: User;
 
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
-    () => BusinessLine,
-    () => UserProfileNetworkBusinessLine,
-    'UserProfileId',
-    'BusinessLineId'
+    () => BusinessSector,
+    () => UserProfileBusinessSector,
+    'userProfileId',
+    'businessSectorId'
   )
-  networkBusinessLines: BusinessLine[];
+  businessSectors: BusinessSector[];
 
-  @HasMany(() => UserProfileNetworkBusinessLine, 'UserProfileId')
-  userProfileNetworkBusinessLines: UserProfileNetworkBusinessLine[];
+  @HasMany(() => UserProfileBusinessSector, 'userProfileId')
+  userProfileBusinessSectors: UserProfileBusinessSector[];
 
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
-    () => BusinessLine,
-    () => UserProfileSearchBusinessLine,
-    'UserProfileId',
-    'BusinessLineId'
+    () => Occupation,
+    () => UserProfileOccupation,
+    'userProfileId',
+    'occupationId'
   )
-  searchBusinessLines: BusinessLine[];
+  occupations: Occupation[];
 
-  @HasMany(() => UserProfileSearchBusinessLine, 'UserProfileId')
-  userProfileSearchBusinessLines: UserProfileSearchBusinessLine[];
-
-  @ApiProperty()
-  @IsArray()
-  @IsOptional()
-  @BelongsToMany(
-    () => Ambition,
-    () => UserProfileSearchAmbition,
-    'UserProfileId',
-    'AmbitionId'
-  )
-  searchAmbitions: Ambition[];
-
-  @HasMany(() => UserProfileSearchAmbition, 'UserProfileId')
-  userProfileSearchAmbitions: UserProfileSearchAmbition[];
+  @HasMany(() => UserProfileOccupation, 'userProfileId')
+  userProfileOccupations: UserProfileOccupation[];
 
   @ApiProperty()
   @IsArray()
@@ -203,7 +188,7 @@ export class UserProfile extends Model {
         },
         {
           where: {
-            id: updatedUserProfile.UserId,
+            id: updatedUserProfile.userId,
           },
           ...(options?.transaction ? { transaction: options.transaction } : {}),
         }

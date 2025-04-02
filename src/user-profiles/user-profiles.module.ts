@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
-import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
+import { BusinessSectorsModule } from 'src/common/businessSectors/businessSectors.module';
+import { OccupationsModule } from 'src/common/occupations/occupations.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
@@ -11,9 +11,8 @@ import {
   HelpNeed,
   HelpOffer,
   UserProfile,
-  UserProfileNetworkBusinessLine,
-  UserProfileSearchAmbition,
-  UserProfileSearchBusinessLine,
+  UserProfileOccupation,
+  UserProfileBusinessSector,
 } from './models';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesController } from './user-profiles.controller';
@@ -23,16 +22,15 @@ import { UserProfilesService } from './user-profiles.service';
   imports: [
     SequelizeModule.forFeature([
       UserProfile,
-      UserProfileSearchAmbition,
-      UserProfileSearchBusinessLine,
-      UserProfileNetworkBusinessLine,
+      UserProfileOccupation,
+      UserProfileBusinessSector,
       HelpNeed,
       HelpOffer,
       UserProfileRecommendation,
     ]),
     UsersModule,
-    AmbitionsModule,
-    BusinessLinesModule,
+    OccupationsModule,
+    BusinessSectorsModule,
     AWSModule,
     MessagesModule,
     SlackModule,

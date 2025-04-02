@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { Includeable, WhereOptions } from 'sequelize';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/businessSectors/models';
+import { Occupation } from 'src/common/occupations/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { HelpNeed } from './help-need.model';
@@ -35,53 +35,49 @@ export function getUserProfileHelpsInclude(
   ];
 }
 
-export function getUserProfileBusinessLinesInclude(
+export function getUserProfileBusinessSectorsInclude(
   role?: UserRole[],
-  businessLinesOptions: WhereOptions<BusinessLine> = {}
+  businessSectorsOptions: WhereOptions<BusinessSector> = {}
 ) {
-  const isBusinessLinesRequired = role && !_.isEmpty(businessLinesOptions);
-  const isCandidateBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
-  const isCoachBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded([UserRoles.COACH], role);
-
+  const isBusinessSectorsRequired = role && !_.isEmpty(businessSectorsOptions);
   return [
     {
-      model: BusinessLine,
-      as: 'searchBusinessLines',
-      required: isCandidateBusinessLines,
-      attributes: ['id', 'name', 'order'],
-      ...(isCandidateBusinessLines ? { where: businessLinesOptions } : {}),
-    },
-    {
-      model: BusinessLine,
-      as: 'networkBusinessLines',
-      required: isCoachBusinessLines,
-      attributes: ['id', 'name', 'order'],
-      ...(isCoachBusinessLines ? { where: businessLinesOptions } : {}),
+      model: BusinessSector,
+      as: 'businessSectors',
+      required: isBusinessSectorsRequired,
+      attributes: ['id', 'value', 'order'],
+      ...(isBusinessSectorsRequired ? { where: businessSectorsOptions } : {}),
+      through: {
+        attributes: ['id'],
+        as: 'userProfileBusinessSectors',
+      },
     },
   ];
 }
 
-export function getUserProfileAmbitionsInclude() {
+export function getUserProfileOccupationsInclude() {
   return [
     {
-      model: Ambition,
-      as: 'searchAmbitions',
+      model: Occupation,
+      as: 'occupations',
       required: false,
-      attributes: ['id', 'name', 'prefix', 'order'],
+      attributes: ['id', 'name', 'prefix'],
+      through: {
+        attributes: ['id'],
+        as: 'userProfileOccupations',
+      },
     },
   ];
 }
 
 export function getUserProfileInclude(
   role?: UserRole[],
-  businessLinesOptions: WhereOptions<BusinessLine> = {},
+  businessSectorsOptions: WhereOptions<BusinessSector> = {},
   helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
 ): Includeable[] {
   return [
-    ...getUserProfileAmbitionsInclude(),
-    ...getUserProfileBusinessLinesInclude(role, businessLinesOptions),
+    ...getUserProfileOccupationsInclude(),
+    ...getUserProfileBusinessSectorsInclude(role, businessSectorsOptions),
     ...getUserProfileHelpsInclude(role, helpsOptions),
   ];
 }

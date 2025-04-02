@@ -1,8 +1,8 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/businessSectors/models';
 import { Department } from 'src/common/locations/locations.types';
+import { Occupation } from 'src/common/occupations/models';
 import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
@@ -70,12 +70,12 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  searchBusinessLines?: BusinessLine[];
+  businessSectors?: BusinessSector[];
 
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  searchAmbitions?: Ambition[];
+  occupations?: Occupation[];
 
   @ApiProperty()
   @IsString()

@@ -1,6 +1,6 @@
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/businessSectors/models';
 import { Department } from 'src/common/locations/locations.types';
+import { Occupation } from 'src/common/occupations/models';
 import { UserRole } from 'src/users/users.types';
 import { FilterConstant } from 'src/utils/types';
 import { HelpNeed, HelpOffer } from './models';
@@ -41,9 +41,8 @@ export type PublicProfile = {
   helpOffers: HelpOffer[];
   helpNeeds: HelpNeed[];
   description: string;
-  searchBusinessLines: BusinessLine[];
-  networkBusinessLines: BusinessLine[];
-  searchAmbitions: Ambition[];
+  businessSectors: BusinessSector[];
+  occupations: Occupation[];
   lastSentMessage: Date;
   lastReceivedMessage: Date;
   cvUrl?: string;

@@ -58,7 +58,7 @@ import {
 import {
   escapeQuery,
   executeBulkAction,
-  formatBusinessLines,
+  formatBusinessSectors,
   formatCompanyName,
   formatDepartment,
   getCasquette,
@@ -483,7 +483,13 @@ export class SalesforceService {
   }
 
   async createAccount(
-    { name, businessLines, address, department, mainAccountSfId }: AccountProps,
+    {
+      name,
+      businessSectors,
+      address,
+      department,
+      mainAccountSfId,
+    }: AccountProps,
     recordType: AccountRecordType
   ) {
     const parsedAddress = parseAddress(address);
@@ -492,7 +498,7 @@ export class SalesforceService {
       Name: mainAccountSfId
         ? formatCompanyName(name, address, department)
         : name || 'Inconnu',
-      M_tiers_LinkedOut__c: formatBusinessLines(businessLines),
+      M_tiers_LinkedOut__c: formatBusinessSectors(businessSectors),
       BillingStreet: parsedAddress.street,
       BillingCity:
         parsedAddress.city?.length > 40
@@ -675,7 +681,13 @@ export class SalesforceService {
   }
 
   async findOrCreateAccount(
-    { name, address, department, businessLines, mainAccountSfId }: AccountProps,
+    {
+      name,
+      address,
+      department,
+      businessSectors,
+      mainAccountSfId,
+    }: AccountProps,
     recordType: AccountRecordType
   ) {
     let companySfId = await this.searchAccountByName(
@@ -693,7 +705,7 @@ export class SalesforceService {
       companySfId = (await this.createAccount(
         {
           name,
-          businessLines,
+          businessSectors,
           address,
           department,
           mainAccountSfId,
@@ -844,7 +856,7 @@ export class SalesforceService {
     socialSecurity,
     handicapped,
     bankAccount,
-    businessLines,
+    businessSectors,
     description,
     heardAbout,
     diagnostic,
@@ -900,7 +912,7 @@ export class SalesforceService {
       socialSecurity,
       handicapped,
       bankAccount,
-      businessLines,
+      businessSectors,
       description,
       diagnostic,
       zone,

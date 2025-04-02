@@ -2,7 +2,7 @@
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
-import { BusinessLineFilters } from 'src/common/business-lines/business-lines.types';
+import { BusinessSectorFilters } from 'src/common/businessSectors/businessSectors.types';
 import {
   CandidateAccommodations,
   CandidateAdministrativeSituations,
@@ -46,8 +46,8 @@ export class ContactCandidateFormFactory
         CandidateProfessionalSituations
       ),
       resources: faker.helpers.objectValue(CandidateResources),
-      businessLines: faker.helpers
-        .arrayElements(BusinessLineFilters)
+      businessSectors: faker.helpers
+        .arrayElements(BusinessSectorFilters)
         .map(({ value }) => value),
       handicapped: faker.helpers.objectValue(CandidateYesNo),
       registeredUnemploymentOffice: faker.helpers.objectValue(CandidateYesNo),

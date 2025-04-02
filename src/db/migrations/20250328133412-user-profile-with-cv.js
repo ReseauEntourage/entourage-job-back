@@ -21,6 +21,7 @@ module.exports = {
       allowNull: false,
       defaultValue: true,
     });
+    await queryInterface.renameColumn('UserProfiles', 'UserId', 'userId');
 
     // BusinessSectors
     await queryInterface.createTable('BusinessSectors', {
@@ -32,14 +33,14 @@ module.exports = {
           return UUID.v4();
         },
       },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW,
-      },
       name: {
         type: Sequelize.STRING,
         allowNull: false,
+      },
+      order: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: -1,
       },
     });
 
@@ -355,7 +356,7 @@ module.exports = {
       order: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 0,
+        defaultValue: -1,
       },
     });
 
@@ -553,7 +554,7 @@ module.exports = {
       order: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 0,
+        defaultValue: -1,
       },
     });
 
@@ -652,6 +653,7 @@ module.exports = {
     await queryInterface.dropTable('BusinessSectors');
 
     // UserProfiles
+    await queryInterface.renameColumn('UserProfiles', 'userId', 'UserId');
     await queryInterface.removeColumn('UserProfiles', 'story');
     await queryInterface.removeColumn('UserProfiles', 'allowRemoteEvents');
     await queryInterface.removeColumn('UserProfiles', 'allowPhysicalEvents');

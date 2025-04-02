@@ -6,7 +6,7 @@ import {
   IsPostalCode,
   IsString,
 } from 'class-validator';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { BusinessSectorValue } from 'src/common/businessSectors/businessSectors.types';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
@@ -133,7 +133,7 @@ export class ContactCandidateFormDto {
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  businessLines?: BusinessLineValue[];
+  businessSectors?: BusinessSectorValue[];
 
   @ApiProperty()
   @IsString()

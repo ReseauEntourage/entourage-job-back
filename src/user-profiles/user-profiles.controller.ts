@@ -19,7 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { BusinessSectorValue } from 'src/common/businessSectors/businessSectors.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
@@ -120,8 +120,8 @@ export class UserProfilesController {
     helps: HelpValue[],
     @Query('departments')
     departments: Department[],
-    @Query('businessLines')
-    businessLines: BusinessLineValue[]
+    @Query('businessSectors')
+    businessSectors: BusinessSectorValue[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -142,7 +142,7 @@ export class UserProfilesController {
       search,
       helps,
       departments,
-      businessLines,
+      businessSectors,
     });
   }
 

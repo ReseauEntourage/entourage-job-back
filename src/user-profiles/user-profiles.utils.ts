@@ -21,9 +21,8 @@ export const getPublicProfileFromUserAndUserProfile = (
     helpOffers: userProfile.helpOffers,
     helpNeeds: userProfile.helpNeeds,
     description: userProfile.description,
-    searchBusinessLines: userProfile.searchBusinessLines,
-    networkBusinessLines: userProfile.networkBusinessLines,
-    searchAmbitions: userProfile.searchAmbitions,
+    businessSectors: userProfile.businessSectors,
+    occupations: userProfile.occupations,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     cvUrl: cvUrl,
@@ -36,6 +35,5 @@ export function userProfileSearchQuery(query = '') {
   return [
     searchInColumnWhereOption('user.firstName', query, true),
     searchInColumnWhereOption('user.lastName', query, true),
-    // searchInColumnWhereOption('searchAmbitions.name', query, true),
   ];
 }

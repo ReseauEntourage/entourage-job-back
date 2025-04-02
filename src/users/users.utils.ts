@@ -1,16 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { literal, Op, WhereOptions } from 'sequelize';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,
   searchInColumnWhereOptionRaw,
 } from 'src/utils/misc';
 import { FilterObject, FilterParams } from 'src/utils/types';
-import { User, UserCandidat } from './models';
+import { User } from './models';
 import {
-  CVStatuses,
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
@@ -206,28 +203,16 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
                 ];
                 break;
               // Only candidates
-              case 'businessLines':
+              case 'businessSectors':
                 whereOptions = [
                   ...whereOptions,
-                  `"candidat->cvs->businessLines"."name" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'hidden':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat"."hidden" IN (:${keys[i]})`,
+                  `"candidat->businessSectors"."name" IN (:${keys[i]})`,
                 ];
                 break;
               case 'employed':
                 whereOptions = [
                   ...whereOptions,
                   `"candidat"."employed" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'cvStatus':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat->cvs"."status" IN (:${keys[i]})`,
                 ];
                 break;
             }
@@ -240,53 +225,34 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   return whereOptions;
 }
 
-export function filterMembersByCVStatus(
-  members: User[],
-  status: FilterObject<MemberFilterKey>['cvStatus']
-) {
-  let filteredList = members;
-
-  if (members && status) {
-    filteredList = members.filter((member) => {
-      return status.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          return currentFilter.value === member.candidat.cvs[0].status;
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
+// TODO Adapt to use BusinessSectors
 export function filterMembersByBusinessLines(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   members: User[],
-  businessLines: FilterObject<MemberFilterKey>['businessLines']
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  businessSectors: FilterObject<MemberFilterKey>['businessSectors']
 ) {
-  let filteredList = members;
-
-  if (members && businessLines && businessLines.length > 0) {
-    filteredList = members.filter((member: User) => {
-      return businessLines.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          const cvBusinessLines = member.candidat.cvs[0].businessLines;
-          return (
-            cvBusinessLines &&
-            cvBusinessLines.length > 0 &&
-            cvBusinessLines
-              .map(({ name }: { name: BusinessLineValue }) => {
-                return name;
-              })
-              .includes(currentFilter.value)
-          );
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
+  // let filteredList = members;
+  // if (members && businessSectors && businessSectors.length > 0) {
+  //   filteredList = members.filter((member: User) => {
+  //     return businessSectors.some((currentFilter) => {
+  //       if (member.candidat && member.candidat.cvs.length > 0) {
+  //         const cvBusinessLines = member.candidat.businessSectors;
+  //         return (
+  //           cvBusinessLines &&
+  //           cvBusinessLines.length > 0 &&
+  //           cvBusinessLines
+  //             .map(({ name }: { name: BusinessLineValue }) => {
+  //               return name;
+  //             })
+  //             .includes(currentFilter.value)
+  //         );
+  //       }
+  //       return false;
+  //     });
+  //   });
+  // }
+  // return filteredList;
 }
 
 export function filterMembersByAssociatedUser(
@@ -333,29 +299,6 @@ export function userSearchQueryRaw(query = '', withOrganizationName = false) {
       ...organizationSearchOption,
     ].join(' OR ')}
   )`;
-}
-
-export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
-  version: {
-    [Op.in]: [
-      literal(`
-          SELECT MAX("CVs"."version")
-          FROM "CVs"
-          WHERE "candidatId" = "CVs"."UserId"
-          GROUP BY "CVs"."UserId"
-      `),
-    ],
-  },
-};
-
-export function generateImageNamesToDelete(prefix: string) {
-  const imageNames = Object.keys(CVStatuses).map((status) => {
-    return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];
-  });
-
-  return imageNames.reduce((acc, curr) => {
-    return [...acc, ...curr];
-  }, []);
 }
 
 export function getCandidateAndCoachIdDependingOnRoles(

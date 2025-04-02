@@ -95,10 +95,6 @@ export class UsersCreationService {
     return this.mailsService.sendOnboardingJ4ContactAdviceMail(user);
   }
 
-  async sendMailsAfterMatching(candidateId: string) {
-    return this.usersService.sendMailsAfterMatching(candidateId);
-  }
-
   async sendAdminNewRefererNotificationMail(referer: User) {
     return this.mailsService.sendAdminNewRefererNotificationMail(referer);
   }
