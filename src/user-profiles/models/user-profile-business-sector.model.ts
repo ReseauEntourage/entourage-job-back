@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { BusinessSector } from 'src/common/businessSectors/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { UserProfile } from './user-profile.model';
 
 @Table({ tableName: 'UserProfileBusinessSectors', timestamps: false })

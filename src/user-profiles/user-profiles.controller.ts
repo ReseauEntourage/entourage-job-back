@@ -19,7 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
-import { BusinessSectorValue } from 'src/common/businessSectors/businessSectors.types';
+import { BusinessSectorValue } from 'src/common/business-sectors/business-sectors.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
   Self,

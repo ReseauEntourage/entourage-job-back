@@ -1,4 +1,4 @@
-import { BusinessSector } from 'src/common/businessSectors/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
 import { UserRole } from 'src/users/users.types';

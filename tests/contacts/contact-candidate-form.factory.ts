@@ -2,7 +2,7 @@
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';
-import { BusinessSectorFilters } from 'src/common/businessSectors/businessSectors.types';
+import { BusinessSectorFilters } from 'src/common/business-sectors/business-sectors.types';
 import {
   CandidateAccommodations,
   CandidateAdministrativeSituations,

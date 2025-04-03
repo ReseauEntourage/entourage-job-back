@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { BusinessSectorsModule } from 'src/common/businessSectors/businessSectors.module';
+import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { OccupationsModule } from 'src/common/occupations/occupations.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';

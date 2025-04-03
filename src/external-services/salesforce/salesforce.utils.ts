@@ -3,8 +3,8 @@ import * as _ from 'lodash';
 import {
   BusinessSectorFilters,
   BusinessSectorValue,
-} from 'src/common/businessSectors/businessSectors.types';
-import { BusinessSector } from 'src/common/businessSectors/models';
+} from 'src/common/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,

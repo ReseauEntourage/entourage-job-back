@@ -194,7 +194,7 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
         helpNeeds: createUserRegistrationDto.helpNeeds,
-        businessSectors: createUserRegistrationDto.businessSectors,
+        businessSectorIds: createUserRegistrationDto.businessSectorIds,
         occupations: createUserRegistrationDto.occupations,
       });
 
@@ -250,6 +250,7 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
+      console.error(err);
       if (((err as Error).name = SequelizeUniqueConstraintError)) {
         throw new ConflictException();
       }
@@ -303,7 +304,7 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
         helpNeeds: createUserReferingDto.helpNeeds,
-        businessSectors: createUserReferingDto.businessSectors,
+        businessSectorIds: createUserReferingDto.businessSectorIds,
         occupations: createUserReferingDto.occupations,
       });
 

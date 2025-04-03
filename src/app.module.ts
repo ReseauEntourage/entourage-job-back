@@ -8,7 +8,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
-import { BusinessSectorsModule } from './common/businessSectors/businessSectors.module';
+import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';

@@ -6,7 +6,7 @@ import {
   IsPostalCode,
   IsString,
 } from 'class-validator';
-import { BusinessSectorValue } from 'src/common/businessSectors/businessSectors.types';
+import { BusinessSectorValue } from 'src/common/business-sectors/business-sectors.types';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,

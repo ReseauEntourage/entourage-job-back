@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import {
   BusinessSectorFilters,
   BusinessSectorValue,
-} from 'src/common/businessSectors/businessSectors.types';
+} from 'src/common/business-sectors/business-sectors.types';
 
 import {
   AdminZone,

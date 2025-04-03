@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { Includeable, WhereOptions } from 'sequelize';
-import { BusinessSector } from 'src/common/businessSectors/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Occupation } from 'src/common/occupations/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
@@ -45,7 +45,7 @@ export function getUserProfileBusinessSectorsInclude(
       model: BusinessSector,
       as: 'businessSectors',
       required: isBusinessSectorsRequired,
-      attributes: ['id', 'value', 'order'],
+      attributes: ['id', 'name', 'order'],
       ...(isBusinessSectorsRequired ? { where: businessSectorsOptions } : {}),
       through: {
         attributes: ['id'],

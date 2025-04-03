@@ -6,7 +6,7 @@ import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { BusinessSector } from 'src/common/businessSectors/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
 import {

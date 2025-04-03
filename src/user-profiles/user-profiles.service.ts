@@ -6,8 +6,8 @@ import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { UserProfileBusinessSector } from 'dist/user-profiles/models/user-profile-business-sectors.model';
-import { BusinessSectorValue } from 'src/common/businessSectors/businessSectors.types';
-import { BusinessSector } from 'src/common/businessSectors/models';
+import { BusinessSectorValue } from 'src/common/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
@@ -286,7 +286,9 @@ export class UserProfilesService {
 
   async updateByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile>
+    updateUserProfileDto: Partial<UserProfile> & {
+      businessSectorIds?: string[];
+    }
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
@@ -295,41 +297,41 @@ export class UserProfilesService {
     }
 
     await this.userProfileModel.sequelize.transaction(async (t) => {
+      // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
         where: { userId },
         individualHooks: true,
         transaction: t,
       });
 
-      if (updateUserProfileDto.businessSectors) {
+      // Business Sectors Ids
+      if (updateUserProfileDto.businessSectorIds) {
         const businessSectors = await Promise.all(
-          updateUserProfileDto.businessSectors.map(({ name }) => {
-            return this.businessSectorModel.create(
-              { name },
-              {
-                hooks: true,
-                transaction: t,
-              }
-            );
+          updateUserProfileDto.businessSectorIds.map((businessSectorId) => {
+            return this.businessSectorModel.findByPk(businessSectorId, {
+              transaction: t,
+            });
           })
         );
-        await userProfileToUpdate.$add('businessSectors', businessSectors, {
+
+        // Update the user profile business sectors
+        await userProfileToUpdate.$set('businessSectors', businessSectors, {
           transaction: t,
         });
 
-        await this.userProfileBusinessSectorModel.destroy({
-          where: {
-            userProfileId: userProfileToUpdate.id,
-            businessSectorId: {
-              [Op.not]: businessSectors.map((bs) => {
-                return bs.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
+        // await this.userProfileBusinessSectorModel.destroy({
+        //   where: {
+        //     userProfileId: userProfileToUpdate.id,
+        //     businessSectorId: {
+        //       [Op.not]: updateUserProfileDto.businessSectorIds,
+        //     },
+        //   },
+        //   hooks: true,
+        //   transaction: t,
+        // });
       }
+
+      // Occupations
       if (updateUserProfileDto.occupations) {
         const occupations = await Promise.all(
           updateUserProfileDto.occupations.map(({ name, prefix = 'dans' }) => {
@@ -359,6 +361,8 @@ export class UserProfilesService {
           transaction: t,
         });
       }
+
+      // HelpsNeeds
       if (updateUserProfileDto.helpNeeds) {
         const helpNeeds = await Promise.all(
           updateUserProfileDto.helpNeeds.map(({ name }) => {

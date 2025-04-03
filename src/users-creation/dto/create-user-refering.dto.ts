@@ -1,6 +1,5 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
-import { BusinessSector } from 'src/common/businessSectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
 import {
@@ -51,7 +50,7 @@ export class CreateUserReferingDto extends PickType(User, [
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  businessSectors?: BusinessSector[];
+  businessSectorIds?: string[];
 
   @ApiProperty()
   @IsArray()
