@@ -189,22 +189,6 @@ module.exports = {
       },
     });
 
-    // LanguagesLevels
-    await queryInterface.createTable('LanguagesLevels', {
-      id: {
-        allowNull: false,
-        primaryKey: true,
-        type: Sequelize.UUID,
-        defaultValue: () => {
-          return UUID.v4();
-        },
-      },
-      value: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-    });
-
     // UserProfileLanguages
     await queryInterface.createTable('UserProfileLanguages', {
       id: {
@@ -231,13 +215,9 @@ module.exports = {
           key: 'id',
         },
       },
-      languageLevelId: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'LanguagesLevels',
-          key: 'id',
-        },
+      level: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
     });
 
@@ -635,7 +615,6 @@ module.exports = {
 
     // Languages
     await queryInterface.dropTable('UserProfileLanguages');
-    await queryInterface.dropTable('LanguagesLevels');
     await queryInterface.dropTable('Languages');
     await queryInterface.renameTable('DeprecatedLanguages', 'Languages');
 

@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import { Includeable, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Language } from 'src/common/languages/models';
 import { Occupation } from 'src/common/occupations/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
@@ -70,6 +71,19 @@ export function getUserProfileOccupationsInclude() {
   ];
 }
 
+export const getUserProfileLanguagesInclude = () => [
+  {
+    model: Language,
+    as: 'languages',
+    required: false,
+    attributes: ['id', 'value'],
+    through: {
+      attributes: ['id', 'level'],
+      as: 'userProfileLanguages',
+    },
+  },
+];
+
 export function getUserProfileInclude(
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
@@ -79,5 +93,6 @@ export function getUserProfileInclude(
     ...getUserProfileOccupationsInclude(),
     ...getUserProfileBusinessSectorsInclude(role, businessSectorsOptions),
     ...getUserProfileHelpsInclude(role, helpsOptions),
+    ...getUserProfileLanguagesInclude(),
   ];
 }

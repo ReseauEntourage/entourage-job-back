@@ -14,6 +14,7 @@ import {
   UserProfileOccupation,
   UserProfileBusinessSector,
 } from './models';
+import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesController } from './user-profiles.controller';
 import { UserProfilesService } from './user-profiles.service';
@@ -23,6 +24,7 @@ import { UserProfilesService } from './user-profiles.service';
     SequelizeModule.forFeature([
       UserProfile,
       UserProfileOccupation,
+      UserProfileLanguage,
       UserProfileBusinessSector,
       HelpNeed,
       HelpOffer,

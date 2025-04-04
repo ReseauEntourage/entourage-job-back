@@ -28,6 +28,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
 import { User } from 'src/users/models';
@@ -35,6 +36,7 @@ import { getZoneFromDepartment } from 'src/utils/misc';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
 import { UserProfileBusinessSector } from './user-profile-business-sector.model';
+import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileOccupation } from './user-profile-occupation.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
@@ -156,6 +158,20 @@ export class UserProfile extends Model {
 
   @HasMany(() => UserProfileOccupation, 'userProfileId')
   userProfileOccupations: UserProfileOccupation[];
+
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Language,
+    () => UserProfileLanguage,
+    'userProfileId',
+    'languageId'
+  )
+  languages: Language[];
+
+  @HasMany(() => UserProfileLanguage, 'userProfileId')
+  userProfileLanguages: UserProfileLanguage[];
 
   @ApiProperty()
   @IsArray()
