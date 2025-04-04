@@ -1,17 +1,15 @@
 import {
   AllowNull,
   Column,
-  CreatedAt,
   DataType,
   Default,
   IsUUID,
   PrimaryKey,
   Table,
-  UpdatedAt,
 } from 'sequelize-typescript';
 import { WrapperModel } from 'src/utils/types';
 
-@Table({ tableName: 'Languages' })
+@Table({ tableName: 'Languages', timestamps: false })
 export class Language extends WrapperModel {
   @IsUUID(4)
   @PrimaryKey
@@ -23,9 +21,7 @@ export class Language extends WrapperModel {
   @Column
   name: string;
 
-  @CreatedAt
-  createdAt: Date;
-
-  @UpdatedAt
-  updatedAt: Date;
+  @AllowNull(false)
+  @Column
+  value: string;
 }

@@ -8,7 +8,6 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { BusinessSectorValue } from '../business-sectors.types';
 
 @Table({ tableName: 'BusinessSectors', timestamps: false })
 export class BusinessSector extends Model {
@@ -20,7 +19,11 @@ export class BusinessSector extends Model {
 
   @AllowNull(false)
   @Column
-  name: BusinessSectorValue;
+  name: string;
+
+  @AllowNull(false)
+  @Column
+  value: string;
 
   @AllowNull(false)
   @Default(-1)
