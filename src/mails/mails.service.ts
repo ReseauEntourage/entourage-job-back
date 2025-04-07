@@ -150,12 +150,12 @@ export class MailsService {
     );
   }
 
-  async sendOnboardingJ3ProfileCompletionMail(user: User) {
+  async sendOnboardingJ3WebinarMail(user: User) {
     return this.queuesService.addToWorkQueue(
       Jobs.SEND_MAIL,
       {
         toEmail: user.email,
-        templateId: MailjetTemplates.ONBOARDING_J3_PROFILE_COMPLETION,
+        templateId: MailjetTemplates.ONBOARDING_J3_WEBINAR,
         variables: {
           firstName: user.firstName,
           role: getRoleString(user),
