@@ -28,16 +28,25 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
 import { UserProfileBusinessSector } from './user-profile-business-sector.model';
+import { UserProfileContract } from './user-profile-contract.model';
+import { UserProfileExperience } from './user-profile-experience.model';
+import { UserProfileFormation } from './user-profile-formation.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileOccupation } from './user-profile-occupation.model';
+import { UserProfileSkill } from './user-profile-skill.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
@@ -69,6 +78,12 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   description: string;
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Column
+  story: string;
 
   @ApiProperty()
   @IsBoolean()
@@ -131,6 +146,7 @@ export class UserProfile extends Model {
   @BelongsTo(() => User, 'userId')
   user: User;
 
+  // Business Sectors
   @ApiProperty()
   @IsArray()
   @IsOptional()
@@ -145,6 +161,7 @@ export class UserProfile extends Model {
   @HasMany(() => UserProfileBusinessSector, 'userProfileId')
   userProfileBusinessSectors: UserProfileBusinessSector[];
 
+  // Occupations
   @ApiProperty()
   @IsArray()
   @IsOptional()
@@ -159,6 +176,7 @@ export class UserProfile extends Model {
   @HasMany(() => UserProfileOccupation, 'userProfileId')
   userProfileOccupations: UserProfileOccupation[];
 
+  // Languages
   @ApiProperty()
   @IsArray()
   @IsOptional()
@@ -173,17 +191,87 @@ export class UserProfile extends Model {
   @HasMany(() => UserProfileLanguage, 'userProfileId')
   userProfileLanguages: UserProfileLanguage[];
 
+  // Contracts
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Contract,
+    () => UserProfileContract,
+    'userProfileId',
+    'contractId'
+  )
+  contracts: Contract[];
+
+  @HasMany(() => UserProfileContract, 'userProfileId')
+  userProfileContracts: UserProfileContract[];
+
+  // Skills
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Skill,
+    () => UserProfileSkill,
+    'userProfileId',
+    'skillId'
+  )
+  skills: Skill[];
+
+  @HasMany(() => UserProfileSkill, 'userProfileId')
+  userProfileSkills: UserProfileSkill[];
+
+  // Experiences
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Experience,
+    () => UserProfileExperience,
+    'userProfileId',
+    'experienceId'
+  )
+  experiences: Experience[];
+
+  @HasMany(() => UserProfileExperience, 'userProfileId')
+  userProfileExperiences: UserProfileExperience[];
+
+  // Formations
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Formation,
+    () => UserProfileFormation,
+    'userProfileId',
+    'formationId'
+  )
+  formations: Formation[];
+
+  @HasMany(() => UserProfileFormation, 'userProfileId')
+  userProfileFormations: UserProfileFormation[];
+
+  // Reviews
+  @HasMany(() => Review, 'userProfileId')
+  reviews: Review[];
+
+  // Helps Needs
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @HasMany(() => HelpNeed, 'UserProfileId')
   helpNeeds: HelpNeed[];
 
+  // Helps Offers
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @HasMany(() => HelpOffer, 'UserProfileId')
   helpOffers: HelpOffer[];
+
+  /**
+   * Hooks
+   */
 
   @AfterUpdate
   static async updateAdminZone(

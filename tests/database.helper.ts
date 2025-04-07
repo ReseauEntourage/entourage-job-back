@@ -5,7 +5,6 @@ import { Contract } from 'src/common/contracts/models';
 import { Experience, ExperienceSkill } from 'src/common/experiences/models';
 import { Formation, FormationSkill } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
-import { Location } from 'src/common/locations/models';
 import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
@@ -47,8 +46,6 @@ export class DatabaseHelper {
     private helpNeedModel: typeof HelpNeed,
     @InjectModel(HelpOffer)
     private helpOfferModel: typeof HelpOffer,
-    @InjectModel(Location)
-    private locationModel: typeof Location,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
     @InjectModel(Language)
@@ -104,7 +101,6 @@ export class DatabaseHelper {
       await this.experienceSkillModel.truncate(destroyOptions);
       await this.formationModel.truncate(destroyOptions);
       await this.formationSkillModel.truncate(destroyOptions);
-      await this.locationModel.truncate(destroyOptions);
       await this.skillModel.truncate(destroyOptions);
       await this.languageModel.truncate(destroyOptions);
       await this.passionModel.truncate(destroyOptions);

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { BusinessSector } from 'dist/common/businessSectors/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
+import { BusinessSector } from './models';
 
 @Injectable()
 export class BusinessSectorsService {
@@ -17,7 +17,7 @@ export class BusinessSectorsService {
       where: whereQuery,
       ...(limit ? { limit } : {}),
       ...(offset ? { offset } : {}),
-      order: [['order', 'ASC']],
+      order: [['name', 'ASC']],
     });
   }
 }

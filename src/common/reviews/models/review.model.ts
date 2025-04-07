@@ -1,7 +1,8 @@
 import {
   AllowNull,
-  BelongsToMany,
+  BelongsTo,
   Column,
+  CreatedAt,
   DataType,
   Default,
   IsUUID,
@@ -9,10 +10,9 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { ExperienceSkill } from 'src/common/experiences/models/experience-skill.model';
-import { Skill } from 'src/common/skills/models';
+import { UserProfile } from 'src/user-profiles/models';
 
-@Table({ tableName: 'Reviews' })
+@Table({ tableName: 'Reviews', updatedAt: false })
 export class Review extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -20,18 +20,26 @@ export class Review extends Model {
   @Column
   id: string;
 
+  @CreatedAt
+  createdAt: Date;
+
+  @IsUUID(4)
   @AllowNull(false)
   @Column
-  name: string;
+  userProfileId: string;
+
+  @BelongsTo(() => UserProfile, 'userProfileId')
+  userProfile?: UserProfile;
 
   @AllowNull(false)
   @Column
-  text: string;
+  authorName: string;
 
   @AllowNull(false)
   @Column
-  status: string;
+  authorLabel: string;
 
-  @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
-  skills: Skill[];
+  @AllowNull(false)
+  @Column
+  content: string;
 }

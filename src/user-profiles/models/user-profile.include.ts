@@ -1,8 +1,13 @@
 import _ from 'lodash';
 import { Includeable, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
 import { Occupation } from 'src/common/occupations/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { HelpNeed } from './help-need.model';
@@ -46,7 +51,7 @@ export function getUserProfileBusinessSectorsInclude(
       model: BusinessSector,
       as: 'businessSectors',
       required: isBusinessSectorsRequired,
-      attributes: ['id', 'name', 'order'],
+      attributes: ['id', 'name'],
       ...(isBusinessSectorsRequired ? { where: businessSectorsOptions } : {}),
       through: {
         attributes: ['id'],
@@ -84,6 +89,83 @@ export const getUserProfileLanguagesInclude = () => [
   },
 ];
 
+export const getUserProfileContractsInclude = () => [
+  {
+    model: Contract,
+    as: 'contracts',
+    required: false,
+    attributes: ['id', 'name'],
+    through: {
+      attributes: ['id'],
+      as: 'userProfileContracts',
+    },
+  },
+];
+
+export const getUserProfileSkillsInclude = () => [
+  {
+    model: Skill,
+    as: 'skills',
+    required: false,
+    attributes: ['id', 'name'],
+    through: {
+      attributes: ['id', 'order'],
+      as: 'userProfileSkills',
+    },
+  },
+];
+
+export const getUserProfileExperiencesInclude = () => [
+  {
+    model: Experience,
+    as: 'experiences',
+    required: false,
+    attributes: [
+      'id',
+      'title',
+      'company',
+      'description',
+      'location',
+      'startDate',
+      'endDate',
+    ],
+    through: {
+      attributes: [] as string[],
+      as: 'userProfileExperiences',
+    },
+  },
+];
+
+export const getUserProfileFormationsInclude = () => [
+  {
+    model: Formation,
+    as: 'formations',
+    required: false,
+    attributes: [
+      'id',
+      'title',
+      'institution',
+      'description',
+      'location',
+      'startDate',
+      'endDate',
+    ],
+    through: {
+      attributes: [] as string[],
+      as: 'userProfileFormations',
+    },
+  },
+];
+
+export const getUserProfileReviewsInclude = () => [
+  {
+    model: Review,
+    as: 'reviews',
+    required: false,
+    attributes: ['id', 'authorName', 'authorLabel', 'content'],
+  },
+];
+
 export function getUserProfileInclude(
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
@@ -94,5 +176,10 @@ export function getUserProfileInclude(
     ...getUserProfileBusinessSectorsInclude(role, businessSectorsOptions),
     ...getUserProfileHelpsInclude(role, helpsOptions),
     ...getUserProfileLanguagesInclude(),
+    ...getUserProfileContractsInclude(),
+    ...getUserProfileSkillsInclude(),
+    ...getUserProfileExperiencesInclude(),
+    ...getUserProfileFormationsInclude(),
+    ...getUserProfileReviewsInclude(),
   ];
 }

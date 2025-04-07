@@ -182,7 +182,7 @@ module.exports = {
               return UUID.v4();
             },
           },
-          value: {
+          name: {
             type: Sequelize.STRING,
             allowNull: false,
           },
@@ -417,6 +417,36 @@ module.exports = {
             type: Sequelize.STRING,
             allowNull: false,
           },
+        },
+        { transaction }
+      );
+      await queryInterface.createTable(
+        'UserProfileSkills',
+        {
+          id: {
+            allowNull: false,
+            primaryKey: true,
+            type: Sequelize.UUID,
+            defaultValue: () => {
+              return UUID.v4();
+            },
+          },
+          userProfileId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            references: {
+              model: 'UserProfiles',
+              key: 'id',
+            },
+          },
+          skillId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            references: {
+              model: 'Skills',
+              key: 'id',
+            },
+          },
           order: {
             type: Sequelize.INTEGER,
             allowNull: false,
@@ -500,6 +530,41 @@ module.exports = {
               key: 'id',
             },
           },
+          order: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            defaultValue: -1,
+          },
+        },
+        { transaction }
+      );
+      await queryInterface.createTable(
+        'UserProfileExperiences',
+        {
+          id: {
+            allowNull: false,
+            primaryKey: true,
+            type: Sequelize.UUID,
+            defaultValue: () => {
+              return UUID.v4();
+            },
+          },
+          userProfileId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            references: {
+              model: 'UserProfiles',
+              key: 'id',
+            },
+          },
+          experienceId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            references: {
+              model: 'Experiences',
+              key: 'id',
+            },
+          },
         },
         { transaction }
       );
@@ -575,6 +640,36 @@ module.exports = {
             allowNull: false,
             references: {
               model: 'Skills',
+              key: 'id',
+            },
+          },
+        },
+        { transaction }
+      );
+      await queryInterface.createTable(
+        'UserProfileFormations',
+        {
+          id: {
+            allowNull: false,
+            primaryKey: true,
+            type: Sequelize.UUID,
+            defaultValue: () => {
+              return UUID.v4();
+            },
+          },
+          userProfileId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            references: {
+              model: 'UserProfiles',
+              key: 'id',
+            },
+          },
+          formationId: {
+            type: Sequelize.UUID,
+            allowNull: false,
+            references: {
+              model: 'Formations',
               key: 'id',
             },
           },
@@ -725,6 +820,9 @@ module.exports = {
         transaction,
       });
 
+      // UserProfile Experiences
+      await queryInterface.dropTable('UserProfileExperiences', { transaction });
+
       // Experience Skills
       await queryInterface.dropTable('ExperienceSkills', { transaction });
       await queryInterface.renameTable(
@@ -740,6 +838,7 @@ module.exports = {
       });
 
       // Skills
+      await queryInterface.dropTable('UserProfileSkills', { transaction });
       await queryInterface.dropTable('Skills', { transaction });
       await queryInterface.renameTable('DeprecatedSkills', 'Skills', {
         transaction,

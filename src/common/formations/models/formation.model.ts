@@ -39,11 +39,11 @@ export class Formation extends Model {
 
   @AllowNull(true)
   @Column
-  dateStart: Date;
+  startDate: Date;
 
   @AllowNull(true)
   @Column
-  dateEnd: Date;
+  endDate: Date;
 
   @BelongsToMany(() => Skill, () => FormationSkill, 'FormationId', 'SkillId')
   skills: Skill[];

@@ -44,11 +44,11 @@ export class Experience extends Model {
 
   @AllowNull(true)
   @Column
-  dateStart: Date;
+  startDate: Date;
 
   @AllowNull(true)
   @Column
-  dateEnd: Date;
+  endDate: Date;
 
   @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
   skills: Skill[];

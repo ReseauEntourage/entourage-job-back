@@ -25,8 +25,7 @@ export class BusinessSector extends Model {
   @Column
   value: string;
 
-  @AllowNull(false)
-  @Default(-1)
+  @AllowNull(true)
   @Column
-  order: number;
+  prefixes: string;
 }
