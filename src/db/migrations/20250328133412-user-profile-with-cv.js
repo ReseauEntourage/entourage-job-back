@@ -52,9 +52,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           name: {
             type: Sequelize.STRING,
@@ -72,38 +70,6 @@ module.exports = {
         { transaction }
       );
 
-      // UserProfileBusinessSectors
-      await queryInterface.createTable(
-        'UserProfileBusinessSectors',
-        {
-          id: {
-            allowNull: false,
-            primaryKey: true,
-            type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
-          },
-          userProfileId: {
-            type: Sequelize.UUID,
-            allowNull: false,
-            references: {
-              model: 'UserProfiles',
-              key: 'id',
-            },
-          },
-          businessSectorId: {
-            type: Sequelize.UUID,
-            allowNull: false,
-            references: {
-              model: 'BusinessSectors',
-              key: 'id',
-            },
-          },
-        },
-        { transaction }
-      );
-
       // Occupations
       await queryInterface.createTable(
         'Occupations',
@@ -112,9 +78,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           createdAt: {
             allowNull: false,
@@ -133,17 +97,15 @@ module.exports = {
         { transaction }
       );
 
-      // UserProfileOccupations
+      // UserProfileSectorOccupations
       await queryInterface.createTable(
-        'UserProfileOccupations',
+        'UserProfileSectorOccupations',
         {
           id: {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -153,13 +115,26 @@ module.exports = {
               key: 'id',
             },
           },
+          businessSectorId: {
+            type: Sequelize.UUID,
+            allowNull: true,
+            references: {
+              model: 'BusinessSectors',
+              key: 'id',
+            },
+          },
           occupationId: {
             type: Sequelize.UUID,
-            allowNull: false,
+            allowNull: true,
             references: {
               model: 'Occupations',
               key: 'id',
             },
+          },
+          order: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+            defaultValue: -1,
           },
         },
         { transaction }
@@ -178,9 +153,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           name: {
             type: Sequelize.STRING,
@@ -198,9 +171,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -233,9 +204,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           value: {
             type: Sequelize.STRING,
@@ -257,9 +226,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -293,9 +260,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           value: {
             type: Sequelize.STRING,
@@ -317,9 +282,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -349,9 +312,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           createdAt: {
             allowNull: false,
@@ -374,9 +335,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -409,9 +368,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           name: {
             type: Sequelize.STRING,
@@ -427,9 +384,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -467,9 +422,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           title: {
             type: Sequelize.STRING,
@@ -510,9 +463,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           experienceId: {
             type: Sequelize.UUID,
@@ -545,9 +496,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -580,9 +529,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           title: {
             type: Sequelize.STRING,
@@ -623,9 +570,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           formationId: {
             type: Sequelize.UUID,
@@ -653,9 +598,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -688,9 +631,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           createdAt: {
             allowNull: false,
@@ -729,9 +670,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           createdAt: {
             allowNull: false,
@@ -758,9 +697,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: () => {
-              return UUID.v4();
-            },
+            defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
           content: {
             type: Sequelize.TEXT,
@@ -866,14 +803,11 @@ module.exports = {
         transaction,
       });
 
-      // Occupations
-      await queryInterface.dropTable('UserProfileOccupations', { transaction });
-      await queryInterface.dropTable('Occupations', { transaction });
-
-      // BusinessSectors
-      await queryInterface.dropTable('UserProfileBusinessSectors', {
+      // BusinessSectors & Occupations
+      await queryInterface.dropTable('UserProfileSectorOccupations', {
         transaction,
       });
+      await queryInterface.dropTable('Occupations', { transaction });
       await queryInterface.dropTable('BusinessSectors', { transaction });
 
       // UserProfiles
