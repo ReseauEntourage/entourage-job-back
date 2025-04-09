@@ -245,7 +245,7 @@ export class UsersCreationController {
         }
       );
 
-      // Newsletter subscritpion
+      // Newsletter subscription
       if (createUserRegistrationDto.optInNewsletter) {
         await this.usersCreationService.sendContactToMailjet({
           email: createUserRegistrationDto.email,
