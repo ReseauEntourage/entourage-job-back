@@ -108,6 +108,12 @@ export class UserProfile extends Model {
   hasPicture: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @Default(false)
+  @Column
+  optInNewsletter: boolean;
+
+  @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column

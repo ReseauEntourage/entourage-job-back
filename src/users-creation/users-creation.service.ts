@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
+import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
@@ -19,7 +22,8 @@ export class UsersCreationService {
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
     private externalDatabasesService: ExternalDatabasesService,
-    private userSocialSituationService: UserSocialSituationsService
+    private userSocialSituationService: UserSocialSituationsService,
+    private queuesService: QueuesService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -141,6 +145,13 @@ export class UsersCreationService {
         networkInsecurity: updateUserSocialSituationDto.networkInsecurity,
         materialInsecurity: updateUserSocialSituationDto.materialInsecurity,
       }
+    );
+  }
+
+  async sendContactToMailjet(contact: CustomContactParams) {
+    await this.queuesService.addToWorkQueue(
+      Jobs.NEWSLETTER_SUBSCRIPTION,
+      contact
     );
   }
 }
