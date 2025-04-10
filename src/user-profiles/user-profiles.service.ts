@@ -144,7 +144,6 @@ export class UserProfilesService {
     // you want all user having in his businessSectors one specific businessSector
     // but you also want the request to response his businessSectors list
     // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
-    console.log('START');
     const filteredProfiles = await this.userProfileModel.findAll({
       offset,
       limit,
@@ -170,7 +169,6 @@ export class UserProfilesService {
         },
       ],
     });
-    console.log('END');
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
