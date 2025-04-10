@@ -119,9 +119,7 @@ export class UsersCreationService {
 
   async updateUserProfileByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile> & {
-      businessSectorIds?: string[];
-    }
+    updateUserProfileDto: Partial<UserProfile>
   ) {
     return this.userProfilesService.updateByUserId(
       userId,

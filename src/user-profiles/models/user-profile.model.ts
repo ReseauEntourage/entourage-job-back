@@ -40,12 +40,11 @@ import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
-import { UserProfileBusinessSector } from './user-profile-business-sector.model';
 import { UserProfileContract } from './user-profile-contract.model';
 import { UserProfileExperience } from './user-profile-experience.model';
 import { UserProfileFormation } from './user-profile-formation.model';
 import { UserProfileLanguage } from './user-profile-language.model';
-import { UserProfileOccupation } from './user-profile-occupation.model';
+import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 import { UserProfileSkill } from './user-profile-skill.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
@@ -146,35 +145,31 @@ export class UserProfile extends Model {
   @BelongsTo(() => User, 'userId')
   user: User;
 
-  // Business Sectors
+  // Business Sectors & Occupations
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
     () => BusinessSector,
-    () => UserProfileBusinessSector,
+    () => UserProfileSectorOccupation,
     'userProfileId',
     'businessSectorId'
   )
   businessSectors: BusinessSector[];
 
-  @HasMany(() => UserProfileBusinessSector, 'userProfileId')
-  userProfileBusinessSectors: UserProfileBusinessSector[];
-
-  // Occupations
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
     () => Occupation,
-    () => UserProfileOccupation,
+    () => UserProfileSectorOccupation,
     'userProfileId',
     'occupationId'
   )
   occupations: Occupation[];
 
-  @HasMany(() => UserProfileOccupation, 'userProfileId')
-  userProfileOccupations: UserProfileOccupation[];
+  @HasMany(() => UserProfileSectorOccupation, 'userProfileId')
+  sectorOccupations: UserProfileSectorOccupation[];
 
   // Languages
   @ApiProperty()

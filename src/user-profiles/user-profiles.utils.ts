@@ -21,13 +21,18 @@ export const getPublicProfileFromUserAndUserProfile = (
     helpOffers: userProfile.helpOffers,
     helpNeeds: userProfile.helpNeeds,
     description: userProfile.description,
-    businessSectors: userProfile.businessSectors,
-    occupations: userProfile.occupations,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     cvUrl: cvUrl,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
+    sectorOccupations: userProfile.sectorOccupations,
+    languages: userProfile.languages,
+    experiences: userProfile.experiences,
+    formations: userProfile.formations,
+    skills: userProfile.skills,
+    contracts: userProfile.contracts,
+    reviews: userProfile.reviews,
   };
 };
 

@@ -12,6 +12,7 @@ import { UserRole, UserRoles } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { HelpNeed } from './help-need.model';
 import { HelpOffer } from './help-offer.model';
+import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 
 export function getUserProfileHelpsInclude(
   role?: UserRole[],
@@ -41,40 +42,38 @@ export function getUserProfileHelpsInclude(
   ];
 }
 
-export function getUserProfileBusinessSectorsInclude(
+export const getUserProfileSectorOccupationsInclude = (
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {}
-) {
+) => {
   const isBusinessSectorsRequired = role && !_.isEmpty(businessSectorsOptions);
-  return [
-    {
-      model: BusinessSector,
-      as: 'businessSectors',
-      required: isBusinessSectorsRequired,
-      attributes: ['id', 'name'],
-      ...(isBusinessSectorsRequired ? { where: businessSectorsOptions } : {}),
-      through: {
-        attributes: ['id'],
-        as: 'userProfileBusinessSectors',
-      },
-    },
-  ];
-}
 
-export function getUserProfileOccupationsInclude() {
   return [
     {
-      model: Occupation,
-      as: 'occupations',
+      model: UserProfileSectorOccupation,
+      as: 'sectorOccupations',
       required: false,
-      attributes: ['id', 'name', 'prefix'],
-      through: {
-        attributes: ['id'],
-        as: 'userProfileOccupations',
-      },
+      attributes: ['id', 'order'],
+      include: [
+        {
+          model: BusinessSector,
+          as: 'businessSector',
+          required: isBusinessSectorsRequired,
+          ...(isBusinessSectorsRequired
+            ? { where: businessSectorsOptions }
+            : {}),
+          attributes: ['id', 'name'],
+        },
+        {
+          model: Occupation,
+          as: 'occupation',
+          required: false,
+          attributes: ['id', 'name', 'prefix'],
+        },
+      ],
     },
   ];
-}
+};
 
 export const getUserProfileLanguagesInclude = () => [
   {
@@ -167,19 +166,23 @@ export const getUserProfileReviewsInclude = () => [
 ];
 
 export function getUserProfileInclude(
+  complete = false,
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
   helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
 ): Includeable[] {
-  return [
-    ...getUserProfileOccupationsInclude(),
-    ...getUserProfileBusinessSectorsInclude(role, businessSectorsOptions),
-    ...getUserProfileHelpsInclude(role, helpsOptions),
+  const additionalIncludes = [
     ...getUserProfileLanguagesInclude(),
     ...getUserProfileContractsInclude(),
     ...getUserProfileSkillsInclude(),
     ...getUserProfileExperiencesInclude(),
     ...getUserProfileFormationsInclude(),
     ...getUserProfileReviewsInclude(),
+  ];
+
+  return [
+    ...(complete ? additionalIncludes : []),
+    ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
+    ...getUserProfileHelpsInclude(role, helpsOptions),
   ];
 }

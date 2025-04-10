@@ -5,8 +5,6 @@ import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
-import { UserProfileBusinessSector } from 'dist/user-profiles/models/user-profile-business-sectors.model';
-import { BusinessSectorValue } from 'src/common/business-sectors/business-sectors.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Occupation } from 'src/common/occupations/models';
@@ -19,8 +17,12 @@ import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
-import { HelpNeed, HelpOffer, UserProfile } from './models';
-import { UserProfileOccupation } from './models/user-profile-occupation.model';
+import {
+  HelpNeed,
+  HelpOffer,
+  UserProfile,
+  UserProfileSectorOccupation,
+} from './models';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
   UserProfilesAttributes,
@@ -42,12 +44,10 @@ export class UserProfilesService {
     private userProfileModel: typeof UserProfile,
     @InjectModel(BusinessSector)
     private businessSectorModel: typeof BusinessSector,
-    @InjectModel(UserProfileBusinessSector)
-    private userProfileBusinessSectorModel: typeof UserProfileBusinessSector,
-    @InjectModel(UserProfileOccupation)
-    private userProfileOccupationModel: typeof UserProfileOccupation,
     @InjectModel(Occupation)
     private occupationModel: typeof Occupation,
+    @InjectModel(UserProfileSectorOccupation)
+    private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
     @InjectModel(HelpNeed)
     private helpNeedModel: typeof HelpNeed,
     @InjectModel(HelpOffer)
@@ -75,17 +75,10 @@ export class UserProfilesService {
     });
   }
 
-  async findOneByUserId(userId: string) {
+  async findOneByUserId(userId: string, complete = false) {
     return this.userProfileModel.findOne({
       where: { userId },
-      include: [
-        ...getUserProfileInclude(),
-        {
-          model: User,
-          as: 'user',
-          attributes: UserProfilesUserAttributes,
-        },
-      ],
+      include: getUserProfileInclude(complete),
     });
   }
 
@@ -106,11 +99,18 @@ export class UserProfilesService {
       search: string;
       helps: HelpValue[];
       departments: Department[];
-      businessSectors: BusinessSectorValue[];
+      businessSectorIds: string[];
     }
   ): Promise<PublicProfile[]> {
-    const { role, offset, limit, search, helps, departments, businessSectors } =
-      query;
+    const {
+      role,
+      offset,
+      limit,
+      search,
+      helps,
+      departments,
+      businessSectorIds,
+    } = query;
 
     const searchOptions = search
       ? { [Op.or]: userProfileSearchQuery(search) }
@@ -124,9 +124,9 @@ export class UserProfilesService {
         : {};
 
     const businessSectorsOptions: WhereOptions<BusinessSector> =
-      businessSectors?.length > 0
+      businessSectorIds?.length > 0
         ? {
-            name: { [Op.or]: businessSectors },
+            id: { [Op.in]: businessSectorIds },
           }
         : {};
 
@@ -144,6 +144,7 @@ export class UserProfilesService {
     // you want all user having in his businessSectors one specific businessSector
     // but you also want the request to response his businessSectors list
     // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
+    console.log('START');
     const filteredProfiles = await this.userProfileModel.findAll({
       offset,
       limit,
@@ -151,7 +152,12 @@ export class UserProfilesService {
       order: sequelize.literal('"user.lastConnection" DESC'),
       ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
-        ...getUserProfileInclude(role, businessSectorsOptions, helpsOptions),
+        ...getUserProfileInclude(
+          false,
+          role,
+          businessSectorsOptions,
+          helpsOptions
+        ),
         {
           model: User,
           as: 'user',
@@ -164,6 +170,7 @@ export class UserProfilesService {
         },
       ],
     });
+    console.log('END');
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
@@ -286,9 +293,7 @@ export class UserProfilesService {
 
   async updateByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile> & {
-      businessSectorIds?: string[];
-    }
+    updateUserProfileDto: Partial<UserProfile>
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
@@ -304,60 +309,71 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      // Business Sectors Ids
-      if (updateUserProfileDto.businessSectorIds) {
-        const businessSectors = await Promise.all(
-          updateUserProfileDto.businessSectorIds.map((businessSectorId) => {
-            return this.businessSectorModel.findByPk(businessSectorId, {
-              transaction: t,
-            });
-          })
+      // Business Sectors & Occupation
+      if (updateUserProfileDto.sectorOccupations) {
+        console.log(
+          'updateUserProfileDto.sectorOccupations',
+          updateUserProfileDto.sectorOccupations
         );
+        const sectorOccupations = await Promise.all(
+          updateUserProfileDto.sectorOccupations.map(
+            async ({ businessSectorId, occupation, order }) => {
+              console.log('--- Inputs -----');
+              console.log('businessSectorId', businessSectorId);
+              console.log('occupation', occupation);
+              console.log('order', order);
+              console.log('-----');
+              const existingSectorOccupation =
+                await this.userProfileSectorOccupationModel.findOne({
+                  where: {
+                    userProfileId: userProfileToUpdate.id,
+                    businessSectorId,
+                  },
+                  include: [
+                    {
+                      model: Occupation,
+                      as: 'occupation',
+                      attributes: ['name'],
+                      where: {
+                        name: occupation.name,
+                      },
+                    },
+                  ],
+                });
 
-        // Update the user profile business sectors
-        await userProfileToUpdate.$set('businessSectors', businessSectors, {
-          transaction: t,
-        });
+              console.log('existingSectorOccupation', existingSectorOccupation);
 
-        // await this.userProfileBusinessSectorModel.destroy({
-        //   where: {
-        //     userProfileId: userProfileToUpdate.id,
-        //     businessSectorId: {
-        //       [Op.not]: updateUserProfileDto.businessSectorIds,
-        //     },
-        //   },
-        //   hooks: true,
-        //   transaction: t,
-        // });
-      }
-
-      // Occupations
-      if (updateUserProfileDto.occupations) {
-        const occupations = await Promise.all(
-          updateUserProfileDto.occupations.map(({ name, prefix = 'dans' }) => {
-            return this.occupationModel.create(
-              { name, prefix },
-              {
-                hooks: true,
-                transaction: t,
+              if (existingSectorOccupation) {
+                return existingSectorOccupation;
               }
-            );
-          })
+              const newOccupation = await this.occupationModel.create(
+                {
+                  name: occupation.name,
+                  prefix: occupation.prefix,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+              console.log('newOccupation', newOccupation);
+              return await this.userProfileSectorOccupationModel.create(
+                {
+                  userProfileId: userProfileToUpdate.id,
+                  businessSectorId,
+                  occupationId: newOccupation.id,
+                  order,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+            }
+          )
         );
-        await userProfileToUpdate.$add('occupations', occupations, {
-          transaction: t,
-        });
 
-        await this.userProfileOccupationModel.destroy({
-          where: {
-            userProfileId: userProfileToUpdate.id,
-            occupationId: {
-              [Op.not]: occupations.map((oc) => {
-                return oc.id;
-              }),
-            },
-          },
-          hooks: true,
+        userProfileToUpdate.$set('sectorOccupations', sectorOccupations, {
           transaction: t,
         });
       }

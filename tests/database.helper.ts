@@ -20,8 +20,7 @@ import {
   HelpNeed,
   HelpOffer,
   UserProfile,
-  UserProfileOccupation,
-  UserProfileBusinessSector,
+  UserProfileSectorOccupation,
 } from 'src/user-profiles/models';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
@@ -36,10 +35,8 @@ export class DatabaseHelper {
     private userCandidatModel: typeof UserCandidat,
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
-    @InjectModel(UserProfileOccupation)
-    private userProfileOccupationModel: typeof UserProfileOccupation,
-    @InjectModel(UserProfileBusinessSector)
-    private userProfileBusinessSectorModel: typeof UserProfileBusinessSector,
+    @InjectModel(UserProfileSectorOccupation)
+    private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
     @InjectModel(UserProfileRecommendation)
     private userProfileRecommendationModel: typeof UserProfileRecommendation,
     @InjectModel(HelpNeed)
@@ -93,8 +90,7 @@ export class DatabaseHelper {
       await this.conversationModel.truncate(destroyOptions);
       await this.revisionChangeModel.truncate(destroyOptions);
       await this.revisionModel.truncate(destroyOptions);
-      await this.userProfileBusinessSectorModel.truncate(destroyOptions);
-      await this.userProfileOccupationModel.truncate(destroyOptions);
+      await this.userProfileSectorOccupationModel.truncate(destroyOptions);
       await this.helpNeedModel.truncate(destroyOptions);
       await this.helpOfferModel.truncate(destroyOptions);
       await this.userProfileRecommendationModel.truncate(destroyOptions);

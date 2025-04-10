@@ -1,9 +1,13 @@
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
+import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
-import { Occupation } from 'src/common/occupations/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
 import { UserRole } from 'src/users/users.types';
 import { FilterConstant } from 'src/utils/types';
-import { HelpNeed, HelpOffer } from './models';
+import { HelpNeed, HelpOffer, UserProfileSectorOccupation } from './models';
 
 export type HelpValue = 'tips' | 'interview' | 'cv' | 'network' | 'event';
 
@@ -41,8 +45,13 @@ export type PublicProfile = {
   helpOffers: HelpOffer[];
   helpNeeds: HelpNeed[];
   description: string;
-  businessSectors: BusinessSector[];
-  occupations: Occupation[];
+  sectorOccupations: UserProfileSectorOccupation[];
+  languages: Language[];
+  experiences: Experience[];
+  formations: Formation[];
+  skills: Skill[];
+  contracts: Contract[];
+  reviews: Review[];
   lastSentMessage: Date;
   lastReceivedMessage: Date;
   cvUrl?: string;

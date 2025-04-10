@@ -1,12 +1,14 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Department } from 'src/common/locations/locations.types';
-import { Occupation } from 'src/common/occupations/models';
 import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
 } from 'src/contacts/contacts.types';
-import { HelpNeed } from 'src/user-profiles/models';
+import {
+  HelpNeed,
+  UserProfileSectorOccupation,
+} from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { Gender, Program, RegistrableUserRole } from 'src/users/users.types';
 
@@ -69,12 +71,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  businessSectorIds?: string[];
-
-  @ApiProperty()
-  @IsArray()
-  @IsOptional()
-  occupations?: Occupation[];
+  sectorOccupations?: UserProfileSectorOccupation[];
 
   @ApiProperty()
   @IsString()

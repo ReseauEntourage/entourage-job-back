@@ -194,8 +194,7 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
         helpNeeds: createUserRegistrationDto.helpNeeds,
-        businessSectorIds: createUserRegistrationDto.businessSectorIds,
-        occupations: createUserRegistrationDto.occupations,
+        sectorOccupations: createUserRegistrationDto.sectorOccupations,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
@@ -305,8 +304,7 @@ export class UsersCreationController {
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
         helpNeeds: createUserReferingDto.helpNeeds,
-        businessSectorIds: createUserReferingDto.businessSectorIds,
-        occupations: createUserReferingDto.occupations,
+        sectorOccupations: createUserReferingDto.sectorOccupations,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(

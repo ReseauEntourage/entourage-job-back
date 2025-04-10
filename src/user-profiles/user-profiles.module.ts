@@ -11,8 +11,7 @@ import {
   HelpNeed,
   HelpOffer,
   UserProfile,
-  UserProfileOccupation,
-  UserProfileBusinessSector,
+  UserProfileSectorOccupation,
 } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileExperience } from './models/user-profile-experience.model';
@@ -27,13 +26,12 @@ import { UserProfilesService } from './user-profiles.service';
   imports: [
     SequelizeModule.forFeature([
       UserProfile,
-      UserProfileOccupation,
       UserProfileLanguage,
       UserProfileContract,
       UserProfileSkill,
       UserProfileExperience,
       UserProfileFormation,
-      UserProfileBusinessSector,
+      UserProfileSectorOccupation,
       HelpNeed,
       HelpOffer,
       UserProfileRecommendation,

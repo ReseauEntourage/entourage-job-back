@@ -19,7 +19,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
-import { BusinessSectorValue } from 'src/common/business-sectors/business-sectors.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
@@ -120,8 +119,8 @@ export class UserProfilesController {
     helps: HelpValue[],
     @Query('departments')
     departments: Department[],
-    @Query('businessSectors')
-    businessSectors: BusinessSectorValue[]
+    @Query('businessSectorIds')
+    businessSectorIds: string[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -142,7 +141,7 @@ export class UserProfilesController {
       search,
       helps,
       departments,
-      businessSectors,
+      businessSectorIds,
     });
   }
 
@@ -270,7 +269,8 @@ export class UserProfilesController {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
 
     const userProfile = await this.userProfilesService.findOneByUserId(
-      userIdToGet
+      userIdToGet,
+      true
     );
 
     if (!user || !userProfile) {
