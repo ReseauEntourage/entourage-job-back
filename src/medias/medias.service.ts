@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { mediaAttributes } from 'src/messaging/messaging.attributes';
 import { Conversation, Message } from 'src/messaging/models';
@@ -95,7 +96,7 @@ export class MediasService {
    * @returns
    */
   private async uploadMedia(file: Express.Multer.File) {
-    const randomString = Math.random().toString(36).substring(7);
+    const randomString = uuid();
     const originalName = file.originalname;
     const extension = originalName.split('.').pop();
     const fileName = `${originalName.replace(
