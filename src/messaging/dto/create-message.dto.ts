@@ -17,5 +17,5 @@ export class CreateMessageDto extends PickType(Message, ['content'] as const) {
   @IsArray()
   @ArrayMaxSize(10)
   @IsOptional()
-  files?: string[];
+  files?: Express.Multer.File[];
 }
