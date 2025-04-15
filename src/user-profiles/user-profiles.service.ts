@@ -31,7 +31,7 @@ import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
   BUSINESS_SECTORS: 0.3,
-  HELPS: 0.5,
+  NUDGES: 0.5,
 };
 
 @Injectable()
@@ -254,7 +254,7 @@ export class UserProfilesService {
     userId: string
   ): Promise<UserProfileRecommendation[]> {
     return this.userProfileRecommandationModel.findAll({
-      where: { userId },
+      where: { UserId: userId },
       order: sequelize.literal('"recommendedUser.createdAt" DESC'),
       include: {
         model: User,
@@ -410,7 +410,7 @@ export class UserProfilesService {
       usersToRecommendIds.map(
         (userToRecommendId) => {
           return {
-            userId,
+            UserId: userId,
             RecommendedUserId: userToRecommendId,
           };
         },
@@ -468,37 +468,28 @@ export class UserProfilesService {
       u."lastName",
       u.email,
       up.department,
-      up."currentJob",
       u.role,
       u."lastConnection",
       u."createdAt" as "createdAt",
-      string_agg(DISTINCT a.name, ', ') as occupations,
-      string_agg(DISTINCT COALESCE(sb.name, nb.name), ', ') as "profileBusinessSectors",  
-      string_agg(DISTINCT COALESCE(ho.name, hn.name), ', ') as "profileHelps"
+      string_agg(DISTINCT o.name, ', ') as occupations,
+      string_agg(DISTINCT bs.name, ', ') as businessSectors,
+      string_agg(DISTINCT nb.value, ', ') as nudges
     
     FROM "Users" u
-    LEFT JOIN "User_Profiles" up 
+    LEFT JOIN "UserProfiles" up
       ON u.id = up."userId"
     
-    LEFT JOIN "User_Profile_Search_Ambitions" upsa
-      ON up.id = upsa."UserProfileId"
-    LEFT JOIN "Ambitions" a
-      ON a.id = upsa."AmbitionId"
-    
-    LEFT JOIN "User_Profile_Search_BusinessLines" upsb
-      ON up.id = upsb."UserProfileId"
-    LEFT JOIN "BusinessLines" sb
-      ON sb.id = upsb."BusinessLineId"
-    
-    LEFT JOIN "User_Profile_Network_BusinessLines" upnb
-      ON up.id = upnb."UserProfileId"
-    LEFT JOIN "BusinessLines" nb
-      ON nb.id = upnb."BusinessLineId"
-    
-    LEFT JOIN "Help_Needs" hn 
-      ON up.id = hn."UserProfileId"
-    LEFT JOIN "Help_Offers" ho
-      ON up.id = ho."UserProfileId"
+    LEFT JOIN "UserProfileSectorOccupations" upso
+      ON up.id = upso."userProfileId"
+    LEFT JOIN "Occupations" o
+      ON o.id = upso."occupationId"
+    LEFT JOIN "BusinessSectors" bs
+      ON bs.id = upso."businessSectorId"
+
+    LEFT JOIN "UserProfileNudges" upn
+      ON up.id = upn."userProfileId"
+    LEFT JOIN "Nudges" nb
+      ON nb.id = upn."nudgeId"
     
     WHERE u."deletedAt" IS NULL
     AND up."isAvailable" IS TRUE
@@ -508,26 +499,8 @@ export class UserProfilesService {
     )})
     AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
     AND u."lastConnection" IS NOT NULL
-
-    -- InternalMessages join optimisation
-    AND u.id NOT IN (
-      SELECT
-        "addresseeUserId"
-      FROM
-        "InternalMessages"
-      WHERE
-        "senderUserId" = '${userId}'
-    )
-    AND u.id NOT IN (
-      SELECT
-        "senderUserId"
-      FROM
-        "InternalMessages"
-      WHERE
-        "addresseeUserId" = '${userId}'
-    )
         
-    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
+    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department
     ;`;
 
     const profiles: UserRecommendationSQL[] =
@@ -556,16 +529,16 @@ export class UserProfilesService {
             ? profile.profileHelps.split(', ')
             : [];
 
-          const helpsDifferences = _.difference(
+          const nudgesDifferences = _.difference(
             userProfileNudges.map(({ nudgeId }) => nudgeId),
             profileHelps
           );
 
-          const helpsMatching =
-            (userProfileNudges.length - helpsDifferences.length) *
-            UserProfileRecommendationsWeights.HELPS;
+          const nudgesMatching =
+            (userProfileNudges.length - nudgesDifferences.length) *
+            UserProfileRecommendationsWeights.NUDGES;
 
-          return businessSectorsMatching + helpsMatching;
+          return businessSectorsMatching + nudgesMatching;
         },
         ({ department }) => department === userProfile.department,
         ({ createdAt }) => createdAt,
@@ -618,7 +591,7 @@ export class UserProfilesService {
 
   async removeRecommendationsByUserId(userId: string) {
     return this.userProfileRecommandationModel.destroy({
-      where: { userId },
+      where: { UserId: userId },
       individualHooks: true,
     });
   }
