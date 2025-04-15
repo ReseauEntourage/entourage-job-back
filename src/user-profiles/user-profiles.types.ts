@@ -7,7 +7,8 @@ import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { UserRole } from 'src/users/users.types';
 import { FilterConstant } from 'src/utils/types';
-import { HelpNeed, HelpOffer, UserProfileSectorOccupation } from './models';
+import { UserProfileSectorOccupation } from './models';
+import { UserProfileNudge } from './models/user-profile-nudge.model';
 
 export type HelpValue = 'tips' | 'interview' | 'cv' | 'network' | 'event';
 
@@ -42,8 +43,7 @@ export type PublicProfile = {
   department: Department;
   currentJob: string;
   isAvailable: boolean;
-  helpOffers: HelpOffer[];
-  helpNeeds: HelpNeed[];
+  userProfileNudges: UserProfileNudge[];
   description: string;
   sectorOccupations: UserProfileSectorOccupation[];
   languages: Language[];

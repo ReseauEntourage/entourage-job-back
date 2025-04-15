@@ -33,17 +33,17 @@ import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
-import { HelpNeed } from './help-need.model';
-import { HelpOffer } from './help-offer.model';
 import { UserProfileContract } from './user-profile-contract.model';
 import { UserProfileExperience } from './user-profile-experience.model';
 import { UserProfileFormation } from './user-profile-formation.model';
 import { UserProfileLanguage } from './user-profile-language.model';
+import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 import { UserProfileSkill } from './user-profile-skill.model';
 
@@ -250,19 +250,20 @@ export class UserProfile extends Model {
   @HasMany(() => Review, 'userProfileId')
   reviews: Review[];
 
-  // Helps Needs
+  // Nudges
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @HasMany(() => HelpNeed, 'UserProfileId')
-  helpNeeds: HelpNeed[];
+  @BelongsToMany(
+    () => Nudge,
+    () => UserProfileNudge,
+    'userProfileId',
+    'nudgeId'
+  )
+  nudges: Nudge[];
 
-  // Helps Offers
-  @ApiProperty()
-  @IsArray()
-  @IsOptional()
-  @HasMany(() => HelpOffer, 'UserProfileId')
-  helpOffers: HelpOffer[];
+  @HasMany(() => UserProfileNudge, 'userProfileId')
+  userProfileNudges: UserProfileNudge[];
 
   /**
    * Hooks

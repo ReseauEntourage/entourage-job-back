@@ -5,42 +5,35 @@ import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Language } from 'src/common/languages/models';
+import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
-import { UserRole, UserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
-import { HelpNeed } from './help-need.model';
-import { HelpOffer } from './help-offer.model';
+import { UserRole } from 'src/users/users.types';
+import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 
-export function getUserProfileHelpsInclude(
-  role?: UserRole[],
-  helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
-) {
-  const isHelpsRequired = role && !_.isEmpty(helpsOptions);
-  const isCandidateHelps =
-    isHelpsRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
-  const isCoachHelps =
-    isHelpsRequired && isRoleIncluded([UserRoles.COACH], role);
-
+export const getUserProfileNudgesInclude = (
+  nudgesOptions: WhereOptions<Nudge> = {}
+) => {
   return [
     {
-      model: HelpNeed,
-      as: 'helpNeeds',
-      required: isCandidateHelps,
-      attributes: ['id', 'name'],
-      ...(isCandidateHelps ? { where: helpsOptions } : {}),
-    },
-    {
-      model: HelpOffer,
-      as: 'helpOffers',
-      required: isCoachHelps,
-      attributes: ['id', 'name'],
-      ...(isCoachHelps ? { where: helpsOptions } : {}),
+      model: UserProfileNudge,
+      as: 'userProfileNudges',
+      attributes: ['id', 'content', 'createdAt'],
+      where: nudgesOptions,
+      required: false,
+      include: [
+        {
+          model: Nudge,
+          as: 'nudge',
+          required: false,
+          attributes: ['id', 'value', 'nameRequest', 'nameOffer', 'order'],
+        },
+      ],
     },
   ];
-}
+};
 
 export const getUserProfileSectorOccupationsInclude = (
   role?: UserRole[],
@@ -165,12 +158,12 @@ export const getUserProfileReviewsInclude = () => [
   },
 ];
 
-export function getUserProfileInclude(
+export const getUserProfileInclude = (
   complete = false,
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
-  helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
-): Includeable[] {
+  nudgesOptions: WhereOptions<Nudge> = {}
+): Includeable[] => {
   const additionalIncludes = [
     ...getUserProfileLanguagesInclude(),
     ...getUserProfileContractsInclude(),
@@ -183,6 +176,6 @@ export function getUserProfileInclude(
   return [
     ...(complete ? additionalIncludes : []),
     ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
-    ...getUserProfileHelpsInclude(role, helpsOptions),
+    ...getUserProfileNudgesInclude(nudgesOptions),
   ];
-}
+};

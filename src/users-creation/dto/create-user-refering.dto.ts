@@ -5,10 +5,7 @@ import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
 } from 'src/contacts/contacts.types';
-import {
-  HelpNeed,
-  UserProfileSectorOccupation,
-} from 'src/user-profiles/models';
+import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { Gender, Program } from 'src/users/users.types';
 
@@ -43,7 +40,7 @@ export class CreateUserReferingDto extends PickType(User, [
 
   @ApiProperty()
   @IsArray()
-  helpNeeds?: HelpNeed[];
+  nudgeIds?: string[];
 
   @ApiProperty()
   @IsString()

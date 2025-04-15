@@ -46,17 +46,10 @@ export class UserProfilesHelper {
           })
         )
       ),
-      helpNeeds: expect.arrayContaining(
-        user.userProfile.helpNeeds.map(({ name }) =>
+      userProfileNudges: expect.arrayContaining(
+        user.userProfile.userProfileNudges.map(({ id }) =>
           expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      helpOffers: expect.arrayContaining(
-        user.userProfile.helpOffers.map(({ name }) =>
-          expect.objectContaining({
-            name,
+            id,
           })
         )
       ),

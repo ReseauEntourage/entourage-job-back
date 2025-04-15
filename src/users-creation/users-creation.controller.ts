@@ -193,7 +193,7 @@ export class UsersCreationController {
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
-        helpNeeds: createUserRegistrationDto.helpNeeds,
+        nudgeIds: createUserRegistrationDto.nudgeIds,
         sectorOccupations: createUserRegistrationDto.sectorOccupations,
       });
 
@@ -303,7 +303,7 @@ export class UsersCreationController {
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
-        helpNeeds: createUserReferingDto.helpNeeds,
+        nudgeIds: createUserReferingDto.nudgeIds,
         sectorOccupations: createUserReferingDto.sectorOccupations,
       });
 

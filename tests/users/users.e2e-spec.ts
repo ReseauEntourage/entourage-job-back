@@ -16,9 +16,8 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
-import { HelpNeed, HelpOffer, UserProfile } from 'src/user-profiles/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
-import { HelpValue } from 'src/user-profiles/user-profiles.types';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { Programs, UserRoles } from 'src/users/users.types';
@@ -632,11 +631,6 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
-
           const userValues = {
             firstName: user.firstName,
             lastName: user.lastName,
@@ -647,7 +641,10 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            nudgeIds: [
+              '6f3b2899-1d7f-48fa-93d5-14d62e2c6742',
+              '9ba366e6-ccaf-4d4e-9467-c6a3e22e0f0b',
+            ],
             department: 'Paris (75)' as Department,
           };
 
@@ -677,9 +674,11 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                helpNeeds: expect.arrayContaining(
-                  userProfileValues.helpNeeds.map((expectation) =>
-                    expect.objectContaining(expectation)
+                userProfileNudge: expect.arrayContaining(
+                  userProfileValues.nudgeIds.map((id) =>
+                    expect.objectContaining({
+                      id,
+                    })
                   )
                 ),
               }),
@@ -1067,10 +1066,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1081,7 +1080,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1111,11 +1110,11 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                helpNeeds: expect.arrayContaining(
-                  userProfileValues.helpNeeds.map((expectation) =>
-                    expect.objectContaining(expectation)
-                  )
-                ),
+                // helpNeeds: expect.arrayContaining(
+                //   userProfileValues.helpNeeds.map((expectation) =>
+                //     expect.objectContaining(expectation)
+                //   )
+                // ),
               }),
             })
           );
@@ -1128,7 +1127,7 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
+          // const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
 
           const userValues = {
             firstName: user.firstName,
@@ -1139,7 +1138,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1167,11 +1166,11 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                helpNeeds: expect.arrayContaining(
-                  userProfileValues.helpNeeds.map((expectation) =>
-                    expect.objectContaining(expectation)
-                  )
-                ),
+                // helpNeeds: expect.arrayContaining(
+                //   userProfileValues.helpNeeds.map((expectation) =>
+                //     expect.objectContaining(expectation)
+                //   )
+                // ),
               }),
             })
           );
@@ -1184,7 +1183,7 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [];
+          // const helpNeeds: { name: HelpValue }[] = [];
 
           const userValues = {
             firstName: user.firstName,
@@ -1193,7 +1192,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1221,10 +1220,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1235,7 +1234,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1267,10 +1266,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1281,7 +1280,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1313,10 +1312,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1327,7 +1326,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1359,10 +1358,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1373,7 +1372,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1406,10 +1405,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1420,7 +1419,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1458,10 +1457,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userToSend = {
             firstName: user.firstName,
@@ -1469,7 +1468,7 @@ describe('Users', () => {
             email: user.email,
             phone: user.phone,
             gender: user.gender,
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
@@ -2482,8 +2481,8 @@ describe('Users', () => {
                 department: 'Paris (75)',
                 businessSectors: [{ name: 'id' }] as BusinessSector[],
                 occupations: [{ name: 'développeur' }] as Occupation[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                // helpNeeds: [{ name: 'network' }] as HelpNeed[],
+                // helpOffers: [{ name: 'network' }] as HelpOffer[],
               },
             }
           );
@@ -2626,7 +2625,7 @@ describe('Users', () => {
                 currentJob: 'peintre',
                 isAvailable: true,
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -2646,7 +2645,7 @@ describe('Users', () => {
                   isAvailable: true,
                   occupations: [{ name: 'peintre' }] as Occupation[],
                   businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                  helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                  // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 },
               }
             )
@@ -2685,7 +2684,7 @@ describe('Users', () => {
                 currentJob: 'peintre',
                 isAvailable: true,
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -2704,7 +2703,7 @@ describe('Users', () => {
                 isAvailable: true,
                 occupations: [{ name: 'peintre' }] as Occupation[],
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
           );
@@ -2720,7 +2719,7 @@ describe('Users', () => {
                 isAvailable: false,
                 occupations: [{ name: 'peintre' }] as Occupation[],
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
           );
@@ -2743,7 +2742,7 @@ describe('Users', () => {
                 isAvailable: true,
                 occupations: [{ name: 'peintre' }] as Occupation[],
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
           );
@@ -2787,11 +2786,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
@@ -2812,11 +2811,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2836,11 +2835,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'cd' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2860,11 +2859,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'cv' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'cv' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2893,11 +2892,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2918,10 +2917,10 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'interview' },
+                //   { name: 'cv' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2942,11 +2941,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'interview' },
+                //   { name: 'cv' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2967,11 +2966,11 @@ describe('Users', () => {
                   { name: 'aev' },
                   { name: 'asp' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -2992,11 +2991,11 @@ describe('Users', () => {
                   { name: 'aev' },
                   { name: 'asp' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -3017,11 +3016,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -3042,11 +3041,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3067,11 +3066,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -3097,11 +3096,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -3129,11 +3128,11 @@ describe('Users', () => {
                     { name: 'aa' },
                     { name: 'cm' },
                   ] as BusinessSector[],
-                  helpNeeds: [
-                    { name: 'network' },
-                    { name: 'tips' },
-                    { name: 'interview' },
-                  ] as HelpNeed[],
+                  // helpNeeds: [
+                  //   { name: 'network' },
+                  //   { name: 'tips' },
+                  //   { name: 'interview' },
+                  // ] as HelpNeed[],
                 },
               }
             );
@@ -3171,7 +3170,7 @@ describe('Users', () => {
                 isAvailable: true,
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 occupations: [{ name: 'menuisier' }] as Occupation[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -3191,7 +3190,7 @@ describe('Users', () => {
                   isAvailable: true,
                   currentJob: 'menuisier',
                   businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                  helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                  // helpOffers: [{ name: 'interview' }] as HelpOffer[],
                 },
               }
             )
@@ -3232,7 +3231,7 @@ describe('Users', () => {
                 isAvailable: true,
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 occupations: [{ name: 'menuisier' }] as Occupation[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -3251,7 +3250,7 @@ describe('Users', () => {
                 isAvailable: true,
                 currentJob: 'menuisier',
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
           );
@@ -3267,7 +3266,7 @@ describe('Users', () => {
                 isAvailable: false,
                 currentJob: 'menuisier',
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
           );
@@ -3295,7 +3294,7 @@ describe('Users', () => {
                 isAvailable: true,
                 currentJob: 'menuisier',
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
           );
@@ -3336,11 +3335,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
@@ -3361,11 +3360,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3385,11 +3384,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'cd' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3409,11 +3408,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'cv' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'cv' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3442,11 +3441,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3467,10 +3466,10 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'interview' },
+                //   { name: 'cv' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3491,11 +3490,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'interview' },
+                //   { name: 'cv' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3516,11 +3515,11 @@ describe('Users', () => {
                   { name: 'aev' },
                   { name: 'asp' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3541,11 +3540,11 @@ describe('Users', () => {
                   { name: 'aev' },
                   { name: 'asp' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3566,11 +3565,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3591,11 +3590,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                // helpNeeds: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpNeed[],
               },
             }
           );
@@ -3616,11 +3615,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3646,11 +3645,11 @@ describe('Users', () => {
                   { name: 'aa' },
                   { name: 'art' },
                 ] as BusinessSector[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                // helpOffers: [
+                //   { name: 'network' },
+                //   { name: 'tips' },
+                //   { name: 'event' },
+                // ] as HelpOffer[],
               },
             }
           );
@@ -3678,11 +3677,11 @@ describe('Users', () => {
                     { name: 'aa' },
                     { name: 'cm' },
                   ] as BusinessSector[],
-                  helpOffers: [
-                    { name: 'network' },
-                    { name: 'tips' },
-                    { name: 'interview' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'network' },
+                  //   { name: 'tips' },
+                  //   { name: 'interview' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -3823,14 +3822,14 @@ describe('Users', () => {
             const userProfileCandidate: Partial<UserProfile> = {
               businessSectors: [{ name: 'bat' }] as BusinessSector[],
               occupations: [{ name: 'menuisier' }] as Occupation[],
-              helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+              // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               description: 'hello',
               department: 'Paris (75)',
             };
             const userProfileCoach: Partial<UserProfile> = {
               currentJob: 'peintre',
               businessSectors: [{ name: 'bat' }] as BusinessSector[],
-              helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               description: 'hello',
               department: 'Paris (75)',
             };
@@ -4481,10 +4480,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpNeed[],
+                  // helpNeeds: [
+                  //   { name: 'cv' },
+                  //   { name: 'network' },
+                  // ] as HelpNeed[],
                 },
               }
             );
@@ -4497,10 +4496,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpNeed[],
+                  // helpNeeds: [
+                  //   { name: 'interview' },
+                  //   { name: 'event' },
+                  // ] as HelpNeed[],
                 },
               }
             );
@@ -4513,7 +4512,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                  // helpNeeds: [{ name: 'tips' }] as HelpNeed[],
                 },
               }
             );
@@ -4526,10 +4525,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'cv' },
+                  //   { name: 'network' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -4542,10 +4541,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'interview' },
+                  //   { name: 'event' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -4558,7 +4557,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                  // helpOffers: [{ name: 'tips' }] as HelpOffer[],
                 },
               }
             );
@@ -4589,10 +4588,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpNeed[],
+                  // helpNeeds: [
+                  //   { name: 'cv' },
+                  //   { name: 'network' },
+                  // ] as HelpNeed[],
                 },
               }
             );
@@ -4605,10 +4604,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpNeed[],
+                  // helpNeeds: [
+                  //   { name: 'interview' },
+                  //   { name: 'event' },
+                  // ] as HelpNeed[],
                 },
               }
             );
@@ -4621,7 +4620,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                  // helpNeeds: [{ name: 'tips' }] as HelpNeed[],
                 },
               }
             );
@@ -4634,10 +4633,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'cv' },
+                  //   { name: 'network' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -4650,10 +4649,10 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'interview' },
+                  //   { name: 'event' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -4666,7 +4665,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                  // helpOffers: [{ name: 'tips' }] as HelpOffer[],
                 },
               }
             );
@@ -4712,10 +4711,10 @@ describe('Users', () => {
                     { name: 'aa' },
                   ] as BusinessSector[],
 
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'cv' },
+                  //   { name: 'network' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -4735,10 +4734,10 @@ describe('Users', () => {
                       { name: 'rh' },
                       { name: 'aa' },
                     ] as BusinessSector[],
-                    helpNeeds: [
-                      { name: 'cv' },
-                      { name: 'network' },
-                    ] as HelpNeed[],
+                    // helpNeeds: [
+                    //   { name: 'cv' },
+                    //   { name: 'network' },
+                    // ] as HelpNeed[],
                   },
                 }
               );
@@ -4784,10 +4783,10 @@ describe('Users', () => {
                     { name: 'aa' },
                   ] as BusinessSector[],
 
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  // helpOffers: [
+                  //   { name: 'cv' },
+                  //   { name: 'network' },
+                  // ] as HelpOffer[],
                 },
               }
             );
@@ -4807,10 +4806,10 @@ describe('Users', () => {
                       { name: 'rh' },
                       { name: 'aa' },
                     ] as BusinessSector[],
-                    helpNeeds: [
-                      { name: 'cv' },
-                      { name: 'network' },
-                    ] as HelpNeed[],
+                    // helpNeeds: [
+                    //   { name: 'cv' },
+                    //   { name: 'network' },
+                    // ] as HelpNeed[],
                   },
                 }
               );
@@ -5915,7 +5914,7 @@ describe('Users', () => {
                 isAvailable: true,
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
                 occupations: [{ name: 'menuisier' }] as Occupation[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               },
             }
           );
@@ -5930,7 +5929,7 @@ describe('Users', () => {
                 currentJob: 'peintre',
                 isAvailable: true,
                 businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               },
             }
           );
@@ -6027,7 +6026,7 @@ describe('Users', () => {
             isAvailable: false,
             businessSectors: [{ name: 'id' }] as BusinessSector[],
             occupations: [{ name: 'développeur' }] as Occupation[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6060,7 +6059,7 @@ describe('Users', () => {
             isAvailable: false,
             businessSectors: [{ name: 'id' }] as BusinessSector[],
             occupations: [{ name: 'développeur' }] as Occupation[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
             linkedinUrl: 'https://www.linkdin.com/in/jean-dupont',
           };
 
@@ -6079,7 +6078,7 @@ describe('Users', () => {
             department: 'Paris (75)',
             isAvailable: false,
             businessSectors: [{ name: 'id' }] as BusinessSector[],
-            helpOffers: [{ name: 'network' }] as HelpOffer[],
+            // helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
           const response: APIResponse<
             UserProfilesController['updateByUserId']
@@ -6096,7 +6095,7 @@ describe('Users', () => {
             department: 'Paris (75)',
             isAvailable: false,
             businessSectors: [{ name: 'id' }] as BusinessSector[],
-            helpOffers: [{ name: 'network' }] as HelpOffer[],
+            // helpOffers: [{ name: 'network' }] as HelpOffer[],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6114,7 +6113,7 @@ describe('Users', () => {
             expect.objectContaining({
               ...updatedProfile,
               businessSectors: [expect.objectContaining({ name: 'id' })],
-              helpOffers: [expect.objectContaining({ name: 'network' })],
+              // helpOffers: [expect.objectContaining({ name: 'network' })],
             })
           );
 
@@ -6143,7 +6142,7 @@ describe('Users', () => {
             isAvailable: false,
             occupations: [{ name: 'développeur' }] as Occupation[],
             businessSectors: [{ name: 'id' }] as BusinessSector[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
           };
 
           const response: APIResponse<

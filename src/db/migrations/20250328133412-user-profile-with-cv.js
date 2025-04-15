@@ -662,9 +662,9 @@ module.exports = {
         { transaction }
       );
 
-      // Requests
+      // Nudges
       await queryInterface.createTable(
-        'RequestTypes',
+        'Nudges',
         {
           id: {
             allowNull: false,
@@ -672,12 +672,15 @@ module.exports = {
             type: Sequelize.UUID,
             defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
-          createdAt: {
+          value: {
+            type: Sequelize.STRING,
             allowNull: false,
-            type: Sequelize.DATE,
-            defaultValue: Sequelize.NOW,
           },
-          name: {
+          nameRequest: {
+            type: Sequelize.STRING,
+            allowNull: false,
+          },
+          nameOffer: {
             type: Sequelize.STRING,
             allowNull: false,
           },
@@ -691,7 +694,7 @@ module.exports = {
       );
 
       await queryInterface.createTable(
-        'Requests',
+        'UserProfileNudges',
         {
           id: {
             allowNull: false,
@@ -699,15 +702,20 @@ module.exports = {
             type: Sequelize.UUID,
             defaultValue: Sequelize.literal('uuid_generate_v4()'),
           },
+          createdAt: {
+            allowNull: false,
+            type: Sequelize.DATE,
+            defaultValue: Sequelize.NOW,
+          },
           content: {
             type: Sequelize.TEXT,
             allowNull: true,
           },
-          requestTypeId: {
+          nudgeId: {
             type: Sequelize.UUID,
             allowNull: true,
             references: {
-              model: 'RequestTypes',
+              model: 'Nudges',
               key: 'id',
             },
           },
@@ -734,8 +742,8 @@ module.exports = {
 
     try {
       // Requests
-      await queryInterface.dropTable('Requests', { transaction });
-      await queryInterface.dropTable('RequestTypes', { transaction });
+      await queryInterface.dropTable('UserProfileNudges', { transaction });
+      await queryInterface.dropTable('Nudges', { transaction });
 
       // Reviews
       await queryInterface.dropTable('Reviews', { transaction });
@@ -744,6 +752,9 @@ module.exports = {
       });
 
       // Formation Skills
+      await queryInterface.dropTable('UserProfileFormations', {
+        transaction,
+      });
       await queryInterface.dropTable('FormationSkills', { transaction });
       await queryInterface.renameTable(
         'DeprecatedFormation_Skills',

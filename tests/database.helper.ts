@@ -17,11 +17,10 @@ import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import {
-  HelpNeed,
-  HelpOffer,
   UserProfile,
   UserProfileSectorOccupation,
 } from 'src/user-profiles/models';
+import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
 import { Factory } from 'src/utils/types';
@@ -39,10 +38,8 @@ export class DatabaseHelper {
     private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
     @InjectModel(UserProfileRecommendation)
     private userProfileRecommendationModel: typeof UserProfileRecommendation,
-    @InjectModel(HelpNeed)
-    private helpNeedModel: typeof HelpNeed,
-    @InjectModel(HelpOffer)
-    private helpOfferModel: typeof HelpOffer,
+    @InjectModel(UserProfileNudge)
+    private userProfileNudge: typeof UserProfileNudge,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
     @InjectModel(Language)
@@ -91,8 +88,7 @@ export class DatabaseHelper {
       await this.revisionChangeModel.truncate(destroyOptions);
       await this.revisionModel.truncate(destroyOptions);
       await this.userProfileSectorOccupationModel.truncate(destroyOptions);
-      await this.helpNeedModel.truncate(destroyOptions);
-      await this.helpOfferModel.truncate(destroyOptions);
+      await this.userProfileNudge.truncate(destroyOptions);
       await this.userProfileRecommendationModel.truncate(destroyOptions);
       await this.experienceSkillModel.truncate(destroyOptions);
       await this.formationModel.truncate(destroyOptions);

@@ -7,6 +7,7 @@ import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -17,19 +18,15 @@ import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
-import {
-  HelpNeed,
-  HelpOffer,
-  UserProfile,
-  UserProfileSectorOccupation,
-} from './models';
+import { UserProfile, UserProfileSectorOccupation } from './models';
+import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
-import { HelpValue, PublicProfile } from './user-profiles.types';
+import { PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
@@ -42,18 +39,14 @@ export class UserProfilesService {
   constructor(
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
-    @InjectModel(BusinessSector)
-    private businessSectorModel: typeof BusinessSector,
     @InjectModel(Occupation)
     private occupationModel: typeof Occupation,
     @InjectModel(UserProfileSectorOccupation)
     private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
-    @InjectModel(HelpNeed)
-    private helpNeedModel: typeof HelpNeed,
-    @InjectModel(HelpOffer)
-    private helpOfferModel: typeof HelpOffer,
     @InjectModel(UserProfileRecommendation)
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
+    @InjectModel(UserProfileNudge)
+    private userProfileNudgeModel: typeof UserProfileNudge,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -97,7 +90,7 @@ export class UserProfilesService {
       offset: number;
       limit: number;
       search: string;
-      helps: HelpValue[];
+      nudgeIds: string[];
       departments: Department[];
       businessSectorIds: string[];
     }
@@ -107,7 +100,7 @@ export class UserProfilesService {
       offset,
       limit,
       search,
-      helps,
+      nudgeIds,
       departments,
       businessSectorIds,
     } = query;
@@ -130,11 +123,11 @@ export class UserProfilesService {
           }
         : {};
 
-    const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
-      helps?.length > 0
+    const nudgesSectorsOptions: WhereOptions<Nudge> =
+      nudgeIds?.length > 0
         ? {
-            name: {
-              [Op.or]: helps,
+            id: {
+              [Op.or]: nudgeIds,
             },
           }
         : {};
@@ -155,7 +148,7 @@ export class UserProfilesService {
           false,
           role,
           businessSectorsOptions,
-          helpsOptions
+          nudgesSectorsOptions
         ),
         {
           model: User,
@@ -291,7 +284,9 @@ export class UserProfilesService {
 
   async updateByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile>
+    updateUserProfileDto: Partial<UserProfile> & {
+      nudgeIds?: string[];
+    }
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
@@ -309,18 +304,9 @@ export class UserProfilesService {
 
       // Business Sectors & Occupation
       if (updateUserProfileDto.sectorOccupations) {
-        console.log(
-          'updateUserProfileDto.sectorOccupations',
-          updateUserProfileDto.sectorOccupations
-        );
         const sectorOccupations = await Promise.all(
           updateUserProfileDto.sectorOccupations.map(
             async ({ businessSectorId, occupation, order }) => {
-              console.log('--- Inputs -----');
-              console.log('businessSectorId', businessSectorId);
-              console.log('occupation', occupation);
-              console.log('order', order);
-              console.log('-----');
               const existingSectorOccupation =
                 await this.userProfileSectorOccupationModel.findOne({
                   where: {
@@ -339,8 +325,6 @@ export class UserProfilesService {
                   ],
                 });
 
-              console.log('existingSectorOccupation', existingSectorOccupation);
-
               if (existingSectorOccupation) {
                 return existingSectorOccupation;
               }
@@ -354,7 +338,6 @@ export class UserProfilesService {
                   transaction: t,
                 }
               );
-              console.log('newOccupation', newOccupation);
               return await this.userProfileSectorOccupationModel.create(
                 {
                   userProfileId: userProfileToUpdate.id,
@@ -376,55 +359,44 @@ export class UserProfilesService {
         });
       }
 
-      // HelpsNeeds
-      if (updateUserProfileDto.helpNeeds) {
-        const helpNeeds = await Promise.all(
-          updateUserProfileDto.helpNeeds.map(({ name }) => {
-            return this.helpNeedModel.create(
-              { UserProfileId: userProfileToUpdate.id, name },
-              {
-                hooks: true,
-                transaction: t,
-              }
-            );
+      // Nudges
+      if (updateUserProfileDto.nudgeIds) {
+        const nudgesToAdd = await Promise.all(
+          updateUserProfileDto.nudgeIds.map(async (nudgeId) => {
+            const userProfileNudge = await this.userProfileNudgeModel.findOne({
+              where: {
+                userProfileId: userProfileToUpdate.id,
+                nudgeId,
+              },
+            });
+            if (!userProfileNudge) {
+              return await this.userProfileNudgeModel.create(
+                {
+                  userProfileId: userProfileToUpdate.id,
+                  nudgeId,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+            }
+            return null;
           })
         );
 
-        await this.helpNeedModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            id: {
-              [Op.not]: helpNeeds.map((hn) => {
-                return hn.id;
-              }),
-            },
-          },
-          hooks: true,
+        userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
           transaction: t,
         });
-      }
-      if (updateUserProfileDto.helpOffers) {
-        const helpOffers = await Promise.all(
-          updateUserProfileDto.helpOffers.map(({ name }) => {
-            return this.helpOfferModel.create(
-              { UserProfileId: userProfileToUpdate.id, name },
-              {
-                hooks: true,
-                transaction: t,
-              }
-            );
-          })
-        );
-        await this.helpOfferModel.destroy({
+
+        await this.userProfileNudgeModel.destroy({
           where: {
-            UserProfileId: userProfileToUpdate.id,
-            id: {
-              [Op.not]: helpOffers.map((ho) => {
-                return ho.id;
-              }),
+            userProfileId: userProfileToUpdate.id,
+            nudgeId: {
+              [Op.notIn]: updateUserProfileDto.nudgeIds,
             },
           },
-          hooks: true,
+          individualHooks: true,
           transaction: t,
         });
       }
@@ -471,7 +443,7 @@ export class UserProfilesService {
         ).map(({ name }) => name)
       : Departments.map(({ name }) => name);
 
-    const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
+    const userProfileNudges = userProfile.userProfileNudges;
     const businessSectors = userProfile.businessSectors;
 
     interface UserRecommendationSQL {
@@ -585,12 +557,12 @@ export class UserProfilesService {
             : [];
 
           const helpsDifferences = _.difference(
-            helps.map(({ name }) => name),
+            userProfileNudges.map(({ nudgeId }) => nudgeId),
             profileHelps
           );
 
           const helpsMatching =
-            (helps.length - helpsDifferences.length) *
+            (userProfileNudges.length - helpsDifferences.length) *
             UserProfileRecommendationsWeights.HELPS;
 
           return businessSectorsMatching + helpsMatching;

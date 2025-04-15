@@ -8,9 +8,11 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'isAvailable',
   'unavailabilityReason',
   'occupations',
-  'helpNeeds',
   'linkedinUrl',
 ] as const) {
   @ApiProperty()
   businessSectorIds: string[];
+
+  @ApiProperty()
+  nudgeIds: string[];
 }
