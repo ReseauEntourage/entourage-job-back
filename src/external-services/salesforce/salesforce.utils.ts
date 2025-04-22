@@ -5,7 +5,7 @@ import {
   BusinessSectorValue,
 } from 'src/common/business-sectors/business-sectors.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
-import { Department, Departments } from 'src/common/locations/locations.types';
+import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
@@ -144,14 +144,6 @@ export function parseAddress(address: string) {
     city: '',
     postalCode: '',
   };
-}
-
-export function getDepartmentFromPostalCode(postalCode: string): Department {
-  const deptNumber = postalCode.substring(0, 2);
-  const department = Departments.find(({ name }) => {
-    return name.includes(`(${deptNumber})`);
-  });
-  return department.name;
 }
 
 export function getPostalCodeFromDepartment(department: Department): string {
