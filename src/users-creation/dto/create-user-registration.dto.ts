@@ -1,5 +1,11 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { Ambition } from 'src/common/ambitions/models';
 import { BusinessLine } from 'src/common/business-lines/models';
 import { Department } from 'src/common/locations/locations.types';
@@ -96,4 +102,9 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @IsString()
   @IsOptional()
   refererEmail?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  optInNewsletter?: boolean;
 }
