@@ -5,6 +5,7 @@ import { User } from 'src/users/models';
 import {
   mediaAttributes,
   messageAttributes,
+  conversationParticipantAttributes,
   userAttributes,
   userProfileAttributes,
 } from './messaging.attributes';
@@ -39,12 +40,17 @@ export const messagingConversationIncludes = (
       attributes: messageAttributes,
       order: [['createdAt', 'DESC']],
       limit: limit,
+      separate: true,
     },
     {
       model: User,
       as: 'participants',
-      paranoid: false,
       attributes: userAttributes,
+      paranoid: false,
+      through: {
+        attributes: conversationParticipantAttributes,
+        as: 'conversationParticipant',
+      },
       include: [messagingParticipantsInclude],
     },
   ];
@@ -61,6 +67,10 @@ export const messagingMessageIncludes: Includeable[] = [
         as: 'participants',
         attributes: userAttributes,
         paranoid: false,
+        through: {
+          attributes: conversationParticipantAttributes,
+          as: 'conversationParticipant',
+        },
       },
     ],
   },

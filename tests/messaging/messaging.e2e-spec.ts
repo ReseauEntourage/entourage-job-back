@@ -156,6 +156,7 @@ describe('MESSAGING', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
         conversation = await messagingHelper.findConversation(conversation.id);
+
         expect(response.status).toBe(201);
         expect(conversation.messages.length).toBe(1);
       });
