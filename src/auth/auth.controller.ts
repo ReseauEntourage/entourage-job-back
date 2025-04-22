@@ -33,9 +33,9 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@UserPayload() user: User) {
-    const logegdInUser = await this.authService.login(user);
+    const loggedInUser = await this.authService.login(user);
     await this.sessionService.createOrUpdateSession(user.id);
-    return logegdInUser;
+    return loggedInUser;
   }
 
   @Redirect(`${process.env.FRONT_URL}`, 302)
@@ -165,6 +165,7 @@ export class AuthController {
     if (!updatedUser) {
       throw new NotFoundException();
     }
+
     const currentUser = await this.authService.findOneUserByMail(
       updatedUser.email
     );
@@ -296,7 +297,7 @@ export class AuthController {
 
     await this.authService.sendWelcomeMail(updatedUser);
     await this.authService.sendOnboardingJ1BAOMail(updatedUser);
-    await this.authService.sendOnboardingJ3ProfileCompletionMail(updatedUser);
+    await this.authService.sendOnboardingJ3WebinarMail(updatedUser);
     await this.authService.sendRefererCandidateHasVerifiedAccountMail(
       updatedUser
     );

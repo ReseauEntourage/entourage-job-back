@@ -15,7 +15,12 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { User } from 'src/users/models/user.model';
-import { CreateMessagePipe, CreateMessageDto } from './dto';
+import {
+  CreateMessagePipe,
+  CreateMessageDto,
+  PostFeedbackPipe,
+  PostFeedbackDto,
+} from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { UserInConversation } from './guards/user-in-conversation';
@@ -48,7 +53,7 @@ export class MessagingController {
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string
   ) {
     await this.messagingService.setConversationHasSeen(conversationId, userId);
-    return this.messagingService.getConversationForUser(conversationId, userId);
+    return this.messagingService.getConversationById(conversationId, userId);
   }
 
   @Post('messages')
@@ -89,14 +94,12 @@ export class MessagingController {
       const conversation = await this.messagingService.createConversation(
         participants
       );
+
       createMessageDto.conversationId = conversation.id;
     }
-    delete createMessageDto.participantIds;
     try {
-      // Remove the participantIds property
       return await this.messagingService.createMessage({
         authorId: userId,
-        // Add createMessageDto properties without participantIds
         ...createMessageDto,
         files,
       });
@@ -118,5 +121,17 @@ export class MessagingController {
       reportConversationDto,
       userId
     );
+  }
+
+  @Post('conversations/feedback')
+  async postConversationFeedback(
+    @Body(new PostFeedbackPipe())
+    postFeedbackDto: PostFeedbackDto
+  ) {
+    try {
+      return this.messagingService.postFeedback(postFeedbackDto);
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
