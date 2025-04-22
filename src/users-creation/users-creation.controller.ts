@@ -253,7 +253,7 @@ export class UsersCreationController {
       // Coach or Candidate
       if (isRoleIncluded(NormalUserRoles, createUserRegistrationDto.role)) {
         await this.usersCreationService.sendOnboardingJ1BAOMail(createdUser);
-        await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
+        await this.usersCreationService.sendOnboardingJ3WebinarMail(
           createdUser
         );
         await this.usersCreationService.sendOnboardingJ4ContactAdviceMail(

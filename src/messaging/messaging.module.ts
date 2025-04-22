@@ -1,11 +1,18 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { MediasModule } from 'src/medias/medias.module';
 import { UsersModule } from 'src/users/users.module';
 import { MessagingController } from './messaging.controller';
 import { MessagingService } from './messaging.service';
-import { Message, Conversation, ConversationParticipant } from './models';
+import {
+  Message,
+  Conversation,
+  ConversationParticipant,
+  MessageMedia,
+} from './models';
 
 @Module({
   imports: [
@@ -13,10 +20,13 @@ import { Message, Conversation, ConversationParticipant } from './models';
       Conversation,
       Message,
       ConversationParticipant,
+      MessageMedia,
     ]),
     SlackModule,
     MailsModule,
     UsersModule,
+    MediasModule,
+    AWSModule,
   ],
   controllers: [MessagingController],
   providers: [MessagingService],
