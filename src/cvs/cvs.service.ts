@@ -862,20 +862,6 @@ export class CVsService {
       }
     );
     await this.queuesService.addToWorkQueue(
-      Jobs.REMINDER_VIDEO,
-      {
-        candidateId,
-      },
-      {
-        delay:
-          (process.env.VIDEO_REMINDER_DELAY
-            ? parseFloat(process.env.VIDEO_REMINDER_DELAY)
-            : 21) *
-          3600000 *
-          24,
-      }
-    );
-    await this.queuesService.addToWorkQueue(
       Jobs.REMINDER_ACTIONS,
       {
         candidateId,
@@ -885,21 +871,6 @@ export class CVsService {
           (process.env.ACTIONS_REMINDER_DELAY
             ? parseFloat(process.env.ACTIONS_REMINDER_DELAY)
             : 42) *
-          3600000 *
-          24,
-      }
-    );
-
-    await this.queuesService.addToWorkQueue(
-      Jobs.REMINDER_EXTERNAL_OFFERS,
-      {
-        candidateId,
-      },
-      {
-        delay:
-          (process.env.EXTERNAL_OFFERS_REMINDER_DELAY
-            ? parseFloat(process.env.EXTERNAL_OFFERS_REMINDER_DELAY)
-            : 60) *
           3600000 *
           24,
       }
@@ -1133,28 +1104,5 @@ export class CVsService {
       }
     }
     return uploadedImg;
-  }
-
-  async sendOffersAfterPublishing(
-    candidateId: string,
-    locations: Location[],
-    businessLines: BusinessLine[]
-  ) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH,
-      {
-        candidateId,
-        locations,
-        businessLines,
-      },
-      {
-        delay:
-          (process.env.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH_DELAY
-            ? parseFloat(process.env.SEND_OFFERS_EMAIL_AFTER_CV_PUBLISH_DELAY)
-            : 60) *
-          3600000 *
-          24,
-      }
-    );
   }
 }

@@ -16,10 +16,6 @@ import {
 } from 'src/contacts/contacts.types';
 import { MessagesService } from 'src/messages/messages.service';
 import { ExternalMessage } from 'src/messages/models';
-import { Opportunity } from 'src/opportunities/models';
-import { OpportunityUserEvent } from 'src/opportunities/models/opportunity-user-event.model';
-import { OpportunitiesService } from 'src/opportunities/opportunities.service';
-import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { UsersService } from 'src/users/users.service';
 import {
   Program,
@@ -38,11 +34,7 @@ import {
   ContactProps,
   ContactRecordType,
   ContactRecordTypeFromRole,
-  ContactRecordTypesIds,
   ErrorCodes,
-  EventProps,
-  EventPropsWithProcessAndBinomeAndRecruiterId,
-  EventRecordTypesIds,
   ExternalMessageProps,
   LeadProp,
   LeadRecordType,
@@ -50,21 +42,14 @@ import {
   LeadRecordTypesIds,
   ObjectName,
   ObjectNames,
-  OfferAndProcessProps,
-  OfferProps,
-  OfferPropsWithRecruiterId,
-  ProcessProps,
   Casquette,
   SalesforceAccount,
   SalesforceBinome,
   SalesforceCampaign,
   SalesforceCampaignMember,
   SalesforceError,
-  SalesforceEvent,
   SalesforceLead,
   SalesforceObject,
-  SalesforceOffer,
-  SalesforceProcess,
   SalesforceTask,
   TaskProps,
   UserProps,
@@ -79,13 +64,9 @@ import {
   getCasquette,
   getDepartmentFromPostalCode,
   getPostalCodeFromDepartment,
-  mapProcessFromOpportunityUser,
   mapSalesforceContactFields,
   mapSalesforceContactSocialSituationFields,
-  mapSalesforceEventFields,
   mapSalesforceLeadFields,
-  mapSalesforceOfferFields,
-  mapSalesforceProcessFields,
   mapSalesforceTaskFields,
   parseAddress,
   prependDuplicateIfCondition,
@@ -109,8 +90,6 @@ export class SalesforceService {
   private isWorker = true;
 
   constructor(
-    private opportunitiesService: OpportunitiesService,
-    private opportunityUsersService: OpportunityUsersService,
     private messagesService: MessagesService,
     private usersService: UsersService
   ) {}
@@ -267,11 +246,7 @@ export class SalesforceService {
     name: T,
     params: SalesforceObject<T> | SalesforceObject<T>[],
     extIdField: keyof SalesforceObject<T>,
-    findIdFunction:
-      | 'findProcessById'
-      | 'findOfferById'
-      | 'findEventById'
-      | 'findTaskById'
+    findIdFunction: 'findTaskById'
   ): Promise<string | string[]> {
     await this.checkIfConnected();
 
@@ -326,113 +301,6 @@ export class SalesforceService {
       console.error(err);
       throw err;
     }
-  }
-
-  async createOrUpdateProcess(params: ProcessProps | ProcessProps[]) {
-    let records: SalesforceProcess | SalesforceProcess[];
-    if (Array.isArray(params)) {
-      records = params.map((singleParams) => {
-        return mapSalesforceProcessFields(singleParams);
-      });
-    } else {
-      records = mapSalesforceProcessFields(params);
-    }
-    return this.upsertRecord(
-      ObjectNames.PROCESS,
-      records,
-      'ID_Externe__c',
-      'findProcessById'
-    );
-  }
-
-  async createOrUpdateOffer(params: OfferProps | OfferProps[]) {
-    let records: SalesforceOffer | SalesforceOffer[];
-    if (Array.isArray(params)) {
-      records = params.map((singleParams) => {
-        return mapSalesforceOfferFields(singleParams);
-      });
-    } else {
-      records = mapSalesforceOfferFields(params);
-    }
-
-    return this.upsertRecord(
-      ObjectNames.OFFER,
-      records,
-      'ID__c',
-      'findOfferById'
-    );
-  }
-
-  async createOrUpdateOfferWithRecruiter(
-    offerToCreate: OfferPropsWithRecruiterId | OfferPropsWithRecruiterId[]
-  ) {
-    let offerWithRecruiterAsContact;
-    let offerWithRecruiterAsProspect;
-    if (Array.isArray(offerToCreate)) {
-      offerWithRecruiterAsContact = offerToCreate.map((singleOffer) => {
-        const { recruiterSfId, ...restOffer } = singleOffer;
-        return {
-          ...restOffer,
-          recruiterSfIdAsContact: recruiterSfId,
-        };
-      });
-      offerWithRecruiterAsProspect = offerToCreate.map((singleOffer) => {
-        const { recruiterSfId, ...restOffer } = singleOffer;
-        return {
-          ...restOffer,
-          recruiterSfIdAsProspect: recruiterSfId,
-        };
-      });
-    } else {
-      const { recruiterSfId, ...restOffer } = offerToCreate;
-      offerWithRecruiterAsContact = {
-        ...restOffer,
-        recruiterSfIdAsContact: recruiterSfId,
-      };
-      offerWithRecruiterAsProspect = {
-        ...restOffer,
-        recruiterSfIdAsProspect: recruiterSfId,
-      };
-    }
-
-    try {
-      return (await this.createOrUpdateOffer(
-        offerWithRecruiterAsContact
-      )) as string;
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-        ErrorCodes.FIELD_INTEGRITY_EXCEPTION
-      ) {
-        return (await this.createOrUpdateOffer(
-          offerWithRecruiterAsProspect
-        )) as string;
-      }
-      console.error(err);
-      throw err;
-    }
-  }
-
-  async createOrUpdateEvent(
-    params:
-      | EventPropsWithProcessAndBinomeAndRecruiterId
-      | EventPropsWithProcessAndBinomeAndRecruiterId[]
-  ) {
-    let records: SalesforceEvent | SalesforceEvent[];
-    if (Array.isArray(params)) {
-      records = params.map((singleParams) => {
-        return mapSalesforceEventFields(singleParams);
-      });
-    } else {
-      records = mapSalesforceEventFields(params);
-    }
-
-    return this.upsertRecord(
-      ObjectNames.EVENT,
-      records,
-      'ID_Externe__c',
-      'findEventById'
-    );
   }
 
   async createOrUpdateTask(params: TaskProps | TaskProps[]) {
@@ -603,60 +471,12 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
-  async findOfferById<T extends string>(id: T): Promise<string> {
-    await this.checkIfConnected();
-    const { records }: { records: Partial<SalesforceOffer>[] } =
-      await this.salesforce.query(
-        `SELECT Id
-         FROM ${ObjectNames.OFFER}
-         WHERE ID__c = '${id}' LIMIT 1`
-      );
-    return records[0]?.Id;
-  }
-
-  async findEventById<T extends string>(id: T): Promise<string> {
-    await this.checkIfConnected();
-    const { records }: { records: Partial<SalesforceEvent>[] } =
-      await this.salesforce.query(
-        `SELECT Id
-         FROM ${ObjectNames.EVENT}
-         WHERE ID_Externe__c = '${id}'
-           AND RecordTypeId = '${EventRecordTypesIds.EVENT}' LIMIT 1`
-      );
-    return records[0]?.Id;
-  }
-
   async findTaskById<T extends string>(id: T): Promise<string> {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceTask>[] } =
       await this.salesforce.query(
         `SELECT Id
          FROM ${ObjectNames.TASK}
-         WHERE ID_Externe__c = '${id}' LIMIT 1`
-      );
-    return records[0]?.Id;
-  }
-
-  async findOfferRelationsById<T extends string>(id: T) {
-    await this.checkIfConnected();
-    const { records }: { records: Partial<SalesforceOffer>[] } =
-      await this.salesforce.query(
-        `SELECT Entreprise_Recruteuse__c, Prenom_Nom_du_recruteur__c
-         FROM ${ObjectNames.OFFER}
-         WHERE ID__c = '${id}' LIMIT 1`
-      );
-    return {
-      companySfId: records[0]?.Entreprise_Recruteuse__c,
-      recruiterSfId: records[0]?.Prenom_Nom_du_recruteur__c,
-    };
-  }
-
-  async findProcessById<T extends string>(id: T) {
-    await this.checkIfConnected();
-    const { records }: { records: Partial<SalesforceProcess>[] } =
-      await this.salesforce.query(
-        `SELECT Id
-         FROM ${ObjectNames.PROCESS}
          WHERE ID_Externe__c = '${id}' LIMIT 1`
       );
     return records[0]?.Id;
@@ -966,70 +786,6 @@ export class SalesforceService {
       }
     }
     return leadSfId;
-  }
-
-  async findOrCreateCompanyAndContactFromOffer(
-    offer: Partial<OfferProps>,
-    mainCompanySfId?: string,
-    mainContactSfId?: string
-  ) {
-    const {
-      recruiterMail,
-      contactMail,
-      recruiterFirstName,
-      recruiterName,
-      department,
-      recruiterPhone,
-      recruiterPosition,
-      company,
-      businessLines,
-      address,
-    } = offer;
-
-    let { companySfId, recruiterSfId } = await this.findOfferRelationsById(
-      offer.id
-    );
-
-    if (!companySfId) {
-      companySfId = await this.findOrCreateAccount(
-        {
-          name: company,
-          businessLines,
-          address,
-          department,
-          mainAccountSfId: mainCompanySfId,
-        },
-        AccountRecordTypesIds.COMPANY
-      );
-    }
-
-    // eslint-disable-next-line no-console
-    console.log('Created Salesforce Company', companySfId);
-
-    if (mainContactSfId) {
-      recruiterSfId = mainContactSfId;
-    } else if (!recruiterSfId) {
-      recruiterSfId = (await this.findOrCreateCompanyContact(
-        {
-          firstName: recruiterFirstName,
-          lastName: recruiterName,
-          email: recruiterMail,
-          position: recruiterPosition,
-          phone: recruiterPhone,
-          contactMail,
-          department,
-          companySfId,
-          mainCompanySfId,
-          casquettes: [Casquette.CONTACT_ENTREPRISE_FINANCEUR],
-        },
-        ContactRecordTypesIds.COMPANY
-      )) as string;
-    }
-
-    // eslint-disable-next-line no-console
-    console.log('Created Salesforce Contact', recruiterSfId);
-
-    return { recruiterSfId, companySfId };
   }
 
   async findOrCreateLeadFromCompanyForm({
@@ -1475,184 +1231,6 @@ export class SalesforceService {
     }
   }
 
-  async getProcessToCreate(
-    process: ProcessProps & { candidateEmail?: string },
-    offerSfId?: string
-  ) {
-    const { candidateEmail, offerId, ...restProcess } = process;
-
-    const binomeSfId = await this.findBinomeByCandidateEmail(candidateEmail);
-    return {
-      ...restProcess,
-      binomeSfId,
-      offerSfId: offerSfId || (await this.findOfferById(offerId)),
-      offerId,
-    };
-  }
-
-  async createOrUpdateSalesforceProcess(
-    process: ProcessProps | ProcessProps[],
-    offerSfId?: string
-  ) {
-    if (Array.isArray(process)) {
-      let processesToCreate: ProcessProps[] = [];
-      for (let i = 0; i < process.length; i += 1) {
-        const processToCreate = await this.getProcessToCreate(
-          process[i],
-          offerSfId
-        );
-        processesToCreate = [...processesToCreate, processToCreate];
-      }
-
-      return this.createOrUpdateProcess(processesToCreate);
-    } else {
-      const processToCreate = await this.getProcessToCreate(process, offerSfId);
-      return this.createOrUpdateProcess(processToCreate);
-    }
-  }
-
-  async createOrUpdateSalesforceOffer(
-    offerAndProcess: OfferAndProcessProps | OfferAndProcessProps[],
-    isSameOffer = false
-  ) {
-    if (Array.isArray(offerAndProcess)) {
-      let mainCompanySfId: string;
-      let mainContactSfId: string;
-      if (isSameOffer) {
-        const {
-          recruiterFirstName,
-          recruiterName,
-          recruiterMail,
-          recruiterPhone,
-          recruiterPosition,
-          company,
-          businessLines,
-        } = offerAndProcess[0].offer;
-
-        ({ companySfId: mainCompanySfId, recruiterSfId: mainContactSfId } =
-          await this.findOrCreateCompanyAndContactFromOffer({
-            recruiterFirstName,
-            recruiterName,
-            recruiterMail,
-            recruiterPhone,
-            recruiterPosition,
-            company,
-            businessLines,
-          }));
-      }
-      const offersAndProcessesToCreate: {
-        offers: OfferProps[];
-        processes: ProcessProps[];
-      } = offerAndProcess.reduce(
-        (acc, { offer, process }) => {
-          return {
-            offers: [...acc.offers, offer],
-            processes: [...acc.processes, ...process],
-          };
-        },
-        { offers: [], processes: [] }
-      );
-
-      let offersToCreate: OfferPropsWithRecruiterId[] = [];
-      for (let i = 0; i < offersAndProcessesToCreate.offers.length; i += 1) {
-        const offer = offersAndProcessesToCreate.offers[i];
-        const { recruiterSfId, companySfId } =
-          await this.findOrCreateCompanyAndContactFromOffer(
-            offer,
-            mainCompanySfId,
-            mainContactSfId
-          );
-
-        offersToCreate = [
-          ...offersToCreate,
-          {
-            ...offer,
-            recruiterSfId,
-            companySfId,
-          },
-        ];
-      }
-
-      await this.createOrUpdateOfferWithRecruiter(offersToCreate);
-
-      if (
-        offersAndProcessesToCreate.processes &&
-        offersAndProcessesToCreate.processes.length > 0
-      ) {
-        const processToCreate =
-          offersAndProcessesToCreate.processes.length === 1
-            ? offersAndProcessesToCreate.processes[0]
-            : offersAndProcessesToCreate.processes;
-
-        await this.createOrUpdateSalesforceProcess(processToCreate);
-      }
-    } else {
-      const { offer, process } = offerAndProcess;
-      const { recruiterSfId, companySfId } =
-        await this.findOrCreateCompanyAndContactFromOffer(offer);
-
-      const offerSfId = (await this.createOrUpdateOfferWithRecruiter({
-        ...offer,
-        recruiterSfId,
-        companySfId,
-      })) as string;
-
-      if (process && process.length > 0) {
-        const processToCreate = process.length === 1 ? process[0] : process;
-        await this.createOrUpdateSalesforceProcess(processToCreate, offerSfId);
-      }
-    }
-  }
-
-  async createOrUpdateSalesforceEvent(event: EventProps | EventProps[]) {
-    if (Array.isArray(event)) {
-      let eventsToCreate: EventPropsWithProcessAndBinomeAndRecruiterId[] = [];
-
-      for (let i = 0; i < event.length; i += 1) {
-        const { processId, candidateMail, recruiterMail, ...restEvent } =
-          event[i];
-
-        const processSfId = await this.findProcessById(processId);
-        const binomeSfId = await this.findBinomeByCandidateEmail(candidateMail);
-        const recruiterSf = await this.findContact(
-          recruiterMail,
-          ContactRecordTypesIds.COMPANY
-        );
-
-        const recruiterSfId = recruiterSf?.Id;
-
-        eventsToCreate = [
-          ...eventsToCreate,
-          {
-            ...restEvent,
-            processSfId,
-            binomeSfId,
-            recruiterSfId,
-          },
-        ];
-      }
-
-      return (await this.createOrUpdateEvent(eventsToCreate)) as string;
-    } else {
-      const { processId, candidateMail, recruiterMail, ...restEvent } = event;
-
-      const processSfId = await this.findProcessById(processId);
-      const binomeSfId = await this.findBinomeByCandidateEmail(candidateMail);
-      const recruiterSf = await this.findContact(
-        recruiterMail,
-        ContactRecordTypesIds.COMPANY
-      );
-      const recruiterSfId = recruiterSf?.Id;
-
-      return (await this.createOrUpdateEvent({
-        ...restEvent,
-        processSfId,
-        binomeSfId,
-        recruiterSfId,
-      })) as string;
-    }
-  }
-
   async findOrCreateLeadFromExternalMessage({
     firstName,
     lastName,
@@ -1720,54 +1298,6 @@ export class SalesforceService {
     }
   }
 
-  async findOfferFromOpportunityId(
-    opportunityId: string
-  ): Promise<OfferAndProcessProps> {
-    const opportunityDb = await this.opportunitiesService.findOne(
-      opportunityId
-    );
-
-    const { opportunityUsers, ...opportunity }: Opportunity =
-      opportunityDb.toJSON();
-
-    return {
-      offer: opportunity,
-      process: mapProcessFromOpportunityUser(
-        opportunityUsers,
-        opportunity.title,
-        opportunity.company,
-        opportunity.isPublic
-      ),
-    };
-  }
-
-  async findEventFromOpportunityUserEventId(
-    opportunityUserEventId: string
-  ): Promise<EventProps> {
-    const opportunityUserEventDb =
-      await this.opportunityUsersService.findOneOpportunityUserEventComplete(
-        opportunityUserEventId
-      );
-
-    const {
-      contract,
-      opportunityUser,
-      ...opportunityUserEvent
-    }: OpportunityUserEvent = opportunityUserEventDb.toJSON();
-
-    return {
-      ...opportunityUserEvent,
-      processId: opportunityUser.id,
-      candidateFirstName: opportunityUser.user.firstName,
-      candidateMail: opportunityUser.user.email,
-      recruiterMail:
-        opportunityUser.opportunity.contactMail ||
-        opportunityUser.opportunity.recruiterMail,
-      offerTitle: opportunityUser.opportunity.title,
-      department: opportunityUser.opportunity.department,
-    };
-  }
-
   async findTaskFromExternalMessageId(
     externalMessageId: string
   ): Promise<ExternalMessageProps> {
@@ -1818,52 +1348,6 @@ export class SalesforceService {
       department: userDb.userProfile.department,
       role: userDb.role as RegistrableUserRole,
     };
-  }
-
-  async createOrUpdateSalesforceOpportunity(
-    opportunityId: string | string[],
-    isSameOpportunity: boolean
-  ) {
-    this.setIsWorker(true);
-
-    if (Array.isArray(opportunityId)) {
-      const offersToCreate = await Promise.all(
-        opportunityId.map((singleOpportunityId) => {
-          return this.findOfferFromOpportunityId(singleOpportunityId);
-        })
-      );
-      return this.createOrUpdateSalesforceOffer(
-        offersToCreate,
-        isSameOpportunity
-      );
-    } else {
-      const offerToCreate = await this.findOfferFromOpportunityId(
-        opportunityId
-      );
-      return this.createOrUpdateSalesforceOffer(offerToCreate);
-    }
-  }
-
-  async createOrUpdateSalesforceOpportunityUserEvent(
-    opportunityUserEventId: string | string[]
-  ) {
-    this.setIsWorker(true);
-
-    if (Array.isArray(opportunityUserEventId)) {
-      const eventsToCreate = await Promise.all(
-        opportunityUserEventId.map((singleOpportunityUserEventId) => {
-          return this.findEventFromOpportunityUserEventId(
-            singleOpportunityUserEventId
-          );
-        })
-      );
-      return this.createOrUpdateSalesforceEvent(eventsToCreate);
-    } else {
-      const eventToCreate = await this.findEventFromOpportunityUserEventId(
-        opportunityUserEventId
-      );
-      return this.createOrUpdateSalesforceEvent(eventToCreate);
-    }
   }
 
   async createOrUpdateSalesforceExternalMessage(
