@@ -13,7 +13,6 @@ import {
   BeforeCreate,
   BeforeUpdate,
   BelongsTo,
-  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -44,7 +43,6 @@ import {
   isRoleIncluded,
 } from '../users.utils';
 import { InternalMessage } from 'src/messages/models';
-import { Opportunity, OpportunityUser } from 'src/opportunities/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { Share } from 'src/shares/models';
@@ -205,14 +203,6 @@ export class User extends HistorizedModel {
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     return isCoach && zone ? WhatsappByZone[zone].qr : '';
   }
-
-  @BelongsToMany(
-    () => Opportunity,
-    () => OpportunityUser,
-    'UserId',
-    'OpportunityId'
-  )
-  opportunities: Opportunity[];
 
   // si candidat regarder candidat
   @HasOne(() => UserCandidat, {

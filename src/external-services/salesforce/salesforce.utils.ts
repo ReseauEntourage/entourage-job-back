@@ -5,7 +5,6 @@ import {
   BusinessLineValue,
 } from 'src/common/business-lines/business-lines.types';
 import { BusinessLine } from 'src/common/business-lines/models';
-import { ContractFilters } from 'src/common/contracts/contracts.types';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
@@ -25,12 +24,6 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
-import { OpportunityUser } from 'src/opportunities/models';
-import {
-  EventTypeFilters,
-  ExternalOfferOriginFilters,
-} from 'src/opportunities/opportunities.types';
-import { findOfferStatus } from 'src/opportunities/opportunities.utils';
 import {
   Programs,
   RegistrableUserRole,
@@ -43,8 +36,6 @@ import {
   Casquette,
   ContactProps,
   ContactRecordType,
-  EventPropsWithProcessAndBinomeAndRecruiterId,
-  EventRecordTypesIds,
   LeadAccomodations,
   LeadAdministrativeSituations,
   LeadApproaches,
@@ -65,15 +56,10 @@ import {
   LeadYesNoJNSPR,
   LeadYesNoNSPP,
   ObjectName,
-  OfferProps,
-  ProcessProps,
   SalesforceContact,
-  SalesforceEvent,
   SalesforceLead,
   SalesforceLeads,
   SalesforceObject,
-  SalesforceOffer,
-  SalesforceProcess,
   SalesforceTask,
   TaskProps,
 } from './salesforce.types';
@@ -177,170 +163,6 @@ export function getPostalCodeFromDepartment(department: Department): string {
   return (
     postalCodeDigits + new Array(5 - postalCodeDigits.length).fill('0').join('')
   );
-}
-
-export function mapSalesforceOfferFields({
-  id,
-  company,
-  title,
-  businessLines,
-  contract,
-  isPartTime,
-  isPublic,
-  isExternal,
-  link,
-  isValidated,
-  isArchived,
-  department,
-  address,
-  workingHours,
-  salary,
-  message,
-  companyDescription,
-  description,
-  otherInfo,
-  driversLicense,
-  externalOrigin,
-  recruiterFirstName,
-  recruiterName,
-  recruiterMail,
-  recruiterPhone,
-  recruiterPosition,
-  contactMail,
-  date,
-  companySfId,
-  recruiterSfIdAsContact,
-  recruiterSfIdAsProspect,
-}: OfferProps): SalesforceOffer {
-  const externalOriginConstant = externalOrigin
-    ? findConstantFromValue(externalOrigin, ExternalOfferOriginFilters)
-    : undefined;
-
-  let name = `${title} - ${formatCompanyName(company, address, department)}`;
-  if (name.length > 80) {
-    name = name.substring(0, 80);
-  }
-  return {
-    ID__c: id,
-    Name: name,
-    Titre__c: title.length > 80 ? title.substring(0, 80) : title,
-    Entreprise_Recruteuse__c: companySfId,
-    Secteur_d_activite_de_l_offre__c: businessLines
-      ? formatBusinessLines(businessLines)
-      : undefined,
-    Type_de_contrat__c: contract
-      ? findConstantFromValue(contract, ContractFilters).label
-      : 'Autre',
-    Temps_partiel__c: isPartTime,
-    Offre_publique__c: isPublic,
-    Offre_externe__c: isExternal,
-    Offre_archivee__c: isArchived,
-    Offre_valid_e__c: isValidated,
-    Lien_externe__c: link,
-    Lien_Offre_Backoffice__c:
-      process.env.FRONT_URL + '/backoffice/admin/offres/' + id,
-    Departement__c: department || 'Inconnu',
-    Adresse_de_l_offre__c: address,
-    Jours_et_horaires_de_travail__c:
-      workingHours?.length > 100
-        ? workingHours.substring(0, 100)
-        : workingHours,
-    Salaire_et_complement__c:
-      salary?.length > 50 ? salary.substring(0, 50) : salary,
-    Message_au_candidat__c: message,
-    Presentation_de_l_entreprise__c: companyDescription,
-    Descriptif_des_missions_proposees__c: description,
-    Autre_precision_sur_votre_besoin__c: otherInfo,
-    Permis_de_conduire_necessaire__c: driversLicense,
-    Source_de_l_offre__c:
-      externalOriginConstant?.salesforceLabel || externalOriginConstant?.label,
-    Nom__c:
-      recruiterName?.length >= 25
-        ? recruiterName.substring(0, 25)
-        : recruiterName || 'Inconnu',
-    Prenom__c: recruiterFirstName || 'Inconnu',
-    Mail_du_recruteur__c: recruiterMail
-      ? recruiterMail
-          .replace(/\+/g, '.')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-      : 'entreprises@entourage.social',
-    Telephone_du_recruteur__c: recruiterPhone,
-    Fonction_du_recruteur__c: recruiterPosition,
-    Mail_de_contact__c: contactMail
-      ?.replace(/\+/g, '.')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''),
-    Date_de_cr_ation__c: date,
-    Prenom_Nom_du_recruteur__c: recruiterSfIdAsContact,
-    Prenom_Nom_du_recruteur_Prospect__c: recruiterSfIdAsProspect,
-    Contact_cree_existant__c: true,
-    Antenne__c: _.capitalize(
-      AdminZones[getZoneSuffixFromDepartment(department)]
-    ),
-  };
-}
-
-export function mapSalesforceProcessFields({
-  id,
-  firstName,
-  lastName,
-  company,
-  isPublic,
-  status,
-  seen,
-  bookmarked,
-  archived,
-  recommended,
-  offerTitle,
-  binomeSfId,
-  offerSfId,
-}: ProcessProps): SalesforceProcess {
-  let name = `${firstName} ${lastName} - ${offerTitle || 'Inconnu'} - ${
-    company || 'Inconnu'
-  }`;
-  if (name.length > 80) {
-    name = name.substring(0, 80);
-  }
-  return {
-    ID_Externe__c: id,
-    Name: name,
-    Statut__c: findOfferStatus(status, isPublic, recommended).label,
-    Vue__c: seen,
-    Favoris__c: bookmarked,
-    Archivee__c: archived,
-    Recommandee__c: recommended,
-    Binome__c: binomeSfId,
-    Offre_d_emploi__c: offerSfId,
-  };
-}
-
-export function mapSalesforceEventFields({
-  id,
-  processSfId,
-  binomeSfId,
-  recruiterSfId,
-  type,
-  department,
-  offerTitle,
-  candidateFirstName,
-  startDate,
-}: EventPropsWithProcessAndBinomeAndRecruiterId): SalesforceEvent {
-  return {
-    WhatId: binomeSfId,
-    WhoId: recruiterSfId,
-    Antenne__c: _.capitalize(
-      AdminZones[getZoneSuffixFromDepartment(department)]
-    ),
-    ID_Externe__c: id,
-    Processus_d_offre__c: processSfId,
-    RecordTypeId: EventRecordTypesIds.EVENT,
-    Subject: `${
-      findConstantFromValue(type, EventTypeFilters).label
-    } ${candidateFirstName} x ${offerTitle}`,
-    StartDateTime: startDate,
-    IsAllDayEvent: true,
-  };
 }
 
 export function mapSalesforceTaskFields({
@@ -712,31 +534,6 @@ export const mapSalesforceContactFields = (
     TS_prescripteur__c: refererId,
   };
 };
-
-export function mapProcessFromOpportunityUser(
-  opportunityUsers: OpportunityUser[],
-  title: string,
-  company: string,
-  isPublic: boolean
-): ProcessProps[] {
-  return opportunityUsers
-    .map(({ OpportunityId, UserId, user, ...restProps }) => {
-      if (!user) {
-        return null;
-      }
-      return {
-        offerTitle: title,
-        candidateEmail: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        offerId: OpportunityId,
-        company,
-        isPublic,
-        ...restProps,
-      } as ProcessProps;
-    })
-    .filter((singleProcess) => !!singleProcess);
-}
 
 export function executeBulkAction<T extends ObjectName>(
   params: SalesforceObject<T>[],
