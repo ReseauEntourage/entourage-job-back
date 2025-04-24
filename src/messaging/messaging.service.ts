@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -7,9 +12,12 @@ import {
   slackChannels,
 } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
+import { MediasService } from 'src/medias/medias.service';
+import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
+import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
 import {
@@ -17,10 +25,11 @@ import {
   messagingMessageIncludes,
 } from './messaging.includes';
 import {
+  determineIfShoudGiveFeedback,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
 } from './messaging.utils';
-import { ConversationParticipant } from './models';
+import { ConversationParticipant, MessageMedia } from './models';
 import { Conversation } from './models/conversation.model';
 import { Message } from './models/message.model';
 
@@ -33,10 +42,42 @@ export class MessagingService {
     private conversationModel: typeof Conversation,
     @InjectModel(ConversationParticipant)
     private conversationParticipantModel: typeof ConversationParticipant,
+    @InjectModel(MessageMedia)
+    private messageMediaModel: typeof MessageMedia,
     private slackService: SlackService,
     private userService: UsersService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private mediaService: MediasService
   ) {}
+
+  /**
+   * User can participate to a conversation
+   */
+  async canParticipate(userId: string, createMessageDto: CreateMessageDto) {
+    if (!createMessageDto.conversationId && !createMessageDto.participantIds) {
+      throw new BadRequestException(
+        'Vous devez fournir un identifiant de conversation ou une liste de participants.'
+      );
+    }
+
+    // Ignore if the conversationId is not provided but the participantIds are
+    if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+      return true;
+    }
+
+    const conversation = await this.findConversation(
+      createMessageDto.conversationId
+    );
+    if (
+      !conversation.participants.some(
+        (participant) => participant.id === userId
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  }
 
   /**
    * Get all conversations for a user
@@ -51,7 +92,7 @@ export class MessagingService {
           {
             model: Conversation,
             as: 'conversation',
-            include: [...messagingConversationIncludes(1)],
+            include: [...messagingConversationIncludes(10)],
           },
         ],
         order: [
@@ -66,38 +107,123 @@ export class MessagingService {
 
     return conversationParticipants
       .filter((cp) => cp.conversation)
-      .map((cp) => cp.conversation);
+      .map((cp) => {
+        const shouldGiveFeedback = determineIfShoudGiveFeedback(
+          cp.conversation,
+          cp.feedbackRating,
+          cp.feedbackDate
+        );
+        return {
+          ...cp.conversation.toJSON(),
+          shouldGiveFeedback,
+          createdAt: cp.createdAt,
+          updatedAt: cp.updatedAt,
+          seenAt: cp.seenAt,
+        };
+      });
+  }
+
+  /**
+   * Get a conversation by its ID
+   * @param conversationId - The ID of the conversation to fetch
+   * @param userId - The ID of the user fetching the conversation
+   * @returns The conversation if the user is a participant, otherwise null
+   */
+  async getConversationById(conversationId: string, userId: string) {
+    const conversationParticipants =
+      await this.conversationParticipantModel.findAll({
+        where: {
+          userId,
+          conversationId,
+        },
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [...messagingConversationIncludes()],
+          },
+        ],
+      });
+
+    const cp = conversationParticipants[0];
+
+    if (!cp) {
+      return null;
+    }
+
+    const shouldGiveFeedback = determineIfShoudGiveFeedback(
+      cp.conversation,
+      cp.feedbackRating,
+      cp.feedbackDate
+    );
+
+    const conversationMedias = await this.findMediasByConversationId(
+      conversationId
+    );
+
+    cp.conversation.messages.forEach((message) => {
+      const messageMedias = conversationMedias.filter((media) =>
+        message.medias.map((m) => m.id).includes(media.id)
+      );
+      message.setDataValue('medias', messageMedias);
+    });
+
+    return {
+      ...cp.conversation.toJSON(),
+      shouldGiveFeedback,
+      createdAt: cp.createdAt,
+      updatedAt: cp.updatedAt,
+      seenAt: cp.seenAt,
+    };
   }
 
   async getUnseenConversationsCount(userId: string) {
-    return this.conversationParticipantModel.count({
-      where: {
-        [Op.or]: [
-          {
-            seenAt: {
-              [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
-            },
-          },
-          {
-            seenAt: null,
-          },
-        ],
-        userId,
-      },
-      include: [
-        {
-          model: Conversation,
-          as: 'conversation',
-          include: [
+    const unseenConversations = await this.conversationParticipantModel.findAll(
+      {
+        where: {
+          [Op.or]: [
             {
-              model: Message,
-              as: 'messages',
-              attributes: ['createdAt'],
+              seenAt: {
+                [Op.lt]: Sequelize.col('conversation.messages.createdAt'),
+              },
+            },
+            {
+              seenAt: null,
             },
           ],
+          userId,
         },
-      ],
-    });
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [
+              {
+                model: Message,
+                as: 'messages',
+                attributes: ['createdAt'],
+              },
+            ],
+          },
+        ],
+      }
+    );
+    const useenConversationIds = unseenConversations.map(
+      (c) => c.conversationId
+    );
+
+    const userConversations = await this.getConversationsForUser(userId);
+
+    // extract conversation ids where conversation.shouldGiveFeedback is true
+    const conversationsWithFeedbackRequired = userConversations
+      .filter((conv) => conv.shouldGiveFeedback)
+      .map((conv) => conv.id);
+
+    // count unique conversations ids in unseenConversationIds ad conversationsWithFeedbackRequired
+    return new Set([
+      ...useenConversationIds,
+      ...conversationsWithFeedbackRequired,
+    ]).size;
   }
 
   /**
@@ -128,8 +254,28 @@ export class MessagingService {
    * Create a new message
    * @param message - The message to create
    */
-  async createMessage(createMessageDto: Partial<Message>) {
+  async createMessage(
+    createMessageDto: Partial<
+      Message & {
+        files: Express.Multer.File[];
+        mediaIds?: string[];
+      }
+    >
+  ) {
+    if (createMessageDto.files) {
+      const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
+        createMessageDto.files,
+        createMessageDto.authorId
+      );
+      createMessageDto.mediaIds = mediaRecords.map((media: Media) => media.id);
+    }
     const createdMessage = await this.messageModel.create(createMessageDto);
+    if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
+      await this.addMediasToMessage(
+        createdMessage.id,
+        createMessageDto.mediaIds
+      );
+    }
     // Set conversation as seen because the user has sent a message
     await this.setConversationHasSeen(
       createMessageDto.conversationId,
@@ -146,6 +292,18 @@ export class MessagingService {
     return message;
   }
 
+  async addMediasToMessage(messageId: string, mediasId: string[]) {
+    if (mediasId.length === 0) {
+      return;
+    }
+    await this.messageMediaModel.bulkCreate(
+      mediasId.map((mediaId) => ({
+        messageId,
+        mediaId,
+      }))
+    );
+  }
+
   async setConversationHasSeen(conversationId: string, userId: string) {
     const conversationParticipant =
       await this.conversationParticipantModel.findOne({
@@ -160,42 +318,13 @@ export class MessagingService {
     }
   }
 
-  /**
-   * Get a conversation by its ID
-   * @param conversationId - The ID of the conversation to fetch
-   * @param userId - The ID of the user fetching the conversation
-   * @returns The conversation if the user is a participant, otherwise null
-   */
-  async getConversationForUser(conversationId: string, userId: string) {
-    if (!(await this.isUserInConversation(conversationId, userId))) {
-      return null;
-    }
-    const conversation = await this.conversationModel.findByPk(conversationId, {
-      include: messagingConversationIncludes(),
-      order: [['messages', 'createdAt', 'ASC']],
-    });
-
-    if (!conversation) {
-      return null;
-    }
-
-    return conversation;
-  }
-
   async findConversation(conversationId: string) {
     return this.conversationModel.findByPk(conversationId, {
       include: [
         {
           model: Message,
           as: 'messages',
-          include: [
-            {
-              model: User,
-              as: 'author',
-              attributes: userAttributes,
-              paranoid: false,
-            },
-          ],
+          include: messagingMessageIncludes,
           order: [['createdAt', 'DESC']],
           limit: 1,
         },
@@ -238,9 +367,13 @@ export class MessagingService {
   }
 
   async findOneMessage(messageId: string) {
-    return this.messageModel.findByPk(messageId, {
+    const message = await this.messageModel.findByPk(messageId, {
       include: messagingMessageIncludes,
     });
+    const medias = await this.mediaService.findMediaByMessageId(messageId);
+    // Link medias to the message
+    message.setDataValue('medias', medias);
+    return message;
   }
 
   async countDailyConversations(userId: string) {
@@ -286,12 +419,28 @@ export class MessagingService {
     }
   }
 
-  private async isUserInConversation(conversationId: string, userId: string) {
-    return this.conversationParticipantModel.findOne({
-      where: {
-        conversationId,
-        userId,
-      },
+  async findMediasByConversationId(conversationId: string) {
+    return this.mediaService.findMediasByConversationId(conversationId);
+  }
+
+  /**
+   * Post a feedback on a conversation
+   */
+  async postFeedback(postFeedbackDto: PostFeedbackDto) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findByPk(
+        postFeedbackDto.conversationParticipantId
+      );
+
+    if (!conversationParticipant) {
+      return;
+    }
+
+    const updatedParticipant = await conversationParticipant.update({
+      feedbackRating: postFeedbackDto.rating,
+      feedbackDate: new Date(),
     });
+
+    return updatedParticipant;
   }
 }

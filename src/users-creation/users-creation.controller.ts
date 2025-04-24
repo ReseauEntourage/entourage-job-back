@@ -12,6 +12,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
+import { getContactStatusFromUserRole } from 'src/external-services/mailjet/mailjet.utils';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
@@ -195,6 +196,7 @@ export class UsersCreationController {
         department: createUserRegistrationDto.department,
         nudgeIds: createUserRegistrationDto.nudgeIds,
         sectorOccupations: createUserRegistrationDto.sectorOccupations,
+        optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
@@ -227,6 +229,15 @@ export class UsersCreationController {
         }
       );
 
+      // Newsletter subscription
+      if (createUserRegistrationDto.optInNewsletter) {
+        await this.usersCreationService.sendContactToMailjet({
+          email: createUserRegistrationDto.email,
+          zone: createdUser.zone,
+          status: getContactStatusFromUserRole(createdUser.role),
+        });
+      }
+
       // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
         await this.usersCreationService.sendAdminNewRefererNotificationMail(
@@ -237,7 +248,7 @@ export class UsersCreationController {
       // Coach or Candidate
       if (isRoleIncluded(NormalUserRoles, createUserRegistrationDto.role)) {
         await this.usersCreationService.sendOnboardingJ1BAOMail(createdUser);
-        await this.usersCreationService.sendOnboardingJ3ProfileCompletionMail(
+        await this.usersCreationService.sendOnboardingJ3WebinarMail(
           createdUser
         );
         await this.usersCreationService.sendOnboardingJ4ContactAdviceMail(

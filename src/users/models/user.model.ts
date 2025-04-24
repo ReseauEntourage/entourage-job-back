@@ -92,7 +92,10 @@ export class User extends HistorizedModel {
   lastName: string;
 
   @ApiProperty()
-  @IsEmailClassValidator()
+  @IsEmailClassValidator({
+    blacklisted_chars: '"\'`$&*()=[]{};:<>?,\\^',
+    allow_utf8_local_part: false,
+  })
   @IsEmail
   @AllowNull(false)
   @Unique

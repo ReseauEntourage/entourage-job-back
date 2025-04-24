@@ -165,6 +165,7 @@ export class AuthController {
     if (!updatedUser) {
       throw new NotFoundException();
     }
+
     const currentUser = await this.authService.findOneUserByMail(
       updatedUser.email
     );
@@ -296,7 +297,7 @@ export class AuthController {
 
     await this.authService.sendWelcomeMail(updatedUser);
     await this.authService.sendOnboardingJ1BAOMail(updatedUser);
-    await this.authService.sendOnboardingJ3ProfileCompletionMail(updatedUser);
+    await this.authService.sendOnboardingJ3WebinarMail(updatedUser);
     await this.authService.sendRefererCandidateHasVerifiedAccountMail(
       updatedUser
     );

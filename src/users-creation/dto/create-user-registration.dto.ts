@@ -1,5 +1,11 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateYesNoNSPPValue,
@@ -89,4 +95,9 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @IsString()
   @IsOptional()
   refererEmail?: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  optInNewsletter?: boolean;
 }

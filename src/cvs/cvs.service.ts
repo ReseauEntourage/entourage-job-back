@@ -15,7 +15,11 @@ export class CVsService {
       const pdfExists = await this.s3Service.getHead(key);
 
       if (pdfExists) {
-        return this.s3Service.getSignedUrl(key);
+        return this.s3Service.getSignedUrl(
+          key,
+          'application/pdf',
+          'attachment'
+        );
       }
       return null;
     } catch (e) {

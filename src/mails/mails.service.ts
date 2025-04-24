@@ -132,12 +132,12 @@ export class MailsService {
     );
   }
 
-  async sendOnboardingJ3ProfileCompletionMail(user: User) {
+  async sendOnboardingJ3WebinarMail(user: User) {
     return this.queuesService.addToWorkQueue(
       Jobs.SEND_MAIL,
       {
         toEmail: user.email,
-        templateId: MailjetTemplates.ONBOARDING_J3_PROFILE_COMPLETION,
+        templateId: MailjetTemplates.ONBOARDING_J3_WEBINAR,
         variables: {
           firstName: user.firstName,
           role: getRoleString(user),
@@ -389,7 +389,10 @@ export class MailsService {
     }
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: candidate.referer.email,
+      toEmail: {
+        to: candidate.referer.email,
+        bcc: getAdminMailsFromZone(candidate.zone).candidatesAdminMail,
+      },
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
         candidateFirstName: candidate.firstName,
