@@ -11,6 +11,8 @@ import { UserSocialSituationsService } from 'src/user-social-situations/user-soc
 import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
+import { Utm } from 'src/utm/models';
+import { UtmService } from 'src/utm/utm.service';
 import { CreateUserRegistrationDto } from './dto';
 
 @Injectable()
@@ -23,7 +25,8 @@ export class UsersCreationService {
     private mailsService: MailsService,
     private externalDatabasesService: ExternalDatabasesService,
     private userSocialSituationService: UserSocialSituationsService,
-    private queuesService: QueuesService
+    private queuesService: QueuesService,
+    private utmService: UtmService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -153,5 +156,9 @@ export class UsersCreationService {
       Jobs.NEWSLETTER_SUBSCRIPTION,
       contact
     );
+  }
+
+  async createUtm(createUtmDto: Partial<Utm>) {
+    return this.utmService.create(createUtmDto);
   }
 }
