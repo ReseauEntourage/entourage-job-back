@@ -457,23 +457,23 @@ module.exports = {
           },
           description: {
             type: Sequelize.TEXT,
-            allowNull: false,
+            allowNull: true,
           },
           company: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
           },
           location: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
           },
           startDate: {
             type: Sequelize.DATE,
-            allowNull: false,
+            allowNull: true,
           },
           endDate: {
             type: Sequelize.DATE,
-            allowNull: false,
+            allowNull: true,
           },
         },
         { transaction }
@@ -570,23 +570,23 @@ module.exports = {
           },
           description: {
             type: Sequelize.TEXT,
-            allowNull: false,
+            allowNull: true,
           },
           institution: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
           },
           location: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
           },
           startDate: {
             type: Sequelize.DATE,
-            allowNull: false,
+            allowNull: true,
           },
           endDate: {
             type: Sequelize.DATE,
-            allowNull: false,
+            allowNull: true,
           },
         },
         { transaction }
