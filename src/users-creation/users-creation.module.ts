@@ -6,6 +6,7 @@ import { QueuesModule } from 'src/queues/producers';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from 'src/user-social-situations/user-social-situations.module';
 import { UsersModule } from 'src/users/users.module';
+import { UtmModule } from 'src/utm/utm.module';
 import { UsersCreationController } from './users-creation.controller';
 import { UsersCreationService } from './users-creation.service';
 
@@ -18,6 +19,7 @@ import { UsersCreationService } from './users-creation.service';
     ExternalDatabasesModule,
     UserSocialSituationsModule,
     QueuesModule,
+    UtmModule,
   ],
   controllers: [UsersCreationController],
   providers: [UsersCreationService],
