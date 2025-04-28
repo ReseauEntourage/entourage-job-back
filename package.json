@@ -3,7 +3,7 @@
   "version": "2.26.16",
   "license": "ISC",
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "scripts": {
     "prebuild": "rimraf dist",
