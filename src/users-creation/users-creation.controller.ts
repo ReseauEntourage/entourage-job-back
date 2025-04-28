@@ -30,6 +30,7 @@ import {
 } from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
 import { convertYesNoToBoolean } from 'src/utils/yesNo';
+import { Utm } from 'src/utm/models';
 import {
   CreateUserDto,
   CreateUserPipe,
@@ -244,6 +245,18 @@ export class UsersCreationController {
           ),
         }
       );
+
+      // UTM
+      const utmToCreate: Partial<Utm> = {
+        userId: createdUserId,
+        utmSource: createUserRegistrationDto.utmSource,
+        utmMedium: createUserRegistrationDto.utmMedium,
+        utmCampaign: createUserRegistrationDto.utmCampaign,
+        utmTerm: createUserRegistrationDto.utmTerm,
+        utmContent: createUserRegistrationDto.utmContent,
+      };
+
+      await this.usersCreationService.createUtm(utmToCreate);
 
       // Newsletter subscription
       if (createUserRegistrationDto.optInNewsletter) {
