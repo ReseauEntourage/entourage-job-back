@@ -75,7 +75,7 @@ export class MessagingController {
         'Vous ne pouvez pas participer à cette conversation.'
       );
     }
-    if (files.length <= 0 && createMessageDto.content.length < 1) {
+    if ((!files || files.length <= 0) && createMessageDto.content.length <= 0) {
       throw new BadRequestException(
         'Le message doit contenir au moins un caractère.'
       );
