@@ -107,4 +107,36 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @IsBoolean()
   @IsOptional()
   optInNewsletter?: boolean;
+
+  // UTM
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  utmSource?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  utmMedium?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  utmCampaign?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  utmTerm?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  utmContent?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  utmId?: string;
 }
