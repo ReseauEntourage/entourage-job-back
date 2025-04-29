@@ -354,7 +354,7 @@ export class UserProfilesService {
           )
         );
 
-        userProfileToUpdate.$set('sectorOccupations', sectorOccupations, {
+        await userProfileToUpdate.$set('sectorOccupations', sectorOccupations, {
           transaction: t,
         });
       }
@@ -385,7 +385,7 @@ export class UserProfilesService {
           })
         );
 
-        userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
+        await userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
           transaction: t,
         });
 
