@@ -12,7 +12,7 @@ import {
 import { Skill } from 'src/common/skills/models';
 import { Experience } from './experience.model';
 
-@Table({ tableName: 'Experience_Skills' })
+@Table({ tableName: 'ExperienceSkills' })
 export class ExperienceSkill extends Model {
   @IsUUID(4)
   @PrimaryKey

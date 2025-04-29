@@ -1,14 +1,18 @@
-import { PickType } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 import { UserProfile } from '../models';
 
 export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
-  'UserId',
+  'userId',
   'description',
   'department',
   'isAvailable',
   'unavailabilityReason',
-  'searchBusinessLines',
-  'searchAmbitions',
-  'helpNeeds',
+  'occupations',
   'linkedinUrl',
-] as const) {}
+] as const) {
+  @ApiProperty()
+  businessSectorIds: string[];
+
+  @ApiProperty()
+  nudgeIds: string[];
+}

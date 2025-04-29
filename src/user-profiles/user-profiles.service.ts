@@ -5,10 +5,10 @@ import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
+import { Occupation } from 'src/common/occupations/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -18,26 +18,20 @@ import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
-import {
-  HelpNeed,
-  HelpOffer,
-  UserProfile,
-  UserProfileNetworkBusinessLine,
-  UserProfileSearchAmbition,
-  UserProfileSearchBusinessLine,
-} from './models';
+import { UserProfile, UserProfileSectorOccupation } from './models';
+import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
 import { getUserProfileInclude } from './models/user-profile.include';
-import { HelpValue, PublicProfile } from './user-profiles.types';
+import { PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
-  BUSINESS_LINES: 0.3,
-  HELPS: 0.5,
+  BUSINESS_SECTORS: 0.3,
+  NUDGES: 0.5,
 };
 
 @Injectable()
@@ -45,22 +39,14 @@ export class UserProfilesService {
   constructor(
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
-    @InjectModel(BusinessLine)
-    private businessLineModel: typeof BusinessLine,
-    @InjectModel(UserProfileNetworkBusinessLine)
-    private userProfileNetworkBusinessLineModel: typeof UserProfileNetworkBusinessLine,
-    @InjectModel(UserProfileSearchBusinessLine)
-    private userProfileSearchBusinessLineModel: typeof UserProfileSearchBusinessLine,
-    @InjectModel(UserProfileSearchAmbition)
-    private userProfileSearchAmbitionModel: typeof UserProfileSearchAmbition,
-    @InjectModel(Ambition)
-    private ambitionModel: typeof Ambition,
-    @InjectModel(HelpNeed)
-    private helpNeedModel: typeof HelpNeed,
-    @InjectModel(HelpOffer)
-    private helpOfferModel: typeof HelpOffer,
+    @InjectModel(Occupation)
+    private occupationModel: typeof Occupation,
+    @InjectModel(UserProfileSectorOccupation)
+    private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
     @InjectModel(UserProfileRecommendation)
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
+    @InjectModel(UserProfileNudge)
+    private userProfileNudgeModel: typeof UserProfileNudge,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -82,17 +68,10 @@ export class UserProfilesService {
     });
   }
 
-  async findOneByUserId(userId: string) {
+  async findOneByUserId(userId: string, complete = false) {
     return this.userProfileModel.findOne({
-      where: { UserId: userId },
-      include: [
-        ...getUserProfileInclude(),
-        {
-          model: User,
-          as: 'user',
-          attributes: UserProfilesUserAttributes,
-        },
-      ],
+      where: { userId },
+      include: getUserProfileInclude(complete),
     });
   }
 
@@ -111,13 +90,20 @@ export class UserProfilesService {
       offset: number;
       limit: number;
       search: string;
-      helps: HelpValue[];
+      nudgeIds: string[];
       departments: Department[];
-      businessLines: BusinessLineValue[];
+      businessSectorIds: string[];
     }
   ): Promise<PublicProfile[]> {
-    const { role, offset, limit, search, helps, departments, businessLines } =
-      query;
+    const {
+      role,
+      offset,
+      limit,
+      search,
+      nudgeIds,
+      departments,
+      businessSectorIds,
+    } = query;
 
     const searchOptions = search
       ? { [Op.or]: userProfileSearchQuery(search) }
@@ -130,26 +116,26 @@ export class UserProfilesService {
           }
         : {};
 
-    const businessLinesOptions: WhereOptions<BusinessLine> =
-      businessLines?.length > 0
+    const businessSectorsOptions: WhereOptions<BusinessSector> =
+      businessSectorIds?.length > 0
         ? {
-            name: { [Op.or]: businessLines },
+            id: { [Op.in]: businessSectorIds },
           }
         : {};
 
-    const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
-      helps?.length > 0
+    const nudgesSectorsOptions: WhereOptions<Nudge> =
+      nudgeIds?.length > 0
         ? {
-            name: {
-              [Op.or]: helps,
+            id: {
+              [Op.or]: nudgeIds,
             },
           }
         : {};
 
     // this query is made in 2 steps because it filters the where clause inside the include
     // eg:
-    // you want all user having in his businesslines one specific businessline
-    // but you also want the request to response his businesslines list
+    // you want all user having in his businessSectors one specific businessSector
+    // but you also want the request to response his businessSectors list
     // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
     const filteredProfiles = await this.userProfileModel.findAll({
       offset,
@@ -158,7 +144,12 @@ export class UserProfilesService {
       order: sequelize.literal('"user.lastConnection" DESC'),
       ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
-        ...getUserProfileInclude(role, businessLinesOptions, helpsOptions),
+        ...getUserProfileInclude(
+          false,
+          role,
+          businessSectorsOptions,
+          nudgesSectorsOptions
+        ),
         {
           model: User,
           as: 'user',
@@ -293,7 +284,9 @@ export class UserProfilesService {
 
   async updateByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile>
+    updateUserProfileDto: Partial<UserProfile> & {
+      nudgeIds?: string[];
+    }
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
@@ -302,156 +295,108 @@ export class UserProfilesService {
     }
 
     await this.userProfileModel.sequelize.transaction(async (t) => {
+      // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
-        where: { UserId: userId },
+        where: { userId },
         individualHooks: true,
         transaction: t,
       });
 
-      if (updateUserProfileDto.networkBusinessLines) {
-        const networkBusinessLines = await Promise.all(
-          updateUserProfileDto.networkBusinessLines.map(
-            ({ name, order = -1 }) => {
-              return this.businessLineModel.create(
-                { name, order },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
-        );
-        await userProfileToUpdate.$add(
-          'networkBusinessLines',
-          networkBusinessLines,
-          { transaction: t }
-        );
-        await this.userProfileNetworkBusinessLineModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            BusinessLineId: {
-              [Op.not]: networkBusinessLines.map((bl) => {
-                return bl.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      if (updateUserProfileDto.searchBusinessLines) {
-        const searchBusinessLines = await Promise.all(
-          updateUserProfileDto.searchBusinessLines.map(
-            ({ name, order = -1 }) => {
-              return this.businessLineModel.create(
-                { name, order },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
-        );
-        await userProfileToUpdate.$add(
-          'searchBusinessLines',
-          searchBusinessLines,
-          { transaction: t }
-        );
+      // Business Sectors & Occupation
+      if (updateUserProfileDto.sectorOccupations) {
+        const sectorOccupations = await Promise.all(
+          updateUserProfileDto.sectorOccupations.map(
+            async ({ businessSectorId, occupation, order }) => {
+              const existingSectorOccupation =
+                await this.userProfileSectorOccupationModel.findOne({
+                  where: {
+                    userProfileId: userProfileToUpdate.id,
+                    businessSectorId,
+                  },
+                  include: [
+                    {
+                      model: Occupation,
+                      as: 'occupation',
+                      attributes: ['name'],
+                      where: {
+                        name: occupation.name,
+                      },
+                    },
+                  ],
+                });
 
-        await this.userProfileSearchBusinessLineModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            BusinessLineId: {
-              [Op.not]: searchBusinessLines.map((bl) => {
-                return bl.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      if (updateUserProfileDto.searchAmbitions) {
-        const searchAmbitions = await Promise.all(
-          updateUserProfileDto.searchAmbitions.map(
-            ({ name, order = -1, prefix = 'dans' }) => {
-              return this.ambitionModel.create(
-                { name, order, prefix },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
-        );
-        await userProfileToUpdate.$add('searchAmbitions', searchAmbitions, {
-          transaction: t,
-        });
-
-        await this.userProfileSearchAmbitionModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            AmbitionId: {
-              [Op.not]: searchAmbitions.map((amb) => {
-                return amb.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      if (updateUserProfileDto.helpNeeds) {
-        const helpNeeds = await Promise.all(
-          updateUserProfileDto.helpNeeds.map(({ name }) => {
-            return this.helpNeedModel.create(
-              { UserProfileId: userProfileToUpdate.id, name },
-              {
-                hooks: true,
-                transaction: t,
+              if (existingSectorOccupation) {
+                return existingSectorOccupation;
               }
-            );
+              const newOccupation = await this.occupationModel.create(
+                {
+                  name: occupation.name,
+                  prefix: occupation.prefix,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+              return await this.userProfileSectorOccupationModel.create(
+                {
+                  userProfileId: userProfileToUpdate.id,
+                  businessSectorId,
+                  occupationId: newOccupation.id,
+                  order,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+            }
+          )
+        );
+
+        userProfileToUpdate.$set('sectorOccupations', sectorOccupations, {
+          transaction: t,
+        });
+      }
+
+      // Nudges
+      if (updateUserProfileDto.nudgeIds) {
+        const nudgesToAdd = await Promise.all(
+          updateUserProfileDto.nudgeIds.map(async (nudgeId) => {
+            const userProfileNudge = await this.userProfileNudgeModel.findOne({
+              where: {
+                userProfileId: userProfileToUpdate.id,
+                nudgeId,
+              },
+            });
+            if (!userProfileNudge) {
+              return await this.userProfileNudgeModel.create(
+                {
+                  userProfileId: userProfileToUpdate.id,
+                  nudgeId,
+                },
+                {
+                  hooks: true,
+                  transaction: t,
+                }
+              );
+            }
+            return null;
           })
         );
 
-        await this.helpNeedModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            id: {
-              [Op.not]: helpNeeds.map((hn) => {
-                return hn.id;
-              }),
-            },
-          },
-          hooks: true,
+        userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
           transaction: t,
         });
-      }
-      if (updateUserProfileDto.helpOffers) {
-        const helpOffers = await Promise.all(
-          updateUserProfileDto.helpOffers.map(({ name }) => {
-            return this.helpOfferModel.create(
-              { UserProfileId: userProfileToUpdate.id, name },
-              {
-                hooks: true,
-                transaction: t,
-              }
-            );
-          })
-        );
-        await this.helpOfferModel.destroy({
+
+        await this.userProfileNudgeModel.destroy({
           where: {
-            UserProfileId: userProfileToUpdate.id,
-            id: {
-              [Op.not]: helpOffers.map((ho) => {
-                return ho.id;
-              }),
+            userProfileId: userProfileToUpdate.id,
+            nudgeId: {
+              [Op.notIn]: updateUserProfileDto.nudgeIds,
             },
           },
-          hooks: true,
+          individualHooks: true,
           transaction: t,
         });
       }
@@ -498,11 +443,8 @@ export class UserProfilesService {
         ).map(({ name }) => name)
       : Departments.map(({ name }) => name);
 
-    const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
-    const businessLines = [
-      ...userProfile.searchBusinessLines,
-      ...userProfile.networkBusinessLines,
-    ];
+    const userProfileNudges = userProfile.userProfileNudges;
+    const businessSectors = userProfile.businessSectors;
 
     interface UserRecommendationSQL {
       id: string;
@@ -514,8 +456,8 @@ export class UserProfilesService {
       role: UserRole;
       lastConnection: Date;
       createdAt: Date;
-      ambitions: string;
-      profileBusinessLines: string;
+      occupations: string;
+      profileBusinessSectors: string;
       profileHelps: string;
     }
 
@@ -526,37 +468,28 @@ export class UserProfilesService {
       u."lastName",
       u.email,
       up.department,
-      up."currentJob",
       u.role,
       u."lastConnection",
       u."createdAt" as "createdAt",
-      string_agg(DISTINCT a.name, ', ') as ambitions,
-      string_agg(DISTINCT COALESCE(sb.name, nb.name), ', ') as "profileBusinessLines",  
-      string_agg(DISTINCT COALESCE(ho.name, hn.name), ', ') as "profileHelps"
+      string_agg(DISTINCT o.name, ', ') as occupations,
+      string_agg(DISTINCT bs.name, ', ') as businessSectors,
+      string_agg(DISTINCT nb.value, ', ') as nudges
     
     FROM "Users" u
-    LEFT JOIN "User_Profiles" up 
-      ON u.id = up."UserId"
+    LEFT JOIN "UserProfiles" up
+      ON u.id = up."userId"
     
-    LEFT JOIN "User_Profile_Search_Ambitions" upsa
-      ON up.id = upsa."UserProfileId"
-    LEFT JOIN "Ambitions" a
-      ON a.id = upsa."AmbitionId"
-    
-    LEFT JOIN "User_Profile_Search_BusinessLines" upsb
-      ON up.id = upsb."UserProfileId"
-    LEFT JOIN "BusinessLines" sb
-      ON sb.id = upsb."BusinessLineId"
-    
-    LEFT JOIN "User_Profile_Network_BusinessLines" upnb
-      ON up.id = upnb."UserProfileId"
-    LEFT JOIN "BusinessLines" nb
-      ON nb.id = upnb."BusinessLineId"
-    
-    LEFT JOIN "Help_Needs" hn 
-      ON up.id = hn."UserProfileId"
-    LEFT JOIN "Help_Offers" ho
-      ON up.id = ho."UserProfileId"
+    LEFT JOIN "UserProfileSectorOccupations" upso
+      ON up.id = upso."userProfileId"
+    LEFT JOIN "Occupations" o
+      ON o.id = upso."occupationId"
+    LEFT JOIN "BusinessSectors" bs
+      ON bs.id = upso."businessSectorId"
+
+    LEFT JOIN "UserProfileNudges" upn
+      ON up.id = upn."userProfileId"
+    LEFT JOIN "Nudges" nb
+      ON nb.id = upn."nudgeId"
     
     WHERE u."deletedAt" IS NULL
     AND up."isAvailable" IS TRUE
@@ -566,26 +499,8 @@ export class UserProfilesService {
     )})
     AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
     AND u."lastConnection" IS NOT NULL
-
-    -- InternalMessages join optimisation
-    AND u.id NOT IN (
-      SELECT
-        "addresseeUserId"
-      FROM
-        "InternalMessages"
-      WHERE
-        "senderUserId" = '${userId}'
-    )
-    AND u.id NOT IN (
-      SELECT
-        "senderUserId"
-      FROM
-        "InternalMessages"
-      WHERE
-        "addresseeUserId" = '${userId}'
-    )
         
-    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
+    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department
     ;`;
 
     const profiles: UserRecommendationSQL[] =
@@ -597,33 +512,33 @@ export class UserProfilesService {
       profiles,
       [
         (profile) => {
-          const profileBusinessLines = profile.profileBusinessLines
-            ? profile.profileBusinessLines.split(', ')
+          const profileBusinessSectors = profile.profileBusinessSectors
+            ? profile.profileBusinessSectors.split(', ')
             : [];
 
-          const businessLinesDifference = _.difference(
-            businessLines.map(({ name }) => name),
-            profileBusinessLines
+          const businessSectorsDifference = _.difference(
+            businessSectors.map(({ name }) => name),
+            profileBusinessSectors
           );
 
-          const businessLinesMatching =
-            (businessLines.length - businessLinesDifference.length) *
-            UserProfileRecommendationsWeights.BUSINESS_LINES;
+          const businessSectorsMatching =
+            (businessSectors.length - businessSectorsDifference.length) *
+            UserProfileRecommendationsWeights.BUSINESS_SECTORS;
 
           const profileHelps = profile.profileHelps
             ? profile.profileHelps.split(', ')
             : [];
 
-          const helpsDifferences = _.difference(
-            helps.map(({ name }) => name),
+          const nudgesDifferences = _.difference(
+            userProfileNudges.map(({ nudgeId }) => nudgeId),
             profileHelps
           );
 
-          const helpsMatching =
-            (helps.length - helpsDifferences.length) *
-            UserProfileRecommendationsWeights.HELPS;
+          const nudgesMatching =
+            (userProfileNudges.length - nudgesDifferences.length) *
+            UserProfileRecommendationsWeights.NUDGES;
 
-          return businessLinesMatching + helpsMatching;
+          return businessSectorsMatching + nudgesMatching;
         },
         ({ department }) => department === userProfile.department,
         ({ createdAt }) => createdAt,
@@ -669,7 +584,7 @@ export class UserProfilesService {
 
   async removeByUserId(userId: string) {
     return this.userProfileModel.destroy({
-      where: { UserId: userId },
+      where: { userId },
       individualHooks: true,
     });
   }

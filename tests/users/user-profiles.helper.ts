@@ -32,38 +32,24 @@ export class UserProfilesHelper {
       isAvailable: user.userProfile.isAvailable,
       lastReceivedMessage: null,
       lastSentMessage: null,
-      networkBusinessLines: expect.arrayContaining(
-        user.userProfile.networkBusinessLines.map(({ name }) =>
+      businessSectors: expect.arrayContaining(
+        user.userProfile.businessSectors.map(({ name }) =>
           expect.objectContaining({
             name,
           })
         )
       ),
-      searchBusinessLines: expect.arrayContaining(
-        user.userProfile.searchBusinessLines.map(({ name }) =>
+      occupations: expect.arrayContaining(
+        user.userProfile.occupations.map(({ name }) =>
           expect.objectContaining({
             name,
           })
         )
       ),
-      searchAmbitions: expect.arrayContaining(
-        user.userProfile.searchAmbitions.map(({ name }) =>
+      userProfileNudges: expect.arrayContaining(
+        user.userProfile.userProfileNudges.map(({ id }) =>
           expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      helpNeeds: expect.arrayContaining(
-        user.userProfile.helpNeeds.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      helpOffers: expect.arrayContaining(
-        user.userProfile.helpOffers.map(({ name }) =>
-          expect.objectContaining({
-            name,
+            id,
           })
         )
       ),

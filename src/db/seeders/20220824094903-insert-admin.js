@@ -21,7 +21,7 @@ module.exports = {
     return queryInterface.bulkInsert('Users', [
       {
         id: uuid.v4(),
-        email: 'admin@linkedout.fr',
+        email: 'admin@entourage.social',
         firstName: 'John',
         lastName: 'Doe',
         role: 'Admin',
