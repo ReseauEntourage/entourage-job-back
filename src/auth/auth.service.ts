@@ -122,8 +122,8 @@ export class AuthService {
     return this.usersService.findOneComplete(id);
   }
 
-  async findOneUserByMail(email: string) {
-    return this.usersService.findOneByMail(email);
+  async findOneUserByMail(email: string, complete = false) {
+    return this.usersService.findOneByMail(email, complete);
   }
 
   async sendPasswordResetLinkMail(

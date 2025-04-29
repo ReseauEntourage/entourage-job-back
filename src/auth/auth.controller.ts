@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Redirect,
   UnauthorizedException,
   UseGuards,
@@ -157,7 +158,10 @@ export class AuthController {
   @Throttle(60, 60)
   @ApiBearerAuth()
   @Get('current')
-  async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+  async getCurrent(
+    @UserPayload('id', new ParseUUIDPipe()) id: string,
+    @Query('complete') complete = 'false'
+  ) {
     // Updating current user last connection date
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
@@ -167,7 +171,8 @@ export class AuthController {
     }
 
     const currentUser = await this.authService.findOneUserByMail(
-      updatedUser.email
+      updatedUser.email,
+      complete === 'true'
     );
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
