@@ -13,6 +13,7 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { User } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
@@ -51,6 +52,7 @@ export class UserProfilesService {
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private messagesService: MessagesService,
+    private messagingService: MessagingService,
     private slackService: SlackService,
     private mailsService: MailsService
   ) {}
@@ -189,6 +191,9 @@ export class UserProfilesService {
           profile.user.id,
           userId
         );
+        const averageDelayResponse = await this.getDayAverageDelayResponse(
+          profile.user.id
+        );
 
         const { user, ...restProfile }: UserProfile = profile.toJSON();
         return {
@@ -196,6 +201,7 @@ export class UserProfilesService {
           ...restProfile,
           lastSentMessage: lastSentMessage?.createdAt || null,
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          averageDelayResponse,
         };
       })
     );
@@ -238,6 +244,9 @@ export class UserProfilesService {
           profile.user.id,
           userId
         );
+        const averageDelayResponse = await this.getDayAverageDelayResponse(
+          profile.user.id
+        );
 
         const { user, ...restProfile }: UserProfile = profile.toJSON();
         return {
@@ -245,6 +254,7 @@ export class UserProfilesService {
           ...restProfile,
           lastSentMessage: lastSentMessage?.createdAt || null,
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          averageDelayResponse,
         };
       })
     );
@@ -280,6 +290,10 @@ export class UserProfilesService {
       senderUserId,
       addresseeUserId
     );
+  }
+
+  async getDayAverageDelayResponse(userId: string): Promise<number | null> {
+    return this.messagingService.getDayAverageDelayResponse(userId);
   }
 
   async updateByUserId(

@@ -7,6 +7,7 @@ import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { MessagesModule } from 'src/messages/messages.module';
+import { MessagingModule } from 'src/messaging/messaging.module';
 import { UsersModule } from 'src/users/users.module';
 import { UserProfile, UserProfileSectorOccupation } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
@@ -38,6 +39,7 @@ import { UserProfilesService } from './user-profiles.service';
     NudgesModule,
     AWSModule,
     MessagesModule,
+    MessagingModule,
     SlackModule,
     MailsModule,
   ],

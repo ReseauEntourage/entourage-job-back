@@ -246,6 +246,11 @@ export class UserProfilesController {
               userId
             );
 
+          const averageDelayResponse =
+            await this.userProfilesService.getDayAverageDelayResponse(
+              recommendedProfile.recommendedUser.id
+            );
+
           const {
             recommendedUser: { userProfile, ...restRecommendedUser },
           }: UserProfileRecommendation = recommendedProfile.toJSON();
@@ -255,6 +260,7 @@ export class UserProfilesController {
             ...userProfile,
             lastSentMessage: lastSentMessage?.createdAt || null,
             lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+            averageDelayResponse,
           };
         }
       )
@@ -289,6 +295,8 @@ export class UserProfilesController {
       userIdToGet,
       currentUserId
     );
+    const averageDelayResponse =
+      await this.userProfilesService.getDayAverageDelayResponse(userIdToGet);
 
     if (user.role === UserRoles.CANDIDATE) {
       const userCandidate =
@@ -302,7 +310,7 @@ export class UserProfilesController {
           userProfile,
           lastSentMessage?.createdAt,
           lastReceivedMessage?.createdAt,
-          userCandidate.url
+          averageDelayResponse
         );
       }
     }
@@ -311,7 +319,8 @@ export class UserProfilesController {
       user,
       userProfile,
       lastSentMessage?.createdAt,
-      lastReceivedMessage?.createdAt
+      lastReceivedMessage?.createdAt,
+      averageDelayResponse
     );
   }
 }

@@ -8,7 +8,7 @@ export const getPublicProfileFromUserAndUserProfile = (
   userProfile: UserProfile,
   lastSentMessage: Date,
   lastReceivedMessage: Date,
-  cvUrl?: string
+  averageDelayResponse: number | null
 ): PublicProfile => {
   return {
     id: user.id,
@@ -22,7 +22,6 @@ export const getPublicProfileFromUserAndUserProfile = (
     description: userProfile.description,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
-    cvUrl: cvUrl,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,
@@ -32,6 +31,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     skills: userProfile.skills,
     contracts: userProfile.contracts,
     reviews: userProfile.reviews,
+    averageDelayResponse,
   };
 };
 

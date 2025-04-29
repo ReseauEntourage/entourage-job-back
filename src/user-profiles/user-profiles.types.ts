@@ -57,4 +57,5 @@ export type PublicProfile = {
   cvUrl?: string;
   linkedinUrl?: string;
   hasExternalCv: boolean;
+  averageDelayResponse: number | null;
 };
