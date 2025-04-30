@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bull';
 import { Module, CacheModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
@@ -19,6 +20,7 @@ import { PassionsModule } from './common/passions/passions.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { CronModule } from './cron/cron.module';
 import { CVsModule } from './cvs/cvs.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
@@ -90,6 +92,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     BullModule.forRoot({
       redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
     }),
+    ScheduleModule.forRoot(),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
@@ -127,6 +130,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MessagingModule,
     UserSocialSituationsModule,
     MediasModule,
+    CronModule,
   ],
   providers: [
     {

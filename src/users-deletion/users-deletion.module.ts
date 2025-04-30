@@ -19,5 +19,6 @@ import { UsersDeletionService } from './users-deletion.service';
   ],
   controllers: [UsersDeletionController],
   providers: [UsersDeletionService],
+  exports: [UsersDeletionService],
 })
 export class UsersDeletionModule {}
