@@ -247,7 +247,7 @@ export class UserProfilesController {
             );
 
           const averageDelayResponse =
-            await this.userProfilesService.getDayAverageDelayResponse(
+            await this.userProfilesService.getAverageDelayResponse(
               recommendedProfile.recommendedUser.id
             );
 
@@ -296,7 +296,7 @@ export class UserProfilesController {
       currentUserId
     );
     const averageDelayResponse =
-      await this.userProfilesService.getDayAverageDelayResponse(userIdToGet);
+      await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
     if (user.role === UserRoles.CANDIDATE) {
       const userCandidate =

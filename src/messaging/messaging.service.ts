@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -45,6 +47,7 @@ export class MessagingService {
     @InjectModel(MessageMedia)
     private messageMediaModel: typeof MessageMedia,
     private slackService: SlackService,
+    @Inject(forwardRef(() => UsersService))
     private userService: UsersService,
     private mailsService: MailsService,
     private mediaService: MediasService
@@ -452,7 +455,7 @@ export class MessagingService {
    * @param userProfileId - The ID of the user profile to fetch the average delay response for
    * @return The average delay response in days or null if no messages are found
    */
-  async getDayAverageDelayResponse(userId: string): Promise<number | null> {
+  async getAverageDelayResponse(userId: string): Promise<number | null> {
     // Get all conversations for the user profile
     const conversations = await this.conversationParticipantModel.findAll({
       where: { userId },
@@ -496,5 +499,29 @@ export class MessagingService {
     const averageDays = averageMs / (1000 * 60 * 60 * 24);
 
     return Math.ceil(averageDays);
+  }
+
+  /**
+   * Compute the response rate for a user profile
+   * Based on all the conversations where the user profile is a participant and no answer is given (excluding the conversations created within the last day)
+   *
+   * @param userProfileId - The ID of the user profile to fetch the response rate for
+   * @return The response rate in percentage or null if no messages are found
+   */
+  async getResponseRate(userId: string): Promise<number | null> {
+    // Get all conversations for the user profile
+    const conversations = await this.conversationParticipantModel.findAll({
+      where: { userId },
+      include: [this.conversationModel],
+    });
+
+    const totalMessages = conversations.length;
+    const answeredMessages = conversations.filter(
+      (c) => c.seenAt && c.seenAt > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ).length;
+
+    if (totalMessages === 0) return null;
+
+    return Math.round((answeredMessages / totalMessages) * 100);
   }
 }

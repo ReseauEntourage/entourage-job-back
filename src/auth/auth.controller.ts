@@ -170,13 +170,21 @@ export class AuthController {
       throw new NotFoundException();
     }
 
+    const usersStats =
+      complete === 'true'
+        ? await this.authService.getUsersStats(updatedUser.id)
+        : {};
+
     const currentUser = await this.authService.findOneUserByMail(
       updatedUser.email,
       complete === 'true'
     );
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
-    return currentUser;
+    return {
+      ...currentUser.toJSON(),
+      ...(usersStats || {}),
+    };
   }
 
   @Public()

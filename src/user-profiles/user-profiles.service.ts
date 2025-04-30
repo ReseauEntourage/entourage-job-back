@@ -191,7 +191,7 @@ export class UserProfilesService {
           profile.user.id,
           userId
         );
-        const averageDelayResponse = await this.getDayAverageDelayResponse(
+        const averageDelayResponse = await this.getAverageDelayResponse(
           profile.user.id
         );
 
@@ -244,7 +244,7 @@ export class UserProfilesService {
           profile.user.id,
           userId
         );
-        const averageDelayResponse = await this.getDayAverageDelayResponse(
+        const averageDelayResponse = await this.getAverageDelayResponse(
           profile.user.id
         );
 
@@ -292,8 +292,8 @@ export class UserProfilesService {
     );
   }
 
-  async getDayAverageDelayResponse(userId: string): Promise<number | null> {
-    return this.messagingService.getDayAverageDelayResponse(userId);
+  async getAverageDelayResponse(userId: string): Promise<number | null> {
+    return this.messagingService.getAverageDelayResponse(userId);
   }
 
   async updateByUserId(

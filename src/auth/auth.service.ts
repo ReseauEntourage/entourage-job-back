@@ -10,6 +10,7 @@ import { MailsService } from 'src/mails/mails.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import { encryptPassword, validatePassword } from './auth.utils';
 
@@ -18,6 +19,7 @@ export class AuthService {
   constructor(
     private mailsService: MailsService,
     private jwtService: JwtService,
+    private usersStatsService: UsersStatsService,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService
   ) {}
@@ -165,5 +167,13 @@ export class AuthService {
 
   async sendOnboardingJ3WebinarMail(user: User) {
     return this.mailsService.sendOnboardingJ3WebinarMail(user);
+  }
+
+  async getUsersStats(userId: string) {
+    return {
+      averageDelayResponse:
+        await this.usersStatsService.getAverageDelayResponse(userId),
+      responseRate: await this.usersStatsService.getResponseRate(userId),
+    };
   }
 }
