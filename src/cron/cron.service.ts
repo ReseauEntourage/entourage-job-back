@@ -21,9 +21,11 @@ export class CronService {
   async deleteInactiveUsers() {
     this.logger.log('Deleting inactive users...');
     const inactiveUsers = await this.usersService.getInactiveUsersForDeletion();
-    inactiveUsers.forEach((user) => {
-      this.logger.log(`Deleting user ${user.id}`);
-      this.usersDeletionService.deleteCompleteUser(user as User);
-    });
+    await Promise.all(
+      inactiveUsers.map(async (user) => {
+        this.logger.log(`Deleting user ${user.id}`);
+        await this.usersDeletionService.deleteCompleteUser(user as User);
+      })
+    );
   }
 }
