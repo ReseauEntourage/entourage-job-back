@@ -16,6 +16,7 @@ import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
+import { CurrentUserInclude } from 'src/users/models/user.include';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
@@ -167,7 +168,8 @@ export class AuthController {
     }
 
     const currentUser = await this.authService.findOneUserByMail(
-      updatedUser.email
+      updatedUser.email,
+      CurrentUserInclude
     );
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
