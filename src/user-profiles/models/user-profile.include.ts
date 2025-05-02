@@ -4,6 +4,7 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
@@ -15,7 +16,7 @@ import { UserProfileSectorOccupation } from './user-profile-sector-occupation.mo
 
 export const getUserProfileNudgesInclude = (
   nudgesOptions: WhereOptions<Nudge> = {}
-) => {
+): Includeable[] => {
   return [
     {
       model: UserProfileNudge,
@@ -38,7 +39,7 @@ export const getUserProfileNudgesInclude = (
 export const getUserProfileSectorOccupationsInclude = (
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {}
-) => {
+): Includeable[] => {
   const isBusinessSectorsRequired = role && !_.isEmpty(businessSectorsOptions);
 
   return [
@@ -68,7 +69,7 @@ export const getUserProfileSectorOccupationsInclude = (
   ];
 };
 
-export const getUserProfileLanguagesInclude = () => [
+export const getUserProfileLanguagesInclude = (): Includeable[] => [
   {
     model: Language,
     as: 'languages',
@@ -81,7 +82,7 @@ export const getUserProfileLanguagesInclude = () => [
   },
 ];
 
-export const getUserProfileContractsInclude = () => [
+export const getUserProfileContractsInclude = (): Includeable[] => [
   {
     model: Contract,
     as: 'contracts',
@@ -94,7 +95,7 @@ export const getUserProfileContractsInclude = () => [
   },
 ];
 
-export const getUserProfileSkillsInclude = () => [
+export const getUserProfileSkillsInclude = (): Includeable[] => [
   {
     model: Skill,
     as: 'skills',
@@ -107,7 +108,7 @@ export const getUserProfileSkillsInclude = () => [
   },
 ];
 
-export const getUserProfileExperiencesInclude = () => [
+export const getUserProfileExperiencesInclude = (): Includeable[] => [
   {
     model: Experience,
     as: 'experiences',
@@ -128,7 +129,7 @@ export const getUserProfileExperiencesInclude = () => [
   },
 ];
 
-export const getUserProfileFormationsInclude = () => [
+export const getUserProfileFormationsInclude = (): Includeable[] => [
   {
     model: Formation,
     as: 'formations',
@@ -149,12 +150,21 @@ export const getUserProfileFormationsInclude = () => [
   },
 ];
 
-export const getUserProfileReviewsInclude = () => [
+export const getUserProfileReviewsInclude = (): Includeable[] => [
   {
     model: Review,
     as: 'reviews',
     required: false,
     attributes: ['id', 'authorName', 'authorLabel', 'content'],
+  },
+];
+
+export const getUserProfileInterestsInclude = (): Includeable[] => [
+  {
+    model: Interest,
+    as: 'interests',
+    required: false,
+    attributes: ['id', 'name', 'order'],
   },
 ];
 
@@ -164,6 +174,13 @@ export const getUserProfileInclude = (
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
   nudgesOptions: WhereOptions<Nudge> = {}
 ): Includeable[] => {
+  // Always included
+  const baseIncludes = [
+    ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
+    ...getUserProfileNudgesInclude(nudgesOptions),
+  ];
+
+  // Conditionally included based on the complete flag
   const additionalIncludes = [
     ...getUserProfileLanguagesInclude(),
     ...getUserProfileContractsInclude(),
@@ -171,11 +188,8 @@ export const getUserProfileInclude = (
     ...getUserProfileExperiencesInclude(),
     ...getUserProfileFormationsInclude(),
     ...getUserProfileReviewsInclude(),
+    ...getUserProfileInterestsInclude(),
   ];
 
-  return [
-    ...(complete ? additionalIncludes : []),
-    ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
-    ...getUserProfileNudgesInclude(nudgesOptions),
-  ];
+  return [...(complete ? additionalIncludes : []), ...baseIncludes];
 };

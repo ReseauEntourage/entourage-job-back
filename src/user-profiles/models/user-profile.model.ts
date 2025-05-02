@@ -31,6 +31,7 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -255,6 +256,13 @@ export class UserProfile extends Model {
   // Reviews
   @HasMany(() => Review, 'userProfileId')
   reviews: Review[];
+
+  // Interests
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => Interest, 'userProfileId')
+  interests: Interest[];
 
   // Nudges
   @ApiProperty()

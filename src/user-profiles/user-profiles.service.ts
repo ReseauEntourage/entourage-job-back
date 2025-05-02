@@ -6,6 +6,7 @@ import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
@@ -48,6 +49,8 @@ export class UserProfilesService {
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
     @InjectModel(UserProfileNudge)
     private userProfileNudgeModel: typeof UserProfileNudge,
+    @InjectModel(Interest)
+    private interestModel: typeof Interest,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -307,7 +310,6 @@ export class UserProfilesService {
     if (!userProfileToUpdate) {
       return null;
     }
-
     await this.userProfileModel.sequelize.transaction(async (t) => {
       // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
@@ -414,9 +416,49 @@ export class UserProfilesService {
           transaction: t,
         });
       }
+
+      // Interests
+      if (updateUserProfileDto.interests) {
+        await this.updateInterestsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.interests
+        );
+      }
     });
 
-    return this.findOneByUserId(userId);
+    return this.findOneByUserId(userId, true);
+  }
+
+  async updateInterestsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    interests: Interest[]
+  ): Promise<void> {
+    await this.userProfileModel.sequelize.transaction(async (t) => {
+      const interestsData = interests.map((interest, order) => {
+        return {
+          userProfileId: userProfileToUpdate.id,
+          name: interest.name,
+          order,
+        };
+      });
+      const userProfileInterests = await this.interestModel.bulkCreate(
+        interestsData,
+        {
+          hooks: true,
+          transaction: t,
+        }
+      );
+      await this.interestModel.destroy({
+        where: {
+          userProfileId: userProfileToUpdate.id,
+          id: {
+            [Op.notIn]: userProfileInterests.map((interest) => interest.id),
+          },
+        },
+        individualHooks: true,
+        transaction: t,
+      });
+    });
   }
 
   async createRecommendations(userId: string, usersToRecommendIds: string[]) {

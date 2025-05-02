@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
+import { Interest } from 'src/common/interests/models';
 import { NudgesModule } from 'src/common/nudge/nudges.module';
 import { OccupationsModule } from 'src/common/occupations/occupations.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
@@ -32,6 +33,7 @@ import { UserProfilesService } from './user-profiles.service';
       UserProfileSectorOccupation,
       UserProfileNudge,
       UserProfileRecommendation,
+      Interest,
     ]),
     UsersModule,
     OccupationsModule,
