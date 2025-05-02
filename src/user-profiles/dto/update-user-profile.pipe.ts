@@ -54,7 +54,7 @@ export class UpdateUserProfilePipe
       });
 
       if (errors.length > 0) {
-        console.error(errors);
+        this.logger.error('Validation errors occurred', errors);
         throw new BadRequestException();
       }
     }
