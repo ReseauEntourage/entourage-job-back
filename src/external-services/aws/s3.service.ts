@@ -83,12 +83,16 @@ export class S3Service {
     return this.s3.send(headObjectCommand);
   }
 
-  async getSignedUrl(key: string) {
+  async getSignedUrl(
+    key: string,
+    contentType: string,
+    contentDisposition = 'attachment'
+  ) {
     const getObjectCommand = new GetObjectCommand({
       Bucket: process.env.AWSS3_BUCKET_NAME,
       Key: key,
-      ResponseContentDisposition: 'attachment',
-      ResponseContentType: 'application/pdf',
+      ResponseContentDisposition: contentDisposition,
+      ResponseContentType: contentType,
     });
 
     return s3GetSignedUrl(this.s3, getObjectCommand, {

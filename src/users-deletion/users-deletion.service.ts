@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
 import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { UpdateOpportunityUserDto } from 'src/opportunities/dto/update-opportunity-user.dto';
-import { OpportunityUsersService } from 'src/opportunities/opportunity-users.service';
 import { RevisionChangesService } from 'src/revisions/revision-changes.service';
 import { RevisionsService } from 'src/revisions/revisions.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -20,7 +18,6 @@ export class UsersDeletionService {
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private userCandidatsService: UserCandidatsService,
-    private opportunityUsersService: OpportunityUsersService,
     private revisionsService: RevisionsService,
     private revisionChangesService: RevisionChangesService,
     private s3Service: S3Service
@@ -30,22 +27,8 @@ export class UsersDeletionService {
     return this.usersService.findOne(userId);
   }
 
-  async findAllOpportunityUsersByCandidateId(candidateId: string) {
-    return this.opportunityUsersService.findAllByCandidateId(candidateId);
-  }
-
   async updateUser(userId: string, updateUserDto: UpdateUserDto) {
     return this.usersService.update(userId, updateUserDto);
-  }
-
-  async updateOpportunityUsersByCandidateId(
-    candidateId: string,
-    updateOpportunityUserDto: UpdateOpportunityUserDto
-  ) {
-    return this.opportunityUsersService.updateByCandidateId(
-      candidateId,
-      updateOpportunityUserDto
-    );
   }
 
   async updateUserCandidatByCandidatId(
@@ -56,29 +39,6 @@ export class UsersDeletionService {
       candidateId,
       updateUserCandidatDto
     );
-  }
-
-  async updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
-    userId: string,
-    opportunityUsersIds: string[]
-  ) {
-    const documentsIds = [userId, ...opportunityUsersIds];
-
-    const revisions = await this.revisionsService.findAllByDocumentsIds(
-      documentsIds
-    );
-    await this.revisionChangesService.updateByRevisionsIds(
-      revisions.map((revision) => {
-        return revision.id;
-      }),
-      {
-        document: {},
-        diff: [{}],
-      }
-    );
-    await this.revisionsService.updateByDocumentsIds(documentsIds, {
-      document: {},
-    });
   }
 
   async removeUser(userId: string) {
@@ -150,21 +110,6 @@ export class UsersDeletionService {
     });
 
     await this.cacheAllCVs();
-
-    const opportunityUsers = await this.findAllOpportunityUsersByCandidateId(
-      id
-    );
-
-    await this.updateOpportunityUsersByCandidateId(id, {
-      note: null,
-    });
-
-    await this.updateUserAndOpportunityUsersRevisionsAndRevisionChanges(
-      id,
-      opportunityUsers.map((opportunityUser) => {
-        return opportunityUser.id;
-      })
-    );
 
     await this.removeUserProfile(id);
 
