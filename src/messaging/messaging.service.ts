@@ -95,14 +95,6 @@ export class MessagingService {
             include: [...messagingConversationIncludes(10)],
           },
         ],
-        order: [
-          [
-            Sequelize.literal(
-              '(SELECT MAX("createdAt") FROM "Messages" WHERE "Messages"."conversationId" = "conversation"."id")'
-            ),
-            'DESC',
-          ],
-        ],
       });
 
     return conversationParticipants
@@ -113,6 +105,13 @@ export class MessagingService {
           cp.feedbackRating,
           cp.feedbackDate
         );
+
+        cp.conversation.messages = cp.conversation.messages.sort((a, b) => {
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
         return {
           ...cp.conversation.toJSON(),
           shouldGiveFeedback,
