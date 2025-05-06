@@ -10,34 +10,6 @@ import { Genders } from 'src/users/users.types';
 export class ExternalDatabasesService {
   constructor(private queuesService: QueuesService) {}
 
-  // TODO merge with createExternalDBOpportunity
-  async updateExternalDBOpportunity(
-    opportunityId: string | string[],
-    isSameOpportunity = false
-  ) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
-      {
-        opportunityId,
-        isSameOpportunity,
-      }
-    );
-  }
-
-  // TODO merge with updateExternalDBOpportunity
-  async createExternalDBOpportunity(
-    opportunityId: string | string[],
-    isSameOpportunity = false
-  ) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
-      {
-        opportunityId,
-        isSameOpportunity,
-      }
-    );
-  }
-
   async createExternalDBUser(
     userId: string,
     otherInfo: Pick<
@@ -99,39 +71,11 @@ export class ExternalDatabasesService {
     );
   }
 
-  async createOrUpdateExternalDBEvent(opportunityUserEventId: string) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT,
-      {
-        opportunityUserEventId,
-      }
-    );
-  }
-
   async createOrUpdateExternalDBTask(externalMessageId: string) {
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK,
       {
         externalMessageId,
-      }
-    );
-  }
-
-  async refreshSalesforceOpportunities(opportunitiesIds: string[]) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_OPPORTUNITY,
-      {
-        opportunityId: opportunitiesIds,
-        isSameOpportunity: false,
-      }
-    );
-  }
-
-  async refreshSalesforceEvents(opportunityUserEventsIds: string[]) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_EVENT,
-      {
-        opportunityUserEventId: opportunityUserEventsIds,
       }
     );
   }

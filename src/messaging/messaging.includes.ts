@@ -1,7 +1,9 @@
 import { Includeable } from 'sequelize';
+import { Media } from 'src/medias/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import {
+  mediaAttributes,
   messageAttributes,
   conversationParticipantAttributes,
   userAttributes,
@@ -27,6 +29,12 @@ export const messagingConversationIncludes = (
           as: 'author',
           paranoid: false,
           attributes: userAttributes,
+        },
+        {
+          model: Media,
+          as: 'medias',
+          attributes: mediaAttributes,
+          through: { attributes: [] },
         },
       ],
       attributes: messageAttributes,
@@ -71,5 +79,11 @@ export const messagingMessageIncludes: Includeable[] = [
     as: 'author',
     attributes: userAttributes,
     paranoid: false,
+  },
+  {
+    model: Media,
+    as: 'medias',
+    attributes: mediaAttributes,
+    through: { attributes: [] },
   },
 ];

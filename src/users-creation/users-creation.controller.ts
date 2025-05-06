@@ -12,6 +12,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
+import { getContactStatusFromUserRole } from 'src/external-services/mailjet/mailjet.utils';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
@@ -29,6 +30,7 @@ import {
 } from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
 import { convertYesNoToBoolean } from 'src/utils/yesNo';
+import { Utm } from 'src/utm/models';
 import {
   CreateUserDto,
   CreateUserPipe,
@@ -211,6 +213,7 @@ export class UsersCreationController {
         helpNeeds: createUserRegistrationDto.helpNeeds,
         searchBusinessLines: createUserRegistrationDto.searchBusinessLines,
         searchAmbitions: createUserRegistrationDto.searchAmbitions,
+        optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
@@ -242,6 +245,27 @@ export class UsersCreationController {
           ),
         }
       );
+
+      // UTM
+      const utmToCreate: Partial<Utm> = {
+        userId: createdUserId,
+        utmSource: createUserRegistrationDto.utmSource,
+        utmMedium: createUserRegistrationDto.utmMedium,
+        utmCampaign: createUserRegistrationDto.utmCampaign,
+        utmTerm: createUserRegistrationDto.utmTerm,
+        utmContent: createUserRegistrationDto.utmContent,
+      };
+
+      await this.usersCreationService.createUtm(utmToCreate);
+
+      // Newsletter subscription
+      if (createUserRegistrationDto.optInNewsletter) {
+        await this.usersCreationService.sendContactToMailjet({
+          email: createUserRegistrationDto.email,
+          zone: createdUser.zone,
+          status: getContactStatusFromUserRole(createdUser.role),
+        });
+      }
 
       // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {

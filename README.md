@@ -8,7 +8,7 @@ Document mis à jour le 02/08/2024
 
 | App            | Version |
 | -------------- | ------- |
-| **Node**       | 18.x.x  |
+| **Node**       | 20.x.x  |
 | **NestJS**     | 9.4.1   |
 | **Sequelize**  | 9.0.2   |
 | **ESLint**     | 8.0.1   |
@@ -50,11 +50,11 @@ Document mis à jour le 02/08/2024
 - `docker-compose.yml`: Définition des différents containers Docker pour le développement local
 - `docker-entrypoint.sh`: Point d'entrée de lancement de l'app avec Docker
 - `Dockerfile`: configuration du container Docker de l'application
-- `nest-cli.json`: configuration de *_nest_* pour l'app
-- `nest-cli.worker.json`: configuration de *_nest_* pour le worker
+- `nest-cli.json`: configuration de _*nest*_ pour l'app
+- `nest-cli.worker.json`: configuration de _*nest*_ pour le worker
 - `package.json`: configuration du projet et des dépendances
 - `Procfile` : configuration des process **_Heroku_** à lancer après déploiement
-- `tsconfig.json`: configuration pour *_typescript_*
+- `tsconfig.json`: configuration pour _*typescript*_
 - `yarn.lock`: définitions des dépendances et sous dépendances et leur version
 
 ## Configuration
@@ -67,12 +67,14 @@ Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJs**.
 
 Veuillez consulter le fichier .env.dist pour connaitre les variables d'environnement utilisés dans le projet.
 Vous devez définir deux nouveaux fichiers de variables d'environnement :
-  - un fichier `.env` pour les variables d'environnement de l'application en mode `run`
-  - un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
+
+- un fichier `.env` pour les variables d'environnement de l'application en mode `run`
+- un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
 
 ### Initialisation des containers
 
 Création des containers de l'application
+
 ```
 docker-compose up --build
 ```
@@ -97,6 +99,7 @@ exit
 ### Initialisation de la BDD
 
 Entrez dans votre container
+
 ```
 docker exec -it linkedout-api-worker bash
 ```
@@ -119,7 +122,6 @@ utilisateurs :
 ```
 yarn db:seed
 ```
-
 
 ### Une fois la DB initialisée
 
@@ -147,11 +149,13 @@ docker compose up
 ### Lancer le projet en mode production
 
 Compiler l'applicaiton
+
 ```
 yarn build
 ```
 
 Démarrer l'applicatin précédemment compilé
+
 ```
 yarn start
 ```
