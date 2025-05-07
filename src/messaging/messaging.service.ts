@@ -95,6 +95,14 @@ export class MessagingService {
             include: [...messagingConversationIncludes(10)],
           },
         ],
+        order: [
+          [
+            Sequelize.literal(
+              '(SELECT MAX("createdAt") FROM "Messages" WHERE "Messages"."conversationId" = "conversation"."id")'
+            ),
+            'DESC',
+          ],
+        ],
       });
 
     return conversationParticipants
