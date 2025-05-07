@@ -20,6 +20,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     currentJob: userProfile.currentJob,
     userProfileNudges: userProfile.userProfileNudges,
     description: userProfile.description,
+    introduction: userProfile.introduction,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     linkedinUrl: userProfile.linkedinUrl,

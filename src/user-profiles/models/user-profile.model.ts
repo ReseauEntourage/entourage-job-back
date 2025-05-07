@@ -77,13 +77,13 @@ export class UserProfile extends Model {
   @IsString()
   @AllowNull(true)
   @Column
-  description: string;
+  introduction: string;
 
   @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column
-  story: string;
+  description: string;
 
   @ApiProperty()
   @IsBoolean()

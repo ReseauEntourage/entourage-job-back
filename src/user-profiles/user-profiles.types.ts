@@ -45,6 +45,7 @@ export type PublicProfile = {
   currentJob: string;
   isAvailable: boolean;
   userProfileNudges: UserProfileNudge[];
+  introduction: string;
   description: string;
   sectorOccupations: UserProfileSectorOccupation[];
   languages: Language[];
