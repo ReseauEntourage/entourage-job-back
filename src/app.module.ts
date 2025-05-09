@@ -34,6 +34,7 @@ import { UserSocialSituationsModule } from './user-social-situations/user-social
 import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
+import { UsersStatsModule } from './users-stats/users-stats.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -98,6 +99,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
     ExternalCvsModule,
     BusinessSectorsModule,
@@ -138,6 +140,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
     BusinessSectorsModule,
     LocationsModule,
