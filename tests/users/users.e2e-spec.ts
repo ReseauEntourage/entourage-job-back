@@ -3824,6 +3824,7 @@ describe('Users', () => {
               occupations: [{ name: 'menuisier' }] as Occupation[],
               // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
               description: 'hello',
+              introduction: 'hello',
               department: 'Paris (75)',
             };
             const userProfileCoach: Partial<UserProfile> = {
@@ -3831,6 +3832,7 @@ describe('Users', () => {
               businessSectors: [{ name: 'bat' }] as BusinessSector[],
               // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               description: 'hello',
+              introduction: 'hello',
               department: 'Paris (75)',
             };
             await userFactory.create(
@@ -5962,6 +5964,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -5975,6 +5978,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -5988,6 +5992,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6001,6 +6006,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6014,6 +6020,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6022,6 +6029,7 @@ describe('Users', () => {
         it('Should return 200, if candidate updates his profile candidate properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
             businessSectors: [{ name: 'id' }] as BusinessSector[],
@@ -6055,6 +6063,7 @@ describe('Users', () => {
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
             businessSectors: [{ name: 'id' }] as BusinessSector[],
@@ -6074,6 +6083,7 @@ describe('Users', () => {
         it('Should return 400, if candidate updates his profile with coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
@@ -6091,6 +6101,7 @@ describe('Users', () => {
         it('Should return 200, if coach updates his profile coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
@@ -6122,6 +6133,7 @@ describe('Users', () => {
         it('Should return 403, if referer updates his profile referer properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
           };
@@ -6138,6 +6150,7 @@ describe('Users', () => {
         it('Should return 400, if coach updates his profile with candidate properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
             occupations: [{ name: 'développeur' }] as Occupation[],
