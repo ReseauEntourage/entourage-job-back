@@ -6,6 +6,7 @@ import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
 import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -21,6 +22,7 @@ import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { UserProfile, UserProfileSectorOccupation } from './models';
+import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
@@ -51,6 +53,8 @@ export class UserProfilesService {
     private userProfileNudgeModel: typeof UserProfileNudge,
     @InjectModel(Interest)
     private interestModel: typeof Interest,
+    @InjectModel(UserProfileContract)
+    private userProfileContractModel: typeof UserProfileContract,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -424,6 +428,14 @@ export class UserProfilesService {
           updateUserProfileDto.interests
         );
       }
+
+      // Contracts
+      if (updateUserProfileDto.contracts) {
+        await this.updateContractsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.contracts
+        );
+      }
     });
 
     return this.findOneByUserId(userId, true);
@@ -453,6 +465,35 @@ export class UserProfilesService {
           userProfileId: userProfileToUpdate.id,
           id: {
             [Op.notIn]: userProfileInterests.map((interest) => interest.id),
+          },
+        },
+        individualHooks: true,
+        transaction: t,
+      });
+    });
+  }
+
+  async updateContractsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    contracts: Contract[]
+  ): Promise<void> {
+    await this.userProfileModel.sequelize.transaction(async (t) => {
+      const contractsData = contracts.map((contract) => {
+        return {
+          userProfileId: userProfileToUpdate.id,
+          contractId: contract.id,
+        };
+      });
+      const userProfileContracts =
+        await this.userProfileContractModel.bulkCreate(contractsData, {
+          hooks: true,
+          transaction: t,
+        });
+      await this.userProfileContractModel.destroy({
+        where: {
+          userProfileId: userProfileToUpdate.id,
+          id: {
+            [Op.notIn]: userProfileContracts.map((upContract) => upContract.id),
           },
         },
         individualHooks: true,
