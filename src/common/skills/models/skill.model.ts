@@ -20,4 +20,8 @@ export class Skill extends WrapperModel {
   @AllowNull(false)
   @Column
   name: string;
+
+  @AllowNull(false)
+  @Column
+  order: number;
 }

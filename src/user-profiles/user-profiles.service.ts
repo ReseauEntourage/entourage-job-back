@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -11,6 +10,7 @@ import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
+import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -53,6 +53,8 @@ export class UserProfilesService {
     private userProfileNudgeModel: typeof UserProfileNudge,
     @InjectModel(Interest)
     private interestModel: typeof Interest,
+    @InjectModel(Skill)
+    private skillModel: typeof Skill,
     @InjectModel(UserProfileContract)
     private userProfileContractModel: typeof UserProfileContract,
     private s3Service: S3Service,
@@ -81,6 +83,10 @@ export class UserProfilesService {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
+      order: [
+        [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
+        [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+      ],
     });
   }
 
@@ -311,12 +317,10 @@ export class UserProfilesService {
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
-    console.log('userProfileToUpdate', userProfileToUpdate);
     if (!userProfileToUpdate) {
       return null;
     }
     await this.userProfileModel.sequelize.transaction(async (t) => {
-      console.log('userProfileModel.update');
       // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
         where: { userId },
@@ -324,11 +328,8 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      console.log('userProfileModel.update done');
-
       // Business Sectors & Occupation
       if (updateUserProfileDto.sectorOccupations) {
-        console.log('userProfileSectorOccupationModel.bulkCreate');
         const sectorOccupations = await Promise.all(
           updateUserProfileDto.sectorOccupations.map(
             async ({ businessSectorId, occupation, order }) => {
@@ -434,6 +435,14 @@ export class UserProfilesService {
         );
       }
 
+      // Skills
+      if (updateUserProfileDto.skills) {
+        await this.updateSkillsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.skills
+        );
+      }
+
       // Contracts
       if (updateUserProfileDto.contracts) {
         await this.updateContractsByUserProfileId(
@@ -470,6 +479,35 @@ export class UserProfilesService {
           userProfileId: userProfileToUpdate.id,
           id: {
             [Op.notIn]: userProfileInterests.map((interest) => interest.id),
+          },
+        },
+        individualHooks: true,
+        transaction: t,
+      });
+    });
+  }
+
+  async updateSkillsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    skills: Skill[]
+  ): Promise<void> {
+    await this.userProfileModel.sequelize.transaction(async (t) => {
+      const skillsData = skills.map((skill, order) => {
+        return {
+          userProfileId: userProfileToUpdate.id,
+          name: skill.name,
+          order,
+        };
+      });
+      const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
+        hooks: true,
+        transaction: t,
+      });
+      await this.skillModel.destroy({
+        where: {
+          userProfileId: userProfileToUpdate.id,
+          id: {
+            [Op.notIn]: skillsCreated.map((skill) => skill.id),
           },
         },
         individualHooks: true,
