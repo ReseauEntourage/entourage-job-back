@@ -11,6 +11,7 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'unavailabilityReason',
   'linkedinUrl',
   'interests',
+  'skills',
 ] as const) {
   @ApiProperty()
   businessSectorIds: string[];

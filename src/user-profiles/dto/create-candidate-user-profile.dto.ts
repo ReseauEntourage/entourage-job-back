@@ -11,6 +11,7 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'occupations',
   'linkedinUrl',
   'interests',
+  'skills',
   'contracts',
 ] as const) {
   @ApiProperty()
