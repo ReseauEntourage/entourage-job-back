@@ -12,7 +12,7 @@ import {
 import { Skill } from 'src/common/skills/models';
 import { Formation } from './formation.model';
 
-@Table({ tableName: 'Formation_Skills' })
+@Table({ tableName: 'FormationSkills' })
 export class FormationSkill extends Model {
   @IsUUID(4)
   @PrimaryKey

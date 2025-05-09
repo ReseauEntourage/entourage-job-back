@@ -1,18 +1,15 @@
 import {
   AllowNull,
   Column,
-  CreatedAt,
   DataType,
   Default,
   IsUUID,
   PrimaryKey,
   Table,
-  UpdatedAt,
 } from 'sequelize-typescript';
-import { ContractValue } from 'src/common/contracts/contracts.types';
 import { WrapperModel } from 'src/utils/types';
 
-@Table({ tableName: 'Contracts' })
+@Table({ tableName: 'Contracts', timestamps: false })
 export class Contract extends WrapperModel {
   @IsUUID(4)
   @PrimaryKey
@@ -22,11 +19,5 @@ export class Contract extends WrapperModel {
 
   @AllowNull(false)
   @Column
-  name: ContractValue;
-
-  @CreatedAt
-  createdAt: Date;
-
-  @UpdatedAt
-  updatedAt: Date;
+  name: string;
 }
