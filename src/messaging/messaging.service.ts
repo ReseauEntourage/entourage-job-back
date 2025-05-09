@@ -116,6 +116,13 @@ export class MessagingService {
           cp.feedbackRating,
           cp.feedbackDate
         );
+
+        cp.conversation.messages = cp.conversation.messages.sort((a, b) => {
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
         return {
           ...cp.conversation.toJSON(),
           shouldGiveFeedback,
