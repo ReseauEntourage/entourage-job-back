@@ -1,6 +1,7 @@
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Review } from 'src/common/reviews/models';
@@ -52,6 +53,7 @@ export type PublicProfile = {
   skills: Skill[];
   contracts: Contract[];
   reviews: Review[];
+  interests: Interest[];
   lastSentMessage: Date;
   lastReceivedMessage: Date;
   cvUrl?: string;

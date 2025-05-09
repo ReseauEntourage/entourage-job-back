@@ -31,6 +31,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     skills: userProfile.skills,
     contracts: userProfile.contracts,
     reviews: userProfile.reviews,
+    interests: userProfile.interests,
     averageDelayResponse,
   };
 };

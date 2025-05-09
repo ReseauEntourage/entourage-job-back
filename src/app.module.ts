@@ -12,6 +12,7 @@ import { BusinessSectorsModule } from './common/business-sectors/business-sector
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';
+import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
@@ -106,6 +107,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     LocationsModule,
     ContractsModule,
     LanguagesModule,
+    InterestsModule,
     PassionsModule,
     SkillsModule,
     ExperiencesModule,
