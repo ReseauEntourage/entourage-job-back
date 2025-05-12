@@ -83,10 +83,12 @@ export class UserProfilesService {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
-      order: [
-        [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
-        [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
-      ],
+      order: complete
+        ? [
+            [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
+            [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+          ]
+        : [],
     });
   }
 
