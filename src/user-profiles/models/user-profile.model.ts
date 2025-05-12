@@ -148,6 +148,20 @@ export class UserProfile extends Model {
   @DeletedAt
   deletedAt: Date;
 
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  allowPhysicalEvents: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  allowRemoteEvents: boolean;
+
   @BelongsTo(() => User, 'userId')
   user: User;
 

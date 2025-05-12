@@ -13,6 +13,8 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'interests',
   'skills',
   'contracts',
+  'allowPhysicalEvents',
+  'allowRemoteEvents',
 ] as const) {
   @ApiProperty()
   businessSectorIds: string[];
