@@ -86,7 +86,7 @@ export class UsersDeletionService {
   async deleteCompleteUser(
     user: User
   ): Promise<{ cvsDeleted: number; userDeleted: number }> {
-    const { id, firstName, lastName, candidat } = user.toJSON();
+    const { id, firstName, lastName, candidat } = user;
 
     await this.removeFiles(id, firstName, lastName);
 
