@@ -85,10 +85,21 @@ export class UserProfilesService {
       include: getUserProfileInclude(complete),
       order: complete
         ? [
+            [
+              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+              'order',
+              'ASC',
+            ],
             [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
             [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
           ]
-        : [],
+        : [
+            [
+              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+              'order',
+              'ASC',
+            ],
+          ],
     });
   }
 
