@@ -343,59 +343,11 @@ export class UserProfilesService {
 
       // Business Sectors & Occupation
       if (updateUserProfileDto.sectorOccupations) {
-        const sectorOccupations = await Promise.all(
-          updateUserProfileDto.sectorOccupations.map(
-            async ({ businessSectorId, occupation, order }) => {
-              const existingSectorOccupation =
-                await this.userProfileSectorOccupationModel.findOne({
-                  where: {
-                    userProfileId: userProfileToUpdate.id,
-                    businessSectorId,
-                  },
-                  include: [
-                    {
-                      model: Occupation,
-                      as: 'occupation',
-                      attributes: ['name'],
-                      where: {
-                        name: occupation.name,
-                      },
-                    },
-                  ],
-                });
-
-              if (existingSectorOccupation) {
-                return existingSectorOccupation;
-              }
-              const newOccupation = await this.occupationModel.create(
-                {
-                  name: occupation.name,
-                  prefix: occupation.prefix,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-              return await this.userProfileSectorOccupationModel.create(
-                {
-                  userProfileId: userProfileToUpdate.id,
-                  businessSectorId,
-                  occupationId: newOccupation.id,
-                  order,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
+        await this.updateSectorOccupationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.sectorOccupations,
+          t
         );
-
-        await userProfileToUpdate.$set('sectorOccupations', sectorOccupations, {
-          transaction: t,
-        });
       }
 
       // Nudges
@@ -444,7 +396,8 @@ export class UserProfilesService {
       if (updateUserProfileDto.interests) {
         await this.updateInterestsByUserProfileId(
           userProfileToUpdate,
-          updateUserProfileDto.interests
+          updateUserProfileDto.interests,
+          t
         );
       }
 
@@ -452,7 +405,8 @@ export class UserProfilesService {
       if (updateUserProfileDto.skills) {
         await this.updateSkillsByUserProfileId(
           userProfileToUpdate,
-          updateUserProfileDto.skills
+          updateUserProfileDto.skills,
+          t
         );
       }
 
@@ -460,7 +414,8 @@ export class UserProfilesService {
       if (updateUserProfileDto.contracts) {
         await this.updateContractsByUserProfileId(
           userProfileToUpdate,
-          updateUserProfileDto.contracts
+          updateUserProfileDto.contracts,
+          t
         );
       }
     });
@@ -468,93 +423,162 @@ export class UserProfilesService {
     return this.findOneByUserId(userId, true);
   }
 
+  async updateSectorOccupationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    sectorOccupations: UserProfileSectorOccupation[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const newSectorOccupations = await Promise.all(
+      sectorOccupations.map(async ({ businessSectorId, occupation, order }) => {
+        const existingSectorOccupation =
+          await this.userProfileSectorOccupationModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              businessSectorId,
+            },
+            include: [
+              {
+                model: Occupation,
+                as: 'occupation',
+                attributes: ['name'],
+                where: {
+                  name: occupation.name,
+                },
+              },
+            ],
+          });
+
+        if (existingSectorOccupation) {
+          return existingSectorOccupation;
+        }
+        const newOccupation = await this.occupationModel.create(
+          {
+            name: occupation.name,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+        return await this.userProfileSectorOccupationModel.create(
+          {
+            userProfileId: userProfileToUpdate.id,
+            businessSectorId,
+            occupationId: newOccupation.id,
+            order,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+      })
+    );
+
+    await this.userProfileSectorOccupationModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: newSectorOccupations.map(
+            (sectorOccupation) => sectorOccupation.id
+          ),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+
+    await userProfileToUpdate.$set('sectorOccupations', newSectorOccupations, {
+      transaction: t,
+    });
+  }
+
   async updateInterestsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    interests: Interest[]
+    interests: Interest[],
+    t: sequelize.Transaction
   ): Promise<void> {
-    await this.userProfileModel.sequelize.transaction(async (t) => {
-      const interestsData = interests.map((interest, order) => {
-        return {
-          userProfileId: userProfileToUpdate.id,
-          name: interest.name,
-          order,
-        };
-      });
-      const userProfileInterests = await this.interestModel.bulkCreate(
-        interestsData,
-        {
-          hooks: true,
-          transaction: t,
-        }
-      );
-      await this.interestModel.destroy({
-        where: {
-          userProfileId: userProfileToUpdate.id,
-          id: {
-            [Op.notIn]: userProfileInterests.map((interest) => interest.id),
-          },
-        },
-        individualHooks: true,
+    const interestsData = interests.map((interest, order) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        name: interest.name,
+        order,
+      };
+    });
+    const userProfileInterests = await this.interestModel.bulkCreate(
+      interestsData,
+      {
+        hooks: true,
         transaction: t,
-      });
+      }
+    );
+    await this.interestModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: userProfileInterests.map((interest) => interest.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
     });
   }
 
   async updateSkillsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    skills: Skill[]
+    skills: Skill[],
+    t: sequelize.Transaction
   ): Promise<void> {
-    await this.userProfileModel.sequelize.transaction(async (t) => {
-      const skillsData = skills.map((skill, order) => {
-        return {
-          userProfileId: userProfileToUpdate.id,
-          name: skill.name,
-          order,
-        };
-      });
-      const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
-        hooks: true,
-        transaction: t,
-      });
-      await this.skillModel.destroy({
-        where: {
-          userProfileId: userProfileToUpdate.id,
-          id: {
-            [Op.notIn]: skillsCreated.map((skill) => skill.id),
-          },
+    const skillsData = skills.map((skill, order) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        name: skill.name,
+        order,
+      };
+    });
+    const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
+      hooks: true,
+      transaction: t,
+    });
+    await this.skillModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: skillsCreated.map((skill) => skill.id),
         },
-        individualHooks: true,
-        transaction: t,
-      });
+      },
+      individualHooks: true,
+      transaction: t,
     });
   }
 
   async updateContractsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    contracts: Contract[]
+    contracts: Contract[],
+    t: sequelize.Transaction
   ): Promise<void> {
-    await this.userProfileModel.sequelize.transaction(async (t) => {
-      const contractsData = contracts.map((contract) => {
-        return {
-          userProfileId: userProfileToUpdate.id,
-          contractId: contract.id,
-        };
-      });
-      const userProfileContracts =
-        await this.userProfileContractModel.bulkCreate(contractsData, {
-          hooks: true,
-          transaction: t,
-        });
-      await this.userProfileContractModel.destroy({
-        where: {
-          userProfileId: userProfileToUpdate.id,
-          id: {
-            [Op.notIn]: userProfileContracts.map((upContract) => upContract.id),
-          },
-        },
-        individualHooks: true,
+    const contractsData = contracts.map((contract) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        contractId: contract.id,
+      };
+    });
+    const userProfileContracts = await this.userProfileContractModel.bulkCreate(
+      contractsData,
+      {
+        hooks: true,
         transaction: t,
-      });
+      }
+    );
+    await this.userProfileContractModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: userProfileContracts.map((upContract) => upContract.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
     });
   }
 

@@ -62,7 +62,7 @@ export const getUserProfileSectorOccupationsInclude = (
           model: Occupation,
           as: 'occupation',
           required: true,
-          attributes: ['id', 'name', 'prefix'],
+          attributes: ['id', 'name'],
         },
       ],
     },
