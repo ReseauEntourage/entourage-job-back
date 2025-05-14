@@ -6,6 +6,7 @@ import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models';
 import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -29,7 +30,10 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
+import {
+  getUserProfileInclude,
+  getUserProfileOrder,
+} from './models/user-profile.include';
 import { PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -57,6 +61,8 @@ export class UserProfilesService {
     private skillModel: typeof Skill,
     @InjectModel(UserProfileContract)
     private userProfileContractModel: typeof UserProfileContract,
+    @InjectModel(Experience)
+    private experienceModel: typeof Experience,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -83,23 +89,7 @@ export class UserProfilesService {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
-      order: complete
-        ? [
-            [
-              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-              'order',
-              'ASC',
-            ],
-            [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
-            [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
-          ]
-        : [
-            [
-              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-              'order',
-              'ASC',
-            ],
-          ],
+      order: getUserProfileOrder(complete),
     });
   }
 
@@ -341,11 +331,20 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      // Business Sectors & Occupation
+      // Sector occupations
       if (updateUserProfileDto.sectorOccupations) {
         await this.updateSectorOccupationsByUserProfileId(
           userProfileToUpdate,
           updateUserProfileDto.sectorOccupations,
+          t
+        );
+      }
+
+      // Experiences
+      if (updateUserProfileDto.experiences) {
+        await this.updateExperiencesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.experiences,
           t
         );
       }
@@ -421,6 +420,45 @@ export class UserProfilesService {
     });
 
     return this.findOneByUserId(userId, true);
+  }
+
+  async updateExperiencesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    experiences: Experience[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const experiencesData = experiences.map((experience) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        title: experience.title,
+        location: experience.location,
+        company: experience.company,
+        startDate: experience.startDate,
+        endDate: experience.endDate,
+        description: experience.description,
+      };
+    });
+    const newExperiences = await this.experienceModel.bulkCreate(
+      experiencesData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.experienceModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: newExperiences.map((experience) => experience.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+
+    await userProfileToUpdate.$set('experiences', newExperiences, {
+      transaction: t,
+    });
   }
 
   async updateSectorOccupationsByUserProfileId(

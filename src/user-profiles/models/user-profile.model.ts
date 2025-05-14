@@ -41,7 +41,6 @@ import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { UserProfileContract } from './user-profile-contract.model';
-import { UserProfileExperience } from './user-profile-experience.model';
 import { UserProfileFormation } from './user-profile-formation.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
@@ -232,16 +231,8 @@ export class UserProfile extends Model {
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @BelongsToMany(
-    () => Experience,
-    () => UserProfileExperience,
-    'userProfileId',
-    'experienceId'
-  )
+  @HasMany(() => Experience, 'userProfileId')
   experiences: Experience[];
-
-  @HasMany(() => UserProfileExperience, 'userProfileId')
-  userProfileExperiences: UserProfileExperience[];
 
   // Formations
   @ApiProperty()

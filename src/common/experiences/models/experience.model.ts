@@ -13,7 +13,10 @@ import {
 import { Skill } from 'src/common/skills/models';
 import { ExperienceSkill } from './experience-skill.model';
 
-@Table({ tableName: 'Experiences' })
+@Table({
+  tableName: 'Experiences',
+  timestamps: false,
+})
 export class Experience extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -28,11 +31,6 @@ export class Experience extends Model {
   @AllowNull(true)
   @Column
   title: string;
-
-  @AllowNull(false)
-  @Default(-1)
-  @Column
-  order: number;
 
   @AllowNull(true)
   @Column
