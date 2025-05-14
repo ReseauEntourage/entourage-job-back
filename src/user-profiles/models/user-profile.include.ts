@@ -100,11 +100,8 @@ export const getUserProfileSkillsInclude = (): Includeable[] => [
     model: Skill,
     as: 'skills',
     required: false,
-    attributes: ['id', 'name'],
-    through: {
-      attributes: ['id', 'order'],
-      as: 'userProfileSkills',
-    },
+    attributes: ['id', 'name', 'order'],
+    order: [['order', 'ASC']],
   },
 ];
 
