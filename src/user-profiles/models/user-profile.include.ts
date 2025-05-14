@@ -52,7 +52,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: BusinessSector,
           as: 'businessSector',
-          required: isBusinessSectorsRequired,
+          required: true,
           ...(isBusinessSectorsRequired
             ? { where: businessSectorsOptions }
             : {}),
@@ -61,8 +61,8 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: Occupation,
           as: 'occupation',
-          required: false,
-          attributes: ['id', 'name', 'prefix'],
+          required: true,
+          attributes: ['id', 'name'],
         },
       ],
     },

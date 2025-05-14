@@ -1,5 +1,6 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { UserProfile } from '../models';
+import { IsArray, IsOptional } from 'class-validator';
+import { UserProfile, UserProfileSectorOccupation } from '../models';
 
 export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'userId',
@@ -16,7 +17,9 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'allowRemoteEvents',
 ] as const) {
   @ApiProperty()
-  businessSectorIds: string[];
+  @IsArray()
+  @IsOptional()
+  sectorOccupations?: UserProfileSectorOccupation[];
 
   @ApiProperty()
   nudgeIds: string[];
