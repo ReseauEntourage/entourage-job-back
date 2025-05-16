@@ -176,7 +176,7 @@ export class AuthController {
         : {};
 
     const currentUser = await this.authService.findOneUserById(
-      updatedUser.email,
+      updatedUser.id,
       complete === 'true'
     );
     await this.sessionService.createOrUpdateSession(currentUser.id);
