@@ -175,7 +175,7 @@ export class AuthController {
         ? await this.authService.getUsersStats(updatedUser.id)
         : {};
 
-    const currentUser = await this.authService.findOneUserByMail(
+    const currentUser = await this.authService.findOneUserById(
       updatedUser.email,
       complete === 'true'
     );
