@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Includeable, Order, WhereOptions } from 'sequelize';
+import { Includeable, Op, Order, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
@@ -102,6 +102,11 @@ export const getUserProfileSkillsInclude = (): Includeable[] => [
     required: false,
     attributes: ['id', 'name', 'order'],
     order: [['order', 'ASC']],
+    where: {
+      order: {
+        [Op.ne]: -1,
+      },
+    },
   },
 ];
 
@@ -120,6 +125,18 @@ export const getUserProfileExperiencesInclude = (): Includeable[] => [
       'endDate',
     ],
     order: [['startDate', 'DESC']],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        required: false,
+        attributes: ['id', 'name'],
+        through: {
+          attributes: ['order'] as string[],
+          as: 'experienceSkills',
+        },
+      },
+    ],
   },
 ];
 
@@ -137,10 +154,19 @@ export const getUserProfileFormationsInclude = (): Includeable[] => [
       'startDate',
       'endDate',
     ],
-    through: {
-      attributes: [] as string[],
-      as: 'userProfileFormations',
-    },
+    order: [['startDate', 'DESC']],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        required: false,
+        attributes: ['id', 'name'],
+        through: {
+          attributes: ['order'] as string[],
+          as: 'formationSkills',
+        },
+      },
+    ],
   },
 ];
 

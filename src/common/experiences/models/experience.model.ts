@@ -1,9 +1,11 @@
 import {
   AllowNull,
+  BelongsTo,
   BelongsToMany,
   Column,
   DataType,
   Default,
+  ForeignKey,
   HasMany,
   IsUUID,
   Model,
@@ -11,6 +13,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Skill } from 'src/common/skills/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { ExperienceSkill } from './experience-skill.model';
 
 @Table({
@@ -24,7 +27,7 @@ export class Experience extends Model {
   @Column
   id: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   description: string;
 
@@ -48,9 +51,17 @@ export class Experience extends Model {
   @Column
   endDate: Date;
 
-  @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
+  @BelongsToMany(() => Skill, () => ExperienceSkill, 'experienceId', 'skillId')
   skills: Skill[];
 
-  @HasMany(() => ExperienceSkill, 'ExperienceId')
+  @HasMany(() => ExperienceSkill, 'experienceId')
   experienceSkills: ExperienceSkill[];
+
+  @ForeignKey(() => UserProfile)
+  @AllowNull(false)
+  @Column
+  userProfileId: string;
+
+  @BelongsTo(() => UserProfile)
+  userProfile: UserProfile;
 }

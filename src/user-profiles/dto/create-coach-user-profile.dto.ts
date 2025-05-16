@@ -13,6 +13,8 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'linkedinUrl',
   'interests',
   'skills',
+  'experiences',
+  'formations',
   'allowPhysicalEvents',
   'allowRemoteEvents',
 ] as const) {
