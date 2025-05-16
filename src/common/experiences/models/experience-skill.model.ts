@@ -12,7 +12,7 @@ import {
 import { Skill } from 'src/common/skills/models';
 import { Experience } from './experience.model';
 
-@Table({ tableName: 'ExperienceSkills' })
+@Table({ tableName: 'ExperienceSkills', timestamps: false })
 export class ExperienceSkill extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -24,11 +24,15 @@ export class ExperienceSkill extends Model {
   @ForeignKey(() => Experience)
   @AllowNull(false)
   @Column
-  ExperienceId: string;
+  experienceId: string;
 
   @IsUUID(4)
   @ForeignKey(() => Skill)
   @AllowNull(false)
   @Column
-  SkillId: string;
+  skillId: string;
+
+  @AllowNull(false)
+  @Column
+  order: number;
 }

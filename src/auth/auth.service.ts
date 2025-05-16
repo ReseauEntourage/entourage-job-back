@@ -128,6 +128,10 @@ export class AuthService {
     return this.usersService.findOneByMail(email, complete);
   }
 
+  async findOneUserById(id: string, complete = false) {
+    return this.usersService.findOne(id, complete);
+  }
+
   async sendPasswordResetLinkMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
     token: string

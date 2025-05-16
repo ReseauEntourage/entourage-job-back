@@ -6,6 +6,10 @@ import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
+import { ExperiencesService } from 'src/common/experiences/experiences.service';
+import { Experience } from 'src/common/experiences/models';
+import { FormationsService } from 'src/common/formations/formations.service';
+import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -29,7 +33,10 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
+import {
+  getUserProfileInclude,
+  getUserProfileOrder,
+} from './models/user-profile.include';
 import { PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -63,7 +70,9 @@ export class UserProfilesService {
     private messagesService: MessagesService,
     private messagingService: MessagingService,
     private slackService: SlackService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private experiencesService: ExperiencesService,
+    private formationsService: FormationsService
   ) {}
 
   async findOne(id: string) {
@@ -83,23 +92,7 @@ export class UserProfilesService {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
-      order: complete
-        ? [
-            [
-              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-              'order',
-              'ASC',
-            ],
-            [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
-            [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
-          ]
-        : [
-            [
-              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-              'order',
-              'ASC',
-            ],
-          ],
+      order: getUserProfileOrder(complete),
     });
   }
 
@@ -341,11 +334,29 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      // Business Sectors & Occupation
+      // Sector occupations
       if (updateUserProfileDto.sectorOccupations) {
         await this.updateSectorOccupationsByUserProfileId(
           userProfileToUpdate,
           updateUserProfileDto.sectorOccupations,
+          t
+        );
+      }
+
+      // Experiences
+      if (updateUserProfileDto.experiences) {
+        await this.updateExperiencesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.experiences,
+          t
+        );
+      }
+
+      // Formations
+      if (updateUserProfileDto.formations) {
+        await this.updateFormationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.formations,
           t
         );
       }
@@ -421,6 +432,30 @@ export class UserProfilesService {
     });
 
     return this.findOneByUserId(userId, true);
+  }
+
+  async updateExperiencesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    experiences: Experience[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.experiencesService.updateExperiencesForUserProfile(
+      userProfileToUpdate,
+      experiences,
+      t
+    );
+  }
+
+  async updateFormationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    formations: Formation[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.formationsService.updateFormationsForUserProfile(
+      userProfileToUpdate,
+      formations,
+      t
+    );
   }
 
   async updateSectorOccupationsByUserProfileId(
@@ -545,6 +580,9 @@ export class UserProfilesService {
         userProfileId: userProfileToUpdate.id,
         id: {
           [Op.notIn]: skillsCreated.map((skill) => skill.id),
+        },
+        order: {
+          [Op.ne]: -1,
         },
       },
       individualHooks: true,

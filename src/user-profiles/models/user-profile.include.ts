@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Includeable, WhereOptions } from 'sequelize';
+import { Includeable, Op, Order, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
@@ -102,6 +102,11 @@ export const getUserProfileSkillsInclude = (): Includeable[] => [
     required: false,
     attributes: ['id', 'name', 'order'],
     order: [['order', 'ASC']],
+    where: {
+      order: {
+        [Op.ne]: -1,
+      },
+    },
   },
 ];
 
@@ -119,10 +124,19 @@ export const getUserProfileExperiencesInclude = (): Includeable[] => [
       'startDate',
       'endDate',
     ],
-    through: {
-      attributes: [] as string[],
-      as: 'userProfileExperiences',
-    },
+    order: [['startDate', 'DESC']],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        required: false,
+        attributes: ['id', 'name'],
+        through: {
+          attributes: ['order'] as string[],
+          as: 'experienceSkills',
+        },
+      },
+    ],
   },
 ];
 
@@ -140,10 +154,19 @@ export const getUserProfileFormationsInclude = (): Includeable[] => [
       'startDate',
       'endDate',
     ],
-    through: {
-      attributes: [] as string[],
-      as: 'userProfileFormations',
-    },
+    order: [['startDate', 'DESC']],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        required: false,
+        attributes: ['id', 'name'],
+        through: {
+          attributes: ['order'] as string[],
+          as: 'formationSkills',
+        },
+      },
+    ],
   },
 ];
 
@@ -162,6 +185,7 @@ export const getUserProfileInterestsInclude = (): Includeable[] => [
     as: 'interests',
     required: false,
     attributes: ['id', 'name', 'order'],
+    order: [['order', 'ASC']],
   },
 ];
 
@@ -189,4 +213,26 @@ export const getUserProfileInclude = (
   ];
 
   return [...(complete ? additionalIncludes : []), ...baseIncludes];
+};
+
+export const getUserProfileOrder = (complete = false): Order => {
+  return complete
+    ? [
+        [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
+        [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
+        [
+          { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+          'order',
+          'ASC',
+        ],
+        [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
+        [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+      ]
+    : [
+        [
+          { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+          'order',
+          'ASC',
+        ],
+      ];
 };

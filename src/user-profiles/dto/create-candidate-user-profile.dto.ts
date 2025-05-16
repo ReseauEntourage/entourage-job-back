@@ -13,6 +13,8 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'linkedinUrl',
   'interests',
   'skills',
+  'experiences',
+  'formations',
   'contracts',
   'allowPhysicalEvents',
   'allowRemoteEvents',

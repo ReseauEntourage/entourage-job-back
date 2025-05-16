@@ -1,9 +1,11 @@
 import {
   AllowNull,
+  BelongsTo,
   BelongsToMany,
   Column,
   DataType,
   Default,
+  ForeignKey,
   HasMany,
   IsUUID,
   Model,
@@ -11,9 +13,10 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Skill } from 'src/common/skills/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { FormationSkill } from './formation-skill.model';
 
-@Table({ tableName: 'Formations' })
+@Table({ tableName: 'Formations', timestamps: false })
 export class Formation extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -21,7 +24,7 @@ export class Formation extends Model {
   @Column
   id: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   description: string;
 
@@ -45,9 +48,17 @@ export class Formation extends Model {
   @Column
   endDate: Date;
 
-  @BelongsToMany(() => Skill, () => FormationSkill, 'FormationId', 'SkillId')
+  @BelongsToMany(() => Skill, () => FormationSkill, 'formationId', 'skillId')
   skills: Skill[];
 
-  @HasMany(() => FormationSkill, 'FormationId')
+  @HasMany(() => FormationSkill, 'formationId')
   formationSkills: FormationSkill[];
+
+  @ForeignKey(() => UserProfile)
+  @AllowNull(false)
+  @Column
+  userProfileId: string;
+
+  @BelongsTo(() => UserProfile)
+  userProfile: UserProfile;
 }

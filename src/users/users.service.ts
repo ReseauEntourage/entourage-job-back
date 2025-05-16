@@ -7,6 +7,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -16,7 +17,10 @@ import {
   UserCandidat,
   UserCandidatAttributes,
 } from './models';
-import { UserCandidatInclude } from './models/user.include';
+import {
+  getUserCandidatOrder,
+  UserCandidatInclude,
+} from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
 import {
@@ -41,10 +45,11 @@ export class UsersService {
     return this.userModel.create(createUserDto, { hooks: true });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, complete = false) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
+      include: UserCandidatInclude(complete),
+      order: getUserCandidatOrder(complete),
     });
   }
 
@@ -53,12 +58,14 @@ export class UsersService {
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
       include: UserCandidatInclude(complete),
+      order: getUserCandidatOrder(complete),
     });
   }
 
   async findOneComplete(id: string) {
     return this.userModel.findByPk(id, {
       include: UserCandidatInclude(),
+      order: getUserProfileOrder(),
     });
   }
 

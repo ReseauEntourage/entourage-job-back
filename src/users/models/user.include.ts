@@ -1,10 +1,13 @@
-import { Includeable } from 'sequelize';
+import { Includeable, Order, OrderItem } from 'sequelize';
 import { UserSocialSituation } from '../../user-social-situations/models/user-social-situation.model';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
-import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
+import {
+  getUserProfileInclude,
+  getUserProfileOrder,
+} from 'src/user-profiles/models/user-profile.include';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';
@@ -28,6 +31,7 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
               as: 'userProfile',
               attributes: UserProfilesAttributes,
               include: getUserProfileInclude(complete),
+              order: getUserProfileOrder(complete),
             },
           ],
         },
@@ -103,6 +107,7 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
       as: 'userProfile',
       attributes: UserProfilesAttributes,
       include: getUserProfileInclude(complete),
+      order: getUserProfileOrder(complete),
     },
     {
       model: ReadDocument,
@@ -110,4 +115,18 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
       attributes: ['documentName', 'createdAt'],
     },
   ];
+};
+
+export const getUserCandidatOrder = (complete = false): Order => {
+  const userProfileOrder = getUserProfileOrder(complete) as OrderItem[];
+
+  // Prefix all the userProfileOrder items with 'userProfile' model
+  // and 'as' alias
+  const prefixedUserProfileOrder = userProfileOrder.map((item) => {
+    if (Array.isArray(item)) {
+      return [{ model: UserProfile, as: 'userProfile' }, ...item] as OrderItem;
+    }
+    return item;
+  });
+  return prefixedUserProfileOrder;
 };
