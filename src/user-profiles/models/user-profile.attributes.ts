@@ -1,5 +1,6 @@
 export const UserProfilesAttributes = [
   'description',
+  'story',
   'currentJob',
   'department',
   'isAvailable',

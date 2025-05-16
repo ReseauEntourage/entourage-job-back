@@ -18,17 +18,20 @@ export const getPublicProfileFromUserAndUserProfile = (
     isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
-    helpOffers: userProfile.helpOffers,
-    helpNeeds: userProfile.helpNeeds,
+    userProfileNudges: userProfile.userProfileNudges,
     description: userProfile.description,
-    searchBusinessLines: userProfile.searchBusinessLines,
-    networkBusinessLines: userProfile.networkBusinessLines,
-    searchAmbitions: userProfile.searchAmbitions,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     cvUrl: cvUrl,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
+    sectorOccupations: userProfile.sectorOccupations,
+    languages: userProfile.languages,
+    experiences: userProfile.experiences,
+    formations: userProfile.formations,
+    skills: userProfile.skills,
+    contracts: userProfile.contracts,
+    reviews: userProfile.reviews,
   };
 };
 
@@ -36,6 +39,5 @@ export function userProfileSearchQuery(query = '') {
   return [
     searchInColumnWhereOption('user.firstName', query, true),
     searchInColumnWhereOption('user.lastName', query, true),
-    // searchInColumnWhereOption('searchAmbitions.name', query, true),
   ];
 }

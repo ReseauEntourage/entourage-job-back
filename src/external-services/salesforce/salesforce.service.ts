@@ -28,8 +28,6 @@ import {
   AccountProps,
   AccountRecordType,
   AccountRecordTypesIds,
-  CandidateAndWorkerLeadProps,
-  CandidateInscriptionLeadProps,
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
@@ -58,11 +56,10 @@ import {
 import {
   escapeQuery,
   executeBulkAction,
-  formatBusinessLines,
+  formatBusinessSectors,
   formatCompanyName,
   formatDepartment,
   getCasquette,
-  getDepartmentFromPostalCode,
   getPostalCodeFromDepartment,
   mapSalesforceContactFields,
   mapSalesforceContactSocialSituationFields,
@@ -483,7 +480,13 @@ export class SalesforceService {
   }
 
   async createAccount(
-    { name, businessLines, address, department, mainAccountSfId }: AccountProps,
+    {
+      name,
+      businessSectors,
+      address,
+      department,
+      mainAccountSfId,
+    }: AccountProps,
     recordType: AccountRecordType
   ) {
     const parsedAddress = parseAddress(address);
@@ -492,7 +495,7 @@ export class SalesforceService {
       Name: mainAccountSfId
         ? formatCompanyName(name, address, department)
         : name || 'Inconnu',
-      M_tiers_LinkedOut__c: formatBusinessLines(businessLines),
+      M_tiers_LinkedOut__c: formatBusinessSectors(businessSectors),
       BillingStreet: parsedAddress.street,
       BillingCity:
         parsedAddress.city?.length > 40
@@ -675,7 +678,13 @@ export class SalesforceService {
   }
 
   async findOrCreateAccount(
-    { name, address, department, businessLines, mainAccountSfId }: AccountProps,
+    {
+      name,
+      address,
+      department,
+      businessSectors,
+      mainAccountSfId,
+    }: AccountProps,
     recordType: AccountRecordType
   ) {
     let companySfId = await this.searchAccountByName(
@@ -693,7 +702,7 @@ export class SalesforceService {
       companySfId = (await this.createAccount(
         {
           name,
-          businessLines,
+          businessSectors,
           address,
           department,
           mainAccountSfId,
@@ -815,171 +824,6 @@ export class SalesforceService {
       },
       LeadRecordTypesIds.COMPANY
     )) as string;
-  }
-
-  async findOrCreateLeadFromContactCandidateForm({
-    workerFirstName,
-    workerLastName,
-    structure,
-    workerPosition,
-    workerEmail,
-    workerPhone,
-    firstName,
-    lastName,
-    helpWith,
-    gender,
-    birthDate,
-    address,
-    postalCode,
-    city,
-    phone,
-    email,
-    registeredUnemploymentOffice,
-    administrativeSituation,
-    workingRight,
-    accommodation,
-    professionalSituation,
-    resources,
-    domiciliation,
-    socialSecurity,
-    handicapped,
-    bankAccount,
-    businessLines,
-    description,
-    heardAbout,
-    diagnostic,
-    contactWithCoach,
-    tsPrescripteur,
-  }: CandidateAndWorkerLeadProps) {
-    const department = getDepartmentFromPostalCode(postalCode);
-
-    const structureAddress = postalCode + ' ' + city;
-
-    const associationSfId = await this.findOrCreateAccount(
-      {
-        name: structure,
-        address: structureAddress,
-        department: department,
-      },
-      AccountRecordTypesIds.ASSOCIATION
-    );
-
-    const zone = getZoneFromDepartment(department);
-
-    const workerSfId = (await this.findOrCreateLead(
-      {
-        firstName: workerFirstName,
-        lastName: workerLastName,
-        phone: workerPhone,
-        email: workerEmail,
-        position: workerPosition,
-        company: structure,
-        zone: zone,
-        heardAbout,
-        contactWithCoach,
-      },
-      LeadRecordTypesIds.ASSOCIATION
-    )) as string;
-
-    const leadToCreate = {
-      firstName,
-      lastName,
-      helpWith,
-      gender,
-      birthDate,
-      address: address ? address : structureAddress,
-      phone,
-      email,
-      registeredUnemploymentOffice,
-      administrativeSituation,
-      workingRight,
-      accommodation,
-      professionalSituation,
-      resources,
-      domiciliation,
-      socialSecurity,
-      handicapped,
-      bankAccount,
-      businessLines,
-      description,
-      diagnostic,
-      zone,
-      associationSfId,
-      tsPrescripteur,
-    };
-
-    try {
-      return (await this.createCandidateLead(
-        leadToCreate,
-        workerSfId
-      )) as string;
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-        ErrorCodes.FIELD_FILTER_VALIDATION_EXCEPTION
-      ) {
-        const { associationSfId, ...restLeadToCreate } = leadToCreate;
-        return (await this.createCandidateLead(
-          restLeadToCreate,
-          workerSfId
-        )) as string;
-      }
-      console.error(err);
-      throw err;
-    }
-  }
-
-  async findOrCreateLeadFromInscriptionCandidateForm({
-    birthdate,
-    email,
-    firstName,
-    heardAbout,
-    infoCo,
-    lastName,
-    department,
-    phone,
-    workingRight,
-    tsPrescripteur,
-  }: CandidateInscriptionLeadProps) {
-    const zone = getZoneFromDepartment(department);
-
-    const leadToCreate = {
-      firstName,
-      lastName,
-      birthDate: birthdate,
-      email,
-      phone,
-      workingRight,
-      heardAbout,
-      zone,
-      tsPrescripteur,
-      autreSource: 'Formulaire_Sourcing_Page_Travailler',
-    } as const;
-
-    try {
-      const leadId = (await this.createCandidateLead(leadToCreate)) as string;
-      if (infoCo) {
-        await this.addLeadOrContactToCampaign({ leadId }, infoCo);
-        return leadId;
-      }
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-          ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD ||
-        (err as SalesforceError).errorCode ===
-          ErrorCodes.FIELD_INTEGRITY_EXCEPTION
-      ) {
-        const contactSf = await this.findContact(email);
-        const contactSfId = contactSf?.Id;
-        await this.addLeadOrContactToCampaign(
-          { contactId: contactSfId },
-          infoCo
-        );
-        return contactSfId;
-      }
-      console.error(err);
-      throw err;
-    }
   }
 
   async findOrCreateContactFromUserRegistrationForm({
@@ -1415,20 +1259,6 @@ export class SalesforceService {
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {
     this.setIsWorker(false);
     return this.findOrCreateLeadFromCompanyForm(lead);
-  }
-
-  async createOrUpdateContactCandidateSalesforceLead(
-    lead: CandidateAndWorkerLeadProps
-  ) {
-    this.setIsWorker(false);
-    return this.findOrCreateLeadFromContactCandidateForm(lead);
-  }
-
-  async createOrUpdateInscriptionCandidateSalesforceLead(
-    lead: CandidateInscriptionLeadProps
-  ) {
-    this.setIsWorker(false);
-    return this.findOrCreateLeadFromInscriptionCandidateForm(lead);
   }
 
   async getCandidateCampaigns() {

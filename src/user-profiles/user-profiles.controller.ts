@@ -19,7 +19,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
@@ -41,7 +40,7 @@ import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profi
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
-import { HelpValue, PublicProfile } from './user-profiles.types';
+import { PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
@@ -116,12 +115,12 @@ export class UserProfilesController {
     role: UserRole[],
     @Query('search')
     search: string,
-    @Query('helps')
-    helps: HelpValue[],
+    @Query('nudgeIds')
+    nudgeIds: string[],
     @Query('departments')
     departments: Department[],
-    @Query('businessLines')
-    businessLines: BusinessLineValue[]
+    @Query('businessSectorIds')
+    businessSectorIds: string[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -140,9 +139,9 @@ export class UserProfilesController {
       offset,
       limit,
       search,
-      helps,
+      nudgeIds,
       departments,
-      businessLines,
+      businessSectorIds,
     });
   }
 
@@ -270,7 +269,8 @@ export class UserProfilesController {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
 
     const userProfile = await this.userProfilesService.findOneByUserId(
-      userIdToGet
+      userIdToGet,
+      true
     );
 
     if (!user || !userProfile) {
