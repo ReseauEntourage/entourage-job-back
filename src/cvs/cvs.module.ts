@@ -11,8 +11,10 @@ import { PassionsModule } from 'src/common/passions/passions.module';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { SkillsModule } from 'src/common/skills/skills.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
+import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
+import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { CVsController } from './cvs.controller';
 import { CVsService } from './cvs.service';
@@ -26,6 +28,7 @@ import {
   CVPassion,
   CVSkill,
   CVSearch,
+  ExtractedCVData,
 } from './models';
 
 @Module({
@@ -40,6 +43,7 @@ import {
       CVPassion,
       CVSkill,
       CVSearch,
+      ExtractedCVData,
     ]),
     UsersModule,
     BusinessLinesModule,
@@ -55,6 +59,8 @@ import {
     QueuesModule,
     MailsModule,
     AWSModule,
+    OpenAiModule,
+    UserProfilesModule,
   ],
   providers: [CVsService],
   controllers: [CVsController],

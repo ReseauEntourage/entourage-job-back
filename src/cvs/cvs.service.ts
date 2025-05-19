@@ -5,6 +5,7 @@ import { Cache } from 'cache-manager';
 import * as _ from 'lodash';
 import moment from 'moment/moment';
 import fetch from 'node-fetch';
+import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
 import { col, fn, Op, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { Ambition } from 'src/common/ambitions/models';
@@ -28,6 +29,8 @@ import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
+import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -49,7 +52,7 @@ import {
   queryConditionCV,
 } from './cvs.utils';
 import { CreateCVDto, UpdateCVDto } from './dto';
-import { CV, CVSearch } from './models';
+import { CV, CVSearch, ExtractedCVData } from './models';
 import {
   CVCompleteWithAllUserInclude,
   CVCompleteWithAllUserPrivateInclude,
@@ -83,12 +86,15 @@ export class CVsService {
     private reviewModel: typeof Review,
     @InjectModel(CVSearch)
     private cvSearchModel: typeof CVSearch,
+    @InjectModel(ExtractedCVData)
+    private extractedCVDataModel: typeof ExtractedCVData,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private queuesService: QueuesService,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
-    private s3Service: S3Service
+    private s3Service: S3Service,
+    private openAiService: OpenAiService
   ) {}
 
   async create(createCVDto: CreateCVDto, userId: string) {
@@ -1104,5 +1110,79 @@ export class CVsService {
       }
     }
     return uploadedImg;
+  }
+
+  async extractDataFromCVImages(
+    image: ToBase64Response
+  ): Promise<CvSchemaType> {
+    try {
+      return await this.openAiService.extractCVFromImages(image);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async saveExtractedCVData(
+    userId: string,
+    data: CvSchemaType,
+    fileHash: string
+  ): Promise<ExtractedCVData> {
+    try {
+      // Vérification si des données existent déjà pour cet utilisateur
+      const existingData = await this.extractedCVDataModel.findOne({
+        where: { userId: userId },
+      });
+
+      if (existingData) {
+        // Mise à jour des données existantes
+        await existingData.update({ data, fileHash });
+        return existingData;
+      } else {
+        // Création d'une nouvelle entrée
+        return await this.extractedCVDataModel.create({
+          userId: userId,
+          data,
+          fileHash,
+        });
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async shouldExtractCV(userId: string, fileHash: string): Promise<boolean> {
+    try {
+      // Vérification si des données extraites existent déjà pour cet utilisateur
+      const existingData = await this.extractedCVDataModel.findOne({
+        where: { userId: userId },
+      });
+
+      // Si aucune donnée n'existe, une extraction est nécessaire
+      if (!existingData) {
+        return true;
+      }
+
+      // Si le hash du fichier est différent, une nouvelle extraction est nécessaire
+      return existingData.fileHash !== fileHash;
+    } catch (error) {
+      // En cas d'erreur, effectuer une extraction par sécurité
+      return true;
+    }
+  }
+
+  async getExtractedCVData(userId: string): Promise<CvSchemaType | null> {
+    try {
+      const existingData = await this.extractedCVDataModel.findOne({
+        where: { userId: userId },
+      });
+
+      if (!existingData) {
+        return null;
+      }
+
+      return existingData.data as CvSchemaType;
+    } catch (error) {
+      throw error;
+    }
   }
 }

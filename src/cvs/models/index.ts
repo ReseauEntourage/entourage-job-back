@@ -7,3 +7,4 @@ export { CVPassion } from './cv-passion.model';
 export { CVSkill } from './cv-skill.model';
 export { CVLanguage } from './cv-language.model';
 export { CVSearch } from './cv-search.model';
+export { ExtractedCVData } from './extracted-cv-data.model';
