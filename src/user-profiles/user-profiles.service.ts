@@ -324,7 +324,6 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      console.log('userProfileModel.update done');
 
       // Business Sectors & Occupation
       if (updateUserProfileDto.sectorOccupations) {
