@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -311,12 +310,10 @@ export class UserProfilesService {
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
-    console.log('userProfileToUpdate', userProfileToUpdate);
     if (!userProfileToUpdate) {
       return null;
     }
     await this.userProfileModel.sequelize.transaction(async (t) => {
-      console.log('userProfileModel.update');
       // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
         where: { userId },
@@ -324,11 +321,8 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      console.log('userProfileModel.update done');
-
       // Business Sectors & Occupation
       if (updateUserProfileDto.sectorOccupations) {
-        console.log('userProfileSectorOccupationModel.bulkCreate');
         const sectorOccupations = await Promise.all(
           updateUserProfileDto.sectorOccupations.map(
             async ({ businessSectorId, occupation, order }) => {
