@@ -67,7 +67,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: BusinessSector,
           as: 'businessSector',
-          required: true,
+          required: false,
           ...(isBusinessSectorsRequired
             ? { where: businessSectorsOptions }
             : {}),
@@ -76,7 +76,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: Occupation,
           as: 'occupation',
-          required: true,
+          required: false,
           attributes: ['id', 'name'],
         },
       ],

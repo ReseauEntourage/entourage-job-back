@@ -186,6 +186,9 @@ export class UserProfile extends Model {
   )
   occupations: Occupation[];
 
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @HasMany(() => UserProfileSectorOccupation, 'userProfileId')
   sectorOccupations: UserProfileSectorOccupation[];
 

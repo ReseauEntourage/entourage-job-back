@@ -7,7 +7,6 @@ import { AuthService } from 'src/auth/auth.service';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -65,7 +64,6 @@ export class UsersService {
   async findOneComplete(id: string) {
     return this.userModel.findByPk(id, {
       include: UserCandidatInclude(),
-      order: getUserProfileOrder(),
     });
   }
 
