@@ -47,20 +47,18 @@ export class ExternalCvsController {
       throw new BadRequestException();
     }
 
-    const externalCvS3Key = await this.externalCvsService.uploadExternalCV(
-      user.id,
-      file
-    );
-    if (!externalCvS3Key) {
+    try {
+      const externalCvS3Key = await this.externalCvsService.uploadExternalCV(
+        user.id,
+        file
+      );
+      const cvFile = await this.externalCvsService.findExternalCv(
+        externalCvS3Key
+      );
+      return { url: cvFile };
+    } catch (error) {
       throw new InternalServerErrorException();
     }
-    const cvFile = await this.externalCvsService.findExternalCv(
-      externalCvS3Key
-    );
-    if (!cvFile) {
-      throw new InternalServerErrorException();
-    }
-    return { url: cvFile };
   }
 
   /**
