@@ -362,45 +362,21 @@ export class UserProfilesService {
       }
 
       // Nudges
-      if (updateUserProfileDto.nudgeIds) {
-        const nudgesToAdd = await Promise.all(
-          updateUserProfileDto.nudgeIds.map(async (nudgeId) => {
-            const userProfileNudge = await this.userProfileNudgeModel.findOne({
-              where: {
-                userProfileId: userProfileToUpdate.id,
-                nudgeId,
-              },
-            });
-            if (!userProfileNudge) {
-              return await this.userProfileNudgeModel.create(
-                {
-                  userProfileId: userProfileToUpdate.id,
-                  nudgeId,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-            return null;
-          })
+      if (updateUserProfileDto.nudges) {
+        await this.updateNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.nudges,
+          t
         );
+      }
 
-        await userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
-          transaction: t,
-        });
-
-        await this.userProfileNudgeModel.destroy({
-          where: {
-            userProfileId: userProfileToUpdate.id,
-            nudgeId: {
-              [Op.notIn]: updateUserProfileDto.nudgeIds,
-            },
-          },
-          individualHooks: true,
-          transaction: t,
-        });
+      // Custom Nudges
+      if (updateUserProfileDto.customNudges) {
+        await this.updateCustomNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.customNudges,
+          t
+        );
       }
 
       // Interests
@@ -444,6 +420,108 @@ export class UserProfilesService {
       experiences,
       t
     );
+  }
+
+  async updateCustomNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    customNudges: UserProfileNudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    // Remove the custom nudges that don't exist anymore
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: customNudges
+            .filter((customNudge) => !!customNudge.id)
+            .map((customNudge) => customNudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+    // Update the custom nudges that exist
+    await Promise.all(
+      customNudges
+        .filter((customNudge) => !!customNudge.id)
+        .map(async (customNudge) => {
+          const existingCustomNudge = await this.userProfileNudgeModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              id: customNudge.id,
+            },
+          });
+
+          if (existingCustomNudge) {
+            return existingCustomNudge.update(
+              {
+                content: customNudge.content,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
+          }
+        })
+    );
+
+    // Create the new custom nudges that don't exist yet
+    const newCustomNudgesData = await Promise.all(
+      customNudges
+        .filter((customNudge) => !customNudge.id)
+        .map((customNudge) => {
+          return {
+            userProfileId: userProfileToUpdate.id,
+            content: customNudge.content,
+          };
+        })
+    );
+    await this.userProfileNudgeModel.bulkCreate(newCustomNudgesData, {
+      hooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    nudges: Nudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const currentNudges = userProfileToUpdate.get('nudges');
+
+    // Create or update userProfileNudge
+    await Promise.all(
+      nudges.map(async (nudge) => {
+        const existingNudge = currentNudges.find(
+          (existingNudge) => existingNudge.id === nudge.id
+        );
+        if (!existingNudge) {
+          return this.userProfileNudgeModel.create(
+            {
+              userProfileId: userProfileToUpdate.id,
+              nudgeId: nudge.id,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+      })
+    );
+
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        nudgeId: {
+          [Op.ne]: null,
+          [Op.notIn]: nudges.map((nudge) => nudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
   }
 
   async updateFormationsByUserProfileId(

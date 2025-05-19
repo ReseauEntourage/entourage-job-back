@@ -8,7 +8,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
-import { Transaction } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import {
   AfterUpdate,
   AllowNull,
@@ -268,6 +268,24 @@ export class UserProfile extends Model {
 
   @HasMany(() => UserProfileNudge, 'userProfileId')
   userProfileNudges: UserProfileNudge[];
+
+  // Custom Nudges
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => UserProfileNudge, {
+    foreignKey: 'userProfileId',
+    scope: {
+      content: {
+        [Op.ne]: null,
+      },
+      nudgeId: {
+        [Op.eq]: null,
+      },
+    },
+    as: 'customNudges',
+  })
+  customNudges: UserProfileNudge[];
 
   /**
    * Hooks

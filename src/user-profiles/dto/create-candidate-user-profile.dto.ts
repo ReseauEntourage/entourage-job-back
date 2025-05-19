@@ -18,10 +18,10 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'contracts',
   'allowPhysicalEvents',
   'allowRemoteEvents',
+  'nudges',
+  'customNudges',
 ] as const) {
   @ApiProperty()
-  nudgeIds: string[];
-
   @ApiProperty()
   @IsArray()
   @IsOptional()
