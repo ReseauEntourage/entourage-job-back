@@ -6,6 +6,10 @@ import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
+import { ExperiencesService } from 'src/common/experiences/experiences.service';
+import { Experience } from 'src/common/experiences/models';
+import { FormationsService } from 'src/common/formations/formations.service';
+import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -29,7 +33,10 @@ import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
+import {
+  getUserProfileInclude,
+  getUserProfileOrder,
+} from './models/user-profile.include';
 import { PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -63,7 +70,9 @@ export class UserProfilesService {
     private messagesService: MessagesService,
     private messagingService: MessagingService,
     private slackService: SlackService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private experiencesService: ExperiencesService,
+    private formationsService: FormationsService
   ) {}
 
   async findOne(id: string) {
@@ -83,23 +92,7 @@ export class UserProfilesService {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
-      order: complete
-        ? [
-            [
-              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-              'order',
-              'ASC',
-            ],
-            [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
-            [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
-          ]
-        : [
-            [
-              { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-              'order',
-              'ASC',
-            ],
-          ],
+      order: getUserProfileOrder(complete),
     });
   }
 
@@ -341,7 +334,7 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      // Business Sectors & Occupation
+      // Sector occupations
       if (updateUserProfileDto.sectorOccupations) {
         await this.updateSectorOccupationsByUserProfileId(
           userProfileToUpdate,
@@ -350,46 +343,40 @@ export class UserProfilesService {
         );
       }
 
-      // Nudges
-      if (updateUserProfileDto.nudgeIds) {
-        const nudgesToAdd = await Promise.all(
-          updateUserProfileDto.nudgeIds.map(async (nudgeId) => {
-            const userProfileNudge = await this.userProfileNudgeModel.findOne({
-              where: {
-                userProfileId: userProfileToUpdate.id,
-                nudgeId,
-              },
-            });
-            if (!userProfileNudge) {
-              return await this.userProfileNudgeModel.create(
-                {
-                  userProfileId: userProfileToUpdate.id,
-                  nudgeId,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-            return null;
-          })
+      // Experiences
+      if (updateUserProfileDto.experiences) {
+        await this.updateExperiencesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.experiences,
+          t
         );
+      }
 
-        await userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
-          transaction: t,
-        });
+      // Formations
+      if (updateUserProfileDto.formations) {
+        await this.updateFormationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.formations,
+          t
+        );
+      }
 
-        await this.userProfileNudgeModel.destroy({
-          where: {
-            userProfileId: userProfileToUpdate.id,
-            nudgeId: {
-              [Op.notIn]: updateUserProfileDto.nudgeIds,
-            },
-          },
-          individualHooks: true,
-          transaction: t,
-        });
+      // Nudges
+      if (updateUserProfileDto.nudges) {
+        await this.updateNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.nudges,
+          t
+        );
+      }
+
+      // Custom Nudges
+      if (updateUserProfileDto.customNudges) {
+        await this.updateCustomNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.customNudges,
+          t
+        );
       }
 
       // Interests
@@ -421,6 +408,132 @@ export class UserProfilesService {
     });
 
     return this.findOneByUserId(userId, true);
+  }
+
+  async updateExperiencesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    experiences: Experience[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.experiencesService.updateExperiencesForUserProfile(
+      userProfileToUpdate,
+      experiences,
+      t
+    );
+  }
+
+  async updateCustomNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    customNudges: UserProfileNudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    // Remove the custom nudges that don't exist anymore
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: customNudges
+            .filter((customNudge) => !!customNudge.id)
+            .map((customNudge) => customNudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+    // Update the custom nudges that exist
+    await Promise.all(
+      customNudges
+        .filter((customNudge) => !!customNudge.id)
+        .map(async (customNudge) => {
+          const existingCustomNudge = await this.userProfileNudgeModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              id: customNudge.id,
+            },
+          });
+
+          if (existingCustomNudge) {
+            return existingCustomNudge.update(
+              {
+                content: customNudge.content,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
+          }
+        })
+    );
+
+    // Create the new custom nudges that don't exist yet
+    const newCustomNudgesData = await Promise.all(
+      customNudges
+        .filter((customNudge) => !customNudge.id)
+        .map((customNudge) => {
+          return {
+            userProfileId: userProfileToUpdate.id,
+            content: customNudge.content,
+          };
+        })
+    );
+    await this.userProfileNudgeModel.bulkCreate(newCustomNudgesData, {
+      hooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    nudges: Nudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const currentNudges = userProfileToUpdate.get('nudges');
+
+    // Create or update userProfileNudge
+    await Promise.all(
+      nudges.map(async (nudge) => {
+        const existingNudge = currentNudges.find(
+          (existingNudge) => existingNudge.id === nudge.id
+        );
+        if (!existingNudge) {
+          return this.userProfileNudgeModel.create(
+            {
+              userProfileId: userProfileToUpdate.id,
+              nudgeId: nudge.id,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+      })
+    );
+
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        nudgeId: {
+          [Op.ne]: null,
+          [Op.notIn]: nudges.map((nudge) => nudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateFormationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    formations: Formation[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.formationsService.updateFormationsForUserProfile(
+      userProfileToUpdate,
+      formations,
+      t
+    );
   }
 
   async updateSectorOccupationsByUserProfileId(
@@ -545,6 +658,9 @@ export class UserProfilesService {
         userProfileId: userProfileToUpdate.id,
         id: {
           [Op.notIn]: skillsCreated.map((skill) => skill.id),
+        },
+        order: {
+          [Op.ne]: -1,
         },
       },
       individualHooks: true,

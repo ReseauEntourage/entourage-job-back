@@ -13,14 +13,15 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'linkedinUrl',
   'interests',
   'skills',
+  'experiences',
+  'formations',
   'allowPhysicalEvents',
   'allowRemoteEvents',
+  'nudges',
+  'customNudges',
 ] as const) {
   @ApiProperty()
   @IsArray()
   @IsOptional()
   sectorOccupations?: UserProfileSectorOccupation[];
-
-  @ApiProperty()
-  nudgeIds: string[];
 }

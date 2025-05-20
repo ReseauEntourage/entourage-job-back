@@ -16,7 +16,10 @@ import {
   UserCandidat,
   UserCandidatAttributes,
 } from './models';
-import { UserCandidatInclude } from './models/user.include';
+import {
+  getUserCandidatOrder,
+  UserCandidatInclude,
+} from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
 import {
@@ -41,10 +44,11 @@ export class UsersService {
     return this.userModel.create(createUserDto, { hooks: true });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, complete = false) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
+      include: UserCandidatInclude(complete),
+      order: getUserCandidatOrder(complete),
     });
   }
 
@@ -53,6 +57,7 @@ export class UsersService {
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
       include: UserCandidatInclude(complete),
+      order: getUserCandidatOrder(complete),
     });
   }
 
