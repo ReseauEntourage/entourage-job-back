@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('User_Profiles', 'optInNewsletter', {
+    await queryInterface.addColumn('UserProfiles', 'optInNewsletter', {
       allowNull: false,
       type: Sequelize.BOOLEAN,
       defaultValue: false,
@@ -11,6 +11,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('User_Profiles', 'optInNewsletter');
+    await queryInterface.removeColumn('UserProfiles', 'optInNewsletter');
   },
 };

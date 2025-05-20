@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
@@ -24,7 +24,7 @@ import {
     ]),
     SlackModule,
     MailsModule,
-    UsersModule,
+    forwardRef(() => UsersModule),
     MediasModule,
     AWSModule,
   ],

@@ -13,10 +13,13 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Skill } from 'src/common/skills/models';
-import { CV } from 'src/cvs/models/cv.model';
+import { UserProfile } from 'src/user-profiles/models';
 import { ExperienceSkill } from './experience-skill.model';
 
-@Table({ tableName: 'Experiences' })
+@Table({
+  tableName: 'Experiences',
+  timestamps: false,
+})
 export class Experience extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -24,24 +27,13 @@ export class Experience extends Model {
   @Column
   id: string;
 
-  @IsUUID(4)
-  @ForeignKey(() => CV)
-  @AllowNull(false)
-  @Column
-  CVId: string;
-
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   description: string;
 
   @AllowNull(true)
   @Column
   title: string;
-
-  @AllowNull(false)
-  @Default(-1)
-  @Column
-  order: number;
 
   @AllowNull(true)
   @Column
@@ -53,18 +45,23 @@ export class Experience extends Model {
 
   @AllowNull(true)
   @Column
-  dateStart: Date;
+  startDate: Date;
 
   @AllowNull(true)
   @Column
-  dateEnd: Date;
+  endDate: Date;
 
-  @BelongsTo(() => CV, 'CVId')
-  cv: CV;
-
-  @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
+  @BelongsToMany(() => Skill, () => ExperienceSkill, 'experienceId', 'skillId')
   skills: Skill[];
 
-  @HasMany(() => ExperienceSkill, 'ExperienceId')
+  @HasMany(() => ExperienceSkill, 'experienceId')
   experienceSkills: ExperienceSkill[];
+
+  @ForeignKey(() => UserProfile)
+  @AllowNull(false)
+  @Column
+  userProfileId: string;
+
+  @BelongsTo(() => UserProfile)
+  userProfile: UserProfile;
 }
