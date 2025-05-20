@@ -18,8 +18,10 @@ export const getPublicProfileFromUserAndUserProfile = (
     isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
-    userProfileNudges: userProfile.userProfileNudges,
+    nudges: userProfile.nudges,
+    customNudges: userProfile.customNudges,
     description: userProfile.description,
+    introduction: userProfile.introduction,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     linkedinUrl: userProfile.linkedinUrl,
@@ -31,6 +33,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     skills: userProfile.skills,
     contracts: userProfile.contracts,
     reviews: userProfile.reviews,
+    interests: userProfile.interests,
     averageDelayResponse,
   };
 };

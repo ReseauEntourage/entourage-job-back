@@ -1,9 +1,10 @@
 import _ from 'lodash';
-import { Includeable, WhereOptions } from 'sequelize';
+import { Includeable, Op, Order, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
@@ -15,13 +16,28 @@ import { UserProfileSectorOccupation } from './user-profile-sector-occupation.mo
 
 export const getUserProfileNudgesInclude = (
   nudgesOptions: WhereOptions<Nudge> = {}
-) => {
+): Includeable[] => {
+  return [
+    {
+      model: Nudge,
+      as: 'nudges',
+      required: false,
+      attributes: ['id', 'value', 'nameRequest', 'nameOffer', 'order'],
+      where: nudgesOptions,
+      through: {
+        attributes: [] as string[],
+        as: 'userProfileNudges',
+      },
+    },
+  ];
+};
+
+export const getUserProfileCustomNudgesInclude = (): Includeable[] => {
   return [
     {
       model: UserProfileNudge,
-      as: 'userProfileNudges',
+      as: 'customNudges',
       attributes: ['id', 'content', 'createdAt'],
-      where: nudgesOptions,
       required: false,
       include: [
         {
@@ -38,7 +54,7 @@ export const getUserProfileNudgesInclude = (
 export const getUserProfileSectorOccupationsInclude = (
   role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {}
-) => {
+): Includeable[] => {
   const isBusinessSectorsRequired = role && !_.isEmpty(businessSectorsOptions);
 
   return [
@@ -51,7 +67,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: BusinessSector,
           as: 'businessSector',
-          required: isBusinessSectorsRequired,
+          required: false,
           ...(isBusinessSectorsRequired
             ? { where: businessSectorsOptions }
             : {}),
@@ -61,14 +77,14 @@ export const getUserProfileSectorOccupationsInclude = (
           model: Occupation,
           as: 'occupation',
           required: false,
-          attributes: ['id', 'name', 'prefix'],
+          attributes: ['id', 'name'],
         },
       ],
     },
   ];
 };
 
-export const getUserProfileLanguagesInclude = () => [
+export const getUserProfileLanguagesInclude = (): Includeable[] => [
   {
     model: Language,
     as: 'languages',
@@ -81,7 +97,7 @@ export const getUserProfileLanguagesInclude = () => [
   },
 ];
 
-export const getUserProfileContractsInclude = () => [
+export const getUserProfileContractsInclude = (): Includeable[] => [
   {
     model: Contract,
     as: 'contracts',
@@ -94,20 +110,22 @@ export const getUserProfileContractsInclude = () => [
   },
 ];
 
-export const getUserProfileSkillsInclude = () => [
+export const getUserProfileSkillsInclude = (): Includeable[] => [
   {
     model: Skill,
     as: 'skills',
     required: false,
-    attributes: ['id', 'name'],
-    through: {
-      attributes: ['id', 'order'],
-      as: 'userProfileSkills',
+    attributes: ['id', 'name', 'order'],
+    order: [['order', 'ASC']],
+    where: {
+      order: {
+        [Op.ne]: -1,
+      },
     },
   },
 ];
 
-export const getUserProfileExperiencesInclude = () => [
+export const getUserProfileExperiencesInclude = (): Includeable[] => [
   {
     model: Experience,
     as: 'experiences',
@@ -121,14 +139,23 @@ export const getUserProfileExperiencesInclude = () => [
       'startDate',
       'endDate',
     ],
-    through: {
-      attributes: [] as string[],
-      as: 'userProfileExperiences',
-    },
+    order: [['startDate', 'DESC']],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        required: false,
+        attributes: ['id', 'name'],
+        through: {
+          attributes: ['order'] as string[],
+          as: 'experienceSkills',
+        },
+      },
+    ],
   },
 ];
 
-export const getUserProfileFormationsInclude = () => [
+export const getUserProfileFormationsInclude = (): Includeable[] => [
   {
     model: Formation,
     as: 'formations',
@@ -142,19 +169,38 @@ export const getUserProfileFormationsInclude = () => [
       'startDate',
       'endDate',
     ],
-    through: {
-      attributes: [] as string[],
-      as: 'userProfileFormations',
-    },
+    order: [['startDate', 'DESC']],
+    include: [
+      {
+        model: Skill,
+        as: 'skills',
+        required: false,
+        attributes: ['id', 'name'],
+        through: {
+          attributes: ['order'] as string[],
+          as: 'formationSkills',
+        },
+      },
+    ],
   },
 ];
 
-export const getUserProfileReviewsInclude = () => [
+export const getUserProfileReviewsInclude = (): Includeable[] => [
   {
     model: Review,
     as: 'reviews',
     required: false,
     attributes: ['id', 'authorName', 'authorLabel', 'content'],
+  },
+];
+
+export const getUserProfileInterestsInclude = (): Includeable[] => [
+  {
+    model: Interest,
+    as: 'interests',
+    required: false,
+    attributes: ['id', 'name', 'order'],
+    order: [['order', 'ASC']],
   },
 ];
 
@@ -164,18 +210,45 @@ export const getUserProfileInclude = (
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
   nudgesOptions: WhereOptions<Nudge> = {}
 ): Includeable[] => {
+  // Always included
+  const baseIncludes = [
+    ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
+    ...getUserProfileNudgesInclude(nudgesOptions),
+  ];
+
+  // Conditionally included based on the complete flag
   const additionalIncludes = [
+    ...getUserProfileCustomNudgesInclude(),
     ...getUserProfileLanguagesInclude(),
     ...getUserProfileContractsInclude(),
     ...getUserProfileSkillsInclude(),
     ...getUserProfileExperiencesInclude(),
     ...getUserProfileFormationsInclude(),
     ...getUserProfileReviewsInclude(),
+    ...getUserProfileInterestsInclude(),
   ];
 
-  return [
-    ...(complete ? additionalIncludes : []),
-    ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
-    ...getUserProfileNudgesInclude(nudgesOptions),
-  ];
+  return [...(complete ? additionalIncludes : []), ...baseIncludes];
+};
+
+export const getUserProfileOrder = (complete = false): Order => {
+  return complete
+    ? [
+        [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
+        [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
+        [
+          { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+          'order',
+          'ASC',
+        ],
+        [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
+        [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+      ]
+    : [
+        [
+          { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+          'order',
+          'ASC',
+        ],
+      ];
 };

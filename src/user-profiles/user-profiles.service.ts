@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -6,9 +5,16 @@ import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
+import { ExperiencesService } from 'src/common/experiences/experiences.service';
+import { Experience } from 'src/common/experiences/models';
+import { FormationsService } from 'src/common/formations/formations.service';
+import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
+import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -20,13 +26,17 @@ import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { UserProfile, UserProfileSectorOccupation } from './models';
+import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
+import {
+  getUserProfileInclude,
+  getUserProfileOrder,
+} from './models/user-profile.include';
 import { PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -48,13 +58,21 @@ export class UserProfilesService {
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
     @InjectModel(UserProfileNudge)
     private userProfileNudgeModel: typeof UserProfileNudge,
+    @InjectModel(Interest)
+    private interestModel: typeof Interest,
+    @InjectModel(Skill)
+    private skillModel: typeof Skill,
+    @InjectModel(UserProfileContract)
+    private userProfileContractModel: typeof UserProfileContract,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private messagesService: MessagesService,
     private messagingService: MessagingService,
     private slackService: SlackService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private experiencesService: ExperiencesService,
+    private formationsService: FormationsService
   ) {}
 
   async findOne(id: string) {
@@ -74,6 +92,7 @@ export class UserProfilesService {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
+      order: getUserProfileOrder(complete),
     });
   }
 
@@ -307,7 +326,6 @@ export class UserProfilesService {
     if (!userProfileToUpdate) {
       return null;
     }
-
     await this.userProfileModel.sequelize.transaction(async (t) => {
       // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
@@ -316,107 +334,368 @@ export class UserProfilesService {
         transaction: t,
       });
 
-      // Business Sectors & Occupation
+      // Sector occupations
       if (updateUserProfileDto.sectorOccupations) {
-        const sectorOccupations = await Promise.all(
-          updateUserProfileDto.sectorOccupations.map(
-            async ({ businessSectorId, occupation, order }) => {
-              const existingSectorOccupation =
-                await this.userProfileSectorOccupationModel.findOne({
-                  where: {
-                    userProfileId: userProfileToUpdate.id,
-                    businessSectorId,
-                  },
-                  include: [
-                    {
-                      model: Occupation,
-                      as: 'occupation',
-                      attributes: ['name'],
-                      where: {
-                        name: occupation.name,
-                      },
-                    },
-                  ],
-                });
-
-              if (existingSectorOccupation) {
-                return existingSectorOccupation;
-              }
-              const newOccupation = await this.occupationModel.create(
-                {
-                  name: occupation.name,
-                  prefix: occupation.prefix,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-              return await this.userProfileSectorOccupationModel.create(
-                {
-                  userProfileId: userProfileToUpdate.id,
-                  businessSectorId,
-                  occupationId: newOccupation.id,
-                  order,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
+        await this.updateSectorOccupationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.sectorOccupations,
+          t
         );
+      }
 
-        await userProfileToUpdate.$set('sectorOccupations', sectorOccupations, {
-          transaction: t,
-        });
+      // Experiences
+      if (updateUserProfileDto.experiences) {
+        await this.updateExperiencesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.experiences,
+          t
+        );
+      }
+
+      // Formations
+      if (updateUserProfileDto.formations) {
+        await this.updateFormationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.formations,
+          t
+        );
       }
 
       // Nudges
-      if (updateUserProfileDto.nudgeIds) {
-        const nudgesToAdd = await Promise.all(
-          updateUserProfileDto.nudgeIds.map(async (nudgeId) => {
-            const userProfileNudge = await this.userProfileNudgeModel.findOne({
-              where: {
-                userProfileId: userProfileToUpdate.id,
-                nudgeId,
-              },
-            });
-            if (!userProfileNudge) {
-              return await this.userProfileNudgeModel.create(
-                {
-                  userProfileId: userProfileToUpdate.id,
-                  nudgeId,
-                },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-            return null;
-          })
+      if (updateUserProfileDto.nudges) {
+        await this.updateNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.nudges,
+          t
         );
+      }
 
-        await userProfileToUpdate.$set('userProfileNudges', nudgesToAdd, {
-          transaction: t,
-        });
+      // Custom Nudges
+      if (updateUserProfileDto.customNudges) {
+        await this.updateCustomNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.customNudges,
+          t
+        );
+      }
 
-        await this.userProfileNudgeModel.destroy({
-          where: {
-            userProfileId: userProfileToUpdate.id,
-            nudgeId: {
-              [Op.notIn]: updateUserProfileDto.nudgeIds,
-            },
-          },
-          individualHooks: true,
-          transaction: t,
-        });
+      // Interests
+      if (updateUserProfileDto.interests) {
+        await this.updateInterestsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.interests,
+          t
+        );
+      }
+
+      // Skills
+      if (updateUserProfileDto.skills) {
+        await this.updateSkillsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.skills,
+          t
+        );
+      }
+
+      // Contracts
+      if (updateUserProfileDto.contracts) {
+        await this.updateContractsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.contracts,
+          t
+        );
       }
     });
 
-    return this.findOneByUserId(userId);
+    return this.findOneByUserId(userId, true);
+  }
+
+  async updateExperiencesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    experiences: Experience[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.experiencesService.updateExperiencesForUserProfile(
+      userProfileToUpdate,
+      experiences,
+      t
+    );
+  }
+
+  async updateCustomNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    customNudges: UserProfileNudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    // Remove the custom nudges that don't exist anymore
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: customNudges
+            .filter((customNudge) => !!customNudge.id)
+            .map((customNudge) => customNudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+    // Update the custom nudges that exist
+    await Promise.all(
+      customNudges
+        .filter((customNudge) => !!customNudge.id)
+        .map(async (customNudge) => {
+          const existingCustomNudge = await this.userProfileNudgeModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              id: customNudge.id,
+            },
+          });
+
+          if (existingCustomNudge) {
+            return existingCustomNudge.update(
+              {
+                content: customNudge.content,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
+          }
+        })
+    );
+
+    // Create the new custom nudges that don't exist yet
+    const newCustomNudgesData = await Promise.all(
+      customNudges
+        .filter((customNudge) => !customNudge.id)
+        .map((customNudge) => {
+          return {
+            userProfileId: userProfileToUpdate.id,
+            content: customNudge.content,
+          };
+        })
+    );
+    await this.userProfileNudgeModel.bulkCreate(newCustomNudgesData, {
+      hooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    nudges: Nudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const currentNudges = userProfileToUpdate.get('nudges');
+
+    // Create or update userProfileNudge
+    await Promise.all(
+      nudges.map(async (nudge) => {
+        const existingNudge = currentNudges.find(
+          (existingNudge) => existingNudge.id === nudge.id
+        );
+        if (!existingNudge) {
+          return this.userProfileNudgeModel.create(
+            {
+              userProfileId: userProfileToUpdate.id,
+              nudgeId: nudge.id,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+      })
+    );
+
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        nudgeId: {
+          [Op.ne]: null,
+          [Op.notIn]: nudges.map((nudge) => nudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateFormationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    formations: Formation[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.formationsService.updateFormationsForUserProfile(
+      userProfileToUpdate,
+      formations,
+      t
+    );
+  }
+
+  async updateSectorOccupationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    sectorOccupations: UserProfileSectorOccupation[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const newSectorOccupations = await Promise.all(
+      sectorOccupations.map(async ({ businessSectorId, occupation, order }) => {
+        const existingSectorOccupation =
+          await this.userProfileSectorOccupationModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              businessSectorId,
+            },
+            include: [
+              {
+                model: Occupation,
+                as: 'occupation',
+                attributes: ['name'],
+                where: {
+                  name: occupation.name,
+                },
+              },
+            ],
+          });
+
+        if (existingSectorOccupation) {
+          return existingSectorOccupation;
+        }
+        const newOccupation = await this.occupationModel.create(
+          {
+            name: occupation.name,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+        return await this.userProfileSectorOccupationModel.create(
+          {
+            userProfileId: userProfileToUpdate.id,
+            businessSectorId,
+            occupationId: newOccupation.id,
+            order,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+      })
+    );
+
+    await this.userProfileSectorOccupationModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: newSectorOccupations.map(
+            (sectorOccupation) => sectorOccupation.id
+          ),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+
+    await userProfileToUpdate.$set('sectorOccupations', newSectorOccupations, {
+      transaction: t,
+    });
+  }
+
+  async updateInterestsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    interests: Interest[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const interestsData = interests.map((interest, order) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        name: interest.name,
+        order,
+      };
+    });
+    const userProfileInterests = await this.interestModel.bulkCreate(
+      interestsData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.interestModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: userProfileInterests.map((interest) => interest.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateSkillsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    skills: Skill[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const skillsData = skills.map((skill, order) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        name: skill.name,
+        order,
+      };
+    });
+    const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
+      hooks: true,
+      transaction: t,
+    });
+    await this.skillModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: skillsCreated.map((skill) => skill.id),
+        },
+        order: {
+          [Op.ne]: -1,
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateContractsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    contracts: Contract[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const contractsData = contracts.map((contract) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        contractId: contract.id,
+      };
+    });
+    const userProfileContracts = await this.userProfileContractModel.bulkCreate(
+      contractsData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.userProfileContractModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: userProfileContracts.map((upContract) => upContract.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
   }
 
   async createRecommendations(userId: string, usersToRecommendIds: string[]) {

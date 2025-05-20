@@ -8,7 +8,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
-import { Transaction } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import {
   AfterUpdate,
   AllowNull,
@@ -31,6 +31,7 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -40,12 +41,9 @@ import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { UserProfileContract } from './user-profile-contract.model';
-import { UserProfileExperience } from './user-profile-experience.model';
-import { UserProfileFormation } from './user-profile-formation.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
-import { UserProfileSkill } from './user-profile-skill.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
@@ -76,13 +74,13 @@ export class UserProfile extends Model {
   @IsString()
   @AllowNull(true)
   @Column
-  description: string;
+  introduction: string;
 
   @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column
-  story: string;
+  description: string;
 
   @ApiProperty()
   @IsBoolean()
@@ -148,6 +146,20 @@ export class UserProfile extends Model {
   @DeletedAt
   deletedAt: Date;
 
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  allowPhysicalEvents: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  allowRemoteEvents: boolean;
+
   @BelongsTo(() => User, 'userId')
   user: User;
 
@@ -174,6 +186,9 @@ export class UserProfile extends Model {
   )
   occupations: Occupation[];
 
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @HasMany(() => UserProfileSectorOccupation, 'userProfileId')
   sectorOccupations: UserProfileSectorOccupation[];
 
@@ -211,50 +226,36 @@ export class UserProfile extends Model {
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @BelongsToMany(
-    () => Skill,
-    () => UserProfileSkill,
-    'userProfileId',
-    'skillId'
-  )
+  @HasMany(() => Skill, 'userProfileId')
   skills: Skill[];
-
-  @HasMany(() => UserProfileSkill, 'userProfileId')
-  userProfileSkills: UserProfileSkill[];
 
   // Experiences
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @BelongsToMany(
-    () => Experience,
-    () => UserProfileExperience,
-    'userProfileId',
-    'experienceId'
-  )
+  @HasMany(() => Experience, 'userProfileId')
   experiences: Experience[];
-
-  @HasMany(() => UserProfileExperience, 'userProfileId')
-  userProfileExperiences: UserProfileExperience[];
 
   // Formations
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @BelongsToMany(
-    () => Formation,
-    () => UserProfileFormation,
-    'userProfileId',
-    'formationId'
-  )
+  @HasMany(() => Formation, 'userProfileId')
   formations: Formation[];
 
-  @HasMany(() => UserProfileFormation, 'userProfileId')
-  userProfileFormations: UserProfileFormation[];
-
   // Reviews
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @HasMany(() => Review, 'userProfileId')
   reviews: Review[];
+
+  // Interests
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => Interest, 'userProfileId')
+  interests: Interest[];
 
   // Nudges
   @ApiProperty()
@@ -270,6 +271,24 @@ export class UserProfile extends Model {
 
   @HasMany(() => UserProfileNudge, 'userProfileId')
   userProfileNudges: UserProfileNudge[];
+
+  // Custom Nudges
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => UserProfileNudge, {
+    foreignKey: 'userProfileId',
+    scope: {
+      content: {
+        [Op.ne]: null,
+      },
+      nudgeId: {
+        [Op.eq]: null,
+      },
+    },
+    as: 'customNudges',
+  })
+  customNudges: UserProfileNudge[];
 
   /**
    * Hooks
