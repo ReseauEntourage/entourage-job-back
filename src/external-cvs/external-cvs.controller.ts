@@ -201,7 +201,7 @@ export class ExternalCvsController {
 
       // Remplir le profil utilisateur avec les données extraites du CV
       if (extractedCVData) {
-        // await this.cvsService.populateUserProfileFromCVData(
+        // await this.externalCvService.populateUserProfileFromCVData(
         //   userId,
         //   extractedCVData
         // );
