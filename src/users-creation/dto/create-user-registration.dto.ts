@@ -7,6 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 import { Department } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
 import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
@@ -64,7 +65,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  nudgeIds?: string[];
+  nudges?: Nudge[];
 
   @ApiProperty()
   @IsString()

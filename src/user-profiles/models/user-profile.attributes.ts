@@ -1,11 +1,13 @@
 export const UserProfilesAttributes = [
   'description',
-  'story',
+  'introduction',
   'currentJob',
   'department',
   'isAvailable',
   'linkedinUrl',
   'hasExternalCv',
+  'allowPhysicalEvents',
+  'allowRemoteEvents',
 ];
 
 export const UserProfilesUserAttributes = [

@@ -4,6 +4,7 @@ import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { UserRole } from 'src/users/users.types';
@@ -44,7 +45,9 @@ export type PublicProfile = {
   department: Department;
   currentJob: string;
   isAvailable: boolean;
-  userProfileNudges: UserProfileNudge[];
+  nudges: Nudge[];
+  customNudges: UserProfileNudge[];
+  introduction: string;
   description: string;
   sectorOccupations: UserProfileSectorOccupation[];
   languages: Language[];

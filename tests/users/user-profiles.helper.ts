@@ -27,6 +27,7 @@ export class UserProfilesHelper {
       lastName: user.lastName,
       role: user.role,
       description: user.userProfile.description,
+      introduction: user.userProfile.introduction,
       currentJob: user.userProfile.currentJob,
       department: user.userProfile.department,
       isAvailable: user.userProfile.isAvailable,
