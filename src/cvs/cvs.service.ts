@@ -1122,54 +1122,6 @@ export class CVsService {
     }
   }
 
-  async saveExtractedCVData(
-    userId: string,
-    data: CvSchemaType,
-    fileHash: string
-  ): Promise<ExtractedCVData> {
-    try {
-      // Vérification si des données existent déjà pour cet utilisateur
-      const existingData = await this.extractedCVDataModel.findOne({
-        where: { userId: userId },
-      });
-
-      if (existingData) {
-        // Mise à jour des données existantes
-        await existingData.update({ data, fileHash });
-        return existingData;
-      } else {
-        // Création d'une nouvelle entrée
-        return await this.extractedCVDataModel.create({
-          userId: userId,
-          data,
-          fileHash,
-        });
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async shouldExtractCV(userId: string, fileHash: string): Promise<boolean> {
-    try {
-      // Vérification si des données extraites existent déjà pour cet utilisateur
-      const existingData = await this.extractedCVDataModel.findOne({
-        where: { userId: userId },
-      });
-
-      // Si aucune donnée n'existe, une extraction est nécessaire
-      if (!existingData) {
-        return true;
-      }
-
-      // Si le hash du fichier est différent, une nouvelle extraction est nécessaire
-      return existingData.fileHash !== fileHash;
-    } catch (error) {
-      // En cas d'erreur, effectuer une extraction par sécurité
-      return true;
-    }
-  }
-
   async getExtractedCVData(userId: string): Promise<CvSchemaType | null> {
     try {
       const existingData = await this.extractedCVDataModel.findOne({
