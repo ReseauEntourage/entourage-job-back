@@ -24,8 +24,4 @@ export class Occupation extends WrapperModel {
   @AllowNull(false)
   @Column
   name: string;
-
-  @AllowNull(false)
-  @Column
-  prefix: string;
 }
