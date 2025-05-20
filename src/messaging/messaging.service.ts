@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -45,6 +47,7 @@ export class MessagingService {
     @InjectModel(MessageMedia)
     private messageMediaModel: typeof MessageMedia,
     private slackService: SlackService,
+    @Inject(forwardRef(() => UsersService))
     private userService: UsersService,
     private mailsService: MailsService,
     private mediaService: MediasService
@@ -449,5 +452,83 @@ export class MessagingService {
     });
 
     return updatedParticipant;
+  }
+
+  /**
+   * Compute the average delay response for a user profile (in days)
+   * Based on the 10 last messages of each conversation excluding the last message (can be a message that don't need a response)
+   * and the messages sent by the user.
+   *
+   * @param userProfileId - The ID of the user profile to fetch the average delay response for
+   * @return The average delay response in days or null if no messages are found
+   */
+  async getAverageDelayResponse(userId: string): Promise<number | null> {
+    // Get all conversations for the user profile
+    const conversations = await this.conversationParticipantModel.findAll({
+      where: { userId },
+      include: [this.conversationModel],
+    });
+
+    const delays: number[] = [];
+
+    for (const participant of conversations) {
+      const conversationId = participant.conversationId;
+
+      // Get the messages of the conversation
+      const messages = await this.messageModel.findAll({
+        where: { conversationId },
+        order: [['createdAt', 'ASC']],
+      });
+
+      // Determine the received messages and the user replies
+      for (let i = 0; i < messages.length; i++) {
+        const message = messages[i];
+
+        // If the message is not from the user profile
+        if (message.authorId !== userId) {
+          // Find first reply from the user after the message
+          const reply = messages.find(
+            (m) => m.authorId === userId && m.createdAt > message.createdAt
+          );
+
+          if (reply) {
+            const delay =
+              reply.createdAt.getTime() - message.createdAt.getTime();
+            delays.push(delay);
+          }
+        }
+      }
+    }
+
+    if (delays.length === 0) return null;
+
+    const averageMs = delays.reduce((a, b) => a + b, 0) / delays.length;
+    const averageDays = averageMs / (1000 * 60 * 60 * 24);
+
+    return Math.ceil(averageDays);
+  }
+
+  /**
+   * Compute the response rate for a user profile
+   * Based on all the conversations where the user profile is a participant and no answer is given (excluding the conversations created within the last day)
+   *
+   * @param userProfileId - The ID of the user profile to fetch the response rate for
+   * @return The response rate in percentage or null if no messages are found
+   */
+  async getResponseRate(userId: string): Promise<number | null> {
+    // Get all conversations for the user profile
+    const conversations = await this.conversationParticipantModel.findAll({
+      where: { userId },
+      include: [this.conversationModel],
+    });
+
+    const totalMessages = conversations.length;
+    const answeredMessages = conversations.filter(
+      (c) => c.seenAt && c.seenAt > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ).length;
+
+    if (totalMessages === 0) return null;
+
+    return Math.round((answeredMessages / totalMessages) * 100);
   }
 }

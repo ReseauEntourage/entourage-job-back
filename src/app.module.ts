@@ -12,6 +12,7 @@ import { BusinessSectorsModule } from './common/business-sectors/business-sector
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';
+import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
@@ -34,6 +35,7 @@ import { UserSocialSituationsModule } from './user-social-situations/user-social
 import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
+import { UsersStatsModule } from './users-stats/users-stats.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -98,12 +100,14 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
     ExternalCvsModule,
     BusinessSectorsModule,
     LocationsModule,
     ContractsModule,
     LanguagesModule,
+    InterestsModule,
     PassionsModule,
     SkillsModule,
     ExperiencesModule,
@@ -138,6 +142,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
     BusinessSectorsModule,
     LocationsModule,
