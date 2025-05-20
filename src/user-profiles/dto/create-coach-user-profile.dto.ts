@@ -17,12 +17,11 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'formations',
   'allowPhysicalEvents',
   'allowRemoteEvents',
+  'nudges',
+  'customNudges',
 ] as const) {
   @ApiProperty()
   @IsArray()
   @IsOptional()
   sectorOccupations?: UserProfileSectorOccupation[];
-
-  @ApiProperty()
-  nudgeIds: string[];
 }

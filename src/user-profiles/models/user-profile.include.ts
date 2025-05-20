@@ -19,10 +19,25 @@ export const getUserProfileNudgesInclude = (
 ): Includeable[] => {
   return [
     {
-      model: UserProfileNudge,
-      as: 'userProfileNudges',
-      attributes: ['id', 'content', 'createdAt'],
+      model: Nudge,
+      as: 'nudges',
+      required: false,
+      attributes: ['id', 'value', 'nameRequest', 'nameOffer', 'order'],
       where: nudgesOptions,
+      through: {
+        attributes: [] as string[],
+        as: 'userProfileNudges',
+      },
+    },
+  ];
+};
+
+export const getUserProfileCustomNudgesInclude = (): Includeable[] => {
+  return [
+    {
+      model: UserProfileNudge,
+      as: 'customNudges',
+      attributes: ['id', 'content', 'createdAt'],
       required: false,
       include: [
         {
@@ -52,7 +67,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: BusinessSector,
           as: 'businessSector',
-          required: true,
+          required: false,
           ...(isBusinessSectorsRequired
             ? { where: businessSectorsOptions }
             : {}),
@@ -61,7 +76,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: Occupation,
           as: 'occupation',
-          required: true,
+          required: false,
           attributes: ['id', 'name'],
         },
       ],
@@ -203,6 +218,7 @@ export const getUserProfileInclude = (
 
   // Conditionally included based on the complete flag
   const additionalIncludes = [
+    ...getUserProfileCustomNudgesInclude(),
     ...getUserProfileLanguagesInclude(),
     ...getUserProfileContractsInclude(),
     ...getUserProfileSkillsInclude(),
