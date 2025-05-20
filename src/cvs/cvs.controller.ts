@@ -106,58 +106,69 @@ export class CVsController {
         fileHash
       );
 
-      if (!needExtraction) {
-        // Si le CV est inchangé, on utilise les données déjà extraites
-        return;
+      let extractedCVData;
+
+      if (needExtraction) {
+        const pdfDoc = await PDFDocument.load(pdfBuffer);
+        const pageCount = pdfDoc.getPageCount();
+
+        try {
+          // Configuration des options de conversion
+          const options = {
+            saveFilename: `${userId}`, // Préfixe des noms de fichiers
+            savePath: tempDir, // Dossier de destination
+            format: 'png', // Format de l'image
+            preserveAspectRatio: true,
+            width: 1000, // Largeur max en pixels
+          };
+
+          // Conversion du PDF en images
+          const convert = fromPath(pdfPath, options);
+          const pagesResult = await convert(pageCount, {
+            responseType: 'base64',
+          });
+
+          // Extraction des données du CV à partir des images
+          extractedCVData = await this.cvsService.extractDataFromCVImages(
+            pagesResult
+          );
+
+          // Sauvegarde des données extraites et du hash du fichier dans la base de données
+          await this.cvsService.saveExtractedCVData(
+            userId,
+            extractedCVData,
+            fileHash
+          );
+
+          return {
+            success: true,
+            message:
+              'Les données du CV ont été extraites et sauvegardées avec succès',
+            cached: false,
+          };
+        } catch (error) {
+          console.error('Erreur lors du traitement du PDF:', error);
+          throw new InternalServerErrorException(
+            'Erreur lors du traitement du PDF: ' + error
+          );
+        } finally {
+          // Nettoyage des fichiers temporaires
+          if (fs.existsSync(pdfPath)) {
+            fs.unlinkSync(pdfPath);
+          }
+        }
+      } else {
+        extractedCVData = await this.cvsService.getExtractedCVData(userId);
       }
 
-      const pdfDoc = await PDFDocument.load(pdfBuffer);
-      const pageCount = pdfDoc.getPageCount();
+      // Remplir le profil utilisateur avec les données extraites du CV
+      if (extractedCVData) {
+        // await this.cvsService.populateUserProfileFromCVData(
+        //   userId,
+        //   extractedCVData
+        // );
 
-      try {
-        // Configuration des options de conversion
-        const options = {
-          saveFilename: `${userId}`, // Préfixe des noms de fichiers
-          savePath: tempDir, // Dossier de destination
-          format: 'png', // Format de l'image
-          preserveAspectRatio: true,
-          width: 1000, // Largeur max en pixels
-        };
-
-        // Conversion du PDF en images
-        const convert = fromPath(pdfPath, options);
-        const pagesResult = await convert(pageCount, {
-          responseType: 'base64',
-        });
-
-        // Extraction des données du CV à partir des images
-        const extractedCVData = await this.cvsService.extractDataFromCVImages(
-          pagesResult
-        );
-
-        // Sauvegarde des données extraites et du hash du fichier dans la base de données
-        await this.cvsService.saveExtractedCVData(
-          userId,
-          extractedCVData,
-          fileHash
-        );
-
-        return {
-          success: true,
-          message:
-            'Les données du CV ont été extraites et sauvegardées avec succès',
-          cached: false,
-        };
-      } catch (error) {
-        console.error('Erreur lors du traitement du PDF:', error);
-        throw new InternalServerErrorException(
-          'Erreur lors du traitement du PDF: ' + error
-        );
-      } finally {
-        // Nettoyage des fichiers temporaires
-        if (fs.existsSync(pdfPath)) {
-          fs.unlinkSync(pdfPath);
-        }
+        return;
       }
     } catch (error) {
       console.error('Error extracting CV data:', error);
