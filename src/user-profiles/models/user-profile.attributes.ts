@@ -6,6 +6,8 @@ export const UserProfilesAttributes = [
   'isAvailable',
   'linkedinUrl',
   'hasExternalCv',
+  'allowPhysicalEvents',
+  'allowRemoteEvents',
 ];
 
 export const UserProfilesUserAttributes = [
