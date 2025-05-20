@@ -132,10 +132,6 @@ export class AuthService {
     return this.usersService.findOne(id, complete);
   }
 
-  async findOneUserById(id: string) {
-    return this.usersService.findOne(id);
-  }
-
   async sendPasswordResetLinkMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
     token: string

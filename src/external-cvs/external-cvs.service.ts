@@ -2,11 +2,11 @@ import fs from 'fs';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
-import { ExtractedCVData } from 'src/cvs/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { ExtractedCVData } from './models/extracted-cv-data.model';
 
 @Injectable()
 export class ExternalCvsService {
