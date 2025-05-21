@@ -15,6 +15,7 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'experiences',
   'formations',
   'contracts',
+  'userProfileLanguages',
   'allowPhysicalEvents',
   'allowRemoteEvents',
   'nudges',
