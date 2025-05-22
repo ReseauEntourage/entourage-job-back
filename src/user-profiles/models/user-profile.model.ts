@@ -127,6 +127,12 @@ export class UserProfile extends Model {
   optInNewsletter: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @Default(true)
+  @Column
+  optInRecommendations: boolean;
+
+  @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column

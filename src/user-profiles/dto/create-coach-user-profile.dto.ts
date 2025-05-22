@@ -20,6 +20,8 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'nudges',
   'userProfileLanguages',
   'customNudges',
+  'optInNewsletter',
+  'optInRecommendations',
 ] as const) {
   @ApiProperty()
   @IsArray()
