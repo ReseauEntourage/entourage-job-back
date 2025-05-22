@@ -21,4 +21,6 @@ export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'nudges',
   'customNudges',
   'sectorOccupations',
+  'optInNewsletter',
+  'optInRecommendations',
 ] as const) {}

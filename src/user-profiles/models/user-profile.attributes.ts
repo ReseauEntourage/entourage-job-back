@@ -8,6 +8,8 @@ export const UserProfilesAttributes = [
   'hasExternalCv',
   'allowPhysicalEvents',
   'allowRemoteEvents',
+  'optInNewsletter',
+  'optInRecommendations',
 ];
 
 export const UserProfilesUserAttributes = [
