@@ -32,6 +32,9 @@ export class ExtractedCVData extends Model {
   @Column(DataType.STRING)
   fileHash: string;
 
+  @Column(DataType.NUMBER)
+  schemaVersion: number;
+
   @BelongsTo(() => User)
   user: User;
 }

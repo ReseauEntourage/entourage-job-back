@@ -1,6 +1,9 @@
 import { Languages } from 'src/common/languages/language.types';
 import { Departments } from 'src/common/locations/locations.types';
 
+// Increment schema version on changes to make sure we dont reuse old saved schemas
+export const SCHEMA_VERSION = 1;
+
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {
   type: 'object',
@@ -46,13 +49,13 @@ export const cvSchema = {
           location: { type: 'string', maxLength: 60 },
           startDate: {
             type: 'string',
-            pattern: '^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4})$',
-            description: 'Date au format dd/mm/YYYY',
+            pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
+            description: 'Date au format ISO YYYY-MM-DD',
           },
           endDate: {
             type: 'string',
-            pattern: '^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4})$',
-            description: 'Date au format dd/mm/YYYY',
+            pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
+            description: 'Date au format ISO YYYY-MM-DD',
           },
           order: { type: 'number' },
           skills: {
@@ -67,7 +70,7 @@ export const cvSchema = {
             },
           },
         },
-        required: ['title', 'company', 'description', 'location'],
+        required: ['title'],
       },
     },
     formations: {
@@ -81,13 +84,13 @@ export const cvSchema = {
           location: { type: 'string' },
           startDate: {
             type: 'string',
-            pattern: '^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4})$',
-            description: 'Date au format dd/mm/YYYY',
+            pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
+            description: 'Date au format ISO YYYY-MM-DD',
           },
           endDate: {
             type: 'string',
-            pattern: '^(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])/([0-9]{4})$',
-            description: 'Date au format dd/mm/YYYY',
+            pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
+            description: 'Date au format ISO YYYY-MM-DD',
           },
           skills: {
             type: 'array',
@@ -101,7 +104,7 @@ export const cvSchema = {
             },
           },
         },
-        required: ['description'],
+        required: ['title'],
       },
     },
     languages: {
@@ -115,7 +118,7 @@ export const cvSchema = {
         required: ['name'],
       },
     },
-    passions: {
+    interests: {
       type: 'array',
       items: {
         type: 'object',
@@ -130,6 +133,8 @@ export const cvSchema = {
 
 // Définition du type pour les données extraites du CV
 export interface CvSchemaType {
+  schemaVersion: number;
+
   // UserProfile fields
   introduction?: string;
   description?: string;
@@ -144,8 +149,8 @@ export interface CvSchemaType {
 
   // Experiences
   experiences?: Array<{
-    title?: string;
-    description: string;
+    title: string;
+    description?: string;
     company?: string;
     location?: string;
     startDate?: string;
@@ -156,8 +161,8 @@ export interface CvSchemaType {
 
   // Formations
   formations?: Array<{
-    title?: string;
-    description: string;
+    title: string;
+    description?: string;
     institution?: string;
     location?: string;
     startDate?: string;
@@ -168,10 +173,10 @@ export interface CvSchemaType {
   // Languages
   languages?: Array<{ name: string; level?: string }>;
 
+  // Todo: Adapt when implemented
   transport?: string;
-  passions?: Array<{ name: string }>;
 
-  // ambitions?: Array<{ name: string; order?: number; prefix?: string }>;
-  // businessLines?: Array<{ name: string; order?: number }>;
+  interests?: Array<{ name: string }>;
+
   // contracts?: Array<{ name: string }>;
 }

@@ -69,36 +69,9 @@ export class ExternalCvsController {
   }
 
   /**
-   * GET /external-cv/:userId - Finds the external CV for the current user
-   * @param user - The current user signed in
-   * @returns cvFile
-   * @throws { InternalServerErrorException } - If the file could not be found
-   * @throws { NotFoundException } - If the user does not have an external CV
+   * GET /external-cv/generate-profile-from-cv - Génère un profil utilisateur à partir des données du CV
+   * @param user - L'utilisateur actuel connecté
    */
-  @Get(':userId')
-  async findExternalCv(@Param('userId') userId: string) {
-    const userProfile = await this.userProfilesService.findOneByUserId(userId);
-    if (!userProfile) {
-      throw new InternalServerErrorException();
-    }
-    if (!userProfile.hasExternalCv) {
-      throw new NotFoundException();
-    }
-    const cvFile = await this.externalCvsService.findExternalCv(
-      `files/external-cvs/${userId}.pdf`
-    );
-    return { url: cvFile };
-  }
-
-  /**
-   * DELETE /external-cv - Deletes the external CV for the current user
-   * @param user - The current user signed in
-   */
-  @Delete()
-  async deleteExternalCv(@UserPayload() user: User) {
-    await this.externalCvsService.deleteExternalCv(user.id);
-  }
-
   @ApiBearerAuth()
   @Get('generate-profile-from-cv')
   async generateProfileFromCV(
@@ -175,13 +148,6 @@ export class ExternalCvsController {
             extractedCVData,
             fileHash
           );
-
-          return {
-            success: true,
-            message:
-              'Les données du CV ont été extraites et sauvegardées avec succès',
-            cached: false,
-          };
         } catch (error) {
           console.error('Erreur lors du traitement du PDF:', error);
           throw new InternalServerErrorException(
@@ -201,18 +167,47 @@ export class ExternalCvsController {
 
       // Remplir le profil utilisateur avec les données extraites du CV
       if (extractedCVData) {
-        // await this.externalCvService.populateUserProfileFromCVData(
-        //   userId,
-        //   extractedCVData
-        // );
+        await this.externalCvsService.populateUserProfileFromCVData(
+          userId,
+          extractedCVData
+        );
 
         return;
       }
     } catch (error) {
       console.error('Error extracting CV data:', error);
-      throw new InternalServerErrorException(
-        'Failed to extract CV data: ' + error
-      );
+      throw new InternalServerErrorException('Failed to extract CV data: ');
     }
+  }
+
+  /**
+   * GET /external-cv/:userId - Finds the external CV for the current user
+   * @param user - The current user signed in
+   * @returns cvFile
+   * @throws { InternalServerErrorException } - If the file could not be found
+   * @throws { NotFoundException } - If the user does not have an external CV
+   */
+  @Get(':userId')
+  async findExternalCv(@Param('userId') userId: string) {
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+    if (!userProfile) {
+      throw new InternalServerErrorException();
+    }
+    if (!userProfile.hasExternalCv) {
+      throw new NotFoundException();
+    }
+    const cvFile = await this.externalCvsService.findExternalCv(
+      `files/external-cvs/${userId}.pdf`
+    );
+    return { url: cvFile };
+  }
+
+  /**
+   * DELETE /external-cv - Deletes the external CV for the current user
+   * @param user - The current user signed in
+   */
+  @Delete()
+  async deleteExternalCv(@UserPayload() user: User) {
+    await this.externalCvsService.deleteExternalCv(user.id);
   }
 }

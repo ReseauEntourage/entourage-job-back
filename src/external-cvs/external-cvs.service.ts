@@ -2,9 +2,18 @@ import fs from 'fs';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
+import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
+import { Department } from 'src/common/locations/locations.types';
+import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
+import {
+  CvSchemaType,
+  SCHEMA_VERSION,
+} from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
+import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { ExtractedCVData } from './models/extracted-cv-data.model';
 
@@ -81,6 +90,7 @@ export class ExternalCvsService {
 
   async shouldExtractCV(userId: string, fileHash: string): Promise<boolean> {
     try {
+      const currentSchemaVersion = SCHEMA_VERSION;
       // Vérification si des données extraites existent déjà pour cet utilisateur
       const existingData = await this.extractedCVDataModel.findOne({
         where: { userId: userId },
@@ -91,8 +101,13 @@ export class ExternalCvsService {
         return true;
       }
 
-      // Si le hash du fichier est différent, une nouvelle extraction est nécessaire
-      return existingData.fileHash !== fileHash;
+      // Une nouvelle extraction est nécessaire si :
+      // - le hash du fichier est différent, ou
+      // - la version du schéma est différente
+      return (
+        existingData.fileHash !== fileHash ||
+        existingData.schemaVersion !== currentSchemaVersion
+      );
     } catch (error) {
       // En cas d'erreur, effectuer une extraction par sécurité
       return true;
@@ -131,6 +146,7 @@ export class ExternalCvsService {
     fileHash: string
   ): Promise<ExtractedCVData> {
     try {
+      const currentSchemaVersion = SCHEMA_VERSION;
       // Vérification si des données existent déjà pour cet utilisateur
       const existingData = await this.extractedCVDataModel.findOne({
         where: { userId: userId },
@@ -138,7 +154,11 @@ export class ExternalCvsService {
 
       if (existingData) {
         // Mise à jour des données existantes
-        await existingData.update({ data, fileHash });
+        await existingData.update({
+          data,
+          fileHash,
+          schemaVersion: currentSchemaVersion,
+        });
         return existingData;
       } else {
         // Création d'une nouvelle entrée
@@ -146,10 +166,110 @@ export class ExternalCvsService {
           userId: userId,
           data,
           fileHash,
+          schemaVersion: currentSchemaVersion,
         });
       }
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * Populates user profile with data extracted from a CV
+   * @param userId - The ID of the user
+   * @param cvData - The data extracted from the CV
+   * @returns {Promise<void>}
+   */
+  async populateUserProfileFromCVData(
+    userId: string,
+    cvData: CvSchemaType
+  ): Promise<void> {
+    try {
+      // Mise à jour des informations de base du profil utilisateur
+      const userProfileDto: Partial<UserProfile> & {
+        nudgeIds?: string[];
+      } = {};
+
+      const userProfile = await this.userProfileService.findOneByUserId(userId);
+      if (!userProfile) {
+        throw new InternalServerErrorException();
+      }
+
+      userProfileDto.userId = userId;
+
+      if (cvData.introduction) {
+        userProfileDto.introduction = cvData.introduction;
+      }
+      if (cvData.description) {
+        userProfileDto.description = cvData.description;
+      }
+      if (cvData.department) {
+        userProfileDto.department = cvData.department as Department;
+      }
+      if (cvData.linkedinUrl) {
+        userProfileDto.linkedinUrl = cvData.linkedinUrl;
+      }
+
+      if (cvData.skills) {
+        const skills = cvData.skills.map((skill) => ({
+          name: skill.name,
+          order: skill.order,
+          userProfileId: userProfile.id,
+        }));
+        userProfileDto.skills = skills as Skill[];
+      }
+
+      if (cvData.experiences) {
+        const experiences = cvData.experiences.map((experience) => ({
+          title: experience.title,
+          description: experience.description,
+          company: experience.company,
+          location: experience.location,
+          startDate: experience.startDate
+            ? new Date(experience.startDate)
+            : new Date(),
+          endDate: experience.endDate
+            ? new Date(experience.endDate)
+            : new Date(),
+        }));
+        userProfileDto.experiences = experiences as Experience[];
+      }
+
+      if (cvData.formations) {
+        const formations = cvData.formations.map((formation) => ({
+          title: formation.title,
+          description: formation.description,
+          location: formation.location,
+          startDate: formation.startDate
+            ? new Date(formation.startDate)
+            : new Date(),
+          endDate: formation.endDate ? new Date(formation.endDate) : new Date(),
+        }));
+        userProfileDto.formations = formations as Formation[];
+      }
+
+      if (cvData.interests) {
+        const interests = cvData.interests.map((interest) => ({
+          name: interest.name,
+        }));
+        userProfileDto.interests = interests as Interest[];
+      }
+
+      // TODO: Uncomment when Language level is implemented
+      // if (cvData.languages) {
+      //   const languages = cvData.languages.map((language) => ({
+      //     name: language.name,
+      //     level: language.level,
+      //   }));
+      //   userProfileDto.languages = languages as Language[];
+      // }
+
+      await this.userProfileService.updateByUserId(userId, userProfileDto);
+    } catch (error) {
+      console.error(`Error populating user profile for user ${userId}`);
+      throw new InternalServerErrorException(
+        'Failed to populate user profile from CV data'
+      );
     }
   }
 }
