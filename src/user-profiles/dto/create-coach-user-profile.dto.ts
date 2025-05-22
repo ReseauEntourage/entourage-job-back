@@ -18,6 +18,7 @@ export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'allowPhysicalEvents',
   'allowRemoteEvents',
   'nudges',
+  'userProfileLanguages',
   'customNudges',
 ] as const) {
   @ApiProperty()
