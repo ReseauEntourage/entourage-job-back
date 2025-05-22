@@ -7,7 +7,7 @@ import { LanguagesService } from './languages.service';
 @ApiBearerAuth()
 @Controller('languages')
 export class LanguagesController {
-  constructor(private readonly languagesServices: LanguagesService) {}
+  constructor(private readonly languagesService: LanguagesService) {}
 
   @Public()
   @Get()
@@ -16,6 +16,6 @@ export class LanguagesController {
     @Query('offset', new ParseIntPipe()) offset: number,
     @Query('search') search?: string
   ) {
-    return await this.languagesServices.findAll(limit, offset, search);
+    return await this.languagesService.findAll(limit, offset, search);
   }
 }
