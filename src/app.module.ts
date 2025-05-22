@@ -22,6 +22,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
@@ -124,6 +125,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MessagingModule,
     UserSocialSituationsModule,
     MediasModule,
+    OpenAiModule,
   ],
   providers: [
     {
