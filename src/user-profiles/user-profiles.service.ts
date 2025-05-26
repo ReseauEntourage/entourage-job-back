@@ -117,6 +117,7 @@ export class UserProfilesService {
       nudgeIds: string[];
       departments: Department[];
       businessSectorIds: string[];
+      contactTypes: string[];
     }
   ): Promise<PublicProfile[]> {
     const {
@@ -127,6 +128,7 @@ export class UserProfilesService {
       nudgeIds,
       departments,
       businessSectorIds,
+      contactTypes,
     } = query;
 
     const searchOptions = search
@@ -156,6 +158,20 @@ export class UserProfilesService {
           }
         : {};
 
+    const contactTypesWhereClause: WhereOptions<UserProfile> | undefined =
+      contactTypes?.includes('physical') || contactTypes?.includes('remote')
+        ? {
+            [Op.or]: {
+              ...(contactTypes.includes('physical') && {
+                allowPhysicalEvents: true,
+              }),
+              ...(contactTypes.includes('remote') && {
+                allowRemoteEvents: true,
+              }),
+            },
+          }
+        : undefined;
+
     // this query is made in 2 steps because it filters the where clause inside the include
     // eg:
     // you want all user having in his businessSectors one specific businessSector
@@ -166,7 +182,6 @@ export class UserProfilesService {
       limit,
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
-      ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
         ...getUserProfileInclude(
           false,
@@ -185,6 +200,10 @@ export class UserProfilesService {
           },
         },
       ],
+      where: {
+        ...(contactTypesWhereClause ? contactTypesWhereClause : {}),
+        ...(departmentsOptions ? departmentsOptions : {}),
+      },
     });
 
     const profiles = await this.userProfileModel.findAll({

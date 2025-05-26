@@ -120,7 +120,9 @@ export class UserProfilesController {
     @Query('departments')
     departments: Department[],
     @Query('businessSectorIds')
-    businessSectorIds: string[]
+    businessSectorIds: string[],
+    @Query('contactTypes')
+    contactTypes: string[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -142,6 +144,7 @@ export class UserProfilesController {
       nudgeIds,
       departments,
       businessSectorIds,
+      contactTypes,
     });
   }
 
