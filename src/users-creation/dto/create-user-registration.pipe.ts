@@ -35,6 +35,13 @@ export class CreateUserRegistrationPipe
     });
 
     if (errors.length > 0) {
+      console.error(
+        'Validation failed:',
+        errors.map((error) => ({
+          property: error.property,
+          constraints: error.constraints,
+        }))
+      );
       throw new BadRequestException();
     }
     return value;

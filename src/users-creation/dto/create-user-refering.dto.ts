@@ -1,6 +1,7 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Department } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
 import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
@@ -40,7 +41,8 @@ export class CreateUserReferingDto extends PickType(User, [
 
   @ApiProperty()
   @IsArray()
-  nudgeIds?: string[];
+  @IsOptional()
+  nudges?: Nudge[];
 
   @ApiProperty()
   @IsString()

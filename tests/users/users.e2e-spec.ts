@@ -26,11 +26,13 @@ import { UsersDeletionController } from 'src/users-deletion/users-deletion.contr
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
+import { NudgesHelper } from 'tests/common/nudges/nudges.helper';
 import { SkillsHelper } from 'tests/common/skills/skills.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
+import { BusinessSectorHelper } from './business-sector.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
@@ -49,6 +51,8 @@ describe('Users', () => {
   let skillsHelper: SkillsHelper;
   let organizationFactory: OrganizationFactory;
   let internalMessageFactory: InternalMessageFactory;
+  let businessSectorsHelper: BusinessSectorHelper;
+  let nudgesHelper: NudgesHelper;
 
   const route = '/user';
 
@@ -74,6 +78,9 @@ describe('Users', () => {
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
+    businessSectorsHelper =
+      moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
+    nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
@@ -86,6 +93,16 @@ describe('Users', () => {
     await databaseHelper.resetTestDB();
     await app.close();
     server.close();
+  });
+
+  beforeAll(async () => {
+    // Initialize the business sectors
+    await businessSectorsHelper.deleteAllBusinessSectors();
+    await businessSectorsHelper.seedBusinessSectors();
+
+    // Intialize the nudges
+    await nudgesHelper.deleteAllNudges();
+    await nudgesHelper.seedNudges();
   });
 
   beforeEach(async () => {
@@ -640,13 +657,21 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const nudge1 = await nudgesHelper.findOne({
+            value: 'tips',
+          });
+          const nudge2 = await nudgesHelper.findOne({
+            value: 'network',
+          });
+
           const userProfileValues = {
-            nudgeIds: [
-              '6f3b2899-1d7f-48fa-93d5-14d62e2c6742',
-              '9ba366e6-ccaf-4d4e-9467-c6a3e22e0f0b',
-            ],
+            nudges: [{ id: nudge1.id }, { id: nudge2.id }],
             department: 'Paris (75)' as Department,
           };
+
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
 
           const userToSend = {
             ...userValues,
@@ -658,8 +683,11 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -674,10 +702,10 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                userProfileNudge: expect.arrayContaining(
-                  userProfileValues.nudgeIds.map((id) =>
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
                     expect.objectContaining({
-                      id,
+                      id: nudge.id,
                     })
                   )
                 ),
@@ -1066,10 +1094,14 @@ describe('Users', () => {
             false
           );
 
-          // const helpNeeds: { name: HelpValue }[] = [
-          //   { name: 'cv' },
-          //   { name: 'interview' },
-          // ];
+          const nudge1 = await nudgesHelper.findOne({
+            value: 'cv',
+          });
+          const nudge2 = await nudgesHelper.findOne({
+            value: 'interview',
+          });
+
+          const nudges = [nudge1, nudge2];
 
           const userValues = {
             firstName: user.firstName,
@@ -1079,9 +1111,23 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+
           const userProfileValues = {
-            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
+            nudges: nudges.map((nudge) => ({
+              id: nudge.id,
+            })),
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const userToSend = {
@@ -1093,8 +1139,6 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSector: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1110,11 +1154,13 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                // helpNeeds: expect.arrayContaining(
-                //   userProfileValues.helpNeeds.map((expectation) =>
-                //     expect.objectContaining(expectation)
-                //   )
-                // ),
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
+                  )
+                ),
               }),
             })
           );
@@ -1127,7 +1173,9 @@ describe('Users', () => {
             false
           );
 
-          // const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
+          const nudge1 = await nudgesHelper.findOne({
+            value: 'cv',
+          });
 
           const userValues = {
             firstName: user.firstName,
@@ -1137,9 +1185,18 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+
           const userProfileValues = {
-            // helpNeeds: helpNeeds,
+            nudges: [{ id: nudge1.id }],
             department: 'Paris (75)' as Department,
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
           };
 
           const userToSend = {
@@ -1150,7 +1207,6 @@ describe('Users', () => {
             materialInsecurity: CandidateYesNo.YES,
             networkInsecurity: CandidateYesNo.NO,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
           };
 
           const response: APIResponse<
@@ -1166,11 +1222,13 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                // helpNeeds: expect.arrayContaining(
-                //   userProfileValues.helpNeeds.map((expectation) =>
-                //     expect.objectContaining(expectation)
-                //   )
-                // ),
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
+                  )
+                ),
               }),
             })
           );
@@ -1457,10 +1515,17 @@ describe('Users', () => {
             false
           );
 
-          // const helpNeeds: { name: HelpValue }[] = [
-          //   { name: 'cv' },
-          //   { name: 'interview' },
-          // ];
+          const nudge1 = await nudgesHelper.findOne({
+            value: 'cv',
+          });
+          const nudge2 = await nudgesHelper.findOne({
+            value: 'interview',
+          });
+          const nudges = [nudge1, nudge2];
+
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
 
           const userToSend = {
             firstName: user.firstName,
@@ -1468,7 +1533,9 @@ describe('Users', () => {
             email: user.email,
             phone: user.phone,
             gender: user.gender,
-            // helpNeeds: helpNeeds,
+            nudges: nudges.map((nudge) => ({
+              id: nudge.id,
+            })),
             department: 'Paris (75)' as Department,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
@@ -1476,8 +1543,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -2174,44 +2247,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the hidden filter', async () => {
-            const hiddenCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  hidden: true,
-                },
-              }
-            );
-            await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  hidden: false,
-                },
-              }
-            );
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&hidden[]=true`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(hiddenCandidates.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
           it('Should return 200, and all the candidates that matches the employed filter', async () => {
             const employedCandidates = await databaseHelper.createEntities(
               userFactory,
@@ -2377,7 +2412,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&businessSectors[]=rh&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2462,6 +2497,72 @@ describe('Users', () => {
             expect(response.status).toBe(200);
             expect(response.body.length).toBe(2);
             expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
+
+        describe('/members - Read all members as admin with businessSectorIds filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that match the businessSectorIds filter', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+            const candidatesSector1 = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                  ],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...candidatesSector1.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(server)
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
@@ -6099,14 +6200,20 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200, if coach updates his profile coach properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+          const updatedProfile = {
             description: 'hello',
             introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            // helpOffers: [{ name: 'network' }] as HelpOffer[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6123,8 +6230,11 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              businessSectors: [expect.objectContaining({ name: 'id' })],
-              // helpOffers: [expect.objectContaining({ name: 'network' })],
+              sectorOccupations: [
+                expect.objectContaining({
+                  businessSector: expect.objectContaining({ name: 'Sector 1' }),
+                }),
+              ],
             })
           );
 

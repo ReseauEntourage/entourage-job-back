@@ -25,7 +25,11 @@ import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
-import { UserProfile, UserProfileSectorOccupation } from './models';
+import {
+  UserProfile,
+  UserProfileSectorOccupation,
+  UserProfileWithPartialAssociations,
+} from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
@@ -339,7 +343,7 @@ export class UserProfilesService {
 
   async updateByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile> & {
+    updateUserProfileDto: UserProfileWithPartialAssociations & {
       nudgeIds?: string[];
     }
   ) {
@@ -569,7 +573,7 @@ export class UserProfilesService {
 
   async updateSectorOccupationsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    sectorOccupations: UserProfileSectorOccupation[],
+    sectorOccupations: Partial<UserProfileSectorOccupation>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const newSectorOccupations = await Promise.all(
@@ -585,9 +589,10 @@ export class UserProfilesService {
                 model: Occupation,
                 as: 'occupation',
                 attributes: ['name'],
-                where: {
-                  name: occupation.name,
-                },
+                where:
+                  occupation && occupation.name
+                    ? { name: occupation.name }
+                    : undefined,
               },
             ],
           });
@@ -595,20 +600,23 @@ export class UserProfilesService {
         if (existingSectorOccupation) {
           return existingSectorOccupation;
         }
-        const newOccupation = await this.occupationModel.create(
-          {
-            name: occupation.name,
-          },
-          {
-            hooks: true,
-            transaction: t,
-          }
-        );
+        let newOccupation = null;
+        if (occupation && !occupation.name) {
+          newOccupation = await this.occupationModel.create(
+            {
+              name: occupation.name,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
         return await this.userProfileSectorOccupationModel.create(
           {
             userProfileId: userProfileToUpdate.id,
             businessSectorId,
-            occupationId: newOccupation.id,
+            occupationId: newOccupation ? newOccupation.id : undefined,
             order,
           },
           {

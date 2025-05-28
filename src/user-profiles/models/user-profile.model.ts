@@ -330,3 +330,9 @@ export class UserProfile extends Model {
     }
   }
 }
+
+export type UserProfileWithPartialAssociations = Partial<
+  Omit<UserProfile, 'sectorOccupations'>
+> & {
+  sectorOccupations?: Partial<UserProfileSectorOccupation>[];
+};

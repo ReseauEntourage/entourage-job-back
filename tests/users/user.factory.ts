@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment/moment';
 import phone from 'phone';
 import { encryptPassword } from 'src/auth/auth.utils';
-import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
 import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
@@ -61,7 +61,7 @@ export class UserFactory implements Factory<User> {
     props: Partial<User> = {},
     userAssociationsProps: {
       userCandidat?: Partial<UserCandidat>;
-      userProfile?: Partial<UserProfile>;
+      userProfile?: UserProfileWithPartialAssociations;
       userSocialCondition?: Partial<UserSocialSituation>;
     } = { userCandidat: {}, userProfile: {}, userSocialCondition: {} },
     insertInDB = true

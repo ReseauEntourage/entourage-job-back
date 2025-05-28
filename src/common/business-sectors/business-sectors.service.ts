@@ -20,4 +20,10 @@ export class BusinessSectorsService {
       order: [['name', 'ASC']],
     });
   }
+
+  async all() {
+    return this.businessSectorModel.findAll({
+      order: [['name', 'ASC']],
+    });
+  }
 }

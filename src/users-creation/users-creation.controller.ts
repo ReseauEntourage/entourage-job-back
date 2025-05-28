@@ -327,7 +327,7 @@ export class UsersCreationController {
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
-        nudgeIds: createUserReferingDto.nudgeIds,
+        nudges: createUserReferingDto.nudges,
         sectorOccupations: createUserReferingDto.sectorOccupations,
       });
 

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,
@@ -179,7 +180,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
-            // TO DO: change switch to mapped object or if else
             switch (keys[i]) {
               case 'role':
                 whereOptions = [
@@ -203,10 +203,10 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
                 ];
                 break;
               // Only candidates
-              case 'businessSectors':
+              case 'businessSectorIds':
                 whereOptions = [
                   ...whereOptions,
-                  `"candidat->businessSectors"."name" IN (:${keys[i]})`,
+                  `"userProfile->sectorOccupations->businessSectors"."id" IN (:${keys[i]})`,
                 ];
                 break;
               case 'employed':
@@ -223,54 +223,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   }
 
   return whereOptions;
-}
-
-// TODO Adapt to use BusinessSectors
-export function filterMembersByBusinessLines(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  members: User[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  businessSectors: FilterObject<MemberFilterKey>['businessSectors']
-) {
-  // let filteredList = members;
-  // if (members && businessSectors && businessSectors.length > 0) {
-  //   filteredList = members.filter((member: User) => {
-  //     return businessSectors.some((currentFilter) => {
-  //       if (member.candidat && member.candidat.cvs.length > 0) {
-  //         const cvBusinessLines = member.candidat.businessSectors;
-  //         return (
-  //           cvBusinessLines &&
-  //           cvBusinessLines.length > 0 &&
-  //           cvBusinessLines
-  //             .map(({ name }: { name: BusinessLineValue }) => {
-  //               return name;
-  //             })
-  //             .includes(currentFilter.value)
-  //         );
-  //       }
-  //       return false;
-  //     });
-  //   });
-  // }
-  // return filteredList;
-}
-
-export function filterMembersByAssociatedUser(
-  members: User[],
-  associatedUsers: FilterObject<MemberFilterKey>['associatedUser']
-) {
-  let filteredList = members;
-
-  if (members && associatedUsers && associatedUsers.length > 0) {
-    filteredList = members.filter((member) => {
-      return associatedUsers.some((currentFilter) => {
-        const relatedUser = getRelatedUser(member);
-        return !_.isEmpty(relatedUser) === currentFilter.value;
-      });
-    });
-  }
-
-  return filteredList;
 }
 
 export function userSearchQuery(query = '', withOrganizationName = false) {
@@ -325,16 +277,19 @@ export function getCandidateAndCoachIdDependingOnRoles(
 }
 
 export function getCommonMembersFilterOptions(
-  params: FilterParams<MemberFilterKey>
+  params: FilterParams<MemberFilterKey>,
+  allBusinessSectors: BusinessSector[]
 ): {
   replacements: FilterParams<MemberFilterKey>;
   filterOptions: string[];
 } {
+  const memberFilters = MemberFilters({
+    businessSectors: allBusinessSectors,
+  });
   const filtersObj = getFiltersObjectsFromQueryParams<
     MemberFilterKey,
     MemberConstantType
-  >(params, MemberFilters);
-
+  >(params, memberFilters);
   const filterOptions = getMemberOptions(filtersObj);
 
   const replacements = Object.keys(filtersObj).reduce((acc, curr) => {

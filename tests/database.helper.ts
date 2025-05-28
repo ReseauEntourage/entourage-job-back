@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience, ExperienceSkill } from 'src/common/experiences/models';
 import { Formation, FormationSkill } from 'src/common/formations/models';
@@ -73,7 +74,9 @@ export class DatabaseHelper {
     @InjectModel(Message)
     private conversationParticipantModel: typeof ConversationParticipant,
     @InjectModel(UserSocialSituation)
-    private userSocialSituationModel: typeof UserSocialSituation
+    private userSocialSituationModel: typeof UserSocialSituation,
+    @InjectModel(BusinessSector)
+    private businessSectorModel: typeof BusinessSector
   ) {}
 
   async resetTestDB() {
@@ -97,7 +100,6 @@ export class DatabaseHelper {
       await this.languageModel.truncate(destroyOptions);
       await this.passionModel.truncate(destroyOptions);
       await this.contractModel.truncate(destroyOptions);
-      await this.passionModel.truncate(destroyOptions);
       await this.experienceModel.truncate(destroyOptions);
       await this.reviewModel.truncate(destroyOptions);
       await this.organizationModel.truncate(destroyOptions);

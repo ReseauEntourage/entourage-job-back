@@ -4,6 +4,7 @@ import { Cache } from 'cache-manager';
 import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
+import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -37,7 +38,8 @@ export class UsersService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private mailsService: MailsService,
     @Inject(forwardRef(() => AuthService))
-    private authService: AuthService
+    private authService: AuthService,
+    private businessSectorsService: BusinessSectorsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -76,10 +78,14 @@ export class UsersService {
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { filterOptions, replacements } = getCommonMembersFilterOptions({
-      ...restParams,
-      role: [UserRoles.CANDIDATE],
-    });
+    const allBusinessSectors = await this.businessSectorsService.all();
+    const { filterOptions, replacements } = getCommonMembersFilterOptions(
+      {
+        ...restParams,
+        role: [UserRoles.CANDIDATE],
+      },
+      allBusinessSectors
+    );
 
     const candidatesIds: { userId: string }[] =
       await this.userModel.sequelize.query(
@@ -91,27 +97,19 @@ export class UsersService {
 
         LEFT OUTER JOIN "User_Candidats" AS "candidat" 
           ON "User"."id" = "candidat"."candidatId"
-        LEFT OUTER JOIN "CVs" AS "candidat->cvs" 
-          ON "candidat"."candidatId" = "candidat->cvs"."UserId" 
-          AND "candidat->cvs"."deletedAt" IS NULL 
-          AND ("UserId", "version") IN (
-            SELECT
-              "CVs"."UserId" AS "candidateId", MAX("CVs"."version") AS "maxVersion" 
-            FROM "CVs"
-            GROUP BY
-              "CVs"."UserId"
-          )
-        LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessSectors->CVBusinessLine"
-          ON "candidat->cvs"."id" = "candidat->cvs->businessSectors->CVBusinessLine"."CVId"
-        LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessSectors" 
-          ON "candidat->cvs->businessSectors"."id" = "candidat->cvs->businessSectors->CVBusinessLine"."BusinessLineId"
         LEFT OUTER JOIN "Users" AS "candidat->coach"
           ON "candidat"."coachId" = "candidat->coach"."id" 
           AND ("candidat->coach"."deletedAt" IS NULL)
         LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
           ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
-        LEFT OUTER JOIN "Organizations" AS "organization" 
+        LEFT OUTER JOIN "Organizations" AS "organization"
           ON "User"."OrganizationId" = "organization"."id"
+        LEFT OUTER JOIN "UserProfiles" AS "userProfile"
+          ON "User"."id" = "userProfile"."userId"
+        LEFT OUTER JOIN "UserProfileSectorOccupations" AS "userProfile->sectorOccupations"
+          ON "userProfile"."id" = "userProfile->sectorOccupations"."userProfileId"
+        LEFT OUTER JOIN "BusinessSectors" AS "userProfile->sectorOccupations->businessSectors"
+          ON "userProfile->sectorOccupations"."businessSectorId" = "userProfile->sectorOccupations->businessSectors"."id"
 
         WHERE 
           "User"."deletedAt" IS NULL
@@ -179,10 +177,14 @@ export class UsersService {
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { replacements, filterOptions } = getCommonMembersFilterOptions({
-      ...restParams,
-      role: [UserRoles.COACH],
-    });
+    const allBusinessSectors = await this.businessSectorsService.all();
+    const { replacements, filterOptions } = getCommonMembersFilterOptions(
+      {
+        ...restParams,
+        role: [UserRoles.COACH],
+      },
+      allBusinessSectors
+    );
 
     const coachesIds: { userId: string }[] =
       await this.userModel.sequelize.query(
@@ -267,10 +269,14 @@ export class UsersService {
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { replacements, filterOptions } = getCommonMembersFilterOptions({
-      ...restParams,
-      role: [UserRoles.REFERER],
-    });
+    const allBusinessSectors = await this.businessSectorsService.all();
+    const { replacements, filterOptions } = getCommonMembersFilterOptions(
+      {
+        ...restParams,
+        role: [UserRoles.REFERER],
+      },
+      allBusinessSectors
+    );
 
     const referersIds: { userId: string }[] =
       await this.userModel.sequelize.query(

@@ -1,8 +1,6 @@
 import { Op } from 'sequelize';
-import {
-  BusinessSectorFilters,
-  BusinessSectorValue,
-} from 'src/common/business-sectors/business-sectors.types';
+import { BusinessSectorFilters } from 'src/common/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
 
 import {
   AdminZone,
@@ -94,7 +92,7 @@ type AssociatedUserWhereOptions = {
 export interface MemberOptions {
   role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: AdminZone[] };
-  businessSectors: { [Op.in]: BusinessSectorValue[] };
+  businessSectorIds: { [Op.in]: string[] };
   associatedUser: {
     candidat: {
       [Op.or]: AssociatedUserWhereOptions[];
@@ -124,7 +122,11 @@ export type MemberConstantType =
   | (typeof AssociatedUserFilters)[number]['value']
   | (typeof EmployedFilters)[number]['value'];
 
-export const MemberFilters: Filters<MemberFilterKey> = [
+export const MemberFilters = ({
+  businessSectors,
+}: {
+  businessSectors: BusinessSector[];
+}): Filters<MemberFilterKey> => [
   {
     key: 'role',
     constants: UserRolesFilters,
@@ -136,9 +138,12 @@ export const MemberFilters: Filters<MemberFilterKey> = [
     title: 'Zone',
   },
   {
-    key: 'businessSectors',
-    constants: BusinessSectorFilters,
-    title: 'Métiers',
+    key: 'businessSectorIds',
+    constants: businessSectors.map((sector) => ({
+      value: sector.id,
+      label: sector.name,
+    })) as FilterConstant<string>[],
+    title: 'Secteurs d’activité',
   },
   {
     key: 'associatedUser',

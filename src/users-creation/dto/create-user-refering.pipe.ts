@@ -32,6 +32,10 @@ export class CreateUserReferingPipe
     });
 
     if (errors.length > 0) {
+      const errorMessages = errors
+        .map((error) => Object.values(error.constraints || {}).join(', '))
+        .join(', ');
+      console.error('Validation errors:', errorMessages);
       throw new BadRequestException();
     }
     return value;
