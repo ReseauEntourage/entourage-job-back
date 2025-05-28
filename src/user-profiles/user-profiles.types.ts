@@ -12,6 +12,11 @@ import { FilterConstant } from 'src/utils/types';
 import { UserProfileSectorOccupation } from './models';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 
+export enum ContactTypeEnum {
+  REMOTE = 'remote',
+  PHYSICAL = 'physical',
+}
+
 export type HelpValue = 'tips' | 'interview' | 'cv' | 'network' | 'event';
 
 export const HelpFilters: FilterConstant<HelpValue>[] = [
