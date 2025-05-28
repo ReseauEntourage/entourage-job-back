@@ -1,5 +1,6 @@
 import {
   AllowNull,
+  BelongsTo,
   Column,
   DataType,
   Default,
@@ -31,6 +32,12 @@ export class UserProfileLanguage extends Model {
   @AllowNull(false)
   @Column
   languageId: string;
+
+  @BelongsTo(() => UserProfile, 'userProfileId')
+  userProfile: UserProfile;
+
+  @BelongsTo(() => Language, 'languageId')
+  language: Language;
 
   @AllowNull(true)
   @Column

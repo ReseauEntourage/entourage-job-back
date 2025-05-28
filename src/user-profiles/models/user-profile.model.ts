@@ -204,6 +204,9 @@ export class UserProfile extends Model {
   )
   languages: Language[];
 
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
   @HasMany(() => UserProfileLanguage, 'userProfileId')
   userProfileLanguages: UserProfileLanguage[];
 

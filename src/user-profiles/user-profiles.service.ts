@@ -27,6 +27,7 @@ import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { UserProfile, UserProfileSectorOccupation } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
+import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
@@ -64,6 +65,8 @@ export class UserProfilesService {
     private skillModel: typeof Skill,
     @InjectModel(UserProfileContract)
     private userProfileContractModel: typeof UserProfileContract,
+    @InjectModel(UserProfileLanguage)
+    private userProfileLanguageModel: typeof UserProfileLanguage,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -405,6 +408,15 @@ export class UserProfilesService {
           t
         );
       }
+
+      // UserProfileLanguages
+      if (updateUserProfileDto.userProfileLanguages) {
+        await this.updateUserProfileLanguagesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.userProfileLanguages,
+          t
+        );
+      }
     });
 
     return this.findOneByUserId(userId, true);
@@ -691,6 +703,38 @@ export class UserProfilesService {
         userProfileId: userProfileToUpdate.id,
         id: {
           [Op.notIn]: userProfileContracts.map((upContract) => upContract.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateUserProfileLanguagesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    userProfileLanguages: Partial<UserProfileLanguage>[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    // Languages already exists, we need to create UserProfileLanguage
+    const languagesData = userProfileLanguages.map((upLanguage) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        languageId: upLanguage.languageId,
+        level: upLanguage.level,
+      };
+    });
+    const createdUpLanguages = await this.userProfileLanguageModel.bulkCreate(
+      languagesData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.userProfileLanguageModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: createdUpLanguages.map((upLanguage) => upLanguage.id),
         },
       },
       individualHooks: true,

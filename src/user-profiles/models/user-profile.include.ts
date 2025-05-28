@@ -11,6 +11,7 @@ import { Occupation } from 'src/common/occupations/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { UserRole } from 'src/users/users.types';
+import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 
@@ -86,14 +87,18 @@ export const getUserProfileSectorOccupationsInclude = (
 
 export const getUserProfileLanguagesInclude = (): Includeable[] => [
   {
-    model: Language,
-    as: 'languages',
+    model: UserProfileLanguage,
+    as: 'userProfileLanguages',
     required: false,
-    attributes: ['id', 'value'],
-    through: {
-      attributes: ['id', 'level'],
-      as: 'userProfileLanguages',
-    },
+    attributes: ['id', 'level'],
+    include: [
+      {
+        model: Language,
+        as: 'language',
+        required: false,
+        attributes: ['id', 'name'],
+      },
+    ],
   },
 ];
 
