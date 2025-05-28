@@ -40,7 +40,7 @@ import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profi
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
-import { PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
@@ -122,7 +122,7 @@ export class UserProfilesController {
     @Query('businessSectorIds')
     businessSectorIds: string[],
     @Query('contactTypes')
-    contactTypes: string[]
+    contactTypes: ContactTypeEnum[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();

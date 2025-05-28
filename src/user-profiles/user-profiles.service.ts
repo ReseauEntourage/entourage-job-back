@@ -38,7 +38,7 @@ import {
   getUserProfileInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
-import { PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
@@ -117,7 +117,7 @@ export class UserProfilesService {
       nudgeIds: string[];
       departments: Department[];
       businessSectorIds: string[];
-      contactTypes: string[];
+      contactTypes: ContactTypeEnum[];
     }
   ): Promise<PublicProfile[]> {
     const {
@@ -159,13 +159,14 @@ export class UserProfilesService {
         : {};
 
     const contactTypesWhereClause: WhereOptions<UserProfile> | undefined =
-      contactTypes?.includes('physical') || contactTypes?.includes('remote')
+      contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
+      contactTypes?.includes(ContactTypeEnum.REMOTE)
         ? {
             [Op.or]: {
-              ...(contactTypes.includes('physical') && {
+              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
                 allowPhysicalEvents: true,
               }),
-              ...(contactTypes.includes('remote') && {
+              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
                 allowRemoteEvents: true,
               }),
             },
