@@ -38,7 +38,7 @@ import {
   getUserProfileInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
-import { PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
@@ -117,6 +117,7 @@ export class UserProfilesService {
       nudgeIds: string[];
       departments: Department[];
       businessSectorIds: string[];
+      contactTypes: ContactTypeEnum[];
     }
   ): Promise<PublicProfile[]> {
     const {
@@ -127,6 +128,7 @@ export class UserProfilesService {
       nudgeIds,
       departments,
       businessSectorIds,
+      contactTypes,
     } = query;
 
     const searchOptions = search
@@ -156,6 +158,21 @@ export class UserProfilesService {
           }
         : {};
 
+    const contactTypesWhereClause: WhereOptions<UserProfile> | undefined =
+      contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
+      contactTypes?.includes(ContactTypeEnum.REMOTE)
+        ? {
+            [Op.or]: {
+              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
+                allowPhysicalEvents: true,
+              }),
+              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
+                allowRemoteEvents: true,
+              }),
+            },
+          }
+        : undefined;
+
     // this query is made in 2 steps because it filters the where clause inside the include
     // eg:
     // you want all user having in his businessSectors one specific businessSector
@@ -166,7 +183,6 @@ export class UserProfilesService {
       limit,
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
-      ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
         ...getUserProfileInclude(
           false,
@@ -185,6 +201,10 @@ export class UserProfilesService {
           },
         },
       ],
+      where: {
+        ...(contactTypesWhereClause ? contactTypesWhereClause : {}),
+        ...(departmentsOptions ? departmentsOptions : {}),
+      },
     });
 
     const profiles = await this.userProfileModel.findAll({
