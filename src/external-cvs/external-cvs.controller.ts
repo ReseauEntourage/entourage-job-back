@@ -112,7 +112,7 @@ export class ExternalCvsController {
 
       // Vérification si une nouvelle extraction est nécessaire
       const needExtraction = await this.externalCvsService.shouldExtractCV(
-        userId,
+        userProfile.id,
         fileHash
       );
 
@@ -144,7 +144,7 @@ export class ExternalCvsController {
 
           // Sauvegarde des données extraites et du hash du fichier dans la base de données
           await this.externalCvsService.saveExtractedCVData(
-            userId,
+            userProfile.id,
             extractedCVData,
             fileHash
           );
@@ -161,7 +161,7 @@ export class ExternalCvsController {
         }
       } else {
         extractedCVData = await this.externalCvsService.getExtractedCVData(
-          userId
+          userProfile.id
         );
       }
 

@@ -88,7 +88,10 @@ export class UserProfilesService {
     });
   }
 
-  async findOneByUserId(userId: string, complete = false) {
+  async findOneByUserId(
+    userId: string,
+    complete = false
+  ): Promise<UserProfile> {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),

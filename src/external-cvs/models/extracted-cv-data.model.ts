@@ -10,7 +10,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { User } from 'src/users/models';
+import { UserProfile } from 'src/user-profiles/models/user-profile.model';
 
 @Table({ tableName: 'ExtractedCVData' })
 export class ExtractedCVData extends Model {
@@ -21,10 +21,10 @@ export class ExtractedCVData extends Model {
   id: string;
 
   @IsUUID(4)
-  @ForeignKey(() => User)
+  @ForeignKey(() => UserProfile)
   @AllowNull(false)
   @Column
-  userId: string;
+  userProfileId: string;
 
   @Column(DataType.JSONB)
   data: object;
@@ -35,6 +35,6 @@ export class ExtractedCVData extends Model {
   @Column(DataType.NUMBER)
   schemaVersion: number;
 
-  @BelongsTo(() => User)
-  user: User;
+  @BelongsTo(() => UserProfile)
+  userProfile: UserProfile;
 }

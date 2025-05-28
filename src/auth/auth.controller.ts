@@ -15,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
+import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
@@ -27,7 +28,8 @@ import { LocalAuthGuard, Public, UserPayload } from './guards';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly sessionService: SessionsService
+    private readonly sessionService: SessionsService,
+    private readonly externalCvsService: ExternalCvsService
   ) {}
 
   @Public()
@@ -179,11 +181,15 @@ export class AuthController {
       updatedUser.id,
       complete === 'true'
     );
+    const hasExtractedCvData = await this.externalCvsService.hasExtractedCVData(
+      currentUser.id
+    );
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
     return {
       ...currentUser.toJSON(),
       ...(usersStats || {}),
+      hasExtractedCvData,
     };
   }
 

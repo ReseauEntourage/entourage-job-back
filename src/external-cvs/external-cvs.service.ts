@@ -88,12 +88,15 @@ export class ExternalCvsService {
     });
   }
 
-  async shouldExtractCV(userId: string, fileHash: string): Promise<boolean> {
+  async shouldExtractCV(
+    userProfileId: string,
+    fileHash: string
+  ): Promise<boolean> {
     try {
       const currentSchemaVersion = SCHEMA_VERSION;
       // Vérification si des données extraites existent déjà pour cet utilisateur
       const existingData = await this.extractedCVDataModel.findOne({
-        where: { userId: userId },
+        where: { userProfileId },
       });
 
       // Si aucune donnée n'existe, une extraction est nécessaire
@@ -124,10 +127,12 @@ export class ExternalCvsService {
     }
   }
 
-  async getExtractedCVData(userId: string): Promise<CvSchemaType | null> {
+  async getExtractedCVData(
+    userProfileId: string
+  ): Promise<CvSchemaType | null> {
     try {
       const existingData = await this.extractedCVDataModel.findOne({
-        where: { userId: userId },
+        where: { userProfileId },
       });
 
       if (!existingData) {
@@ -140,8 +145,19 @@ export class ExternalCvsService {
     }
   }
 
+  async hasExtractedCVData(userProfileId: string): Promise<boolean> {
+    try {
+      const existingData = await this.extractedCVDataModel.findOne({
+        where: { userProfileId },
+      });
+      return !!existingData;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async saveExtractedCVData(
-    userId: string,
+    userProfileId: string,
     data: CvSchemaType,
     fileHash: string
   ): Promise<ExtractedCVData> {
@@ -149,7 +165,7 @@ export class ExternalCvsService {
       const currentSchemaVersion = SCHEMA_VERSION;
       // Vérification si des données existent déjà pour cet utilisateur
       const existingData = await this.extractedCVDataModel.findOne({
-        where: { userId: userId },
+        where: { userProfileId },
       });
 
       if (existingData) {
@@ -163,7 +179,7 @@ export class ExternalCvsService {
       } else {
         // Création d'une nouvelle entrée
         return await this.extractedCVDataModel.create({
-          userId: userId,
+          userProfileId,
           data,
           fileHash,
           schemaVersion: currentSchemaVersion,
@@ -220,31 +236,62 @@ export class ExternalCvsService {
       }
 
       if (cvData.experiences) {
-        const experiences = cvData.experiences.map((experience) => ({
-          title: experience.title,
-          description: experience.description,
-          company: experience.company,
-          location: experience.location,
-          startDate: experience.startDate
-            ? new Date(experience.startDate)
-            : new Date(),
-          endDate: experience.endDate
-            ? new Date(experience.endDate)
-            : new Date(),
-        }));
+        const experiences = cvData.experiences.map((experience) => {
+          let startDate = new Date();
+          let endDate = new Date();
+
+          try {
+            startDate = new Date(experience.startDate);
+            if (isNaN(startDate.getTime())) {
+              startDate = new Date();
+            }
+          } catch (e) {}
+
+          try {
+            endDate = new Date(experience.endDate);
+            if (isNaN(endDate.getTime())) {
+              endDate = new Date();
+            }
+          } catch (e) {}
+
+          return {
+            title: experience.title,
+            description: experience.description,
+            company: experience.company,
+            location: experience.location,
+            startDate,
+            endDate,
+          };
+        });
         userProfileDto.experiences = experiences as Experience[];
       }
 
       if (cvData.formations) {
-        const formations = cvData.formations.map((formation) => ({
-          title: formation.title,
-          description: formation.description,
-          location: formation.location,
-          startDate: formation.startDate
-            ? new Date(formation.startDate)
-            : new Date(),
-          endDate: formation.endDate ? new Date(formation.endDate) : new Date(),
-        }));
+        const formations = cvData.formations.map((formation) => {
+          let startDate = new Date();
+          let endDate = new Date();
+
+          try {
+            startDate = new Date(formation.startDate);
+            if (isNaN(startDate.getTime())) {
+              startDate = new Date();
+            }
+          } catch (e) {}
+
+          try {
+            endDate = new Date(formation.endDate);
+            if (isNaN(endDate.getTime())) {
+              endDate = new Date();
+            }
+          } catch (e) {}
+          return {
+            title: formation.title,
+            description: formation.description,
+            location: formation.location,
+            startDate,
+            endDate,
+          };
+        });
         userProfileDto.formations = formations as Formation[];
       }
 

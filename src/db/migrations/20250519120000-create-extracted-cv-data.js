@@ -12,11 +12,11 @@ module.exports = {
           return UUID.v4();
         },
       },
-      userId: {
+      userProfileId: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'Users',
+          model: 'UserProfiles',
           key: 'id',
         },
       },
@@ -42,8 +42,8 @@ module.exports = {
       },
     });
 
-    // Création d'un index sur UserId pour optimiser les recherches
-    await queryInterface.addIndex('ExtractedCVData', ['userId']);
+    // Création d'un index sur userProfileId pour optimiser les recherches
+    await queryInterface.addIndex('ExtractedCVData', ['userProfileId']);
   },
 
   async down(queryInterface, Sequelize) {
