@@ -91,7 +91,10 @@ export class UserProfilesService {
     });
   }
 
-  async findOneByUserId(userId: string, complete = false) {
+  async findOneByUserId(
+    userId: string,
+    complete = false
+  ): Promise<UserProfile> {
     return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
@@ -444,7 +447,7 @@ export class UserProfilesService {
 
   async updateExperiencesByUserProfileId(
     userProfileToUpdate: UserProfile,
-    experiences: Experience[],
+    experiences: Partial<Experience>[],
     t: sequelize.Transaction
   ): Promise<void> {
     await this.experiencesService.updateExperiencesForUserProfile(
@@ -671,7 +674,7 @@ export class UserProfilesService {
 
   async updateSkillsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    skills: Skill[],
+    skills: Partial<Skill>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const skillsData = skills.map((skill, order) => {
