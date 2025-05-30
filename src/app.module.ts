@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bull';
-import { Module, CacheModule } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';

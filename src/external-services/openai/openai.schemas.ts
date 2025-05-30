@@ -1,4 +1,3 @@
-import { Languages } from 'src/common/languages/language.types';
 import { Departments } from 'src/common/locations/locations.types';
 
 // Increment schema version on changes to make sure we dont reuse old saved schemas
@@ -112,10 +111,18 @@ export const cvSchema = {
       items: {
         type: 'object',
         properties: {
-          name: { type: 'string', enum: Languages.map((lang) => lang.name) },
+          name: {
+            type: 'string',
+            description: 'Nom de la langue en français (ex: Anglais, Espagnol)',
+          },
+          value: {
+            type: 'string',
+            description: 'Code de la langue au format ISO 639-1 (ex: en, es)',
+            pattern: '^[a-z]{2}$',
+          },
           level: { type: 'string' },
         },
-        required: ['name'],
+        required: ['name', 'value'],
       },
     },
     interests: {
@@ -171,7 +178,11 @@ export interface CvSchemaType {
   }>;
 
   // Languages
-  languages?: Array<{ name: string; level?: string }>;
+  languages?: Array<{
+    name: string; // Nom de la langue en français
+    value: string; // Code ISO 639-1 de la langue
+    level?: string;
+  }>;
 
   // Todo: Adapt when implemented
   transport?: string;

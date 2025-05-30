@@ -181,9 +181,11 @@ export class AuthController {
       updatedUser.id,
       complete === 'true'
     );
-    const hasExtractedCvData = await this.externalCvsService.hasExtractedCVData(
-      currentUser.id
-    );
+    const hasExtractedCvData =
+      complete === 'true'
+        ? await this.externalCvsService.hasExtractedCVData(currentUser.id)
+        : undefined;
+
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
     return {
