@@ -88,7 +88,7 @@ export class ExternalCvsController {
       }
 
       // Construction de la clé S3 pour le CV externe
-      const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}/${process.env.AWSS3_FILE_DIRECTORY}external-cvs/${userId}.pdf`;
+      const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}external-cvs/${userId}.pdf`;
 
       // Création du dossier temporaire s'il n'existe pas
       const tempDir = path.join(process.cwd(), 'temp');
