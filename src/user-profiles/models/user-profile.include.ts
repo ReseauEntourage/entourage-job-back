@@ -10,7 +10,6 @@ import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
-import { UserRole } from 'src/users/users.types';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
@@ -18,11 +17,13 @@ import { UserProfileSectorOccupation } from './user-profile-sector-occupation.mo
 export const getUserProfileNudgesInclude = (
   nudgesOptions: WhereOptions<Nudge> = {}
 ): Includeable[] => {
+  const isNudgesRequired = !_.isEmpty(nudgesOptions);
+
   return [
     {
       model: Nudge,
       as: 'nudges',
-      required: false,
+      required: isNudgesRequired,
       attributes: ['id', 'value', 'nameRequest', 'nameOffer', 'order'],
       where: nudgesOptions,
       through: {
@@ -53,10 +54,9 @@ export const getUserProfileCustomNudgesInclude = (): Includeable[] => {
 };
 
 export const getUserProfileSectorOccupationsInclude = (
-  role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {}
 ): Includeable[] => {
-  const isBusinessSectorsRequired = role && !_.isEmpty(businessSectorsOptions);
+  const isBusinessSectorsRequired = !_.isEmpty(businessSectorsOptions);
 
   return [
     {
@@ -68,7 +68,7 @@ export const getUserProfileSectorOccupationsInclude = (
         {
           model: BusinessSector,
           as: 'businessSector',
-          required: false,
+          required: isBusinessSectorsRequired,
           ...(isBusinessSectorsRequired
             ? { where: businessSectorsOptions }
             : {}),
@@ -211,13 +211,12 @@ export const getUserProfileInterestsInclude = (): Includeable[] => [
 
 export const getUserProfileInclude = (
   complete = false,
-  role?: UserRole[],
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
   nudgesOptions: WhereOptions<Nudge> = {}
 ): Includeable[] => {
   // Always included
   const baseIncludes = [
-    ...getUserProfileSectorOccupationsInclude(role, businessSectorsOptions),
+    ...getUserProfileSectorOccupationsInclude(businessSectorsOptions),
     ...getUserProfileNudgesInclude(nudgesOptions),
   ];
 
@@ -246,6 +245,7 @@ export const getUserProfileOrder = (complete = false): Order => {
           'order',
           'ASC',
         ],
+        [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
         [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
         [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
       ]
@@ -255,5 +255,6 @@ export const getUserProfileOrder = (complete = false): Order => {
           'order',
           'ASC',
         ],
+        [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
       ];
 };

@@ -42,6 +42,34 @@ export class BusinessSectorHelper {
         name: 'Sector 3',
         value: 'S3',
       },
+      {
+        name: 'Sector 4',
+        value: 'S4',
+      },
+      {
+        name: 'Sector 5',
+        value: 'S5',
+      },
+      {
+        name: 'Sector 6',
+        value: 'S6',
+      },
+      {
+        name: 'Sector 7',
+        value: 'S7',
+      },
+      {
+        name: 'Sector 8',
+        value: 'S8',
+      },
+      {
+        name: 'Sector 9',
+        value: 'S9',
+      },
+      {
+        name: 'Sector 10',
+        value: 'S10',
+      },
     ];
 
     try {

@@ -21,6 +21,7 @@ import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { User } from 'src/users/models';
+import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
@@ -28,6 +29,7 @@ import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   UserProfile,
   UserProfileSectorOccupation,
+  UserProfileSectorOccupationWithPartialAssociations,
   UserProfileWithPartialAssociations,
 } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
@@ -96,11 +98,12 @@ export class UserProfilesService {
   }
 
   async findOneByUserId(userId: string, complete = false) {
-    return this.userProfileModel.findOne({
+    const res = await this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
       order: getUserProfileOrder(complete),
     });
+    return res;
   }
 
   async findOneUser(userId: string) {
@@ -189,7 +192,6 @@ export class UserProfilesService {
       include: [
         ...getUserProfileInclude(
           false,
-          role,
           businessSectorsOptions,
           nudgesSectorsOptions
         ),
@@ -310,7 +312,7 @@ export class UserProfilesService {
   ): Promise<UserProfileRecommendation[]> {
     return this.userProfileRecommandationModel.findAll({
       where: { UserId: userId },
-      order: sequelize.literal('"recommendedUser.createdAt" DESC'),
+      order: getUserProfileRecommendationOrder(),
       include: {
         model: User,
         as: 'recommendedUser',
@@ -520,7 +522,7 @@ export class UserProfilesService {
 
   async updateNudgesByUserProfileId(
     userProfileToUpdate: UserProfile,
-    nudges: Nudge[],
+    nudges: Partial<Nudge>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const currentNudges = userProfileToUpdate.get('nudges');
@@ -573,7 +575,7 @@ export class UserProfilesService {
 
   async updateSectorOccupationsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    sectorOccupations: Partial<UserProfileSectorOccupation>[],
+    sectorOccupations: Partial<UserProfileSectorOccupationWithPartialAssociations>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const newSectorOccupations = await Promise.all(
@@ -601,7 +603,7 @@ export class UserProfilesService {
           return existingSectorOccupation;
         }
         let newOccupation = null;
-        if (occupation && !occupation.name) {
+        if (occupation && occupation.name) {
           newOccupation = await this.occupationModel.create(
             {
               name: occupation.name,
@@ -807,8 +809,11 @@ export class UserProfilesService {
         ).map(({ name }) => name)
       : Departments.map(({ name }) => name);
 
-    const userProfileNudges = userProfile.userProfileNudges;
-    const businessSectors = userProfile.businessSectors;
+    const nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
+    const sectorOccupations = userProfile.sectorOccupations;
+    const businessSectorIds = sectorOccupations.map(
+      (sectorOccupation) => sectorOccupation.businessSector?.id
+    );
 
     interface UserRecommendationSQL {
       id: string;
@@ -821,8 +826,8 @@ export class UserProfilesService {
       lastConnection: Date;
       createdAt: Date;
       occupations: string;
-      profileBusinessSectors: string;
-      profileHelps: string;
+      businessSectorIds: string;
+      nudgeIds: string;
     }
 
     const sql = `
@@ -835,9 +840,8 @@ export class UserProfilesService {
       u.role,
       u."lastConnection",
       u."createdAt" as "createdAt",
-      string_agg(DISTINCT o.name, ', ') as occupations,
-      string_agg(DISTINCT bs.name, ', ') as businessSectors,
-      string_agg(DISTINCT nb.value, ', ') as nudges
+      string_agg(DISTINCT upso."businessSectorId"::text, ', ') as "businessSectorIds",
+      string_agg(DISTINCT upn."nudgeId"::text, ', ') as "nudgeIds"
     
     FROM "Users" u
     LEFT JOIN "UserProfiles" up
@@ -845,15 +849,9 @@ export class UserProfilesService {
     
     LEFT JOIN "UserProfileSectorOccupations" upso
       ON up.id = upso."userProfileId"
-    LEFT JOIN "Occupations" o
-      ON o.id = upso."occupationId"
-    LEFT JOIN "BusinessSectors" bs
-      ON bs.id = upso."businessSectorId"
 
     LEFT JOIN "UserProfileNudges" upn
       ON up.id = upn."userProfileId"
-    LEFT JOIN "Nudges" nb
-      ON nb.id = upn."nudgeId"
     
     WHERE u."deletedAt" IS NULL
     AND up."isAvailable" IS TRUE
@@ -876,30 +874,27 @@ export class UserProfilesService {
       profiles,
       [
         (profile) => {
-          const profileBusinessSectors = profile.profileBusinessSectors
-            ? profile.profileBusinessSectors.split(', ')
+          const profileBusinessSectors = profile.businessSectorIds
+            ? profile.businessSectorIds.split(', ')
             : [];
 
           const businessSectorsDifference = _.difference(
-            businessSectors.map(({ name }) => name),
+            businessSectorIds,
             profileBusinessSectors
           );
 
           const businessSectorsMatching =
-            (businessSectors.length - businessSectorsDifference.length) *
+            (businessSectorIds.length - businessSectorsDifference.length) *
             UserProfileRecommendationsWeights.BUSINESS_SECTORS;
 
-          const profileHelps = profile.profileHelps
-            ? profile.profileHelps.split(', ')
+          const profileNudgeIds = profile.nudgeIds
+            ? profile.nudgeIds.split(', ')
             : [];
 
-          const nudgesDifferences = _.difference(
-            userProfileNudges.map(({ nudgeId }) => nudgeId),
-            profileHelps
-          );
+          const nudgesDifferences = _.difference(nudgeIds, profileNudgeIds);
 
           const nudgesMatching =
-            (userProfileNudges.length - nudgesDifferences.length) *
+            (nudgeIds.length - nudgesDifferences.length) *
             UserProfileRecommendationsWeights.NUDGES;
 
           return businessSectorsMatching + nudgesMatching;

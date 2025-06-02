@@ -130,3 +130,30 @@ export const getUserCandidatOrder = (complete = false): Order => {
   });
   return prefixedUserProfileOrder;
 };
+
+export const getUserProfileRecommendationOrder = (complete = false): Order => {
+  const userProfileOrder = getUserProfileOrder(complete) as OrderItem[];
+
+  // Prefix all the userProfileOrder items with 'userProfile' model
+  // and 'as' alias
+  const prefixedUserProfileOrder = userProfileOrder.map((item) => {
+    if (Array.isArray(item)) {
+      return [{ model: UserProfile, as: 'userProfile' }, ...item] as OrderItem;
+    }
+    return item;
+  });
+
+  // Then prefix all the userProfileOrder items with 'recommendedUser' model
+  const prefixedRecommendedUserOrder = prefixedUserProfileOrder.map((item) => {
+    if (Array.isArray(item)) {
+      return [{ model: User, as: 'recommendedUser' }, ...item] as OrderItem;
+    }
+    return item;
+  });
+
+  // Finally, add the 'recommendedUser' model and 'createdAt' order
+  return [
+    [{ model: User, as: 'recommendedUser' }, 'createdAt', 'ASC'],
+    ...prefixedRecommendedUserOrder,
+  ];
+};

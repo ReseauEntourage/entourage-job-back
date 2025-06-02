@@ -68,7 +68,6 @@ export class UpdateUserProfilePipe
       });
 
       if (errors.length > 0) {
-        console.error(errors);
         throw new BadRequestException();
       }
     }

@@ -32,15 +32,23 @@ export class NudgesHelper {
     const nudges = [
       {
         value: 'tips',
-      },
-      {
-        value: 'network',
+        order: 0,
       },
       {
         value: 'interview',
+        order: 1,
       },
       {
         value: 'cv',
+        order: 2,
+      },
+      {
+        value: 'network',
+        order: 3,
+      },
+      {
+        value: 'event',
+        order: 4,
       },
     ];
 
@@ -48,6 +56,7 @@ export class NudgesHelper {
       for (const nudge of nudges) {
         await this.nudgeFactory.create({
           value: nudge.value,
+          order: nudge.order,
         });
       }
     } catch (err) {
