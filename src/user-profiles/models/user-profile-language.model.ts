@@ -33,20 +33,10 @@ export class UserProfileLanguage extends Model {
   @Column
   languageId: string;
 
-  @BelongsTo(() => UserProfile, {
-    foreignKey: 'userProfileId',
-    targetKey: 'id',
-    constraints: false,
-    as: 'userProfile',
-  })
+  @BelongsTo(() => UserProfile, 'userProfileId')
   userProfile: UserProfile;
 
-  @BelongsTo(() => Language, {
-    foreignKey: 'languageId',
-    targetKey: 'id',
-    constraints: false,
-    as: 'language',
-  })
+  @BelongsTo(() => Language, 'languageId')
   language: Language;
 
   @AllowNull(true)

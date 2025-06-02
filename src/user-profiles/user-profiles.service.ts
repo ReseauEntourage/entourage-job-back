@@ -44,7 +44,7 @@ import {
   getUserProfileInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
-import { PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
@@ -97,13 +97,15 @@ export class UserProfilesService {
     });
   }
 
-  async findOneByUserId(userId: string, complete = false) {
-    const res = await this.userProfileModel.findOne({
+  async findOneByUserId(
+    userId: string,
+    complete = false
+  ): Promise<UserProfile> {
+    return this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(complete),
       order: getUserProfileOrder(complete),
     });
-    return res;
   }
 
   async findOneUser(userId: string) {
@@ -124,7 +126,7 @@ export class UserProfilesService {
       nudgeIds: string[];
       departments: Department[];
       businessSectorIds: string[];
-      contactTypes: string[];
+      contactTypes: ContactTypeEnum[];
     }
   ): Promise<PublicProfile[]> {
     const {
@@ -166,13 +168,14 @@ export class UserProfilesService {
         : {};
 
     const contactTypesWhereClause: WhereOptions<UserProfile> | undefined =
-      contactTypes?.includes('physical') || contactTypes?.includes('remote')
+      contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
+      contactTypes?.includes(ContactTypeEnum.REMOTE)
         ? {
             [Op.or]: {
-              ...(contactTypes.includes('physical') && {
+              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
                 allowPhysicalEvents: true,
               }),
-              ...(contactTypes.includes('remote') && {
+              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
                 allowRemoteEvents: true,
               }),
             },
@@ -449,7 +452,7 @@ export class UserProfilesService {
 
   async updateExperiencesByUserProfileId(
     userProfileToUpdate: UserProfile,
-    experiences: Experience[],
+    experiences: Partial<Experience>[],
     t: sequelize.Transaction
   ): Promise<void> {
     await this.experiencesService.updateExperiencesForUserProfile(
@@ -680,7 +683,7 @@ export class UserProfilesService {
 
   async updateSkillsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    skills: Skill[],
+    skills: Partial<Skill>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const skillsData = skills.map((skill, order) => {
