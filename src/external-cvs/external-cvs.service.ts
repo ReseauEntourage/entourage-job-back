@@ -5,6 +5,7 @@ import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
+import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department } from 'src/common/locations/locations.types';
 import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
@@ -14,6 +15,7 @@ import {
 } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { ExtractedCVData } from './models/extracted-cv-data.model';
 
@@ -24,7 +26,8 @@ export class ExternalCvsService {
     private userProfileService: UserProfilesService,
     private openAiService: OpenAiService,
     @InjectModel(ExtractedCVData)
-    private extractedCVDataModel: typeof ExtractedCVData
+    private extractedCVDataModel: typeof ExtractedCVData,
+    private languagesService: LanguagesService
   ) {}
 
   /**
@@ -302,14 +305,25 @@ export class ExternalCvsService {
         userProfileDto.interests = interests as Interest[];
       }
 
-      // TODO: Uncomment when Language level is implemented
-      // if (cvData.languages) {
-      //   const languages = cvData.languages.map((language) => ({
-      //     name: language.name,
-      //     level: language.level,
-      //   }));
-      //   userProfileDto.languages = languages as Language[];
-      // }
+      if (cvData.languages) {
+        const userProfileLanguages = await Promise.all(
+          cvData.languages.map(async (cvDataLang) => {
+            const language = await this.languagesService.findByValue(
+              cvDataLang.value
+            );
+            if (language) {
+              return {
+                userProfileId: userProfile.id,
+                languageId: language.id,
+                level: cvDataLang.level,
+              };
+            }
+          })
+        );
+
+        userProfileDto.userProfileLanguages =
+          userProfileLanguages as UserProfileLanguage[];
+      }
 
       await this.userProfileService.updateByUserId(userId, userProfileDto);
     } catch (error) {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { LanguagesModule } from 'src/common/languages/languages.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { MessagesModule } from 'src/messages/messages.module';
@@ -15,6 +16,7 @@ import { ExtractedCVData } from './models/extracted-cv-data.model';
     AWSModule,
     MessagesModule,
     OpenAiModule,
+    LanguagesModule,
   ],
   controllers: [ExternalCvsController],
   providers: [ExternalCvsService],

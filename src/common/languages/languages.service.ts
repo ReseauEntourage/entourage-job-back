@@ -20,4 +20,12 @@ export class LanguagesService {
       order: [['name', 'ASC']],
     });
   }
+
+  async findByValue(value: string): Promise<Language | null> {
+    const language = await this.languageModel.findOne({
+      where: { value },
+    });
+
+    return language || null;
+  }
 }

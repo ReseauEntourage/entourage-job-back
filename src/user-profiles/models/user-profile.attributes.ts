@@ -1,4 +1,5 @@
 export const UserProfilesAttributes = [
+  'id',
   'allowPhysicalEvents',
   'allowRemoteEvents',
   'currentJob',
