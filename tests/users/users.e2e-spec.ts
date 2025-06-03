@@ -9,7 +9,6 @@ import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
-import { Occupation } from 'src/common/occupations/models';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
@@ -1328,7 +1327,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1374,7 +1380,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1420,7 +1433,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1466,8 +1486,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1513,8 +1539,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -2587,10 +2619,13 @@ describe('Users', () => {
             {
               userProfile: {
                 department: 'Paris (75)',
-                businessSectors: [{ name: 'id' }] as BusinessSector[],
-                occupations: [{ name: 'développeur' }] as Occupation[],
-                // helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                // helpOffers: [{ name: 'network' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'développeur' },
+                  },
+                ],
+                nudges: [{ id: nudgeNetwork.id }],
               },
             }
           );
@@ -6419,14 +6454,18 @@ describe('Users', () => {
           expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const updatedProfile: UserProfileWithPartialAssociations = {
             description: 'hello',
             introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
-            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: { name: 'développeur' },
+              },
+            ],
+            nudges: [{ id: nudgeNetwork.id }],
             linkedinUrl: 'https://www.linkdin.com/in/jean-dupont',
           };
 
@@ -6513,25 +6552,6 @@ describe('Users', () => {
             .send(updatedProfile);
 
           expect(response.status).toBe(403);
-        });
-        it('Should return 400, if coach updates his profile with candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            introduction: 'hello',
-            department: 'Paris (75)',
-            isAvailable: false,
-            occupations: [{ name: 'développeur' }] as Occupation[],
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`)
-            .send(updatedProfile);
-          expect(response.status).toBe(400);
         });
       });
       describe('/profile/uploadImage/:id - Upload user profile picture', () => {

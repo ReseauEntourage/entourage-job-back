@@ -273,9 +273,7 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
-      console.error(err);
       if (((err as Error).name = SequelizeUniqueConstraintError)) {
-        console.error(err);
         throw new ConflictException();
       }
     }
