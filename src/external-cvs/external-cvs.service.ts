@@ -49,6 +49,14 @@ export class ExternalCvsService {
       await this.userProfileService.updateByUserId(userId, {
         hasExternalCv: true,
       });
+
+      const userProfile = await this.userProfileService.findOneByUserId(
+        userId,
+        false
+      );
+      await this.extractedCVDataModel.destroy({
+        where: { userProfileId: userProfile.id },
+      });
       return uploadedCV;
     } catch (error) {
       throw new InternalServerErrorException();
