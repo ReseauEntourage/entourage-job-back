@@ -25,6 +25,7 @@ export class NudgesHelper {
       });
     } catch (err) {
       console.error('Error deleting nudges:', err);
+      throw err;
     }
   }
 
