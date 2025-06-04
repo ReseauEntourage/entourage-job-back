@@ -8,6 +8,6 @@ import { BusinessSector } from './models/business-sector.model';
   imports: [SequelizeModule.forFeature([BusinessSector])],
   providers: [BusinessSectorsService],
   controllers: [BusinessSectorsController],
-  exports: [SequelizeModule],
+  exports: [SequelizeModule, BusinessSectorsService],
 })
 export class BusinessSectorsModule {}

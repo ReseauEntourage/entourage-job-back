@@ -33,27 +33,21 @@ export class UserProfilesHelper {
       isAvailable: user.userProfile.isAvailable,
       lastReceivedMessage: null,
       lastSentMessage: null,
-      businessSectors: expect.arrayContaining(
-        user.userProfile.businessSectors.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
+      sectorOccupations: expect.arrayContaining(
+        user.userProfile.sectorOccupations.map((sectorOccupation) => ({
+          id: sectorOccupation.id,
+          businessSector: expect.objectContaining({
+            id: sectorOccupation.businessSector.id,
+          }),
+          occupation: sectorOccupation.occupation
+            ? expect.objectContaining({
+                name: sectorOccupation.occupation.name,
+              })
+            : null,
+          order: sectorOccupation.order,
+        }))
       ),
-      occupations: expect.arrayContaining(
-        user.userProfile.occupations.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      userProfileNudges: expect.arrayContaining(
-        user.userProfile.userProfileNudges.map(({ id }) =>
-          expect.objectContaining({
-            id,
-          })
-        )
-      ),
+      nudges: user.userProfile.nudges,
     } as Partial<UserProfile & User>;
   }
 

@@ -8,7 +8,7 @@ import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
-import { Occupation } from 'src/common/occupations/models';
+import { Nudge } from 'src/common/nudge/models';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
@@ -16,7 +16,10 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
-import { UserProfile } from 'src/user-profiles/models';
+import {
+  UserProfile,
+  UserProfileWithPartialAssociations,
+} from 'src/user-profiles/models';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
@@ -26,11 +29,12 @@ import { UsersDeletionController } from 'src/users-deletion/users-deletion.contr
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
-import { SkillsHelper } from 'tests/common/skills/skills.helper';
+import { NudgesHelper } from 'tests/common/nudges/nudges.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
+import { BusinessSectorHelper } from './business-sector.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
@@ -46,9 +50,22 @@ describe('Users', () => {
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
   let userProfilesHelper: UserProfilesHelper;
-  let skillsHelper: SkillsHelper;
   let organizationFactory: OrganizationFactory;
   let internalMessageFactory: InternalMessageFactory;
+  let businessSectorsHelper: BusinessSectorHelper;
+  let nudgesHelper: NudgesHelper;
+
+  let businessSector1: BusinessSector;
+  let businessSector2: BusinessSector;
+  let businessSector3: BusinessSector;
+  let businessSector4: BusinessSector;
+  let businessSector5: BusinessSector;
+  let businessSector6: BusinessSector;
+  let nudgeCv: Nudge;
+  let nudgeTips: Nudge;
+  let nudgeNetwork: Nudge;
+  let nudgeInterview: Nudge;
+  let nudgeEvent: Nudge;
 
   const route = '/user';
 
@@ -74,6 +91,9 @@ describe('Users', () => {
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
+    businessSectorsHelper =
+      moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
+    nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
@@ -82,8 +102,45 @@ describe('Users', () => {
     );
   });
 
-  afterAll(async () => {
+  beforeAll(async () => {
+    // Reset the test database
     await databaseHelper.resetTestDB();
+
+    // Initialize the business sectors
+    await businessSectorsHelper.deleteAllBusinessSectors();
+    await businessSectorsHelper.seedBusinessSectors();
+
+    businessSector1 = await businessSectorsHelper.findOne({
+      name: 'Sector 1',
+    });
+    businessSector2 = await businessSectorsHelper.findOne({
+      name: 'Sector 2',
+    });
+    businessSector3 = await businessSectorsHelper.findOne({
+      name: 'Sector 3',
+    });
+    businessSector4 = await businessSectorsHelper.findOne({
+      name: 'Sector 4',
+    });
+    businessSector5 = await businessSectorsHelper.findOne({
+      name: 'Sector 5',
+    });
+    businessSector6 = await businessSectorsHelper.findOne({
+      name: 'Sector 6',
+    });
+
+    // Intialize the nudges
+    await nudgesHelper.deleteAllNudges();
+    await nudgesHelper.seedNudges();
+
+    nudgeCv = await nudgesHelper.findOne({ value: 'cv' });
+    nudgeTips = await nudgesHelper.findOne({ value: 'tips' });
+    nudgeNetwork = await nudgesHelper.findOne({ value: 'network' });
+    nudgeInterview = await nudgesHelper.findOne({ value: 'interview' });
+    nudgeEvent = await nudgesHelper.findOne({ value: 'event' });
+  });
+
+  afterAll(async () => {
     await app.close();
     server.close();
   });
@@ -641,12 +698,13 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            nudgeIds: [
-              '6f3b2899-1d7f-48fa-93d5-14d62e2c6742',
-              '9ba366e6-ccaf-4d4e-9467-c6a3e22e0f0b',
-            ],
+            nudges: [{ id: nudgeTips.id }, { id: nudgeNetwork.id }],
             department: 'Paris (75)' as Department,
           };
+
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
 
           const userToSend = {
             ...userValues,
@@ -658,8 +716,11 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -674,10 +735,10 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                userProfileNudge: expect.arrayContaining(
-                  userProfileValues.nudgeIds.map((id) =>
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
                     expect.objectContaining({
-                      id,
+                      id: nudge.id,
                     })
                   )
                 ),
@@ -1066,10 +1127,7 @@ describe('Users', () => {
             false
           );
 
-          // const helpNeeds: { name: HelpValue }[] = [
-          //   { name: 'cv' },
-          //   { name: 'interview' },
-          // ];
+          const nudges = [nudgeCv, nudgeInterview];
 
           const userValues = {
             firstName: user.firstName,
@@ -1079,9 +1137,23 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+
           const userProfileValues = {
-            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
+            nudges: nudges.map((nudge) => ({
+              id: nudge.id,
+            })),
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const userToSend = {
@@ -1093,8 +1165,6 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSector: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
           };
 
           const response: APIResponse<
@@ -1110,11 +1180,13 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                // helpNeeds: expect.arrayContaining(
-                //   userProfileValues.helpNeeds.map((expectation) =>
-                //     expect.objectContaining(expectation)
-                //   )
-                // ),
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
+                  )
+                ),
               }),
             })
           );
@@ -1127,8 +1199,6 @@ describe('Users', () => {
             false
           );
 
-          // const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
-
           const userValues = {
             firstName: user.firstName,
             lastName: user.lastName,
@@ -1137,9 +1207,18 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+
           const userProfileValues = {
-            // helpNeeds: helpNeeds,
+            nudges: [{ id: nudgeCv.id }],
             department: 'Paris (75)' as Department,
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
           };
 
           const userToSend = {
@@ -1150,7 +1229,6 @@ describe('Users', () => {
             materialInsecurity: CandidateYesNo.YES,
             networkInsecurity: CandidateYesNo.NO,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
           };
 
           const response: APIResponse<
@@ -1166,11 +1244,13 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                // helpNeeds: expect.arrayContaining(
-                //   userProfileValues.helpNeeds.map((expectation) =>
-                //     expect.objectContaining(expectation)
-                //   )
-                // ),
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
+                  )
+                ),
               }),
             })
           );
@@ -1247,7 +1327,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1293,7 +1380,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1339,7 +1433,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1385,8 +1486,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1432,8 +1539,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1457,10 +1570,7 @@ describe('Users', () => {
             false
           );
 
-          // const helpNeeds: { name: HelpValue }[] = [
-          //   { name: 'cv' },
-          //   { name: 'interview' },
-          // ];
+          const nudges = [nudgeCv, nudgeInterview];
 
           const userToSend = {
             firstName: user.firstName,
@@ -1468,7 +1578,9 @@ describe('Users', () => {
             email: user.email,
             phone: user.phone,
             gender: user.gender,
-            // helpNeeds: helpNeeds,
+            nudges: nudges.map((nudge) => ({
+              id: nudge.id,
+            })),
             department: 'Paris (75)' as Department,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
@@ -1476,8 +1588,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -2174,44 +2292,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the hidden filter', async () => {
-            const hiddenCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  hidden: true,
-                },
-              }
-            );
-            await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  hidden: false,
-                },
-              }
-            );
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&hidden[]=true`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(hiddenCandidates.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
           it('Should return 200, and all the candidates that matches the employed filter', async () => {
             const employedCandidates = await databaseHelper.createEntities(
               userFactory,
@@ -2377,7 +2457,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&businessSectors[]=rh&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2466,6 +2546,66 @@ describe('Users', () => {
             );
           });
         });
+
+        describe('/members - Read all members as admin with businessSectorIds filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that match the businessSectorIds filter', async () => {
+            const candidatesSector1 = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                  ],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...candidatesSector1.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(server)
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
       });
     });
     describe('R - Read 1 Profile', () => {
@@ -2479,10 +2619,13 @@ describe('Users', () => {
             {
               userProfile: {
                 department: 'Paris (75)',
-                businessSectors: [{ name: 'id' }] as BusinessSector[],
-                occupations: [{ name: 'développeur' }] as Occupation[],
-                // helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                // helpOffers: [{ name: 'network' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'développeur' },
+                  },
+                ],
+                nudges: [{ id: nudgeNetwork.id }],
               },
             }
           );
@@ -2567,6 +2710,7 @@ describe('Users', () => {
 
           expect(response.status).toBe(401);
         });
+
         it('Should return 403, if admin gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -2577,6 +2721,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if admin gets his recommendations', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -2585,6 +2730,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if coach gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -2595,6 +2741,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if referer gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -2605,6 +2752,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if candidate gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -2613,6 +2761,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -2624,33 +2773,37 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
           );
 
-          const usersToRecommend = (
-            await databaseHelper.createEntities(
-              userFactory,
-              3,
-              {
-                role: UserRoles.CANDIDATE,
-                zone: AdminZones.LYON,
+          const usersToRecommend = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
-              {
-                userProfile: {
-                  department: 'Rhône (69)',
-                  isAvailable: true,
-                  occupations: [{ name: 'peintre' }] as Occupation[],
-                  businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                  // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
-                },
-              }
-            )
-          ).sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
+            }
           );
 
           await userProfilesHelper.createUserProfileRecommendations(
@@ -2672,6 +2825,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200 and new recommendations, if coach gets his recent recommendations and one of the candidates is not available anymore', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -2683,8 +2837,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -2701,9 +2859,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                occupations: [{ name: 'peintre' }] as Occupation[],
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -2717,9 +2879,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: false,
-                occupations: [{ name: 'peintre' }] as Occupation[],
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -2740,16 +2906,18 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                occupations: [{ name: 'peintre' }] as Occupation[],
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
 
-          const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
-            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
-          );
+          const usersToRecommend = [...stillAvailableUsers, userAvailable];
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCoach.user.id,
@@ -2770,6 +2938,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -2781,16 +2950,26 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
+
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
@@ -2803,19 +2982,28 @@ describe('Users', () => {
             },
             {
               userProfile: {
-                department: 'Aisne (02)',
+                department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -2829,17 +3017,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'cd' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -2853,17 +3050,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'cv' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
@@ -2872,9 +3078,7 @@ describe('Users', () => {
             candidateSameRegion,
             candidate2BusinessSectorsInCommon,
             candidate2HelpsInCommon,
-          ].sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
-          );
+          ];
 
           // Candidate wrong departement
           await userFactory.create(
@@ -2886,17 +3090,23 @@ describe('Users', () => {
               userProfile: {
                 department: 'Paris (75)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -2911,16 +3121,22 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'interview' },
-                //   { name: 'cv' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
               },
             }
           );
@@ -2935,17 +3151,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'interview' },
-                //   { name: 'cv' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeInterview.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
@@ -2960,17 +3185,23 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'aa' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector2.id,
+                    occupation: { name: 'Développeur' },
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -2985,17 +3216,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector6.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3010,17 +3250,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: false,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3036,79 +3285,28 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
-
-          // Candidate who sent message
-          const sentMessageCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: sentMessageCandidate.id,
-            addresseeUserId: loggedInCoach.user.id,
-          });
-
-          // Candidate who received message
-          const receivedMessageCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: loggedInCoach.user.id,
-            addresseeUserId: receivedMessageCandidate.id,
-          });
 
           const oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon =
             await databaseHelper.createEntities(
@@ -3122,17 +3320,26 @@ describe('Users', () => {
                 userProfile: {
                   department: 'Nord (59)',
                   isAvailable: true,
-                  occupations: [{ name: 'Développeur' }] as Occupation[],
-                  businessSectors: [
-                    { name: 'id' },
-                    { name: 'aa' },
-                    { name: 'cm' },
-                  ] as BusinessSector[],
-                  // helpNeeds: [
-                  //   { name: 'network' },
-                  //   { name: 'tips' },
-                  //   { name: 'interview' },
-                  // ] as HelpNeed[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                      occupation: { name: 'Développeur' },
+                      order: 1,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                      order: 2,
+                    },
+                    {
+                      businessSectorId: businessSector6.id,
+                      order: 3,
+                    },
+                  ],
+                  nudges: [
+                    { id: nudgeTips.id },
+                    { id: nudgeInterview.id },
+                    { id: nudgeNetwork.id },
+                  ],
                 },
               }
             );
@@ -3158,6 +3365,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200, and actual recommendations, if candidate gets his recent recommendations', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
@@ -3168,34 +3376,38 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                occupations: [{ name: 'menuisier' }] as Occupation[],
-                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'menuisier' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
           );
 
-          const usersToRecommend = (
-            await databaseHelper.createEntities(
-              userFactory,
-              3,
-              {
-                role: UserRoles.COACH,
-                zone: AdminZones.LYON,
+          const usersToRecommend = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id, // id
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
-              {
-                userProfile: {
-                  department: 'Rhône (69)',
-                  isAvailable: true,
-                  currentJob: 'menuisier',
-                  businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                  // helpOffers: [{ name: 'interview' }] as HelpOffer[],
-                },
-              }
-            )
-          ).sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
+            }
           );
 
           await userProfilesHelper.createUserProfileRecommendations(
@@ -3219,6 +3431,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200, and new recommendations, if candidate gets his recent recommendations and on of the coaches is not available anymore', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
@@ -3229,9 +3442,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                occupations: [{ name: 'menuisier' }] as Occupation[],
-                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'menuisier' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -3249,8 +3466,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: true,
                 currentJob: 'menuisier',
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id, // id
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -3265,8 +3486,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: false,
                 currentJob: 'menuisier',
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -3293,14 +3518,18 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: true,
                 currentJob: 'menuisier',
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
 
           const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
-            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+            (userA, userB) => moment(userA.createdAt).diff(userB.createdAt)
           );
 
           const response: APIResponse<
@@ -3319,9 +3548,11 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
+              firstName: 'me',
               role: UserRoles.CANDIDATE,
               zone: AdminZones.LILLE,
             },
@@ -3329,17 +3560,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
@@ -3352,19 +3592,28 @@ describe('Users', () => {
             },
             {
               userProfile: {
-                department: 'Aisne (02)',
+                department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3379,22 +3628,32 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'cd' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
 
           const coach2HelpsInCommon = await userFactory.create(
             {
+              firstName: 'coach2HelpsInCommon',
               role: UserRoles.COACH,
               zone: AdminZones.LILLE,
             },
@@ -3403,16 +3662,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'cv' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
@@ -3421,9 +3689,7 @@ describe('Users', () => {
             coachSameRegion,
             coach2BusinessSectorsInCommon,
             coach2HelpsInCommon,
-          ].sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
-          );
+          ];
 
           // Coach wrong department
           await userFactory.create(
@@ -3436,16 +3702,25 @@ describe('Users', () => {
                 department: 'Paris (75)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3461,15 +3736,21 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'interview' },
-                //   { name: 'cv' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
               },
             }
           );
@@ -3477,6 +3758,7 @@ describe('Users', () => {
           // Coach 1 help in common
           await userFactory.create(
             {
+              firstName: 'oneHelpInCommon',
               role: UserRoles.COACH,
               zone: AdminZones.LILLE,
             },
@@ -3485,16 +3767,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'interview' },
-                //   { name: 'cv' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeInterview.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
@@ -3510,16 +3801,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'aa' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3535,16 +3835,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector6.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3560,16 +3869,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: false,
                 currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3577,6 +3895,7 @@ describe('Users', () => {
           // Candidate same profile
           await userFactory.create(
             {
+              firstName: 'sameProfile',
               role: UserRoles.CANDIDATE,
               zone: AdminZones.LILLE,
             },
@@ -3584,80 +3903,29 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                occupations: [{ name: 'Développeur' }] as Occupation[],
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpNeeds: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
-
-          // Coach who sent message
-          const sentMessageCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: sentMessageCoach.id,
-            addresseeUserId: loggedInCandidate.user.id,
-          });
-
-          // Coach who received message
-          const receivedMessageCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                currentJob: 'Développeur',
-                businessSectors: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessSector[],
-                // helpOffers: [
-                //   { name: 'network' },
-                //   { name: 'tips' },
-                //   { name: 'event' },
-                // ] as HelpOffer[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: loggedInCandidate.user.id,
-            addresseeUserId: receivedMessageCoach.id,
-          });
 
           const oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon =
             await databaseHelper.createEntities(
@@ -3672,16 +3940,25 @@ describe('Users', () => {
                   department: 'Nord (59)',
                   isAvailable: true,
                   currentJob: 'Développeur',
-                  businessSectors: [
-                    { name: 'id' },
-                    { name: 'aa' },
-                    { name: 'cm' },
-                  ] as BusinessSector[],
-                  // helpOffers: [
-                  //   { name: 'network' },
-                  //   { name: 'tips' },
-                  //   { name: 'interview' },
-                  // ] as HelpOffer[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                      order: 1,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                      order: 2,
+                    },
+                    {
+                      businessSectorId: businessSector6.id,
+                      order: 3,
+                    },
+                  ],
+                  nudges: [
+                    { id: nudgeTips.id },
+                    { id: nudgeNetwork.id },
+                    { id: nudgeInterview.id },
+                  ],
                 },
               }
             );
@@ -3701,6 +3978,7 @@ describe('Users', () => {
             )
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
+          expect(response.body.length).toBe(newUsersToRecommend.length);
           expect(response.body).toEqual(
             newUsersToRecommend.map((user) =>
               expect.objectContaining(
@@ -3819,15 +4097,19 @@ describe('Users', () => {
               lastConnection: moment().subtract(15, 'day').toDate(),
             });
 
-            const userProfileCandidate: Partial<UserProfile> = {
-              businessSectors: [{ name: 'bat' }] as BusinessSector[],
-              occupations: [{ name: 'menuisier' }] as Occupation[],
-              // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+            const userProfileCandidate: UserProfileWithPartialAssociations = {
+              sectorOccupations: [
+                {
+                  businessSectorId: businessSector1.id,
+                  occupation: { name: 'menuisier' },
+                },
+              ],
+              nudges: [{ id: nudgeInterview.id }],
               description: 'hello',
               introduction: 'hello',
               department: 'Paris (75)',
             };
-            const userProfileCoach: Partial<UserProfile> = {
+            const userProfileCoach: UserProfileWithPartialAssociations = {
               currentJob: 'peintre',
               businessSectors: [{ name: 'bat' }] as BusinessSector[],
               // helpOffers: [{ name: 'interview' }] as HelpOffer[],
@@ -4245,6 +4527,27 @@ describe('Users', () => {
           });
 
           it('Should return 200, and all the candidates that matches the businessSectors filters', async () => {
+            // bat
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            // asp
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+            // rh
+            const businessSector3 = await businessSectorsHelper.findOne({
+              name: 'Sector 3',
+            });
+            // aa
+            const businessSector4 = await businessSectorsHelper.findOne({
+              name: 'Sector 4',
+            });
+            // pr
+            const businessSector5 = await businessSectorsHelper.findOne({
+              name: 'Sector 5',
+            });
+
             const batCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4253,10 +4556,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4269,10 +4576,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4285,10 +4596,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4301,10 +4616,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4317,10 +4636,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4333,10 +4656,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4349,7 +4676,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectors[]=bat&businessSectors[]=rh`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4359,6 +4686,22 @@ describe('Users', () => {
             );
           });
           it('Should return 200, and all the coaches that matches the businessSectors filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+            const businessSector3 = await businessSectorsHelper.findOne({
+              name: 'Sector 3',
+            });
+            const businessSector4 = await businessSectorsHelper.findOne({
+              name: 'Sector 4',
+            });
+            const businessSector5 = await businessSectorsHelper.findOne({
+              name: 'Sector 5',
+            });
+
             await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4367,10 +4710,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4383,10 +4730,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4399,10 +4750,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4415,10 +4770,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4431,10 +4790,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4447,10 +4810,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  businessSectors: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessSector[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4463,7 +4830,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessSectors[]=bat&businessSectors[]=rh`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4473,7 +4840,7 @@ describe('Users', () => {
             );
           });
 
-          it('Should return 200, and all the candidates that matches the helps filters', async () => {
+          it('Should return 200, and all the candidates that matches the nudges filters', async () => {
             const cvCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4482,10 +4849,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpNeeds: [
-                  //   { name: 'cv' },
-                  //   { name: 'network' },
-                  // ] as HelpNeed[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -4498,10 +4862,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpNeeds: [
-                  //   { name: 'interview' },
-                  //   { name: 'event' },
-                  // ] as HelpNeed[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -4514,7 +4875,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -4527,10 +4888,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpOffers: [
-                  //   { name: 'cv' },
-                  //   { name: 'network' },
-                  // ] as HelpOffer[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -4543,10 +4901,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpOffers: [
-                  //   { name: 'interview' },
-                  //   { name: 'event' },
-                  // ] as HelpOffer[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -4559,7 +4914,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -4572,7 +4927,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&helps[]=cv&helps[]=interview`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4581,7 +4936,7 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the coaches that matches the helps filters', async () => {
+          it('Should return 200, and all the coaches that matches the nudges filters', async () => {
             await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4590,10 +4945,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpNeeds: [
-                  //   { name: 'cv' },
-                  //   { name: 'network' },
-                  // ] as HelpNeed[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -4606,10 +4958,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpNeeds: [
-                  //   { name: 'interview' },
-                  //   { name: 'event' },
-                  // ] as HelpNeed[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -4622,7 +4971,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -4635,10 +4984,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpOffers: [
-                  //   { name: 'cv' },
-                  //   { name: 'network' },
-                  // ] as HelpOffer[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -4651,10 +4997,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpOffers: [
-                  //   { name: 'interview' },
-                  //   { name: 'event' },
-                  // ] as HelpOffer[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -4667,7 +5010,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  // helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -4680,7 +5023,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&helps[]=cv&helps[]=interview`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4698,6 +5041,12 @@ describe('Users', () => {
             });
           });
           it('Should return 200, and all the candidates that match all the filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
             const lyonAssociatedCoaches = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4708,15 +5057,15 @@ describe('Users', () => {
               {
                 userProfile: {
                   department: 'Rhône (69)',
-                  businessSectors: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessSector[],
-
-                  // helpOffers: [
-                  //   { name: 'cv' },
-                  //   { name: 'network' },
-                  // ] as HelpOffer[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -4732,14 +5081,15 @@ describe('Users', () => {
                 {
                   userProfile: {
                     department: 'Rhône (69)',
-                    businessSectors: [
-                      { name: 'rh' },
-                      { name: 'aa' },
-                    ] as BusinessSector[],
-                    // helpNeeds: [
-                    //   { name: 'cv' },
-                    //   { name: 'network' },
-                    // ] as HelpNeed[],
+                    sectorOccupations: [
+                      {
+                        businessSectorId: businessSector1.id,
+                      },
+                      {
+                        businessSectorId: businessSector2.id,
+                      },
+                    ],
+                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                   },
                 }
               );
@@ -4760,7 +5110,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessSectors[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4770,6 +5120,13 @@ describe('Users', () => {
             );
           });
           it('Should return 200, and all the coaches that match all the filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+
             const lyonAssociatedCoaches = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4780,15 +5137,15 @@ describe('Users', () => {
               {
                 userProfile: {
                   department: 'Rhône (69)',
-                  businessSectors: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessSector[],
-
-                  // helpOffers: [
-                  //   { name: 'cv' },
-                  //   { name: 'network' },
-                  // ] as HelpOffer[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -4804,14 +5161,15 @@ describe('Users', () => {
                 {
                   userProfile: {
                     department: 'Rhône (69)',
-                    businessSectors: [
-                      { name: 'rh' },
-                      { name: 'aa' },
-                    ] as BusinessSector[],
-                    // helpNeeds: [
-                    //   { name: 'cv' },
-                    //   { name: 'network' },
-                    // ] as HelpNeed[],
+                    sectorOccupations: [
+                      {
+                        businessSectorId: businessSector1.id,
+                      },
+                      {
+                        businessSectorId: businessSector2.id,
+                      },
+                    ],
+                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                   },
                 }
               );
@@ -4832,7 +5190,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessSectors[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -5914,9 +6272,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                occupations: [{ name: 'menuisier' }] as Occupation[],
-                // helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'menuisier' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -5930,8 +6292,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                businessSectors: [{ name: 'bat' }] as BusinessSector[],
-                // helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                nudges: [{ id: nudgeInterview.id }],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
               },
             }
           );
@@ -6027,14 +6393,23 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         it('Should return 200, if candidate updates his profile candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+          const updatedProfile = {
             description: 'hello',
             introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
-            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
+            nudges: [{ id: nudgeNetwork.id }],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6049,26 +6424,48 @@ describe('Users', () => {
             loggedInCandidate.user.id
           );
 
+          const {
+            nudges: updatedNudges,
+            sectorOccupations: updatedSectorOccupation,
+            ...restUpdatedUserProfile
+          } = updatedUser.userProfile;
+
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...updatedProfile,
-              businessSectors: [expect.objectContaining({ name: 'id' })],
-              occupations: [expect.objectContaining({ name: 'développeur' })],
-              helpNeeds: [expect.objectContaining({ name: 'network' })],
+              ...restUpdatedUserProfile,
+              sectorOccupations: [
+                expect.objectContaining({
+                  businessSector: expect.objectContaining({ name: 'Sector 1' }),
+                  occupation: expect.objectContaining({ name: 'Développeur' }),
+                }),
+              ],
+              nudges: [
+                expect.objectContaining({
+                  id: nudgeNetwork.id,
+                  nameRequest: nudgeNetwork.nameRequest,
+                  nameOffer: nudgeNetwork.nameOffer,
+                  value: nudgeNetwork.value,
+                  order: nudgeNetwork.order,
+                }),
+              ],
             })
           );
           expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const updatedProfile: UserProfileWithPartialAssociations = {
             description: 'hello',
             introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            occupations: [{ name: 'développeur' }] as Occupation[],
-            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: { name: 'développeur' },
+              },
+            ],
+            nudges: [{ id: nudgeNetwork.id }],
             linkedinUrl: 'https://www.linkdin.com/in/jean-dupont',
           };
 
@@ -6099,14 +6496,20 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200, if coach updates his profile coach properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+          const updatedProfile = {
             description: 'hello',
             introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            // helpOffers: [{ name: 'network' }] as HelpOffer[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6123,8 +6526,11 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              businessSectors: [expect.objectContaining({ name: 'id' })],
-              // helpOffers: [expect.objectContaining({ name: 'network' })],
+              sectorOccupations: [
+                expect.objectContaining({
+                  businessSector: expect.objectContaining({ name: 'Sector 1' }),
+                }),
+              ],
             })
           );
 
@@ -6146,25 +6552,6 @@ describe('Users', () => {
             .send(updatedProfile);
 
           expect(response.status).toBe(403);
-        });
-        it('Should return 400, if coach updates his profile with candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            introduction: 'hello',
-            department: 'Paris (75)',
-            isAvailable: false,
-            occupations: [{ name: 'développeur' }] as Occupation[],
-            businessSectors: [{ name: 'id' }] as BusinessSector[],
-            // helpNeeds: [{ name: 'network' }] as HelpNeed[],
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`)
-            .send(updatedProfile);
-          expect(response.status).toBe(400);
         });
       });
       describe('/profile/uploadImage/:id - Upload user profile picture', () => {
@@ -6469,7 +6856,6 @@ describe('Users', () => {
         let candidate: User;
         let coach: User;
         let referer: User;
-        const uniqIdToFind = uuid();
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -6552,11 +6938,6 @@ describe('Users', () => {
             candidate.id
           );
           expect(userProfile).toBeFalsy();
-
-          const expSkillsCount = await skillsHelper.countSkillsByName(
-            uniqIdToFind
-          );
-          expect(expSkillsCount).toBe(1);
         });
         it('Should return 200 if logged in as admin and deletes coach', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =

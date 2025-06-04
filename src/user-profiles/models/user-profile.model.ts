@@ -330,3 +330,17 @@ export class UserProfile extends Model {
     }
   }
 }
+
+export type UserProfileSectorOccupationWithPartialAssociations = Partial<
+  Omit<UserProfileSectorOccupation, 'businessSector' | 'occupation'> & {
+    businessSector?: Partial<BusinessSector>;
+    occupation?: Partial<Occupation>;
+  }
+>;
+
+export type UserProfileWithPartialAssociations = Partial<
+  Omit<UserProfile, 'sectorOccupations' | 'nudges'>
+> & {
+  sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
+  nudges?: Partial<Nudge>[];
+};
