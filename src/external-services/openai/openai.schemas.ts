@@ -120,7 +120,11 @@ export const cvSchema = {
             description: 'Code de la langue au format ISO 639-1 (ex: en, es)',
             pattern: '^[a-z]{2}$',
           },
-          level: { type: 'string' },
+          level: {
+            type: 'string',
+            enum: ['NOTIONS', 'INTERMEDIATE', 'FLUENT', 'NATIVE'],
+            description: 'Niveau de maîtrise de la langue',
+          },
         },
         required: ['name', 'value'],
       },
