@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { LanguagesModule } from 'src/common/languages/languages.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
@@ -14,7 +14,7 @@ import { ExtractedCVData } from './models/extracted-cv-data.model';
     SequelizeModule.forFeature([ExtractedCVData]),
     UserProfilesModule,
     AWSModule,
-    MessagesModule,
+    forwardRef(() => MessagesModule),
     OpenAiModule,
     LanguagesModule,
   ],

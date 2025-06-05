@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { ExperiencesModule } from 'src/common/experiences/experiences.module';
@@ -37,12 +37,12 @@ import { UserProfilesService } from './user-profiles.service';
       Skill,
       Experience,
     ]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     OccupationsModule,
     BusinessSectorsModule,
     NudgesModule,
     AWSModule,
-    MessagesModule,
+    forwardRef(() => MessagesModule),
     MessagingModule,
     SlackModule,
     MailsModule,
