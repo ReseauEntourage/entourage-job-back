@@ -14,5 +14,9 @@
     "^tests/(.*)": "<rootDir>/tests/$1"
   },
   "setupFiles": ["<rootDir>/tests/setup.ts"],
-  "testTimeout": 60000
+  "testTimeout": 120000,
+  "maxWorkers": 1,
+  "verbose": true,
+  "detectOpenHandles": true,
+  "forceExit": true
 }

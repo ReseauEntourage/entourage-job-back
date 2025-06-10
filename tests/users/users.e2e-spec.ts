@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -141,12 +142,40 @@ describe('Users', () => {
   });
 
   afterAll(async () => {
+    console.log('Fermeture des connexions...');
+
+    // Fermeture de l'application NestJS
     await app.close();
-    server.close();
+
+    // Fermeture du serveur HTTP avec une Promise
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        console.log('Serveur HTTP fermé');
+        resolve();
+      });
+    });
+
+    // Fermeture des files d'attente
+    if (QueueMocks.close) {
+      await QueueMocks.close();
+      console.log("Files d'attente fermées");
+    }
+
+    console.log('Toutes les connexions ont été fermées');
   });
 
   beforeEach(async () => {
-    await databaseHelper.resetTestDB();
+    console.log('Réinitialisation de la base de données de test...');
+    try {
+      await databaseHelper.resetTestDB();
+      console.log('Base de données réinitialisée avec succès');
+    } catch (error) {
+      console.error(
+        'Erreur lors de la réinitialisation de la base de données:',
+        error
+      );
+      throw error; // Propager l'erreur pour faire échouer le test proprement
+    }
   });
 
   describe('CRUD User', () => {
