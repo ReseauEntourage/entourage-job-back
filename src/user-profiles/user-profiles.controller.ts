@@ -125,27 +125,35 @@ export class UserProfilesController {
     contactTypes: ContactTypeEnum[]
   ) {
     if (!role || role.length === 0) {
+      console.error('Role is required');
       throw new BadRequestException();
     }
 
     if (!isRoleIncluded(AllUserRoles, role)) {
+      console.error('Invalid role provided');
       throw new BadRequestException();
     }
 
     if (role.includes(UserRoles.REFERER)) {
+      console.error('Referer role is not allowed');
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll(userId, {
-      role,
-      offset,
-      limit,
-      search,
-      nudgeIds,
-      departments,
-      businessSectorIds,
-      contactTypes,
-    });
+    try {
+      return this.userProfilesService.findAll(userId, {
+        role,
+        offset,
+        limit,
+        search,
+        nudgeIds,
+        departments,
+        businessSectorIds,
+        contactTypes,
+      });
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw new InternalServerErrorException();
+    }
   }
 
   @UserPermissions(Permissions.REFERER)

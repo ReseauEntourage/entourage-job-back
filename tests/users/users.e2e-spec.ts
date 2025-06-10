@@ -4477,7 +4477,11 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.CANDIDATE
+                  }&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&departments[]=${encodeURIComponent('Paris (75)')}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4541,7 +4545,11 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.COACH
+                  }&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&departments[]=${encodeURIComponent('Paris (75)')}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5135,7 +5143,13 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.CANDIDATE
+                  }&query=XXX&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${
+                    nudgeCv.id
+                  }&nudgeIds[]=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5215,7 +5229,13 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeNetwork.id}`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.COACH
+                  }&query=XXX&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${
+                    nudgeNetwork.id
+                  }`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
