@@ -142,8 +142,6 @@ describe('Users', () => {
   });
 
   afterAll(async () => {
-    console.log('Fermeture des connexions...');
-
     // Fermeture de l'application NestJS
     await app.close();
 
@@ -165,16 +163,14 @@ describe('Users', () => {
   });
 
   beforeEach(async () => {
-    console.log('Réinitialisation de la base de données de test...');
     try {
       await databaseHelper.resetTestDB();
-      console.log('Base de données réinitialisée avec succès');
     } catch (error) {
       console.error(
         'Erreur lors de la réinitialisation de la base de données:',
         error
       );
-      throw error; // Propager l'erreur pour faire échouer le test proprement
+      throw error;
     }
   });
 
@@ -4430,130 +4426,130 @@ describe('Users', () => {
               role: UserRoles.ADMIN,
             });
           });
-          // it('Should return 200, and all the candidates that matches the department filter', async () => {
-          //   const lyonCandidates = await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.CANDIDATE,
-          //     },
-          //     {
-          //       userProfile: { department: 'Rhône (69)' },
-          //     }
-          //   );
-          //   const parisCandidates = await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.CANDIDATE,
-          //     },
-          //     {
-          //       userProfile: { department: 'Paris (75)' },
-          //     }
-          //   );
-          //   await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.CANDIDATE,
-          //     },
-          //     {
-          //       userProfile: { department: 'Nord (59)' },
-          //     }
-          //   );
+          it('Should return 200, and all the candidates that matches the department filter', async () => {
+            const lyonCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+            const parisCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Paris (75)' },
+              }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Nord (59)' },
+              }
+            );
 
-          //   await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.COACH,
-          //     },
-          //     {
-          //       userProfile: { department: 'Nord (59)' },
-          //     }
-          //   );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: { department: 'Nord (59)' },
+              }
+            );
 
-          //   const expectedCandidatesIds = [
-          //     ...lyonCandidates.map(({ id }) => id),
-          //     ...parisCandidates.map(({ id }) => id),
-          //   ];
+            const expectedCandidatesIds = [
+              ...lyonCandidates.map(({ id }) => id),
+              ...parisCandidates.map(({ id }) => id),
+            ];
 
-          //   const response: APIResponse<UserProfilesController['findAll']> =
-          //     await request(server)
-          //       .get(
-          //         `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
-          //       )
-          //       .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          //   expect(response.status).toBe(200);
-          //   expect(response.body.length).toBe(4);
-          //   expect(expectedCandidatesIds).toEqual(
-          //     expect.arrayContaining(response.body.map(({ id }) => id))
-          //   );
-          // });
-          // it('Should return 200, and all the coaches that matches the department filter', async () => {
-          //   const lyonCoaches = await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.COACH,
-          //     },
-          //     {
-          //       userProfile: { department: 'Rhône (69)' },
-          //     }
-          //   );
-          //   const parisCoaches = await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.COACH,
-          //     },
-          //     {
-          //       userProfile: {
-          //         department: 'Paris (75)',
-          //       },
-          //     }
-          //   );
-          //   await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.COACH,
-          //     },
-          //     {
-          //       userProfile: {
-          //         department: 'Nord (59)',
-          //       },
-          //     }
-          //   );
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that matches the department filter', async () => {
+            const lyonCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
+            const parisCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Paris (75)',
+                },
+              }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Nord (59)',
+                },
+              }
+            );
 
-          //   await databaseHelper.createEntities(
-          //     userFactory,
-          //     2,
-          //     {
-          //       role: UserRoles.CANDIDATE,
-          //     },
-          //     {
-          //       userProfile: { department: 'Rhône (69)' },
-          //     }
-          //   );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: { department: 'Rhône (69)' },
+              }
+            );
 
-          //   const expectedCoachesIds = [
-          //     ...lyonCoaches.map(({ id }) => id),
-          //     ...parisCoaches.map(({ id }) => id),
-          //   ];
+            const expectedCoachesIds = [
+              ...lyonCoaches.map(({ id }) => id),
+              ...parisCoaches.map(({ id }) => id),
+            ];
 
-          //   const response: APIResponse<UserProfilesController['findAll']> =
-          //     await request(server)
-          //       .get(
-          //         `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
-          //       )
-          //       .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          //   expect(response.status).toBe(200);
-          //   expect(response.body.length).toBe(4);
-          //   expect(expectedCoachesIds).toEqual(
-          //     expect.arrayContaining(response.body.map(({ id }) => id))
-          //   );
-          // });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
 
           it('Should return 200, and all the candidates that matches the businessSectors filters', async () => {
             // bat
@@ -5062,174 +5058,174 @@ describe('Users', () => {
             );
           });
         });
-        // describe('/profile - Read all profiles with all filters', () => {
-        //   let loggedInAdmin: LoggedUser;
-        //   beforeEach(async () => {
-        //     loggedInAdmin = await usersHelper.createLoggedInUser({
-        //       role: UserRoles.ADMIN,
-        //     });
-        //   });
-        //   // it('Should return 200, and all the candidates that match all the filters', async () => {
-        //   //   const businessSector1 = await businessSectorsHelper.findOne({
-        //   //     name: 'Sector 1',
-        //   //   });
-        //   //   const businessSector2 = await businessSectorsHelper.findOne({
-        //   //     name: 'Sector 2',
-        //   //   });
-        //   //   const lyonAssociatedCoaches = await databaseHelper.createEntities(
-        //   //     userFactory,
-        //   //     2,
-        //   //     {
-        //   //       firstName: 'XXX',
-        //   //       role: UserRoles.COACH,
-        //   //     },
-        //   //     {
-        //   //       userProfile: {
-        //   //         department: 'Rhône (69)',
-        //   //         sectorOccupations: [
-        //   //           {
-        //   //             businessSectorId: businessSector1.id,
-        //   //           },
-        //   //           {
-        //   //             businessSectorId: businessSector2.id,
-        //   //           },
-        //   //         ],
-        //   //         nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
-        //   //       },
-        //   //     }
-        //   //   );
+        describe('/profile - Read all profiles with all filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+          it('Should return 200, and all the candidates that match all the filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
+                },
+              }
+            );
 
-        //   //   const lyonAssociatedCandidates =
-        //   //     await databaseHelper.createEntities(
-        //   //       userFactory,
-        //   //       2,
-        //   //       {
-        //   //         firstName: 'XXX',
-        //   //         role: UserRoles.CANDIDATE,
-        //   //       },
-        //   //       {
-        //   //         userProfile: {
-        //   //           department: 'Rhône (69)',
-        //   //           sectorOccupations: [
-        //   //             {
-        //   //               businessSectorId: businessSector1.id,
-        //   //             },
-        //   //             {
-        //   //               businessSectorId: businessSector2.id,
-        //   //             },
-        //   //           ],
-        //   //           nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
-        //   //         },
-        //   //       }
-        //   //     );
+            const lyonAssociatedCandidates =
+              await databaseHelper.createEntities(
+                userFactory,
+                2,
+                {
+                  firstName: 'XXX',
+                  role: UserRoles.CANDIDATE,
+                },
+                {
+                  userProfile: {
+                    department: 'Rhône (69)',
+                    sectorOccupations: [
+                      {
+                        businessSectorId: businessSector1.id,
+                      },
+                      {
+                        businessSectorId: businessSector2.id,
+                      },
+                    ],
+                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
+                  },
+                }
+              );
 
-        //   //   await Promise.all(
-        //   //     lyonAssociatedCandidates.map(async (candidate, index) => {
-        //   //       return userCandidatsHelper.associateCoachAndCandidate(
-        //   //         lyonAssociatedCoaches[index],
-        //   //         candidate
-        //   //       );
-        //   //     })
-        //   //   );
+            await Promise.all(
+              lyonAssociatedCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedCoaches[index],
+                  candidate
+                );
+              })
+            );
 
-        //   //   const expectedCandidatesIds = [
-        //   //     ...lyonAssociatedCandidates.map(({ id }) => id),
-        //   //   ];
+            const expectedCandidatesIds = [
+              ...lyonAssociatedCandidates.map(({ id }) => id),
+            ];
 
-        //   //   const response: APIResponse<UserProfilesController['findAll']> =
-        //   //     await request(server)
-        //   //       .get(
-        //   //         `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
-        //   //       )
-        //   //       .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        //   //   expect(response.status).toBe(200);
-        //   //   expect(response.body.length).toBe(2);
-        //   //   expect(expectedCandidatesIds).toEqual(
-        //   //     expect.arrayContaining(response.body.map(({ id }) => id))
-        //   //   );
-        //   // });
-        //   // it('Should return 200, and all the coaches that match all the filters', async () => {
-        //   //   const businessSector1 = await businessSectorsHelper.findOne({
-        //   //     name: 'Sector 1',
-        //   //   });
-        //   //   const businessSector2 = await businessSectorsHelper.findOne({
-        //   //     name: 'Sector 2',
-        //   //   });
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+          it('Should return 200, and all the coaches that match all the filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
 
-        //   //   const lyonAssociatedCoaches = await databaseHelper.createEntities(
-        //   //     userFactory,
-        //   //     2,
-        //   //     {
-        //   //       firstName: 'XXX',
-        //   //       role: UserRoles.COACH,
-        //   //     },
-        //   //     {
-        //   //       userProfile: {
-        //   //         department: 'Rhône (69)',
-        //   //         sectorOccupations: [
-        //   //           {
-        //   //             businessSectorId: businessSector1.id,
-        //   //           },
-        //   //           {
-        //   //             businessSectorId: businessSector2.id,
-        //   //           },
-        //   //         ],
-        //   //         nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
-        //   //       },
-        //   //     }
-        //   //   );
+            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                firstName: 'XXX',
+                role: UserRoles.COACH,
+              },
+              {
+                userProfile: {
+                  department: 'Rhône (69)',
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
+                },
+              }
+            );
 
-        //   //   const lyonAssociatedCandidates =
-        //   //     await databaseHelper.createEntities(
-        //   //       userFactory,
-        //   //       2,
-        //   //       {
-        //   //         firstName: 'XXX',
-        //   //         role: UserRoles.CANDIDATE,
-        //   //       },
-        //   //       {
-        //   //         userProfile: {
-        //   //           department: 'Rhône (69)',
-        //   //           sectorOccupations: [
-        //   //             {
-        //   //               businessSectorId: businessSector1.id,
-        //   //             },
-        //   //             {
-        //   //               businessSectorId: businessSector2.id,
-        //   //             },
-        //   //           ],
-        //   //           nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
-        //   //         },
-        //   //       }
-        //   //     );
+            const lyonAssociatedCandidates =
+              await databaseHelper.createEntities(
+                userFactory,
+                2,
+                {
+                  firstName: 'XXX',
+                  role: UserRoles.CANDIDATE,
+                },
+                {
+                  userProfile: {
+                    department: 'Rhône (69)',
+                    sectorOccupations: [
+                      {
+                        businessSectorId: businessSector1.id,
+                      },
+                      {
+                        businessSectorId: businessSector2.id,
+                      },
+                    ],
+                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
+                  },
+                }
+              );
 
-        //   //   await Promise.all(
-        //   //     lyonAssociatedCandidates.map(async (candidate, index) => {
-        //   //       return userCandidatsHelper.associateCoachAndCandidate(
-        //   //         lyonAssociatedCoaches[index],
-        //   //         candidate
-        //   //       );
-        //   //     })
-        //   //   );
+            await Promise.all(
+              lyonAssociatedCandidates.map(async (candidate, index) => {
+                return userCandidatsHelper.associateCoachAndCandidate(
+                  lyonAssociatedCoaches[index],
+                  candidate
+                );
+              })
+            );
 
-        //   //   const expectedCoachesIds = [
-        //   //     ...lyonAssociatedCoaches.map(({ id }) => id),
-        //   //   ];
+            const expectedCoachesIds = [
+              ...lyonAssociatedCoaches.map(({ id }) => id),
+            ];
 
-        //   //   const response: APIResponse<UserProfilesController['findAll']> =
-        //   //     await request(server)
-        //   //       .get(
-        //   //         `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeNetwork.id}`
-        //   //       )
-        //   //       .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeNetwork.id}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
-        //   //   expect(response.status).toBe(200);
-        //   //   expect(response.body.length).toBe(2);
-        //   //   expect(expectedCoachesIds).toEqual(
-        //   //     expect.arrayContaining(response.body.map(({ id }) => id))
-        //   //   );
-        //   // });
-        // });
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCoachesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+        });
       });
 
       describe('/profile/refered', () => {
