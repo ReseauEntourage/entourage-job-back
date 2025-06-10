@@ -52,7 +52,10 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            type: Sequelize.UUID,
+            defaultValue: () => {
+              return UUID.v4();
+            },
           },
           name: {
             type: Sequelize.STRING,
@@ -78,7 +81,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           createdAt: {
             allowNull: false,
@@ -105,7 +108,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -152,7 +155,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           name: {
             type: Sequelize.STRING,
@@ -170,7 +173,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -203,7 +206,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           value: {
             type: Sequelize.STRING,
@@ -225,7 +228,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -259,7 +262,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           value: {
             type: Sequelize.STRING,
@@ -281,7 +284,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -311,7 +314,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           createdAt: {
             allowNull: false,
@@ -334,7 +337,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -367,7 +370,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           name: {
             type: Sequelize.STRING,
@@ -383,7 +386,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -421,7 +424,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           title: {
             type: Sequelize.STRING,
@@ -462,7 +465,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           experienceId: {
             type: Sequelize.UUID,
@@ -495,7 +498,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -528,7 +531,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           title: {
             type: Sequelize.STRING,
@@ -569,7 +572,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           formationId: {
             type: Sequelize.UUID,
@@ -597,7 +600,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           userProfileId: {
             type: Sequelize.UUID,
@@ -630,7 +633,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           createdAt: {
             allowNull: false,
@@ -669,7 +672,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           value: {
             type: Sequelize.STRING,
@@ -699,7 +702,7 @@ module.exports = {
             allowNull: false,
             primaryKey: true,
             type: Sequelize.UUID,
-            defaultValue: Sequelize.literal('uuid_generate_v4()'),
+            defaultValue: Sequelize.UUIDV4,
           },
           createdAt: {
             allowNull: false,

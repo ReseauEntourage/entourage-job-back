@@ -261,6 +261,7 @@ export class UserProfilesController {
           return {
             ...restRecommendedUser,
             ...userProfile,
+            id: recommendedProfile.recommendedUser.id,
             lastSentMessage: lastSentMessage?.createdAt || null,
             lastReceivedMessage: lastReceivedMessage?.createdAt || null,
             averageDelayResponse,

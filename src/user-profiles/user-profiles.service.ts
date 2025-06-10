@@ -249,6 +249,7 @@ export class UserProfilesService {
         return {
           ...user,
           ...restProfile,
+          id: profile.user.id,
           lastSentMessage: lastSentMessage?.createdAt || null,
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
           averageDelayResponse,
@@ -302,6 +303,7 @@ export class UserProfilesService {
         return {
           ...user,
           ...restProfile,
+          id: profile.user.id,
           lastSentMessage: lastSentMessage?.createdAt || null,
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
           averageDelayResponse,
