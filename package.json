@@ -18,7 +18,7 @@
     "test": "run-s test:*",
     "test:ts-check": "tsc -p tsconfig.json --noEmit",
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",
-    "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --detectOpenHandles --forceExit",
+    "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --detectOpenHandles --forceExit --testTimeout=10000 --watch",
     "db:create": "sequelize db:create",
     "db:migrate": "sequelize db:migrate",
     "db:migrate:undo": "sequelize db:migrate:undo",
