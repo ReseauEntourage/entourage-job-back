@@ -1,19 +1,21 @@
 import {
   AllowNull,
-  BelongsToMany,
+  BelongsTo,
   Column,
-  CreatedAt,
   DataType,
   Default,
+  ForeignKey,
+  HasMany,
   IsUUID,
   PrimaryKey,
   Table,
-  UpdatedAt,
 } from 'sequelize-typescript';
-import { CV, CVSkill } from 'src/cvs/models';
+import { ExperienceSkill } from 'src/common/experiences/models';
+import { FormationSkill } from 'src/common/formations/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { WrapperModel } from 'src/utils/types';
 
-@Table({ tableName: 'Skills' })
+@Table({ tableName: 'Skills', timestamps: false })
 export class Skill extends WrapperModel {
   @IsUUID(4)
   @PrimaryKey
@@ -25,12 +27,21 @@ export class Skill extends WrapperModel {
   @Column
   name: string;
 
-  @BelongsToMany(() => CV, () => CVSkill, 'SkillId', 'CVId')
-  CVs: CV[];
+  @AllowNull(false)
+  @Column
+  order: number;
 
-  @CreatedAt
-  createdAt: Date;
+  @ForeignKey(() => UserProfile)
+  @AllowNull(false)
+  @Column
+  userProfileId: string;
 
-  @UpdatedAt
-  updatedAt: Date;
+  @BelongsTo(() => UserProfile)
+  userProfile: UserProfile;
+
+  @HasMany(() => ExperienceSkill)
+  experienceSkills: ExperienceSkill[];
+
+  @HasMany(() => ExperienceSkill)
+  formationSkills: FormationSkill[];
 }

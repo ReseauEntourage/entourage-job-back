@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { LanguagesController } from './languages.controller';
+import { LanguagesService } from './languages.service';
 import { Language } from './models';
 
 @Module({
   imports: [SequelizeModule.forFeature([Language])],
-  exports: [SequelizeModule],
+  providers: [LanguagesService],
+  controllers: [LanguagesController],
+  exports: [SequelizeModule, LanguagesService],
 })
 export class LanguagesModule {}

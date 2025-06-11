@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bull';
-import { Module, CacheModule } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
@@ -8,21 +8,21 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
-import { AmbitionsModule } from './common/ambitions/ambitions.module';
-import { BusinessLinesModule } from './common/business-lines/business-lines.module';
+import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';
+import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { ContactsModule } from './contacts/contacts.module';
-import { CVsModule } from './cvs/cvs.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
@@ -31,12 +31,12 @@ import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RevisionsModule } from './revisions/revisions.module';
-import { SharesModule } from './shares/shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
 import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
+import { UsersStatsModule } from './users-stats/users-stats.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -98,19 +98,17 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
-    CVsModule,
     ExternalCvsModule,
-    BusinessLinesModule,
+    BusinessSectorsModule,
     LocationsModule,
-    AmbitionsModule,
     ContractsModule,
     LanguagesModule,
+    InterestsModule,
     PassionsModule,
     SkillsModule,
     ExperiencesModule,
@@ -127,6 +125,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MessagingModule,
     UserSocialSituationsModule,
     MediasModule,
+    OpenAiModule,
   ],
   providers: [
     {
@@ -142,16 +141,13 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
-    CVsModule,
-    BusinessLinesModule,
+    BusinessSectorsModule,
     LocationsModule,
-    AmbitionsModule,
     ContractsModule,
     LanguagesModule,
     PassionsModule,

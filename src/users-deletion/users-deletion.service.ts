@@ -1,25 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
-import { CVsService } from 'src/cvs/cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { RevisionChangesService } from 'src/revisions/revision-changes.service';
-import { RevisionsService } from 'src/revisions/revisions.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User, UserCandidat } from 'src/users/models';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
-import { generateImageNamesToDelete } from 'src/users/users.utils';
 
 @Injectable()
 export class UsersDeletionService {
   constructor(
-    private cvsService: CVsService,
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private userCandidatsService: UserCandidatsService,
-    private revisionsService: RevisionsService,
-    private revisionChangesService: RevisionChangesService,
     private s3Service: S3Service
   ) {}
 
@@ -46,9 +39,6 @@ export class UsersDeletionService {
   }
 
   async removeFiles(id: string, firstName: string, lastName: string) {
-    await this.s3Service.deleteFiles(
-      generateImageNamesToDelete(`${process.env.AWSS3_IMAGE_DIRECTORY}${id}`)
-    );
     const pdfFileName = `${firstName}_${lastName}_${id.substring(0, 8)}.pdf`;
     await this.s3Service.deleteFiles(
       `${process.env.AWSS3_FILE_DIRECTORY}${pdfFileName}`
@@ -59,34 +49,13 @@ export class UsersDeletionService {
     await this.userProfilesService.updateByUserId(id, {
       currentJob: null,
       description: null,
+      introduction: null,
     });
     return this.userProfilesService.removeByUserId(id);
   }
 
-  async removeCandidateCVs(id: string) {
-    await this.cvsService.updateByCandidateId(id, {
-      intro: null,
-      story: null,
-      transport: null,
-      availability: null,
-      urlImg: null,
-      catchphrase: null,
-    });
-    return this.cvsService.removeByCandidateId(id);
-  }
-
-  async uncacheCandidateCV(url: string) {
-    await this.cvsService.uncacheCV(url);
-  }
-
-  async cacheAllCVs() {
-    await this.cvsService.sendCacheAllCVs();
-  }
-
-  async deleteCompleteUser(
-    user: User
-  ): Promise<{ cvsDeleted: number; userDeleted: number }> {
-    const { id, firstName, lastName, candidat } = user.toJSON();
+  async deleteCompleteUser(user: User): Promise<{ userDeleted: number }> {
+    const { id, firstName, lastName } = user.toJSON();
 
     await this.removeFiles(id, firstName, lastName);
 
@@ -98,25 +67,16 @@ export class UsersDeletionService {
       address: null,
     });
 
-    if (candidat?.url) {
-      await this.uncacheCandidateCV(candidat.url);
-    }
-
-    const cvsDeleted = await this.removeCandidateCVs(id);
-
     await this.updateUserCandidatByCandidatId(id, {
       note: null,
       url: `deleted-${id.substring(0, 8)}`,
     });
-
-    await this.cacheAllCVs();
 
     await this.removeUserProfile(id);
 
     const userDeleted = await this.removeUser(id);
     return {
       userDeleted,
-      cvsDeleted,
     };
   }
 }

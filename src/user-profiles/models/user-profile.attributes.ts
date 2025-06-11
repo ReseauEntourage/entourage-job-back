@@ -1,9 +1,15 @@
 export const UserProfilesAttributes = [
-  'description',
+  'id',
+  'allowPhysicalEvents',
+  'allowRemoteEvents',
   'currentJob',
   'department',
+  'description',
+  'introduction',
   'isAvailable',
   'linkedinUrl',
+  'optInNewsletter',
+  'optInRecommendations',
   'hasExternalCv',
 ];
 

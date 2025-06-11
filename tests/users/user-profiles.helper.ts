@@ -27,46 +27,27 @@ export class UserProfilesHelper {
       lastName: user.lastName,
       role: user.role,
       description: user.userProfile.description,
+      introduction: user.userProfile.introduction,
       currentJob: user.userProfile.currentJob,
       department: user.userProfile.department,
       isAvailable: user.userProfile.isAvailable,
       lastReceivedMessage: null,
       lastSentMessage: null,
-      networkBusinessLines: expect.arrayContaining(
-        user.userProfile.networkBusinessLines.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
+      sectorOccupations: expect.arrayContaining(
+        user.userProfile.sectorOccupations.map((sectorOccupation) => ({
+          id: sectorOccupation.id,
+          businessSector: expect.objectContaining({
+            id: sectorOccupation.businessSector.id,
+          }),
+          occupation: sectorOccupation.occupation
+            ? expect.objectContaining({
+                name: sectorOccupation.occupation.name,
+              })
+            : null,
+          order: sectorOccupation.order,
+        }))
       ),
-      searchBusinessLines: expect.arrayContaining(
-        user.userProfile.searchBusinessLines.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      searchAmbitions: expect.arrayContaining(
-        user.userProfile.searchAmbitions.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      helpNeeds: expect.arrayContaining(
-        user.userProfile.helpNeeds.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
-      ),
-      helpOffers: expect.arrayContaining(
-        user.userProfile.helpOffers.map(({ name }) =>
-          expect.objectContaining({
-            name,
-          })
-        )
-      ),
+      nudges: user.userProfile.nudges,
     } as Partial<UserProfile & User>;
   }
 

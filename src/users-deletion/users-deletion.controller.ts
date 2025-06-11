@@ -27,13 +27,14 @@ export class UsersDeletionController {
   async removeOwnUser(@UserPayload('id') userId: string) {
     const user = await this.usersDeletionService.findOneUser(userId);
 
-    const { userDeleted, cvsDeleted } =
-      await this.usersDeletionService.deleteCompleteUser(user);
+    const { userDeleted } = await this.usersDeletionService.deleteCompleteUser(
+      user
+    );
 
     if (userDeleted) {
       await this.mailService.sendUserDeletionEmail(user);
     }
-    return { userDeleted, cvsDeleted };
+    return { userDeleted };
   }
 
   @UserPermissions(Permissions.ADMIN)
@@ -46,9 +47,10 @@ export class UsersDeletionController {
       throw new NotFoundException();
     }
 
-    const { userDeleted, cvsDeleted } =
-      await this.usersDeletionService.deleteCompleteUser(user);
+    const { userDeleted } = await this.usersDeletionService.deleteCompleteUser(
+      user
+    );
 
-    return { userDeleted, cvsDeleted };
+    return { userDeleted };
   }
 }

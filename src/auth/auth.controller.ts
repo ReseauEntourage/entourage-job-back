@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Redirect,
   UnauthorizedException,
   UseGuards,
@@ -14,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
+import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
@@ -26,7 +28,8 @@ import { LocalAuthGuard, Public, UserPayload } from './guards';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly sessionService: SessionsService
+    private readonly sessionService: SessionsService,
+    private readonly externalCvsService: ExternalCvsService
   ) {}
 
   @Public()
@@ -157,7 +160,10 @@ export class AuthController {
   @Throttle(60, 60)
   @ApiBearerAuth()
   @Get('current')
-  async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+  async getCurrent(
+    @UserPayload('id', new ParseUUIDPipe()) id: string,
+    @Query('complete') complete = 'false'
+  ) {
     // Updating current user last connection date
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
@@ -166,10 +172,29 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    const currentUser = await this.authService.findOneUserById(id);
+    const usersStats =
+      complete === 'true'
+        ? await this.authService.getUsersStats(updatedUser.id)
+        : {};
+
+    const currentUser = await this.authService.findOneUserById(
+      updatedUser.id,
+      complete === 'true'
+    );
+    const hasExtractedCvData =
+      complete === 'true'
+        ? await this.externalCvsService.hasExtractedCVData(
+            currentUser.userProfile.id
+          )
+        : undefined;
+
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
-    return currentUser;
+    return {
+      ...currentUser.toJSON(),
+      ...(usersStats || {}),
+      hasExtractedCvData,
+    };
   }
 
   @Public()
