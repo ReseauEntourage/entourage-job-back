@@ -90,6 +90,8 @@ export class ExternalCvsController {
       // Construction de la clé S3 pour le CV externe
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}external-cvs/${userId}.pdf`;
 
+      // eslint-disable-next-line no-console
+      console.log('PDF URL:', pdfUrl);
       // Création du dossier temporaire s'il n'existe pas
       const tempDir = path.join(process.cwd(), 'temp');
       if (!fs.existsSync(tempDir)) {
@@ -137,6 +139,9 @@ export class ExternalCvsController {
           const pagesResult = await convert(pageCount, {
             responseType: 'base64',
           });
+
+          // eslint-disable-next-line no-console
+          console.log('Pages converted:', pagesResult.base64);
 
           // Extraction des données du CV à partir des images
           extractedCVData =
