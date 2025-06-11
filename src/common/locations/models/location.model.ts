@@ -1,6 +1,5 @@
 import {
   AllowNull,
-  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -11,7 +10,6 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { Department } from '../locations.types';
-import { CV, CVLocation } from 'src/cvs/models';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Locations' })
@@ -30,9 +28,6 @@ export class Location extends WrapperModel {
   @Default(-1)
   @Column
   order: number;
-
-  @BelongsToMany(() => CV, () => CVLocation, 'LocationId', 'CVId')
-  CVs: CV[];
 
   @CreatedAt
   createdAt: Date;

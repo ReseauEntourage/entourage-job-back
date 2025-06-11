@@ -1,10 +1,8 @@
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
-
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
-
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';

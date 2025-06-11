@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from 'src/auth/auth.module';
+import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';
 import { UserCandidat, User } from './models';
@@ -14,6 +15,7 @@ import { UsersService } from './users.service';
     QueuesModule,
     MailsModule,
     forwardRef(() => AuthModule),
+    BusinessSectorsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService, UserCandidatsService],

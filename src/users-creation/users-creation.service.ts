@@ -102,10 +102,6 @@ export class UsersCreationService {
     return this.mailsService.sendOnboardingJ4ContactAdviceMail(user);
   }
 
-  async sendMailsAfterMatching(candidateId: string) {
-    return this.usersService.sendMailsAfterMatching(candidateId);
-  }
-
   async sendAdminNewRefererNotificationMail(referer: User) {
     return this.mailsService.sendAdminNewRefererNotificationMail(referer);
   }
@@ -130,7 +126,9 @@ export class UsersCreationService {
 
   async updateUserProfileByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile>
+    updateUserProfileDto: Partial<UserProfile> & {
+      nudgeIds?: string[];
+    }
   ) {
     return this.userProfilesService.updateByUserId(
       userId,

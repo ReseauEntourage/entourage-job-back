@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 // import { UpdateUserDto } from 'src/users/dto';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -18,7 +18,7 @@ export class UsersHelper {
     props: Partial<User> = {},
     userAssociationsProps: {
       userCandidat?: Partial<UserCandidat>;
-      userProfile?: Partial<UserProfile>;
+      userProfile?: UserProfileWithPartialAssociations;
     } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
   ): Promise<{ user: User; token: string }> {

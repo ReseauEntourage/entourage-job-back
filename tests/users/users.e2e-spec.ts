@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -6,12 +7,9 @@ import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
-import { Experience } from 'src/common/experiences/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
-import { Review } from 'src/common/reviews/models';
-import { Skill } from 'src/common/skills/models';
+import { Nudge } from 'src/common/nudge/models';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
@@ -19,42 +17,25 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
-import { HelpNeed, HelpOffer, UserProfile } from 'src/user-profiles/models';
+import {
+  UserProfile,
+  UserProfileWithPartialAssociations,
+} from 'src/user-profiles/models';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
-import { HelpValue } from 'src/user-profiles/user-profiles.types';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
-import { CVStatuses, Programs, UserRoles } from 'src/users/users.types';
+import { Programs, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { UsersDeletionController } from 'src/users-deletion/users-deletion.controller';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
-import { AmbitionsHelper } from 'tests/common/ambitions/ambitions.helper';
-import { BusinessLinesHelper } from 'tests/common/business-lines/business-lines.helper';
-import { ContractsHelper } from 'tests/common/contracts/contracts.helper';
-import { ExperiencesSkillsHelper } from 'tests/common/experiences/experiences-skills.helper';
-import { ExperiencesHelper } from 'tests/common/experiences/experiences.helper';
-import { FormationsHelper } from 'tests/common/formations/formations.helper';
-import { LanguagesHelper } from 'tests/common/languages/languages.helper';
-import { LocationsHelper } from 'tests/common/locations/locations.helper';
-import { PassionsHelper } from 'tests/common/passions/passions.helper';
-import { ReviewsHelper } from 'tests/common/reviews/reviews.helper';
-import { SkillsHelper } from 'tests/common/skills/skills.helper';
+import { NudgesHelper } from 'tests/common/nudges/nudges.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
-import { CVAmbitionsHelper } from 'tests/cvs/cv-ambitions.helper';
-import { CVBusinessLinesHelper } from 'tests/cvs/cv-business-lines.helper';
-import { CVContractsHelper } from 'tests/cvs/cv-contracts.helper';
-import { CVLanguagesHelper } from 'tests/cvs/cv-languages.helper';
-import { CVLocationsHelper } from 'tests/cvs/cv-locations.helper';
-import { CVPassionsHelper } from 'tests/cvs/cv-passions.helper';
-import { CVSearchesHelper } from 'tests/cvs/cv-searches.helper';
-import { CVSkillsHelper } from 'tests/cvs/cv-skills.helper';
-import { CVFactory } from 'tests/cvs/cv.factory';
-import { CVsHelper } from 'tests/cvs/cvs.helper';
 import { DatabaseHelper } from 'tests/database.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
+import { BusinessSectorHelper } from './business-sector.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
@@ -70,29 +51,22 @@ describe('Users', () => {
   let usersHelper: UsersHelper;
   let userCandidatsHelper: UserCandidatsHelper;
   let userProfilesHelper: UserProfilesHelper;
-  let cvsHelper: CVsHelper;
-  let cvFactory: CVFactory;
-  let cvBusinessLinesHelper: CVBusinessLinesHelper;
-  let cvLocationsHelper: CVLocationsHelper;
-  let cvPassionsHelper: CVPassionsHelper;
-  let cvAmbitionsHelper: CVAmbitionsHelper;
-  let cvContractsHelper: CVContractsHelper;
-  let cvLanguagesHelper: CVLanguagesHelper;
-  let cvSkillsHelper: CVSkillsHelper;
-  let cvSearchesHelper: CVSearchesHelper;
-  let experiencesHelper: ExperiencesHelper;
-  let formationsHelper: FormationsHelper;
-  let businessLinesHelper: BusinessLinesHelper;
-  let locationsHelper: LocationsHelper;
-  let passionsHelper: PassionsHelper;
-  let ambitionsHelper: AmbitionsHelper;
-  let contractsHelper: ContractsHelper;
-  let languagesHelper: LanguagesHelper;
-  let skillsHelper: SkillsHelper;
-  let experiencesSkillsHelper: ExperiencesSkillsHelper;
-  let reviewsHelper: ReviewsHelper;
   let organizationFactory: OrganizationFactory;
   let internalMessageFactory: InternalMessageFactory;
+  let businessSectorsHelper: BusinessSectorHelper;
+  let nudgesHelper: NudgesHelper;
+
+  let businessSector1: BusinessSector;
+  let businessSector2: BusinessSector;
+  let businessSector3: BusinessSector;
+  let businessSector4: BusinessSector;
+  let businessSector5: BusinessSector;
+  let businessSector6: BusinessSector;
+  let nudgeCv: Nudge;
+  let nudgeTips: Nudge;
+  let nudgeNetwork: Nudge;
+  let nudgeInterview: Nudge;
+  let nudgeEvent: Nudge;
 
   const route = '/user';
 
@@ -118,33 +92,10 @@ describe('Users', () => {
       moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
+    businessSectorsHelper =
+      moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
+    nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    cvsHelper = moduleFixture.get<CVsHelper>(CVsHelper);
-    cvFactory = moduleFixture.get<CVFactory>(CVFactory);
-    cvBusinessLinesHelper = moduleFixture.get<CVBusinessLinesHelper>(
-      CVBusinessLinesHelper
-    );
-    cvLocationsHelper = moduleFixture.get<CVLocationsHelper>(CVLocationsHelper);
-    cvPassionsHelper = moduleFixture.get<CVPassionsHelper>(CVPassionsHelper);
-    cvAmbitionsHelper = moduleFixture.get<CVAmbitionsHelper>(CVAmbitionsHelper);
-    cvContractsHelper = moduleFixture.get<CVContractsHelper>(CVContractsHelper);
-    cvLanguagesHelper = moduleFixture.get<CVLanguagesHelper>(CVLanguagesHelper);
-    cvSkillsHelper = moduleFixture.get<CVSkillsHelper>(CVSkillsHelper);
-    experiencesHelper = moduleFixture.get<ExperiencesHelper>(ExperiencesHelper);
-    formationsHelper = moduleFixture.get<FormationsHelper>(FormationsHelper);
-    cvSearchesHelper = moduleFixture.get<CVSearchesHelper>(CVSearchesHelper);
-    businessLinesHelper =
-      moduleFixture.get<BusinessLinesHelper>(BusinessLinesHelper);
-    locationsHelper = moduleFixture.get<LocationsHelper>(LocationsHelper);
-    passionsHelper = moduleFixture.get<PassionsHelper>(PassionsHelper);
-    ambitionsHelper = moduleFixture.get<AmbitionsHelper>(AmbitionsHelper);
-    contractsHelper = moduleFixture.get<ContractsHelper>(ContractsHelper);
-    languagesHelper = moduleFixture.get<LanguagesHelper>(LanguagesHelper);
-    skillsHelper = moduleFixture.get<SkillsHelper>(SkillsHelper);
-    experiencesSkillsHelper = moduleFixture.get<ExperiencesSkillsHelper>(
-      ExperiencesSkillsHelper
-    );
-    reviewsHelper = moduleFixture.get<ReviewsHelper>(ReviewsHelper);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
     internalMessageFactory = moduleFixture.get<InternalMessageFactory>(
@@ -152,14 +103,75 @@ describe('Users', () => {
     );
   });
 
-  afterAll(async () => {
+  beforeAll(async () => {
+    // Reset the test database
     await databaseHelper.resetTestDB();
+
+    // Initialize the business sectors
+    await businessSectorsHelper.deleteAllBusinessSectors();
+    await businessSectorsHelper.seedBusinessSectors();
+
+    businessSector1 = await businessSectorsHelper.findOne({
+      name: 'Sector 1',
+    });
+    businessSector2 = await businessSectorsHelper.findOne({
+      name: 'Sector 2',
+    });
+    businessSector3 = await businessSectorsHelper.findOne({
+      name: 'Sector 3',
+    });
+    businessSector4 = await businessSectorsHelper.findOne({
+      name: 'Sector 4',
+    });
+    businessSector5 = await businessSectorsHelper.findOne({
+      name: 'Sector 5',
+    });
+    businessSector6 = await businessSectorsHelper.findOne({
+      name: 'Sector 6',
+    });
+
+    // Intialize the nudges
+    await nudgesHelper.deleteAllNudges();
+    await nudgesHelper.seedNudges();
+
+    nudgeCv = await nudgesHelper.findOne({ value: 'cv' });
+    nudgeTips = await nudgesHelper.findOne({ value: 'tips' });
+    nudgeNetwork = await nudgesHelper.findOne({ value: 'network' });
+    nudgeInterview = await nudgesHelper.findOne({ value: 'interview' });
+    nudgeEvent = await nudgesHelper.findOne({ value: 'event' });
+  });
+
+  afterAll(async () => {
+    // Fermeture de l'application NestJS
     await app.close();
-    server.close();
+
+    // Fermeture du serveur HTTP avec une Promise
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        console.log('Serveur HTTP fermé');
+        resolve();
+      });
+    });
+
+    // Fermeture des files d'attente
+    if (QueueMocks.close) {
+      await QueueMocks.close();
+      console.log("Files d'attente fermées");
+    }
+
+    console.log('Toutes les connexions ont été fermées');
   });
 
   beforeEach(async () => {
-    await databaseHelper.resetTestDB();
+    try {
+      await databaseHelper.resetTestDB();
+    } catch (error) {
+      console.error(
+        'Erreur lors de la réinitialisation de la base de données:',
+        error
+      );
+      throw error;
+    }
   });
 
   describe('CRUD User', () => {
@@ -701,11 +713,6 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
-
           const userValues = {
             firstName: user.firstName,
             lastName: user.lastName,
@@ -716,9 +723,13 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            nudges: [{ id: nudgeTips.id }, { id: nudgeNetwork.id }],
             department: 'Paris (75)' as Department,
           };
+
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
 
           const userToSend = {
             ...userValues,
@@ -730,8 +741,11 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -746,9 +760,11 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                helpNeeds: expect.arrayContaining(
-                  userProfileValues.helpNeeds.map((expectation) =>
-                    expect.objectContaining(expectation)
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
                   )
                 ),
               }),
@@ -1136,10 +1152,7 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          const nudges = [nudgeCv, nudgeInterview];
 
           const userValues = {
             firstName: user.firstName,
@@ -1149,9 +1162,23 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+
           const userProfileValues = {
-            helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
+            nudges: nudges.map((nudge) => ({
+              id: nudge.id,
+            })),
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const userToSend = {
@@ -1163,8 +1190,6 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
           };
 
           const response: APIResponse<
@@ -1180,9 +1205,11 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                helpNeeds: expect.arrayContaining(
-                  userProfileValues.helpNeeds.map((expectation) =>
-                    expect.objectContaining(expectation)
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
                   )
                 ),
               }),
@@ -1197,8 +1224,6 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [{ name: 'cv' }];
-
           const userValues = {
             firstName: user.firstName,
             lastName: user.lastName,
@@ -1207,9 +1232,18 @@ describe('Users', () => {
             gender: user.gender,
           };
 
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            nudges: [{ id: nudgeCv.id }],
             department: 'Paris (75)' as Department,
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
           };
 
           const userToSend = {
@@ -1220,7 +1254,6 @@ describe('Users', () => {
             materialInsecurity: CandidateYesNo.YES,
             networkInsecurity: CandidateYesNo.NO,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
           };
 
           const response: APIResponse<
@@ -1236,9 +1269,11 @@ describe('Users', () => {
               zone: getZoneFromDepartment(userProfileValues.department),
               userProfile: expect.objectContaining({
                 department: userProfileValues.department,
-                helpNeeds: expect.arrayContaining(
-                  userProfileValues.helpNeeds.map((expectation) =>
-                    expect.objectContaining(expectation)
+                nudges: expect.arrayContaining(
+                  userProfileValues.nudges.map((nudge) =>
+                    expect.objectContaining({
+                      id: nudge.id,
+                    })
                   )
                 ),
               }),
@@ -1253,7 +1288,7 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [];
+          // const helpNeeds: { name: HelpValue }[] = [];
 
           const userValues = {
             firstName: user.firstName,
@@ -1262,7 +1297,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1290,10 +1325,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1304,7 +1339,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1317,7 +1352,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1336,10 +1378,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1350,7 +1392,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1363,7 +1405,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1382,10 +1431,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1396,7 +1445,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1409,7 +1458,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1428,10 +1484,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1442,7 +1498,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1455,8 +1511,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1475,10 +1537,10 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          // const helpNeeds: { name: HelpValue }[] = [
+          //   { name: 'cv' },
+          //   { name: 'interview' },
+          // ];
 
           const userValues = {
             firstName: user.firstName,
@@ -1489,7 +1551,7 @@ describe('Users', () => {
           };
 
           const userProfileValues = {
-            helpNeeds: helpNeeds,
+            // helpNeeds: helpNeeds,
             department: 'Paris (75)' as Department,
           };
 
@@ -1502,8 +1564,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1527,10 +1595,7 @@ describe('Users', () => {
             false
           );
 
-          const helpNeeds: { name: HelpValue }[] = [
-            { name: 'cv' },
-            { name: 'interview' },
-          ];
+          const nudges = [nudgeCv, nudgeInterview];
 
           const userToSend = {
             firstName: user.firstName,
@@ -1538,7 +1603,9 @@ describe('Users', () => {
             email: user.email,
             phone: user.phone,
             gender: user.gender,
-            helpNeeds: helpNeeds,
+            nudges: nudges.map((nudge) => ({
+              id: nudge.id,
+            })),
             department: 'Paris (75)' as Department,
             campaign: '1234',
             workingRight: CandidateYesNoNSPP.YES,
@@ -1546,8 +1613,14 @@ describe('Users', () => {
             networkInsecurity: CandidateYesNo.NO,
             program: Programs.THREE_SIXTY,
             birthDate: '1996-24-04',
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
           };
 
           const response: APIResponse<
@@ -1944,52 +2017,6 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
       });
-      describe('/search/candidates?query= - Search a public candidate where query string in email, first name or last name', () => {
-        let candidate: User;
-
-        beforeEach(async () => {
-          candidate = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-        });
-        it('Should return 200 and part of candidates if candidates have a published CV', async () => {
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PUBLISHED.value,
-          });
-
-          const publicCandidateInfo = [
-            {
-              id: candidate.id,
-              firstName: candidate.firstName,
-              lastName: candidate.lastName,
-              role: candidate.role,
-            },
-          ];
-
-          const response: APIResponse<UsersController['findCandidates']> =
-            await request(server).get(
-              `${route}/search/candidates?query=${candidate.firstName}`
-            );
-
-          expect(response.status).toBe(200);
-          expect(response.body).toStrictEqual(publicCandidateInfo);
-        });
-        it('Should return 200 and no candidates if candidates have not a published CV', async () => {
-          await cvFactory.create({
-            UserId: candidate.id,
-            status: CVStatuses.PROGRESS.value,
-          });
-
-          const response: APIResponse<UsersController['findCandidates']> =
-            await request(server).get(
-              `${route}/search/candidates?query=${candidate.firstName}`
-            );
-
-          expect(response.status).toBe(200);
-          expect(response.body.length).toBe(0);
-        });
-      });
       describe('/members - Read all members', () => {
         it('Should return 401 if user is not logged in', async () => {
           const response: APIResponse<UsersController['findMembers']> =
@@ -2195,7 +2222,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/members?zone[]=&employed[]=&hidden[]=&businessLines[]=&associatedUser[]=&cvStatus[]= - Read all members as admin with filters', () => {
+        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]=&associatedUser[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -2290,44 +2317,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the hidden filter', async () => {
-            const hiddenCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  hidden: true,
-                },
-              }
-            );
-            await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  hidden: false,
-                },
-              }
-            );
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&hidden[]=true`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(hiddenCandidates.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
           it('Should return 200, and all the candidates that matches the employed filter', async () => {
             const employedCandidates = await databaseHelper.createEntities(
               userFactory,
@@ -2363,286 +2352,6 @@ describe('Users', () => {
             expect(response.body.length).toBe(2);
             expect(employedCandidates.map(({ id }) => id)).toEqual(
               expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
-          it('Should return 200, and all the candidates that matches the cvStatus filters', async () => {
-            const publishedCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const pendingCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const progressCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            await Promise.all(
-              publishedCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PENDING.value,
-                  version: 1,
-                });
-              })
-            );
-            const publishedLatestCVs = await Promise.all(
-              publishedCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PUBLISHED.value,
-                  version: 3,
-                });
-              })
-            );
-
-            await Promise.all(
-              pendingCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PUBLISHED.value,
-                  version: 3,
-                });
-              })
-            );
-            const pendingLatestCVs = await Promise.all(
-              pendingCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PENDING.value,
-                  version: 6,
-                });
-              })
-            );
-
-            await Promise.all(
-              progressCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PUBLISHED.value,
-                  version: 7,
-                });
-              })
-            );
-            await Promise.all(
-              progressCandidates.map(async ({ id }) => {
-                return cvFactory.create({
-                  UserId: id,
-                  status: CVStatuses.PROGRESS.value,
-                  version: 10,
-                });
-              })
-            );
-
-            const expectedCandidatesIds = [
-              ...publishedCandidates.map(({ id }) => id),
-              ...pendingCandidates.map(({ id }) => id),
-            ];
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&cvStatus[]=${CVStatuses.PUBLISHED.value}&cvStatus[]=${CVStatuses.PENDING.value}`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(4);
-            expect(expectedCandidatesIds).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-            expect(response.body).toEqual(
-              expect.arrayContaining([
-                ...pendingLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-                ...publishedLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-              ])
-            );
-          });
-          it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
-            const batCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const rhCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const aaCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            await Promise.all(
-              rhCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 1,
-                  },
-                  { businessLines: ['id'] }
-                );
-              })
-            );
-            const rhLatestCVs = await Promise.all(
-              rhCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 4,
-                  },
-                  { businessLines: ['rh', 'aa'] }
-                );
-              })
-            );
-
-            await Promise.all(
-              batCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 2,
-                  },
-                  { businessLines: ['id'] }
-                );
-              })
-            );
-            const batLatestCVs = await Promise.all(
-              batCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 7,
-                  },
-                  { businessLines: ['bat', 'asp'] }
-                );
-              })
-            );
-            await Promise.all(
-              aaCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 5,
-                  },
-                  { businessLines: ['id'] }
-                );
-              })
-            );
-
-            await Promise.all(
-              aaCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 6,
-                  },
-                  { businessLines: ['aa', 'pr'] }
-                );
-              })
-            );
-
-            const expectedCandidatesIds = [
-              ...batCandidates.map(({ id }) => id),
-              ...rhCandidates.map(({ id }) => id),
-            ];
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(4);
-            expect(expectedCandidatesIds).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-            expect(response.body).toEqual(
-              expect.arrayContaining([
-                ...rhLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          businessLines: expect.arrayContaining([
-                            expect.objectContaining({
-                              name: 'rh',
-                            }),
-                          ]),
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-                ...batLatestCVs.map((cv) =>
-                  expect.objectContaining({
-                    candidat: expect.objectContaining({
-                      cvs: [
-                        expect.objectContaining({
-                          businessLines: expect.arrayContaining([
-                            expect.objectContaining({
-                              name: 'bat',
-                            }),
-                          ]),
-                          status: cv.status,
-                          urlImg: cv.urlImg,
-                          version: cv.version,
-                        }),
-                      ],
-                    }),
-                  })
-                ),
-              ])
             );
           });
           it('Should return 200, and all the candidates that matches the associatedUser filters', async () => {
@@ -2758,19 +2467,6 @@ describe('Users', () => {
               });
 
             await Promise.all(
-              lyonAssociatedCandidates.map(async ({ id }) => {
-                return cvFactory.create(
-                  {
-                    UserId: id,
-                    version: 4,
-                    status: CVStatuses.PUBLISHED.value,
-                  },
-                  { businessLines: ['rh', 'aa'] }
-                );
-              })
-            );
-
-            await Promise.all(
               lyonAssociatedCandidates.map(async (candidate, index) => {
                 return userCandidatsHelper.associateCoachAndCandidate(
                   lyonAssociatedCoaches[index],
@@ -2786,7 +2482,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&hidden[]=false&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&cvStatus[]=${CVStatuses.PUBLISHED.value}&businessLines[]=rh&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -2875,64 +2571,65 @@ describe('Users', () => {
             );
           });
         });
-      });
-      describe('/members/count - Count all pending members', () => {
-        it('Should return 403 if user is not a logged in admin', async () => {
-          const loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
+
+        describe('/members - Read all members as admin with businessSectorIds filters', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
           });
-          const response: APIResponse<
-            UsersController['countSubmittedCVMembers']
-          > = await request(server)
-            .get(`${route}/members/count`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 200 and count of members with pending CVs', async () => {
-          const loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
+          it('Should return 200, and all the candidates that match the businessSectorIds filter', async () => {
+            const candidatesSector1 = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                  ],
+                },
+              }
+            );
+
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              {
+                role: UserRoles.CANDIDATE,
+              },
+              {
+                userProfile: {
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                },
+              }
+            );
+
+            const expectedCandidatesIds = [
+              ...candidatesSector1.map(({ id }) => id),
+            ];
+
+            const response: APIResponse<UsersController['findMembers']> =
+              await request(server)
+                .get(
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedCandidatesIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
           });
-
-          const pendingCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            }
-          );
-
-          const progressCandidates = await databaseHelper.createEntities(
-            userFactory,
-            2,
-            {
-              role: UserRoles.CANDIDATE,
-            }
-          );
-
-          await Promise.all(
-            pendingCandidates.map(async ({ id }) => {
-              return cvFactory.create({
-                UserId: id,
-                status: CVStatuses.PENDING.value,
-              });
-            })
-          );
-          await Promise.all(
-            progressCandidates.map(async ({ id }) => {
-              return cvFactory.create({
-                UserId: id,
-                status: CVStatuses.PROGRESS.value,
-              });
-            })
-          );
-
-          const response: APIResponse<
-            UsersController['countSubmittedCVMembers']
-          > = await request(server)
-            .get(`${route}/members/count`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.pendingCVs).toBe(2);
         });
       });
     });
@@ -2947,11 +2644,13 @@ describe('Users', () => {
             {
               userProfile: {
                 department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'développeur' },
+                  },
+                ],
+                nudges: [{ id: nudgeNetwork.id }],
               },
             }
           );
@@ -2998,92 +2697,6 @@ describe('Users', () => {
             })
           );
         });
-        it('Should return 200, and cvUrl if user profile is a candidate not hidden CV', async () => {
-          const candidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-              userCandidat: {
-                hidden: false,
-              },
-            }
-          );
-
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server)
-              .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Bearer ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...userProfilesHelper.mapUserProfileFromUser(candidate),
-              cvUrl: candidate.candidat.url,
-            })
-          );
-        });
-        it('Should return 200, and no cvUrl if user profile is a candidate with hidden CV', async () => {
-          const candidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-              userCandidat: {
-                hidden: true,
-              },
-            }
-          );
-
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server)
-              .get(`${route}/profile/${candidate.id}`)
-              .set('authorization', `Bearer ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(candidate)
-            )
-          );
-          expect(response.body.cvUrl).toBeFalsy();
-        });
-        it('Should return 200, and no cvUrl if user profile is not a candidate', async () => {
-          const coach = await userFactory.create(
-            { role: UserRoles.COACH },
-            {
-              userProfile: {
-                department: 'Paris (75)',
-                searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-                helpNeeds: [{ name: 'network' }] as HelpNeed[],
-                helpOffers: [{ name: 'network' }] as HelpOffer[],
-              },
-            }
-          );
-          const response: APIResponse<UserProfilesController['findByUserId']> =
-            await request(server)
-              .get(`${route}/profile/${coach.id}`)
-              .set('authorization', `Bearer ${loggedInUser.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(coach)
-            )
-          );
-          expect(response.body.cvUrl).toBeFalsy();
-        });
       });
       describe('/profile/recommendations/:userId - Get user recommendations', () => {
         let loggedInAdmin: LoggedUser;
@@ -3122,6 +2735,7 @@ describe('Users', () => {
 
           expect(response.status).toBe(401);
         });
+
         it('Should return 403, if admin gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -3132,6 +2746,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if admin gets his recommendations', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -3140,6 +2755,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if coach gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -3150,6 +2766,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCoach.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if referer gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -3160,6 +2777,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInReferer.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 403, if candidate gets recommendations for another user', async () => {
           const response: APIResponse<
             UserProfilesController['findRecommendationsByUserId']
@@ -3168,6 +2786,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
+
         it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -3179,33 +2798,37 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
           );
 
-          const usersToRecommend = (
-            await databaseHelper.createEntities(
-              userFactory,
-              3,
-              {
-                role: UserRoles.CANDIDATE,
-                zone: AdminZones.LYON,
+          const usersToRecommend = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.CANDIDATE,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
-              {
-                userProfile: {
-                  department: 'Rhône (69)',
-                  isAvailable: true,
-                  searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                  searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                  helpNeeds: [{ name: 'interview' }] as HelpNeed[],
-                },
-              }
-            )
-          ).sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
+            }
           );
 
           await userProfilesHelper.createUserProfileRecommendations(
@@ -3227,6 +2850,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200 and new recommendations, if coach gets his recent recommendations and one of the candidates is not available anymore', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -3238,8 +2862,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -3256,9 +2884,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -3272,9 +2904,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: false,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -3295,16 +2931,18 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'peintre' }] as Ambition[],
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'peintre' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
 
-          const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
-            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
-          );
+          const usersToRecommend = [...stillAvailableUsers, userAvailable];
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCoach.user.id,
@@ -3325,6 +2963,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200 and new recommendations, if coach gets his old recommendations', async () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
@@ -3336,16 +2975,26 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
+
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
@@ -3358,24 +3007,33 @@ describe('Users', () => {
             },
             {
               userProfile: {
-                department: 'Aisne (02)',
+                department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
 
-          const candidate2BusinessLinesInCommon = await userFactory.create(
+          const candidate2BusinessSectorsInCommon = await userFactory.create(
             {
               role: UserRoles.CANDIDATE,
               zone: AdminZones.LILLE,
@@ -3384,17 +3042,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'cd' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3408,28 +3075,35 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'cv' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
 
           const newUsersToRecommend = [
             candidateSameRegion,
-            candidate2BusinessLinesInCommon,
+            candidate2BusinessSectorsInCommon,
             candidate2HelpsInCommon,
-          ].sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
-          );
+          ];
 
           // Candidate wrong departement
           await userFactory.create(
@@ -3441,17 +3115,23 @@ describe('Users', () => {
               userProfile: {
                 department: 'Paris (75)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3466,16 +3146,22 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
               },
             }
           );
@@ -3490,17 +3176,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeInterview.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
@@ -3515,17 +3210,23 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'aa' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector2.id,
+                    occupation: { name: 'Développeur' },
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3540,17 +3241,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector6.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3565,17 +3275,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: false,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -3591,81 +3310,30 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 currentJob: 'Développeur',
                 isAvailable: true,
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
 
-          // Candidate who sent message
-          const sentMessageCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: sentMessageCandidate.id,
-            addresseeUserId: loggedInCoach.user.id,
-          });
-
-          // Candidate who received message
-          const receivedMessageCandidate = await userFactory.create(
-            {
-              role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: loggedInCoach.user.id,
-            addresseeUserId: receivedMessageCandidate.id,
-          });
-
-          const oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon =
+          const oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon =
             await databaseHelper.createEntities(
               userFactory,
               3,
@@ -3677,24 +3345,33 @@ describe('Users', () => {
                 userProfile: {
                   department: 'Nord (59)',
                   isAvailable: true,
-                  searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                  searchBusinessLines: [
-                    { name: 'id' },
-                    { name: 'aa' },
-                    { name: 'cm' },
-                  ] as BusinessLine[],
-                  helpNeeds: [
-                    { name: 'network' },
-                    { name: 'tips' },
-                    { name: 'interview' },
-                  ] as HelpNeed[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                      occupation: { name: 'Développeur' },
+                      order: 1,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                      order: 2,
+                    },
+                    {
+                      businessSectorId: businessSector6.id,
+                      order: 3,
+                    },
+                  ],
+                  nudges: [
+                    { id: nudgeTips.id },
+                    { id: nudgeInterview.id },
+                    { id: nudgeNetwork.id },
+                  ],
                 },
               }
             );
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCoach.user.id,
-            oldRecommendedCandidatesWithOnly2BusinessLinesAndHelpsInCommon.map(
+            oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon.map(
               ({ id }) => id
             )
           );
@@ -3713,6 +3390,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200, and actual recommendations, if candidate gets his recent recommendations', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
@@ -3723,34 +3401,38 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'menuisier' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
           );
 
-          const usersToRecommend = (
-            await databaseHelper.createEntities(
-              userFactory,
-              3,
-              {
-                role: UserRoles.COACH,
-                zone: AdminZones.LYON,
+          const usersToRecommend = await databaseHelper.createEntities(
+            userFactory,
+            3,
+            {
+              role: UserRoles.COACH,
+              zone: AdminZones.LYON,
+            },
+            {
+              userProfile: {
+                department: 'Rhône (69)',
+                isAvailable: true,
+                currentJob: 'menuisier',
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id, // id
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
-              {
-                userProfile: {
-                  department: 'Rhône (69)',
-                  isAvailable: true,
-                  currentJob: 'menuisier',
-                  networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                  helpOffers: [{ name: 'interview' }] as HelpOffer[],
-                },
-              }
-            )
-          ).sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
+            }
           );
 
           await userProfilesHelper.createUserProfileRecommendations(
@@ -3774,6 +3456,7 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200, and new recommendations, if candidate gets his recent recommendations and on of the coaches is not available anymore', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
@@ -3784,9 +3467,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'menuisier' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
                 lastRecommendationsDate: moment().subtract(2, 'day').toDate(),
               },
             }
@@ -3804,8 +3491,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: true,
                 currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id, // id
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -3820,8 +3511,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: false,
                 currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -3848,14 +3543,18 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 isAvailable: true,
                 currentJob: 'menuisier',
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
 
           const usersToRecommend = [...stillAvailableUsers, userAvailable].sort(
-            (userA, userB) => moment(userB.createdAt).diff(userA.createdAt)
+            (userA, userB) => moment(userA.createdAt).diff(userB.createdAt)
           );
 
           const response: APIResponse<
@@ -3874,9 +3573,11 @@ describe('Users', () => {
             )
           );
         });
+
         it('Should return 200, and new recommendations, if candidate gets his old recommendations', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
+              firstName: 'me',
               role: UserRoles.CANDIDATE,
               zone: AdminZones.LILLE,
             },
@@ -3884,17 +3585,26 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
                 lastRecommendationsDate: moment().subtract(2, 'week').toDate(),
               },
             }
@@ -3907,24 +3617,33 @@ describe('Users', () => {
             },
             {
               userProfile: {
-                department: 'Aisne (02)',
+                department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
 
-          const coach2BusinessLinesInCommon = await userFactory.create(
+          const coach2BusinessSectorsInCommon = await userFactory.create(
             {
               role: UserRoles.COACH,
               zone: AdminZones.LILLE,
@@ -3934,22 +3653,32 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'cd' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
 
           const coach2HelpsInCommon = await userFactory.create(
             {
+              firstName: 'coach2HelpsInCommon',
               role: UserRoles.COACH,
               zone: AdminZones.LILLE,
             },
@@ -3958,27 +3687,34 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'cv' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
 
           const newUsersToRecommend = [
             coachSameRegion,
-            coach2BusinessLinesInCommon,
+            coach2BusinessSectorsInCommon,
             coach2HelpsInCommon,
-          ].sort((userA, userB) =>
-            moment(userB.createdAt).diff(userA.createdAt)
-          );
+          ];
 
           // Coach wrong department
           await userFactory.create(
@@ -3991,16 +3727,25 @@ describe('Users', () => {
                 department: 'Paris (75)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -4016,15 +3761,21 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
               },
             }
           );
@@ -4032,6 +3783,7 @@ describe('Users', () => {
           // Coach 1 help in common
           await userFactory.create(
             {
+              firstName: 'oneHelpInCommon',
               role: UserRoles.COACH,
               zone: AdminZones.LILLE,
             },
@@ -4040,16 +3792,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'interview' },
-                  { name: 'cv' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeInterview.id },
+                  { id: nudgeCv.id },
+                  { id: nudgeNetwork.id },
+                ],
               },
             }
           );
@@ -4065,16 +3826,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'aa' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector4.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -4090,16 +3860,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: true,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aev' },
-                  { name: 'asp' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector5.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector6.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -4115,16 +3894,25 @@ describe('Users', () => {
                 department: 'Nord (59)',
                 isAvailable: false,
                 currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
@@ -4132,6 +3920,7 @@ describe('Users', () => {
           // Candidate same profile
           await userFactory.create(
             {
+              firstName: 'sameProfile',
               role: UserRoles.CANDIDATE,
               zone: AdminZones.LILLE,
             },
@@ -4139,82 +3928,31 @@ describe('Users', () => {
               userProfile: {
                 department: 'Nord (59)',
                 isAvailable: true,
-                searchAmbitions: [{ name: 'Développeur' }] as Ambition[],
-                searchBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpNeeds: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'Développeur' },
+                    order: 1,
+                  },
+                  {
+                    businessSectorId: businessSector2.id,
+                    order: 2,
+                  },
+                  {
+                    businessSectorId: businessSector3.id,
+                    order: 3,
+                  },
+                ],
+                nudges: [
+                  { id: nudgeTips.id },
+                  { id: nudgeNetwork.id },
+                  { id: nudgeEvent.id },
+                ],
               },
             }
           );
 
-          // Coach who sent message
-          const sentMessageCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: sentMessageCoach.id,
-            addresseeUserId: loggedInCandidate.user.id,
-          });
-
-          // Coach who received message
-          const receivedMessageCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
-            },
-            {
-              userProfile: {
-                department: 'Nord (59)',
-                isAvailable: true,
-                currentJob: 'Développeur',
-                networkBusinessLines: [
-                  { name: 'id' },
-                  { name: 'aa' },
-                  { name: 'art' },
-                ] as BusinessLine[],
-                helpOffers: [
-                  { name: 'network' },
-                  { name: 'tips' },
-                  { name: 'event' },
-                ] as HelpOffer[],
-              },
-            }
-          );
-
-          await internalMessageFactory.create({
-            senderUserId: loggedInCandidate.user.id,
-            addresseeUserId: receivedMessageCoach.id,
-          });
-
-          const oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon =
+          const oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon =
             await databaseHelper.createEntities(
               userFactory,
               3,
@@ -4227,23 +3965,32 @@ describe('Users', () => {
                   department: 'Nord (59)',
                   isAvailable: true,
                   currentJob: 'Développeur',
-                  networkBusinessLines: [
-                    { name: 'id' },
-                    { name: 'aa' },
-                    { name: 'cm' },
-                  ] as BusinessLine[],
-                  helpOffers: [
-                    { name: 'network' },
-                    { name: 'tips' },
-                    { name: 'interview' },
-                  ] as HelpOffer[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                      order: 1,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                      order: 2,
+                    },
+                    {
+                      businessSectorId: businessSector6.id,
+                      order: 3,
+                    },
+                  ],
+                  nudges: [
+                    { id: nudgeTips.id },
+                    { id: nudgeNetwork.id },
+                    { id: nudgeInterview.id },
+                  ],
                 },
               }
             );
 
           await userProfilesHelper.createUserProfileRecommendations(
             loggedInCandidate.user.id,
-            oldRecommendedCoachesWithOnly2BusinessLinesAndHelpsInCommon.map(
+            oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon.map(
               ({ id }) => id
             )
           );
@@ -4256,6 +4003,7 @@ describe('Users', () => {
             )
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
+          expect(response.body.length).toBe(newUsersToRecommend.length);
           expect(response.body).toEqual(
             newUsersToRecommend.map((user) =>
               expect.objectContaining(
@@ -4374,18 +4122,24 @@ describe('Users', () => {
               lastConnection: moment().subtract(15, 'day').toDate(),
             });
 
-            const userProfileCandidate: Partial<UserProfile> = {
-              searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-              searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-              helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+            const userProfileCandidate: UserProfileWithPartialAssociations = {
+              sectorOccupations: [
+                {
+                  businessSectorId: businessSector1.id,
+                  occupation: { name: 'menuisier' },
+                },
+              ],
+              nudges: [{ id: nudgeInterview.id }],
               description: 'hello',
+              introduction: 'hello',
               department: 'Paris (75)',
             };
-            const userProfileCoach: Partial<UserProfile> = {
+            const userProfileCoach: UserProfileWithPartialAssociations = {
               currentJob: 'peintre',
-              networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-              helpOffers: [{ name: 'interview' }] as HelpOffer[],
+              businessSectors: [{ name: 'bat' }] as BusinessSector[],
+              // helpOffers: [{ name: 'interview' }] as HelpOffer[],
               description: 'hello',
+              introduction: 'hello',
               department: 'Paris (75)',
             };
             await userFactory.create(
@@ -4665,7 +4419,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/profile?departments[]=&businessLines[]=&helps[]= - Read all profiles with filters', () => {
+        describe('/profile?departments[]=&businessSectors[]=&helps[]= - Read all profiles with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -4723,7 +4477,11 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.CANDIDATE
+                  }&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&departments[]=${encodeURIComponent('Paris (75)')}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4787,7 +4545,11 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=Rhône (69)&departments[]=Paris (75)`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.COACH
+                  }&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&departments[]=${encodeURIComponent('Paris (75)')}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4797,7 +4559,28 @@ describe('Users', () => {
             );
           });
 
-          it('Should return 200, and all the candidates that matches the businessLines filters', async () => {
+          it('Should return 200, and all the candidates that matches the businessSectors filters', async () => {
+            // bat
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            // asp
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+            // rh
+            const businessSector3 = await businessSectorsHelper.findOne({
+              name: 'Sector 3',
+            });
+            // aa
+            const businessSector4 = await businessSectorsHelper.findOne({
+              name: 'Sector 4',
+            });
+            // pr
+            const businessSector5 = await businessSectorsHelper.findOne({
+              name: 'Sector 5',
+            });
+
             const batCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4806,10 +4589,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4822,10 +4609,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4838,10 +4629,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4854,10 +4649,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4870,10 +4669,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4886,10 +4689,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4902,7 +4709,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessLines[]=bat&businessLines[]=rh`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -4911,7 +4718,23 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the coaches that matches the businessLines filters', async () => {
+          it('Should return 200, and all the coaches that matches the businessSectors filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+            const businessSector3 = await businessSectorsHelper.findOne({
+              name: 'Sector 3',
+            });
+            const businessSector4 = await businessSectorsHelper.findOne({
+              name: 'Sector 4',
+            });
+            const businessSector5 = await businessSectorsHelper.findOne({
+              name: 'Sector 5',
+            });
+
             await databaseHelper.createEntities(
               userFactory,
               2,
@@ -4920,10 +4743,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4936,10 +4763,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  searchBusinessLines: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4952,10 +4783,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4968,10 +4803,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'bat' },
-                    { name: 'asp' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
                 },
               }
             );
@@ -4984,10 +4823,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector3.id,
+                    },
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                  ],
                 },
               }
             );
@@ -5000,10 +4843,14 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  networkBusinessLines: [
-                    { name: 'aa' },
-                    { name: 'pr' },
-                  ] as BusinessLine[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector4.id,
+                    },
+                    {
+                      businessSectorId: businessSector5.id,
+                    },
+                  ],
                 },
               }
             );
@@ -5016,7 +4863,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessLines[]=bat&businessLines[]=rh`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5026,7 +4873,7 @@ describe('Users', () => {
             );
           });
 
-          it('Should return 200, and all the candidates that matches the helps filters', async () => {
+          it('Should return 200, and all the candidates that matches the nudges filters', async () => {
             const cvCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -5035,10 +4882,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpNeed[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -5051,10 +4895,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpNeed[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -5067,7 +4908,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -5080,10 +4921,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -5096,10 +4934,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpOffer[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -5112,7 +4947,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -5125,7 +4960,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&helps[]=cv&helps[]=interview`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5134,7 +4969,7 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the coaches that matches the helps filters', async () => {
+          it('Should return 200, and all the coaches that matches the nudges filters', async () => {
             await databaseHelper.createEntities(
               userFactory,
               2,
@@ -5143,10 +4978,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpNeed[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -5159,10 +4991,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpNeed[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -5175,7 +5004,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpNeeds: [{ name: 'tips' }] as HelpNeed[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -5188,10 +5017,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -5204,10 +5030,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [
-                    { name: 'interview' },
-                    { name: 'event' },
-                  ] as HelpOffer[],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
                 },
               }
             );
@@ -5220,7 +5043,7 @@ describe('Users', () => {
               },
               {
                 userProfile: {
-                  helpOffers: [{ name: 'tips' }] as HelpOffer[],
+                  nudges: [{ id: nudgeTips.id }],
                 },
               }
             );
@@ -5233,7 +5056,7 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&helps[]=cv&helps[]=interview`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5251,6 +5074,12 @@ describe('Users', () => {
             });
           });
           it('Should return 200, and all the candidates that match all the filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
             const lyonAssociatedCoaches = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -5261,15 +5090,15 @@ describe('Users', () => {
               {
                 userProfile: {
                   department: 'Rhône (69)',
-                  networkBusinessLines: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessLine[],
-
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -5285,14 +5114,15 @@ describe('Users', () => {
                 {
                   userProfile: {
                     department: 'Rhône (69)',
-                    searchBusinessLines: [
-                      { name: 'rh' },
-                      { name: 'aa' },
-                    ] as BusinessLine[],
-                    helpNeeds: [
-                      { name: 'cv' },
-                      { name: 'network' },
-                    ] as HelpNeed[],
+                    sectorOccupations: [
+                      {
+                        businessSectorId: businessSector1.id,
+                      },
+                      {
+                        businessSectorId: businessSector2.id,
+                      },
+                    ],
+                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                   },
                 }
               );
@@ -5313,7 +5143,13 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.CANDIDATE
+                  }&query=XXX&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${
+                    nudgeCv.id
+                  }&nudgeIds[]=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -5323,6 +5159,13 @@ describe('Users', () => {
             );
           });
           it('Should return 200, and all the coaches that match all the filters', async () => {
+            const businessSector1 = await businessSectorsHelper.findOne({
+              name: 'Sector 1',
+            });
+            const businessSector2 = await businessSectorsHelper.findOne({
+              name: 'Sector 2',
+            });
+
             const lyonAssociatedCoaches = await databaseHelper.createEntities(
               userFactory,
               2,
@@ -5333,15 +5176,15 @@ describe('Users', () => {
               {
                 userProfile: {
                   department: 'Rhône (69)',
-                  networkBusinessLines: [
-                    { name: 'rh' },
-                    { name: 'aa' },
-                  ] as BusinessLine[],
-
-                  helpOffers: [
-                    { name: 'cv' },
-                    { name: 'network' },
-                  ] as HelpOffer[],
+                  sectorOccupations: [
+                    {
+                      businessSectorId: businessSector1.id,
+                    },
+                    {
+                      businessSectorId: businessSector2.id,
+                    },
+                  ],
+                  nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
             );
@@ -5357,14 +5200,15 @@ describe('Users', () => {
                 {
                   userProfile: {
                     department: 'Rhône (69)',
-                    searchBusinessLines: [
-                      { name: 'rh' },
-                      { name: 'aa' },
-                    ] as BusinessLine[],
-                    helpNeeds: [
-                      { name: 'cv' },
-                      { name: 'network' },
-                    ] as HelpNeed[],
+                    sectorOccupations: [
+                      {
+                        businessSectorId: businessSector1.id,
+                      },
+                      {
+                        businessSectorId: businessSector2.id,
+                      },
+                    ],
+                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                   },
                 }
               );
@@ -5385,7 +5229,13 @@ describe('Users', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=Rhône (69)&businessLines[]=rh&helps[]=network`
+                  `${route}/profile?limit=50&offset=0&role[]=${
+                    UserRoles.COACH
+                  }&query=XXX&departments[]=${encodeURIComponent(
+                    'Rhône (69)'
+                  )}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${
+                    nudgeNetwork.id
+                  }`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -6467,9 +6317,13 @@ describe('Users', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 isAvailable: true,
-                searchBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                searchAmbitions: [{ name: 'menuisier' }] as Ambition[],
-                helpNeeds: [{ name: 'interview' }] as HelpNeed[],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                    occupation: { name: 'menuisier' },
+                  },
+                ],
+                nudges: [{ id: nudgeInterview.id }],
               },
             }
           );
@@ -6483,8 +6337,12 @@ describe('Users', () => {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
                 isAvailable: true,
-                networkBusinessLines: [{ name: 'bat' }] as BusinessLine[],
-                helpOffers: [{ name: 'interview' }] as HelpOffer[],
+                nudges: [{ id: nudgeInterview.id }],
+                sectorOccupations: [
+                  {
+                    businessSectorId: businessSector1.id,
+                  },
+                ],
               },
             }
           );
@@ -6517,6 +6375,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6530,6 +6389,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6543,6 +6403,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6556,6 +6417,7 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -6569,19 +6431,30 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
+              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
         });
         it('Should return 200, if candidate updates his profile candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+          const updatedProfile = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+                occupation: {
+                  name: 'Développeur',
+                },
+              },
+            ],
+            nudges: [{ id: nudgeNetwork.id }],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6596,27 +6469,48 @@ describe('Users', () => {
             loggedInCandidate.user.id
           );
 
+          const {
+            nudges: updatedNudges,
+            sectorOccupations: updatedSectorOccupation,
+            ...restUpdatedUserProfile
+          } = updatedUser.userProfile;
+
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...updatedProfile,
-              searchBusinessLines: [expect.objectContaining({ name: 'id' })],
-              searchAmbitions: [
-                expect.objectContaining({ name: 'développeur' }),
+              ...restUpdatedUserProfile,
+              sectorOccupations: [
+                expect.objectContaining({
+                  businessSector: expect.objectContaining({ name: 'Sector 1' }),
+                  occupation: expect.objectContaining({ name: 'Développeur' }),
+                }),
               ],
-              helpNeeds: [expect.objectContaining({ name: 'network' })],
+              nudges: [
+                expect.objectContaining({
+                  id: nudgeNetwork.id,
+                  nameRequest: nudgeNetwork.nameRequest,
+                  nameOffer: nudgeNetwork.nameOffer,
+                  value: nudgeNetwork.value,
+                  order: nudgeNetwork.order,
+                }),
+              ],
             })
           );
           expect(updatedUser.zone).toMatch(AdminZones.PARIS);
         });
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const updatedProfile: UserProfileWithPartialAssociations = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector1.id,
+                occupation: { name: 'développeur' },
+              },
+            ],
+            nudges: [{ id: nudgeNetwork.id }],
             linkedinUrl: 'https://www.linkdin.com/in/jean-dupont',
           };
 
@@ -6631,11 +6525,12 @@ describe('Users', () => {
         it('Should return 400, if candidate updates his profile with coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
-            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            helpOffers: [{ name: 'network' }] as HelpOffer[],
+            businessSectors: [{ name: 'id' }] as BusinessSector[],
+            // helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
           const response: APIResponse<
             UserProfilesController['updateByUserId']
@@ -6646,13 +6541,20 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200, if coach updates his profile coach properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
+          const businessSector = await businessSectorsHelper.findOne({
+            name: 'Sector 1',
+          });
+          const updatedProfile = {
             description: 'hello',
+            introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
-            networkBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            helpOffers: [{ name: 'network' }] as HelpOffer[],
+            sectorOccupations: [
+              {
+                businessSectorId: businessSector.id,
+              },
+            ],
             linkedinUrl: 'https://www.linkedin.com/in/jean-dupont',
           };
 
@@ -6669,8 +6571,11 @@ describe('Users', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
-              networkBusinessLines: [expect.objectContaining({ name: 'id' })],
-              helpOffers: [expect.objectContaining({ name: 'network' })],
+              sectorOccupations: [
+                expect.objectContaining({
+                  businessSector: expect.objectContaining({ name: 'Sector 1' }),
+                }),
+              ],
             })
           );
 
@@ -6679,6 +6584,7 @@ describe('Users', () => {
         it('Should return 403, if referer updates his profile referer properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
+            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
           };
@@ -6691,24 +6597,6 @@ describe('Users', () => {
             .send(updatedProfile);
 
           expect(response.status).toBe(403);
-        });
-        it('Should return 400, if coach updates his profile with candidate properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            department: 'Paris (75)',
-            isAvailable: false,
-            searchAmbitions: [{ name: 'développeur' }] as Ambition[],
-            searchBusinessLines: [{ name: 'id' }] as BusinessLine[],
-            helpNeeds: [{ name: 'network' }] as HelpNeed[],
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`)
-            .send(updatedProfile);
-          expect(response.status).toBe(400);
         });
       });
       describe('/profile/uploadImage/:id - Upload user profile picture', () => {
@@ -7013,10 +6901,6 @@ describe('Users', () => {
         let candidate: User;
         let coach: User;
         let referer: User;
-        const uniqIdToFind = uuid();
-        const uniqId2ToFind = uuid();
-        let cvId: string;
-        let experienceId: string;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -7049,52 +6933,6 @@ describe('Users', () => {
           loggedInReferer = await usersHelper.createLoggedInUser({
             role: UserRoles.REFERER,
           });
-
-          ({
-            id: cvId,
-            experiences: [{ id: experienceId }],
-          } = await cvFactory.create(
-            {
-              UserId: candidate.id,
-              urlImg: `images/${candidate.id}.Published.jpg`,
-              intro: null,
-              story: 'test',
-              availability: 'En semaine',
-              transport: 'Permis B',
-              catchphrase: 'Helloooooo',
-              status: 'Progress',
-            },
-            {
-              contracts: [uniqIdToFind],
-              languages: [uniqIdToFind],
-              passions: [uniqIdToFind],
-              skills: [uniqIdToFind],
-              ambitions: [
-                { prefix: 'dans', name: uniqIdToFind, order: 0 } as Ambition,
-                { prefix: 'dans', name: uniqId2ToFind, order: 1 } as Ambition,
-              ],
-              businessLines: [
-                { name: uniqIdToFind, order: 0 } as BusinessLine,
-                { name: uniqId2ToFind, order: 1 } as BusinessLine,
-              ],
-              locations: [uniqIdToFind],
-              experiences: [
-                {
-                  description: uniqIdToFind,
-                  skills: [{ name: uniqId2ToFind } as Skill],
-                  order: 0,
-                } as Experience,
-              ],
-              reviews: [
-                {
-                  text: uniqIdToFind,
-                  status: uniqIdToFind,
-                  name: uniqIdToFind,
-                } as Review,
-              ],
-            },
-            true
-          ));
         });
         it('Should return 403 if logged as coach', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
@@ -7119,7 +6957,6 @@ describe('Users', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.userDeleted).toBe(1);
-          expect(response.body.cvsDeleted).toBe(1);
 
           const user = await usersHelper.findUser(candidate.id);
           expect(user).toBeFalsy();
@@ -7146,93 +6983,6 @@ describe('Users', () => {
             candidate.id
           );
           expect(userProfile).toBeFalsy();
-
-          const cvs = await cvsHelper.findAllCVsByCandidateId(candidate.id);
-          expect(cvs.length).toBeFalsy();
-
-          const locationsCount = await locationsHelper.countLocationByName(
-            uniqIdToFind
-          );
-          const cvLocationsCount =
-            await cvLocationsHelper.countCVLocationsByCVId(cvId);
-          expect(locationsCount).toBe(1);
-          expect(cvLocationsCount).toBe(0);
-
-          const businessLinesCount =
-            await businessLinesHelper.countBusinessLinesByName([
-              uniqIdToFind,
-              uniqId2ToFind,
-            ]);
-          const cvBusinessLinesCount =
-            await cvBusinessLinesHelper.countCVBusinessLinesByCVId(cvId);
-          expect(businessLinesCount).toBe(2);
-          expect(cvBusinessLinesCount).toBe(0);
-
-          const ambitionsCount = await ambitionsHelper.countAmbitionsByName([
-            uniqIdToFind,
-            uniqId2ToFind,
-          ]);
-          const cvAmbitionsCount =
-            await cvAmbitionsHelper.countCVAmbitionsByCVId(cvId);
-          expect(ambitionsCount).toBe(2);
-          expect(cvAmbitionsCount).toBe(0);
-
-          const contractsCount = await contractsHelper.countContractsByName(
-            uniqIdToFind
-          );
-          const cvContractsCount =
-            await cvContractsHelper.countCVContractsByCVId(cvId);
-          expect(contractsCount).toBe(1);
-          expect(cvContractsCount).toBe(0);
-
-          const languagesCount = await languagesHelper.countLanguagesByName(
-            uniqIdToFind
-          );
-          const cvLanguagesCount =
-            await cvLanguagesHelper.countCVLanguagesByCVId(cvId);
-          expect(languagesCount).toBe(1);
-          expect(cvLanguagesCount).toBe(0);
-
-          const passionsCount = await passionsHelper.countPassionsByName(
-            uniqIdToFind
-          );
-          const cvPassionsCount = await cvPassionsHelper.countCVPassionsByCVId(
-            cvId
-          );
-          expect(passionsCount).toBe(1);
-          expect(cvPassionsCount).toBe(0);
-
-          const skillsCount = await skillsHelper.countSkillsByName(
-            uniqIdToFind
-          );
-          const cvSkillsCount = await cvSkillsHelper.countCVSkillsByCVId(cvId);
-          expect(skillsCount).toBe(1);
-          expect(cvSkillsCount).toBe(0);
-
-          const expSkillsCount = await skillsHelper.countSkillsByName(
-            uniqId2ToFind
-          );
-          const cvFormationsCount =
-            await formationsHelper.countFormationsByCVId(cvId);
-          const cvExperiencesCount =
-            await experiencesHelper.countExperiencesByCVId(cvId);
-          const cvExpSkillsCount =
-            await experiencesSkillsHelper.countExperienceSkillsByExperienceId(
-              experienceId
-            );
-
-          expect(cvExperiencesCount).toBe(0);
-          expect(cvFormationsCount).toBe(0);
-          expect(cvExpSkillsCount).toBe(0);
-          expect(expSkillsCount).toBe(1);
-
-          const searchesCount = await cvSearchesHelper.countCVSearchesByCVId(
-            cvId
-          );
-          expect(searchesCount).toBe(0);
-
-          const reviewsCount = await reviewsHelper.countReviewsByCVId(cvId);
-          expect(reviewsCount).toBe(0);
         });
         it('Should return 200 if logged in as admin and deletes coach', async () => {
           const response: APIResponse<UsersDeletionController['removeUser']> =
@@ -7242,7 +6992,6 @@ describe('Users', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.userDeleted).toBe(1);
-          expect(response.body.cvsDeleted).toBe(0);
 
           const user = await usersHelper.findUser(coach.id);
           expect(user).toBeFalsy();
@@ -7279,7 +7028,6 @@ describe('Users', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.userDeleted).toBe(1);
-          expect(response.body.cvsDeleted).toBe(0);
 
           const user = await usersHelper.findUser(referer.id);
           expect(user).toBeFalsy();

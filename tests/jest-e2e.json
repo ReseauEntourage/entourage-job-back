@@ -1,9 +1,5 @@
 {
-  "moduleFileExtensions": [
-    "js",
-    "json",
-    "ts"
-  ],
+  "moduleFileExtensions": ["js", "json", "ts"],
   "testEnvironment": "node",
   "rootDir": "..",
   "roots": ["<rootDir>/src", "<rootDir>/tests"],
@@ -11,15 +7,16 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "transformIgnorePatterns": [
-    "/node_modules/(?!axios)"
-  ],
-  "moduleDirectories": [
-    "node_modules"
-  ],
+  "transformIgnorePatterns": ["/node_modules/(?!(@slack|axios)/)"],
+  "moduleDirectories": ["node_modules"],
   "moduleNameMapper": {
     "^src/(.*)": "<rootDir>/src/$1",
     "^tests/(.*)": "<rootDir>/tests/$1"
   },
-  "testTimeout": 60000
+  "setupFiles": ["<rootDir>/tests/setup.ts"],
+  "testTimeout": 120000,
+  "maxWorkers": 1,
+  "verbose": true,
+  "detectOpenHandles": true,
+  "forceExit": true
 }

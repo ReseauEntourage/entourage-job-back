@@ -26,7 +26,7 @@ import {
   UpdateUserRestrictedPipe,
 } from 'src/users/dto';
 import { isValidPhone } from 'src/utils/misc';
-import { AdminZone, FilterParams } from 'src/utils/types';
+import { FilterParams } from 'src/utils/types';
 import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
   LinkedUser,
@@ -111,14 +111,6 @@ export class UsersController {
     }
 
     throw new BadRequestException();
-  }
-
-  // TODO divide service
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
-  @Get('members/count')
-  async countSubmittedCVMembers(@UserPayload('zone') zone: AdminZone) {
-    return this.usersService.countSubmittedCVMembers(zone);
   }
 
   // TODO divide service
@@ -279,12 +271,6 @@ export class UsersController {
         usersIds,
         updateUserCandidatDto
       );
-    if (updateUserCandidatDto.hidden) {
-      for (const candidate of updatedUserCandidats) {
-        await this.usersService.uncacheCandidateCV(candidate.url);
-      }
-    }
-    await this.usersService.cacheAllCVs();
 
     return {
       nbUpdated,
@@ -316,14 +302,6 @@ export class UsersController {
         ...updateUserCandidatDto,
         lastModifiedBy: userId,
       });
-
-    if (updatedUserCandidat.hidden) {
-      await this.usersService.uncacheCandidateCV(updatedUserCandidat.url);
-    } else {
-      await this.usersService.cacheCandidateCV(updatedUserCandidat.candidat.id);
-    }
-
-    await this.usersService.cacheAllCVs();
 
     return updatedUserCandidat;
   }
@@ -392,20 +370,6 @@ export class UsersController {
       if (!updatedUserCandidates) {
         throw new NotFoundException();
       }
-
-      await Promise.all(
-        updatedUserCandidates.map((updatedUserCandidate) => {
-          const previousCoach = updatedUserCandidate.previous('coach');
-          if (
-            updatedUserCandidate.coach &&
-            updatedUserCandidate.coach.id !== previousCoach?.id
-          ) {
-            return this.usersService.sendMailsAfterMatching(
-              updatedUserCandidate.candidat.id
-            );
-          }
-        })
-      );
     }
 
     return this.usersService.findOne(userId);
