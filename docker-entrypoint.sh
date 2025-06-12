@@ -9,11 +9,21 @@ echo "- Operating system: $(uname -a)"
 echo "- Current working directory: $(pwd)"
 echo "- Environment: $NODE_ENV"
 echo "- Port: $PORT"
-echo "=============================""
+echo "============================"
 
 # Afficher la version de Node.js
 echo "Node.js version:"
 node -v
+
+# Afficher les versions des dépendances système importantes
+echo "============================"
+echo "= System Dependencies Versions ="
+echo "============================"
+echo "GraphicsMagick version:"
+gm --version || echo "GraphicsMagick not found"
+echo "Ghostscript version:"
+gs -h || echo "Ghostscript not found"
+echo "============================"
 
 npm install -g @nestjs/cli
 
