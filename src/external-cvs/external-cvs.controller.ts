@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { createHash } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -90,13 +91,17 @@ export class ExternalCvsController {
       // Construction de la clé S3 pour le CV externe
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}external-cvs/${userId}.pdf`;
 
-      // eslint-disable-next-line no-console
       console.log('PDF URL:', pdfUrl);
       // Création du dossier temporaire s'il n'existe pas
+      console.log(process.cwd());
       const tempDir = path.join(process.cwd(), 'temp');
+      console.log('Temp directory:', tempDir);
       if (!fs.existsSync(tempDir)) {
+        console.log(`Creating temp directory: ${tempDir}`);
         fs.mkdirSync(tempDir, { recursive: true });
       }
+      // verification de le dossier temporaire
+      console.log(`Temp directory exists: ${fs.existsSync(tempDir)}`);
 
       // Téléchargement du PDF
       const pdfPath = path.join(tempDir, `${userId}.pdf`);
