@@ -38,6 +38,7 @@ lerna-debug.log*
 
 .env*
 !.env.dist
+heroku-env/.env.heroku
 package-lock.json
 .vscode
 
