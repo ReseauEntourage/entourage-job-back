@@ -1,0 +1,20 @@
+services:
+  heroku-app:
+    build:
+      context: ..
+      dockerfile: ./heroku-env/Dockerfile.multi-stage
+    container_name: entourage-job-heroku
+    ports:
+      - '3002:3002'
+    env_file:
+      - ./heroku.env
+    environment:
+      PORT: 3002
+      NODE_ENV: production
+      # Les connexions aux bases de données sont configurées dans le fichier heroku.env
+    volumes:
+      # Monter uniquement le script d'entrée, pas le code source
+      # pour éviter d'écraser les fichiers générés lors du build
+      - ./docker-heroku-entrypoint-web-only.sh:/app/docker-heroku-entrypoint-web-only.sh
+      # Commentons temporairement ce volume qui pourrait masquer les fichiers générés
+      # - /app/dist

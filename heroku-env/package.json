@@ -1,0 +1,8 @@
+{
+  "name": "linkedout-backend-heroku-env",
+  "version": "1.0.0",
+  "description": "Configuration spécifique pour l'environnement Heroku dans Docker",
+  "scripts": {
+    "start": "node dist/src/main"
+  }
+}
