@@ -32,7 +32,7 @@ echo "✅ Adresse IP de l'hôte détectée: $HOST_IP"
 
 # Créer un fichier temporaire avec les bonnes variables d'environnement
 TMP_ENV_FILE="docker-compose.mac.env"
-cp heroku.env $TMP_ENV_FILE
+cp .env.heroku $TMP_ENV_FILE
 
 # Ajouter les variables spécifiques avec l'adresse IP réelle de l'hôte
 echo "DATABASE_URL=postgres://linkedout:linkedout@$HOST_IP:5432/linkedout" > $TMP_ENV_FILE

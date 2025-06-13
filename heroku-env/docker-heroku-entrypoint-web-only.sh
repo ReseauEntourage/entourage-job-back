@@ -10,10 +10,10 @@ echo "======================================"
 echo "L'application utilisera les variables d'environnement pour se connecter aux bases de données distantes"
 echo "======================================"
 
-# Chargement des variables d'environnement depuis le fichier heroku.env
-if [ -f /app/heroku-env/heroku.env ]; then
-  echo "Chargement des variables d'environnement depuis heroku.env"
-  export $(cat /app/heroku-env/heroku.env | grep -v '^#' | xargs)
+# Chargement des variables d'environnement depuis le fichier .env.heroku
+if [ -f /app/heroku-env/.env.heroku ]; then
+  echo "Chargement des variables d'environnement depuis .env.heroku"
+  export $(cat /app/heroku-env/.env.heroku | grep -v '^#' | xargs)
 fi
 
 # Vérification des permissions

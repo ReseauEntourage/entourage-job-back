@@ -7,11 +7,11 @@ services:
     ports:
       - '3002:3002'
     env_file:
-      - ./heroku.env
+      - ./.env.heroku
     environment:
       PORT: 3002
       NODE_ENV: production
-      # Les connexions aux bases de données sont configurées dans le fichier heroku.env
+      # Les connexions aux bases de données sont configurées dans le fichier .env.heroku
     volumes:
       # Monter uniquement le script d'entrée, pas le code source
       # pour éviter d'écraser les fichiers générés lors du build

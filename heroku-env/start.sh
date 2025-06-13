@@ -12,7 +12,7 @@ OS=$(uname -s)
 
 # On ne vérifie plus les bases de données, car l'application se connecte à des bases distantes
 echo "L'application utilisera les variables d'environnement pour se connecter aux bases de données distantes."
-echo "Assurez-vous que les variables d'environnement dans le fichier heroku.env sont correctement configurées."
+echo "Assurez-vous que les variables d'environnement dans le fichier .env.heroku sont correctement configurées."
 
 # Si on est sur macOS, on utilise le script spécifique qui gère l'adresse IP correctement
 if [ "$OS" = "Darwin" ]; then
