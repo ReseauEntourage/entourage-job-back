@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
-import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
 import { cvSchema, CvSchemaType } from './openai.schemas';
 
 @Injectable()
@@ -20,7 +19,7 @@ export class OpenAiService {
    * @param image Tableau de réponses ToBase64Response de pdf2pic
    * @returns Les données extraites selon le schéma fourni
    */
-  async extractCVFromImages(image: ToBase64Response): Promise<CvSchemaType> {
+  async extractCVFromImages(base64Image: string): Promise<CvSchemaType> {
     try {
       const response = await this.openai.chat.completions.create({
         model: 'o4-mini-2025-04-16',
@@ -41,7 +40,7 @@ export class OpenAiService {
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:image/png;base64,${image.base64}`,
+                  url: `data:image/png;base64,${base64Image}`,
                 },
               },
             ],

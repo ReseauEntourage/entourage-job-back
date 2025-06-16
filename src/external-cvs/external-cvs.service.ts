@@ -1,7 +1,8 @@
+import { execFile } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
@@ -128,11 +129,9 @@ export class ExternalCvsService {
     }
   }
 
-  async extractDataFromCVImages(
-    image: ToBase64Response
-  ): Promise<CvSchemaType> {
+  async extractDataFromCVImages(base64Image: string): Promise<CvSchemaType> {
     try {
-      return await this.openAiService.extractCVFromImages(image);
+      return await this.openAiService.extractCVFromImages(base64Image);
     } catch (error) {
       throw error;
     }
@@ -337,5 +336,62 @@ export class ExternalCvsService {
         'Failed to populate user profile from CV data'
       );
     }
+  }
+
+  async convertPdfToPngBase64(pdfPath: string, page = 1): Promise<string> {
+    const outputDir = path.join(__dirname, 'output');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir);
+    }
+
+    const outputPrefix = 'page';
+    const outputFile = path.join(outputDir, `${outputPrefix}-${page}.png`);
+
+    const pdftocairoPath = this.detectPdftocairoPath();
+    // eslint-disable-next-line no-console
+    console.log(pdftocairoPath);
+
+    return new Promise((resolve, reject) => {
+      const args = [
+        '-png',
+        '-f',
+        `${page}`,
+        '-l',
+        `${page}`,
+        '-scale-to',
+        '1024',
+        pdfPath,
+        path.join(outputDir, outputPrefix),
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      execFile(pdftocairoPath, args, (error: any) => {
+        if (error)
+          return reject(new Error(`Erreur conversion PDF: ${error.message}`));
+
+        fs.readFile(outputFile, (err, buffer) => {
+          if (err)
+            return reject(new Error(`Erreur lecture PNG : ${err.message}`));
+          resolve(buffer.toString('base64'));
+        });
+      });
+    });
+  }
+
+  detectPdftocairoPath() {
+    const candidates = [
+      '/opt/homebrew/bin/pdftocairo', // Mac M1/M2
+      '/usr/local/bin/pdftocairo', // Mac Intel
+      '/app/.apt/usr/bin/pdftocairo', // Heroku (poppler buildpack)
+      '/usr/bin/pdftocairo', // Linux générique
+    ];
+
+    for (const path of candidates) {
+      if (fs.existsSync(path)) return path;
+    }
+
+    throw new Error(
+      'pdftocairo introuvable. Installez Poppler localement ou ajoutez le buildpack sur Heroku.'
+    );
   }
 }

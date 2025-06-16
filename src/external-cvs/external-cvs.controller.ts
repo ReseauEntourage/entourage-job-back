@@ -18,8 +18,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import axios from 'axios';
-import { PDFDocument } from 'pdf-lib';
-import { fromPath } from 'pdf2pic';
 import { UserPayload } from 'src/auth/guards';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
@@ -126,31 +124,15 @@ export class ExternalCvsController {
       let extractedCVData;
 
       if (needExtraction) {
-        const pdfDoc = await PDFDocument.load(pdfBuffer);
-        const pageCount = pdfDoc.getPageCount();
-
         try {
-          // Configuration des options de conversion
-          const options = {
-            saveFilename: `${userId}`, // Préfixe des noms de fichiers
-            savePath: tempDir, // Dossier de destination
-            format: 'png', // Format de l'image
-            preserveAspectRatio: true,
-            width: 1000, // Largeur max en pixels
-          };
+          const base64Image =
+            await this.externalCvsService.convertPdfToPngBase64(pdfPath);
 
-          // Conversion du PDF en images
-          const convert = fromPath(pdfPath, options);
-          const pagesResult = await convert(pageCount, {
-            responseType: 'base64',
-          });
-
-          // eslint-disable-next-line no-console
-          console.log('Pages converted:', pagesResult.base64);
+          console.log('Image en Base64 :', base64Image.slice(0, 100) + '...');
 
           // Extraction des données du CV à partir des images
           extractedCVData =
-            await this.externalCvsService.extractDataFromCVImages(pagesResult);
+            await this.externalCvsService.extractDataFromCVImages(base64Image);
 
           // Sauvegarde des données extraites et du hash du fichier dans la base de données
           await this.externalCvsService.saveExtractedCVData(
