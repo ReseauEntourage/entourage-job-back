@@ -9,6 +9,7 @@ import { Interest } from 'src/common/interests/models';
 import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department } from 'src/common/locations/locations.types';
 import { Skill } from 'src/common/skills/models';
+import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import {
   CvSchemaType,
@@ -347,7 +348,7 @@ export class ExternalCvsService {
     const outputPrefix = 'page';
     const outputFile = path.join(outputDir, `${outputPrefix}-${page}.png`);
 
-    const pdftocairoPath = this.detectPdftocairoPath();
+    const pdftocairoPath = detectPdftocairoPath();
 
     return new Promise((resolve, reject) => {
       const args = [
@@ -374,22 +375,5 @@ export class ExternalCvsService {
         });
       });
     });
-  }
-
-  detectPdftocairoPath() {
-    const candidates = [
-      '/opt/homebrew/bin/pdftocairo', // Mac M1/M2
-      '/usr/local/bin/pdftocairo', // Mac Intel
-      '/app/.apt/usr/bin/pdftocairo', // Heroku (poppler buildpack)
-      '/usr/bin/pdftocairo', // Linux générique
-    ];
-
-    for (const path of candidates) {
-      if (fs.existsSync(path)) return path;
-    }
-
-    throw new Error(
-      'pdftocairo introuvable. Installez Poppler localement ou ajoutez le buildpack sur Heroku.'
-    );
   }
 }
