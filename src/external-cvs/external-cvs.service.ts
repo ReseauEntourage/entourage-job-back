@@ -348,8 +348,6 @@ export class ExternalCvsService {
     const outputFile = path.join(outputDir, `${outputPrefix}-${page}.png`);
 
     const pdftocairoPath = this.detectPdftocairoPath();
-    // eslint-disable-next-line no-console
-    console.log(pdftocairoPath);
 
     return new Promise((resolve, reject) => {
       const args = [
@@ -367,7 +365,7 @@ export class ExternalCvsService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       execFile(pdftocairoPath, args, (error: any) => {
         if (error)
-          return reject(new Error(`Erreur conversion PDF: ${error.message}`));
+          return reject(new Error(`Erreur conversion PDF: ${error?.message}`));
 
         fs.readFile(outputFile, (err, buffer) => {
           if (err)

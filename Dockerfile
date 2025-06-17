@@ -22,8 +22,6 @@ RUN apt-get update && apt-get install -y \
   libpng-dev \
   zlib1g-dev \
   python3 \
-  ghostscript \
-  graphicsmagick \
   && rm -rf /var/lib/apt/lists/*
 
 # THEN INSTALL NODE MODULES
