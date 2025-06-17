@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
+import { ChatCompletionContentPart } from 'openai/resources/chat';
 import { cvSchema, CvSchemaType } from './openai.schemas';
 
 @Injectable()
@@ -19,7 +20,22 @@ export class OpenAiService {
    * @param image Tableau de réponses ToBase64Response de pdf2pic
    * @returns Les données extraites selon le schéma fourni
    */
-  async extractCVFromImages(base64Image: string): Promise<CvSchemaType> {
+  async extractCVFromImages(base64ImageArray: string[]): Promise<CvSchemaType> {
+    const content: ChatCompletionContentPart[] = [
+      {
+        type: 'text',
+        text: 'Analyse ce CV et extrait toutes les informations pertinentes selon le schéma JSON spécifié. Le document peut être sur plusieurs pages.',
+      },
+    ];
+    for (const base64Image of base64ImageArray) {
+      content.push({
+        type: 'image_url',
+        image_url: {
+          url: `data:image/png;base64,${base64Image}`,
+        },
+      });
+    }
+
     try {
       const response = await this.openai.chat.completions.create({
         model: 'o4-mini-2025-04-16',
@@ -32,18 +48,7 @@ export class OpenAiService {
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analyse ce CV et extrait toutes les informations pertinentes selon le schéma JSON spécifié. Le document peut être sur plusieurs pages.',
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/png;base64,${base64Image}`,
-                },
-              },
-            ],
+            content: content,
           },
         ],
         functions: [

@@ -1,4 +1,4 @@
-import { execFile } from 'child_process';
+import { execFile, ExecFileException } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
@@ -130,9 +130,11 @@ export class ExternalCvsService {
     }
   }
 
-  async extractDataFromCVImages(base64Image: string): Promise<CvSchemaType> {
+  async extractDataFromCVImages(
+    base64ImageArray: string[]
+  ): Promise<CvSchemaType> {
     try {
-      return await this.openAiService.extractCVFromImages(base64Image);
+      return await this.openAiService.extractCVFromImages(base64ImageArray);
     } catch (error) {
       throw error;
     }
@@ -339,40 +341,59 @@ export class ExternalCvsService {
     }
   }
 
-  async convertPdfToPngBase64(pdfPath: string, page = 1): Promise<string> {
+  async convertPdfToPngBase64(pdfPath: string): Promise<string[]> {
     const outputDir = path.join(__dirname, 'output');
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir);
     }
 
-    const outputPrefix = 'page';
-    const outputFile = path.join(outputDir, `${outputPrefix}-${page}.png`);
-
+    const outputPrefix = 'converted';
     const pdftocairoPath = detectPdftocairoPath();
 
     return new Promise((resolve, reject) => {
+      // Convertir toutes les pages du PDF
       const args = [
         '-png',
-        '-f',
-        `${page}`,
-        '-l',
-        `${page}`,
         '-scale-to',
         '1024',
         pdfPath,
         path.join(outputDir, outputPrefix),
       ];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      execFile(pdftocairoPath, args, (error: any) => {
+      execFile(pdftocairoPath, args, async (error: ExecFileException) => {
         if (error)
-          return reject(new Error(`Erreur conversion PDF: ${error?.message}`));
+          return reject(new Error(`Erreur conversion PDF: ${error.message}`));
 
-        fs.readFile(outputFile, (err, buffer) => {
-          if (err)
-            return reject(new Error(`Erreur lecture PNG : ${err.message}`));
-          resolve(buffer.toString('base64'));
-        });
+        try {
+          // Lire tous les fichiers générés dans le répertoire
+          const files = fs
+            .readdirSync(outputDir)
+            .filter(
+              (file) => file.startsWith(outputPrefix) && file.endsWith('.png')
+            )
+            .sort((a, b) => {
+              // Format attendu: "converted-[page].png"
+              const pageA = parseInt(a.split('-')[1]?.replace('.png', ''));
+              const pageB = parseInt(b.split('-')[1]?.replace('.png', ''));
+              return pageA - pageB;
+            });
+
+          const pagesBase64: string[] = [];
+
+          // Lire chaque fichier et le convertir en base64
+          for (const file of files) {
+            const filePath = path.join(outputDir, file);
+            const buffer = fs.readFileSync(filePath);
+            pagesBase64.push(buffer.toString('base64'));
+
+            // Supprimer le fichier après utilisation
+            fs.unlinkSync(filePath);
+          }
+
+          resolve(pagesBase64);
+        } catch (err) {
+          reject(new Error(`Erreur traitement des images: ${err}`));
+        }
       });
     });
   }
