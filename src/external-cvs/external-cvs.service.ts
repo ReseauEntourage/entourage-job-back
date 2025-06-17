@@ -342,10 +342,7 @@ export class ExternalCvsService {
   }
 
   async convertPdfToPngBase64(pdfPath: string): Promise<string[]> {
-    const outputDir = path.join(__dirname, 'output');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir);
-    }
+    const outputDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'output-'));
 
     const outputPrefix = 'converted';
     const pdftocairoPath = detectPdftocairoPath();
