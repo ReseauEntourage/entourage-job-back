@@ -30,7 +30,7 @@ import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
-import { RedisModule } from './redis/redis.module';
+import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
@@ -91,9 +91,9 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     }),
     BullModule.forRootAsync({
       imports: [RedisModule],
-      inject: ['REDIS_CLIENT'],
-      useFactory: (redisClient) => ({
-        createClient: () => redisClient,
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        redis: redisOptions,
       }),
     }),
     CacheModule.register<ClientOpts>({

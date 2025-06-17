@@ -4,60 +4,75 @@ import Redis from 'ioredis';
 import { getRedisOptions } from '../app.module';
 
 export const REDIS_CLIENT = 'REDIS_CLIENT';
+export const REDIS_OPTIONS = 'REDIS_OPTIONS';
 
-const redisClientFactory = {
-  provide: REDIS_CLIENT,
+export const createRedisClient = () => {
+  const options = getRedisOptions();
+  const ENV = `${process.env.NODE_ENV}`;
+
+  // Pour les environnements de test, retourner un objet mock ou null
+  if (ENV === 'dev-test' || ENV === 'test') {
+    return {};
+  }
+
+  const client = new Redis({
+    port: options.port,
+    host: options.host,
+    password: options.password,
+    tls: options.tls,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    reconnectOnError: (err) => {
+      // eslint-disable-next-line no-console
+      console.log('Redis reconnection error:', err);
+      return true;
+    },
+  });
+
+  client.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
+
+  client.on('connect', () => {
+    // eslint-disable-next-line no-console
+    console.log('Connected to Redis');
+  });
+
+  client.on('ready', () => {
+    // eslint-disable-next-line no-console
+    console.log('Redis client ready');
+  });
+
+  client.on('close', () => {
+    // eslint-disable-next-line no-console
+    console.log('Redis connection closed');
+  });
+
+  return client;
+};
+
+// Fournisseur pour les options Redis
+const redisOptionsProvider = {
+  provide: REDIS_OPTIONS,
   useFactory: () => {
-    const options = getRedisOptions();
     const ENV = `${process.env.NODE_ENV}`;
-
-    // Pour les environnements de test, retourner un objet mock ou null
     if (ENV === 'dev-test' || ENV === 'test') {
       return {};
     }
-
-    // Création d'une seule instance Redis partagée
-    const client = new Redis({
-      port: options.port,
-      host: options.host,
-      password: options.password,
-      tls: options.tls,
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      reconnectOnError: (err) => {
-        // eslint-disable-next-line no-console
-        console.log('Redis reconnection error:', err);
-        return true;
-      },
-    });
-
-    client.on('error', (err) => {
-      console.error('Redis connection error:', err);
-    });
-
-    client.on('connect', () => {
-      // eslint-disable-next-line no-console
-      console.log('Connected to Redis');
-    });
-
-    client.on('ready', () => {
-      // eslint-disable-next-line no-console
-      console.log('Redis client ready');
-    });
-
-    client.on('close', () => {
-      // eslint-disable-next-line no-console
-      console.log('Redis connection closed');
-    });
-
-    return client;
+    return getRedisOptions();
   },
+};
+
+// Fournisseur pour le client Redis partagé
+const redisClientProvider = {
+  provide: REDIS_CLIENT,
+  useFactory: () => createRedisClient(),
 };
 
 @Global()
 @Module({
   imports: [ConfigModule],
-  providers: [redisClientFactory],
-  exports: [REDIS_CLIENT],
+  providers: [redisOptionsProvider, redisClientProvider],
+  exports: [REDIS_OPTIONS, REDIS_CLIENT],
 })
 export class RedisModule {}

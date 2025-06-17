@@ -8,8 +8,8 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
-import { getRedisOptions, getSequelizeOptions } from './app.module';
-import { RedisModule } from './redis/redis.module';
+import { getSequelizeOptions } from './app.module';
+import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -20,9 +20,9 @@ import { RedisModule } from './redis/redis.module';
     SequelizeModule.forRoot(getSequelizeOptions()),
     BullModule.forRootAsync({
       imports: [RedisModule],
-      inject: ['REDIS_CLIENT'],
-      useFactory: (redisClient) => ({
-        createClient: () => redisClient,
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        redis: redisOptions,
       }),
     }),
     BullModule.registerQueue({
@@ -41,10 +41,14 @@ import { RedisModule } from './redis/redis.module';
         removeOnComplete: true,
       },
     }),
-    CacheModule.register<ClientOpts>({
+    CacheModule.registerAsync<ClientOpts>({
       isGlobal: true,
-      store: redisStore,
-      ...getRedisOptions(),
+      imports: [RedisModule],
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        store: redisStore,
+        ...redisOptions,
+      }),
     }),
     ConsumersModule,
     ThrottlerModule.forRoot({
