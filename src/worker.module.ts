@@ -9,14 +9,22 @@ import { ClientOpts } from 'redis';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getRedisOptions, getSequelizeOptions } from './app.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    RedisModule, // Module Redis partagé
     SequelizeModule.forRoot(getSequelizeOptions()),
-    BullModule.forRoot({ redis: getRedisOptions() }),
+    BullModule.forRootAsync({
+      imports: [RedisModule],
+      inject: ['REDIS_CLIENT'],
+      useFactory: (redisClient) => ({
+        createClient: () => redisClient,
+      }),
+    }),
     BullModule.registerQueue({
       name: Queues.WORK,
       defaultJobOptions: {
