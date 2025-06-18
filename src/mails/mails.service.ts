@@ -22,6 +22,7 @@ import { UserRoles } from 'src/users/users.types';
 import { getCoachFromCandidate } from 'src/users/users.utils';
 import { getAdminMailsFromZone } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
+import { AdminZones } from 'src/utils/types';
 
 @Injectable()
 export class MailsService {
@@ -39,6 +40,7 @@ export class MailsService {
       templateId: MailjetTemplates.PASSWORD_RESET,
       variables: {
         ..._.omitBy(user, _.isNil),
+        zone: user.zone || AdminZones.HZ,
         token,
       },
     });
@@ -56,6 +58,7 @@ export class MailsService {
       templateId: MailjetTemplates.ACCOUNT_CREATED,
       variables: {
         ..._.omitBy(user, _.isNil),
+        zone: user.zone || AdminZones.HZ,
         token,
       },
     });
@@ -73,6 +76,7 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_COACH,
         variables: {
           ..._.omitBy(user, _.isNil),
+          zone: user.zone || AdminZones.HZ,
         },
       });
     }
@@ -84,6 +88,7 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_CANDIDATE,
         variables: {
           ..._.omitBy(user, _.isNil),
+          zone: user.zone || AdminZones.HZ,
         },
       });
     }
@@ -95,6 +100,7 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_REFERER,
         variables: {
           ..._.omitBy(user, _.isNil),
+          zone: user.zone || AdminZones.HZ,
         },
       });
     }
