@@ -324,9 +324,9 @@ describe('Auth', () => {
         organization: null,
         lastConnection: response.body.lastConnection,
         createdAt: response.body.createdAt,
-        whatsappZoneCoachName: response.body.whatsappZoneCoachName,
-        whatsappZoneCoachUrl: response.body.whatsappZoneCoachUrl,
-        whatsappZoneCoachQR: response.body.whatsappZoneCoachQR,
+        whatsappZoneName: response.body.whatsappZoneName,
+        whatsappZoneUrl: response.body.whatsappZoneUrl,
+        whatsappZoneQR: response.body.whatsappZoneQR,
       });
     });
     it('Should return 401, if invalid token', async () => {

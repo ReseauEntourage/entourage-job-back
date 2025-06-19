@@ -202,9 +202,9 @@ describe('Users', () => {
             updatedAt,
             createdAt,
             lastConnection,
-            whatsappZoneCoachName,
-            whatsappZoneCoachUrl,
-            whatsappZoneCoachQR,
+            whatsappZoneName,
+            whatsappZoneUrl,
+            whatsappZoneQR,
             ...user
           } = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersCreationController['createUser']> =
@@ -230,9 +230,9 @@ describe('Users', () => {
             createdAt,
             lastConnection,
             address,
-            whatsappZoneCoachName,
-            whatsappZoneCoachUrl,
-            whatsappZoneCoachQR,
+            whatsappZoneName,
+            whatsappZoneUrl,
+            whatsappZoneQR,
             ...user
           } = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersCreationController['createUser']> =
@@ -322,9 +322,9 @@ describe('Users', () => {
             updatedAt,
             createdAt,
             lastConnection,
-            whatsappZoneCoachName,
-            whatsappZoneCoachUrl,
-            whatsappZoneCoachQR,
+            whatsappZoneName,
+            whatsappZoneUrl,
+            whatsappZoneQR,
             userSocialSituation,
             ...candidate
           } = await userFactory.create(
@@ -354,9 +354,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -385,9 +385,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               OrganizationId,
               userSocialSituation,
               ...candidate
@@ -410,9 +410,9 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
-              whatsappZoneCoachName: coachWhatsappZoneCoachName,
-              whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
-              whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+              whatsappZoneName: coachWhatsappZoneName,
+              whatsappZoneUrl: coachWhatsappZoneUrl,
+              whatsappZoneQR: coachWhatsappZoneQR,
               OrganizationId: coachOrganizationId,
               referredCandidates: coachReferredCandidates,
               referer: coachReferer,
@@ -447,9 +447,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -475,9 +475,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -503,9 +503,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName: coachWhatsappZoneCoachName,
-              whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
-              whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+              whatsappZoneName: coachWhatsappZoneName,
+              whatsappZoneUrl: coachWhatsappZoneUrl,
+              whatsappZoneQR: coachWhatsappZoneQR,
               referredCandidates: coachReferredCandidates,
               refererId: coachRefererId,
               userSocialSituation: coachUserSocialSituation,
@@ -525,9 +525,9 @@ describe('Users', () => {
               organization,
               candidat,
               coaches,
-              whatsappZoneCoachName: candidateWhatappZoneCoachName,
-              whatsappZoneCoachUrl: candidateWhatappZoneCoachUrl,
-              whatsappZoneCoachQR: candidateWhatappZoneCoachQR,
+              whatsappZoneName: candidateWhatappZoneCoachName,
+              whatsappZoneUrl: candidateWhatappZoneCoachUrl,
+              whatsappZoneQR: candidateWhatappZoneCoachQR,
               refererId: candidateRefererId,
               referredCandidates: candidateReferredCandidates,
               referer: candidateReferer,
@@ -568,9 +568,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -593,9 +593,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -626,9 +626,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -656,9 +656,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...candidate
             } = await userFactory.create(
               { role: UserRoles.CANDIDATE },
@@ -686,9 +686,9 @@ describe('Users', () => {
               updatedAt,
               createdAt,
               lastConnection,
-              whatsappZoneCoachName,
-              whatsappZoneCoachUrl,
-              whatsappZoneCoachQR,
+              whatsappZoneName,
+              whatsappZoneUrl,
+              whatsappZoneQR,
               ...coach
             } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -1895,9 +1895,9 @@ describe('Users', () => {
             phone: loggedInCandidate.user.phone,
             zone: loggedInCandidate.user.zone,
             isEmailVerified: loggedInCandidate.user.isEmailVerified,
-            whatsappZoneCoachName: loggedInCandidate.user.whatsappZoneCoachName,
-            whatsappZoneCoachUrl: loggedInCandidate.user.whatsappZoneCoachUrl,
-            whatsappZoneCoachQR: loggedInCandidate.user.whatsappZoneCoachQR,
+            whatsappZoneName: loggedInCandidate.user.whatsappZoneName,
+            whatsappZoneUrl: loggedInCandidate.user.whatsappZoneUrl,
+            whatsappZoneQR: loggedInCandidate.user.whatsappZoneQR,
             refererId: loggedInCandidate.user.refererId,
             organization: null,
           };
@@ -5851,9 +5851,9 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization,
-            whatsappZoneCoachName,
-            whatsappZoneCoachUrl,
-            whatsappZoneCoachQR,
+            whatsappZoneName,
+            whatsappZoneUrl,
+            whatsappZoneQR,
             refererId,
             userSocialSituation,
             ...restCandidate
@@ -5866,9 +5866,9 @@ describe('Users', () => {
             createdAt: createdAtCoach,
             organization: coachOrganization,
             readDocuments,
-            whatsappZoneCoachName: coachWhatsappZoneCoachName,
-            whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
-            whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+            whatsappZoneName: coachWhatsappZoneName,
+            whatsappZoneUrl: coachWhatsappZoneUrl,
+            whatsappZoneQR: coachWhatsappZoneQR,
             refererId: coachRefererId,
             referer: coachReferer,
             referredCandidates: coachReferredCandidates,
@@ -5904,9 +5904,9 @@ describe('Users', () => {
             createdAt,
             organization,
             readDocuments,
-            whatsappZoneCoachName,
-            whatsappZoneCoachUrl,
-            whatsappZoneCoachQR,
+            whatsappZoneName,
+            whatsappZoneUrl,
+            whatsappZoneQR,
             refererId,
             referer,
             referredCandidates,
@@ -5920,9 +5920,9 @@ describe('Users', () => {
             lastConnection: lastConnectionCoach,
             createdAt: createdAtCoach,
             organization: coachOrganization,
-            whatsappZoneCoachName: coachWhatsappZoneCoachName,
-            whatsappZoneCoachUrl: coachWhatsappZoneCoachUrl,
-            whatsappZoneCoachQR: coachWhatsappZoneCoachQR,
+            whatsappZoneName: coachWhatsappZoneName,
+            whatsappZoneUrl: coachWhatsappZoneUrl,
+            whatsappZoneQR: coachWhatsappZoneQR,
             referredCandidates: coachReferredCandidates,
             userSocialSituation: coachUserSocialSituation,
             ...restCoach
@@ -6000,9 +6000,9 @@ describe('Users', () => {
             lastConnection,
             createdAt,
             organization,
-            whatsappZoneCoachName,
-            whatsappZoneCoachUrl,
-            whatsappZoneCoachQR,
+            whatsappZoneName,
+            whatsappZoneUrl,
+            whatsappZoneQR,
             ...restCoach
           } = loggedInCoach.user;
 

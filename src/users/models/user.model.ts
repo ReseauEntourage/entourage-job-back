@@ -48,7 +48,10 @@ import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserSocialSituation } from 'src/user-social-situations/models/user-social-situation.model';
 import { AdminZone, HistorizedModel } from 'src/utils/types';
-import { WhatsappByZone } from 'src/utils/types/WhatsappZone';
+import {
+  WhatsappCandidateByZone,
+  WhatsappCoachByZone,
+} from 'src/utils/types/WhatsappZone';
 import { UserCandidat } from './user-candidat.model';
 
 @Table({ tableName: 'Users' })
@@ -183,24 +186,39 @@ export class User extends HistorizedModel {
   deletedAt: Date;
 
   @Column(DataType.VIRTUAL)
-  get whatsappZoneCoachName(): string {
+  get whatsappZoneName(): string {
     const zone = this.getDataValue('zone') as AdminZone;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
-    return isCoach && zone ? WhatsappByZone[zone].name : '';
+    if (!zone) {
+      return '';
+    }
+    return isCoach
+      ? WhatsappCoachByZone[zone].name
+      : WhatsappCandidateByZone[zone].name;
   }
 
   @Column(DataType.VIRTUAL)
-  get whatsappZoneCoachUrl(): string {
+  get whatsappZoneUrl(): string {
     const zone = this.getDataValue('zone') as AdminZone;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
-    return isCoach && zone ? WhatsappByZone[zone].url : '';
+    if (!zone) {
+      return '';
+    }
+    return isCoach
+      ? WhatsappCoachByZone[zone].url
+      : WhatsappCandidateByZone[zone].url;
   }
 
   @Column(DataType.VIRTUAL)
-  get whatsappZoneCoachQR(): string {
+  get whatsappZoneQR(): string {
     const zone = this.getDataValue('zone') as AdminZone;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
-    return isCoach && zone ? WhatsappByZone[zone].qr : '';
+    if (!zone) {
+      return '';
+    }
+    return isCoach
+      ? WhatsappCoachByZone[zone].qr
+      : WhatsappCandidateByZone[zone].qr;
   }
 
   // si candidat regarder candidat
