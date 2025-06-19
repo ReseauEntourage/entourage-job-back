@@ -159,7 +159,7 @@ export const Departments = [
   },
   {
     name: 'Haute-Garonne (31)',
-    zone: AdminZones.HZ,
+    zone: AdminZones.SUDOUEST,
     region: 'Occitanie',
   },
   {
@@ -169,7 +169,7 @@ export const Departments = [
   },
   {
     name: 'Gironde (33)',
-    zone: AdminZones.HZ,
+    zone: AdminZones.SUDOUEST,
     region: 'Nouvelle-Aquitaine',
   },
   {

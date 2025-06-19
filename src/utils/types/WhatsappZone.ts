@@ -26,6 +26,11 @@ export const WhatsappByZone = {
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-rennes-lorient.png',
     url: process.env.WHATSAPP_COACH_URL_RENNES_LORIENT as string,
   },
+  [AdminZones.SUDOUEST]: {
+    name: 'Sud-ouest',
+    qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-sudouest.png',
+    url: process.env.WHATSAPP_COACH_URL_SUDOUEST as string,
+  },
   [AdminZones.HZ]: {
     name: 'Entourage Pro France',
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-hz.png',
