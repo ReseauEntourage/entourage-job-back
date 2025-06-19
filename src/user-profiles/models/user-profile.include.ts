@@ -72,7 +72,7 @@ export const getUserProfileSectorOccupationsInclude = (
           ...(isBusinessSectorsRequired
             ? { where: businessSectorsOptions }
             : {}),
-          attributes: ['id', 'name'],
+          attributes: ['id', 'name', 'prefixes'],
         },
         {
           model: Occupation,
@@ -258,3 +258,32 @@ export const getUserProfileOrder = (complete = false): Order => {
         [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
       ];
 };
+
+/**
+ * Returns the includes for a public user profile.
+ * This is a subset of the complete user profile includes, tailored for public profiles.
+ * It includes sector occupations, languages, contracts, skills, experiences, formations,
+ * reviews, and interests but excludes nudges and custom nudges.
+ */
+export const publicProfileIncludes: Includeable[] = [
+  ...getUserProfileSectorOccupationsInclude(),
+  ...getUserProfileLanguagesInclude(),
+  ...getUserProfileContractsInclude(),
+  ...getUserProfileSkillsInclude(),
+  ...getUserProfileExperiencesInclude(),
+  ...getUserProfileFormationsInclude(),
+  ...getUserProfileReviewsInclude(),
+  ...getUserProfileInterestsInclude(),
+];
+
+export const publicProfileOrder: Order = [
+  [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
+  [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
+  [
+    { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+    'order',
+    'ASC',
+  ],
+  [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
+  [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+];

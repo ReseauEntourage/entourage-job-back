@@ -29,6 +29,7 @@ import { MediasModule } from './medias/medias.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { PublicProfilesModule } from './public-profiles/public-profiles.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
@@ -126,6 +127,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UserSocialSituationsModule,
     MediasModule,
     OpenAiModule,
+    PublicProfilesModule,
   ],
   providers: [
     {
