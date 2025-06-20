@@ -1,13 +1,15 @@
+import { execFile, ExecFileException } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { ToBase64Response } from 'pdf2pic/dist/types/convertResponse';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department } from 'src/common/locations/locations.types';
 import { Skill } from 'src/common/skills/models';
+import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import {
   CvSchemaType,
@@ -129,10 +131,10 @@ export class ExternalCvsService {
   }
 
   async extractDataFromCVImages(
-    image: ToBase64Response
+    base64ImageArray: string[]
   ): Promise<CvSchemaType> {
     try {
-      return await this.openAiService.extractCVFromImages(image);
+      return await this.openAiService.extractCVFromImages(base64ImageArray);
     } catch (error) {
       throw error;
     }
@@ -337,5 +339,62 @@ export class ExternalCvsService {
         'Failed to populate user profile from CV data'
       );
     }
+  }
+
+  async convertPdfToPngBase64(pdfPath: string): Promise<string[]> {
+    const outputDir = path.join(__dirname, 'output');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir);
+    }
+
+    const outputPrefix = 'converted';
+    const pdftocairoPath = detectPdftocairoPath();
+
+    return new Promise((resolve, reject) => {
+      // Convertir toutes les pages du PDF
+      const args = [
+        '-png',
+        '-scale-to',
+        '1024',
+        pdfPath,
+        path.join(outputDir, outputPrefix),
+      ];
+
+      execFile(pdftocairoPath, args, async (error: ExecFileException) => {
+        if (error)
+          return reject(new Error(`Erreur conversion PDF: ${error.message}`));
+
+        try {
+          // Lire tous les fichiers générés dans le répertoire
+          const files = fs
+            .readdirSync(outputDir)
+            .filter(
+              (file) => file.startsWith(outputPrefix) && file.endsWith('.png')
+            )
+            .sort((a, b) => {
+              // Format attendu: "converted-[page].png"
+              const pageA = parseInt(a.split('-')[1]?.replace('.png', ''));
+              const pageB = parseInt(b.split('-')[1]?.replace('.png', ''));
+              return pageA - pageB;
+            });
+
+          const pagesBase64: string[] = [];
+
+          // Lire chaque fichier et le convertir en base64
+          for (const file of files) {
+            const filePath = path.join(outputDir, file);
+            const buffer = fs.readFileSync(filePath);
+            pagesBase64.push(buffer.toString('base64'));
+
+            // Supprimer le fichier après utilisation
+            fs.unlinkSync(filePath);
+          }
+
+          resolve(pagesBase64);
+        } catch (err) {
+          reject(new Error(`Erreur traitement des images: ${err}`));
+        }
+      });
+    });
   }
 }

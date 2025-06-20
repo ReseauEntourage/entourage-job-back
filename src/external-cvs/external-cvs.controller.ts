@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { createHash } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -18,8 +17,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import axios from 'axios';
-import { PDFDocument } from 'pdf-lib';
-import { fromPath } from 'pdf2pic';
 import { UserPayload } from 'src/auth/guards';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
@@ -91,17 +88,11 @@ export class ExternalCvsController {
       // Construction de la clé S3 pour le CV externe
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}external-cvs/${userId}.pdf`;
 
-      console.log('PDF URL:', pdfUrl);
       // Création du dossier temporaire s'il n'existe pas
-      console.log(process.cwd());
       const tempDir = path.join(process.cwd(), 'temp');
-      console.log('Temp directory:', tempDir);
       if (!fs.existsSync(tempDir)) {
-        console.log(`Creating temp directory: ${tempDir}`);
         fs.mkdirSync(tempDir, { recursive: true });
       }
-      // verification de le dossier temporaire
-      console.log(`Temp directory exists: ${fs.existsSync(tempDir)}`);
 
       // Téléchargement du PDF
       const pdfPath = path.join(tempDir, `${userId}.pdf`);
@@ -126,31 +117,13 @@ export class ExternalCvsController {
       let extractedCVData;
 
       if (needExtraction) {
-        const pdfDoc = await PDFDocument.load(pdfBuffer);
-        const pageCount = pdfDoc.getPageCount();
-
         try {
-          // Configuration des options de conversion
-          const options = {
-            saveFilename: `${userId}`, // Préfixe des noms de fichiers
-            savePath: tempDir, // Dossier de destination
-            format: 'png', // Format de l'image
-            preserveAspectRatio: true,
-            width: 1000, // Largeur max en pixels
-          };
-
-          // Conversion du PDF en images
-          const convert = fromPath(pdfPath, options);
-          const pagesResult = await convert(pageCount, {
-            responseType: 'base64',
-          });
-
-          // eslint-disable-next-line no-console
-          console.log('Pages converted:', pagesResult.base64);
+          const base64Image =
+            await this.externalCvsService.convertPdfToPngBase64(pdfPath);
 
           // Extraction des données du CV à partir des images
           extractedCVData =
-            await this.externalCvsService.extractDataFromCVImages(pagesResult);
+            await this.externalCvsService.extractDataFromCVImages(base64Image);
 
           // Sauvegarde des données extraites et du hash du fichier dans la base de données
           await this.externalCvsService.saveExtractedCVData(
