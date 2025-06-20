@@ -240,6 +240,8 @@ export const getUserProfileOrder = (complete = false): Order => {
     ? [
         [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
         [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
+        [{ model: Formation, as: 'formations' }, 'endDate', 'DESC'],
+        [{ model: Formation, as: 'formations' }, 'startDate', 'ASC'],
         [
           { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
           'order',
