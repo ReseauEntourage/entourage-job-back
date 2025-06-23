@@ -1,13 +1,13 @@
 import { Departments } from 'src/common/locations/locations.types';
 
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {
   type: 'object',
   properties: {
-    // introduction: { type: 'string', maxLength: 1000 },
+    introduction: { type: 'string', maxLength: 500 },
     description: { type: 'string', maxLength: 1000 },
     department: {
       type: 'string',
@@ -148,7 +148,7 @@ export interface CvSchemaType {
   schemaVersion: number;
 
   // UserProfile fields
-  // introduction?: string;
+  introduction?: string;
   description?: string;
   department?: string;
   linkedinUrl?: string;

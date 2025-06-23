@@ -224,6 +224,9 @@ export class ExternalCvsService {
 
       userProfileDto.userId = userId;
 
+      if (cvData.introduction) {
+        userProfileDto.introduction = cvData.introduction;
+      }
       if (cvData.description) {
         userProfileDto.description = cvData.description;
       }
