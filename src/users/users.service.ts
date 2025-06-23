@@ -7,19 +7,22 @@ import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
+import { PublicProfileFilterKey } from 'src/public-profiles/public-profiles.types';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
-  PublicUserAttributes,
   User,
   UserAttributes,
   UserCandidat,
   UserCandidatAttributes,
 } from './models';
+import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
   UserCandidatInclude,
+  userPublicProfileInclude,
+  userPublicProfileOrder,
 } from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
@@ -442,5 +445,42 @@ export class UsersService {
 
   async sendVerificationMail(user: User, token: string) {
     return this.mailsService.sendVerificationMail(user, token);
+  }
+
+  findAllPublicProfiles(
+    query: {
+      limit: number;
+      offset: number;
+      search: string;
+    } & FilterParams<PublicProfileFilterKey>
+  ) {
+    const { limit, offset } = query;
+
+    // const filtersObj = getFiltersObjectsFromQueryParams<
+    //   PublicProfileFilterKey,
+    //   PublicProfileConstantType
+    // >(params, PublicProfileFilters);
+
+    // const escapedQuery = escapeQuery(search);
+    return this.userModel.findAll({
+      limit,
+      offset,
+      attributes: PublicUserAttributes,
+      include: UserCandidatInclude(true),
+      order: getUserCandidatOrder(true),
+      where: {
+        lastConnection: { [Op.ne]: null },
+        role: UserRoles.CANDIDATE,
+      },
+    });
+  }
+
+  findPublicProfileByCandidateId(candidateId: string) {
+    return this.userModel.findOne({
+      where: { id: candidateId, role: UserRoles.CANDIDATE },
+      attributes: PublicUserAttributes,
+      include: userPublicProfileInclude,
+      order: userPublicProfileOrder(),
+    });
   }
 }

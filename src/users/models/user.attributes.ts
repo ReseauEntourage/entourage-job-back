@@ -22,11 +22,6 @@ export const UserAttributes = [
 
 export type UserAttribute = (typeof UserAttributes)[number];
 
-export const PublicUserAttributes = [
-  'id',
-  'firstName',
-  'lastName',
-  'role',
-] as const;
+export const PublicUserAttributes = ['id', 'firstName', 'lastName', 'role'];
 
 export type PublicUserAttribute = (typeof PublicUserAttributes)[number];
