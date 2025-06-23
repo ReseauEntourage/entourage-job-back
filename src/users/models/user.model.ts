@@ -205,8 +205,8 @@ export class User extends HistorizedModel {
       return '';
     }
     return isCoach
-      ? WhatsappCoachByZone[zone].url
-      : WhatsappCandidateByZone[zone].url;
+      ? WhatsappCoachByZone[zone].url || ''
+      : WhatsappCandidateByZone[zone].url || '';
   }
 
   @Column(DataType.VIRTUAL)
