@@ -27,7 +27,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,
-    languages: userProfile.languages,
+    userProfileLanguages: userProfile.userProfileLanguages,
     experiences: userProfile.experiences,
     formations: userProfile.formations,
     skills: userProfile.skills,

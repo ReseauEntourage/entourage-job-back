@@ -31,6 +31,7 @@ import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PublicProfilesModule } from './public-profiles/public-profiles.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
+import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
@@ -83,18 +84,24 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       isGlobal: true,
       envFilePath: ENV === 'dev-test' || ENV === 'test' ? '.env.test' : '.env',
     }),
+    RedisModule, // Module Redis partagé ajouté avant les modules qui utilisent Redis
     SequelizeModule.forRoot(getSequelizeOptions()),
     ThrottlerModule.forRoot({
       ttl: 60,
       limit: 100,
     }),
-    BullModule.forRoot({
-      redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
+    BullModule.forRootAsync({
+      imports: [RedisModule],
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        redis: redisOptions,
+      }),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
       ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
+      // Nous conservons les options Redis pour le cache-manager-redis-store car il a besoin de ces options au format standard
     }),
     RevisionsModule,
     UserProfilesModule,
