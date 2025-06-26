@@ -22,5 +22,6 @@ import { UsersTestingModule } from './users/users-testing.module';
     MessagingTestingModule,
   ],
   providers: [DatabaseHelper],
+  exports: [DatabaseHelper],
 })
 export class CustomTestingModule {}
