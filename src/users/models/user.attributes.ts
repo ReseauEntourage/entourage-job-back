@@ -15,9 +15,9 @@ export const UserAttributes = [
   'createdAt',
   'refererId',
   'deletedAt',
-  'whatsappZoneCoachName',
-  'whatsappZoneCoachUrl',
-  'whatsappZoneCoachQR',
+  'whatsappZoneName',
+  'whatsappZoneUrl',
+  'whatsappZoneQR',
 ] as const;
 
 export type UserAttribute = (typeof UserAttributes)[number];

@@ -7,6 +7,7 @@ export const AdminZones = {
   LILLE: 'LILLE',
   LORIENT: 'LORIENT',
   RENNES: 'RENNES',
+  SUDOUEST: 'SUDOUEST',
   HZ: 'HORS ZONE',
 } as const;
 
@@ -18,6 +19,7 @@ export const AdminZoneFilters: FilterConstant<AdminZone>[] = [
   { value: AdminZones.LYON, label: _.capitalize(AdminZones.LYON) },
   { value: AdminZones.LORIENT, label: _.capitalize(AdminZones.LORIENT) },
   { value: AdminZones.RENNES, label: _.capitalize(AdminZones.RENNES) },
+  { value: AdminZones.SUDOUEST, label: _.capitalize(AdminZones.SUDOUEST) },
   { value: AdminZones.HZ, label: _.capitalize(AdminZones.HZ) },
 ];
 

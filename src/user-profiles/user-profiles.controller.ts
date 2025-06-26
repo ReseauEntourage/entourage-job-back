@@ -125,7 +125,6 @@ export class UserProfilesController {
     contactTypes: ContactTypeEnum[]
   ) {
     if (!role || role.length === 0) {
-      console.error('Role is required');
       throw new BadRequestException();
     }
 
@@ -135,7 +134,6 @@ export class UserProfilesController {
     }
 
     if (role.includes(UserRoles.REFERER)) {
-      console.error('Referer role is not allowed');
       throw new BadRequestException();
     }
 
