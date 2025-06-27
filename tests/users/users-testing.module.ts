@@ -4,9 +4,8 @@ import { BusinessSectorsModule } from 'src/common/business-sectors/business-sect
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from 'src/user-social-situations/user-social-situations.module';
 import { UsersModule } from 'src/users/users.module';
-import { NudgesTestingModule } from 'tests/common/nudges/nudges-testing.module';
-import { BusinessSectorFactory } from './business-sector.factory';
-import { BusinessSectorHelper } from './business-sector.helper';
+import { BusinessSectorsTestingModule } from 'tests/business-sectors/business-sectors-testing.module';
+import { NudgesTestingModule } from 'tests/nudges/nudges-testing.module';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
@@ -20,21 +19,14 @@ import { UsersHelper } from './users.helper';
     UserSocialSituationsModule,
     AuthModule,
     NudgesTestingModule,
+    BusinessSectorsTestingModule,
   ],
   providers: [
     UsersHelper,
     UserCandidatsHelper,
     UserProfilesHelper,
     UserFactory,
-    BusinessSectorFactory,
-    BusinessSectorHelper,
   ],
-  exports: [
-    UsersHelper,
-    UserCandidatsHelper,
-    UserProfilesHelper,
-    UserFactory,
-    BusinessSectorHelper,
-  ],
+  exports: [UsersHelper, UserCandidatsHelper, UserProfilesHelper, UserFactory],
 })
 export class UsersTestingModule {}

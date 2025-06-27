@@ -30,12 +30,12 @@ import { UsersDeletionController } from 'src/users-deletion/users-deletion.contr
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { assertCondition } from 'src/utils/misc/asserts';
 import { AdminZones, APIResponse } from 'src/utils/types';
-import { NudgesHelper } from 'tests/common/nudges/nudges.helper';
+import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
+import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
-import { BusinessSectorHelper } from './business-sector.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserProfilesHelper } from './user-profiles.helper';
 import { UserFactory } from './user.factory';
