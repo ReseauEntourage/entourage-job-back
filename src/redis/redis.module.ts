@@ -2,20 +2,11 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import Redis from 'ioredis';
 import { getRedisOptions } from '../app.module';
-import { createRedisMock } from 'src/redis/redis.mock';
 
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 export const REDIS_OPTIONS = 'REDIS_OPTIONS';
 
 export const createRedisClient = () => {
-  const ENV = `${process.env.NODE_ENV}`;
-
-  // Pour les environnements de test, retourner un objet mock approprié
-  if (ENV === 'dev-test' || ENV === 'test') {
-    return createRedisMock();
-  }
-
-  // En production, utiliser les options réelles
   const options = getRedisOptions();
 
   const client = new Redis({

@@ -45,6 +45,9 @@ const ENV = `${process.env.NODE_ENV}`;
 const getParsedURI = (uri: string) => new URL(uri);
 
 export function getRedisOptions() {
+  if (ENV === 'dev-test' || ENV === 'test') {
+    return {};
+  }
   const redisUri = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
   const { port, hostname, password } = getParsedURI(redisUri);
   return {
