@@ -2,7 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import Redis from 'ioredis';
 import { getRedisOptions } from '../app.module';
-import { createRedisMock } from 'tests/redis.mock';
+import { createRedisMock } from 'src/redis/redis.mock';
 
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 export const REDIS_OPTIONS = 'REDIS_OPTIONS';
