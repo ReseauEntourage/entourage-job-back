@@ -12,6 +12,7 @@ import { MessagesTestingModule } from './messages/messages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
+import { PublicProfilesTestingModule } from './public-profiles/public-profiles-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     NudgesTestingModule,
     LanguagesTestingModule,
     ContractsTestingModule,
+    PublicProfilesTestingModule,
   ],
   providers: [DatabaseHelper],
   exports: [DatabaseHelper],
