@@ -45,9 +45,6 @@ export class ExternalCvsController {
     @UploadedFile() file: Express.Multer.File,
     @UserPayload() user: User
   ) {
-    if (!user.candidat) {
-      throw new BadRequestException('User is not a candidate');
-    }
     if (!file) {
       throw new BadRequestException();
     }
