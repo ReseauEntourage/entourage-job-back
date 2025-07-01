@@ -10,7 +10,7 @@ const ioRedisMock = jest.fn().mockImplementation(() => ({
   del: jest.fn().mockResolvedValue(1),
   exists: jest.fn().mockResolvedValue(0),
   expire: jest.fn().mockResolvedValue(1),
-  scan: jest.fn().mockReturnValueOnce(Promise.resolve(['0', []])),
+  scan: jest.fn().mockResolvedValueOnce(['0', []]),
   pipeline: jest.fn().mockReturnValue({
     set: jest.fn().mockReturnThis(),
     get: jest.fn().mockReturnThis(),

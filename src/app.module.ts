@@ -44,7 +44,7 @@ const ENV = `${process.env.NODE_ENV}`;
 
 const getParsedURI = (uri: string) => new URL(uri);
 
-export function getRedisOptions() {
+export function getRedisOptions(): Partial<ClientOpts> {
   if (ENV === 'dev-test' || ENV === 'test') {
     return {};
   }
