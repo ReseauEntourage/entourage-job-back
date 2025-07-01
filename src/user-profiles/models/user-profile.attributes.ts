@@ -11,6 +11,7 @@ export const UserProfilesAttributes = [
   'optInNewsletter',
   'optInRecommendations',
   'hasExternalCv',
+  'hasPicture',
 ];
 
 export const UserProfilesUserAttributes = [
