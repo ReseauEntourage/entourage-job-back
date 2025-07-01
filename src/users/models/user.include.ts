@@ -157,7 +157,7 @@ export const userPublicProfileOrder = (): Order => {
     return item;
   });
 
-  // Finally, add the 'recommendedUser' model and 'createdAt' order
+  // Finally, add the 'recUser' model and 'createdAt' order
   return prefixedUserProfileOrder;
 };
 
@@ -173,17 +173,17 @@ export const getUserProfileRecommendationOrder = (complete = false): Order => {
     return item;
   });
 
-  // Then prefix all the userProfileOrder items with 'recommendedUser' model
+  // Then prefix all the userProfileOrder items with 'recUser' model
   const prefixedRecommendedUserOrder = prefixedUserProfileOrder.map((item) => {
     if (Array.isArray(item)) {
-      return [{ model: User, as: 'recommendedUser' }, ...item] as OrderItem;
+      return [{ model: User, as: 'recUser' }, ...item] as OrderItem;
     }
     return item;
   });
 
-  // Finally, add the 'recommendedUser' model and 'createdAt' order
+  // Finally, add the 'recUser' model and 'createdAt' order
   return [
-    [{ model: User, as: 'recommendedUser' }, 'createdAt', 'ASC'],
+    [{ model: User, as: 'recUser' }, 'createdAt', 'ASC'],
     ...prefixedRecommendedUserOrder,
   ];
 };

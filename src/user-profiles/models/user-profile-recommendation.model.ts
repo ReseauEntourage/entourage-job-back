@@ -32,8 +32,8 @@ export class UserProfileRecommendation extends Model {
   @IsUUID(4)
   @ForeignKey(() => User)
   @AllowNull(false)
-  @Column
-  RecommendedUserId: string;
+  @Column({ field: 'RecommendedUserId' })
+  recommendedUserId: string;
 
   @CreatedAt
   createdAt: Date;
@@ -44,6 +44,9 @@ export class UserProfileRecommendation extends Model {
   @DeletedAt
   deletedAt: Date;
 
-  @BelongsTo(() => User, 'RecommendedUserId')
-  recommendedUser: User;
+  @BelongsTo(() => User, {
+    foreignKey: 'recommendedUserId',
+    as: 'recUser',
+  })
+  recUser: User;
 }
