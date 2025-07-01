@@ -157,7 +157,6 @@ export const userPublicProfileOrder = (): Order => {
     return item;
   });
 
-  // Finally, add the 'recUser' model and 'createdAt' order
   return prefixedUserProfileOrder;
 };
 
