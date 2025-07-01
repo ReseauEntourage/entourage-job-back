@@ -320,7 +320,7 @@ export class UserProfilesService {
       order: getUserProfileRecommendationOrder(),
       include: {
         model: User,
-        as: 'recommendedUser',
+        as: 'recUser',
         attributes: UserProfilesUserAttributes,
         include: [
           {
@@ -782,7 +782,7 @@ export class UserProfilesService {
         (userToRecommendId) => {
           return {
             UserId: userId,
-            RecommendedUserId: userToRecommendId,
+            recommendedUserId: userToRecommendId,
           };
         },
         {

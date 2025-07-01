@@ -223,7 +223,7 @@ export class UserProfilesController {
 
     const oneOfCurrentRecommendedProfilesIsNotAvailable =
       currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recommendedUser?.userProfile?.isAvailable;
+        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
       });
 
     if (
@@ -247,27 +247,27 @@ export class UserProfilesController {
         async (recommendedProfile): Promise<PublicProfile> => {
           const lastSentMessage = await this.userProfilesService.getLastContact(
             userId,
-            recommendedProfile.recommendedUser.id
+            recommendedProfile.recUser.id
           );
           const lastReceivedMessage =
             await this.userProfilesService.getLastContact(
-              recommendedProfile.recommendedUser.id,
+              recommendedProfile.recUser.id,
               userId
             );
 
           const averageDelayResponse =
             await this.userProfilesService.getAverageDelayResponse(
-              recommendedProfile.recommendedUser.id
+              recommendedProfile.recUser.id
             );
 
           const {
-            recommendedUser: { userProfile, ...restRecommendedUser },
+            recUser: { userProfile, ...restRecommendedUser },
           }: UserProfileRecommendation = recommendedProfile.toJSON();
 
           return {
             ...restRecommendedUser,
             ...userProfile,
-            id: recommendedProfile.recommendedUser.id,
+            id: recommendedProfile.recUser.id,
             lastSentMessage: lastSentMessage?.createdAt || null,
             lastReceivedMessage: lastReceivedMessage?.createdAt || null,
             averageDelayResponse,
