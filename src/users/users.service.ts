@@ -9,6 +9,7 @@ import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { PublicProfileFilterKey } from 'src/public-profiles/public-profiles.types';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { UserProfile } from 'src/user-profiles/models';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -167,6 +168,12 @@ export class UsersService {
           attributes: ['name', 'address', 'zone', 'id'],
           required: false,
         },
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: ['id', 'hasPicture'],
+          required: false,
+        },
       ],
     });
   }
@@ -259,6 +266,12 @@ export class UsersService {
           attributes: ['name', 'address', 'zone', 'id'],
           required: false,
         },
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: ['id', 'hasPicture'],
+          required: false,
+        },
       ],
     });
   }
@@ -347,6 +360,12 @@ export class UsersService {
           model: Organization,
           as: 'organization',
           attributes: ['name', 'address', 'zone', 'id'],
+          required: false,
+        },
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: ['id', 'hasPicture'],
           required: false,
         },
       ],

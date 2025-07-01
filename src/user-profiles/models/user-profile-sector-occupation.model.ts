@@ -39,7 +39,9 @@ export class UserProfileSectorOccupation extends Model {
   @Column
   businessSectorId: string;
 
-  @BelongsTo(() => BusinessSector, 'businessSectorId')
+  @BelongsTo(() => BusinessSector, {
+    foreignKey: 'businessSectorId',
+  })
   businessSector: BusinessSector;
 
   // Occupation
