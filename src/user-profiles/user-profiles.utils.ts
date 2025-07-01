@@ -35,6 +35,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     reviews: userProfile.reviews,
     interests: userProfile.interests,
     averageDelayResponse,
+    hasPicture: userProfile.hasPicture,
   };
 };
 

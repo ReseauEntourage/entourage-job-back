@@ -68,4 +68,5 @@ export type PublicProfile = {
   linkedinUrl?: string;
   hasExternalCv: boolean;
   averageDelayResponse: number | null;
+  hasPicture: boolean;
 };

@@ -18,5 +18,5 @@ export const conversationParticipantAttributes = [
 ];
 
 export const messageAttributes = ['id', 'content', 'createdAt', 'authorId'];
-export const userProfileAttributes = ['id', 'isAvailable'];
+export const userProfileAttributes = ['id', 'isAvailable', 'hasPicture'];
 export const mediaAttributes = ['id', 'mimeType', 'name', 'size', 's3Key'];
