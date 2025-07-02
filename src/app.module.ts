@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bull';
-import { Module, CacheModule } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
@@ -8,41 +8,46 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ClientOpts } from 'redis';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
-import { AmbitionsModule } from './common/ambitions/ambitions.module';
-import { BusinessLinesModule } from './common/business-lines/business-lines.module';
+import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';
+import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { ContactsModule } from './contacts/contacts.module';
-import { CVsModule } from './cvs/cvs.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
+import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { PublicProfilesModule } from './public-profiles/public-profiles.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
+import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
-import { SharesModule } from './shares/shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
 import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
+import { UsersStatsModule } from './users-stats/users-stats.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
 const getParsedURI = (uri: string) => new URL(uri);
 
-export function getRedisOptions() {
+export function getRedisOptions(): Partial<ClientOpts> {
+  if (ENV === 'dev-test' || ENV === 'test') {
+    return {};
+  }
   const redisUri = process.env.REDIS_TLS_URL || process.env.REDIS_URL;
   const { port, hostname, password } = getParsedURI(redisUri);
   return {
@@ -82,35 +87,39 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       isGlobal: true,
       envFilePath: ENV === 'dev-test' || ENV === 'test' ? '.env.test' : '.env',
     }),
+    RedisModule, // Module Redis partagé ajouté avant les modules qui utilisent Redis
     SequelizeModule.forRoot(getSequelizeOptions()),
     ThrottlerModule.forRoot({
       ttl: 60,
       limit: 100,
     }),
-    BullModule.forRoot({
-      redis: ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions(),
+    BullModule.forRootAsync({
+      imports: [RedisModule],
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        redis: redisOptions,
+      }),
     }),
     CacheModule.register<ClientOpts>({
       isGlobal: true,
       store: redisStore,
       ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
+      // Nous conservons les options Redis pour le cache-manager-redis-store car il a besoin de ces options au format standard
     }),
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
-    CVsModule,
     ExternalCvsModule,
-    BusinessLinesModule,
+    BusinessSectorsModule,
     LocationsModule,
-    AmbitionsModule,
     ContractsModule,
     LanguagesModule,
+    InterestsModule,
     PassionsModule,
     SkillsModule,
     ExperiencesModule,
@@ -127,6 +136,8 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MessagingModule,
     UserSocialSituationsModule,
     MediasModule,
+    OpenAiModule,
+    PublicProfilesModule,
   ],
   providers: [
     {
@@ -142,16 +153,13 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule
-    SharesModule,
-    // Put SharesModule before CVsModule
     UsersModule,
     UsersDeletionModule,
     UsersCreationModule,
+    UsersStatsModule,
     AuthModule,
-    CVsModule,
-    BusinessLinesModule,
+    BusinessSectorsModule,
     LocationsModule,
-    AmbitionsModule,
     ContractsModule,
     LanguagesModule,
     PassionsModule,

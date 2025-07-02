@@ -1,22 +1,18 @@
 import {
   AllowNull,
   BelongsTo,
-  BelongsToMany,
   Column,
+  CreatedAt,
   DataType,
   Default,
-  ForeignKey,
-  HasMany,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { ExperienceSkill } from 'src/common/experiences/models/experience-skill.model';
-import { Skill } from 'src/common/skills/models';
-import { CV } from 'src/cvs/models/cv.model';
+import { UserProfile } from 'src/user-profiles/models';
 
-@Table({ tableName: 'Reviews' })
+@Table({ tableName: 'Reviews', updatedAt: false })
 export class Review extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -24,30 +20,26 @@ export class Review extends Model {
   @Column
   id: string;
 
+  @CreatedAt
+  createdAt: Date;
+
   @IsUUID(4)
-  @ForeignKey(() => CV)
   @AllowNull(false)
   @Column
-  CVId: string;
+  userProfileId: string;
 
-  @AllowNull(false)
-  @Column
-  name: string;
-
-  @AllowNull(false)
-  @Column
-  text: string;
+  @BelongsTo(() => UserProfile, 'userProfileId')
+  userProfile?: UserProfile;
 
   @AllowNull(false)
   @Column
-  status: string;
+  authorName: string;
 
-  @BelongsTo(() => CV, 'CVId')
-  cv: CV;
+  @AllowNull(false)
+  @Column
+  authorLabel: string;
 
-  @BelongsToMany(() => Skill, () => ExperienceSkill, 'ExperienceId', 'SkillId')
-  skills: Skill[];
-
-  @HasMany(() => ExperienceSkill, 'ExperienceId')
-  cvSkills: ExperienceSkill[];
+  @AllowNull(false)
+  @Column
+  content: string;
 }

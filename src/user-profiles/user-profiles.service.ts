@@ -1,43 +1,55 @@
-/* eslint-disable no-console */
 import fs from 'fs';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
+import { ExperiencesService } from 'src/common/experiences/experiences.service';
+import { Experience } from 'src/common/experiences/models';
+import { FormationsService } from 'src/common/formations/formations.service';
+import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
 import { Department, Departments } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
+import { Occupation } from 'src/common/occupations/models';
+import { Skill } from 'src/common/skills/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { User } from 'src/users/models';
+import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
-  HelpNeed,
-  HelpOffer,
   UserProfile,
-  UserProfileNetworkBusinessLine,
-  UserProfileSearchAmbition,
-  UserProfileSearchBusinessLine,
+  UserProfileSectorOccupation,
+  UserProfileSectorOccupationWithPartialAssociations,
+  UserProfileWithPartialAssociations,
 } from './models';
+import { UserProfileContract } from './models/user-profile-contract.model';
+import { UserProfileLanguage } from './models/user-profile-language.model';
+import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
 } from './models/user-profile.attributes';
-import { getUserProfileInclude } from './models/user-profile.include';
-import { HelpValue, PublicProfile } from './user-profiles.types';
+import {
+  getUserProfileInclude,
+  getUserProfileOrder,
+} from './models/user-profile.include';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
-  BUSINESS_LINES: 0.3,
-  HELPS: 0.5,
+  BUSINESS_SECTORS: 0.3,
+  NUDGES: 0.5,
 };
 
 @Injectable()
@@ -45,28 +57,31 @@ export class UserProfilesService {
   constructor(
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
-    @InjectModel(BusinessLine)
-    private businessLineModel: typeof BusinessLine,
-    @InjectModel(UserProfileNetworkBusinessLine)
-    private userProfileNetworkBusinessLineModel: typeof UserProfileNetworkBusinessLine,
-    @InjectModel(UserProfileSearchBusinessLine)
-    private userProfileSearchBusinessLineModel: typeof UserProfileSearchBusinessLine,
-    @InjectModel(UserProfileSearchAmbition)
-    private userProfileSearchAmbitionModel: typeof UserProfileSearchAmbition,
-    @InjectModel(Ambition)
-    private ambitionModel: typeof Ambition,
-    @InjectModel(HelpNeed)
-    private helpNeedModel: typeof HelpNeed,
-    @InjectModel(HelpOffer)
-    private helpOfferModel: typeof HelpOffer,
+    @InjectModel(Occupation)
+    private occupationModel: typeof Occupation,
+    @InjectModel(UserProfileSectorOccupation)
+    private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
     @InjectModel(UserProfileRecommendation)
     private userProfileRecommandationModel: typeof UserProfileRecommendation,
+    @InjectModel(UserProfileNudge)
+    private userProfileNudgeModel: typeof UserProfileNudge,
+    @InjectModel(Interest)
+    private interestModel: typeof Interest,
+    @InjectModel(Skill)
+    private skillModel: typeof Skill,
+    @InjectModel(UserProfileContract)
+    private userProfileContractModel: typeof UserProfileContract,
+    @InjectModel(UserProfileLanguage)
+    private userProfileLanguageModel: typeof UserProfileLanguage,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private messagesService: MessagesService,
+    private messagingService: MessagingService,
     private slackService: SlackService,
-    private mailsService: MailsService
+    private mailsService: MailsService,
+    private experiencesService: ExperiencesService,
+    private formationsService: FormationsService
   ) {}
 
   async findOne(id: string) {
@@ -82,17 +97,14 @@ export class UserProfilesService {
     });
   }
 
-  async findOneByUserId(userId: string) {
+  async findOneByUserId(
+    userId: string,
+    complete = false
+  ): Promise<UserProfile> {
     return this.userProfileModel.findOne({
-      where: { UserId: userId },
-      include: [
-        ...getUserProfileInclude(),
-        {
-          model: User,
-          as: 'user',
-          attributes: UserProfilesUserAttributes,
-        },
-      ],
+      where: { userId },
+      include: getUserProfileInclude(complete),
+      order: getUserProfileOrder(complete),
     });
   }
 
@@ -111,13 +123,22 @@ export class UserProfilesService {
       offset: number;
       limit: number;
       search: string;
-      helps: HelpValue[];
+      nudgeIds: string[];
       departments: Department[];
-      businessLines: BusinessLineValue[];
+      businessSectorIds: string[];
+      contactTypes: ContactTypeEnum[];
     }
   ): Promise<PublicProfile[]> {
-    const { role, offset, limit, search, helps, departments, businessLines } =
-      query;
+    const {
+      role,
+      offset,
+      limit,
+      search,
+      nudgeIds,
+      departments,
+      businessSectorIds,
+      contactTypes,
+    } = query;
 
     const searchOptions = search
       ? { [Op.or]: userProfileSearchQuery(search) }
@@ -130,35 +151,53 @@ export class UserProfilesService {
           }
         : {};
 
-    const businessLinesOptions: WhereOptions<BusinessLine> =
-      businessLines?.length > 0
+    const businessSectorsOptions: WhereOptions<BusinessSector> =
+      businessSectorIds?.length > 0
         ? {
-            name: { [Op.or]: businessLines },
+            id: { [Op.in]: businessSectorIds },
           }
         : {};
 
-    const helpsOptions: WhereOptions<HelpNeed | HelpOffer> =
-      helps?.length > 0
+    const nudgesSectorsOptions: WhereOptions<Nudge> =
+      nudgeIds?.length > 0
         ? {
-            name: {
-              [Op.or]: helps,
+            id: {
+              [Op.or]: nudgeIds,
             },
           }
         : {};
 
+    const contactTypesWhereClause: WhereOptions<UserProfile> | undefined =
+      contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
+      contactTypes?.includes(ContactTypeEnum.REMOTE)
+        ? {
+            [Op.or]: {
+              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
+                allowPhysicalEvents: true,
+              }),
+              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
+                allowRemoteEvents: true,
+              }),
+            },
+          }
+        : undefined;
+
     // this query is made in 2 steps because it filters the where clause inside the include
     // eg:
-    // you want all user having in his businesslines one specific businessline
-    // but you also want the request to response his businesslines list
+    // you want all user having in his businessSectors one specific businessSector
+    // but you also want the request to response his businessSectors list
     // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
     const filteredProfiles = await this.userProfileModel.findAll({
       offset,
       limit,
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
-      ...(!_.isEmpty(departmentsOptions) ? { where: departmentsOptions } : {}),
       include: [
-        ...getUserProfileInclude(role, businessLinesOptions, helpsOptions),
+        ...getUserProfileInclude(
+          false,
+          businessSectorsOptions,
+          nudgesSectorsOptions
+        ),
         {
           model: User,
           as: 'user',
@@ -170,6 +209,10 @@ export class UserProfilesService {
           },
         },
       ],
+      where: {
+        ...(contactTypesWhereClause ? contactTypesWhereClause : {}),
+        ...(departmentsOptions ? departmentsOptions : {}),
+      },
     });
 
     const profiles = await this.userProfileModel.findAll({
@@ -198,13 +241,18 @@ export class UserProfilesService {
           profile.user.id,
           userId
         );
+        const averageDelayResponse = await this.getAverageDelayResponse(
+          profile.user.id
+        );
 
         const { user, ...restProfile }: UserProfile = profile.toJSON();
         return {
           ...user,
           ...restProfile,
+          id: profile.user.id,
           lastSentMessage: lastSentMessage?.createdAt || null,
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          averageDelayResponse,
         };
       })
     );
@@ -247,13 +295,18 @@ export class UserProfilesService {
           profile.user.id,
           userId
         );
+        const averageDelayResponse = await this.getAverageDelayResponse(
+          profile.user.id
+        );
 
         const { user, ...restProfile }: UserProfile = profile.toJSON();
         return {
           ...user,
           ...restProfile,
+          id: profile.user.id,
           lastSentMessage: lastSentMessage?.createdAt || null,
           lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+          averageDelayResponse,
         };
       })
     );
@@ -264,10 +317,10 @@ export class UserProfilesService {
   ): Promise<UserProfileRecommendation[]> {
     return this.userProfileRecommandationModel.findAll({
       where: { UserId: userId },
-      order: sequelize.literal('"recommendedUser.createdAt" DESC'),
+      order: getUserProfileRecommendationOrder(),
       include: {
         model: User,
-        as: 'recommendedUser',
+        as: 'recUser',
         attributes: UserProfilesUserAttributes,
         include: [
           {
@@ -291,173 +344,436 @@ export class UserProfilesService {
     );
   }
 
+  async getAverageDelayResponse(userId: string): Promise<number | null> {
+    return this.messagingService.getAverageDelayResponse(userId);
+  }
+
   async updateByUserId(
     userId: string,
-    updateUserProfileDto: Partial<UserProfile>
+    updateUserProfileDto: UserProfileWithPartialAssociations & {
+      nudgeIds?: string[];
+    }
   ) {
     const userProfileToUpdate = await this.findOneByUserId(userId);
 
     if (!userProfileToUpdate) {
       return null;
     }
-
     await this.userProfileModel.sequelize.transaction(async (t) => {
+      // UserProfile
       await this.userProfileModel.update(updateUserProfileDto, {
-        where: { UserId: userId },
+        where: { userId },
         individualHooks: true,
         transaction: t,
       });
 
-      if (updateUserProfileDto.networkBusinessLines) {
-        const networkBusinessLines = await Promise.all(
-          updateUserProfileDto.networkBusinessLines.map(
-            ({ name, order = -1 }) => {
-              return this.businessLineModel.create(
-                { name, order },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
+      // Sector occupations
+      if (updateUserProfileDto.sectorOccupations) {
+        await this.updateSectorOccupationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.sectorOccupations,
+          t
         );
-        await userProfileToUpdate.$add(
-          'networkBusinessLines',
-          networkBusinessLines,
-          { transaction: t }
-        );
-        await this.userProfileNetworkBusinessLineModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            BusinessLineId: {
-              [Op.not]: networkBusinessLines.map((bl) => {
-                return bl.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
       }
-      if (updateUserProfileDto.searchBusinessLines) {
-        const searchBusinessLines = await Promise.all(
-          updateUserProfileDto.searchBusinessLines.map(
-            ({ name, order = -1 }) => {
-              return this.businessLineModel.create(
-                { name, order },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
-        );
-        await userProfileToUpdate.$add(
-          'searchBusinessLines',
-          searchBusinessLines,
-          { transaction: t }
-        );
 
-        await this.userProfileSearchBusinessLineModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            BusinessLineId: {
-              [Op.not]: searchBusinessLines.map((bl) => {
-                return bl.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      if (updateUserProfileDto.searchAmbitions) {
-        const searchAmbitions = await Promise.all(
-          updateUserProfileDto.searchAmbitions.map(
-            ({ name, order = -1, prefix = 'dans' }) => {
-              return this.ambitionModel.create(
-                { name, order, prefix },
-                {
-                  hooks: true,
-                  transaction: t,
-                }
-              );
-            }
-          )
+      // Experiences
+      if (updateUserProfileDto.experiences) {
+        await this.updateExperiencesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.experiences,
+          t
         );
-        await userProfileToUpdate.$add('searchAmbitions', searchAmbitions, {
-          transaction: t,
-        });
+      }
 
-        await this.userProfileSearchAmbitionModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            AmbitionId: {
-              [Op.not]: searchAmbitions.map((amb) => {
-                return amb.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      if (updateUserProfileDto.helpNeeds) {
-        const helpNeeds = await Promise.all(
-          updateUserProfileDto.helpNeeds.map(({ name }) => {
-            return this.helpNeedModel.create(
-              { UserProfileId: userProfileToUpdate.id, name },
-              {
-                hooks: true,
-                transaction: t,
-              }
-            );
-          })
+      // Formations
+      if (updateUserProfileDto.formations) {
+        await this.updateFormationsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.formations,
+          t
         );
+      }
 
-        await this.helpNeedModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            id: {
-              [Op.not]: helpNeeds.map((hn) => {
-                return hn.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
-      }
-      if (updateUserProfileDto.helpOffers) {
-        const helpOffers = await Promise.all(
-          updateUserProfileDto.helpOffers.map(({ name }) => {
-            return this.helpOfferModel.create(
-              { UserProfileId: userProfileToUpdate.id, name },
-              {
-                hooks: true,
-                transaction: t,
-              }
-            );
-          })
+      // Nudges
+      if (updateUserProfileDto.nudges) {
+        await this.updateNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.nudges,
+          t
         );
-        await this.helpOfferModel.destroy({
-          where: {
-            UserProfileId: userProfileToUpdate.id,
-            id: {
-              [Op.not]: helpOffers.map((ho) => {
-                return ho.id;
-              }),
-            },
-          },
-          hooks: true,
-          transaction: t,
-        });
+      }
+
+      // Custom Nudges
+      if (updateUserProfileDto.customNudges) {
+        await this.updateCustomNudgesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.customNudges,
+          t
+        );
+      }
+
+      // Interests
+      if (updateUserProfileDto.interests) {
+        await this.updateInterestsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.interests,
+          t
+        );
+      }
+
+      // Skills
+      if (updateUserProfileDto.skills) {
+        await this.updateSkillsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.skills,
+          t
+        );
+      }
+
+      // Contracts
+      if (updateUserProfileDto.contracts) {
+        await this.updateContractsByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.contracts,
+          t
+        );
+      }
+
+      // UserProfileLanguages
+      if (updateUserProfileDto.userProfileLanguages) {
+        await this.updateUserProfileLanguagesByUserProfileId(
+          userProfileToUpdate,
+          updateUserProfileDto.userProfileLanguages,
+          t
+        );
       }
     });
 
-    return this.findOneByUserId(userId);
+    return this.findOneByUserId(userId, true);
+  }
+
+  async updateExperiencesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    experiences: Partial<Experience>[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.experiencesService.updateExperiencesForUserProfile(
+      userProfileToUpdate,
+      experiences,
+      t
+    );
+  }
+
+  async updateCustomNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    customNudges: UserProfileNudge[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    // Remove the custom nudges that don't exist anymore
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: customNudges
+            .filter((customNudge) => !!customNudge.id)
+            .map((customNudge) => customNudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+    // Update the custom nudges that exist
+    await Promise.all(
+      customNudges
+        .filter((customNudge) => !!customNudge.id)
+        .map(async (customNudge) => {
+          const existingCustomNudge = await this.userProfileNudgeModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              id: customNudge.id,
+            },
+          });
+
+          if (existingCustomNudge) {
+            return existingCustomNudge.update(
+              {
+                content: customNudge.content,
+              },
+              {
+                hooks: true,
+                transaction: t,
+              }
+            );
+          }
+        })
+    );
+
+    // Create the new custom nudges that don't exist yet
+    const newCustomNudgesData = await Promise.all(
+      customNudges
+        .filter((customNudge) => !customNudge.id)
+        .map((customNudge) => {
+          return {
+            userProfileId: userProfileToUpdate.id,
+            content: customNudge.content,
+          };
+        })
+    );
+    await this.userProfileNudgeModel.bulkCreate(newCustomNudgesData, {
+      hooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateNudgesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    nudges: Partial<Nudge>[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const currentNudges = userProfileToUpdate.get('nudges');
+
+    // Create or update userProfileNudge
+    await Promise.all(
+      nudges.map(async (nudge) => {
+        const existingNudge = currentNudges.find(
+          (existingNudge) => existingNudge.id === nudge.id
+        );
+        if (!existingNudge) {
+          return this.userProfileNudgeModel.create(
+            {
+              userProfileId: userProfileToUpdate.id,
+              nudgeId: nudge.id,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+      })
+    );
+
+    await this.userProfileNudgeModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        nudgeId: {
+          [Op.ne]: null,
+          [Op.notIn]: nudges.map((nudge) => nudge.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateFormationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    formations: Formation[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    await this.formationsService.updateFormationsForUserProfile(
+      userProfileToUpdate,
+      formations,
+      t
+    );
+  }
+
+  async updateSectorOccupationsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    sectorOccupations: Partial<UserProfileSectorOccupationWithPartialAssociations>[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const newSectorOccupations = await Promise.all(
+      sectorOccupations.map(async ({ businessSectorId, occupation, order }) => {
+        const existingSectorOccupation =
+          await this.userProfileSectorOccupationModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              businessSectorId,
+            },
+            include: [
+              {
+                model: Occupation,
+                as: 'occupation',
+                attributes: ['name'],
+                where:
+                  occupation && occupation.name
+                    ? { name: occupation.name }
+                    : undefined,
+              },
+            ],
+          });
+
+        if (existingSectorOccupation) {
+          return existingSectorOccupation;
+        }
+        let newOccupation = null;
+        if (occupation && occupation.name) {
+          newOccupation = await this.occupationModel.create(
+            {
+              name: occupation.name,
+            },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+        return await this.userProfileSectorOccupationModel.create(
+          {
+            userProfileId: userProfileToUpdate.id,
+            businessSectorId,
+            occupationId: newOccupation ? newOccupation.id : undefined,
+            order,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+      })
+    );
+
+    await this.userProfileSectorOccupationModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: newSectorOccupations.map(
+            (sectorOccupation) => sectorOccupation.id
+          ),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+
+    await userProfileToUpdate.$set('sectorOccupations', newSectorOccupations, {
+      transaction: t,
+    });
+  }
+
+  async updateInterestsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    interests: Interest[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const interestsData = interests.map((interest, order) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        name: interest.name,
+        order,
+      };
+    });
+    const userProfileInterests = await this.interestModel.bulkCreate(
+      interestsData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.interestModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: userProfileInterests.map((interest) => interest.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateSkillsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    skills: Partial<Skill>[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const skillsData = skills.map((skill, order) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        name: skill.name,
+        order,
+      };
+    });
+    const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
+      hooks: true,
+      transaction: t,
+    });
+    await this.skillModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: skillsCreated.map((skill) => skill.id),
+        },
+        order: {
+          [Op.ne]: -1,
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateContractsByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    contracts: Contract[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    const contractsData = contracts.map((contract) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        contractId: contract.id,
+      };
+    });
+    const userProfileContracts = await this.userProfileContractModel.bulkCreate(
+      contractsData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.userProfileContractModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: userProfileContracts.map((upContract) => upContract.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
+  }
+
+  async updateUserProfileLanguagesByUserProfileId(
+    userProfileToUpdate: UserProfile,
+    userProfileLanguages: Partial<UserProfileLanguage>[],
+    t: sequelize.Transaction
+  ): Promise<void> {
+    // Languages already exists, we need to create UserProfileLanguage
+    const languagesData = userProfileLanguages.map((upLanguage) => {
+      return {
+        userProfileId: userProfileToUpdate.id,
+        languageId: upLanguage.languageId,
+        level: upLanguage.level,
+      };
+    });
+    const createdUpLanguages = await this.userProfileLanguageModel.bulkCreate(
+      languagesData,
+      {
+        hooks: true,
+        transaction: t,
+      }
+    );
+    await this.userProfileLanguageModel.destroy({
+      where: {
+        userProfileId: userProfileToUpdate.id,
+        id: {
+          [Op.notIn]: createdUpLanguages.map((upLanguage) => upLanguage.id),
+        },
+      },
+      individualHooks: true,
+      transaction: t,
+    });
   }
 
   async createRecommendations(userId: string, usersToRecommendIds: string[]) {
@@ -466,7 +782,7 @@ export class UserProfilesService {
         (userToRecommendId) => {
           return {
             UserId: userId,
-            RecommendedUserId: userToRecommendId,
+            recommendedUserId: userToRecommendId,
           };
         },
         {
@@ -498,11 +814,11 @@ export class UserProfilesService {
         ).map(({ name }) => name)
       : Departments.map(({ name }) => name);
 
-    const helps = [...userProfile.helpNeeds, ...userProfile.helpOffers];
-    const businessLines = [
-      ...userProfile.searchBusinessLines,
-      ...userProfile.networkBusinessLines,
-    ];
+    const nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
+    const sectorOccupations = userProfile.sectorOccupations;
+    const businessSectorIds = sectorOccupations.map(
+      (sectorOccupation) => sectorOccupation.businessSector?.id
+    );
 
     interface UserRecommendationSQL {
       id: string;
@@ -514,9 +830,9 @@ export class UserProfilesService {
       role: UserRole;
       lastConnection: Date;
       createdAt: Date;
-      ambitions: string;
-      profileBusinessLines: string;
-      profileHelps: string;
+      occupations: string;
+      businessSectorIds: string;
+      nudgeIds: string;
     }
 
     const sql = `
@@ -526,37 +842,21 @@ export class UserProfilesService {
       u."lastName",
       u.email,
       up.department,
-      up."currentJob",
       u.role,
       u."lastConnection",
       u."createdAt" as "createdAt",
-      string_agg(DISTINCT a.name, ', ') as ambitions,
-      string_agg(DISTINCT COALESCE(sb.name, nb.name), ', ') as "profileBusinessLines",  
-      string_agg(DISTINCT COALESCE(ho.name, hn.name), ', ') as "profileHelps"
+      string_agg(DISTINCT upso."businessSectorId"::text, ', ') as "businessSectorIds",
+      string_agg(DISTINCT upn."nudgeId"::text, ', ') as "nudgeIds"
     
     FROM "Users" u
-    LEFT JOIN "User_Profiles" up 
-      ON u.id = up."UserId"
+    LEFT JOIN "UserProfiles" up
+      ON u.id = up."userId"
     
-    LEFT JOIN "User_Profile_Search_Ambitions" upsa
-      ON up.id = upsa."UserProfileId"
-    LEFT JOIN "Ambitions" a
-      ON a.id = upsa."AmbitionId"
-    
-    LEFT JOIN "User_Profile_Search_BusinessLines" upsb
-      ON up.id = upsb."UserProfileId"
-    LEFT JOIN "BusinessLines" sb
-      ON sb.id = upsb."BusinessLineId"
-    
-    LEFT JOIN "User_Profile_Network_BusinessLines" upnb
-      ON up.id = upnb."UserProfileId"
-    LEFT JOIN "BusinessLines" nb
-      ON nb.id = upnb."BusinessLineId"
-    
-    LEFT JOIN "Help_Needs" hn 
-      ON up.id = hn."UserProfileId"
-    LEFT JOIN "Help_Offers" ho
-      ON up.id = ho."UserProfileId"
+    LEFT JOIN "UserProfileSectorOccupations" upso
+      ON up.id = upso."userProfileId"
+
+    LEFT JOIN "UserProfileNudges" upn
+      ON up.id = upn."userProfileId"
     
     WHERE u."deletedAt" IS NULL
     AND up."isAvailable" IS TRUE
@@ -566,26 +866,8 @@ export class UserProfilesService {
     )})
     AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
     AND u."lastConnection" IS NOT NULL
-
-    -- InternalMessages join optimisation
-    AND u.id NOT IN (
-      SELECT
-        "addresseeUserId"
-      FROM
-        "InternalMessages"
-      WHERE
-        "senderUserId" = '${userId}'
-    )
-    AND u.id NOT IN (
-      SELECT
-        "senderUserId"
-      FROM
-        "InternalMessages"
-      WHERE
-        "addresseeUserId" = '${userId}'
-    )
         
-    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department, up."currentJob"
+    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department
     ;`;
 
     const profiles: UserRecommendationSQL[] =
@@ -597,33 +879,30 @@ export class UserProfilesService {
       profiles,
       [
         (profile) => {
-          const profileBusinessLines = profile.profileBusinessLines
-            ? profile.profileBusinessLines.split(', ')
+          const profileBusinessSectors = profile.businessSectorIds
+            ? profile.businessSectorIds.split(', ')
             : [];
 
-          const businessLinesDifference = _.difference(
-            businessLines.map(({ name }) => name),
-            profileBusinessLines
+          const businessSectorsDifference = _.difference(
+            businessSectorIds,
+            profileBusinessSectors
           );
 
-          const businessLinesMatching =
-            (businessLines.length - businessLinesDifference.length) *
-            UserProfileRecommendationsWeights.BUSINESS_LINES;
+          const businessSectorsMatching =
+            (businessSectorIds.length - businessSectorsDifference.length) *
+            UserProfileRecommendationsWeights.BUSINESS_SECTORS;
 
-          const profileHelps = profile.profileHelps
-            ? profile.profileHelps.split(', ')
+          const profileNudgeIds = profile.nudgeIds
+            ? profile.nudgeIds.split(', ')
             : [];
 
-          const helpsDifferences = _.difference(
-            helps.map(({ name }) => name),
-            profileHelps
-          );
+          const nudgesDifferences = _.difference(nudgeIds, profileNudgeIds);
 
-          const helpsMatching =
-            (helps.length - helpsDifferences.length) *
-            UserProfileRecommendationsWeights.HELPS;
+          const nudgesMatching =
+            (nudgeIds.length - nudgesDifferences.length) *
+            UserProfileRecommendationsWeights.NUDGES;
 
-          return businessLinesMatching + helpsMatching;
+          return businessSectorsMatching + nudgesMatching;
         },
         ({ department }) => department === userProfile.department,
         ({ createdAt }) => createdAt,
@@ -669,7 +948,7 @@ export class UserProfilesService {
 
   async removeByUserId(userId: string) {
     return this.userProfileModel.destroy({
-      where: { UserId: userId },
+      where: { userId },
       individualHooks: true,
     });
   }

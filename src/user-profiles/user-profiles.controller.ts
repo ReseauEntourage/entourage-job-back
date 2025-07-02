@@ -19,7 +19,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
 import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
@@ -41,7 +40,7 @@ import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profi
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
-import { HelpValue, PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
@@ -116,18 +115,21 @@ export class UserProfilesController {
     role: UserRole[],
     @Query('search')
     search: string,
-    @Query('helps')
-    helps: HelpValue[],
+    @Query('nudgeIds')
+    nudgeIds: string[],
     @Query('departments')
     departments: Department[],
-    @Query('businessLines')
-    businessLines: BusinessLineValue[]
+    @Query('businessSectorIds')
+    businessSectorIds: string[],
+    @Query('contactTypes')
+    contactTypes: ContactTypeEnum[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
     }
 
     if (!isRoleIncluded(AllUserRoles, role)) {
+      console.error('Invalid role provided');
       throw new BadRequestException();
     }
 
@@ -135,15 +137,21 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll(userId, {
-      role,
-      offset,
-      limit,
-      search,
-      helps,
-      departments,
-      businessLines,
-    });
+    try {
+      return this.userProfilesService.findAll(userId, {
+        role,
+        offset,
+        limit,
+        search,
+        nudgeIds,
+        departments,
+        businessSectorIds,
+        contactTypes,
+      });
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw new InternalServerErrorException();
+    }
   }
 
   @UserPermissions(Permissions.REFERER)
@@ -215,7 +223,7 @@ export class UserProfilesController {
 
     const oneOfCurrentRecommendedProfilesIsNotAvailable =
       currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recommendedUser?.userProfile?.isAvailable;
+        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
       });
 
     if (
@@ -239,23 +247,30 @@ export class UserProfilesController {
         async (recommendedProfile): Promise<PublicProfile> => {
           const lastSentMessage = await this.userProfilesService.getLastContact(
             userId,
-            recommendedProfile.recommendedUser.id
+            recommendedProfile.recUser.id
           );
           const lastReceivedMessage =
             await this.userProfilesService.getLastContact(
-              recommendedProfile.recommendedUser.id,
+              recommendedProfile.recUser.id,
               userId
             );
 
+          const averageDelayResponse =
+            await this.userProfilesService.getAverageDelayResponse(
+              recommendedProfile.recUser.id
+            );
+
           const {
-            recommendedUser: { userProfile, ...restRecommendedUser },
+            recUser: { userProfile, ...restRecommendedUser },
           }: UserProfileRecommendation = recommendedProfile.toJSON();
 
           return {
             ...restRecommendedUser,
             ...userProfile,
+            id: recommendedProfile.recUser.id,
             lastSentMessage: lastSentMessage?.createdAt || null,
             lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+            averageDelayResponse,
           };
         }
       )
@@ -270,7 +285,8 @@ export class UserProfilesController {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
 
     const userProfile = await this.userProfilesService.findOneByUserId(
-      userIdToGet
+      userIdToGet,
+      true
     );
 
     if (!user || !userProfile) {
@@ -289,6 +305,8 @@ export class UserProfilesController {
       userIdToGet,
       currentUserId
     );
+    const averageDelayResponse =
+      await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
     if (user.role === UserRoles.CANDIDATE) {
       const userCandidate =
@@ -302,7 +320,7 @@ export class UserProfilesController {
           userProfile,
           lastSentMessage?.createdAt,
           lastReceivedMessage?.createdAt,
-          userCandidate.url
+          averageDelayResponse
         );
       }
     }
@@ -311,7 +329,8 @@ export class UserProfilesController {
       user,
       userProfile,
       lastSentMessage?.createdAt,
-      lastReceivedMessage?.createdAt
+      lastReceivedMessage?.createdAt,
+      averageDelayResponse
     );
   }
 }

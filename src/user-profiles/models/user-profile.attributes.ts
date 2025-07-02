@@ -1,10 +1,17 @@
 export const UserProfilesAttributes = [
-  'description',
+  'id',
+  'allowPhysicalEvents',
+  'allowRemoteEvents',
   'currentJob',
   'department',
+  'description',
+  'introduction',
   'isAvailable',
   'linkedinUrl',
+  'optInNewsletter',
+  'optInRecommendations',
   'hasExternalCv',
+  'hasPicture',
 ];
 
 export const UserProfilesUserAttributes = [
@@ -14,4 +21,13 @@ export const UserProfilesUserAttributes = [
   'role',
   'lastConnection',
   'createdAt',
+];
+
+export const publicProfileAttributes = [
+  'id',
+  'department',
+  'description',
+  'introduction',
+  'linkedinUrl',
+  'hasPicture',
 ];

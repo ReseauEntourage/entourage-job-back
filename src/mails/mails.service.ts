@@ -2,10 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
-import { CV } from 'src/cvs/models';
 import {
   CustomMailParams,
-  MailjetTemplate,
   MailjetTemplates,
 } from 'src/external-services/mailjet/mailjet.types';
 import {
@@ -21,12 +19,10 @@ import { Jobs } from 'src/queues/queues.types';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import {
-  getCandidateFromCoach,
-  getCoachFromCandidate,
-} from 'src/users/users.utils';
+import { getCoachFromCandidate } from 'src/users/users.utils';
 import { getAdminMailsFromZone } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
+import { AdminZones } from 'src/utils/types';
 
 @Injectable()
 export class MailsService {
@@ -44,6 +40,7 @@ export class MailsService {
       templateId: MailjetTemplates.PASSWORD_RESET,
       variables: {
         ..._.omitBy(user, _.isNil),
+        zone: user.zone || AdminZones.HZ,
         token,
       },
     });
@@ -61,6 +58,7 @@ export class MailsService {
       templateId: MailjetTemplates.ACCOUNT_CREATED,
       variables: {
         ..._.omitBy(user, _.isNil),
+        zone: user.zone || AdminZones.HZ,
         token,
       },
     });
@@ -78,6 +76,7 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_COACH,
         variables: {
           ..._.omitBy(user, _.isNil),
+          zone: user.zone || AdminZones.HZ,
         },
       });
     }
@@ -89,6 +88,7 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_CANDIDATE,
         variables: {
           ..._.omitBy(user, _.isNil),
+          zone: user.zone || AdminZones.HZ,
         },
       });
     }
@@ -100,6 +100,7 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_REFERER,
         variables: {
           ..._.omitBy(user, _.isNil),
+          zone: user.zone || AdminZones.HZ,
         },
       });
     }
@@ -181,161 +182,6 @@ export class MailsService {
         // 4 jours après la création du compte
         delay: 3600000 * 24 * 4,
       }
-    );
-  }
-
-  async sendCVPreparationMail(candidate: User) {
-    const toEmail: CustomMailParams['toEmail'] = { to: candidate.email };
-
-    const coach = getCoachFromCandidate(candidate);
-    if (coach && coach.role !== UserRoles.REFERER) {
-      toEmail.cc = coach.email;
-    }
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
-
-    await this.queuesService.addToWorkQueue(
-      Jobs.SEND_MAIL,
-      {
-        toEmail,
-        templateId: MailjetTemplates.CV_PREPARE,
-        replyTo: candidatesAdminMail,
-        variables: {
-          ..._.omitBy(candidate, _.isNil),
-        },
-      },
-      {
-        delay:
-          (process.env.CV_START_DELAY
-            ? parseFloat(process.env.CV_START_DELAY)
-            : 2) *
-          3600000 *
-          24,
-      }
-    );
-  }
-
-  async sendCVPublishedMail(candidate: User) {
-    const coach = getCoachFromCandidate(candidate);
-
-    const toEmail: CustomMailParams['toEmail'] =
-      coach && coach.role !== UserRoles.REFERER
-        ? { to: candidate.email, cc: coach.email }
-        : { to: candidate.email };
-
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
-
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail,
-      templateId: MailjetTemplates.CV_PUBLISHED,
-      replyTo: candidatesAdminMail,
-      variables: {
-        ..._.omitBy(candidate, _.isNil),
-      },
-    });
-  }
-
-  async sendCVSubmittedMail(
-    submittingUser: User,
-    candidateId: string,
-    cv: Partial<CV>
-  ) {
-    let candidate, coach: User;
-    let toEmail: string;
-    // if user is a a candidate then get the user as candidate
-    if (submittingUser.role === UserRoles.CANDIDATE) {
-      candidate = submittingUser;
-      coach = getCoachFromCandidate(candidate);
-      toEmail = getAdminMailsFromZone(submittingUser.zone).candidatesAdminMail;
-    } else {
-      // if user is a coach then get the candidate from the coach
-      coach = submittingUser;
-      candidate = getCandidateFromCoach(coach, candidateId);
-      toEmail = getAdminMailsFromZone(candidate.zone).candidatesAdminMail;
-    }
-
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: toEmail,
-      templateId: MailjetTemplates.CV_SUBMITTED,
-      variables: {
-        role: submittingUser.role,
-        candidate: _.omitBy(candidate, _.isNil),
-        coach: _.omitBy(coach, _.isNil),
-        cv: _.omitBy(cv, _.isNil),
-      },
-    });
-  }
-
-  async sendCVReminderMail(candidate: User, is20Days = false) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
-
-    const toEmail: CustomMailParams['toEmail'] = {
-      to: candidate.email,
-    };
-
-    const coach = getCoachFromCandidate(candidate);
-    if (coach && coach.role !== UserRoles.REFERER) {
-      toEmail.cc = coach.email;
-    }
-
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail,
-      templateId: is20Days
-        ? MailjetTemplates.CV_REMINDER_20
-        : MailjetTemplates.CV_REMINDER_10,
-      replyTo: candidatesAdminMail,
-      variables: {
-        ..._.omitBy(candidate, _.isNil),
-      },
-    });
-
-    return toEmail;
-  }
-
-  async sendReminderIfNotEmployed(
-    candidate: User,
-    templateId: MailjetTemplate
-  ) {
-    if (!candidate.candidat.employed) {
-      const toEmail: CustomMailParams['toEmail'] = {
-        to: candidate.email,
-      };
-      const coach = getCoachFromCandidate(candidate);
-      if (coach && coach.role !== UserRoles.REFERER) {
-        toEmail.cc = coach.email;
-      }
-      const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
-
-      await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-        toEmail,
-        templateId: templateId,
-        replyTo: candidatesAdminMail,
-        variables: {
-          ..._.omitBy(candidate, _.isNil),
-        },
-      });
-      return toEmail;
-    }
-    return false;
-  }
-
-  async sendInterviewTrainingReminderMail(candidate: User) {
-    return this.sendReminderIfNotEmployed(
-      candidate,
-      MailjetTemplates.INTERVIEW_TRAINING_REMINDER
-    );
-  }
-
-  async sendVideoReminderMail(candidate: User) {
-    return this.sendReminderIfNotEmployed(
-      candidate,
-      MailjetTemplates.VIDEO_REMINDER
-    );
-  }
-
-  async sendActionsReminderMails(candidate: User) {
-    return this.sendReminderIfNotEmployed(
-      candidate,
-      MailjetTemplates.ACTIONS_REMINDER
     );
   }
 

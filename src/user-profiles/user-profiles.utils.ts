@@ -8,7 +8,7 @@ export const getPublicProfileFromUserAndUserProfile = (
   userProfile: UserProfile,
   lastSentMessage: Date,
   lastReceivedMessage: Date,
-  cvUrl?: string
+  averageDelayResponse: number | null
 ): PublicProfile => {
   return {
     id: user.id,
@@ -18,17 +18,24 @@ export const getPublicProfileFromUserAndUserProfile = (
     isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
-    helpOffers: userProfile.helpOffers,
-    helpNeeds: userProfile.helpNeeds,
+    nudges: userProfile.nudges,
+    customNudges: userProfile.customNudges,
     description: userProfile.description,
-    searchBusinessLines: userProfile.searchBusinessLines,
-    networkBusinessLines: userProfile.networkBusinessLines,
-    searchAmbitions: userProfile.searchAmbitions,
+    introduction: userProfile.introduction,
     lastSentMessage: lastSentMessage ? lastSentMessage : null,
     lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
-    cvUrl: cvUrl,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
+    sectorOccupations: userProfile.sectorOccupations,
+    userProfileLanguages: userProfile.userProfileLanguages,
+    experiences: userProfile.experiences,
+    formations: userProfile.formations,
+    skills: userProfile.skills,
+    contracts: userProfile.contracts,
+    reviews: userProfile.reviews,
+    interests: userProfile.interests,
+    averageDelayResponse,
+    hasPicture: userProfile.hasPicture,
   };
 };
 
@@ -36,6 +43,5 @@ export function userProfileSearchQuery(query = '') {
   return [
     searchInColumnWhereOption('user.firstName', query, true),
     searchInColumnWhereOption('user.lastName', query, true),
-    // searchInColumnWhereOption('searchAmbitions.name', query, true),
   ];
 }

@@ -1,16 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { literal, Op, WhereOptions } from 'sequelize';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,
   searchInColumnWhereOptionRaw,
 } from 'src/utils/misc';
 import { FilterObject, FilterParams } from 'src/utils/types';
-import { User, UserCandidat } from './models';
+import { User } from './models';
 import {
-  CVStatuses,
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
@@ -182,7 +180,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
-            // TO DO: change switch to mapped object or if else
             switch (keys[i]) {
               case 'role':
                 whereOptions = [
@@ -206,28 +203,16 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
                 ];
                 break;
               // Only candidates
-              case 'businessLines':
+              case 'businessSectorIds':
                 whereOptions = [
                   ...whereOptions,
-                  `"candidat->cvs->businessLines"."name" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'hidden':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat"."hidden" IN (:${keys[i]})`,
+                  `"userProfile->sectorOccupations->businessSectors"."id" IN (:${keys[i]})`,
                 ];
                 break;
               case 'employed':
                 whereOptions = [
                   ...whereOptions,
                   `"candidat"."employed" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'cvStatus':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat->cvs"."status" IN (:${keys[i]})`,
                 ];
                 break;
             }
@@ -238,73 +223,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   }
 
   return whereOptions;
-}
-
-export function filterMembersByCVStatus(
-  members: User[],
-  status: FilterObject<MemberFilterKey>['cvStatus']
-) {
-  let filteredList = members;
-
-  if (members && status) {
-    filteredList = members.filter((member) => {
-      return status.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          return currentFilter.value === member.candidat.cvs[0].status;
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
-export function filterMembersByBusinessLines(
-  members: User[],
-  businessLines: FilterObject<MemberFilterKey>['businessLines']
-) {
-  let filteredList = members;
-
-  if (members && businessLines && businessLines.length > 0) {
-    filteredList = members.filter((member: User) => {
-      return businessLines.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          const cvBusinessLines = member.candidat.cvs[0].businessLines;
-          return (
-            cvBusinessLines &&
-            cvBusinessLines.length > 0 &&
-            cvBusinessLines
-              .map(({ name }: { name: BusinessLineValue }) => {
-                return name;
-              })
-              .includes(currentFilter.value)
-          );
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
-export function filterMembersByAssociatedUser(
-  members: User[],
-  associatedUsers: FilterObject<MemberFilterKey>['associatedUser']
-) {
-  let filteredList = members;
-
-  if (members && associatedUsers && associatedUsers.length > 0) {
-    filteredList = members.filter((member) => {
-      return associatedUsers.some((currentFilter) => {
-        const relatedUser = getRelatedUser(member);
-        return !_.isEmpty(relatedUser) === currentFilter.value;
-      });
-    });
-  }
-
-  return filteredList;
 }
 
 export function userSearchQuery(query = '', withOrganizationName = false) {
@@ -335,29 +253,6 @@ export function userSearchQueryRaw(query = '', withOrganizationName = false) {
   )`;
 }
 
-export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
-  version: {
-    [Op.in]: [
-      literal(`
-          SELECT MAX("CVs"."version")
-          FROM "CVs"
-          WHERE "candidatId" = "CVs"."UserId"
-          GROUP BY "CVs"."UserId"
-      `),
-    ],
-  },
-};
-
-export function generateImageNamesToDelete(prefix: string) {
-  const imageNames = Object.keys(CVStatuses).map((status) => {
-    return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];
-  });
-
-  return imageNames.reduce((acc, curr) => {
-    return [...acc, ...curr];
-  }, []);
-}
-
 export function getCandidateAndCoachIdDependingOnRoles(
   user: User,
   userToLink: User,
@@ -382,16 +277,19 @@ export function getCandidateAndCoachIdDependingOnRoles(
 }
 
 export function getCommonMembersFilterOptions(
-  params: FilterParams<MemberFilterKey>
+  params: FilterParams<MemberFilterKey>,
+  allBusinessSectors: BusinessSector[]
 ): {
   replacements: FilterParams<MemberFilterKey>;
   filterOptions: string[];
 } {
+  const memberFilters = MemberFilters({
+    businessSectors: allBusinessSectors,
+  });
   const filtersObj = getFiltersObjectsFromQueryParams<
     MemberFilterKey,
     MemberConstantType
-  >(params, MemberFilters);
-
+  >(params, memberFilters);
   const filterOptions = getMemberOptions(filtersObj);
 
   const replacements = Object.keys(filtersObj).reduce((acc, curr) => {
