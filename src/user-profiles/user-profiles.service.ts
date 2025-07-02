@@ -979,4 +979,67 @@ export class UserProfilesService {
       ),
     ]);
   }
+
+  /**
+   * Calcule le taux de complétion du profil utilisateur
+   * @param userId L'identifiant de l'utilisateur
+   * @returns pourcentage entre 0 et 100 représentant le taux de complétion du profil
+   */
+  async calculateProfileCompletion(userId: string): Promise<number> {
+    // Utilisation d'une requête SQL plutot que les modeles pour optimiser les performances
+    const sql = `
+      SELECT
+        up.id,
+        up."hasPicture",
+        up.department,
+        up.introduction,
+        up.description,
+        u."firstName",
+        u."lastName",
+        u.phone,
+        (SELECT COUNT(*) > 0 FROM "UserProfileSectorOccupations" upso WHERE upso."userProfileId" = up.id) AS "hasSectorOccupations",
+        (SELECT COUNT(*) > 0 FROM "Skills" s WHERE s."userProfileId" = up.id) AS "hasSkills",
+        (SELECT COUNT(*) > 0 FROM "UserProfileNudges" upn WHERE upn."userProfileId" = up.id AND upn."nudgeId" IS NULL) AS "hasCustomNudges",
+        (SELECT COUNT(*) > 0 FROM "Experiences" e WHERE e."userProfileId" = up.id) AS "hasExperiences",
+        (SELECT COUNT(*) > 0 FROM "Formations" f WHERE f."userProfileId" = up.id) AS "hasFormations",
+        (SELECT COUNT(*) > 0 FROM "UserProfileLanguages" upl WHERE upl."userProfileId" = up.id) AS "hasLanguages",
+        (SELECT COUNT(*) > 0 FROM "Interests" i WHERE i."userProfileId" = up.id) AS "hasInterests"
+      FROM "UserProfiles" up
+      JOIN "Users" u ON u.id = up."userId"
+      WHERE up."userId" = :userId
+    `;
+
+    const result = await this.userProfileModel.sequelize.query(sql, {
+      type: QueryTypes.SELECT,
+      replacements: { userId },
+      plain: true,
+    });
+
+    if (!result) {
+      return 0;
+    }
+
+    // Calculer le pourcentage de complétion en fonction des champs retournés
+    const fields = Object.entries(result);
+    if (fields.length === 0) return 0;
+
+    // Compte les champs qui sont remplis (non null, non undefined et non false)
+    const filledFields = fields.filter(([, value]) => {
+      // Si c'est une valeur booléenne provenant d'une sous-requête (hasSkills, hasExperiences, etc.)
+      if (typeof value === 'boolean' || value === 't' || value === 'f') {
+        return value === true || value === 't';
+      }
+      // Pour les chaînes de caractères (firstName, lastName, etc.)
+      if (typeof value === 'string') {
+        return value?.trim().length > 0;
+      }
+      // Pour les autres types (null, undefined, nombre, etc.)
+      return !!value;
+    });
+
+    // Calcul du pourcentage arrondi à l'entier le plus proche
+    const percentage = Math.round((filledFields.length / fields.length) * 100);
+
+    return percentage;
+  }
 }
