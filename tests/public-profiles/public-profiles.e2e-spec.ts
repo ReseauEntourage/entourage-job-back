@@ -264,5 +264,36 @@ describe('PublicProfiles', () => {
       );
       expect(response.status).toBe(404);
     });
+
+    it('should return public profile with correct fields', async () => {
+      const user = userCandidates[0];
+      const response: APIResponse<
+        PublicProfilesController['getPublicProfileByCandidateId']
+      > = await request(server).get(`/users/public-profiles/${user.id}`);
+      expect(response.status).toBe(200);
+      // Direct Attributes
+      expect(response.body).toHaveProperty('id');
+      expect(response.body).toHaveProperty('firstName');
+      expect(response.body).toHaveProperty('lastName');
+      expect(response.body).toHaveProperty('role');
+
+      // Direct Relationships
+      // expect(response.body.candidat).toBeDefined();
+      expect(response.body.userProfile).toBeDefined();
+
+      // User Profile Attributes
+      expect(response.body.userProfile).toHaveProperty('department');
+      expect(response.body.userProfile).toHaveProperty('description');
+      expect(response.body.userProfile).toHaveProperty('introduction');
+      expect(response.body.userProfile).toHaveProperty('linkedinUrl');
+      expect(response.body.userProfile).toHaveProperty('userProfileLanguages');
+      expect(response.body.userProfile).toHaveProperty('contracts');
+      expect(response.body.userProfile).toHaveProperty('skills');
+      expect(response.body.userProfile).toHaveProperty('experiences');
+      expect(response.body.userProfile).toHaveProperty('formations');
+      expect(response.body.userProfile).toHaveProperty('reviews');
+      expect(response.body.userProfile).toHaveProperty('interests');
+      expect(response.body.userProfile).toHaveProperty('sectorOccupations');
+    });
   });
 });
