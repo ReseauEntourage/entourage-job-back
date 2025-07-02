@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import axios from 'axios';
 import { UserPayload } from 'src/auth/guards';
+import { Timeout } from 'src/common/decorators';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { ExternalCvsService } from './external-cvs.service';
@@ -69,6 +70,7 @@ export class ExternalCvsController {
    */
   @ApiBearerAuth()
   @Get('generate-profile-from-cv')
+  @Timeout(60000)
   async generateProfileFromCV(
     @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {

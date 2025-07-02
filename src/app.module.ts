@@ -1,7 +1,7 @@
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as redisStore from 'cache-manager-redis-store';
@@ -12,6 +12,7 @@ import { BusinessSectorsModule } from './common/business-sectors/business-sector
 import { ContractsModule } from './common/contracts/contracts.module';
 import { ExperiencesModule } from './common/experiences/experiences.module';
 import { FormationsModule } from './common/formations/formations.module';
+import { TimeoutInterceptor } from './common/interceptors';
 import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
@@ -147,6 +148,10 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TimeoutInterceptor,
     },
   ],
   exports: [
