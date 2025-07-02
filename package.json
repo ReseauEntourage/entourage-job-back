@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.27.0",
+  "version": "2.27.1",
   "license": "ISC",
   "engines": {
     "node": "20.x"
@@ -81,7 +81,7 @@
     "redis": "^3.1.2",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^7.2.0",
+    "rxjs": "^7.8.2",
     "sequelize": "^6.29.0",
     "sequelize-cli": "^6.4.1",
     "sequelize-typescript": "^2.1.6",
