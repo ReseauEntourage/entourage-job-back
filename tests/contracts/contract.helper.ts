@@ -11,9 +11,9 @@ export class ContractHelper {
     private contractFactory: ContractFactory
   ) {}
 
-  async findOne({ id }: { id: string }) {
+  async findOne({ name }: { name: string }) {
     return this.contractModel.findOne({
-      where: { id },
+      where: { name },
     });
   }
 

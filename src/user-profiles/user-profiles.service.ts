@@ -568,7 +568,7 @@ export class UserProfilesService {
 
   async updateFormationsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    formations: Formation[],
+    formations: Partial<Formation>[],
     t: sequelize.Transaction
   ): Promise<void> {
     await this.formationsService.updateFormationsForUserProfile(
@@ -654,7 +654,7 @@ export class UserProfilesService {
 
   async updateInterestsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    interests: Interest[],
+    interests: Partial<Interest>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const interestsData = interests.map((interest, order) => {
@@ -716,7 +716,7 @@ export class UserProfilesService {
 
   async updateContractsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    contracts: Contract[],
+    contracts: Partial<Contract>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const contractsData = contracts.map((contract) => {

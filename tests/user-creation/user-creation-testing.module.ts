@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { AuthModule } from 'src/auth/auth.module';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
@@ -7,12 +6,11 @@ import { UserSocialSituationsModule } from 'src/user-social-situations/user-soci
 import { UsersModule } from 'src/users/users.module';
 import { BusinessSectorsTestingModule } from 'tests/business-sectors/business-sectors-testing.module';
 import { NudgesTestingModule } from 'tests/nudges/nudges-testing.module';
-import { UserCandidatsHelper } from './user-candidats.helper';
-import { UserFactory } from './user.factory';
-import { UsersHelper } from './users.helper';
+import { UsersTestingModule } from 'tests/users/users-testing.module';
 
 @Module({
   imports: [
+    UsersTestingModule,
     UserProfilesModule,
     BusinessSectorsModule,
     UsersModule,
@@ -21,12 +19,7 @@ import { UsersHelper } from './users.helper';
     NudgesTestingModule,
     BusinessSectorsTestingModule,
   ],
-  providers: [
-    UsersHelper,
-    UserCandidatsHelper,
-    UserProfilesHelper,
-    UserFactory,
-  ],
-  exports: [UsersHelper, UserCandidatsHelper, UserProfilesHelper, UserFactory],
+  providers: [],
+  exports: [],
 })
-export class UsersTestingModule {}
+export class UserCreationTestingModule {}

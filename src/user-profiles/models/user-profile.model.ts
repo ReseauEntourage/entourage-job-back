@@ -339,8 +339,20 @@ export type UserProfileSectorOccupationWithPartialAssociations = Partial<
 >;
 
 export type UserProfileWithPartialAssociations = Partial<
-  Omit<UserProfile, 'sectorOccupations' | 'nudges'>
+  Omit<
+    UserProfile,
+    | 'sectorOccupations'
+    | 'nudges'
+    | 'experiences'
+    | 'formations'
+    | 'contracts'
+    | 'skills'
+  >
 > & {
   sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
   nudges?: Partial<Nudge>[];
+  experiences?: Partial<Experience>[];
+  formations?: Partial<Formation>[];
+  contracts?: Partial<Contract>[];
+  skills?: Partial<Skill>[];
 };

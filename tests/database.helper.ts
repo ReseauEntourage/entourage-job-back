@@ -98,7 +98,6 @@ export class DatabaseHelper {
       await this.formationSkillModel.truncate(destroyOptions);
       await this.skillModel.truncate(destroyOptions);
       await this.passionModel.truncate(destroyOptions);
-      await this.contractModel.truncate(destroyOptions);
       await this.experienceModel.truncate(destroyOptions);
       await this.reviewModel.truncate(destroyOptions);
       await this.organizationModel.truncate(destroyOptions);
