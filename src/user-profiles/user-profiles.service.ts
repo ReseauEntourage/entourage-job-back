@@ -989,7 +989,6 @@ export class UserProfilesService {
     // Utilisation d'une requête SQL plutot que les modeles pour optimiser les performances
     const sql = `
       SELECT
-        up.id,
         up."hasPicture",
         up.department,
         up.introduction,
