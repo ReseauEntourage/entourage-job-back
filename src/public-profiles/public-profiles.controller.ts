@@ -1,4 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/guards';
 import { PublicProfilesService } from './public-profiles.services';
@@ -27,6 +33,13 @@ export class PublicProfilesController {
   async getPublicProfileByCandidateId(
     @Param('candidateId') candidateId: string
   ) {
+    if (
+      !candidateId.match(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      )
+    ) {
+      throw new NotFoundException('Invalid candidate ID format');
+    }
     return this.publicProfilesService.getPublicProfileByCandidateId(
       candidateId
     );
