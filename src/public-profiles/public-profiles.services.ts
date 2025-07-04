@@ -17,7 +17,7 @@ export class PublicProfilesService {
     return this.usersService.findAllPublicProfiles(query);
   }
 
-  getPublicProfileByCandidateId(candidateId: string) {
+  async getPublicProfileByCandidateId(candidateId: string) {
     return this.usersService.findPublicProfileByCandidateId(candidateId);
   }
 }

@@ -2,7 +2,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { UserProfilesHelper } from '../users/user-profiles.helper';
+import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { UsersHelper } from '../users/users.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { ExternalCvsController } from 'src/external-cvs/external-cvs.controller';
