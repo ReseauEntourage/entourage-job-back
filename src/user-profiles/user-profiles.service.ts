@@ -466,7 +466,7 @@ export class UserProfilesService {
 
   async updateCustomNudgesByUserProfileId(
     userProfileToUpdate: UserProfile,
-    customNudges: UserProfileNudge[],
+    customNudges: Partial<UserProfileNudge>[],
     t: sequelize.Transaction
   ): Promise<void> {
     // Remove the custom nudges that don't exist anymore

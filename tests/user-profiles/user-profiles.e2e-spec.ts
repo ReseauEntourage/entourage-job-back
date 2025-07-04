@@ -9,6 +9,7 @@ import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
+import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Queues } from 'src/queues/queues.types';
@@ -26,6 +27,7 @@ import { FormationFactory } from 'tests/common/formations/formation.factory';
 import { ContractHelper } from 'tests/contracts/contract.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { LanguageHelper } from 'tests/languages/language.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
@@ -48,6 +50,7 @@ describe('UserProfiles', () => {
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
   let contractHelper: ContractHelper;
+  let languageHelper: LanguageHelper;
 
   let businessSector1: BusinessSector;
   let businessSector2: BusinessSector;
@@ -64,6 +67,9 @@ describe('UserProfiles', () => {
 
   let contractCdi: Contract;
   let contractCdd: Contract;
+
+  let languageFrench: Language;
+  let languageEnglish: Language;
 
   const route = '/user';
 
@@ -93,6 +99,7 @@ describe('UserProfiles', () => {
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     contractHelper = moduleFixture.get<ContractHelper>(ContractHelper);
+    languageHelper = moduleFixture.get<LanguageHelper>(LanguageHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     internalMessageFactory = moduleFixture.get<InternalMessageFactory>(
       InternalMessageFactory
@@ -139,7 +146,7 @@ describe('UserProfiles', () => {
     nudgeEvent = await nudgesHelper.findOne({ value: 'event' });
 
     // Initialize the contracts
-    // await contractHelper.deleteAllContracts();
+    await contractHelper.deleteAllContracts();
     await contractHelper.seedContracts();
 
     contractCdi = await contractHelper.findOne({
@@ -147,6 +154,17 @@ describe('UserProfiles', () => {
     });
     contractCdd = await contractHelper.findOne({
       name: 'CDD',
+    });
+
+    // Initialize the languages
+    await languageHelper.deleteAllLanguages();
+    await languageHelper.seedLanguages();
+
+    languageFrench = await languageHelper.findOne({
+      value: 'fr',
+    });
+    languageEnglish = await languageHelper.findOne({
+      value: 'en',
     });
   });
 
@@ -1437,6 +1455,33 @@ describe('UserProfiles', () => {
                 nudges: [{ id: nudgeNetwork.id }],
                 contracts: [{ id: contractCdd.id }, { id: contractCdi.id }],
                 skills: [{ name: 'JavaScript', order: 0 }],
+                userProfileLanguages: [
+                  {
+                    languageId: languageFrench.id,
+                  },
+                  {
+                    languageId: languageEnglish.id,
+                  },
+                ],
+                interests: [
+                  { name: 'Photographie', order: 0 },
+                  { name: 'Voyage', order: 1 },
+                ],
+                customNudges: [
+                  {
+                    content: 'Nudge personnalisé 1',
+                  },
+                  {
+                    content: 'Nudge personnalisé 2',
+                  },
+                ],
+                reviews: [
+                  {
+                    authorName: 'John Doe',
+                    authorLabel: 'CEO',
+                    content: 'Great candidate!',
+                  },
+                ],
               },
             }
           );

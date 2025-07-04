@@ -107,6 +107,44 @@ export class UserProfilesHelper {
           })
         )
       );
+      config.userProfileLanguages = expect.arrayContaining(
+        user.userProfile.userProfileLanguages.map((upLanguages) =>
+          expect.objectContaining({
+            id: upLanguages.id,
+            language: expect.objectContaining({
+              id: upLanguages.language.id,
+              name: upLanguages.language.name,
+            }),
+            level: upLanguages.level,
+          })
+        )
+      );
+      config.interests = expect.arrayContaining(
+        user.userProfile.interests.map((interest) =>
+          expect.objectContaining({
+            id: interest.id,
+            name: interest.name,
+          })
+        )
+      );
+      config.customNudges = expect.arrayContaining(
+        user.userProfile.customNudges.map((customNudge) =>
+          expect.objectContaining({
+            id: customNudge.id,
+            content: customNudge.content,
+          })
+        )
+      );
+      config.reviews = expect.arrayContaining(
+        user.userProfile.reviews.map((review) =>
+          expect.objectContaining({
+            id: review.id,
+            authorName: review.authorName,
+            authorLabel: review.authorLabel,
+            content: review.content,
+          })
+        )
+      );
     }
     return config;
   }

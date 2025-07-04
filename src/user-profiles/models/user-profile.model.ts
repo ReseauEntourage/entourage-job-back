@@ -347,12 +347,20 @@ export type UserProfileWithPartialAssociations = Partial<
     | 'formations'
     | 'contracts'
     | 'skills'
+    | 'userProfileLanguages'
+    | 'interests'
+    | 'customNudges'
+    | 'reviews'
   >
 > & {
   sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
   nudges?: Partial<Nudge>[];
+  customNudges?: Partial<UserProfileNudge>[];
   experiences?: Partial<Experience>[];
   formations?: Partial<Formation>[];
   contracts?: Partial<Contract>[];
   skills?: Partial<Skill>[];
+  userProfileLanguages?: Partial<UserProfileLanguage>[];
+  interests?: Partial<Interest>[];
+  reviews?: Partial<Review>[];
 };
