@@ -24,6 +24,7 @@ import { AdminZones, APIResponse } from 'src/utils/types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { ExperienceFactory } from 'tests/common/experiences/experience.factory';
 import { FormationFactory } from 'tests/common/formations/formation.factory';
+import { SkillFactory } from 'tests/common/skills/skill.factory';
 import { ContractHelper } from 'tests/contracts/contract.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
@@ -44,6 +45,7 @@ describe('UserProfiles', () => {
   let usersHelper: UsersHelper;
   let experienceFactory: ExperienceFactory;
   let formationFactory: FormationFactory;
+  let skillFactory: SkillFactory;
   let userCandidatsHelper: UserCandidatsHelper;
   let userProfilesHelper: UserProfilesHelper;
   let internalMessageFactory: InternalMessageFactory;
@@ -106,6 +108,7 @@ describe('UserProfiles', () => {
     );
     experienceFactory = moduleFixture.get<ExperienceFactory>(ExperienceFactory);
     formationFactory = moduleFixture.get<FormationFactory>(FormationFactory);
+    skillFactory = moduleFixture.get<SkillFactory>(SkillFactory);
   });
 
   beforeAll(async () => {
@@ -1604,6 +1607,7 @@ describe('UserProfiles', () => {
               true
             ));
         });
+
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
@@ -1844,6 +1848,212 @@ describe('UserProfiles', () => {
 
           expect(response.status).toBe(403);
         });
+
+        it('Should return 200 and valid data if candidate update his contracts', async () => {
+          const updatedProfile: UserProfileWithPartialAssociations = {
+            contracts: [
+              { id: contractCdd.id, name: contractCdd.name },
+              { id: contractCdi.id, name: contractCdi.name },
+            ],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+
+          expect(response.status).toBe(200);
+          expect(response.body.contracts).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: contractCdd.id,
+                name: contractCdd.name,
+              }),
+              expect.objectContaining({
+                id: contractCdi.id,
+                name: contractCdi.name,
+              }),
+            ])
+          );
+        });
+
+        it('Should return 200 and valid data if candidate update his interests', async () => {
+          const updatedProfile: UserProfileWithPartialAssociations = {
+            interests: [
+              { name: 'Photographie', order: 0 },
+              { name: 'Voyage', order: 1 },
+            ],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+
+          expect(response.status).toBe(200);
+          expect(response.body.interests).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({ name: 'Photographie', order: 0 }),
+              expect.objectContaining({ name: 'Voyage', order: 1 }),
+            ])
+          );
+        });
+
+        it('Should return 200 and valid data if candidate update his customNudges', async () => {
+          const updatedProfile: UserProfileWithPartialAssociations = {
+            customNudges: [
+              { content: 'Nudge personnalisé 1' },
+              { content: 'Nudge personnalisé 2' },
+            ],
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+
+          expect(response.status).toBe(200);
+          expect(response.body.customNudges).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({ content: 'Nudge personnalisé 1' }),
+              expect.objectContaining({ content: 'Nudge personnalisé 2' }),
+            ])
+          );
+        });
+
+        it('Should return 200 and valid data if candidate update his experiences', async () => {
+          const experiences = await databaseHelper.createEntities(
+            experienceFactory,
+            2,
+            {
+              userProfileId: loggedInCandidate.user.userProfile.id,
+            }
+          );
+
+          const updatedProfile: UserProfileWithPartialAssociations = {
+            experiences: experiences.map((experience) => ({
+              id: experience.id,
+              title: experience.title,
+              description: experience.description,
+              company: experience.company,
+              startDate: experience.startDate,
+              endDate: experience.endDate,
+              location: experience.location,
+            })),
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+
+          expect(response.status).toBe(200);
+          expect(response.body.experiences).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: experiences[0].id,
+                company: experiences[0].company,
+                title: experiences[0].title,
+              }),
+              expect.objectContaining({
+                id: experiences[1].id,
+                company: experiences[1].company,
+                title: experiences[1].title,
+              }),
+            ])
+          );
+        });
+
+        it('Should return 200 and valid data if candidate update his formations', async () => {
+          const formations = await databaseHelper.createEntities(
+            formationFactory,
+            2,
+            {
+              userProfileId: loggedInCandidate.user.userProfile.id,
+            }
+          );
+          const sortedFormations = formations.sort(
+            (a, b) => a.startDate.getTime() - b.startDate.getTime()
+          );
+          const updatedProfile: UserProfileWithPartialAssociations = {
+            formations: sortedFormations.map((formation) => ({
+              id: formation.id,
+              title: formation.title,
+              description: formation.description,
+              institution: formation.institution,
+              startDate: formation.startDate,
+              endDate: formation.endDate,
+              location: formation.location,
+            })),
+          };
+
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+
+          expect(response.status).toBe(200);
+          expect(response.body.formations).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: sortedFormations[0].id,
+                title: sortedFormations[0].title,
+                description: sortedFormations[0].description,
+                location: sortedFormations[0].location,
+              }),
+              expect.objectContaining({
+                id: sortedFormations[1].id,
+                title: sortedFormations[1].title,
+                description: sortedFormations[1].description,
+                location: sortedFormations[1].location,
+              }),
+            ])
+          );
+        });
+
+        it('Should return 200 and valid data if candidate update his skills', async () => {
+          const skills = await databaseHelper.createEntities(skillFactory, 2, {
+            userProfileId: loggedInCandidate.user.userProfile.id,
+          });
+          const updatedProfile: UserProfileWithPartialAssociations = {
+            skills: skills.map((skill) => ({
+              id: skill.id,
+              name: skill.name,
+            })),
+          };
+          const response: APIResponse<
+            UserProfilesController['updateByUserId']
+          > = await request(server)
+            .put(`${route}/profile/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send(updatedProfile);
+          expect(response.status).toBe(200);
+          expect(response.body.skills).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: skills[0].id,
+                name: skills[0].name,
+              }),
+              expect.objectContaining({
+                id: skills[1].id,
+                name: skills[1].name,
+              }),
+            ])
+          );
+        });
+
+        // Skills
+        /// ... ?
       });
       describe('PUT /profile/uploadImage/:id - Upload user profile picture', () => {
         let path: string;
