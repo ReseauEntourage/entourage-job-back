@@ -2027,10 +2027,12 @@ describe('UserProfiles', () => {
           });
           const updatedProfile: UserProfileWithPartialAssociations = {
             skills: skills.map((skill) => ({
-              id: skill.id,
               name: skill.name,
             })),
           };
+          const sortedSkills = updatedProfile.skills.sort(
+            (a, b) => a.order - b.order
+          );
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
@@ -2041,12 +2043,10 @@ describe('UserProfiles', () => {
           expect(response.body.skills).toEqual(
             expect.arrayContaining([
               expect.objectContaining({
-                id: skills[0].id,
-                name: skills[0].name,
+                name: sortedSkills[0].name,
               }),
               expect.objectContaining({
-                id: skills[1].id,
-                name: skills[1].name,
+                name: sortedSkills[1].name,
               }),
             ])
           );

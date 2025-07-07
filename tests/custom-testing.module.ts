@@ -8,6 +8,7 @@ import { ContractsTestingModule } from './contracts/contracts-testing.module';
 import { DatabaseHelper } from './database.helper';
 import { ExternalCvsTestingModule } from './external-cvs/external-cvs-testing.module';
 import { LanguagesTestingModule } from './languages/languages-testing.module';
+import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { PublicProfilesTestingModule } from './public-profiles/public-profiles-testing.module';
@@ -32,6 +33,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     UserDeletionTestingModule,
     UserProfilesTestingModule,
     ContactsTestingModule,
+    MessagingTestingModule,
   ],
   providers: [DatabaseHelper],
   exports: [DatabaseHelper],

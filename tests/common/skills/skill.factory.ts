@@ -17,6 +17,8 @@ export class SkillFactory implements Factory<Skill> {
     return {
       id: uuid.v4(),
       name: props.name || faker.lorem.word(),
+      order: props.order || faker.datatype.number({ min: 1, max: 100 }),
+      userProfileId: props.userProfileId || null,
     };
   }
 
