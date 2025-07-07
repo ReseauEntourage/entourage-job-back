@@ -6,6 +6,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import validator from 'validator';
 import { Public } from 'src/auth/guards';
 import { PublicProfilesService } from './public-profiles.services';
 
@@ -33,11 +34,8 @@ export class PublicProfilesController {
   async getPublicProfileByCandidateId(
     @Param('candidateId') candidateId: string
   ) {
-    if (
-      !candidateId.match(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-      )
-    ) {
+    const candidateIdIsValid = validator.isUUID(candidateId, 4);
+    if (!candidateIdIsValid) {
       throw new NotFoundException('Invalid candidate ID format');
     }
     return this.publicProfilesService.getPublicProfileByCandidateId(
