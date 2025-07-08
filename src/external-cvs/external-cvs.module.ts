@@ -20,6 +20,6 @@ import { ExtractedCVData } from './models/extracted-cv-data.model';
   ],
   controllers: [ExternalCvsController],
   providers: [ExternalCvsService],
-  exports: [ExternalCvsService],
+  exports: [ExternalCvsService, SequelizeModule],
 })
 export class ExternalCvsModule {}

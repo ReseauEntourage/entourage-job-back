@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
@@ -9,8 +9,8 @@ import { UsersDeletionService } from './users-deletion.service';
 
 @Module({
   imports: [
-    UserProfilesModule,
-    UsersModule,
+    forwardRef(() => UserProfilesModule),
+    forwardRef(() => UsersModule),
     AWSModule,
     RevisionsModule,
     MailsModule,
