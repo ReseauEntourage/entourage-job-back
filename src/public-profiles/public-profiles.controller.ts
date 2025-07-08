@@ -38,8 +38,13 @@ export class PublicProfilesController {
     if (!candidateIdIsValid) {
       throw new NotFoundException('Invalid candidate ID format');
     }
-    return this.publicProfilesService.getPublicProfileByCandidateId(
-      candidateId
-    );
+    const publicProfile =
+      await this.publicProfilesService.getPublicProfileByCandidateId(
+        candidateId
+      );
+    if (!publicProfile) {
+      throw new NotFoundException('Public profile not found');
+    }
+    return publicProfile;
   }
 }
