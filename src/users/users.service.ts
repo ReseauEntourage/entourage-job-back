@@ -466,7 +466,7 @@ export class UsersService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
-  findAllPublicProfiles(
+  async findAllPublicProfiles(
     query: {
       limit: number;
       offset: number;
@@ -494,7 +494,7 @@ export class UsersService {
     });
   }
 
-  findPublicProfileByCandidateId(candidateId: string) {
+  async findPublicProfileByCandidateId(candidateId: string) {
     return this.userModel.findOne({
       where: { id: candidateId, role: UserRoles.CANDIDATE },
       attributes: PublicUserAttributes,
