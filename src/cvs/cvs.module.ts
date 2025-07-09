@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AWSModule } from 'src/external-services/aws/aws.module';
-import { QueuesModule } from 'src/queues/producers';
 import { CVsController } from './cvs.controller';
 import { CVsService } from './cvs.service';
 
 @Module({
-  imports: [QueuesModule, AWSModule],
+  imports: [AWSModule],
   providers: [CVsService],
   controllers: [CVsController],
   exports: [CVsService],

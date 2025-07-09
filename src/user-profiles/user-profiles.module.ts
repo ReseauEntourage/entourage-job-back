@@ -45,7 +45,7 @@ import { UserProfilesService } from './user-profiles.service';
     forwardRef(() => MessagesModule),
     MessagingModule,
     SlackModule,
-    MailsModule,
+    forwardRef(() => MailsModule),
     ExperiencesModule,
     FormationsModule,
   ],

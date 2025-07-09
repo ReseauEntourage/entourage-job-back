@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
@@ -11,10 +11,10 @@ import { ExternalMessage, InternalMessage } from './models';
 @Module({
   imports: [
     SequelizeModule.forFeature([ExternalMessage, InternalMessage]),
-    MailsModule,
+    forwardRef(() => MailsModule),
     SlackModule,
-    UsersModule,
-    ExternalDatabasesModule,
+    forwardRef(() => UsersModule),
+    forwardRef(() => ExternalDatabasesModule),
   ],
   controllers: [MessagesController],
   providers: [MessagesService],

@@ -19,3 +19,19 @@ export function getBullWorkQueueOptions(): BullModuleOptions {
     },
   };
 }
+
+export function getBullProfileGenerationQueueOptions(): BullModuleOptions {
+  return {
+    name: Queues.PROFILE_GENERATION,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 10000,
+      },
+      removeOnFail: false, // Garder les jobs échoués pour inspection
+      removeOnComplete: true,
+      timeout: 300000, // 5 minutes de timeout pour le job
+    },
+  };
+}

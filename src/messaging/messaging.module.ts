@@ -1,6 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { MediasModule } from 'src/medias/medias.module';
@@ -23,10 +22,9 @@ import {
       MessageMedia,
     ]),
     SlackModule,
-    MailsModule,
+    forwardRef(() => MailsModule),
     forwardRef(() => UsersModule),
-    MediasModule,
-    AWSModule,
+    forwardRef(() => MediasModule),
   ],
   controllers: [MessagingController],
   providers: [MessagingService],

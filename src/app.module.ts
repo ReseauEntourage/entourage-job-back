@@ -30,6 +30,7 @@ import { MediasModule } from './medias/medias.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
 import { PublicProfilesModule } from './public-profiles/public-profiles.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
@@ -139,6 +140,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MediasModule,
     OpenAiModule,
     PublicProfilesModule,
+    ProfileGenerationModule,
   ],
   providers: [
     {
