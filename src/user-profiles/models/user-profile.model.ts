@@ -44,6 +44,7 @@ import { UserProfileContract } from './user-profile-contract.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
+import { UserProfileSkill } from './user-profile-skill.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
@@ -235,8 +236,16 @@ export class UserProfile extends Model {
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @HasMany(() => Skill, 'userProfileId')
+  @BelongsToMany(
+    () => Skill,
+    () => UserProfileSkill,
+    'userProfileId',
+    'skillId'
+  )
   skills: Skill[];
+
+  @HasMany(() => UserProfileSkill, 'userProfileId')
+  userProfileSkills: UserProfileSkill[];
 
   // Experiences
   @ApiProperty()
@@ -339,8 +348,9 @@ export type UserProfileSectorOccupationWithPartialAssociations = Partial<
 >;
 
 export type UserProfileWithPartialAssociations = Partial<
-  Omit<UserProfile, 'sectorOccupations' | 'nudges'>
+  Omit<UserProfile, 'sectorOccupations' | 'nudges' | 'skills'>
 > & {
   sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
   nudges?: Partial<Nudge>[];
+  skills?: Partial<Skill>[];
 };

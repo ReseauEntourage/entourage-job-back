@@ -10,6 +10,21 @@ export class SkillsService {
     private skillModel: typeof Skill
   ) {}
 
+  /**
+   * Find a skill by its name (case-insensitive).
+   * @param name The name of the skill to find.
+   * @returns A Promise that resolves to the found skill or null if not found.
+   */
+  async findOneByName(name: string): Promise<Skill | null> {
+    return this.skillModel.findOne({
+      where: {
+        name: {
+          [sequelize.Op.iLike]: name,
+        },
+      },
+    });
+  }
+
   async bulkCreateSkills(
     skillsData: Partial<Skill>[],
     transaction?: sequelize.Transaction
