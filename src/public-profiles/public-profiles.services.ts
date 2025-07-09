@@ -7,7 +7,7 @@ import { PublicProfileFilterKey } from './public-profiles.types';
 export class PublicProfilesService {
   constructor(private usersService: UsersService) {}
 
-  getPublicProfiles(
+  async getPublicProfiles(
     query: {
       limit: number;
       offset: number;
@@ -17,7 +17,7 @@ export class PublicProfilesService {
     return this.usersService.findAllPublicProfiles(query);
   }
 
-  getPublicProfileByCandidateId(candidateId: string) {
+  async getPublicProfileByCandidateId(candidateId: string) {
     return this.usersService.findPublicProfileByCandidateId(candidateId);
   }
 }
