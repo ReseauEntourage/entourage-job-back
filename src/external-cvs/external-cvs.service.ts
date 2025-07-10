@@ -8,7 +8,7 @@ import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department } from 'src/common/locations/locations.types';
-import { Skill } from 'src/common/skills/models';
+import { SkillsService } from 'src/common/skills/skills.service';
 import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import {
@@ -16,7 +16,7 @@ import {
   SCHEMA_VERSION,
 } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
-import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { ExtractedCVData } from './models/extracted-cv-data.model';
@@ -29,7 +29,8 @@ export class ExternalCvsService {
     private openAiService: OpenAiService,
     @InjectModel(ExtractedCVData)
     private extractedCVDataModel: typeof ExtractedCVData,
-    private languagesService: LanguagesService
+    private languagesService: LanguagesService,
+    private skillService: SkillsService
   ) {}
 
   /**
@@ -215,9 +216,7 @@ export class ExternalCvsService {
   ): Promise<void> {
     try {
       // Mise à jour des informations de base du profil utilisateur
-      const userProfileDto: Partial<UserProfile> & {
-        nudgeIds?: string[];
-      } = {};
+      const userProfileDto: UserProfileWithPartialAssociations = {};
 
       const userProfile = await this.userProfileService.findOneByUserId(userId);
       if (!userProfile) {
@@ -240,12 +239,12 @@ export class ExternalCvsService {
       }
 
       if (cvData.skills) {
-        const skills = cvData.skills.map((skill) => ({
+        userProfileDto.skills = cvData.skills.map((skill) => ({
           name: skill.name,
-          order: skill.order,
-          userProfileId: userProfile.id,
+          userProfileSkill: {
+            order: skill.order,
+          },
         }));
-        userProfileDto.skills = skills as Skill[];
       }
 
       if (cvData.experiences) {

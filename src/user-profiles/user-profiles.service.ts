@@ -36,6 +36,7 @@ import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
+import { UserProfileSkill } from './models/user-profile-skill.model';
 import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
@@ -73,6 +74,8 @@ export class UserProfilesService {
     private userProfileContractModel: typeof UserProfileContract,
     @InjectModel(UserProfileLanguage)
     private userProfileLanguageModel: typeof UserProfileLanguage,
+    @InjectModel(UserProfileSkill)
+    private userProfileSkillModel: typeof UserProfileSkill,
     private s3Service: S3Service,
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
@@ -688,30 +691,77 @@ export class UserProfilesService {
     skills: Partial<Skill>[],
     t: sequelize.Transaction
   ): Promise<void> {
-    const skillsData = skills.map((skill, order) => {
-      return {
-        userProfileId: userProfileToUpdate.id,
-        name: skill.name,
-        order,
-      };
-    });
-    const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
-      hooks: true,
-      transaction: t,
-    });
-    await this.skillModel.destroy({
+    const skillsData = await Promise.all(
+      skills.map(async (skill, order) => {
+        const existingSkill = await this.skillModel.findOne({
+          where: { name: { [Op.iLike]: skill.name } },
+        });
+
+        if (existingSkill) {
+          return {
+            userProfileId: userProfileToUpdate.id,
+            skillId: existingSkill.id,
+            order,
+          };
+        }
+
+        const newSkill = await this.skillModel.create(
+          {
+            name: skill.name,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+
+        return {
+          userProfileId: userProfileToUpdate.id,
+          skillId: newSkill.id,
+          order,
+        };
+      })
+    );
+
+    // Remove the skills that don't exist anymore
+    await this.userProfileSkillModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
-        id: {
-          [Op.notIn]: skillsCreated.map((skill) => skill.id),
-        },
-        order: {
-          [Op.ne]: -1,
+        skillId: {
+          [Op.notIn]: skillsData.map((skillData) => skillData.skillId),
         },
       },
       individualHooks: true,
       transaction: t,
     });
+
+    // Create or update userProfileSkill (and update order)
+    await Promise.all(
+      skillsData.map(async (skillData) => {
+        const existingUserProfileSkill =
+          await this.userProfileSkillModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              skillId: skillData.skillId,
+            },
+          });
+
+        if (existingUserProfileSkill) {
+          return existingUserProfileSkill.update(
+            { order: skillData.order },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+
+        return this.userProfileSkillModel.create(skillData, {
+          hooks: true,
+          transaction: t,
+        });
+      })
+    );
   }
 
   async updateContractsByUserProfileId(

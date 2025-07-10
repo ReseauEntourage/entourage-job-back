@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { LanguagesModule } from 'src/common/languages/languages.module';
+import { SkillsModule } from 'src/common/skills/skills.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { MessagesModule } from 'src/messages/messages.module';
@@ -17,6 +18,7 @@ import { ExtractedCVData } from './models/extracted-cv-data.model';
     forwardRef(() => MessagesModule),
     OpenAiModule,
     LanguagesModule,
+    SkillsModule,
   ],
   controllers: [ExternalCvsController],
   providers: [ExternalCvsService],

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Includeable, Op, Order, WhereOptions } from 'sequelize';
+import { Includeable, Order, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
@@ -13,6 +13,7 @@ import { Skill } from 'src/common/skills/models';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
+import { UserProfileSkill } from './user-profile-skill.model';
 
 export const getUserProfileNudgesInclude = (
   nudgesOptions: WhereOptions<Nudge> = {}
@@ -120,12 +121,10 @@ export const getUserProfileSkillsInclude = (): Includeable[] => [
     model: Skill,
     as: 'skills',
     required: false,
-    attributes: ['id', 'name', 'order'],
-    order: [['order', 'ASC']],
-    where: {
-      order: {
-        [Op.ne]: -1,
-      },
+    attributes: ['id', 'name'],
+    through: {
+      attributes: ['order'] as string[],
+      as: 'userProfileSkills',
     },
   },
 ];
@@ -248,7 +247,12 @@ export const getUserProfileOrder = (complete = false): Order => {
           'ASC',
         ],
         [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
-        [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
+        [
+          { model: Skill, as: 'skills' },
+          { model: UserProfileSkill, as: 'userProfileSkills' },
+          'order',
+          'ASC',
+        ],
         [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
       ]
     : [
@@ -286,6 +290,5 @@ export const publicProfileOrder: Order = [
     'order',
     'ASC',
   ],
-  [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
   [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
 ];
