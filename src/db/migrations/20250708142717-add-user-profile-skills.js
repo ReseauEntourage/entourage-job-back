@@ -104,7 +104,7 @@ module.exports = {
     // 8. Rename NewSkills back to Skills
     await queryInterface.renameTable('NewSkills', 'Skills');
 
-    // 9. Add foreign key constraints to UserProfileSkills
+    // 9. Add foreign key constraints
     await queryInterface.addConstraint('ExperienceSkills', {
       fields: ['skillId'],
       type: 'foreign key',
