@@ -469,7 +469,7 @@ export class UserProfilesService {
 
   async updateCustomNudgesByUserProfileId(
     userProfileToUpdate: UserProfile,
-    customNudges: UserProfileNudge[],
+    customNudges: Partial<UserProfileNudge>[],
     t: sequelize.Transaction
   ): Promise<void> {
     // Remove the custom nudges that don't exist anymore
@@ -571,7 +571,7 @@ export class UserProfilesService {
 
   async updateFormationsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    formations: Formation[],
+    formations: Partial<Formation>[],
     t: sequelize.Transaction
   ): Promise<void> {
     await this.formationsService.updateFormationsForUserProfile(
@@ -657,7 +657,7 @@ export class UserProfilesService {
 
   async updateInterestsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    interests: Interest[],
+    interests: Partial<Interest>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const interestsData = interests.map((interest, order) => {
@@ -766,7 +766,7 @@ export class UserProfilesService {
 
   async updateContractsByUserProfileId(
     userProfileToUpdate: UserProfile,
-    contracts: Contract[],
+    contracts: Partial<Contract>[],
     t: sequelize.Transaction
   ): Promise<void> {
     const contractsData = contracts.map((contract) => {
