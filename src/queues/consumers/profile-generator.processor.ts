@@ -1,5 +1,6 @@
-import { execFile, ExecFileException } from 'child_process';
+import { execFile } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
@@ -30,10 +31,18 @@ export class ProfileGeneratorProcessor {
 
   @Process(Jobs.GENERATE_PROFILE_FROM_PDF)
   async handleProfileGeneration(job: Job<GenerateProfileFromPDFJob>) {
-    const { pdfPath, userProfileId, fileHash } = job.data;
+    const { pdfPath, userProfileId, userId, fileHash } = job.data;
 
     try {
       job.progress(10);
+
+      // Vérification de l'existence du fichier PDF
+      if (!fs.existsSync(pdfPath)) {
+        console.error(`Le fichier PDF n'existe pas: ${pdfPath}`);
+        throw new Error(
+          `Le fichier PDF n'existe pas à l'emplacement spécifié: ${pdfPath}`
+        );
+      }
 
       const base64Images = await this.convertPDFToImages(pdfPath);
 
@@ -56,7 +65,8 @@ export class ProfileGeneratorProcessor {
 
       // Notifier l'utilisateur que le traitement est terminé
       await this.pusherService.sendEvent(
-        PusherChannels.PROFILE_GENERATION,
+        `${PusherChannels.PROFILE_GENERATION}-${userId}`,
+
         PusherEvents.PROFILE_GENERATION_COMPLETE,
         {
           success: true,
@@ -81,6 +91,15 @@ export class ProfileGeneratorProcessor {
         }
       );
       throw error;
+    } finally {
+      // Nettoyage des fichiers temporaires
+      if (fs.existsSync(pdfPath)) {
+        try {
+          fs.unlinkSync(pdfPath);
+        } catch (err) {
+          console.error(`Erreur lors de la suppression du fichier PDF: ${err}`);
+        }
+      }
     }
   }
 
@@ -88,60 +107,142 @@ export class ProfileGeneratorProcessor {
    * Convertit un contenu PDF en base64 en un tableau d'images base64
    * Cette méthode est un placeholder - utilisez votre propre implémentation
    */
+  /**
+   * Convertit un PDF en un tableau d'images base64
+   * @param pdfPath Chemin vers le fichier PDF à convertir
+   * @returns Un tableau de chaînes base64 représentant chaque page du PDF
+   */
   private async convertPDFToImages(pdfPath: string): Promise<string[]> {
-    const outputDir = path.join(__dirname, 'output');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir);
-    }
+    // S'assurer que le chemin est absolu
+    const absolutePdfPath = path.isAbsolute(pdfPath)
+      ? pdfPath
+      : path.resolve(process.cwd(), pdfPath);
 
-    const outputPrefix = 'converted';
-    const pdftocairoPath = detectPdftocairoPath();
+    // Utiliser un dossier temporaire unique pour éviter les conflits
+    const uniqueId = `${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 8)}`;
 
-    return new Promise((resolve, reject) => {
-      // Convertir toutes les pages du PDF
-      const args = [
-        '-png',
-        '-scale-to',
-        '1024',
-        pdfPath,
-        path.join(outputDir, outputPrefix),
-      ];
+    // Créer le dossier temporaire dans /tmp qui est généralement accessible en écriture
+    const tempDir = process.platform === 'darwin' ? '/tmp' : os.tmpdir();
+    const outputDir = path.join(tempDir, `entourage_pdf_convert_${uniqueId}`);
 
-      execFile(pdftocairoPath, args, async (error: ExecFileException) => {
-        if (error)
-          return reject(new Error(`Erreur conversion PDF: ${error.message}`));
+    try {
+      // Vérifier une dernière fois que le fichier PDF existe
+      if (!fs.existsSync(absolutePdfPath)) {
+        throw new Error(`Le fichier PDF n'existe pas: ${absolutePdfPath}`);
+      }
 
-        try {
-          // Lire tous les fichiers générés dans le répertoire
-          const files = fs
-            .readdirSync(outputDir)
-            .filter(
-              (file) => file.startsWith(outputPrefix) && file.endsWith('.png')
-            )
-            .sort((a, b) => {
-              // Format attendu: "converted-[page].png"
-              const pageA = parseInt(a.split('-')[1]?.replace('.png', ''));
-              const pageB = parseInt(b.split('-')[1]?.replace('.png', ''));
-              return pageA - pageB;
-            });
+      // Créer le dossier de sortie temporaire
+      fs.mkdirSync(outputDir, { recursive: true });
 
-          const pagesBase64: string[] = [];
+      const outputPrefix = 'converted';
+      const pdftocairoPath = detectPdftocairoPath();
 
-          // Lire chaque fichier et le convertir en base64
-          for (const file of files) {
-            const filePath = path.join(outputDir, file);
-            const buffer = fs.readFileSync(filePath);
-            pagesBase64.push(buffer.toString('base64'));
+      return await new Promise<string[]>((resolve, reject) => {
+        // Délai d'attente de 60 secondes
+        const timeout = setTimeout(() => {
+          reject(
+            new Error('La conversion du PDF a pris trop de temps (timeout)')
+          );
+        }, 60000);
 
-            // Supprimer le fichier après utilisation
-            fs.unlinkSync(filePath);
+        // Vérifier une dernière fois que le fichier existe
+        if (!fs.existsSync(absolutePdfPath)) {
+          clearTimeout(timeout);
+          return reject(new Error(`Fichier introuvable: ${absolutePdfPath}`));
+        }
+
+        const args = [
+          '-png',
+          '-scale-to',
+          '1024',
+          absolutePdfPath,
+          path.join(outputDir, outputPrefix),
+        ];
+
+        execFile(pdftocairoPath, args, (error) => {
+          clearTimeout(timeout);
+
+          if (error) {
+            return reject(
+              new Error(`Erreur lors de la conversion PDF: ${error.message}`)
+            );
           }
 
-          resolve(pagesBase64);
-        } catch (err) {
-          reject(new Error(`Erreur traitement des images: ${err}`));
-        }
+          try {
+            if (!fs.existsSync(outputDir)) {
+              return reject(
+                new Error(
+                  'Le dossier de sortie a été supprimé pendant le traitement'
+                )
+              );
+            }
+
+            const files = fs
+              .readdirSync(outputDir)
+              .filter(
+                (file) => file.startsWith(outputPrefix) && file.endsWith('.png')
+              )
+              .sort((a, b) => {
+                const pageA = parseInt(
+                  a.split('-')[1]?.replace('.png', '') || '0'
+                );
+                const pageB = parseInt(
+                  b.split('-')[1]?.replace('.png', '') || '0'
+                );
+                return pageA - pageB;
+              });
+
+            if (files.length === 0) {
+              return reject(
+                new Error("Aucune image n'a été générée à partir du PDF")
+              );
+            }
+
+            const pagesBase64: string[] = [];
+
+            for (const file of files) {
+              const filePath = path.join(outputDir, file);
+              if (fs.existsSync(filePath)) {
+                const buffer = fs.readFileSync(filePath);
+                pagesBase64.push(buffer.toString('base64'));
+
+                try {
+                  fs.unlinkSync(filePath);
+                } catch {
+                  // Ignorer les erreurs de suppression de fichiers
+                }
+              }
+            }
+
+            resolve(pagesBase64);
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            reject(
+              new Error(`Erreur lors du traitement des images: ${errorMsg}`)
+            );
+          }
+        });
       });
-    });
+    } finally {
+      // Nettoyage: s'assurer que le dossier temporaire est supprimé
+      if (fs.existsSync(outputDir)) {
+        try {
+          const files = fs.readdirSync(outputDir);
+          for (const file of files) {
+            try {
+              fs.unlinkSync(path.join(outputDir, file));
+            } catch {
+              // Ignorer les erreurs
+            }
+          }
+
+          fs.rmdirSync(outputDir);
+        } catch {
+          // Ignorer les erreurs de nettoyage
+        }
+      }
+    }
   }
 }

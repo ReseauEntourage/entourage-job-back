@@ -76,6 +76,7 @@ export interface CreateOrUpdateSalesforceUserJob {
 export interface GenerateProfileFromPDFJob {
   pdfPath: string;
   userProfileId: string;
+  userId: string;
   fileHash: string;
 }
 

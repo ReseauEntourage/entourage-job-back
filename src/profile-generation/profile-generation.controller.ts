@@ -83,6 +83,7 @@ export class ProfileGenerationController {
           return this.profileGenerationService.generateProfileFromPDF({
             pdfPath,
             userProfileId: userProfile.id,
+            userId,
             fileHash,
           });
         } catch (error) {
@@ -90,11 +91,6 @@ export class ProfileGenerationController {
           throw new InternalServerErrorException(
             'Erreur lors du traitement du PDF: ' + error
           );
-        } finally {
-          // Nettoyage des fichiers temporaires
-          if (fs.existsSync(pdfPath)) {
-            fs.unlinkSync(pdfPath);
-          }
         }
       } else {
         extractedCVData =
