@@ -80,7 +80,7 @@ export class ProfileGeneratorProcessor {
       return;
     } catch (error: unknown) {
       await this.pusherService.sendEvent(
-        PusherChannels.PROFILE_GENERATION,
+        `${PusherChannels.PROFILE_GENERATION}-${userId}`,
         PusherEvents.PROFILE_GENERATION_COMPLETE,
         {
           success: false,
