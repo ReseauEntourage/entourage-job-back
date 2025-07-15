@@ -1023,9 +1023,9 @@ export class UserProfilesService {
     if (fields.length === 0) return 0;
 
     // Compte les champs qui sont remplis (non null, non undefined et non false)
-    const filledFields = fields.filter(([, value]) => {
-      // Si c'est une valeur booléenne provenant d'une sous-requête (hasSkills, hasExperiences, etc.)
-      if (typeof value === 'boolean' || value === 't' || value === 'f') {
+    const filledFields = fields.filter(([fieldName, value]) => {
+      // Si c'est un champ booléen (commençant par "has")
+      if (fieldName.startsWith('has')) {
         return value === true || value === 't';
       }
       // Pour les chaînes de caractères (firstName, lastName, etc.)
