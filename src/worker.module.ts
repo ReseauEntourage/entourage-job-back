@@ -4,8 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import * as redisStore from 'cache-manager-redis-store';
-import { ClientOpts } from 'redis';
+import * as ioRedisStore from 'cache-manager-ioredis';
+import { RedisOptions } from 'ioredis';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getSequelizeOptions } from './app.module';
@@ -41,12 +41,12 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
         removeOnComplete: true,
       },
     }),
-    CacheModule.registerAsync<ClientOpts>({
+    CacheModule.registerAsync<RedisOptions>({
       isGlobal: true,
       imports: [RedisModule],
       inject: [REDIS_OPTIONS],
       useFactory: (redisOptions) => ({
-        store: redisStore,
+        store: ioRedisStore,
         ...redisOptions,
       }),
     }),
