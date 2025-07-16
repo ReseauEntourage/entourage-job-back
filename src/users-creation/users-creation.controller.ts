@@ -18,7 +18,6 @@ import { User } from 'src/users/models';
 import {
   NormalUserRoles,
   Permissions,
-  Programs,
   RegistrableUserRoles,
   RolesWithOrganization,
   SequelizeUniqueConstraintError,
@@ -162,13 +161,6 @@ export class UsersCreationController {
       throw new BadRequestException();
     }
 
-    if (
-      !isRoleIncluded([UserRoles.REFERER], createUserRegistrationDto.role) &&
-      !createUserRegistrationDto.program
-    ) {
-      throw new BadRequestException();
-    }
-
     const { hash, salt } = encryptPassword(createUserRegistrationDto.password);
 
     const zone = getZoneFromDepartment(createUserRegistrationDto.department);
@@ -204,12 +196,7 @@ export class UsersCreationController {
         createdUserId
       );
       await this.usersCreationService.createExternalDBUser(createdUserId, {
-        program: createUserRegistrationDto.program,
         birthDate: createUserRegistrationDto.birthDate,
-        campaign:
-          createUserRegistrationDto.program === Programs.THREE_SIXTY
-            ? createUserRegistrationDto.campaign
-            : undefined,
         workingRight: createUserRegistrationDto.workingRight,
         gender: createUserRegistrationDto.gender,
         structure:
@@ -293,10 +280,6 @@ export class UsersCreationController {
       throw new BadRequestException();
     }
 
-    if (!createUserReferingDto.program) {
-      throw new BadRequestException();
-    }
-
     const userRandomPassword = generateFakePassword();
     const { hash, salt } = encryptPassword(userRandomPassword);
 
@@ -334,12 +317,7 @@ export class UsersCreationController {
       );
 
       await this.usersCreationService.createExternalDBUser(createdUserId, {
-        program: createUserReferingDto.program,
         birthDate: createUserReferingDto.birthDate,
-        campaign:
-          createUserReferingDto.program === Programs.THREE_SIXTY
-            ? createUserReferingDto.campaign
-            : undefined,
         workingRight: createUserReferingDto.workingRight,
         gender: createUserReferingDto.gender,
         refererEmail: referer.email,

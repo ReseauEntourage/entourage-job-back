@@ -168,14 +168,6 @@ export const ContactRecordTypeFromRole: {
   [UserRoles.REFERER]: ContactRecordTypesIds.ASSOCIATION,
 };
 
-export const LeadRecordTypeFromRole: {
-  [K in RegistrableUserRole]: LeadRecordType;
-} = {
-  [UserRoles.CANDIDATE]: LeadRecordTypesIds.CANDIDATE,
-  [UserRoles.COACH]: LeadRecordTypesIds.COACH,
-  [UserRoles.REFERER]: LeadRecordTypesIds.ASSOCIATION,
-};
-
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
   [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
@@ -723,7 +715,6 @@ export interface UserProps {
   department: Department;
   role: RegistrableUserRole;
   birthDate: Date;
-  program: string;
   workingRight?: CandidateYesNoNSPPValue;
   campaign?: string;
   nationality?: Nationality;

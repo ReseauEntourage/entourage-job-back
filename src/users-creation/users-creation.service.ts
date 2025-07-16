@@ -37,7 +37,6 @@ export class UsersCreationService {
     createdUserId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      | 'program'
       | 'workingRight'
       | 'campaign'
       | 'birthDate'

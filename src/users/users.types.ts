@@ -157,11 +157,4 @@ export const MemberFilters = ({
   },
 ];
 
-export const Programs = {
-  BOOST: 'boost',
-  THREE_SIXTY: 'three_sixty',
-} as const;
-
-export type Program = (typeof Programs)[keyof typeof Programs];
-
 export const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';
