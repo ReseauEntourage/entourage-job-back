@@ -19,6 +19,7 @@ import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
+import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
@@ -139,6 +140,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MediasModule,
     OpenAiModule,
     PublicProfilesModule,
+    CompaniesModule,
   ],
   providers: [
     {
