@@ -1,6 +1,5 @@
-import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Cache } from 'cache-manager';
 import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
@@ -8,7 +7,6 @@ import { BusinessSectorsService } from 'src/common/business-sectors/business-sec
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { PublicProfileFilterKey } from 'src/public-profiles/public-profiles.types';
-import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -38,8 +36,6 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    private queuesService: QueuesService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private mailsService: MailsService,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,

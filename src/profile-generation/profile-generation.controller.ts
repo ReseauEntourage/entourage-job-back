@@ -4,18 +4,12 @@ import path from 'path';
 import {
   Controller,
   Get,
-  Param,
   UseGuards,
   ParseUUIDPipe,
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import axios from 'axios';
 import { JwtAuthGuard, UserPayload } from 'src/auth/guards';
 import { ProfileGenerationService } from 'src/queues/producers/profile-generation.service';
@@ -112,17 +106,5 @@ export class ProfileGenerationController {
       console.error('Error extracting CV data:', error);
       throw new InternalServerErrorException('Failed to extract CV data: ');
     }
-  }
-
-  @Get('job-status/:jobId')
-  @ApiOperation({
-    summary: "Récupère le statut d'un job de génération de profil",
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Statut du job récupéré avec succès',
-  })
-  async getJobStatus(@Param('jobId') jobId: string) {
-    return this.profileGenerationService.getJobStatus(jobId);
   }
 }

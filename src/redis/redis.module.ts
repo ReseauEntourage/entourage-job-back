@@ -7,6 +7,15 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
 export const REDIS_OPTIONS = 'REDIS_OPTIONS';
 
 export const createRedisClient = () => {
+  const ENV = `${process.env.NODE_ENV}`;
+
+  // Si nous sommes en environnement de test, retournons un mock ou un client minimal
+  if (ENV === 'dev-test' || ENV === 'test') {
+    // Utilisation de l'import Redis déjà existant en haut du fichier
+    const client = new Redis();
+    return client;
+  }
+
   const options = getRedisOptions();
 
   const client = new Redis({
@@ -51,6 +60,7 @@ const redisOptionsProvider = {
   useFactory: () => {
     const ENV = `${process.env.NODE_ENV}`;
     if (ENV === 'dev-test' || ENV === 'test') {
+      // Retourner un objet vide mais valide pour les tests
       return {};
     }
     return getRedisOptions();

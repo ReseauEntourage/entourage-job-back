@@ -1,7 +1,5 @@
-import { InjectQueue } from '@nestjs/bull';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Queue } from 'bull';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
@@ -14,22 +12,18 @@ import {
   SCHEMA_VERSION,
 } from 'src/external-services/openai/openai.schemas';
 
-import {
-  Jobs,
-  Queues,
-  GenerateProfileFromPDFJob,
-} from 'src/queues/queues.types';
+import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { QueuesService } from './queues.service';
 
 @Injectable()
 export class ProfileGenerationService {
   constructor(
-    @InjectQueue(Queues.PROFILE_GENERATION)
-    private readonly profileGenerationQueue: Queue,
     @InjectModel(ExtractedCVData)
     private extractedCVDataModel: typeof ExtractedCVData,
+    private queuesService: QueuesService,
     private userProfileService: UserProfilesService,
     private languagesService: LanguagesService
   ) {}
@@ -42,7 +36,7 @@ export class ProfileGenerationService {
    * @returns ID du job créé
    */
   async generateProfileFromPDF(params: GenerateProfileFromPDFJob) {
-    const job = await this.profileGenerationQueue.add(
+    const job = await this.queuesService.addToWorkQueue(
       Jobs.GENERATE_PROFILE_FROM_PDF,
       params
     );
@@ -50,28 +44,6 @@ export class ProfileGenerationService {
     return {
       jobId: job.id,
       status: 'processing',
-    };
-  }
-
-  /**
-   * Récupère le statut d'un job de génération de profil
-   * @param jobId ID du job
-   * @returns Informations sur le job
-   */
-  async getJobStatus(jobId: string) {
-    const job = await this.profileGenerationQueue.getJob(jobId);
-
-    if (!job) {
-      throw new Error(`Job ${jobId} not found`);
-    }
-
-    const state = await job.getState();
-    const progress = job.progress();
-
-    return {
-      jobId,
-      status: state,
-      progress,
     };
   }
 

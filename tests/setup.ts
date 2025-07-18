@@ -1,6 +1,7 @@
 import 'openai/shims/node';
 import { EventEmitter } from 'events';
 
+// Mocks pour ioredis
 jest.mock('ioredis', () => {
   class MockRedis extends EventEmitter {
     private keyValueStore: Record<string, string> = {};
@@ -52,3 +53,9 @@ jest.mock('ioredis', () => {
 
   return MockRedis;
 });
+
+// // Mock pour Bull
+// jest.mock('bull');
+
+// // Mock pour @nestjs/bull
+// jest.mock('@nestjs/bull');
