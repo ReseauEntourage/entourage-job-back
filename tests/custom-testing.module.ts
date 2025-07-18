@@ -29,16 +29,20 @@ import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from 'src/user-social-situations/user-social-situations.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersCreationModule } from 'src/users-creation/users-creation.module';
-
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { AuthTestingModule } from './auth/auth-testing.module';
+import { BusinessSectorsTestingModule } from './business-sectors/business-sectors-testing.module';
 import { ContactsTestingModule } from './contacts/contacts-testing.module';
+import { ContractsTestingModule } from './contracts/contracts-testing.module';
 import { DatabaseHelper } from './database.helper';
 import { ExternalCvsTestingModule } from './external-cvs/external-cvs-testing.module';
-import { MessagesTestingModule } from './messages/messages-testing.module';
+import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
+import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { QueuesTestingModule } from './queues/queues-testing.module';
+import { PublicProfilesTestingModule } from './public-profiles/public-profiles-testing.module';
+import { UserProfilesTestingModule } from './user-profiles/user-profiles-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
 
 @Module({
@@ -88,10 +92,17 @@ import { UsersTestingModule } from './users/users-testing.module';
     // Modules de test spécifiques
     AuthTestingModule,
     UsersTestingModule,
-    ContactsTestingModule,
     OrganizationsTestingModule,
-    MessagesTestingModule,
     ExternalCvsTestingModule,
+    BusinessSectorsTestingModule,
+    NudgesTestingModule,
+    LanguagesTestingModule,
+    ContractsTestingModule,
+    PublicProfilesTestingModule,
+    UserCreationTestingModule,
+    UserDeletionTestingModule,
+    UserProfilesTestingModule,
+    ContactsTestingModule,
     MessagingTestingModule,
     QueuesTestingModule,
   ],
