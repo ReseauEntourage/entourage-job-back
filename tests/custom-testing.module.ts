@@ -40,8 +40,10 @@ import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
-import { QueuesTestingModule } from './queues/queues-testing.module';
 import { PublicProfilesTestingModule } from './public-profiles/public-profiles-testing.module';
+import { QueuesTestingModule } from './queues/queues-testing.module';
+import { UserCreationTestingModule } from './user-creation/user-creation-testing.module';
+import { UserDeletionTestingModule } from './user-deletion/user-deletion-testing.module';
 import { UserProfilesTestingModule } from './user-profiles/user-profiles-testing.module';
 import { UsersTestingModule } from './users/users-testing.module';
 

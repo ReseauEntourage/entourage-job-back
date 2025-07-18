@@ -9,11 +9,6 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import {
-  UserProfile,
-  UserProfileWithPartialAssociations,
-} from 'src/user-profiles/models';
-import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { UserRoles } from 'src/users/users.types';
@@ -24,7 +19,6 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
-import { BusinessSectorHelper } from './business-sector.helper';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
