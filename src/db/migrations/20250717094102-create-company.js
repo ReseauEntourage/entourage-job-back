@@ -61,13 +61,13 @@ module.exports = {
     });
 
     // Create a table for link between users and companies
-    await queryInterface.createTable('UserCompanies', {
-      userId: {
+    await queryInterface.createTable('CompanyUsers', {
+      id: {
         allowNull: false,
+        primaryKey: true,
         type: Sequelize.UUID,
-        references: {
-          model: 'Users',
-          key: 'id',
+        defaultValue: () => {
+          return UUID.v4();
         },
       },
       companyId: {
@@ -75,6 +75,14 @@ module.exports = {
         type: Sequelize.UUID,
         references: {
           model: 'Companies',
+          key: 'id',
+        },
+      },
+      userId: {
+        allowNull: false,
+        type: Sequelize.UUID,
+        references: {
+          model: 'Users',
           key: 'id',
         },
       },
@@ -93,7 +101,7 @@ module.exports = {
      * Example:
      * await queryInterface.dropTable('users');
      */
-    await queryInterface.dropTable('UserCompany');
-    await queryInterface.dropTable('Company');
+    await queryInterface.dropTable('CompanyUsers');
+    await queryInterface.dropTable('Companies');
   },
 };

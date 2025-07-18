@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
+import { CompaniesService } from 'src/companies/companies.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
@@ -26,7 +27,8 @@ export class UsersCreationService {
     private externalDatabasesService: ExternalDatabasesService,
     private userSocialSituationService: UserSocialSituationsService,
     private queuesService: QueuesService,
-    private utmService: UtmService
+    private utmService: UtmService,
+    private companiesService: CompaniesService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -157,5 +159,28 @@ export class UsersCreationService {
 
   async createUtm(createUtmDto: Partial<Utm>) {
     return this.utmService.create(createUtmDto);
+  }
+
+  async findOneCompany(companyId: string) {
+    return this.companiesService.findOneCompany(companyId);
+  }
+
+  async linkUserToCompany(
+    userId: string,
+    companyId: string,
+    role: string
+  ): Promise<void> {
+    const companyUser = await this.companiesService.findOneCompanyUser(
+      companyId,
+      userId
+    );
+
+    if (!companyUser) {
+      await this.companiesService.createCompanyUser({
+        userId,
+        companyId,
+        role,
+      });
+    }
   }
 }

@@ -55,6 +55,16 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsString()
   @IsOptional()
+  companyId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  companyRole?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   campaign?: string;
 
   @ApiProperty()

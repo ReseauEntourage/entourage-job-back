@@ -35,6 +35,7 @@ export class CreateUserRegistrationPipe
     });
 
     if (errors.length > 0) {
+      console.error('Validation errors:', errors);
       throw new BadRequestException();
     }
     return value;

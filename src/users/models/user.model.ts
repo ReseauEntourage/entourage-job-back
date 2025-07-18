@@ -13,6 +13,7 @@ import {
   BeforeCreate,
   BeforeUpdate,
   BelongsTo,
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -42,6 +43,8 @@ import {
   generateUrl,
   isRoleIncluded,
 } from '../users.utils';
+import { CompanyUser } from 'src/companies/models/company-user.model';
+import { Company } from 'src/companies/models/company.model';
 import { InternalMessage } from 'src/messages/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
@@ -261,6 +264,16 @@ export class User extends HistorizedModel {
 
   @HasMany(() => User, 'refererId')
   referredCandidates: User[];
+
+  @HasMany(() => CompanyUser)
+  companyUsers: CompanyUser[];
+
+  @BelongsToMany(() => Company, {
+    through: () => CompanyUser,
+    foreignKey: 'userId',
+    otherKey: 'companyId',
+  })
+  companies: Company[];
 
   @BeforeCreate
   @BeforeUpdate

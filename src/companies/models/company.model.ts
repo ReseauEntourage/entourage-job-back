@@ -2,16 +2,20 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import {
   AllowNull,
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
   Default,
+  HasMany,
   IsUUID,
   Model,
   PrimaryKey,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { User } from 'src/users/models';
+import { CompanyUser } from './company-user.model';
 
 @Table({ tableName: 'Companies' })
 export class Company extends Model {
@@ -62,4 +66,14 @@ export class Company extends Model {
   @AllowNull(true)
   @Column
   linkedInUrl: string;
+
+  @HasMany(() => CompanyUser)
+  companyUsers: CompanyUser[];
+
+  @BelongsToMany(() => User, {
+    through: () => CompanyUser,
+    foreignKey: 'companyId',
+    otherKey: 'userId',
+  })
+  users: User[];
 }

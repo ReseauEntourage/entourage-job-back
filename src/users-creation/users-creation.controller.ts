@@ -217,6 +217,21 @@ export class UsersCreationController {
         }
       );
 
+      // Link the company if provided
+      if (createUserRegistrationDto.companyId) {
+        const company = await this.usersCreationService.findOneCompany(
+          createUserRegistrationDto.companyId
+        );
+        if (!company) {
+          throw new NotFoundException('Company not found');
+        }
+        await this.usersCreationService.linkUserToCompany(
+          createdUserId,
+          createUserRegistrationDto.companyId,
+          createUserRegistrationDto.companyRole
+        );
+      }
+
       // UTM
       const utmToCreate: Partial<Utm> = {
         userId: createdUserId,
@@ -261,8 +276,10 @@ export class UsersCreationController {
       return createdUser;
     } catch (err) {
       if (((err as Error).name = SequelizeUniqueConstraintError)) {
+        console.error('Duplicate email error:', err);
         throw new ConflictException();
       }
+      console.error('Error during user registration creation:', err);
     }
   }
 
