@@ -341,8 +341,6 @@ export enum Casquette {
   PRESCRIPTEUR = 'PRO Prescripteur',
   COACH_COUP_DE_POUCE = 'PRO Coach Coup de pouce',
   CANDIDAT_COUP_DE_POUCE = 'PRO Candidat Coup de pouce',
-  COACH_360 = 'PRO Coach 360',
-  CANDIDAT_360 = 'PRO Candidat 360',
 }
 
 export interface SalesforceBinome {
