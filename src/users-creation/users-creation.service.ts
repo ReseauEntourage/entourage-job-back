@@ -183,4 +183,8 @@ export class UsersCreationService {
       });
     }
   }
+
+  async findOneCompanyUser(companyId: string) {
+    return this.companiesService.findOneCompanyUser(companyId);
+  }
 }

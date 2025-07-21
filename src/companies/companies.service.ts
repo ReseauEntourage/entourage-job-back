@@ -49,9 +49,9 @@ export class CompaniesService {
     });
   }
 
-  async findOneCompanyUser(companyId: string, userId: string) {
+  async findOneCompanyUser(companyId: string, userId?: string) {
     return this.companyUserModel.findOne({
-      where: { companyId, userId },
+      where: { companyId, ...(userId ? { userId } : {}) },
     });
   }
 }

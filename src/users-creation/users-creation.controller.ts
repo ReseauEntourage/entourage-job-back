@@ -225,10 +225,18 @@ export class UsersCreationController {
         if (!company) {
           throw new NotFoundException('Company not found');
         }
+        // If an other user is already linked to the company, we change the role to 'employee'
+        const existingCompanyUser =
+          await this.usersCreationService.findOneCompanyUser(
+            createUserRegistrationDto.companyId
+          );
+        const role = existingCompanyUser
+          ? 'employee'
+          : createUserRegistrationDto.companyRole;
         await this.usersCreationService.linkUserToCompany(
           createdUserId,
           createUserRegistrationDto.companyId,
-          createUserRegistrationDto.companyRole
+          role
         );
       }
 
