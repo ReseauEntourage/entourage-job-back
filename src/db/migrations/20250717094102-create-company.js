@@ -91,6 +91,11 @@ module.exports = {
         type: Sequelize.STRING,
         defaultValue: 'employee',
       },
+      isAdmin: {
+        allowNull: false,
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
     });
   },
 

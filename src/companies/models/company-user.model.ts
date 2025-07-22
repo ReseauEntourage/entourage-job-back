@@ -33,6 +33,10 @@ export class CompanyUser extends Model<CompanyUser> {
   @Column
   role: string;
 
+  @Default(false)
+  @Column
+  isAdmin: boolean;
+
   @BelongsTo(() => User)
   user: User;
 

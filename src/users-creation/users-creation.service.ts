@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { CompaniesService } from 'src/companies/companies.service';
+import { CompanyUsersService } from 'src/companies/models/company-user.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
@@ -28,7 +29,8 @@ export class UsersCreationService {
     private userSocialSituationService: UserSocialSituationsService,
     private queuesService: QueuesService,
     private utmService: UtmService,
-    private companiesService: CompaniesService
+    private companiesService: CompaniesService,
+    private companyUsersService: CompanyUsersService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -168,23 +170,25 @@ export class UsersCreationService {
   async linkUserToCompany(
     userId: string,
     companyId: string,
-    role: string
+    role: string,
+    isAdmin = false
   ): Promise<void> {
-    const companyUser = await this.companiesService.findOneCompanyUser(
+    const companyUser = await this.companyUsersService.findOneCompanyUser(
       companyId,
       userId
     );
 
     if (!companyUser) {
-      await this.companiesService.createCompanyUser({
+      await this.companyUsersService.createCompanyUser({
         userId,
         companyId,
         role,
+        isAdmin,
       });
     }
   }
 
   async findOneCompanyUser(companyId: string) {
-    return this.companiesService.findOneCompanyUser(companyId);
+    return this.companyUsersService.findOneCompanyUser(companyId);
   }
 }

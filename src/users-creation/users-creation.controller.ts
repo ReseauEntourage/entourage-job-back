@@ -12,6 +12,10 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
+import {
+  COMPANY_USER_ROLE_CAN_BE_ADMIN,
+  CompanyUserRole,
+} from 'src/companies/models/company-user.utils';
 import { getContactStatusFromUserRole } from 'src/external-services/mailjet/mailjet.utils';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
@@ -225,18 +229,23 @@ export class UsersCreationController {
         if (!company) {
           throw new NotFoundException('Company not found');
         }
-        // If an other user is already linked to the company, we change the role to 'employee'
+        // Check if a user is already linked to the company
         const existingCompanyUser =
           await this.usersCreationService.findOneCompanyUser(
             createUserRegistrationDto.companyId
           );
-        const role = existingCompanyUser
-          ? 'employee'
-          : createUserRegistrationDto.companyRole;
+        // If no user is linked, we can set the role as admin if applicable
+        const isAdmin =
+          !existingCompanyUser &&
+          COMPANY_USER_ROLE_CAN_BE_ADMIN.includes(
+            createUserRegistrationDto.companyRole as CompanyUserRole
+          );
+        // Create the company user
         await this.usersCreationService.linkUserToCompany(
           createdUserId,
           createUserRegistrationDto.companyId,
-          role
+          createUserRegistrationDto.companyRole || 'employee',
+          isAdmin
         );
       }
 
