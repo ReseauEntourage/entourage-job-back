@@ -53,9 +53,3 @@ jest.mock('ioredis', () => {
 
   return MockRedis;
 });
-
-// // Mock pour Bull
-// jest.mock('bull');
-
-// // Mock pour @nestjs/bull
-// jest.mock('@nestjs/bull');
