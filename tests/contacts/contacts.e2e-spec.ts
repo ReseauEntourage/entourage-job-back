@@ -1,21 +1,16 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { ContactsController } from 'src/contacts/contacts.controller';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import {
-  CacheMocks,
-  MailjetMock,
-  QueueMocks,
-  SalesforceMocks,
-} from 'tests/mocks.types';
+import { MailjetMock, SalesforceMocks } from 'tests/mocks.types';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { ContactCompanyFormFactory } from './contact-company-form.factory';
 import { ContactUsFormFactory } from './contact-us-form.factory';
 
@@ -34,10 +29,8 @@ describe('Contacts', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
       .overrideProvider(MailjetService)

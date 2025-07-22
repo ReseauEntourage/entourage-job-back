@@ -1,16 +1,16 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { CacheMocks, QueueMocks, SalesforceMocks } from '../mocks.types';
+import { SalesforceMocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { ReadDocumentsController } from 'src/read-documents/read-documents.controller';
 import { User } from 'src/users/models';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 
@@ -29,10 +29,8 @@ describe('Read Documents', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
       .compile();

@@ -1,17 +1,16 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { CacheMocks, QueueMocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { OrganizationFactory } from './organization.factory';
@@ -34,10 +33,8 @@ describe('Organizations', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

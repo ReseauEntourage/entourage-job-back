@@ -1,23 +1,18 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import {
-  CacheMocks,
-  QueueMocks,
-  SalesforceMocks,
-  SlackMocks,
-} from '../mocks.types';
+import { SalesforceMocks, SlackMocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagesController } from 'src/messages/messages.controller';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { ExternalMessageFactory } from './external-message.factory';
@@ -43,10 +38,8 @@ describe('Messages', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
       .overrideProvider(SlackService)

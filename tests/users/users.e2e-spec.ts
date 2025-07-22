@@ -1,15 +1,14 @@
 /* eslint-disable no-console */
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
+import { QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { UserRoles } from 'src/users/users.types';
@@ -19,6 +18,7 @@ import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.hel
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
@@ -44,10 +44,8 @@ describe('Users', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();
