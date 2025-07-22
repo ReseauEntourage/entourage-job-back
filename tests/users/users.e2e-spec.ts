@@ -1601,6 +1601,7 @@ describe('Users', () => {
             referer,
             referredCandidates,
             userSocialSituation,
+            companies,
             ...restCandidate
           } = loggedInCandidate.user;
 
