@@ -125,7 +125,8 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
       as: 'companies',
       attributes: ['id', 'name'],
       through: {
-        attributes: [],
+        attributes: ['isAdmin', 'role'],
+        as: 'companyUser',
       },
     },
   ];
