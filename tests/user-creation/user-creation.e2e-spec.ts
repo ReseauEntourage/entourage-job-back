@@ -362,6 +362,7 @@ describe('UserCreation', () => {
           referredCandidates: coachReferredCandidates,
           referer: coachReferer,
           userSocialSituation: coachUserSocialSituation,
+          companies: coachCompanies,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -450,6 +451,7 @@ describe('UserCreation', () => {
           referredCandidates: coachReferredCandidates,
           refererId: coachRefererId,
           userSocialSituation: coachUserSocialSituation,
+          companies: coachCompanies,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -473,6 +475,7 @@ describe('UserCreation', () => {
           referredCandidates: candidateReferredCandidates,
           referer: candidateReferer,
           userSocialSituation: candidateUserSocialSituation,
+          companies: candidateCompanies,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, true);
 
