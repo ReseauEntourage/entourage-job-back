@@ -49,6 +49,14 @@ import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
 
+  @ApiBearerAuth()
+  @Get('/completion')
+  async getProfileCompletion(
+    @UserPayload('id', new ParseUUIDPipe()) id: string
+  ) {
+    return await this.userProfilesService.calculateProfileCompletion(id);
+  }
+
   @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
   @UseGuards(UserPermissionsGuard)
   @Self('params.userId')
