@@ -123,11 +123,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    /**
-     * Add reverting commands here.
-     *
-     * Example:
-     * await queryInterface.dropTable('users');
-     */
+    // This migration is not reversible due to the complexity of the changes.
+    throw new Error('This migration cannot be reversed');
   },
 };
