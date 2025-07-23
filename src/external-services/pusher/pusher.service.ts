@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import Pusher from 'pusher';
-import { PusherChannel, PusherEvent } from './pusher.types';
+import { PusherEvent } from './pusher.types';
 
 @Injectable()
 export class PusherService {
@@ -16,7 +16,7 @@ export class PusherService {
     });
   }
 
-  async sendEvent<T>(channel: PusherChannel, event: PusherEvent, data: T) {
+  async sendEvent<T>(channel: string, event: PusherEvent, data: T) {
     return this.pusher.trigger(channel, event, data);
   }
 }

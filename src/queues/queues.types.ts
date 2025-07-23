@@ -22,6 +22,7 @@ export const Jobs = {
   NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription',
   CREATE_OR_UPDATE_SALESFORCE_TASK: 'create_or_update_salesforce_task',
   CREATE_OR_UPDATE_SALESFORCE_USER: 'create_or_update_salesforce_user',
+  GENERATE_PROFILE_FROM_PDF: 'generate_profile_from_pdf',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -32,6 +33,7 @@ type JobsData = {
   [Jobs.NEWSLETTER_SUBSCRIPTION]: NewsletterSubscriptionJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK]: CreateOrUpdateSalesforceTaskJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_USER]: CreateOrUpdateSalesforceUserJob;
+  [Jobs.GENERATE_PROFILE_FROM_PDF]: GenerateProfileFromPDFJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -71,8 +73,16 @@ export interface CreateOrUpdateSalesforceUserJob {
   structure?: string;
 }
 
+export interface GenerateProfileFromPDFJob {
+  pdfPath: string;
+  userProfileId: string;
+  userId: string;
+  fileHash: string;
+}
+
 export const Queues = {
   WORK: 'work',
+  PROFILE_GENERATION: 'profile-generation',
 } as const;
 
 export type Queue = (typeof Queues)[keyof typeof Queues];

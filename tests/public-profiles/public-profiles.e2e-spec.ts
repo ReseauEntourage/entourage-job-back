@@ -1,12 +1,11 @@
 import { Server } from 'http';
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Nudge } from 'src/common/nudge/models';
 import { PublicProfilesController } from 'src/public-profiles/public-profiles.controller';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
 import { AdminZones, APIResponse } from 'src/utils/types';
@@ -14,8 +13,8 @@ import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.hel
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { LanguageHelper } from 'tests/languages/language.helper';
-import { CacheMocks, QueueMocks } from 'tests/mocks.types';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 
 describe('PublicProfiles', () => {
@@ -43,10 +42,8 @@ describe('PublicProfiles', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

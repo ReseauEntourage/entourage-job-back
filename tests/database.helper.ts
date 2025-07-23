@@ -71,7 +71,7 @@ export class DatabaseHelper {
     private messageModel: typeof Message,
     @InjectModel(Conversation)
     private conversationModel: typeof Conversation,
-    @InjectModel(Message)
+    @InjectModel(ConversationParticipant)
     private conversationParticipantModel: typeof ConversationParticipant,
     @InjectModel(UserSocialSituation)
     private userSocialSituationModel: typeof UserSocialSituation,

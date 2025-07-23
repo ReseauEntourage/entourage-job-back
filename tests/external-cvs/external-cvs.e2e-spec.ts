@@ -1,5 +1,4 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
@@ -7,12 +6,13 @@ import { UsersHelper } from '../users/users.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { ExternalCvsController } from 'src/external-cvs/external-cvs.controller';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { CacheMocks, QueueMocks, S3Mocks } from 'tests/mocks.types';
+import { S3Mocks } from 'tests/mocks.types';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 
 describe('ExternalCvsController', () => {
   let app: INestApplication;
@@ -29,10 +29,8 @@ describe('ExternalCvsController', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();

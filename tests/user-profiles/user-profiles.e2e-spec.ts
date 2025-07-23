@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import moment from 'moment';
 import request from 'supertest';
-import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
+import { QueueMocks, S3Mocks } from '../mocks.types';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
@@ -12,7 +11,7 @@ import { Contract } from 'src/common/contracts/models';
 import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import {
   UserProfile,
   UserProfileWithPartialAssociations,
@@ -31,6 +30,7 @@ import { DatabaseHelper } from 'tests/database.helper';
 import { LanguageHelper } from 'tests/languages/language.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
@@ -79,10 +79,8 @@ describe('UserProfiles', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();
