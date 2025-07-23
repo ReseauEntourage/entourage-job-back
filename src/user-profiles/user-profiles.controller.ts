@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import {
   BadRequestException,
   Body,
@@ -282,55 +283,59 @@ export class UserProfilesController {
     @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
   ) {
-    const user = await this.userProfilesService.findOneUser(userIdToGet);
+    try {
+      console.log('=== START findByUserId ===');
+      console.log(' - Get user : Start');
+      const user = await this.userProfilesService.findOneUser(userIdToGet);
+      console.log(' - Get user : End');
 
-    const userProfile = await this.userProfilesService.findOneByUserId(
-      userIdToGet,
-      true
-    );
+      console.log(' - Get user profile : Start');
+      const userProfile = await this.userProfilesService.findOneByUserId(
+        userIdToGet,
+        true
+      );
+      console.log(' - Get user profile : End');
 
-    if (!user || !userProfile) {
-      throw new NotFoundException();
-    }
-
-    if (user.role === UserRoles.ADMIN) {
-      throw new BadRequestException();
-    }
-
-    const lastSentMessage = await this.userProfilesService.getLastContact(
-      currentUserId,
-      userIdToGet
-    );
-    const lastReceivedMessage = await this.userProfilesService.getLastContact(
-      userIdToGet,
-      currentUserId
-    );
-    const averageDelayResponse =
-      await this.userProfilesService.getAverageDelayResponse(userIdToGet);
-
-    if (user.role === UserRoles.CANDIDATE) {
-      const userCandidate =
-        await this.userProfilesService.findUserCandidateByCandidateId(
-          userIdToGet
-        );
-
-      if (!userCandidate.hidden) {
-        return getPublicProfileFromUserAndUserProfile(
-          user,
-          userProfile,
-          lastSentMessage?.createdAt,
-          lastReceivedMessage?.createdAt,
-          averageDelayResponse
-        );
+      if (!user || !userProfile) {
+        console.log(' - user or user profile not found > 404 <');
+        throw new NotFoundException();
       }
-    }
 
-    return getPublicProfileFromUserAndUserProfile(
-      user,
-      userProfile,
-      lastSentMessage?.createdAt,
-      lastReceivedMessage?.createdAt,
-      averageDelayResponse
-    );
+      if (user.role === UserRoles.ADMIN) {
+        console.log(' - user is admin > Bad request <');
+        throw new BadRequestException();
+      }
+
+      console.log(' - Get last sent message : Start');
+      const lastSentMessage = await this.userProfilesService.getLastContact(
+        currentUserId,
+        userIdToGet
+      );
+      console.log(' - Get last sent message : End');
+
+      console.log(' - Get last received message : Start');
+      const lastReceivedMessage = await this.userProfilesService.getLastContact(
+        userIdToGet,
+        currentUserId
+      );
+      console.log(' - Get last received message : End');
+
+      console.log(' - Get average delay response : Start');
+      const averageDelayResponse =
+        await this.userProfilesService.getAverageDelayResponse(userIdToGet);
+      console.log(' - Get average delay response : End');
+
+      console.log(' - Get public profile');
+      return getPublicProfileFromUserAndUserProfile(
+        user,
+        userProfile,
+        lastSentMessage?.createdAt,
+        lastReceivedMessage?.createdAt,
+        averageDelayResponse
+      );
+    } catch (error) {
+      console.error('Error in findByUserId:', error);
+      throw new InternalServerErrorException();
+    }
   }
 }
