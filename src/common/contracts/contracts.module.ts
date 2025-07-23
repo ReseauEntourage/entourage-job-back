@@ -9,6 +9,6 @@ import { Contract } from './models';
   imports: [SequelizeModule.forFeature([Contract, UserProfileContract])],
   providers: [ContractsService],
   controllers: [ContractsController],
-  exports: [ContractsService],
+  exports: [SequelizeModule, ContractsService],
 })
 export class ContractsModule {}

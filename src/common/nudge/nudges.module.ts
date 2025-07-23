@@ -9,6 +9,6 @@ import { NudgesService } from './nudges.service';
   imports: [SequelizeModule.forFeature([Nudge, UserProfileNudge])],
   providers: [NudgesService],
   controllers: [NudgesController],
-  exports: [NudgesService],
+  exports: [SequelizeModule, NudgesService],
 })
 export class NudgesModule {}

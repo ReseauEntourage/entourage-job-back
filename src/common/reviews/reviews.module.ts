@@ -6,6 +6,6 @@ import { ReviewsService } from './reviews.service';
 @Module({
   imports: [SequelizeModule.forFeature([Review])],
   providers: [ReviewsService],
-  exports: [ReviewsService],
+  exports: [SequelizeModule, ReviewsService],
 })
 export class ReviewsModule {}
