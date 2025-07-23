@@ -105,6 +105,7 @@ export class UserProfilesService {
       where: { userId },
       include: getUserProfileInclude(complete),
       order: getUserProfileOrder(complete),
+      logging: true,
     });
   }
 
