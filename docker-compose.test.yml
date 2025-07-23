@@ -1,11 +1,10 @@
-version: '3.8'
 services:
   linkedout-api-test:
     container_name: linkedout-api-test
     build:
       context: ./
       target: base
-    entrypoint: ["npm", "run", "test:e2e"]
+    entrypoint: ['npm', 'run', 'test:e2e']
     env_file:
       - .env.test
     environment:
@@ -19,8 +18,6 @@ services:
       - .:/home/node
     image: linkedout-api-worker:nestjs
     depends_on:
-      - linkedout-db
-    links:
       - linkedout-db
 
   linkedout-db:
