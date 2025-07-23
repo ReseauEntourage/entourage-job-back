@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {
   BadRequestException,
   Body,
@@ -39,6 +38,7 @@ import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
+import { generateUserProfileDto } from './dto/user-profile.dto';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
@@ -77,7 +77,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return updatedUserProfile;
+    return generateUserProfileDto(updatedUserProfile);
   }
 
   @Post('/:userId/report')
@@ -283,43 +283,39 @@ export class UserProfilesController {
     @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
   ) {
-    try {
-      const user = await this.userProfilesService.findOneUser(userIdToGet);
-      const userProfile = await this.userProfilesService.findOneByUserId(
-        userIdToGet,
-        true
-      );
+    const user = await this.userProfilesService.findOneUser(userIdToGet);
+    const userProfile = await this.userProfilesService.findOneByUserId(
+      userIdToGet,
+      true
+    );
 
-      if (!user || !userProfile) {
-        throw new NotFoundException();
-      }
-
-      if (user.role === UserRoles.ADMIN) {
-        throw new BadRequestException();
-      }
-
-      const lastSentMessage = await this.userProfilesService.getLastContact(
-        currentUserId,
-        userIdToGet
-      );
-
-      const lastReceivedMessage = await this.userProfilesService.getLastContact(
-        userIdToGet,
-        currentUserId
-      );
-
-      const averageDelayResponse =
-        await this.userProfilesService.getAverageDelayResponse(userIdToGet);
-
-      return getPublicProfileFromUserAndUserProfile(
-        user,
-        userProfile,
-        lastSentMessage?.createdAt,
-        lastReceivedMessage?.createdAt,
-        averageDelayResponse
-      );
-    } catch (error) {
-      throw new InternalServerErrorException();
+    if (!user || !userProfile) {
+      throw new NotFoundException();
     }
+
+    if (user.role === UserRoles.ADMIN) {
+      throw new BadRequestException();
+    }
+
+    const lastSentMessage = await this.userProfilesService.getLastContact(
+      currentUserId,
+      userIdToGet
+    );
+
+    const lastReceivedMessage = await this.userProfilesService.getLastContact(
+      userIdToGet,
+      currentUserId
+    );
+
+    const averageDelayResponse =
+      await this.userProfilesService.getAverageDelayResponse(userIdToGet);
+
+    return getPublicProfileFromUserAndUserProfile(
+      user,
+      userProfile,
+      lastSentMessage?.createdAt,
+      lastReceivedMessage?.createdAt,
+      averageDelayResponse
+    );
   }
 }

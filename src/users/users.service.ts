@@ -50,20 +50,20 @@ export class UsersService {
     return this.userModel.create(createUserDto, { hooks: true });
   }
 
-  async findOne(id: string, complete = false) {
+  async findOne(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(complete),
-      order: getUserCandidatOrder(complete),
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 
-  async findOneByMail(email: string, complete = false) {
+  async findOneByMail(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(complete),
-      order: getUserCandidatOrder(complete),
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 
@@ -485,8 +485,8 @@ export class UsersService {
       limit,
       offset,
       attributes: PublicUserAttributes,
-      include: UserCandidatInclude(true),
-      order: getUserCandidatOrder(true),
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
       where: {
         lastConnection: { [Op.ne]: null },
         role: UserRoles.CANDIDATE,

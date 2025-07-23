@@ -1499,7 +1499,7 @@ describe('UserProfiles', () => {
           });
 
           // Re fetch the random user to ensure the profile is up-to-date
-          randomUser = await usersHelper.findUser(randomUser.id, true);
+          randomUser = await usersHelper.findUser(randomUser.id);
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =

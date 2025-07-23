@@ -5,6 +5,7 @@ import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { SessionsModule } from 'src/sessions/sessions.module';
 import { SessionsService } from 'src/sessions/sessions.service';
+import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { AuthController } from './auth.controller';
@@ -21,6 +22,7 @@ import { JwtStrategy, LocalStrategy } from './guards';
     MailsModule,
     forwardRef(() => UsersModule),
     forwardRef(() => UsersStatsModule),
+    forwardRef(() => UserProfilesModule),
     SessionsModule,
     ExternalCvsModule,
   ],

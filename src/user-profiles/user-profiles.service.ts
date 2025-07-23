@@ -1,21 +1,26 @@
-/* eslint-disable no-console */
 import fs from 'fs';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { ContractsService } from 'src/common/contracts/contracts.service';
 import { Contract } from 'src/common/contracts/models';
 import { ExperiencesService } from 'src/common/experiences/experiences.service';
 import { Experience } from 'src/common/experiences/models';
 import { FormationsService } from 'src/common/formations/formations.service';
 import { Formation } from 'src/common/formations/models';
+import { InterestsService } from 'src/common/interests/interests.service';
 import { Interest } from 'src/common/interests/models';
+import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
+import { NudgesService } from 'src/common/nudge/nudges.service';
 import { Occupation } from 'src/common/occupations/models';
+import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
+import { SkillsService } from 'src/common/skills/skills.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -75,6 +80,7 @@ export class UserProfilesService {
     @InjectModel(UserProfileLanguage)
     private userProfileLanguageModel: typeof UserProfileLanguage,
     private s3Service: S3Service,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
     private messagesService: MessagesService,
@@ -82,7 +88,13 @@ export class UserProfilesService {
     private slackService: SlackService,
     private mailsService: MailsService,
     private experiencesService: ExperiencesService,
-    private formationsService: FormationsService
+    private formationsService: FormationsService,
+    private nudgeService: NudgesService,
+    private skillService: SkillsService,
+    private contractsService: ContractsService,
+    private languagesService: LanguagesService,
+    private reviewsService: ReviewsService,
+    private interestsService: InterestsService
   ) {}
 
   async findOne(id: string) {
@@ -102,11 +114,53 @@ export class UserProfilesService {
     userId: string,
     complete = false
   ): Promise<UserProfile> {
-    return this.userProfileModel.findOne({
+    const userProfile = await this.userProfileModel.findOne({
       where: { userId },
-      include: getUserProfileInclude(complete),
-      order: getUserProfileOrder(complete),
+      include: getUserProfileInclude(),
+      order: getUserProfileOrder(),
     });
+
+    if (complete) {
+      // Experiences
+      userProfile.experiences =
+        await this.experiencesService.findByUserProfileId(userProfile.id);
+
+      // Formations
+      userProfile.formations = await this.formationsService.findByUserProfileId(
+        userProfile.id
+      );
+
+      // Custom Nudges
+      userProfile.customNudges =
+        await this.nudgeService.findCustomNudgesByUserProfileId(userProfile.id);
+
+      // Skills
+      userProfile.skills = await this.skillService.findSkillsByUserProfileId(
+        userProfile.id
+      );
+
+      // Contracts
+      userProfile.contracts =
+        await this.contractsService.findContractByUserProfileId(userProfile.id);
+
+      // UserProfile Languages
+      userProfile.userProfileLanguages =
+        await this.languagesService.findLanguagesByUserProfileId(
+          userProfile.id
+        );
+
+      // Reviews
+      userProfile.reviews = await this.reviewsService.findByUserProfileId(
+        userProfile.id
+      );
+
+      // Interests
+      userProfile.interests = await this.interestsService.findByUserProfileId(
+        userProfile.id
+      );
+    }
+
+    return userProfile;
   }
 
   async findOneUser(userId: string) {
@@ -194,11 +248,7 @@ export class UserProfilesService {
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
       include: [
-        ...getUserProfileInclude(
-          false,
-          businessSectorsOptions,
-          nudgesSectorsOptions
-        ),
+        ...getUserProfileInclude(businessSectorsOptions, nudgesSectorsOptions),
         {
           model: User,
           as: 'user',

@@ -18,29 +18,12 @@ import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';
 import { User } from './user.model';
 
-export const UserCandidatInclude = (complete = false): Includeable[] => {
+export const UserCandidatInclude = (): Includeable[] => {
   return [
     {
       model: UserCandidat,
       as: 'candidat',
       attributes: [...UserCandidatAttributes],
-      include: [
-        {
-          model: User,
-          as: 'coach',
-          attributes: [...UserAttributes],
-          paranoid: false,
-          include: [
-            {
-              model: UserProfile,
-              as: 'userProfile',
-              attributes: UserProfilesAttributes,
-              include: getUserProfileInclude(complete),
-              order: getUserProfileOrder(complete),
-            },
-          ],
-        },
-      ],
     },
     {
       model: User,
@@ -53,27 +36,6 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
           as: 'userProfile',
           attributes: UserProfilesAttributes,
           include: getUserProfileInclude(),
-        },
-      ],
-    },
-    {
-      model: UserCandidat,
-      as: 'coaches',
-      attributes: [...UserCandidatAttributes],
-      include: [
-        {
-          model: User,
-          as: 'candidat',
-          attributes: [...UserAttributes],
-          paranoid: false,
-          include: [
-            {
-              model: UserProfile,
-              as: 'userProfile',
-              attributes: UserProfilesAttributes,
-              include: getUserProfileInclude(),
-            },
-          ],
         },
       ],
     },
@@ -111,8 +73,8 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
       model: UserProfile,
       as: 'userProfile',
       attributes: UserProfilesAttributes,
-      include: getUserProfileInclude(complete),
-      order: getUserProfileOrder(complete),
+      include: getUserProfileInclude(),
+      order: getUserProfileOrder(),
     },
     {
       model: ReadDocument,
@@ -122,8 +84,8 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
   ];
 };
 
-export const getUserCandidatOrder = (complete = false): Order => {
-  const userProfileOrder = getUserProfileOrder(complete) as OrderItem[];
+export const getUserCandidatOrder = (): Order => {
+  const userProfileOrder = getUserProfileOrder() as OrderItem[];
 
   // Prefix all the userProfileOrder items with 'userProfile' model
   // and 'as' alias
@@ -160,8 +122,8 @@ export const userPublicProfileOrder = (): Order => {
   return prefixedUserProfileOrder;
 };
 
-export const getUserProfileRecommendationOrder = (complete = false): Order => {
-  const userProfileOrder = getUserProfileOrder(complete) as OrderItem[];
+export const getUserProfileRecommendationOrder = (): Order => {
+  const userProfileOrder = getUserProfileOrder() as OrderItem[];
 
   // Prefix all the userProfileOrder items with 'userProfile' model
   // and 'as' alias

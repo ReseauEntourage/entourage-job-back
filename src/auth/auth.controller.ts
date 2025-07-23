@@ -20,6 +20,7 @@ import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
+import { generateCurrentUserDto } from './dto/current-user.dto';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @ApiTags('Auth')
@@ -175,9 +176,10 @@ export class AuthController {
     const usersStats =
       complete === 'true'
         ? await this.authService.getUsersStats(updatedUser.id)
-        : {};
+        : undefined;
 
-    const currentUser = await this.authService.findOneUserById(
+    const currentUser = await this.authService.findOneUserById(updatedUser.id);
+    const currentUserProfile = await this.authService.findOneUserProfileById(
       updatedUser.id,
       complete === 'true'
     );
@@ -190,11 +192,12 @@ export class AuthController {
 
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
-    return {
-      ...currentUser.toJSON(),
-      ...(usersStats || {}),
-      hasExtractedCvData,
-    };
+    return generateCurrentUserDto(
+      currentUser,
+      currentUserProfile,
+      usersStats,
+      hasExtractedCvData
+    );
   }
 
   @Public()
