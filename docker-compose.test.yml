@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  linkedout-api-test:
+    container_name: linkedout-api-test
+    build:
+      context: ./
+      target: base
+    entrypoint: ["npm", "run", "test:e2e"]
+    env_file:
+      - .env.test
+    environment:
+      NODE_ENV: dev-test
+      DB_HOST: linkedout-db
+      DB_PORT: 5432
+      DB_USER: linkedout
+      DB_PASSWORD: linkedout
+      DB_NAME: linkedouttest
+    volumes:
+      - .:/home/node
+    image: linkedout-api-worker:nestjs
+    depends_on:
+      - linkedout-db
+    links:
+      - linkedout-db
+
+  linkedout-db:
+    image: postgres:14.1-alpine
+    container_name: linkedout-db-postgresql
+    restart: always
+    environment:
+      - POSTGRES_USER=linkedout
+      - POSTGRES_PASSWORD=linkedout
+    ports:
+      - '5432:5432'
+    command:
+      - 'postgres'
+      - '-c'
+      - 'log_temp_files=10240'
+      - '-c'
+      - 'shared_buffers=3GB'
+
+volumes:
+  linkedout-db:
+    driver: local
