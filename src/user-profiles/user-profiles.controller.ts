@@ -284,69 +284,41 @@ export class UserProfilesController {
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
   ) {
     try {
-      console.log('=== START findByUserId ===');
-      console.log(' - Get user : Start');
       const user = await this.userProfilesService.findOneUser(userIdToGet);
-      console.log(' - Get user : End', JSON.stringify(user));
-
-      console.log(' - Get user profile : Start');
       const userProfile = await this.userProfilesService.findOneByUserId(
         userIdToGet,
         true
       );
-      console.log(' - Get user profile : End', JSON.stringify(userProfile));
 
       if (!user || !userProfile) {
-        console.log(' - user or user profile not found > 404 <');
         throw new NotFoundException();
       }
 
       if (user.role === UserRoles.ADMIN) {
-        console.log(' - user is admin > Bad request <');
         throw new BadRequestException();
       }
 
-      console.log(' - Get last sent message : Start');
       const lastSentMessage = await this.userProfilesService.getLastContact(
         currentUserId,
         userIdToGet
       );
-      console.log(
-        ' - Get last sent message : End',
-        JSON.stringify(lastSentMessage)
-      );
 
-      console.log(' - Get last received message : Start');
       const lastReceivedMessage = await this.userProfilesService.getLastContact(
         userIdToGet,
         currentUserId
       );
-      console.log(
-        ' - Get last received message : End',
-        JSON.stringify(lastReceivedMessage)
-      );
 
-      console.log(' - Get average delay response : Start');
       const averageDelayResponse =
         await this.userProfilesService.getAverageDelayResponse(userIdToGet);
-      console.log(
-        ' - Get average delay response : End',
-        JSON.stringify(averageDelayResponse)
-      );
 
-      console.log(' - Get public profile: Start');
-      const ret = getPublicProfileFromUserAndUserProfile(
+      return getPublicProfileFromUserAndUserProfile(
         user,
         userProfile,
         lastSentMessage?.createdAt,
         lastReceivedMessage?.createdAt,
         averageDelayResponse
       );
-
-      console.log(' - Get public profile: End', JSON.stringify(ret));
-      return ret;
     } catch (error) {
-      console.error('Error in findByUserId:', error);
       throw new InternalServerErrorException();
     }
   }

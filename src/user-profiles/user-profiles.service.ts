@@ -106,10 +106,6 @@ export class UserProfilesService {
       where: { userId },
       include: getUserProfileInclude(complete),
       order: getUserProfileOrder(complete),
-      logging: (sql: string, timing: number) => {
-        console.log('SQL Query:', sql);
-        console.log('Query Timing:', timing);
-      },
     });
   }
 
