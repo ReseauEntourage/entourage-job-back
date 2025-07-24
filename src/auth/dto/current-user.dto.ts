@@ -40,7 +40,6 @@ export const generateCurrentUserDto = (
     gender: user.gender,
     lastConnection: user.lastConnection,
     isEmailVerified: user.isEmailVerified,
-    createdAt: user.createdAt,
     refererId: user.refererId || null,
     candidat: user.candidat || null,
     referredCandidates: user.referredCandidates || [],

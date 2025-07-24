@@ -323,9 +323,13 @@ describe('Auth', () => {
         .get(`${route}/current`)
         .set('authorization', `Bearer ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
-      expect(response.body).toStrictEqual(
-        generateCurrentUserDto(loggedInCandidat.user, loggedInCandidatProfile)
-      );
+      expect(response.body).toStrictEqual({
+        ...generateCurrentUserDto(
+          loggedInCandidat.user,
+          loggedInCandidatProfile
+        ),
+        lastConnection: response.body.lastConnection,
+      });
     });
     it('Should return 401, if invalid token', async () => {
       const response: APIResponse<AuthController['getCurrent']> = await request(
