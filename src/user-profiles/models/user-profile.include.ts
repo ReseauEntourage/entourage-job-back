@@ -210,55 +210,24 @@ export const getUserProfileInterestsInclude = (): Includeable[] => [
 ];
 
 export const getUserProfileInclude = (
-  complete = false,
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
   nudgesOptions: WhereOptions<Nudge> = {}
 ): Includeable[] => {
-  // Always included
-  const baseIncludes = [
+  return [
     ...getUserProfileSectorOccupationsInclude(businessSectorsOptions),
     ...getUserProfileNudgesInclude(nudgesOptions),
   ];
-
-  // Conditionally included based on the complete flag
-  const additionalIncludes = [
-    ...getUserProfileCustomNudgesInclude(),
-    ...getUserProfileLanguagesInclude(),
-    ...getUserProfileContractsInclude(),
-    ...getUserProfileSkillsInclude(),
-    ...getUserProfileExperiencesInclude(),
-    ...getUserProfileFormationsInclude(),
-    ...getUserProfileReviewsInclude(),
-    ...getUserProfileInterestsInclude(),
-  ];
-
-  return [...(complete ? additionalIncludes : []), ...baseIncludes];
 };
 
-export const getUserProfileOrder = (complete = false): Order => {
-  return complete
-    ? [
-        [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
-        [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
-        [{ model: Formation, as: 'formations' }, 'endDate', 'DESC'],
-        [{ model: Formation, as: 'formations' }, 'startDate', 'ASC'],
-        [
-          { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-          'order',
-          'ASC',
-        ],
-        [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
-        [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
-        [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
-      ]
-    : [
-        [
-          { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-          'order',
-          'ASC',
-        ],
-        [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
-      ];
+export const getUserProfileOrder = (): Order => {
+  return [
+    [
+      { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+      'order',
+      'ASC',
+    ],
+    [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
+  ];
 };
 
 /**
@@ -269,6 +238,7 @@ export const getUserProfileOrder = (complete = false): Order => {
  */
 export const publicProfileIncludes: Includeable[] = [
   ...getUserProfileSectorOccupationsInclude(),
+  ...getUserProfileNudgesInclude(),
   ...getUserProfileLanguagesInclude(),
   ...getUserProfileContractsInclude(),
   ...getUserProfileSkillsInclude(),
@@ -281,6 +251,8 @@ export const publicProfileIncludes: Includeable[] = [
 export const publicProfileOrder: Order = [
   [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
   [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
+  [{ model: Formation, as: 'formations' }, 'endDate', 'DESC'],
+  [{ model: Formation, as: 'formations' }, 'startDate', 'ASC'],
   [
     { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
     'order',
@@ -288,4 +260,5 @@ export const publicProfileOrder: Order = [
   ],
   [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
   [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+  [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
 ];

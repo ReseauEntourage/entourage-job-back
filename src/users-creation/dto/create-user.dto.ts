@@ -1,5 +1,4 @@
-import { ApiProperty, PickType } from '@nestjs/swagger';
-import { IsOptional } from 'class-validator';
+import { PickType } from '@nestjs/swagger';
 import { User } from 'src/users/models';
 
 export class CreateUserDto extends PickType(User, [
@@ -13,8 +12,4 @@ export class CreateUserDto extends PickType(User, [
   'phone',
   'address',
   'zone',
-] as const) {
-  @ApiProperty()
-  @IsOptional()
-  userToLinkId?: string;
-}
+] as const) {}
