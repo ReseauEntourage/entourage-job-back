@@ -16,7 +16,7 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { Queues } from 'src/queues/queues.types';
-import { Programs, UserRoles } from 'src/users/users.types';
+import { UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { APIResponse } from 'src/utils/types';
@@ -362,6 +362,7 @@ describe('UserCreation', () => {
           referredCandidates: coachReferredCandidates,
           referer: coachReferer,
           userSocialSituation: coachUserSocialSituation,
+          companies: coachCompanies,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
 
@@ -450,6 +451,7 @@ describe('UserCreation', () => {
           referredCandidates: coachReferredCandidates,
           refererId: coachRefererId,
           userSocialSituation: coachUserSocialSituation,
+          companies: coachCompanies,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -473,6 +475,7 @@ describe('UserCreation', () => {
           referredCandidates: candidateReferredCandidates,
           referer: candidateReferer,
           userSocialSituation: candidateUserSocialSituation,
+          companies: candidateCompanies,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, true);
 
@@ -668,7 +671,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -723,7 +725,6 @@ describe('UserCreation', () => {
         ...userProfileValues,
         password: user.password,
         campaign: '1234',
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
@@ -823,7 +824,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
@@ -951,7 +951,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
       };
 
@@ -984,7 +983,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
       };
 
@@ -1020,7 +1018,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
         birthDate: '1996-24-04',
@@ -1097,7 +1094,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
       };
 
@@ -1158,7 +1154,6 @@ describe('UserCreation', () => {
       const userToSend = {
         ...userValues,
         ...userProfileValues,
-        program: Programs.THREE_SIXTY,
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
@@ -1259,7 +1254,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1312,7 +1306,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1365,7 +1358,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1418,7 +1410,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1471,7 +1462,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1520,7 +1510,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {

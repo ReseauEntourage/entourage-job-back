@@ -14,7 +14,6 @@ import {
   CustomMailParams,
   MailjetTemplate,
 } from 'src/external-services/mailjet/mailjet.types';
-import { Program } from 'src/users/users.types';
 
 export const Jobs = {
   GENERATE_CV_PDF: 'generate_cv_pdf',
@@ -55,7 +54,6 @@ export interface CreateOrUpdateSalesforceTaskJob {
 
 export interface CreateOrUpdateSalesforceUserJob {
   userId: string;
-  program?: Program;
   birthDate?: Date;
   campaign?: string;
   nationality?: Nationality;

@@ -1,5 +1,6 @@
 import { Includeable, Order, OrderItem } from 'sequelize';
 import { UserSocialSituation } from '../../user-social-situations/models/user-social-situation.model';
+import { Company } from 'src/companies/models/company.model';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
@@ -118,6 +119,15 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
       model: ReadDocument,
       as: 'readDocuments',
       attributes: ['documentName', 'createdAt'],
+    },
+    {
+      model: Company,
+      as: 'companies',
+      attributes: ['id', 'name'],
+      through: {
+        attributes: ['isAdmin', 'role'],
+        as: 'companyUser',
+      },
     },
   ];
 };

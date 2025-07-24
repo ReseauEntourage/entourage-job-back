@@ -1562,6 +1562,7 @@ describe('Users', () => {
             referer: coachReferer,
             referredCandidates: coachReferredCandidates,
             userSocialSituation: coachUserSocialSituation,
+            companies: coachCompanies,
             ...restCoach
           } = loggedInCoach.user;
 
@@ -1600,6 +1601,7 @@ describe('Users', () => {
             referer,
             referredCandidates,
             userSocialSituation,
+            companies,
             ...restCandidate
           } = loggedInCandidate.user;
 
@@ -1614,6 +1616,7 @@ describe('Users', () => {
             whatsappZoneQR: coachWhatsappZoneQR,
             referredCandidates: coachReferredCandidates,
             userSocialSituation: coachUserSocialSituation,
+            companies: coachCompanies,
             ...restCoach
           } = loggedInCoach.user;
 

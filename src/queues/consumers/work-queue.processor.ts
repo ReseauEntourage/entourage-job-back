@@ -157,7 +157,6 @@ export class WorkQueueProcessor {
 
     if (process.env.ENABLE_SF === 'true') {
       await this.salesforceService.createOrUpdateSalesforceUser(data.userId, {
-        program: data.program,
         campaign: data.campaign,
         birthDate: data.birthDate,
         nationality: data.nationality,

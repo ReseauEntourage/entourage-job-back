@@ -6,25 +6,16 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateUserRegistrationDto } from './create-user-registration.dto';
+import { CreateCompanyDto } from './create-company.dto';
 
-export class CreateUserRegistrationPipe
-  implements
-    PipeTransform<
-      CreateUserRegistrationDto,
-      Promise<CreateUserRegistrationDto>
-    >
+export class CreateCompanyPipe
+  implements PipeTransform<CreateCompanyDto, Promise<CreateCompanyDto>>
 {
-  private static toValidate(metatype: Function): boolean {
-    const types: Function[] = [String, Boolean, Number, Array, Object];
-    return !types.includes(metatype);
-  }
-
   async transform(
-    value: CreateUserRegistrationDto,
+    value: CreateCompanyDto,
     { metatype }: ArgumentMetadata
-  ): Promise<CreateUserRegistrationDto> {
-    if (!metatype || !CreateUserRegistrationPipe.toValidate(metatype)) {
+  ): Promise<CreateCompanyDto> {
+    if (!metatype || !CreateCompanyPipe.toValidate(metatype)) {
       return value;
     }
     const object = plainToInstance(metatype, value);
@@ -35,9 +26,13 @@ export class CreateUserRegistrationPipe
     });
 
     if (errors.length > 0) {
-      console.error('Validation errors:', errors);
       throw new BadRequestException();
     }
     return value;
+  }
+
+  private static toValidate(metatype: Function): boolean {
+    const types: Function[] = [String, Boolean, Number, Array, Object];
+    return !types.includes(metatype);
   }
 }
