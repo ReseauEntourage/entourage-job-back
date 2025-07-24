@@ -59,12 +59,5 @@ export class CompaniesService {
       company,
       inviteCollaboratorsDto
     );
-
-    // Logic to handle inviting collaborators, e.g., sending emails
-    // This is a placeholder implementation
-    return {
-      message: 'Invitations sent successfully',
-      emails: inviteCollaboratorsDto.emails,
-    };
   }
 }
