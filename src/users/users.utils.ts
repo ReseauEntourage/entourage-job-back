@@ -99,34 +99,8 @@ export function getCandidateIdFromCoachOrCandidate(member: User) {
   return null;
 }
 
-export const formatAssociatedUserMemberOptions = (
-  key: string,
-  filterValues: FilterObject<MemberFilterKey>['associatedUser']
-) => {
-  return `(
-    ${filterValues
-      .map((currentFilterValue) => {
-        return `${key} ${currentFilterValue.value ? 'IS NOT NULL' : 'IS NULL'}`;
-      })
-      .join(' OR ')}
-    )`;
-};
-
 export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   let whereOptions: string[] = [];
-
-  let associatedUserOptionKey: string;
-  const rolesFilters = filtersObj.role.map(({ value }) => value);
-
-  if (isRoleIncluded([UserRoles.CANDIDATE], rolesFilters)) {
-    associatedUserOptionKey = '"candidat"."coachId"';
-  } else if (isRoleIncluded([UserRoles.COACH], rolesFilters)) {
-    associatedUserOptionKey = '"coaches"."candidatId"';
-  } else if (isRoleIncluded([UserRoles.REFERER], rolesFilters)) {
-    associatedUserOptionKey = '"referredCandidates"."candidatId"';
-  } else {
-    return [];
-  }
 
   if (filtersObj) {
     const keys: MemberFilterKey[] = Object.keys(
@@ -152,15 +126,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
                 whereOptions = [
                   ...whereOptions,
                   `"User"."zone" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'associatedUser':
-                whereOptions = [
-                  ...whereOptions,
-                  `${formatAssociatedUserMemberOptions(
-                    associatedUserOptionKey,
-                    filtersObj[keys[i]]
-                  )}`,
                 ];
                 break;
               // Only candidates

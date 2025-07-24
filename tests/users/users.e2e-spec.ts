@@ -707,7 +707,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]=&associatedUser[]= - Read all members as admin with filters', () => {
+        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -839,88 +839,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the associatedUser filters', async () => {
-            const coaches = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.COACH,
-              }
-            );
-
-            const associatedUserCandidates =
-              await databaseHelper.createEntities(userFactory, 2, {
-                role: UserRoles.CANDIDATE,
-              });
-
-            const notAssociatedUserCandidates =
-              await databaseHelper.createEntities(userFactory, 2, {
-                role: UserRoles.CANDIDATE,
-              });
-
-            await Promise.all(
-              associatedUserCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  coaches[index],
-                  candidate
-                );
-              })
-            );
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&associatedUser[]=false`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(notAssociatedUserCandidates.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
-          it('Should return 200, and all the coaches that matches the associatedUser filters', async () => {
-            const candidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const associatedUserCoaches = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.COACH,
-              }
-            );
-
-            const notAssociatedUserCoaches =
-              await databaseHelper.createEntities(userFactory, 2, {
-                role: UserRoles.COACH,
-              });
-
-            await Promise.all(
-              associatedUserCoaches.map(async (coach, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  coach,
-                  candidates[index]
-                );
-              })
-            );
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&associatedUser[]=false`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(notAssociatedUserCoaches.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
         });
         describe('/members - Read all members as admin with all filters', () => {
           let loggedInAdmin: LoggedUser;
@@ -967,7 +885,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1017,7 +935,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${AdminZones.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
