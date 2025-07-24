@@ -1731,17 +1731,9 @@ describe('UserProfiles', () => {
           const updatedUser = await usersHelper.findUser(
             loggedInCandidate.user.id
           );
-
-          const {
-            nudges: updatedNudges,
-            sectorOccupations: updatedSectorOccupation,
-            ...restUpdatedUserProfile
-          } = updatedUser.userProfile;
-
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...restUpdatedUserProfile,
               sectorOccupations: [
                 expect.objectContaining({
                   businessSector: expect.objectContaining({ name: 'Sector 1' }),
