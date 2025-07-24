@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import {
@@ -12,7 +11,6 @@ import {
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
-  NormalUserRoles,
   Permission,
   UserPermissions,
   UserRole,
@@ -77,37 +75,10 @@ export function capitalizeNameAndTrim(name: string) {
   return capitalizedName.trim().replace(/\s\s+/g, ' ');
 }
 
-export function getRelatedUser(member: User) {
-  if (member) {
-    if (member.candidat && member.candidat.coach) {
-      return [member.candidat.coach]; // an array because of the external coaches
-    }
-    if (member.coaches && member.coaches.length > 0) {
-      return member.coaches.map(({ candidat }) => {
-        return candidat;
-      });
-    }
-  }
-
-  return null;
-}
-
 export function getCoachFromCandidate(candidate: User) {
   if (candidate && candidate.role === UserRoles.CANDIDATE) {
     if (candidate.candidat && candidate.candidat.coach) {
       return candidate.candidat.coach;
-    }
-  }
-
-  return null;
-}
-
-export function getCandidateFromCoach(coach: User, candidateId: string) {
-  if (coach && coach.role === UserRoles.COACH) {
-    if (coach.coaches && coach.coaches.length > 0) {
-      return coach.coaches.find(({ candidat }) => {
-        return candidat.id === candidateId;
-      })?.candidat;
     }
   }
 
@@ -122,16 +93,6 @@ export function getCandidateIdFromCoachOrCandidate(member: User) {
     if (isRoleIncluded([UserRoles.REFERER], member.role)) {
       return member.referredCandidates.map(({ candidat }) => {
         return candidat.candidat.id;
-      });
-    }
-
-    if (
-      isRoleIncluded([UserRoles.COACH], member.role) &&
-      member.coaches &&
-      member.coaches.length > 0
-    ) {
-      return member.coaches.map(({ candidat }) => {
-        return candidat.id;
       });
     }
   }
@@ -251,29 +212,6 @@ export function userSearchQueryRaw(query = '', withOrganizationName = false) {
       ...organizationSearchOption,
     ].join(' OR ')}
   )`;
-}
-
-export function getCandidateAndCoachIdDependingOnRoles(
-  user: User,
-  userToLink: User,
-  shouldRemoveLinkedUser = false
-) {
-  if (
-    isRoleIncluded(NormalUserRoles, [user.role, userToLink.role]) &&
-    user.role !== userToLink.role
-  ) {
-    return {
-      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
-      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
-    };
-  } else if (shouldRemoveLinkedUser) {
-    return {
-      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
-      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
-    };
-  } else {
-    throw new BadRequestException();
-  }
 }
 
 export function getCommonMembersFilterOptions(

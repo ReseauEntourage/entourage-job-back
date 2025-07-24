@@ -77,7 +77,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return generateUserProfileDto(updatedUserProfile);
+    return generateUserProfileDto(updatedUserProfile, true);
   }
 
   @Post('/:userId/report')

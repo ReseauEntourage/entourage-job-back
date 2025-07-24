@@ -19,9 +19,10 @@ export const generateCurrentUserDto = (
     averageDelayResponse: number | null;
     responseRate: number | null;
   },
-  hasExtractedCvData?: boolean
+  hasExtractedCvData?: boolean,
+  complete = false
 ): CurrentUserDto => {
-  return {
+  const dto = {
     // From User
     id: user.id,
     firstName: user.firstName,
@@ -32,13 +33,14 @@ export const generateCurrentUserDto = (
     email: user.email,
 
     // From UserProfile
-    userProfile: generateUserProfileDto(userProfile),
-
-    // From UsersStats
-    averageDelayResponse: usersStats?.averageDelayResponse ?? null,
-    responseRate: usersStats?.responseRate ?? null,
-
-    // From CV Extraction
-    hasExtractedCvData: hasExtractedCvData,
-  };
+    userProfile: generateUserProfileDto(userProfile, complete),
+  } as CurrentUserDto;
+  if (hasExtractedCvData !== undefined) {
+    dto.hasExtractedCvData = hasExtractedCvData;
+  }
+  if (usersStats !== undefined) {
+    dto.averageDelayResponse = usersStats.averageDelayResponse;
+    dto.responseRate = usersStats.responseRate;
+  }
+  return dto as CurrentUserDto;
 };

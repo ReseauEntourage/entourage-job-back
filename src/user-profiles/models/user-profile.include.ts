@@ -238,6 +238,7 @@ export const getUserProfileOrder = (): Order => {
  */
 export const publicProfileIncludes: Includeable[] = [
   ...getUserProfileSectorOccupationsInclude(),
+  ...getUserProfileNudgesInclude(),
   ...getUserProfileLanguagesInclude(),
   ...getUserProfileContractsInclude(),
   ...getUserProfileSkillsInclude(),
@@ -250,6 +251,8 @@ export const publicProfileIncludes: Includeable[] = [
 export const publicProfileOrder: Order = [
   [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
   [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
+  [{ model: Formation, as: 'formations' }, 'endDate', 'DESC'],
+  [{ model: Formation, as: 'formations' }, 'startDate', 'ASC'],
   [
     { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
     'order',
@@ -257,4 +260,5 @@ export const publicProfileOrder: Order = [
   ],
   [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
   [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
+  [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
 ];

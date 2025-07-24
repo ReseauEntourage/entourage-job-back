@@ -196,7 +196,8 @@ export class AuthController {
       currentUser,
       currentUserProfile,
       usersStats,
-      hasExtractedCvData
+      hasExtractedCvData,
+      complete === 'true'
     );
   }
 

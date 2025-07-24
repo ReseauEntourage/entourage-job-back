@@ -3,26 +3,30 @@ import { UserProfile, UserProfileWithPartialAssociations } from '../models';
 export interface UserProfileDto extends UserProfileWithPartialAssociations {}
 
 export const generateUserProfileDto = (
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  complete = false
 ): UserProfileDto => {
-  return {
+  const dto = {
     isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     nudges: userProfile.nudges,
-    customNudges: userProfile.customNudges,
     description: userProfile.description,
     introduction: userProfile.introduction,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,
-    userProfileLanguages: userProfile.userProfileLanguages,
-    experiences: userProfile.experiences,
-    formations: userProfile.formations,
-    skills: userProfile.skills,
-    contracts: userProfile.contracts,
-    reviews: userProfile.reviews,
-    interests: userProfile.interests,
     hasPicture: userProfile.hasPicture,
   } as UserProfileDto;
+  if (complete) {
+    dto.experiences = userProfile.experiences;
+    dto.formations = userProfile.formations;
+    dto.skills = userProfile.skills;
+    dto.contracts = userProfile.contracts;
+    dto.reviews = userProfile.reviews;
+    dto.interests = userProfile.interests;
+    dto.customNudges = userProfile.customNudges;
+    dto.userProfileLanguages = userProfile.userProfileLanguages;
+  }
+  return dto;
 };

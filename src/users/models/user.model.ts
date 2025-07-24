@@ -234,10 +234,6 @@ export class User extends HistorizedModel {
   })
   userSocialSituation?: UserSocialSituation;
 
-  // si coach regarder coach
-  @HasMany(() => UserCandidat, 'coachId')
-  coaches: UserCandidat[];
-
   @BelongsTo(() => Organization, 'OrganizationId')
   organization?: Organization;
 

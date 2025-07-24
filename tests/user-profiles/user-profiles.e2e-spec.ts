@@ -1441,6 +1441,7 @@ describe('UserProfiles', () => {
       describe('GET /user/profile/:userId - Get user profile', () => {
         let loggedInUser: LoggedUser;
         let randomUser: User;
+        let randomUserProfile: UserProfile;
         beforeEach(async () => {
           loggedInUser = await usersHelper.createLoggedInUser();
 
@@ -1500,6 +1501,10 @@ describe('UserProfiles', () => {
 
           // Re fetch the random user to ensure the profile is up-to-date
           randomUser = await usersHelper.findUser(randomUser.id);
+          randomUserProfile = await userProfilesHelper.findOneProfileByUserId(
+            randomUser.id,
+            true
+          );
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
@@ -1514,7 +1519,11 @@ describe('UserProfiles', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(randomUser, true)
+              userProfilesHelper.mapUserProfileFromUser(
+                randomUser,
+                randomUserProfile,
+                true
+              )
             )
           );
         });
@@ -1536,7 +1545,11 @@ describe('UserProfiles', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...userProfilesHelper.mapUserProfileFromUser(randomUser, true),
+              ...userProfilesHelper.mapUserProfileFromUser(
+                randomUser,
+                randomUserProfile,
+                true
+              ),
               lastReceivedMessage:
                 internalMessageReceived.createdAt.toISOString(),
               lastSentMessage: internalMessageSent.createdAt.toISOString(),

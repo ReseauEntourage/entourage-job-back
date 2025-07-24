@@ -83,6 +83,7 @@ export class UserProfilesService {
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
+    @Inject(forwardRef(() => MessagesService))
     private messagesService: MessagesService,
     private messagingService: MessagingService,
     private slackService: SlackService,

@@ -3,7 +3,6 @@ import { getQueueToken } from '@nestjs/bull';
 import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { v4 as uuid } from 'uuid';
 import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
@@ -297,7 +296,7 @@ describe('UserCreation', () => {
     });
 
     describe('/ - Create normal candidate or coach', () => {
-      it('Should return 200 and a created candidate without coach', async () => {
+      it('Should return 200 and a created candidate', async () => {
         const {
           password,
           hashReset,
@@ -324,89 +323,8 @@ describe('UserCreation', () => {
           })
         );
       });
-      it('Should return 200 and a created candidate with coach', async () => {
-        const {
-          password,
-          hashReset,
-          salt,
-          saltReset,
-          revision,
-          updatedAt,
-          createdAt,
-          lastConnection,
-          whatsappZoneName,
-          whatsappZoneUrl,
-          whatsappZoneQR,
-          OrganizationId,
-          userSocialSituation,
-          ...candidate
-        } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
 
-        const {
-          password: coachPassword,
-          hashReset: coachHashReset,
-          salt: coachSalt,
-          saltReset: coachSaltReset,
-          revision: coachRevision,
-          updatedAt: coachUpdatedAt,
-          createdAt: coachCreatedAt,
-          lastConnection: coachLastConnection,
-          readDocuments: [],
-          organization,
-          candidat,
-          coaches,
-          whatsappZoneName: coachWhatsappZoneName,
-          whatsappZoneUrl: coachWhatsappZoneUrl,
-          whatsappZoneQR: coachWhatsappZoneQR,
-          OrganizationId: coachOrganizationId,
-          referredCandidates: coachReferredCandidates,
-          referer: coachReferer,
-          userSocialSituation: coachUserSocialSituation,
-          ...coach
-        } = await userFactory.create({ role: UserRoles.COACH }, {}, true);
-
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(server)
-            .post(`${route}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({ ...candidate, userToLinkId: coach.id });
-        expect(response.status).toBe(201);
-        expect(response.body).toEqual(
-          expect.objectContaining({
-            ...candidate,
-            candidat: expect.objectContaining({
-              coach: expect.objectContaining({
-                ...coach,
-              }),
-            }),
-          })
-        );
-      });
-      it('Should return 404 if create candidate with unexisting coach', async () => {
-        const {
-          password,
-          hashReset,
-          salt,
-          saltReset,
-          revision,
-          updatedAt,
-          createdAt,
-          lastConnection,
-          whatsappZoneName,
-          whatsappZoneUrl,
-          whatsappZoneQR,
-          ...candidate
-        } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
-
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(server)
-            .post(`${route}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({ ...candidate, userToLinkId: uuid() });
-        expect(response.status).toBe(404);
-      });
-
-      it('Should return 200 and a created coach without candidate', async () => {
+      it('Should return 200 and a created coach', async () => {
         const {
           password,
           hashReset,
@@ -433,150 +351,6 @@ describe('UserCreation', () => {
             ...coach,
           })
         );
-      });
-      it('Should return 200 and a created coach with candidate', async () => {
-        const {
-          password,
-          hashReset,
-          salt,
-          saltReset,
-          revision,
-          updatedAt,
-          createdAt,
-          lastConnection,
-          whatsappZoneName: coachWhatsappZoneName,
-          whatsappZoneUrl: coachWhatsappZoneUrl,
-          whatsappZoneQR: coachWhatsappZoneQR,
-          referredCandidates: coachReferredCandidates,
-          refererId: coachRefererId,
-          userSocialSituation: coachUserSocialSituation,
-          ...coach
-        } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-        const {
-          password: candidatePassword,
-          hashReset: candidateHashReset,
-          salt: candidateSalt,
-          saltReset: candidateSaltReset,
-          revision: candidateRevision,
-          updatedAt: candidateUpdatedAt,
-          createdAt: candidateCreatedAt,
-          lastConnection: candidateLastConnection,
-          readDocuments: [],
-          organization,
-          candidat,
-          coaches,
-          whatsappZoneName: candidateWhatappZoneCoachName,
-          whatsappZoneUrl: candidateWhatappZoneCoachUrl,
-          whatsappZoneQR: candidateWhatappZoneCoachQR,
-          refererId: candidateRefererId,
-          referredCandidates: candidateReferredCandidates,
-          referer: candidateReferer,
-          userSocialSituation: candidateUserSocialSituation,
-          ...candidate
-        } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, true);
-
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(server)
-            .post(`${route}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({ ...coach, userToLinkId: candidate.id });
-        expect(response.status).toBe(201);
-        expect(response.body).toEqual(
-          expect.objectContaining({
-            ...coach,
-            coaches: [
-              expect.objectContaining({
-                candidat: expect.objectContaining({
-                  ...candidate,
-                }),
-              }),
-            ],
-          })
-        );
-      });
-      it('Should return 404 if created coach with unexisting candidate', async () => {
-        const {
-          password,
-          hashReset,
-          salt,
-          saltReset,
-          revision,
-          updatedAt,
-          createdAt,
-          lastConnection,
-          whatsappZoneName,
-          whatsappZoneUrl,
-          whatsappZoneQR,
-          ...coach
-        } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(server)
-            .post(`${route}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({ ...coach, userToLinkId: uuid() });
-
-        expect(response.status).toBe(404);
-      });
-
-      it('Should return 400 if candidate with another candidate as coach', async () => {
-        const {
-          password,
-          hashReset,
-          salt,
-          saltReset,
-          revision,
-          updatedAt,
-          createdAt,
-          lastConnection,
-          whatsappZoneName,
-          whatsappZoneUrl,
-          whatsappZoneQR,
-          ...candidate
-        } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
-
-        const { id } = await userFactory.create(
-          { role: UserRoles.CANDIDATE },
-          {},
-          true
-        );
-
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(server)
-            .post(`${route}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({ ...candidate, userToLinkId: id });
-        expect(response.status).toBe(400);
-      });
-      it('Should return 400 if coach with another coach as candidate', async () => {
-        const {
-          password,
-          hashReset,
-          salt,
-          saltReset,
-          revision,
-          updatedAt,
-          createdAt,
-          lastConnection,
-          whatsappZoneName,
-          whatsappZoneUrl,
-          whatsappZoneQR,
-          ...coach
-        } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
-
-        const { id } = await userFactory.create(
-          { role: UserRoles.COACH },
-          {},
-          true
-        );
-
-        const response: APIResponse<UsersCreationController['createUser']> =
-          await request(server)
-            .post(`${route}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({ ...coach, userToLinkId: id });
-        expect(response.status).toBe(400);
       });
 
       it('Should return 400 if candidate with organization', async () => {
