@@ -85,31 +85,14 @@ export const Genders = {
 
 export type Gender = (typeof Genders)[keyof typeof Genders];
 
-type AssociatedUserWhereOptions = {
-  [K in string]: { [Op.is]: null } | { [Op.not]: null };
-};
-
 export interface MemberOptions {
   role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: AdminZone[] };
   businessSectorIds: { [Op.in]: string[] };
-  associatedUser: {
-    candidat: {
-      [Op.or]: AssociatedUserWhereOptions[];
-    };
-    coach: {
-      [Op.or]: AssociatedUserWhereOptions[];
-    };
-  };
   employed: { [Op.or]: boolean[] };
 }
 
 export type MemberFilterKey = keyof MemberOptions;
-
-const AssociatedUserFilters: FilterConstant<boolean>[] = [
-  { label: 'Binôme en cours', value: true },
-  { label: 'Sans binôme', value: false },
-];
 
 export const EmployedFilters: FilterConstant<boolean>[] = [
   { label: 'En emploi', value: true },
@@ -119,7 +102,6 @@ export const EmployedFilters: FilterConstant<boolean>[] = [
 export type MemberConstantType =
   | (typeof AdminZoneFilters)[number]['value']
   | (typeof BusinessSectorFilters)[number]['value']
-  | (typeof AssociatedUserFilters)[number]['value']
   | (typeof EmployedFilters)[number]['value'];
 
 export const MemberFilters = ({
@@ -144,11 +126,6 @@ export const MemberFilters = ({
       label: sector.name,
     })) as FilterConstant<string>[],
     title: 'Secteurs d’activité',
-  },
-  {
-    key: 'associatedUser',
-    constants: AssociatedUserFilters,
-    title: 'Membre associé',
   },
   {
     key: 'employed',

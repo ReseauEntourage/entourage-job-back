@@ -106,6 +106,7 @@ export class DatabaseHelper {
       await this.userSocialSituationModel.truncate(destroyOptions);
       await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
+      await this.userProfileNudge.truncate(destroyOptions);
     } catch (err) {
       console.error(err);
     }

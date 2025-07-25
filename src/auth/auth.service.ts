@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -21,7 +22,9 @@ export class AuthService {
     private jwtService: JwtService,
     private usersStatsService: UsersStatsService,
     @Inject(forwardRef(() => UsersService))
-    private usersService: UsersService
+    private usersService: UsersService,
+    @Inject(forwardRef(() => UserProfilesService))
+    private userProfileService: UserProfilesService
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -124,12 +127,20 @@ export class AuthService {
     return this.usersService.findOneComplete(id);
   }
 
-  async findOneUserByMail(email: string, complete = false) {
-    return this.usersService.findOneByMail(email, complete);
+  async findOneUserByMail(email: string) {
+    return this.usersService.findOneByMail(email);
   }
 
-  async findOneUserById(id: string, complete = false) {
-    return this.usersService.findOne(id, complete);
+  async findOneUserProfileByUserId(id: string, complete = false) {
+    return await this.userProfileService.findOneByUserId(id, complete);
+  }
+
+  async findOneUserById(id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  async findOneUserProfileById(id: string, complete = false) {
+    return await this.userProfileService.findOneByUserId(id, complete);
   }
 
   async sendPasswordResetLinkMail(

@@ -37,8 +37,8 @@ export class UsersHelper {
     };
   }
 
-  async findUser(userId: string, complete = false): Promise<User> {
-    const user = await this.usersService.findOne(userId, complete);
+  async findUser(userId: string): Promise<User> {
+    const user = await this.usersService.findOne(userId);
     return user?.toJSON();
   }
 

@@ -116,10 +116,6 @@ describe('PublicProfiles', () => {
               businessSectorId: businessSector2.id,
               order: 2,
             },
-            {
-              businessSectorId: businessSector3.id,
-              order: 3,
-            },
           ],
           nudges: [
             { id: nudgeTips.id },
@@ -190,6 +186,7 @@ describe('PublicProfiles', () => {
         PublicProfilesController['getPublicProfiles']
       > = await request(server).get(`/users/public-profiles`);
       expect(response.status).toBe(200);
+
       // Direct Attributes
       expect(response.body[0]).toHaveProperty('id');
       expect(response.body[0]).toHaveProperty('firstName');
@@ -203,19 +200,6 @@ describe('PublicProfiles', () => {
       // User Profile Attributes
       expect(response.body[0].userProfile).toHaveProperty('department');
       expect(response.body[0].userProfile).toHaveProperty('description');
-      expect(response.body[0].userProfile).toHaveProperty('introduction');
-      expect(response.body[0].userProfile).toHaveProperty('isAvailable');
-      expect(response.body[0].userProfile).toHaveProperty('linkedinUrl');
-      expect(response.body[0].userProfile).toHaveProperty('customNudges');
-      expect(response.body[0].userProfile).toHaveProperty(
-        'userProfileLanguages'
-      );
-      expect(response.body[0].userProfile).toHaveProperty('contracts');
-      expect(response.body[0].userProfile).toHaveProperty('skills');
-      expect(response.body[0].userProfile).toHaveProperty('experiences');
-      expect(response.body[0].userProfile).toHaveProperty('formations');
-      expect(response.body[0].userProfile).toHaveProperty('reviews');
-      expect(response.body[0].userProfile).toHaveProperty('interests');
       expect(response.body[0].userProfile).toHaveProperty('sectorOccupations');
       expect(response.body[0].userProfile).toHaveProperty('nudges');
     });
@@ -251,6 +235,52 @@ describe('PublicProfiles', () => {
       expect(response.status).toBe(200);
       expect(response.body.firstName).toBe(user.firstName);
       expect(response.body.lastName).toBe(user.lastName);
+      expect(response.body.role).toBe(user.role);
+      expect(response.body.id).toBe(user.id);
+      expect(response.body.userProfile).toBeDefined();
+      expect(response.body.userProfile.department).toBe(
+        user.userProfile.department
+      );
+      expect(response.body.userProfile.description).toBe(
+        user.userProfile.description
+      );
+      expect(response.body.userProfile.introduction).toBe(
+        user.userProfile.introduction
+      );
+      expect(response.body.userProfile.linkedinUrl).toBe(
+        user.userProfile.linkedinUrl
+      );
+      expect(response.body.userProfile.sectorOccupations).toBeDefined();
+      expect(response.body.userProfile.sectorOccupations.length).toBe(2);
+      expect(
+        response.body.userProfile.sectorOccupations[0].businessSector
+      ).toBeDefined();
+      expect(
+        response.body.userProfile.sectorOccupations[0].businessSector.id
+      ).toBe(businessSector1.id);
+      expect(
+        response.body.userProfile.sectorOccupations[1].businessSector
+      ).toBeDefined();
+      expect(
+        response.body.userProfile.sectorOccupations[1].businessSector.id
+      ).toBe(businessSector2.id);
+      expect(response.body.userProfile.nudges).toBeDefined();
+      expect(response.body.userProfile.nudges.length).toBe(3);
+      expect(response.body.userProfile.nudges[0].id).toBe(nudgeTips.id);
+      expect(response.body.userProfile.nudges[1].id).toBe(nudgeInterview.id);
+      expect(response.body.userProfile.nudges[2].id).toBe(nudgeNetwork.id);
+      expect(response.body.userProfile.experiences).toBeDefined();
+      expect(response.body.userProfile.experiences.length).toBe(0);
+      expect(response.body.userProfile.formations).toBeDefined();
+      expect(response.body.userProfile.formations.length).toBe(0);
+      expect(response.body.userProfile.skills).toBeDefined();
+      expect(response.body.userProfile.skills.length).toBe(0);
+      expect(response.body.userProfile.contracts).toBeDefined();
+      expect(response.body.userProfile.contracts.length).toBe(0);
+      expect(response.body.userProfile.reviews).toBeDefined();
+      expect(response.body.userProfile.reviews.length).toBe(0);
+      expect(response.body.userProfile.interests).toBeDefined();
+      expect(response.body.userProfile.interests.length).toBe(0);
     });
 
     it('should return 404 if public profile not found', async () => {

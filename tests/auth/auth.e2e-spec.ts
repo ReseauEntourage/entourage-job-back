@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
+import { generateCurrentUserDto } from 'src/auth/dto/current-user.dto';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
@@ -11,6 +12,7 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { MailsServiceMock } from 'tests/mails/mails.service.mock';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
+import { UserProfilesHelper } from 'tests/user-profiles/user-profiles.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
@@ -24,6 +26,7 @@ describe('Auth', () => {
   let authHelper: AuthHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
+  let userProfilesHelper: UserProfilesHelper;
 
   const route = '/auth';
 
@@ -45,6 +48,8 @@ describe('Auth', () => {
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
+    userProfilesHelper =
+      moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
   });
 
   afterAll(async () => {
@@ -242,7 +247,6 @@ describe('Auth', () => {
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
           ...candidate,
-          coaches: [],
           candidat: {
             ...candidate.candidat,
             note: null,
@@ -308,6 +312,11 @@ describe('Auth', () => {
         role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
+      const loggedInCandidatProfile =
+        await userProfilesHelper.findOneProfileByUserId(
+          loggedInCandidat.user.id,
+          false
+        );
 
       const response: APIResponse<AuthController['getCurrent']> = await request(
         server
@@ -316,18 +325,11 @@ describe('Auth', () => {
         .set('authorization', `Bearer ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
-        ...loggedInCandidat.user,
-        coaches: [],
-        candidat: {
-          ...loggedInCandidat.user.candidat,
-          note: null,
-        },
-        organization: null,
+        ...generateCurrentUserDto(
+          loggedInCandidat.user,
+          loggedInCandidatProfile
+        ),
         lastConnection: response.body.lastConnection,
-        createdAt: response.body.createdAt,
-        whatsappZoneName: response.body.whatsappZoneName,
-        whatsappZoneUrl: response.body.whatsappZoneUrl,
-        whatsappZoneQR: response.body.whatsappZoneQR,
       });
     });
     it('Should return 401, if invalid token', async () => {

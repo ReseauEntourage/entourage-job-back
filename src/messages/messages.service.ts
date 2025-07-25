@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -22,6 +22,7 @@ export class MessagesService {
     private internalMessageModel: typeof InternalMessage,
     private mailsService: MailsService,
     private slackService: SlackService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private externalDatabasesService: ExternalDatabasesService
   ) {}
