@@ -25,6 +25,7 @@ import { UserProfileFormation } from './models/user-profile-formation.model';
 import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
+import { UserProfileSkill } from './models/user-profile-skill.model';
 import { UserProfilesController } from './user-profiles.controller';
 import { UserProfilesService } from './user-profiles.service';
 
@@ -38,6 +39,7 @@ import { UserProfilesService } from './user-profiles.service';
       UserProfileSectorOccupation,
       UserProfileNudge,
       UserProfileRecommendation,
+      UserProfileSkill,
       Interest,
       Skill,
       Experience,

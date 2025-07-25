@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { Includeable, Op, Order, WhereOptions } from 'sequelize';
+import { Includeable, Order, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Experience } from 'src/common/experiences/models';
@@ -120,12 +120,10 @@ export const getUserProfileSkillsInclude = (): Includeable[] => [
     model: Skill,
     as: 'skills',
     required: false,
-    attributes: ['id', 'name', 'order'],
-    order: [['order', 'ASC']],
-    where: {
-      order: {
-        [Op.ne]: -1,
-      },
+    attributes: ['id', 'name'],
+    through: {
+      attributes: ['order'] as string[],
+      as: 'userProfileSkills',
     },
   },
 ];
@@ -258,7 +256,6 @@ export const publicProfileOrder: Order = [
     'order',
     'ASC',
   ],
-  [{ model: Skill, as: 'skills' }, 'order', 'ASC'],
   [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
   [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
 ];

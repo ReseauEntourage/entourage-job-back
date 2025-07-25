@@ -1,10 +1,8 @@
 import {
   AllowNull,
-  BelongsTo,
   Column,
   DataType,
   Default,
-  ForeignKey,
   HasMany,
   IsUUID,
   PrimaryKey,
@@ -12,7 +10,7 @@ import {
 } from 'sequelize-typescript';
 import { ExperienceSkill } from 'src/common/experiences/models';
 import { FormationSkill } from 'src/common/formations/models';
-import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileSkill } from 'src/user-profiles/models/user-profile-skill.model';
 import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Skills', timestamps: false })
@@ -27,17 +25,8 @@ export class Skill extends WrapperModel {
   @Column
   name: string;
 
-  @AllowNull(false)
-  @Column
-  order: number;
-
-  @ForeignKey(() => UserProfile)
-  @AllowNull(false)
-  @Column
-  userProfileId: string;
-
-  @BelongsTo(() => UserProfile)
-  userProfile: UserProfile;
+  @HasMany(() => UserProfileSkill)
+  userProfileSkills: UserProfileSkill[];
 
   @HasMany(() => ExperienceSkill)
   experienceSkills: ExperienceSkill[];

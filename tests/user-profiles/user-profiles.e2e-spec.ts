@@ -1456,7 +1456,7 @@ describe('UserProfiles', () => {
                 ],
                 nudges: [{ id: nudgeNetwork.id }],
                 contracts: [{ id: contractCdd.id }, { id: contractCdi.id }],
-                skills: [{ name: 'JavaScript', order: 0 }],
+                skills: [{ name: 'JavaScript' }],
                 userProfileLanguages: [
                   {
                     languageId: languageFrench.id,
@@ -2025,17 +2025,17 @@ describe('UserProfiles', () => {
         });
 
         it('Should return 200 and valid data if candidate update his skills', async () => {
-          const skills = await databaseHelper.createEntities(skillFactory, 2, {
-            userProfileId: loggedInCandidate.user.userProfile.id,
-          });
+          const skills = await databaseHelper.createEntities(
+            skillFactory,
+            2,
+            {}
+          );
           const updatedProfile: UserProfileWithPartialAssociations = {
             skills: skills.map((skill) => ({
               name: skill.name,
             })),
           };
-          const sortedSkills = updatedProfile.skills.sort(
-            (a, b) => a.order - b.order
-          );
+
           const response: APIResponse<
             UserProfilesController['updateByUserId']
           > = await request(server)
@@ -2046,17 +2046,14 @@ describe('UserProfiles', () => {
           expect(response.body.skills).toEqual(
             expect.arrayContaining([
               expect.objectContaining({
-                name: sortedSkills[0].name,
+                name: skills[0].name,
               }),
               expect.objectContaining({
-                name: sortedSkills[1].name,
+                name: skills[1].name,
               }),
             ])
           );
         });
-
-        // Skills
-        /// ... ?
       });
       describe('PUT /profile/uploadImage/:id - Upload user profile picture', () => {
         let path: string;

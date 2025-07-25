@@ -5,7 +5,6 @@ import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department } from 'src/common/locations/locations.types';
-import { Skill } from 'src/common/skills/models';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
 import {
   CvSchemaType,
@@ -13,7 +12,7 @@ import {
 } from 'src/external-services/openai/openai.schemas';
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
-import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { QueuesService } from './queues.service';
@@ -151,7 +150,7 @@ export class ProfileGenerationService {
   ): Promise<void> {
     try {
       // Mise à jour des informations de base du profil utilisateur
-      const userProfileDto: Partial<UserProfile> & {
+      const userProfileDto: Partial<UserProfileWithPartialAssociations> & {
         nudgeIds?: string[];
       } = {};
 
@@ -176,12 +175,12 @@ export class ProfileGenerationService {
       }
 
       if (cvData.skills) {
-        const skills = cvData.skills.map((skill) => ({
+        userProfileDto.skills = cvData.skills.map((skill) => ({
           name: skill.name,
-          order: skill.order,
-          userProfileId: userProfile.id,
+          userProfileSkill: {
+            order: skill.order,
+          },
         }));
-        userProfileDto.skills = skills as Skill[];
       }
 
       if (cvData.experiences) {
