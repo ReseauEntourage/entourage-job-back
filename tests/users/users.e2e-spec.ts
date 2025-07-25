@@ -1,15 +1,14 @@
 /* eslint-disable no-console */
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
+import { QueueMocks, S3Mocks } from '../mocks.types';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { UserRoles } from 'src/users/users.types';
@@ -19,6 +18,7 @@ import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.hel
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
@@ -44,10 +44,8 @@ describe('Users', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();
@@ -707,7 +705,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]=&associatedUser[]= - Read all members as admin with filters', () => {
+        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -839,88 +837,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the associatedUser filters', async () => {
-            const coaches = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.COACH,
-              }
-            );
-
-            const associatedUserCandidates =
-              await databaseHelper.createEntities(userFactory, 2, {
-                role: UserRoles.CANDIDATE,
-              });
-
-            const notAssociatedUserCandidates =
-              await databaseHelper.createEntities(userFactory, 2, {
-                role: UserRoles.CANDIDATE,
-              });
-
-            await Promise.all(
-              associatedUserCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  coaches[index],
-                  candidate
-                );
-              })
-            );
-
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&associatedUser[]=false`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(notAssociatedUserCandidates.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
-          it('Should return 200, and all the coaches that matches the associatedUser filters', async () => {
-            const candidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              }
-            );
-
-            const associatedUserCoaches = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.COACH,
-              }
-            );
-
-            const notAssociatedUserCoaches =
-              await databaseHelper.createEntities(userFactory, 2, {
-                role: UserRoles.COACH,
-              });
-
-            await Promise.all(
-              associatedUserCoaches.map(async (coach, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  coach,
-                  candidates[index]
-                );
-              })
-            );
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&associatedUser[]=false`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(notAssociatedUserCoaches.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
         });
         describe('/members - Read all members as admin with all filters', () => {
           let loggedInAdmin: LoggedUser;
@@ -967,7 +883,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1017,7 +933,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${AdminZones.LYON}&associatedUser[]=true`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${AdminZones.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1454,300 +1370,6 @@ describe('Users', () => {
           expect(response.body.note).toMatch(updatedNote);
           expect(response.body.lastModifiedBy).toBe(loggedInCandidate.user.id);
         });
-        it('Should return 200 and updated userCandidat, if coach updates candidate associated to him', async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-          const updatedNote = 'updated note by coach';
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`)
-              .send({
-                employed: false,
-                note: updatedNote,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body.note).toMatch(updatedNote);
-          expect(response.body.lastModifiedBy).toBe(loggedInCoach.user.id);
-        });
-      });
-      describe('/linkUser/:userId - Link a user', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
-          });
-        });
-
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .send({
-                userToLinkId: loggedInCoach.user.id,
-              });
-          expect(response.status).toBe(401);
-        });
-        it('Should return 403, if user is not admin', async () => {
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`)
-              .send({
-                userToLinkId: loggedInCoach.user.id,
-              });
-          expect(response.status).toBe(403);
-        });
-
-        it('Should return 404 if admin updates candidate with unexisting coach', async () => {
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: uuid(),
-              });
-          expect(response.status).toBe(404);
-        });
-        it('Should return 404 if admin updates coach with unexisting candidate', async () => {
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: uuid(),
-              });
-          expect(response.status).toBe(404);
-        });
-
-        it('Should return 200 if admin updates linked coach for candidate', async () => {
-          const {
-            candidat,
-            coaches,
-            lastConnection,
-            createdAt,
-            organization,
-            whatsappZoneName,
-            whatsappZoneUrl,
-            whatsappZoneQR,
-            refererId,
-            userSocialSituation,
-            ...restCandidate
-          } = loggedInCandidate.user;
-
-          const {
-            candidat: coachCandidat,
-            coaches: coachCoaches,
-            lastConnection: lastConnectionCoach,
-            createdAt: createdAtCoach,
-            organization: coachOrganization,
-            readDocuments,
-            whatsappZoneName: coachWhatsappZoneName,
-            whatsappZoneUrl: coachWhatsappZoneUrl,
-            whatsappZoneQR: coachWhatsappZoneQR,
-            refererId: coachRefererId,
-            referer: coachReferer,
-            referredCandidates: coachReferredCandidates,
-            userSocialSituation: coachUserSocialSituation,
-            companies: coachCompanies,
-            ...restCoach
-          } = loggedInCoach.user;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: loggedInCoach.user.id,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restCandidate,
-              candidat: expect.objectContaining({
-                ...candidat,
-                coach: expect.objectContaining({
-                  ...restCoach,
-                }),
-              }),
-            })
-          );
-        });
-        it('Should return 200 if admin updates linked candidate for coach', async () => {
-          const {
-            candidat: { coach, ...restCandidateCandidat },
-            coaches,
-            lastConnection,
-            createdAt,
-            organization,
-            readDocuments,
-            whatsappZoneName,
-            whatsappZoneUrl,
-            whatsappZoneQR,
-            refererId,
-            referer,
-            referredCandidates,
-            userSocialSituation,
-            companies,
-            ...restCandidate
-          } = loggedInCandidate.user;
-
-          const {
-            candidat: coachCandidat,
-            coaches: coachCoaches,
-            lastConnection: lastConnectionCoach,
-            createdAt: createdAtCoach,
-            organization: coachOrganization,
-            whatsappZoneName: coachWhatsappZoneName,
-            whatsappZoneUrl: coachWhatsappZoneUrl,
-            whatsappZoneQR: coachWhatsappZoneQR,
-            referredCandidates: coachReferredCandidates,
-            userSocialSituation: coachUserSocialSituation,
-            companies: coachCompanies,
-            ...restCoach
-          } = loggedInCoach.user;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: loggedInCandidate.user.id,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restCoach,
-              coaches: [
-                expect.objectContaining({
-                  ...restCandidateCandidat,
-                  candidat: expect.objectContaining({
-                    ...restCandidate,
-                  }),
-                }),
-              ],
-            })
-          );
-        });
-
-        it('Should return 200 if admin removes linked coach for candidate', async () => {
-          ({ loggedInCandidate, loggedInCoach } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-
-          const {
-            candidat,
-            coaches,
-            lastConnection,
-            createdAt,
-            organization,
-            ...restCandidate
-          } = loggedInCandidate.user;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: null,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restCandidate,
-              candidat: expect.objectContaining({
-                ...candidat,
-                coach: null,
-              }),
-            })
-          );
-        });
-        it('Should return 200 if admin removes linked candidate for coach', async () => {
-          ({ loggedInCandidate, loggedInCoach } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-
-          const {
-            candidat,
-            coaches,
-            lastConnection,
-            createdAt,
-            organization,
-            whatsappZoneName,
-            whatsappZoneUrl,
-            whatsappZoneQR,
-            ...restCoach
-          } = loggedInCoach.user;
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: null,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              ...restCoach,
-              coaches: [],
-            })
-          );
-        });
-
-        it('Should return 400 if admin updates normal candidate with another normal candidate as coach', async () => {
-          const otherCandidate = await userFactory.create(
-            { role: UserRoles.CANDIDATE },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: otherCandidate.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400 if admin updates normal coach with another normal coach as candidate', async () => {
-          const otherCoach = await userFactory.create(
-            {
-              role: UserRoles.COACH,
-            },
-            {},
-            true
-          );
-
-          const response: APIResponse<UsersController['linkUser']> =
-            await request(server)
-              .put(`${route}/linkUser/${otherCoach.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                userToLinkId: otherCoach.id,
-              });
-          expect(response.status).toBe(400);
-        });
       });
       describe('/candidate/checkUpdate - Check if update has been made on userCandidat note', () => {
         let loggedInAdmin: LoggedUser;
@@ -1892,100 +1514,6 @@ describe('Users', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(200);
           expect(response.body.noteHasBeenModified).toBe(false);
-        });
-      });
-      describe('/candidate/read/:candidateId - Set note to has been read', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
-          });
-          loggedInReferer = await usersHelper.createLoggedInUser({
-            role: UserRoles.REFERER,
-          });
-        });
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server).put(
-              `${route}/candidate/read/${loggedInCandidate.user.id}`
-            );
-
-          expect(response.status).toBe(401);
-        });
-        it('Should return 403, if admin sets the note has been read', async () => {
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server)
-              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if referer sets the note has been read', async () => {
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server)
-              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInReferer.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if coach sets the note has been read on candidate not related', async () => {
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server)
-              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 200, if candidat sets the note and is not related to a coach', async () => {
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server)
-              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.lastModifiedBy).toBe(null);
-        });
-        it('Should return 200 and userCandidat, if coach sets the note has been read', async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            loggedInCandidate.user.id
-          );
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server)
-              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.lastModifiedBy).toBe(null);
-        });
-        it('Should return 200 and userCandidat, if candidat sets the note has been read', async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            loggedInCoach.user.id
-          );
-          const response: APIResponse<UsersController['setNoteHasBeenRead']> =
-            await request(server)
-              .put(`${route}/candidate/read/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.lastModifiedBy).toBe(null);
         });
       });
     });

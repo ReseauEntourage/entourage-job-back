@@ -1,6 +1,5 @@
-import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Cache } from 'cache-manager';
 import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
@@ -8,7 +7,6 @@ import { BusinessSectorsService } from 'src/common/business-sectors/business-sec
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { PublicProfileFilterKey } from 'src/public-profiles/public-profiles.types';
-import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -38,8 +36,6 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    private queuesService: QueuesService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private mailsService: MailsService,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
@@ -50,20 +46,20 @@ export class UsersService {
     return this.userModel.create(createUserDto, { hooks: true });
   }
 
-  async findOne(id: string, complete = false) {
+  async findOne(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(complete),
-      order: getUserCandidatOrder(complete),
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 
-  async findOneByMail(email: string, complete = false) {
+  async findOneByMail(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(complete),
-      order: getUserCandidatOrder(complete),
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 
@@ -203,14 +199,7 @@ export class UsersService {
           "User"."id" as "userId"
 
         FROM "Users" as "User"
-                     
-        LEFT OUTER JOIN "User_Candidats" AS "coaches" 
-          ON "User"."id" = "coaches"."coachId"
-        LEFT OUTER JOIN "Users" AS "coaches->candidat"
-          ON "coaches"."candidatId" = "coaches->candidat"."id" 
-          AND ("coaches->candidat"."deletedAt" IS NULL)
-        LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
-          ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
+
         LEFT OUTER JOIN "Organizations" AS "organization" 
           ON "User"."OrganizationId" = "organization"."id"
             
@@ -238,28 +227,6 @@ export class UsersService {
       },
       order: [['firstName', 'ASC']],
       include: [
-        {
-          model: UserCandidat,
-          as: 'coaches',
-          attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          required: false,
-          include: [
-            {
-              model: User,
-              as: 'candidat',
-              attributes: [...UserAttributes],
-              required: false,
-              include: [
-                {
-                  model: Organization,
-                  as: 'organization',
-                  attributes: ['name', 'address', 'zone', 'id'],
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
         {
           model: Organization,
           as: 'organization',
@@ -302,13 +269,6 @@ export class UsersService {
 
         FROM "Users" as "User"
                      
-        LEFT OUTER JOIN "User_Candidats" AS "coaches" 
-          ON "User"."id" = "coaches"."coachId"
-        LEFT OUTER JOIN "Users" AS "coaches->candidat"
-          ON "coaches"."candidatId" = "coaches->candidat"."id" 
-          AND ("coaches->candidat"."deletedAt" IS NULL)
-        LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
-          ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
         LEFT OUTER JOIN "Organizations" AS "organization" 
           ON "User"."OrganizationId" = "organization"."id"
             
@@ -485,8 +445,8 @@ export class UsersService {
       limit,
       offset,
       attributes: PublicUserAttributes,
-      include: UserCandidatInclude(true),
-      order: getUserCandidatOrder(true),
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
       where: {
         lastConnection: { [Op.ne]: null },
         role: UserRoles.CANDIDATE,

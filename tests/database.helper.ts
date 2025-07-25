@@ -71,7 +71,7 @@ export class DatabaseHelper {
     private messageModel: typeof Message,
     @InjectModel(Conversation)
     private conversationModel: typeof Conversation,
-    @InjectModel(Message)
+    @InjectModel(ConversationParticipant)
     private conversationParticipantModel: typeof ConversationParticipant,
     @InjectModel(UserSocialSituation)
     private userSocialSituationModel: typeof UserSocialSituation,
@@ -106,6 +106,7 @@ export class DatabaseHelper {
       await this.userSocialSituationModel.truncate(destroyOptions);
       await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
+      await this.userProfileNudge.truncate(destroyOptions);
     } catch (err) {
       console.error(err);
     }

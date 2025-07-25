@@ -48,11 +48,7 @@ import {
   UserRole,
   UserRoles,
 } from './users.types';
-import {
-  getCandidateAndCoachIdDependingOnRoles,
-  getRelatedUser,
-  isRoleIncluded,
-} from './users.utils';
+import { isRoleIncluded } from './users.utils';
 
 // TODO change to /users
 @ApiTags('Users')
@@ -304,75 +300,6 @@ export class UsersController {
       });
 
     return updatedUserCandidat;
-  }
-
-  // match coach and candidate
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
-  @Put('linkUser/:userId')
-  async linkUser(
-    @Param('userId', new ParseUUIDPipe()) userId: string,
-    @Body('userToLinkId') userToLinkId: string
-  ) {
-    const shouldRemoveLinkedUser = userToLinkId === null;
-
-    if (!shouldRemoveLinkedUser && !uuidValidate(userId)) {
-      throw new BadRequestException();
-    }
-
-    const user = await this.usersService.findOne(userId);
-
-    if (!user) {
-      throw new NotFoundException();
-    }
-
-    const usersToLinkIds = [userToLinkId];
-
-    const usersToLinkOrToRemoveIds = shouldRemoveLinkedUser
-      ? getRelatedUser(user)?.map(({ id }) => id)
-      : usersToLinkIds;
-
-    if (usersToLinkOrToRemoveIds) {
-      const userCandidatesToUpdate = await Promise.all(
-        usersToLinkOrToRemoveIds.map(async (userToLinkOrToRemoveId) => {
-          const userToLink = await this.usersService.findOne(
-            userToLinkOrToRemoveId
-          );
-
-          if (!userToLink) {
-            throw new NotFoundException();
-          }
-
-          const { candidateId, coachId } =
-            getCandidateAndCoachIdDependingOnRoles(
-              user,
-              userToLink,
-              shouldRemoveLinkedUser
-            );
-
-          const userCandidate =
-            await this.userCandidatsService.findOneByCandidateId(candidateId);
-
-          if (!userCandidate) {
-            throw new NotFoundException();
-          }
-
-          return { candidateId: candidateId, coachId: coachId };
-        })
-      );
-
-      const updatedUserCandidates =
-        await this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
-          userCandidatesToUpdate,
-          shouldRemoveLinkedUser
-        );
-
-      if (!updatedUserCandidates) {
-        throw new NotFoundException();
-      }
-    }
-
-    return this.usersService.findOne(userId);
   }
 
   @LinkedUser('params.candidateId')

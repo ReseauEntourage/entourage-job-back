@@ -114,4 +114,28 @@ export class FormationsService {
       await Promise.all(formationSkillsPromises);
     }
   }
+
+  async findByUserProfileId(userProfileId: string) {
+    return this.formationModel.findAll({
+      where: { userProfileId },
+      attributes: [
+        'id',
+        'title',
+        'institution',
+        'description',
+        'location',
+        'startDate',
+        'endDate',
+      ],
+      include: [
+        {
+          model: Skill,
+          as: 'skills',
+          attributes: ['id', 'name'],
+          through: { attributes: ['order'], as: 'formationSkills' },
+        },
+      ],
+      order: [['startDate', 'DESC']],
+    });
+  }
 }

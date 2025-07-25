@@ -38,6 +38,7 @@ import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
+import { generateUserProfileDto } from './dto/user-profile.dto';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
@@ -48,6 +49,14 @@ import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 @Controller('user/profile')
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
+
+  @ApiBearerAuth()
+  @Get('/completion')
+  async getProfileCompletion(
+    @UserPayload('id', new ParseUUIDPipe()) id: string
+  ) {
+    return await this.userProfilesService.calculateProfileCompletion(id);
+  }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
   @UseGuards(UserPermissionsGuard)
@@ -76,7 +85,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return updatedUserProfile;
+    return generateUserProfileDto(updatedUserProfile, true);
   }
 
   @Post('/:userId/report')
@@ -283,7 +292,6 @@ export class UserProfilesController {
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
   ) {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
-
     const userProfile = await this.userProfilesService.findOneByUserId(
       userIdToGet,
       true
@@ -301,29 +309,14 @@ export class UserProfilesController {
       currentUserId,
       userIdToGet
     );
+
     const lastReceivedMessage = await this.userProfilesService.getLastContact(
       userIdToGet,
       currentUserId
     );
+
     const averageDelayResponse =
       await this.userProfilesService.getAverageDelayResponse(userIdToGet);
-
-    if (user.role === UserRoles.CANDIDATE) {
-      const userCandidate =
-        await this.userProfilesService.findUserCandidateByCandidateId(
-          userIdToGet
-        );
-
-      if (!userCandidate.hidden) {
-        return getPublicProfileFromUserAndUserProfile(
-          user,
-          userProfile,
-          lastSentMessage?.createdAt,
-          lastReceivedMessage?.createdAt,
-          averageDelayResponse
-        );
-      }
-    }
 
     return getPublicProfileFromUserAndUserProfile(
       user,
