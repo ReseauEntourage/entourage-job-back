@@ -1099,7 +1099,7 @@ export class UserProfilesService {
         u."lastName",
         u.phone,
         (SELECT COUNT(*) > 0 FROM "UserProfileSectorOccupations" upso WHERE upso."userProfileId" = up.id) AS "hasSectorOccupations",
-        (SELECT COUNT(*) > 0 FROM "Skills" s WHERE s."userProfileId" = up.id) AS "hasSkills",
+        (SELECT COUNT(*) > 0 FROM "UserProfileSkills" ups WHERE ups."userProfileId" = up.id) AS "hasSkills",
         (SELECT COUNT(*) > 0 FROM "UserProfileNudges" upn WHERE upn."userProfileId" = up.id AND upn."nudgeId" IS NULL) AS "hasCustomNudges",
         (SELECT COUNT(*) > 0 FROM "Experiences" e WHERE e."userProfileId" = up.id) AS "hasExperiences",
         (SELECT COUNT(*) > 0 FROM "Formations" f WHERE f."userProfileId" = up.id) AS "hasFormations",
