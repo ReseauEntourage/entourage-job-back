@@ -154,7 +154,7 @@ docker compose up
 yarn build
 ```
 
-- Démarrer l'applicatin précédemment compilé
+- Démarrer l'application précédemment compilé
 
 ```
 yarn start
