@@ -8,4 +8,4 @@ yarn db:migrate
 
 echo "==> Running tests..."
 # Passe tous les arguments à la commande test
-npm run test:e2e -- "$@"
+yarn test:e2e -- "$@"
