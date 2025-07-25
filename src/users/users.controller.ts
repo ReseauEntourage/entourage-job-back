@@ -18,7 +18,7 @@ import { passwordStrength } from 'check-password-strength';
 import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
-import { Public, UserPayload } from 'src/auth/guards';
+import { UserPayload } from 'src/auth/guards';
 import {
   UpdateUserDto,
   UpdateUserCandidatDto,
@@ -37,7 +37,7 @@ import {
   UserPermissionsGuard,
 } from './guards';
 import { AdminOverride } from './guards/admin-override.decorator';
-import { User, UserCandidat } from './models';
+import { User } from './models';
 
 import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
@@ -107,68 +107,6 @@ export class UsersController {
     }
 
     throw new BadRequestException();
-  }
-
-  // TODO divide service
-  @Public()
-  @Get('search/candidates')
-  async findCandidates(@Query('query') search: string) {
-    return this.usersService.findAllCandidates(search);
-  }
-
-  // TODO divide service
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
-  @Get('search')
-  async findUsers(
-    @Query('query') search: string,
-    @Query('role') role: UserRole[],
-    @Query('organizationId') organizationId?: string
-  ) {
-    if (organizationId && !uuidValidate(organizationId)) {
-      throw new BadRequestException();
-    }
-
-    return this.usersService.findAllUsers(search, role, organizationId);
-  }
-
-  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
-  @UseGuards(UserPermissionsGuard)
-  @Get('candidate')
-  async findRelatedUser(
-    @UserPayload('id') userId: string,
-    @UserPayload('role') role: UserRole
-  ) {
-    const ids = {
-      candidateId: role === UserRoles.CANDIDATE ? userId : undefined,
-      coachId: role === UserRoles.COACH ? userId : undefined,
-    };
-
-    if (role === UserRoles.REFERER) {
-      const userCandidates = await this.userCandidatsService.findAllByCoachId(
-        ids.coachId
-      );
-
-      if (!userCandidates || userCandidates.length === 0) {
-        throw new NotFoundException();
-      }
-
-      return userCandidates.map((userCandidate) => {
-        return userCandidate.toJSON() as UserCandidat;
-      });
-    }
-
-    const userCandidate =
-      await this.userCandidatsService.findOneByCandidateOrCoachId(
-        ids.candidateId,
-        ids.coachId
-      );
-
-    if (!userCandidate) {
-      throw new NotFoundException();
-    }
-
-    return userCandidate;
   }
 
   @AdminOverride()
