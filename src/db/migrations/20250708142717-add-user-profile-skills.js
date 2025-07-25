@@ -123,7 +123,32 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // This migration is not reversible due to the complexity of the changes.
-    throw new Error('This migration cannot be reversed');
+    /**
+     * Revert the migration by dropping UserProfileSkills,
+     * and restoring the old Skills table.
+     * The data will not be restored.
+     */
+    // 1. Drop UserProfileSkills table
+    await queryInterface.dropTable('UserProfileSkills');
+    // 2. Add order to Skills table
+    await queryInterface.addColumn('Skills', 'order', {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      defaultValue: -1,
+    });
+    // 3. Remove all data in Skills table
+    await queryInterface.sequelize.query(`
+      DELETE FROM "Skills"
+    `);
+
+    // 4. add userProfileId to Skills table
+    await queryInterface.addColumn('Skills', 'userProfileId', {
+      type: Sequelize.UUID,
+      allowNull: null,
+      references: {
+        model: 'UserProfiles',
+        key: 'id',
+      },
+    });
   },
 };
