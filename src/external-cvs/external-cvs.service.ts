@@ -10,7 +10,7 @@ import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department } from 'src/common/locations/locations.types';
 import { SkillsService } from 'src/common/skills/skills.service';
 import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
-import { S3Service } from 'src/external-services/aws/s3.service';
+import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import {
   CvSchemaType,
   SCHEMA_VERSION,
@@ -39,9 +39,12 @@ export class ExternalCvsService {
    * @param file - The file to be uploaded
    * @returns {Promise<string>} - The S3 key of the uploaded file
    */
-  async uploadExternalCV(userId: string, file: Express.Multer.File) {
+  async uploadExternalCV(
+    userId: string,
+    file: Express.Multer.File
+  ): Promise<string> {
     const { path } = file;
-    let uploadedCV: string;
+    let uploadedCV: S3File;
 
     try {
       uploadedCV = await this.s3Service.upload(
@@ -60,7 +63,7 @@ export class ExternalCvsService {
       await this.extractedCVDataModel.destroy({
         where: { userProfileId: userProfile.id },
       });
-      return uploadedCV;
+      return uploadedCV.key;
     } catch (error) {
       throw new InternalServerErrorException();
     } finally {

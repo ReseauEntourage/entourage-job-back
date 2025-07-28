@@ -1,12 +1,19 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
+  InternalServerErrorException,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public, UserPayload } from 'src/auth/guards';
@@ -15,12 +22,15 @@ import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CreateCompanyPipe } from './dto/create-company.pipe';
 import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
 
 @ApiTags('Companies')
 @Throttle(20, 60)
 @Controller('companies')
 export class CompaniesController {
-  constructor(private readonly companiesService: CompaniesService) {}
+  constructor(
+    private readonly companiesService: CompaniesService // private readonly usersService: UsersService
+  ) {}
 
   @Public()
   @Get()
@@ -42,6 +52,54 @@ export class CompaniesController {
     const createdCompany = await this.companiesService.create(createCompanyDto);
 
     return createdCompany;
+  }
+
+  @Throttle(5, 60)
+  @Put()
+  async update(
+    @Body() updateCompanyDto: UpdateCompanyDto,
+    @UserPayload() user: User
+  ) {
+    try {
+      // Todo; user can only have one company
+      const companyId = user.companies?.[0]?.id;
+      if (!companyId) {
+        throw new NotFoundException(`Company not found`);
+      }
+
+      if (updateCompanyDto.businessSectorIds) {
+        await this.companiesService.updateBusinessSectors(
+          companyId,
+          updateCompanyDto.businessSectorIds
+        );
+      }
+
+      const updatedCompany = await this.companiesService.update(
+        companyId,
+        updateCompanyDto
+      );
+
+      return updatedCompany;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  @UseInterceptors(FileInterceptor('file', { dest: 'uploads/' }))
+  @Post('logo')
+  async uploadExternalCV(
+    @UploadedFile() file: Express.Multer.File,
+    @UserPayload() user: User
+  ) {
+    if (!file) {
+      throw new BadRequestException();
+    }
+    try {
+      await this.companiesService.uploadLogo(user.companies[0].id, file);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
   }
 
   @Throttle(1, 60)

@@ -15,7 +15,7 @@ import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
 import { Skill } from 'src/common/skills/models';
-import { S3Service } from 'src/external-services/aws/s3.service';
+import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagesService } from 'src/messages/messages.service';
@@ -975,7 +975,7 @@ export class UserProfilesService {
   async uploadProfileImage(userId: string, file: Express.Multer.File) {
     const { path } = file;
 
-    let uploadedImg: string;
+    let uploadedImg: S3File;
 
     try {
       const fileBuffer = await sharp(path).jpeg({ quality: 75 }).toBuffer();

@@ -51,13 +51,11 @@ export class ExternalCvsController {
     }
 
     try {
-      const externalCvS3Key = await this.externalCvsService.uploadExternalCV(
+      const externalCvS3 = await this.externalCvsService.uploadExternalCV(
         user.id,
         file
       );
-      const cvFile = await this.externalCvsService.findExternalCv(
-        externalCvS3Key
-      );
+      const cvFile = await this.externalCvsService.findExternalCv(externalCvS3);
       return { url: cvFile };
     } catch (error) {
       throw new InternalServerErrorException();
