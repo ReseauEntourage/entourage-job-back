@@ -19,6 +19,8 @@ export const generateUserProfileDto = (
     hasPicture: userProfile.hasPicture,
   } as UserProfileDto;
   if (complete) {
+    dto.allowPhysicalEvents = userProfile.allowPhysicalEvents;
+    dto.allowRemoteEvents = userProfile.allowRemoteEvents;
     dto.experiences = userProfile.experiences;
     dto.formations = userProfile.formations;
     dto.skills = userProfile.skills;
