@@ -22,12 +22,3 @@ export const UserProfilesUserAttributes = [
   'lastConnection',
   'createdAt',
 ];
-
-export const publicProfileAttributes = [
-  'id',
-  'department',
-  'description',
-  'introduction',
-  'linkedinUrl',
-  'hasPicture',
-];

@@ -31,7 +31,7 @@ import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
-import { PublicProfilesModule } from './public-profiles/public-profiles.module';
+import { PublicCVsModule } from './public-cv/public-cvs.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
@@ -139,7 +139,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UserSocialSituationsModule,
     MediasModule,
     OpenAiModule,
-    PublicProfilesModule,
+    PublicCVsModule,
     ProfileGenerationModule,
   ],
   providers: [
