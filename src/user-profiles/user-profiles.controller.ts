@@ -207,7 +207,7 @@ export class UserProfilesController {
       throw new InternalServerErrorException();
     }
 
-    return profileImage;
+    return profileImage.key;
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)

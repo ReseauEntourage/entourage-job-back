@@ -14,7 +14,9 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { User } from 'src/users/models';
+import { CompanyBusinessSector } from './company-business-sector.model';
 import { CompanyUser } from './company-user.model';
 
 @Table({ tableName: 'Companies' })
@@ -67,6 +69,18 @@ export class Company extends Model {
   @Column
   linkedInUrl: string;
 
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Column
+  goal: string;
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Column
+  logoUrl: string;
+
   @HasMany(() => CompanyUser)
   companyUsers: CompanyUser[];
 
@@ -76,4 +90,14 @@ export class Company extends Model {
     otherKey: 'userId',
   })
   users: User[];
+
+  @HasMany(() => CompanyBusinessSector)
+  companyBusinessSectors: CompanyBusinessSector[];
+
+  @BelongsToMany(() => BusinessSector, {
+    through: () => CompanyBusinessSector,
+    foreignKey: 'companyId',
+    otherKey: 'businessSectorId',
+  })
+  businessSectors: BusinessSector[];
 }
