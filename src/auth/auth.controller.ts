@@ -15,11 +15,12 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
-import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
+import { ProfileGenerationService } from 'src/queues/producers/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
+import { generateCurrentUserDto } from './dto/current-user.dto';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @ApiTags('Auth')
@@ -29,7 +30,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly sessionService: SessionsService,
-    private readonly externalCvsService: ExternalCvsService
+    private readonly profileGenerationService: ProfileGenerationService
   ) {}
 
   @Public()
@@ -175,26 +176,29 @@ export class AuthController {
     const usersStats =
       complete === 'true'
         ? await this.authService.getUsersStats(updatedUser.id)
-        : {};
+        : undefined;
 
-    const currentUser = await this.authService.findOneUserById(
+    const currentUser = await this.authService.findOneUserById(updatedUser.id);
+    const currentUserProfile = await this.authService.findOneUserProfileById(
       updatedUser.id,
       complete === 'true'
     );
     const hasExtractedCvData =
       complete === 'true'
-        ? await this.externalCvsService.hasExtractedCVData(
+        ? await this.profileGenerationService.hasExtractedCVData(
             currentUser.userProfile.id
           )
         : undefined;
 
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
-    return {
-      ...currentUser.toJSON(),
-      ...(usersStats || {}),
+    return generateCurrentUserDto(
+      currentUser,
+      currentUserProfile,
+      usersStats,
       hasExtractedCvData,
-    };
+      complete === 'true'
+    );
   }
 
   @Public()

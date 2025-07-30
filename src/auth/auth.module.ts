@@ -1,10 +1,12 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
+import { QueuesModule } from 'src/queues/producers/queues.module';
 import { SessionsModule } from 'src/sessions/sessions.module';
 import { SessionsService } from 'src/sessions/sessions.service';
+import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { AuthController } from './auth.controller';
@@ -21,8 +23,10 @@ import { JwtStrategy, LocalStrategy } from './guards';
     MailsModule,
     forwardRef(() => UsersModule),
     forwardRef(() => UsersStatsModule),
+    forwardRef(() => UserProfilesModule),
     SessionsModule,
-    ExternalCvsModule,
+    forwardRef(() => QueuesModule),
+    ProfileGenerationModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, SessionsService, LocalStrategy, JwtStrategy],

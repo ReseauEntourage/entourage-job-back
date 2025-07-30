@@ -117,4 +117,28 @@ export class ExperiencesService {
       await Promise.all(experienceSkillsPromises);
     }
   }
+
+  async findByUserProfileId(userProfileId: string) {
+    return this.experienceModel.findAll({
+      where: { userProfileId },
+      attributes: [
+        'id',
+        'title',
+        'company',
+        'description',
+        'location',
+        'startDate',
+        'endDate',
+      ],
+      include: [
+        {
+          model: Skill,
+          as: 'skills',
+          attributes: ['id', 'name'],
+          through: { attributes: ['order'], as: 'experienceSkills' },
+        },
+      ],
+      order: [['startDate', 'DESC']],
+    });
+  }
 }

@@ -4,8 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import * as redisStore from 'cache-manager-redis-store';
-import { ClientOpts } from 'redis';
+import * as ioRedisStore from 'cache-manager-ioredis';
+import { RedisOptions } from 'ioredis';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
 import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
@@ -31,7 +31,8 @@ import { MediasModule } from './medias/medias.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
-import { PublicProfilesModule } from './public-profiles/public-profiles.module';
+import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
+import { PublicCVsModule } from './public-cv/public-cvs.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
@@ -46,7 +47,7 @@ const ENV = `${process.env.NODE_ENV}`;
 
 const getParsedURI = (uri: string) => new URL(uri);
 
-export function getRedisOptions(): Partial<ClientOpts> {
+export function getRedisOptions(): Partial<RedisOptions> {
   if (ENV === 'dev-test' || ENV === 'test') {
     return {};
   }
@@ -78,7 +79,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     password: password,
     database: pathname.replace('/', ''),
     autoLoadModels: true,
-    synchronize: true,
+    // synchronize: true,
     logging: false,
   };
 }
@@ -102,11 +103,11 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
         redis: redisOptions,
       }),
     }),
-    CacheModule.register<ClientOpts>({
+    CacheModule.register<RedisOptions>({
       isGlobal: true,
-      store: redisStore,
+      store: ioRedisStore,
       ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
-      // Nous conservons les options Redis pour le cache-manager-redis-store car il a besoin de ces options au format standard
+      // Configuration avec cache-manager-ioredis qui est compatible avec ioredis
     }),
     RevisionsModule,
     UserProfilesModule,
@@ -139,8 +140,9 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     UserSocialSituationsModule,
     MediasModule,
     OpenAiModule,
-    PublicProfilesModule,
+    PublicCVsModule,
     CompaniesModule,
+    ProfileGenerationModule,
   ],
   providers: [
     {

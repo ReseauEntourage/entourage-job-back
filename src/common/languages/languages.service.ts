@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { Language } from './models';
 
@@ -7,7 +8,9 @@ import { Language } from './models';
 export class LanguagesService {
   constructor(
     @InjectModel(Language)
-    private languageModel: typeof Language
+    private languageModel: typeof Language,
+    @InjectModel(UserProfileLanguage)
+    private userProfileLanguageModel: typeof UserProfileLanguage
   ) {}
 
   async findAll(limit: number, offset: number, search = '') {
@@ -27,5 +30,20 @@ export class LanguagesService {
     });
 
     return language || null;
+  }
+
+  async findLanguagesByUserProfileId(userProfileId: string) {
+    return this.userProfileLanguageModel.findAll({
+      where: { userProfileId },
+      attributes: ['id', 'level'],
+      include: [
+        {
+          model: Language,
+          as: 'language',
+          required: false,
+          attributes: ['id', 'name'],
+        },
+      ],
+    });
   }
 }

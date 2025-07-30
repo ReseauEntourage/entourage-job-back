@@ -1,6 +1,4 @@
-import { execFile, ExecFileException } from 'child_process';
 import fs from 'fs';
-import path from 'path';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Experience } from 'src/common/experiences/models';
@@ -15,9 +13,9 @@ import {
   CvSchemaType,
   SCHEMA_VERSION,
 } from 'src/external-services/openai/openai.schemas';
+import { S3Service } from 'src/external-services/aws/s3.service';
+import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
-import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
-import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { ExtractedCVData } from './models/extracted-cv-data.model';
 
@@ -28,9 +26,7 @@ export class ExternalCvsService {
     private userProfileService: UserProfilesService,
     private openAiService: OpenAiService,
     @InjectModel(ExtractedCVData)
-    private extractedCVDataModel: typeof ExtractedCVData,
-    private languagesService: LanguagesService,
-    private skillService: SkillsService
+    private extractedCVDataModel: typeof ExtractedCVData
   ) {}
 
   /**
@@ -105,35 +101,6 @@ export class ExternalCvsService {
     });
   }
 
-  async shouldExtractCV(
-    userProfileId: string,
-    fileHash: string
-  ): Promise<boolean> {
-    try {
-      const currentSchemaVersion = SCHEMA_VERSION;
-      // Vérification si des données extraites existent déjà pour cet utilisateur
-      const existingData = await this.extractedCVDataModel.findOne({
-        where: { userProfileId },
-      });
-
-      // Si aucune donnée n'existe, une extraction est nécessaire
-      if (!existingData) {
-        return true;
-      }
-
-      // Une nouvelle extraction est nécessaire si :
-      // - le hash du fichier est différent, ou
-      // - la version du schéma est différente
-      return (
-        existingData.fileHash !== fileHash ||
-        existingData.schemaVersion !== currentSchemaVersion
-      );
-    } catch (error) {
-      // En cas d'erreur, effectuer une extraction par sécurité
-      return true;
-    }
-  }
-
   async extractDataFromCVImages(
     base64ImageArray: string[]
   ): Promise<CvSchemaType> {
@@ -142,264 +109,5 @@ export class ExternalCvsService {
     } catch (error) {
       throw error;
     }
-  }
-
-  async getExtractedCVData(
-    userProfileId: string
-  ): Promise<CvSchemaType | null> {
-    try {
-      const existingData = await this.extractedCVDataModel.findOne({
-        where: { userProfileId },
-      });
-
-      if (!existingData) {
-        return null;
-      }
-
-      return existingData.data as CvSchemaType;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async hasExtractedCVData(userProfileId: string): Promise<boolean> {
-    try {
-      const existingData = await this.extractedCVDataModel.findOne({
-        where: { userProfileId },
-      });
-      return !!existingData;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async saveExtractedCVData(
-    userProfileId: string,
-    data: CvSchemaType,
-    fileHash: string
-  ): Promise<ExtractedCVData> {
-    try {
-      const currentSchemaVersion = SCHEMA_VERSION;
-      // Vérification si des données existent déjà pour cet utilisateur
-      const existingData = await this.extractedCVDataModel.findOne({
-        where: { userProfileId },
-      });
-
-      if (existingData) {
-        // Mise à jour des données existantes
-        await existingData.update({
-          data,
-          fileHash,
-          schemaVersion: currentSchemaVersion,
-        });
-        return existingData;
-      } else {
-        // Création d'une nouvelle entrée
-        return await this.extractedCVDataModel.create({
-          userProfileId,
-          data,
-          fileHash,
-          schemaVersion: currentSchemaVersion,
-        });
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
-   * Populates user profile with data extracted from a CV
-   * @param userId - The ID of the user
-   * @param cvData - The data extracted from the CV
-   * @returns {Promise<void>}
-   */
-  async populateUserProfileFromCVData(
-    userId: string,
-    cvData: CvSchemaType
-  ): Promise<void> {
-    try {
-      // Mise à jour des informations de base du profil utilisateur
-      const userProfileDto: UserProfileWithPartialAssociations = {};
-
-      const userProfile = await this.userProfileService.findOneByUserId(userId);
-      if (!userProfile) {
-        throw new InternalServerErrorException();
-      }
-
-      userProfileDto.userId = userId;
-
-      if (cvData.introduction) {
-        userProfileDto.introduction = cvData.introduction;
-      }
-      if (cvData.description) {
-        userProfileDto.description = cvData.description;
-      }
-      if (cvData.department) {
-        userProfileDto.department = cvData.department as Department;
-      }
-      if (cvData.linkedinUrl) {
-        userProfileDto.linkedinUrl = cvData.linkedinUrl;
-      }
-
-      if (cvData.skills) {
-        userProfileDto.skills = cvData.skills.map((skill) => ({
-          name: skill.name,
-          userProfileSkill: {
-            order: skill.order,
-          },
-        }));
-      }
-
-      if (cvData.experiences) {
-        const experiences = cvData.experiences.map((experience) => {
-          let startDate = new Date();
-          let endDate = new Date();
-
-          try {
-            startDate = new Date(experience.startDate);
-            if (isNaN(startDate.getTime())) {
-              startDate = new Date();
-            }
-          } catch (e) {}
-
-          try {
-            endDate = new Date(experience.endDate);
-            if (isNaN(endDate.getTime())) {
-              endDate = new Date();
-            }
-          } catch (e) {}
-
-          return {
-            title: experience.title,
-            description: experience.description,
-            company: experience.company,
-            location: experience.location,
-            startDate,
-            endDate,
-          };
-        });
-        userProfileDto.experiences = experiences as Experience[];
-      }
-
-      if (cvData.formations) {
-        const formations = cvData.formations.map((formation) => {
-          let startDate = new Date();
-          let endDate = new Date();
-
-          try {
-            startDate = new Date(formation.startDate);
-            if (isNaN(startDate.getTime())) {
-              startDate = new Date();
-            }
-          } catch (e) {}
-
-          try {
-            endDate = new Date(formation.endDate);
-            if (isNaN(endDate.getTime())) {
-              endDate = new Date();
-            }
-          } catch (e) {}
-          return {
-            title: formation.title,
-            description: formation.description,
-            location: formation.location,
-            startDate,
-            endDate,
-          };
-        });
-        userProfileDto.formations = formations as Formation[];
-      }
-
-      if (cvData.interests) {
-        const interests = cvData.interests.map((interest) => ({
-          name: interest.name,
-        }));
-        userProfileDto.interests = interests as Interest[];
-      }
-
-      if (cvData.languages) {
-        const userProfileLanguages = await Promise.all(
-          cvData.languages.map(async (cvDataLang) => {
-            const language = await this.languagesService.findByValue(
-              cvDataLang.value
-            );
-            if (language) {
-              return {
-                userProfileId: userProfile.id,
-                languageId: language.id,
-                level: cvDataLang.level,
-              };
-            }
-          })
-        );
-
-        userProfileDto.userProfileLanguages =
-          userProfileLanguages as UserProfileLanguage[];
-      }
-
-      await this.userProfileService.updateByUserId(userId, userProfileDto);
-    } catch (error) {
-      console.error(`Error populating user profile for user ${userId}`);
-      throw new InternalServerErrorException(
-        'Failed to populate user profile from CV data'
-      );
-    }
-  }
-
-  async convertPdfToPngBase64(pdfPath: string): Promise<string[]> {
-    const outputDir = path.join(__dirname, 'output');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir);
-    }
-
-    const outputPrefix = 'converted';
-    const pdftocairoPath = detectPdftocairoPath();
-
-    return new Promise((resolve, reject) => {
-      // Convertir toutes les pages du PDF
-      const args = [
-        '-png',
-        '-scale-to',
-        '1024',
-        pdfPath,
-        path.join(outputDir, outputPrefix),
-      ];
-
-      execFile(pdftocairoPath, args, async (error: ExecFileException) => {
-        if (error)
-          return reject(new Error(`Erreur conversion PDF: ${error.message}`));
-
-        try {
-          // Lire tous les fichiers générés dans le répertoire
-          const files = fs
-            .readdirSync(outputDir)
-            .filter(
-              (file) => file.startsWith(outputPrefix) && file.endsWith('.png')
-            )
-            .sort((a, b) => {
-              // Format attendu: "converted-[page].png"
-              const pageA = parseInt(a.split('-')[1]?.replace('.png', ''));
-              const pageB = parseInt(b.split('-')[1]?.replace('.png', ''));
-              return pageA - pageB;
-            });
-
-          const pagesBase64: string[] = [];
-
-          // Lire chaque fichier et le convertir en base64
-          for (const file of files) {
-            const filePath = path.join(outputDir, file);
-            const buffer = fs.readFileSync(filePath);
-            pagesBase64.push(buffer.toString('base64'));
-
-            // Supprimer le fichier après utilisation
-            fs.unlinkSync(filePath);
-          }
-
-          resolve(pagesBase64);
-        } catch (err) {
-          reject(new Error(`Erreur traitement des images: ${err}`));
-        }
-      });
-    });
   }
 }

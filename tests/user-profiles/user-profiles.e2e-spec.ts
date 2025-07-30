@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import moment from 'moment';
 import request from 'supertest';
-import { CacheMocks, QueueMocks, S3Mocks } from '../mocks.types';
+import { QueueMocks, S3Mocks } from '../mocks.types';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
@@ -12,7 +11,7 @@ import { Contract } from 'src/common/contracts/models';
 import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import {
   UserProfile,
   UserProfileWithPartialAssociations,
@@ -31,6 +30,7 @@ import { DatabaseHelper } from 'tests/database.helper';
 import { LanguageHelper } from 'tests/languages/language.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
@@ -79,10 +79,8 @@ describe('UserProfiles', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();
@@ -1441,6 +1439,7 @@ describe('UserProfiles', () => {
       describe('GET /user/profile/:userId - Get user profile', () => {
         let loggedInUser: LoggedUser;
         let randomUser: User;
+        let randomUserProfile: UserProfile;
         beforeEach(async () => {
           loggedInUser = await usersHelper.createLoggedInUser();
 
@@ -1499,7 +1498,11 @@ describe('UserProfiles', () => {
           });
 
           // Re fetch the random user to ensure the profile is up-to-date
-          randomUser = await usersHelper.findUser(randomUser.id, true);
+          randomUser = await usersHelper.findUser(randomUser.id);
+          randomUserProfile = await userProfilesHelper.findOneProfileByUserId(
+            randomUser.id,
+            true
+          );
         });
         it('Should return 401, if user not logged in', async () => {
           const response: APIResponse<UserProfilesController['findByUserId']> =
@@ -1514,7 +1517,11 @@ describe('UserProfiles', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(randomUser, true)
+              userProfilesHelper.mapUserProfileFromUser(
+                randomUser,
+                randomUserProfile,
+                true
+              )
             )
           );
         });
@@ -1536,7 +1543,11 @@ describe('UserProfiles', () => {
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...userProfilesHelper.mapUserProfileFromUser(randomUser, true),
+              ...userProfilesHelper.mapUserProfileFromUser(
+                randomUser,
+                randomUserProfile,
+                true
+              ),
               lastReceivedMessage:
                 internalMessageReceived.createdAt.toISOString(),
               lastSentMessage: internalMessageSent.createdAt.toISOString(),
@@ -1718,17 +1729,9 @@ describe('UserProfiles', () => {
           const updatedUser = await usersHelper.findUser(
             loggedInCandidate.user.id
           );
-
-          const {
-            nudges: updatedNudges,
-            sectorOccupations: updatedSectorOccupation,
-            ...restUpdatedUserProfile
-          } = updatedUser.userProfile;
-
           expect(response.status).toBe(200);
           expect(response.body).toEqual(
             expect.objectContaining({
-              ...restUpdatedUserProfile,
               sectorOccupations: [
                 expect.objectContaining({
                   businessSector: expect.objectContaining({ name: 'Sector 1' }),

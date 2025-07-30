@@ -83,14 +83,14 @@ Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, v
 containers:
 
 ```
-docker exec -it linkedout-api-worker sh
+docker exec -it linkedout-api-worker bash
 rm -r node_modules/sharp/
 npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
 ```
-docker exec -it linkedout-api-test sh
+docker exec -it linkedout-api-test bash
 rm -r node_modules/sharp/
 npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
@@ -148,19 +148,19 @@ docker compose up
 
 ### Lancer le projet en mode production
 
-Compiler l'applicaiton
+- Compiler l'application
 
 ```
 yarn build
 ```
 
-Démarrer l'applicatin précédemment compilé
+- Démarrer l'application précédemment compilé
 
 ```
 yarn start
 ```
 
-Démarrer le worker
+- Démarrer le worker
 
 ```
 yarn worker:start:dev
@@ -178,29 +178,42 @@ yarn worker:start
 yarn test:eslint
 ```
 
-Ces deux commandes sont lancées par les hooks de commit.
+> Ces deux commandes sont lancées par les hooks de commit.
 
 ## Tests
 
-### Initialisation de la BDD de test
-
-```
-docker run --name linkedout-db-test -e POSTGRES_PASSWORD=linkedout -e POSTGRES_USER=linkedout -e POSTGRES_DB=linkedout -d -p 54300:5432 postgres
-```
+## Initialisation de la BDD de test
 
 Vous avez besoin des données du fichier `.env.test` pour les tests en local, et de renseigner le champ _DATABASE_URL_ (
 _ex:_ `postgresql://linkedout:linkedout@localhost:54300/linkedout`) avec l'adresse de l'instance **_Docker_**
 
+## Lancer les tests
+
+### En local, sur votre machine directement
+
+- Assurez vous d'avoir initialisé les migrations
+
 ```
-NODE_ENV=dev-test yarn db:migrate
+$> docker exec -it linkedout-api-test sh
 ```
 
-### Lancer les tests
+- Executez les tests e2e
 
-- `yarn test:e2e` est utilisé pour l'intégration continue pour lancer les tests avec les valeurs du fichier `.env`
-- `NODE_ENV=dev-test yarn test:e2e` pour lancer les tests en local, en utilisant le fichier `.env.test`
+```
+$> yarn run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
+```
 
-## Déploiement
+### Avec docker
+
+- L'initialisation de la base de donnée pour les tests est automatique **_avec Docker_**, et il utilise les informations contenues dans .env.test.
+
+  Le script docker-entrypoint.test.sh est executé, il commence par supprimer la base existante, la recréé, lance toutes les migrations de la branche courante et enfin execute les tests e2e.
+
+```
+$> docker compose -f docker-compose.test.yml run --rm linkedout-api-test {optionnel: test file path} {optionnel: -t "Name of test"}
+```
+
+# Déploiement
 
 Le déploiement se fait automatiquement grâce à **_Github Actions_** et **_Heroku_**.
 

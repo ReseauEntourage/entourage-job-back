@@ -8,8 +8,11 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 
 type ProviderMock<T> = { [K in keyof T]: jest.Mock };
 
-export const QueueMocks: Partial<ProviderMock<Queue>> = {
+export const QueueMocks: Partial<ProviderMock<Queue>> & {
+  redisOptions: Record<string, unknown>;
+} = {
   add: jest.fn(),
+  redisOptions: {},
 } as const;
 
 export const CacheMocks: Partial<ProviderMock<Cache>> = {
