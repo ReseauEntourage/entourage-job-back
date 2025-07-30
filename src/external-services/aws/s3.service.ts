@@ -65,7 +65,7 @@ export class S3Service {
 
     await upload.done();
 
-    // Si on ne demande pas l'URL publique ou si le fichier est privé, retourner seulement la clé
+    // If the public URL is not requested or the file is private, return only the key
     if (isPrivate || !returnPublicUrl) {
       return { key, publicUrl: null };
     }
