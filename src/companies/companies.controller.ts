@@ -50,7 +50,7 @@ export class CompaniesController {
     return createdCompany;
   }
 
-  @Throttle(1, 30)
+  @Throttle(1, 60)
   @Post(':companyId/invite-collaborators')
   async inviteCollaborators(
     @Param('companyId') companyId: string,
