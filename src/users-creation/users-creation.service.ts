@@ -205,7 +205,7 @@ export class UsersCreationService {
       throw new Error(`Invitation with ID ${invitationId} not found`);
     }
     if (invitation.userId) {
-      throw new Error(
+      throw new ConflictException(
         `Invitation with ID ${invitationId} is already linked to a user`
       );
     }
