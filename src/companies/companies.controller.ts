@@ -61,7 +61,7 @@ export class CompaniesController {
     @UserPayload() user: User
   ) {
     try {
-      // Todo; user can only have one company
+      // TODO: user can only have one company
       const companyId = user.companies?.[0]?.id;
       if (!companyId) {
         throw new NotFoundException(`Company not found`);
