@@ -28,9 +28,7 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 @Throttle(20, 60)
 @Controller('companies')
 export class CompaniesController {
-  constructor(
-    private readonly companiesService: CompaniesService // private readonly usersService: UsersService
-  ) {}
+  constructor(private readonly companiesService: CompaniesService) {}
 
   @Public()
   @Get()
@@ -88,7 +86,7 @@ export class CompaniesController {
 
   @UseInterceptors(FileInterceptor('file', { dest: 'uploads/' }))
   @Post('logo')
-  async uploadExternalCV(
+  async uploadCompanyLogo(
     @UploadedFile() file: Express.Multer.File,
     @UserPayload() user: User
   ) {
