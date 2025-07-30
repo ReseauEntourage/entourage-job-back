@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
-import { InviteCollaboratorsDto } from 'src/companies/dto/invite-collaborators.dto';
-import { Company } from 'src/companies/models/company.model';
+import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import {
@@ -433,26 +432,23 @@ export class MailsService {
     });
   }
 
-  async sendCompanyInvitationToCollaborators(
-    sender: User,
-    company: Company,
-    inviteCollaboratorsDto: InviteCollaboratorsDto
-  ) {
-    if (
-      !inviteCollaboratorsDto.emails ||
-      inviteCollaboratorsDto.emails.length === 0
-    ) {
-      throw new Error('No emails provided for invitation');
-    }
-
+  async sendCompanyInvitation({
+    sender,
+    email,
+    invitationWithCompany,
+  }: {
+    sender: User;
+    email: string;
+    invitationWithCompany: CompanyInvitation;
+  }) {
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: inviteCollaboratorsDto.emails,
+      toEmail: email,
       templateId: MailjetTemplates.COMPANY_COLLABORATORS_INVITATION,
       variables: {
-        companyName: company.name,
+        companyName: invitationWithCompany.company.name,
         senderFirstName: sender.firstName,
         senderLastName: sender.lastName,
-        registerUrl: `${process.env.FRONT_URL}/inscription?companyId=${company.id}&flow=coach`,
+        registerUrl: `${process.env.FRONT_URL}/inscription?companyId=${invitationWithCompany.company.id}&flow=coach&invitationId=${invitationWithCompany.id}`,
         zone: sender.zone, // We don't have zone of the collaborators, so we use the sender's zone by default
       },
     });

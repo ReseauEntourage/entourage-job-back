@@ -60,6 +60,11 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsString()
   @IsOptional()
+  invitationId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   companyRole?: string;
 
   @ApiProperty()

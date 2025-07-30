@@ -15,7 +15,7 @@ import { Public, UserPayload } from 'src/auth/guards';
 import {
   COMPANY_USER_ROLE_CAN_BE_ADMIN,
   CompanyUserRole,
-} from 'src/companies/models/company-user.utils';
+} from 'src/companies/company-user.utils';
 import { getContactStatusFromUserRole } from 'src/external-services/mailjet/mailjet.utils';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
@@ -153,6 +153,14 @@ export class UsersCreationController {
         sectorOccupations: createUserRegistrationDto.sectorOccupations,
         optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
+
+      if (createUserRegistrationDto.invitationId) {
+        // Link the invitation to the user
+        await this.usersCreationService.linkInvitationToUser(
+          createdUserId,
+          createUserRegistrationDto.invitationId
+        );
+      }
 
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId

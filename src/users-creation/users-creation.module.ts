@@ -20,7 +20,6 @@ import { UsersCreationService } from './users-creation.service';
     ExternalDatabasesModule,
     forwardRef(() => UserSocialSituationsModule),
     CompaniesModule,
-
     QueuesModule,
     UtmModule,
   ],
