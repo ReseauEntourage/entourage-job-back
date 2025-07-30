@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { MailsModule } from 'src/mails/mails.module';
+import { UsersModule } from 'src/users/users.module';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
@@ -13,9 +14,15 @@ import { Company } from './models/company.model';
   imports: [
     SequelizeModule.forFeature([Company, CompanyUser, CompanyInvitation]),
     MailsModule,
+    UsersModule,
   ],
   controllers: [CompaniesController],
   providers: [CompaniesService, CompanyUsersService, CompanyInvitationsService],
-  exports: [CompaniesService, CompanyUsersService, CompanyInvitationsService],
+  exports: [
+    SequelizeModule,
+    CompaniesService,
+    CompanyUsersService,
+    CompanyInvitationsService,
+  ],
 })
 export class CompaniesModule {}

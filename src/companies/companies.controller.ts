@@ -7,11 +7,13 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
+import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { User } from 'src/users/models';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
@@ -50,7 +52,8 @@ export class CompaniesController {
     return createdCompany;
   }
 
-  @Throttle(1, 60)
+  @Throttle(5, 60)
+  @UseGuards(IsCompanyAdminGuard)
   @Post(':companyId/invite-collaborators')
   async inviteCollaborators(
     @Param('companyId') companyId: string,

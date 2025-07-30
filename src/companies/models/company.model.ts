@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsString, MinLength } from 'class-validator';
 import {
   AllowNull,
   BelongsToMany,
@@ -35,6 +35,7 @@ export class Company extends Model {
   @IsString()
   @AllowNull(false)
   @Column
+  @MinLength(2)
   name: string;
 
   @ApiProperty()
