@@ -35,7 +35,7 @@ export class ProfileGenerationService {
    * @returns ID du job créé
    */
   async generateProfileFromPDF(params: GenerateProfileFromPDFJob) {
-    const job = await this.queuesService.addToWorkQueue(
+    const job = await this.queuesService.addToProfileGenerationQueue(
       Jobs.GENERATE_PROFILE_FROM_PDF,
       params
     );

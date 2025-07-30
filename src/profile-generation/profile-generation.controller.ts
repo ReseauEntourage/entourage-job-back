@@ -91,16 +91,10 @@ export class ProfileGenerationController {
           await this.profileGenerationService.getExtractedCVData(
             userProfile.id
           );
-      }
-
-      // Remplir le profil utilisateur avec les données extraites du CV
-      if (extractedCVData) {
         await this.profileGenerationService.populateUserProfileFromCVData(
           userId,
           extractedCVData
         );
-
-        return;
       }
     } catch (error) {
       console.error('Error extracting CV data:', error);
