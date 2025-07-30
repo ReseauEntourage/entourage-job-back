@@ -1,17 +1,8 @@
 import _ from 'lodash';
 import { Includeable, Order, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
-import { Contract } from 'src/common/contracts/models';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
-import { Interest } from 'src/common/interests/models';
-import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
-import { Review } from 'src/common/reviews/models';
-import { Skill } from 'src/common/skills/models';
-import { UserProfileLanguage } from './user-profile-language.model';
-import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 
 export const getUserProfileNudgesInclude = (
@@ -30,25 +21,6 @@ export const getUserProfileNudgesInclude = (
         attributes: [] as string[],
         as: 'userProfileNudges',
       },
-    },
-  ];
-};
-
-export const getUserProfileCustomNudgesInclude = (): Includeable[] => {
-  return [
-    {
-      model: UserProfileNudge,
-      as: 'customNudges',
-      attributes: ['id', 'content', 'createdAt'],
-      required: false,
-      include: [
-        {
-          model: Nudge,
-          as: 'nudge',
-          required: false,
-          attributes: ['id', 'value', 'nameRequest', 'nameOffer', 'order'],
-        },
-      ],
     },
   ];
 };
@@ -85,128 +57,6 @@ export const getUserProfileSectorOccupationsInclude = (
   ];
 };
 
-export const getUserProfileLanguagesInclude = (): Includeable[] => [
-  {
-    model: UserProfileLanguage,
-    as: 'userProfileLanguages',
-    required: false,
-    attributes: ['id', 'level'],
-    include: [
-      {
-        model: Language,
-        as: 'language',
-        required: false,
-        attributes: ['id', 'name'],
-      },
-    ],
-  },
-];
-
-export const getUserProfileContractsInclude = (): Includeable[] => [
-  {
-    model: Contract,
-    as: 'contracts',
-    required: false,
-    attributes: ['id', 'name'],
-    through: {
-      attributes: ['id'],
-      as: 'userProfileContracts',
-    },
-  },
-];
-
-export const getUserProfileSkillsInclude = (): Includeable[] => [
-  {
-    model: Skill,
-    as: 'skills',
-    required: false,
-    attributes: ['id', 'name'],
-    through: {
-      attributes: ['order'] as string[],
-      as: 'userProfileSkills',
-    },
-  },
-];
-
-export const getUserProfileExperiencesInclude = (): Includeable[] => [
-  {
-    model: Experience,
-    as: 'experiences',
-    required: false,
-    attributes: [
-      'id',
-      'title',
-      'company',
-      'description',
-      'location',
-      'startDate',
-      'endDate',
-    ],
-    order: [['startDate', 'DESC']],
-    include: [
-      {
-        model: Skill,
-        as: 'skills',
-        required: false,
-        attributes: ['id', 'name'],
-        through: {
-          attributes: ['order'] as string[],
-          as: 'experienceSkills',
-        },
-      },
-    ],
-  },
-];
-
-export const getUserProfileFormationsInclude = (): Includeable[] => [
-  {
-    model: Formation,
-    as: 'formations',
-    required: false,
-    attributes: [
-      'id',
-      'title',
-      'institution',
-      'description',
-      'location',
-      'startDate',
-      'endDate',
-    ],
-    order: [['startDate', 'DESC']],
-    include: [
-      {
-        model: Skill,
-        as: 'skills',
-        required: false,
-        attributes: ['id', 'name'],
-        through: {
-          attributes: ['order'] as string[],
-          as: 'formationSkills',
-        },
-      },
-    ],
-  },
-];
-
-export const getUserProfileReviewsInclude = (): Includeable[] => [
-  {
-    model: Review,
-    as: 'reviews',
-    required: false,
-    attributes: ['id', 'authorName', 'authorLabel', 'content'],
-  },
-];
-
-export const getUserProfileInterestsInclude = (): Includeable[] => [
-  {
-    model: Interest,
-    as: 'interests',
-    required: false,
-    attributes: ['id', 'name', 'order'],
-    order: [['order', 'ASC']],
-  },
-];
-
 export const getUserProfileInclude = (
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
   nudgesOptions: WhereOptions<Nudge> = {}
@@ -227,35 +77,3 @@ export const getUserProfileOrder = (): Order => {
     [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
   ];
 };
-
-/**
- * Returns the includes for a public user profile.
- * This is a subset of the complete user profile includes, tailored for public profiles.
- * It includes sector occupations, languages, contracts, skills, experiences, formations,
- * reviews, and interests but excludes nudges and custom nudges.
- */
-export const publicProfileIncludes: Includeable[] = [
-  ...getUserProfileSectorOccupationsInclude(),
-  ...getUserProfileNudgesInclude(),
-  ...getUserProfileLanguagesInclude(),
-  ...getUserProfileContractsInclude(),
-  ...getUserProfileSkillsInclude(),
-  ...getUserProfileExperiencesInclude(),
-  ...getUserProfileFormationsInclude(),
-  ...getUserProfileReviewsInclude(),
-  ...getUserProfileInterestsInclude(),
-];
-
-export const publicProfileOrder: Order = [
-  [{ model: Experience, as: 'experiences' }, 'endDate', 'DESC'],
-  [{ model: Experience, as: 'experiences' }, 'startDate', 'ASC'],
-  [{ model: Formation, as: 'formations' }, 'endDate', 'DESC'],
-  [{ model: Formation, as: 'formations' }, 'startDate', 'ASC'],
-  [
-    { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
-    'order',
-    'ASC',
-  ],
-  [{ model: Interest, as: 'interests' }, 'order', 'ASC'],
-  [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
-];

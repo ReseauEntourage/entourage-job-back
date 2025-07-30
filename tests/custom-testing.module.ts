@@ -40,7 +40,7 @@ import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
 import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
-import { PublicProfilesTestingModule } from './public-profiles/public-profiles-testing.module';
+import { PublicCVsTestingModule } from './public-cvs/public-cvs-testing.module';
 import { QueuesTestingModule } from './queues/queues-testing.module';
 import { UserCreationTestingModule } from './user-creation/user-creation-testing.module';
 import { UserDeletionTestingModule } from './user-deletion/user-deletion-testing.module';
@@ -100,7 +100,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     NudgesTestingModule,
     LanguagesTestingModule,
     ContractsTestingModule,
-    PublicProfilesTestingModule,
+    PublicCVsTestingModule,
     UserCreationTestingModule,
     UserDeletionTestingModule,
     UserProfilesTestingModule,

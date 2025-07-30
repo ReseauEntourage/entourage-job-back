@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Nudge } from 'src/common/nudge/models';
-import { PublicProfilesController } from 'src/public-profiles/public-profiles.controller';
+import { PublicCVsController } from 'src/public-cv/public-cvs.controller';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -17,7 +17,7 @@ import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 
-describe('PublicProfiles', () => {
+describe('PublicCVs', () => {
   let app: INestApplication;
   let server: Server;
 
@@ -162,18 +162,16 @@ describe('PublicProfiles', () => {
     );
   });
 
-  describe('GET /users/public-profiles', () => {
-    it('should return all public profiles', async () => {
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfiles']
-      > = await request(server).get(`/users/public-profiles`);
+  describe('GET /users/public-cvs', () => {
+    it('should return all public cvs', async () => {
+      const response: APIResponse<PublicCVsController['getPublicCVs']> =
+        await request(server).get(`/users/public-cvs`);
       expect(response.status).toBe(200);
     });
 
-    it('should return only candidate public profiles', async () => {
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfiles']
-      > = await request(server).get(`/users/public-profiles`);
+    it('should return only candidate public cvs', async () => {
+      const response: APIResponse<PublicCVsController['getPublicCVs']> =
+        await request(server).get(`/users/public-cvs`);
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(3);
       expect(
@@ -181,10 +179,9 @@ describe('PublicProfiles', () => {
       ).toBe(true);
     });
 
-    it('should return public profiles with correct fields', async () => {
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfiles']
-      > = await request(server).get(`/users/public-profiles`);
+    it('should return public cvs with correct fields', async () => {
+      const response: APIResponse<PublicCVsController['getPublicCVs']> =
+        await request(server).get(`/users/public-cvs`);
       expect(response.status).toBe(200);
 
       // Direct Attributes
@@ -204,34 +201,29 @@ describe('PublicProfiles', () => {
       expect(response.body[0].userProfile).toHaveProperty('nudges');
     });
 
-    it('should be able to limit public profiles', async () => {
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfiles']
-      > = await request(server)
-        .get(`/users/public-profiles`)
-        .query({ limit: 2 });
+    it('should be able to limit public cvs', async () => {
+      const response: APIResponse<PublicCVsController['getPublicCVs']> =
+        await request(server).get(`/users/public-cvs`).query({ limit: 2 });
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);
     });
 
-    it('should be able to paginate public profiles', async () => {
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfiles']
-      > = await request(server)
-        .get(`/users/public-profiles`)
-        .query({ limit: 1, offset: 1 });
+    it('should be able to paginate public cvs', async () => {
+      const response: APIResponse<PublicCVsController['getPublicCVs']> =
+        await request(server)
+          .get(`/users/public-cvs`)
+          .query({ limit: 1, offset: 1 });
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(1);
       expect(response.body[0].id).toBeDefined();
     });
   });
 
-  describe('GET /users/public-profiles/:id', () => {
-    it('should return a public profile by ID', async () => {
+  describe('GET /users/public-cvs/:id', () => {
+    it('should return a public cv by ID', async () => {
       const user = userCandidates[0];
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfileByCandidateId']
-      > = await request(server).get(`/users/public-profiles/${user.id}`);
+      const response: APIResponse<PublicCVsController['getPublicCVsByUserId']> =
+        await request(server).get(`/users/public-cvs/${user.id}`);
       expect(response.status).toBe(200);
       expect(response.body.firstName).toBe(user.firstName);
       expect(response.body.lastName).toBe(user.lastName);
@@ -283,20 +275,18 @@ describe('PublicProfiles', () => {
       expect(response.body.userProfile.interests.length).toBe(0);
     });
 
-    it('should return 404 if public profile not found', async () => {
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfileByCandidateId']
-      > = await request(server).get(
-        `/users/public-profiles/fdeb3d5e-8f3b-4dde-89be-277b233f7f30` // non-existing ID
-      );
+    it('should return 404 if public cv not found', async () => {
+      const response: APIResponse<PublicCVsController['getPublicCVsByUserId']> =
+        await request(server).get(
+          `/users/public-cvs/fdeb3d5e-8f3b-4dde-89be-277b233f7f30` // non-existing ID
+        );
       expect(response.status).toBe(404);
     });
 
-    it('should return public profile with correct fields', async () => {
+    it('should return public cv with correct fields', async () => {
       const user = userCandidates[0];
-      const response: APIResponse<
-        PublicProfilesController['getPublicProfileByCandidateId']
-      > = await request(server).get(`/users/public-profiles/${user.id}`);
+      const response: APIResponse<PublicCVsController['getPublicCVsByUserId']> =
+        await request(server).get(`/users/public-cvs/${user.id}`);
       expect(response.status).toBe(200);
       // Direct Attributes
       expect(response.body).toHaveProperty('id');
