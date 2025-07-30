@@ -96,7 +96,11 @@ export class CompaniesController {
       throw new BadRequestException();
     }
     try {
-      await this.companiesService.uploadLogo(user.companies[0].id, file);
+      const companyId = user.companies?.[0]?.id;
+      if (!companyId) {
+        throw new NotFoundException('Company not found for the user.');
+      }
+      await this.companiesService.uploadLogo(companyId, file);
     } catch (error) {
       throw new InternalServerErrorException();
     }
