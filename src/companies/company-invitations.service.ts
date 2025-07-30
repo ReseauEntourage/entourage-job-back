@@ -71,7 +71,7 @@ export class CompanyInvitationsService {
               include: [{ model: Company }],
               transaction,
             });
-          this.mailsService.sendCompanyInvitation({
+          await this.mailsService.sendCompanyInvitation({
             email,
             sender,
             invitationWithCompany,
