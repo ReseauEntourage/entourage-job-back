@@ -4,15 +4,10 @@ import { Company } from 'src/companies/models/company.model';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
-import {
-  publicProfileAttributes,
-  UserProfilesAttributes,
-} from 'src/user-profiles/models/user-profile.attributes';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import {
   getUserProfileInclude,
   getUserProfileOrder,
-  publicProfileIncludes,
-  publicProfileOrder,
 } from 'src/user-profiles/models/user-profile.include';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
@@ -105,30 +100,6 @@ export const getUserCandidatOrder = (): Order => {
     }
     return item;
   });
-  return prefixedUserProfileOrder;
-};
-
-export const userPublicProfileInclude: Includeable[] = [
-  {
-    model: UserProfile,
-    as: 'userProfile',
-    attributes: publicProfileAttributes,
-    include: publicProfileIncludes,
-  },
-];
-
-export const userPublicProfileOrder = (): Order => {
-  const userProfileOrder = publicProfileOrder as OrderItem[];
-
-  // Prefix all the userProfileOrder items with 'userProfile' model
-  // and 'as' alias
-  const prefixedUserProfileOrder = userProfileOrder.map((item) => {
-    if (Array.isArray(item)) {
-      return [{ model: UserProfile, as: 'userProfile' }, ...item] as OrderItem;
-    }
-    return item;
-  });
-
   return prefixedUserProfileOrder;
 };
 

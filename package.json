@@ -20,6 +20,7 @@
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",
     "test:e2e": "jest --config ./tests/jest-e2e.json --runInBand --forceExit --verbose",
     "db:create": "sequelize db:create",
+    "db:drop": "sequelize db:drop",
     "db:migrate": "sequelize db:migrate",
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
