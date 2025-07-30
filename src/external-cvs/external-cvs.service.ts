@@ -1,19 +1,7 @@
 import fs from 'fs';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
-import { Interest } from 'src/common/interests/models';
-import { LanguagesService } from 'src/common/languages/languages.service';
-import { Department } from 'src/common/locations/locations.types';
-import { SkillsService } from 'src/common/skills/skills.service';
-import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
-import {
-  CvSchemaType,
-  SCHEMA_VERSION,
-} from 'src/external-services/openai/openai.schemas';
-import { S3Service } from 'src/external-services/aws/s3.service';
 import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
