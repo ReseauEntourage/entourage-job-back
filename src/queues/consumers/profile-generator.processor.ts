@@ -61,6 +61,11 @@ export class ProfileGeneratorProcessor {
         fileHash
       );
 
+      await this.profileGenerationService.populateUserProfileFromCVData(
+        userId,
+        extractedCVData
+      );
+
       job.progress(90);
 
       // Notifier l'utilisateur que le traitement est terminé
