@@ -1,20 +1,26 @@
 import fs from 'fs';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { ContractsService } from 'src/common/contracts/contracts.service';
 import { Contract } from 'src/common/contracts/models';
 import { ExperiencesService } from 'src/common/experiences/experiences.service';
 import { Experience } from 'src/common/experiences/models';
 import { FormationsService } from 'src/common/formations/formations.service';
 import { Formation } from 'src/common/formations/models';
+import { InterestsService } from 'src/common/interests/interests.service';
 import { Interest } from 'src/common/interests/models';
+import { LanguagesService } from 'src/common/languages/languages.service';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
+import { NudgesService } from 'src/common/nudge/nudges.service';
 import { Occupation } from 'src/common/occupations/models';
+import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
+import { SkillsService } from 'src/common/skills/skills.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -36,6 +42,7 @@ import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
+import { UserProfileSkill } from './models/user-profile-skill.model';
 import {
   UserProfilesAttributes,
   UserProfilesUserAttributes,
@@ -73,15 +80,25 @@ export class UserProfilesService {
     private userProfileContractModel: typeof UserProfileContract,
     @InjectModel(UserProfileLanguage)
     private userProfileLanguageModel: typeof UserProfileLanguage,
+    @InjectModel(UserProfileSkill)
+    private userProfileSkillModel: typeof UserProfileSkill,
     private s3Service: S3Service,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
+    @Inject(forwardRef(() => MessagesService))
     private messagesService: MessagesService,
     private messagingService: MessagingService,
     private slackService: SlackService,
     private mailsService: MailsService,
     private experiencesService: ExperiencesService,
-    private formationsService: FormationsService
+    private formationsService: FormationsService,
+    private nudgeService: NudgesService,
+    private skillService: SkillsService,
+    private contractsService: ContractsService,
+    private languagesService: LanguagesService,
+    private reviewsService: ReviewsService,
+    private interestsService: InterestsService
   ) {}
 
   async findOne(id: string) {
@@ -101,11 +118,53 @@ export class UserProfilesService {
     userId: string,
     complete = false
   ): Promise<UserProfile> {
-    return this.userProfileModel.findOne({
+    const userProfile = await this.userProfileModel.findOne({
       where: { userId },
-      include: getUserProfileInclude(complete),
-      order: getUserProfileOrder(complete),
+      include: getUserProfileInclude(),
+      order: getUserProfileOrder(),
     });
+
+    if (complete) {
+      // Experiences
+      userProfile.experiences =
+        await this.experiencesService.findByUserProfileId(userProfile.id);
+
+      // Formations
+      userProfile.formations = await this.formationsService.findByUserProfileId(
+        userProfile.id
+      );
+
+      // Custom Nudges
+      userProfile.customNudges =
+        await this.nudgeService.findCustomNudgesByUserProfileId(userProfile.id);
+
+      // Skills
+      userProfile.skills = await this.skillService.findSkillsByUserProfileId(
+        userProfile.id
+      );
+
+      // Contracts
+      userProfile.contracts =
+        await this.contractsService.findContractByUserProfileId(userProfile.id);
+
+      // UserProfile Languages
+      userProfile.userProfileLanguages =
+        await this.languagesService.findLanguagesByUserProfileId(
+          userProfile.id
+        );
+
+      // Reviews
+      userProfile.reviews = await this.reviewsService.findByUserProfileId(
+        userProfile.id
+      );
+
+      // Interests
+      userProfile.interests = await this.interestsService.findByUserProfileId(
+        userProfile.id
+      );
+    }
+
+    return userProfile;
   }
 
   async findOneUser(userId: string) {
@@ -193,11 +252,7 @@ export class UserProfilesService {
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
       include: [
-        ...getUserProfileInclude(
-          false,
-          businessSectorsOptions,
-          nudgesSectorsOptions
-        ),
+        ...getUserProfileInclude(businessSectorsOptions, nudgesSectorsOptions),
         {
           model: User,
           as: 'user',
@@ -688,30 +743,77 @@ export class UserProfilesService {
     skills: Partial<Skill>[],
     t: sequelize.Transaction
   ): Promise<void> {
-    const skillsData = skills.map((skill, order) => {
-      return {
-        userProfileId: userProfileToUpdate.id,
-        name: skill.name,
-        order,
-      };
-    });
-    const skillsCreated = await this.skillModel.bulkCreate(skillsData, {
-      hooks: true,
-      transaction: t,
-    });
-    await this.skillModel.destroy({
+    const skillsData = await Promise.all(
+      skills.map(async (skill, order) => {
+        const existingSkill = await this.skillModel.findOne({
+          where: { name: { [Op.iLike]: skill.name } },
+        });
+
+        if (existingSkill) {
+          return {
+            userProfileId: userProfileToUpdate.id,
+            skillId: existingSkill.id,
+            order,
+          };
+        }
+
+        const newSkill = await this.skillModel.create(
+          {
+            name: skill.name,
+          },
+          {
+            hooks: true,
+            transaction: t,
+          }
+        );
+
+        return {
+          userProfileId: userProfileToUpdate.id,
+          skillId: newSkill.id,
+          order,
+        };
+      })
+    );
+
+    // Remove the skills that don't exist anymore
+    await this.userProfileSkillModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
-        id: {
-          [Op.notIn]: skillsCreated.map((skill) => skill.id),
-        },
-        order: {
-          [Op.ne]: -1,
+        skillId: {
+          [Op.notIn]: skillsData.map((skillData) => skillData.skillId),
         },
       },
       individualHooks: true,
       transaction: t,
     });
+
+    // Create or update userProfileSkill (and update order)
+    await Promise.all(
+      skillsData.map(async (skillData) => {
+        const existingUserProfileSkill =
+          await this.userProfileSkillModel.findOne({
+            where: {
+              userProfileId: userProfileToUpdate.id,
+              skillId: skillData.skillId,
+            },
+          });
+
+        if (existingUserProfileSkill) {
+          return existingUserProfileSkill.update(
+            { order: skillData.order },
+            {
+              hooks: true,
+              transaction: t,
+            }
+          );
+        }
+
+        return this.userProfileSkillModel.create(skillData, {
+          hooks: true,
+          transaction: t,
+        });
+      })
+    );
   }
 
   async updateContractsByUserProfileId(
@@ -978,5 +1080,67 @@ export class UserProfilesService {
         userReporter
       ),
     ]);
+  }
+
+  /**
+   * Calcule le taux de complétion du profil utilisateur
+   * @param userId L'identifiant de l'utilisateur
+   * @returns pourcentage entre 0 et 100 représentant le taux de complétion du profil
+   */
+  async calculateProfileCompletion(userId: string): Promise<number> {
+    // Utilisation d'une requête SQL plutot que les modeles pour optimiser les performances
+    const sql = `
+      SELECT
+        up."hasPicture",
+        up.department,
+        up.introduction,
+        up.description,
+        u."firstName",
+        u."lastName",
+        u.phone,
+        (SELECT COUNT(*) > 0 FROM "UserProfileSectorOccupations" upso WHERE upso."userProfileId" = up.id) AS "hasSectorOccupations",
+        (SELECT COUNT(*) > 0 FROM "UserProfileSkills" ups WHERE ups."userProfileId" = up.id) AS "hasSkills",
+        (SELECT COUNT(*) > 0 FROM "UserProfileNudges" upn WHERE upn."userProfileId" = up.id AND upn."nudgeId" IS NULL) AS "hasCustomNudges",
+        (SELECT COUNT(*) > 0 FROM "Experiences" e WHERE e."userProfileId" = up.id) AS "hasExperiences",
+        (SELECT COUNT(*) > 0 FROM "Formations" f WHERE f."userProfileId" = up.id) AS "hasFormations",
+        (SELECT COUNT(*) > 0 FROM "UserProfileLanguages" upl WHERE upl."userProfileId" = up.id) AS "hasLanguages",
+        (SELECT COUNT(*) > 0 FROM "Interests" i WHERE i."userProfileId" = up.id) AS "hasInterests"
+      FROM "UserProfiles" up
+      JOIN "Users" u ON u.id = up."userId"
+      WHERE up."userId" = :userId
+    `;
+
+    const result = await this.userProfileModel.sequelize.query(sql, {
+      type: QueryTypes.SELECT,
+      replacements: { userId },
+      plain: true,
+    });
+
+    if (!result) {
+      return 0;
+    }
+
+    // Calculer le pourcentage de complétion en fonction des champs retournés
+    const fields = Object.entries(result);
+    if (fields.length === 0) return 0;
+
+    // Compte les champs qui sont remplis (non null, non undefined et non false)
+    const filledFields = fields.filter(([fieldName, value]) => {
+      // Si c'est un champ booléen (commençant par "has")
+      if (fieldName.startsWith('has')) {
+        return value === true || value === 't';
+      }
+      // Pour les chaînes de caractères (firstName, lastName, etc.)
+      if (typeof value === 'string') {
+        return value?.trim().length > 0;
+      }
+      // Pour les autres types (null, undefined, nombre, etc.)
+      return !!value;
+    });
+
+    // Calcul du pourcentage arrondi à l'entier le plus proche
+    const percentage = Math.round((filledFields.length / fields.length) * 100);
+
+    return percentage;
   }
 }

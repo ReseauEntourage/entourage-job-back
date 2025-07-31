@@ -44,6 +44,7 @@ import { UserProfileContract } from './user-profile-contract.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
+import { UserProfileSkill } from './user-profile-skill.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
@@ -235,8 +236,16 @@ export class UserProfile extends Model {
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @HasMany(() => Skill, 'userProfileId')
+  @BelongsToMany(
+    () => Skill,
+    () => UserProfileSkill,
+    'userProfileId',
+    'skillId'
+  )
   skills: Skill[];
+
+  @HasMany(() => UserProfileSkill, 'userProfileId')
+  userProfileSkills: UserProfileSkill[];
 
   // Experiences
   @ApiProperty()

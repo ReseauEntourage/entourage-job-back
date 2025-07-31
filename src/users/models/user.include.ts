@@ -3,44 +3,22 @@ import { UserSocialSituation } from '../../user-social-situations/models/user-so
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
-import {
-  publicProfileAttributes,
-  UserProfilesAttributes,
-} from 'src/user-profiles/models/user-profile.attributes';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import {
   getUserProfileInclude,
   getUserProfileOrder,
-  publicProfileIncludes,
-  publicProfileOrder,
 } from 'src/user-profiles/models/user-profile.include';
 import { UserCandidatAttributes } from './user-candidat.attributes';
 import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';
 import { User } from './user.model';
 
-export const UserCandidatInclude = (complete = false): Includeable[] => {
+export const UserCandidatInclude = (): Includeable[] => {
   return [
     {
       model: UserCandidat,
       as: 'candidat',
       attributes: [...UserCandidatAttributes],
-      include: [
-        {
-          model: User,
-          as: 'coach',
-          attributes: [...UserAttributes],
-          paranoid: false,
-          include: [
-            {
-              model: UserProfile,
-              as: 'userProfile',
-              attributes: UserProfilesAttributes,
-              include: getUserProfileInclude(complete),
-              order: getUserProfileOrder(complete),
-            },
-          ],
-        },
-      ],
     },
     {
       model: User,
@@ -53,27 +31,6 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
           as: 'userProfile',
           attributes: UserProfilesAttributes,
           include: getUserProfileInclude(),
-        },
-      ],
-    },
-    {
-      model: UserCandidat,
-      as: 'coaches',
-      attributes: [...UserCandidatAttributes],
-      include: [
-        {
-          model: User,
-          as: 'candidat',
-          attributes: [...UserAttributes],
-          paranoid: false,
-          include: [
-            {
-              model: UserProfile,
-              as: 'userProfile',
-              attributes: UserProfilesAttributes,
-              include: getUserProfileInclude(),
-            },
-          ],
         },
       ],
     },
@@ -111,8 +68,8 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
       model: UserProfile,
       as: 'userProfile',
       attributes: UserProfilesAttributes,
-      include: getUserProfileInclude(complete),
-      order: getUserProfileOrder(complete),
+      include: getUserProfileInclude(),
+      order: getUserProfileOrder(),
     },
     {
       model: ReadDocument,
@@ -122,8 +79,8 @@ export const UserCandidatInclude = (complete = false): Includeable[] => {
   ];
 };
 
-export const getUserCandidatOrder = (complete = false): Order => {
-  const userProfileOrder = getUserProfileOrder(complete) as OrderItem[];
+export const getUserCandidatOrder = (): Order => {
+  const userProfileOrder = getUserProfileOrder() as OrderItem[];
 
   // Prefix all the userProfileOrder items with 'userProfile' model
   // and 'as' alias
@@ -136,32 +93,8 @@ export const getUserCandidatOrder = (complete = false): Order => {
   return prefixedUserProfileOrder;
 };
 
-export const userPublicProfileInclude: Includeable[] = [
-  {
-    model: UserProfile,
-    as: 'userProfile',
-    attributes: publicProfileAttributes,
-    include: publicProfileIncludes,
-  },
-];
-
-export const userPublicProfileOrder = (): Order => {
-  const userProfileOrder = publicProfileOrder as OrderItem[];
-
-  // Prefix all the userProfileOrder items with 'userProfile' model
-  // and 'as' alias
-  const prefixedUserProfileOrder = userProfileOrder.map((item) => {
-    if (Array.isArray(item)) {
-      return [{ model: UserProfile, as: 'userProfile' }, ...item] as OrderItem;
-    }
-    return item;
-  });
-
-  return prefixedUserProfileOrder;
-};
-
-export const getUserProfileRecommendationOrder = (complete = false): Order => {
-  const userProfileOrder = getUserProfileOrder(complete) as OrderItem[];
+export const getUserProfileRecommendationOrder = (): Order => {
+  const userProfileOrder = getUserProfileOrder() as OrderItem[];
 
   // Prefix all the userProfileOrder items with 'userProfile' model
   // and 'as' alias

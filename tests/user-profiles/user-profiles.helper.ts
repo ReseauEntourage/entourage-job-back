@@ -8,8 +8,8 @@ import { User } from 'src/users/models';
 export class UserProfilesHelper {
   constructor(private userProfilesService: UserProfilesService) {}
 
-  async findOneProfileByUserId(userId: string) {
-    return this.userProfilesService.findOneByUserId(userId);
+  async findOneProfileByUserId(userId: string, complete = false) {
+    return this.userProfilesService.findOneByUserId(userId, complete);
   }
 
   async findOneProfile(profileId: string) {
@@ -22,22 +22,25 @@ export class UserProfilesHelper {
 
   mapUserProfileFromUser(
     user: User,
-    complete = false
+    userProfile?: UserProfile,
+    completeExpected = false
   ): Partial<UserProfile & User> {
+    const userProfileData = userProfile || user.userProfile;
     const config = {
+      // From User
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      description: user.userProfile.description,
-      introduction: user.userProfile.introduction,
-      currentJob: user.userProfile.currentJob,
-      department: user.userProfile.department,
-      isAvailable: user.userProfile.isAvailable,
-      lastReceivedMessage: null,
-      lastSentMessage: null,
+
+      // From UserProfileData
+      description: userProfileData.description,
+      introduction: userProfileData.introduction,
+      currentJob: userProfileData.currentJob,
+      department: userProfileData.department,
+      isAvailable: userProfileData.isAvailable,
       sectorOccupations: expect.arrayContaining(
-        user.userProfile.sectorOccupations.map((sectorOccupation) => ({
+        userProfileData.sectorOccupations.map((sectorOccupation) => ({
           id: sectorOccupation.id,
           businessSector: expect.objectContaining({
             id: sectorOccupation.businessSector.id,
@@ -50,11 +53,13 @@ export class UserProfilesHelper {
           order: sectorOccupation.order,
         }))
       ),
-      nudges: user.userProfile.nudges,
+      nudges: userProfileData.nudges,
+      lastReceivedMessage: null,
+      lastSentMessage: null,
     } as Partial<UserProfile & User>;
-    if (complete) {
+    if (completeExpected) {
       config.experiences = expect.arrayContaining(
-        user.userProfile.experiences.map((experience) => ({
+        userProfileData.experiences.map((experience) => ({
           id: experience.id,
           title: experience.title,
           description: experience.description,
@@ -73,7 +78,7 @@ export class UserProfilesHelper {
         }))
       );
       config.formations = expect.arrayContaining(
-        user.userProfile.formations.map((formation) => ({
+        userProfileData.formations.map((formation) => ({
           id: formation.id,
           title: formation.title,
           description: formation.description,
@@ -92,7 +97,7 @@ export class UserProfilesHelper {
         }))
       );
       config.contracts = expect.arrayContaining(
-        user.userProfile.contracts.map((contract) =>
+        userProfileData.contracts.map((contract) =>
           expect.objectContaining({
             id: contract.id,
             name: contract.name,
@@ -100,7 +105,7 @@ export class UserProfilesHelper {
         )
       );
       config.skills = expect.arrayContaining(
-        user.userProfile.skills.map((skill) =>
+        userProfileData.skills.map((skill) =>
           expect.objectContaining({
             id: skill.id,
             name: skill.name,
@@ -108,7 +113,7 @@ export class UserProfilesHelper {
         )
       );
       config.userProfileLanguages = expect.arrayContaining(
-        user.userProfile.userProfileLanguages.map((upLanguages) =>
+        userProfileData.userProfileLanguages.map((upLanguages) =>
           expect.objectContaining({
             id: upLanguages.id,
             language: expect.objectContaining({
@@ -120,7 +125,7 @@ export class UserProfilesHelper {
         )
       );
       config.interests = expect.arrayContaining(
-        user.userProfile.interests.map((interest) =>
+        userProfileData.interests.map((interest) =>
           expect.objectContaining({
             id: interest.id,
             name: interest.name,
@@ -128,7 +133,7 @@ export class UserProfilesHelper {
         )
       );
       config.customNudges = expect.arrayContaining(
-        user.userProfile.customNudges.map((customNudge) =>
+        userProfileData.customNudges.map((customNudge) =>
           expect.objectContaining({
             id: customNudge.id,
             content: customNudge.content,
@@ -136,7 +141,7 @@ export class UserProfilesHelper {
         )
       );
       config.reviews = expect.arrayContaining(
-        user.userProfile.reviews.map((review) =>
+        userProfileData.reviews.map((review) =>
           expect.objectContaining({
             id: review.id,
             authorName: review.authorName,

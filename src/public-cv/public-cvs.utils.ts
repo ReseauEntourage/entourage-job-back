@@ -1,17 +1,14 @@
 import { Op } from 'sequelize';
 import { FilterObject } from 'src/utils/types';
-import {
-  PublicProfileFilterKey,
-  PublicProfileOptions,
-} from './public-profiles.types';
+import { PublicCVsFilterKey, PublicCVsOptions } from './public-cvs.types';
 
 export function getCVOptions(
-  filtersObj: FilterObject<PublicProfileFilterKey>
-): PublicProfileOptions {
-  let whereOptions = {} as PublicProfileOptions;
+  filtersObj: FilterObject<PublicCVsFilterKey>
+): PublicCVsOptions {
+  let whereOptions = {} as PublicCVsOptions;
 
   if (filtersObj) {
-    const keys = Object.keys(filtersObj) as PublicProfileFilterKey[];
+    const keys = Object.keys(filtersObj) as PublicCVsFilterKey[];
 
     if (keys.length > 0) {
       const totalFilters = keys.reduce((acc, curr) => {

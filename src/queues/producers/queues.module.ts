@@ -1,10 +1,16 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { getBullWorkQueueOptions } from 'src/queues/queues.utils';
+import {
+  getBullWorkQueueOptions,
+  getBullProfileGenerationQueueOptions,
+} from '../queues.utils';
 import { QueuesService } from './queues.service';
 
 @Module({
-  imports: [BullModule.registerQueue(getBullWorkQueueOptions())],
+  imports: [
+    BullModule.registerQueue(getBullWorkQueueOptions()),
+    BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
+  ],
   providers: [QueuesService],
   exports: [QueuesService],
 })

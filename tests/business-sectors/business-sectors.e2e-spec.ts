@@ -1,13 +1,12 @@
 import { Server } from 'http';
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { CacheMocks, QueueMocks } from 'tests/mocks.types';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 
 describe('BusinessSectors', () => {
   let app: INestApplication;
@@ -19,10 +18,8 @@ describe('BusinessSectors', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .compile();
 
     app = moduleFixture.createNestApplication();

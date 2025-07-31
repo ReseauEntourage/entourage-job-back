@@ -4,7 +4,6 @@ import {
   Body,
   ConflictException,
   Controller,
-  NotFoundException,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -24,10 +23,7 @@ import {
   SequelizeUniqueConstraintError,
   UserRoles,
 } from 'src/users/users.types';
-import {
-  getCandidateAndCoachIdDependingOnRoles,
-  isRoleIncluded,
-} from 'src/users/users.utils';
+import { isRoleIncluded } from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
 import { convertYesNoToBoolean } from 'src/utils/yesNo';
 import { Utm } from 'src/utm/models';
@@ -105,45 +101,6 @@ export class UsersCreationController {
       },
       jwtToken
     );
-
-    if (userToCreate.userToLinkId) {
-      const usersToLinkIds = [userToCreate.userToLinkId];
-
-      const userCandidatesToUpdate = await Promise.all(
-        usersToLinkIds.map(async (userToLinkId) => {
-          const userToLink = await this.usersCreationService.findOneUser(
-            userToLinkId
-          );
-
-          if (!userToLink) {
-            throw new NotFoundException();
-          }
-
-          const { candidateId, coachId } =
-            getCandidateAndCoachIdDependingOnRoles(createdUser, userToLink);
-
-          const userCandidate =
-            await this.usersCreationService.findOneUserCandidatByCandidateId(
-              candidateId
-            );
-
-          if (!userCandidate) {
-            throw new NotFoundException();
-          }
-
-          return { candidateId: candidateId, coachId: coachId };
-        })
-      );
-
-      const updatedUserCandidates =
-        await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
-          userCandidatesToUpdate
-        );
-
-      if (!updatedUserCandidates) {
-        throw new NotFoundException();
-      }
-    }
 
     return this.usersCreationService.findOneUser(createdUser.id);
   }
