@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { CompaniesService } from 'src/companies/companies.service';
 import { CompanyInvitationsService } from 'src/companies/company-invitations.service';
