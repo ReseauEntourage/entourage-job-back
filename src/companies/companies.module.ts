@@ -1,20 +1,28 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { AWSModule } from 'src/external-services/aws/aws.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
 import { CompaniesController } from './companies.controller';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
 import { CompanyUsersService } from './company-user.service';
+import { CompanyBusinessSector } from './models/company-business-sector.model';
 import { CompanyInvitation } from './models/company-invitation.model';
 import { CompanyUser } from './models/company-user.model';
 import { Company } from './models/company.model';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Company, CompanyUser, CompanyInvitation]),
+    SequelizeModule.forFeature([
+      Company,
+      CompanyUser,
+      CompanyInvitation,
+      CompanyBusinessSector,
+    ]),
     MailsModule,
     UsersModule,
+    AWSModule,
   ],
   controllers: [CompaniesController],
   providers: [CompaniesService, CompanyUsersService, CompanyInvitationsService],

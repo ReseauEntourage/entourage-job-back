@@ -1,6 +1,4 @@
 import { createHash } from 'crypto';
-import fs from 'fs';
-import path from 'path';
 import {
   Controller,
   Get,
@@ -41,15 +39,6 @@ export class ProfileGenerationController {
 
       // Construction de la clé S3 pour le CV externe
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}external-cvs/${userId}.pdf`;
-
-      // Création du dossier temporaire s'il n'existe pas
-      const tempDir = path.join(process.cwd(), 'temp');
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      // Téléchargement du PDF
-      const pdfPath = path.join(tempDir, `${userId}.pdf`);
       const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
       if (response.status !== 200) {
         throw new InternalServerErrorException(
@@ -57,8 +46,6 @@ export class ProfileGenerationController {
         );
       }
       const pdfBuffer = Buffer.from(response.data);
-      fs.writeFileSync(pdfPath, pdfBuffer);
-
       // Calcul du hash du fichier PDF pour le comparer avec la version précédente
       const fileHash = createHash('md5').update(pdfBuffer).digest('hex');
 
@@ -75,7 +62,7 @@ export class ProfileGenerationController {
         try {
           // Création d'un job de génération de profil à partir du PDF
           return this.profileGenerationService.generateProfileFromPDF({
-            pdfPath,
+            s3Key: `external-cvs/${userId}.pdf`,
             userProfileId: userProfile.id,
             userId,
             fileHash,
@@ -91,16 +78,10 @@ export class ProfileGenerationController {
           await this.profileGenerationService.getExtractedCVData(
             userProfile.id
           );
-      }
-
-      // Remplir le profil utilisateur avec les données extraites du CV
-      if (extractedCVData) {
         await this.profileGenerationService.populateUserProfileFromCVData(
           userId,
           extractedCVData
         );
-
-        return;
       }
     } catch (error) {
       console.error('Error extracting CV data:', error);

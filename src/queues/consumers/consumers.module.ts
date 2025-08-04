@@ -3,13 +3,15 @@ import { Module } from '@nestjs/common';
 
 import { CVsModule } from 'src/cvs/cvs.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
+import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
+import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import {
   getBullWorkQueueOptions,
   getBullProfileGenerationQueueOptions,
 } from 'src/queues/queues.utils';
-import { ProfileGenerationModule } from './profile-generation.module';
+import { ProfileGeneratorProcessor } from './profile-generator.processor';
 import { WorkQueueProcessor } from './work-queue.processor';
 
 @Module({
@@ -18,10 +20,11 @@ import { WorkQueueProcessor } from './work-queue.processor';
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
     CVsModule,
     MailjetModule,
+    OpenAiModule,
     SalesforceModule,
     ProfileGenerationModule,
   ],
-  providers: [WorkQueueProcessor, PusherService],
-  exports: [WorkQueueProcessor],
+  providers: [WorkQueueProcessor, ProfileGeneratorProcessor, PusherService],
+  exports: [WorkQueueProcessor, ProfileGeneratorProcessor],
 })
 export class ConsumersModule {}
