@@ -15,6 +15,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
+import { CompanyInvitation } from './company-invitation.model';
 import { CompanyUser } from './company-user.model';
 
 @Table({ tableName: 'Companies' })
@@ -77,4 +78,7 @@ export class Company extends Model {
     otherKey: 'userId',
   })
   users: User[];
+
+  @HasMany(() => CompanyInvitation)
+  pendingInvitations: CompanyInvitation[];
 }

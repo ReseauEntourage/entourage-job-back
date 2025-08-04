@@ -40,6 +40,15 @@ export class CompaniesController {
     return await this.companiesService.findAll(limit, offset, search);
   }
 
+  @Get(':companyId')
+  async findOne(@Param('companyId') companyId: string) {
+    const company = await this.companiesService.findOneComplete(companyId);
+    if (!company) {
+      throw new BadRequestException(`Company with ID ${companyId} not found`);
+    }
+    return company;
+  }
+
   @Public()
   @Throttle(5, 60)
   @Post()

@@ -143,7 +143,7 @@ describe('Organizations', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...organization,
-              createdAt: organization.createdAt.toISOString(),
+              createdAt: organization.createdAt,
               updatedAt: organization.updatedAt.toISOString(),
               organizationReferent: {
                 ...organization.organizationReferent,
