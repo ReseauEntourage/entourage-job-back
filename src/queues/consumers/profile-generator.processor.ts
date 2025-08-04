@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import { Job } from 'bull';
 
 import { ProfileGenerationService } from '../producers/profile-generation.service';
@@ -31,20 +32,45 @@ export class ProfileGeneratorProcessor {
 
   @Process(Jobs.GENERATE_PROFILE_FROM_PDF)
   async handleProfileGeneration(job: Job<GenerateProfileFromPDFJob>) {
-    const { pdfPath, userProfileId, userId, fileHash } = job.data;
+    const { s3Key, userProfileId, userId, fileHash } = job.data;
+    let tempPdfPath = '';
 
     try {
       job.progress(10);
 
-      // Vérification de l'existence du fichier PDF
-      if (!fs.existsSync(pdfPath)) {
-        console.error(`Le fichier PDF n'existe pas: ${pdfPath}`);
+      // Construire l'URL S3
+      const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}${s3Key}`;
+
+      // Télécharger le PDF depuis S3 directement dans le worker
+      const tempDir = process.platform === 'darwin' ? '/tmp' : os.tmpdir();
+      fs.mkdirSync(tempDir, { recursive: true });
+
+      // Utiliser un nom de fichier unique pour éviter les conflits - ne peut pas utiliser le userId
+      const uniqueId = `${Date.now()}_${Math.random()
+        .toString(36)
+        .substring(2, 8)}`;
+      tempPdfPath = path.join(tempDir, `${uniqueId}.pdf`);
+
+      const response = await axios.get(pdfUrl, { responseType: 'arraybuffer' });
+      if (response.status !== 200) {
         throw new Error(
-          `Le fichier PDF n'existe pas à l'emplacement spécifié: ${pdfPath}`
+          `Erreur lors du téléchargement du PDF depuis S3: ${response.status}`
         );
       }
 
-      const base64Images = await this.convertPDFToImages(pdfPath);
+      fs.writeFileSync(tempPdfPath, Buffer.from(response.data));
+
+      // Vérification de l'existence du fichier PDF
+      if (!fs.existsSync(tempPdfPath)) {
+        console.error(
+          `Le fichier PDF n'existe pas après téléchargement: ${tempPdfPath}`
+        );
+        throw new Error(
+          `Le fichier PDF n'existe pas à l'emplacement spécifié après téléchargement: ${tempPdfPath}`
+        );
+      }
+
+      const base64Images = await this.convertPDFToImages(tempPdfPath);
 
       job.progress(30);
 
@@ -59,6 +85,11 @@ export class ProfileGeneratorProcessor {
         userProfileId,
         extractedCVData,
         fileHash
+      );
+
+      await this.profileGenerationService.populateUserProfileFromCVData(
+        userId,
+        extractedCVData
       );
 
       job.progress(90);
@@ -93,9 +124,9 @@ export class ProfileGeneratorProcessor {
       throw error;
     } finally {
       // Nettoyage des fichiers temporaires
-      if (fs.existsSync(pdfPath)) {
+      if (tempPdfPath && fs.existsSync(tempPdfPath)) {
         try {
-          fs.unlinkSync(pdfPath);
+          fs.unlinkSync(tempPdfPath);
         } catch (err) {
           console.error(`Erreur lors de la suppression du fichier PDF: ${err}`);
         }
