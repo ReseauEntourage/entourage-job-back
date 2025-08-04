@@ -72,7 +72,7 @@ export interface CreateOrUpdateSalesforceUserJob {
 }
 
 export interface GenerateProfileFromPDFJob {
-  pdfPath: string;
+  s3Key: string;
   userProfileId: string;
   userId: string;
   fileHash: string;
