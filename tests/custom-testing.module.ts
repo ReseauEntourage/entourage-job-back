@@ -18,6 +18,7 @@ import { LanguagesModule } from 'src/common/languages/languages.module';
 import { PassionsModule } from 'src/common/passions/passions.module';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { SkillsModule } from 'src/common/skills/skills.module';
+import { CompaniesModule } from 'src/companies/companies.module';
 import { ContactsModule } from 'src/contacts/contacts.module';
 import { MessagesModule } from 'src/messages/messages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
@@ -32,6 +33,7 @@ import { UsersCreationModule } from 'src/users-creation/users-creation.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { AuthTestingModule } from './auth/auth-testing.module';
 import { BusinessSectorsTestingModule } from './business-sectors/business-sectors-testing.module';
+import { CompaniesTestingModule } from './companies/companies-testing.module';
 import { ContactsTestingModule } from './contacts/contacts-testing.module';
 import { ContractsTestingModule } from './contracts/contracts-testing.module';
 import { DatabaseHelper } from './database.helper';
@@ -90,6 +92,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ReadDocumentsModule,
     UsersCreationModule,
     UsersDeletionModule,
+    CompaniesModule,
 
     // Modules de test spécifiques
     AuthTestingModule,
@@ -107,6 +110,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsTestingModule,
     MessagingTestingModule,
     QueuesTestingModule,
+    CompaniesTestingModule,
   ],
   providers: [
     // Configuration du garde d'authentification global

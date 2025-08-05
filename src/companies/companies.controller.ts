@@ -10,15 +10,19 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
+import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { User } from 'src/users/models';
 import { CompaniesService } from './companies.service';
+import { CompanyInvitationsService } from './company-invitations.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CreateCompanyPipe } from './dto/create-company.pipe';
 import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
@@ -28,7 +32,10 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 @Throttle(20, 60)
 @Controller('companies')
 export class CompaniesController {
-  constructor(private readonly companiesService: CompaniesService) {}
+  constructor(
+    private readonly companiesService: CompaniesService,
+    private readonly companyInvitationsService: CompanyInvitationsService
+  ) {}
 
   @Public()
   @Get()
@@ -104,17 +111,35 @@ export class CompaniesController {
     }
   }
 
-  @Throttle(1, 60)
+  @Throttle(5, 60)
+  @UseGuards(IsCompanyAdminGuard)
   @Post(':companyId/invite-collaborators')
   async inviteCollaborators(
     @Param('companyId') companyId: string,
     @Body() inviteCollaboratorsDto: InviteCollaboratorsDto,
     @UserPayload() user: User
   ) {
-    return await this.companiesService.inviteCollaborators(
+    // Validate the provided emails
+    if (inviteCollaboratorsDto.emails.length === 0) {
+      throw new BadRequestException('No emails provided for invitation');
+    }
+    // Check if the number of emails exceeds the limit
+    if (inviteCollaboratorsDto.emails.length > 100) {
+      throw new BadRequestException('Too many emails provided for invitation');
+    }
+
+    // Validate each email format
+    inviteCollaboratorsDto.emails.forEach((email) => {
+      if (!isEmail(email)) {
+        throw new BadRequestException(`Invalid email format: ${email}`);
+      }
+    });
+
+    // Proceed with inviting collaborators
+    return await this.companyInvitationsService.inviteCollaborators(
       user,
       companyId,
-      inviteCollaboratorsDto
+      inviteCollaboratorsDto.emails
     );
   }
 }

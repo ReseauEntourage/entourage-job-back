@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { CompaniesService } from 'src/companies/companies.service';
-import { CompanyUsersService } from 'src/companies/models/company-user.service';
+import { CompanyInvitationsService } from 'src/companies/company-invitations.service';
+import { CompanyUsersService } from 'src/companies/company-user.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
@@ -30,7 +31,8 @@ export class UsersCreationService {
     private queuesService: QueuesService,
     private utmService: UtmService,
     private companiesService: CompaniesService,
-    private companyUsersService: CompanyUsersService
+    private companyUsersService: CompanyUsersService,
+    private companyInvitationsService: CompanyInvitationsService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -190,5 +192,25 @@ export class UsersCreationService {
 
   async findOneCompanyUser(companyId: string) {
     return this.companyUsersService.findOneCompanyUser(companyId);
+  }
+
+  async linkInvitationToUser(
+    userId: string,
+    invitationId: string
+  ): Promise<void> {
+    const invitation = await this.companyInvitationsService.findOneById(
+      invitationId
+    );
+    if (!invitation) {
+      throw new Error(`Invitation with ID ${invitationId} not found`);
+    }
+    if (invitation.userId) {
+      throw new ConflictException(
+        `Invitation with ID ${invitationId} is already linked to a user`
+      );
+    }
+    await this.companyInvitationsService.update(invitationId, {
+      userId,
+    });
   }
 }

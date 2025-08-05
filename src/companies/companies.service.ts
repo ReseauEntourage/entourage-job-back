@@ -4,10 +4,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { MailsService } from 'src/mails/mails.service';
-import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
-import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyBusinessSector } from './models/company-business-sector.model';
 import { Company } from './models/company.model';
@@ -19,7 +16,6 @@ export class CompaniesService {
     private companyModel: typeof Company,
     @InjectModel(CompanyBusinessSector)
     private companyBusinessSectorModel: typeof CompanyBusinessSector,
-    private readonly mailsService: MailsService,
     private readonly S3Service: S3Service
   ) {}
 
@@ -46,30 +42,6 @@ export class CompaniesService {
       order: [['name', 'ASC']],
     });
   }
-
-  async inviteCollaborators(
-    sender: User,
-    companyId: string,
-    inviteCollaboratorsDto: InviteCollaboratorsDto
-  ) {
-    const company = await this.findOneCompany(companyId);
-    if (!company) {
-      throw new Error(`Company with ID ${companyId} not found`);
-    }
-    if (
-      !inviteCollaboratorsDto.emails ||
-      inviteCollaboratorsDto.emails.length === 0
-    ) {
-      throw new Error('No emails provided for invitation');
-    }
-
-    this.mailsService.sendCompanyInvitationToCollaborators(
-      sender,
-      company,
-      inviteCollaboratorsDto
-    );
-  }
-
   async update(
     id: string,
     updateCompanyDto: UpdateCompanyDto
