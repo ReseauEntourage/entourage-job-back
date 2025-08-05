@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Conversation } from 'src/messaging/models';
+import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UpdateCompanyDto } from './dto/update-company.dto';
@@ -54,14 +55,19 @@ export class CompaniesService {
     });
   }
 
-  async findOneComplete(companyId: string) {
+  async findOneWithCompanyUsersAndPendingInvitations(companyId: string) {
     return this.companyModel.findOne({
       where: { id: companyId },
       include: [
         {
           model: User,
           as: 'users',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'createdAt'],
           include: [
+            {
+              model: UserProfile,
+              attributes: ['id', 'hasPicture'],
+            },
             {
               model: CompanyInvitation,
               as: 'invitations',
@@ -93,6 +99,7 @@ export class CompaniesService {
       order: [['name', 'ASC']],
     });
   }
+
   async update(
     id: string,
     updateCompanyDto: UpdateCompanyDto

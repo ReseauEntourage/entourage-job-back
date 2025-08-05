@@ -13,6 +13,7 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
@@ -21,6 +22,7 @@ import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { User } from 'src/users/models';
+import { UsersService } from 'src/users/users.service';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -34,7 +36,8 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 export class CompaniesController {
   constructor(
     private readonly companiesService: CompaniesService,
-    private readonly companyInvitationsService: CompanyInvitationsService
+    private readonly companyInvitationsService: CompanyInvitationsService,
+    private readonly usersService: UsersService
   ) {}
 
   @Public()
@@ -49,11 +52,33 @@ export class CompaniesController {
 
   @Get(':companyId')
   async findOne(@Param('companyId') companyId: string) {
-    const company = await this.companiesService.findOneComplete(companyId);
-    if (!company) {
-      throw new BadRequestException(`Company with ID ${companyId} not found`);
+    return await this.companiesService.findOne(companyId);
+  }
+
+  @Get(':companyId/collaborators')
+  async findCompanyCollaborators(
+    @Param('companyId') companyId: string,
+    @UserPayload() user: User
+  ) {
+    const userWithCompanyUsers =
+      await this.usersService.findOneWithCompanyUsers(user.id);
+    // Ensure the user has the right to view collaborators
+    const companyUser = userWithCompanyUsers.companyUsers.find(
+      (cu) => cu.companyId === companyId
+    );
+    if (!companyUser) {
+      throw new UnauthorizedException(
+        `User is not part of company ${companyId}`
+      );
     }
-    return company;
+    if (!companyUser.isAdmin) {
+      throw new UnauthorizedException(
+        `User does not have permission to view collaborators for company ${companyId}`
+      );
+    }
+    return await this.companiesService.findOneWithCompanyUsersAndPendingInvitations(
+      companyId
+    );
   }
 
   @Public()
