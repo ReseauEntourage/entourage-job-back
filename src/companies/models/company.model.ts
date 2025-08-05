@@ -17,6 +17,7 @@ import {
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { User } from 'src/users/models';
 import { CompanyBusinessSector } from './company-business-sector.model';
+import { CompanyInvitation } from './company-invitation.model';
 import { CompanyUser } from './company-user.model';
 
 @Table({ tableName: 'Companies' })
@@ -91,6 +92,9 @@ export class Company extends Model {
     otherKey: 'userId',
   })
   users: User[];
+
+  @HasMany(() => CompanyInvitation)
+  pendingInvitations: CompanyInvitation[];
 
   @HasMany(() => CompanyBusinessSector)
   companyBusinessSectors: CompanyBusinessSector[];

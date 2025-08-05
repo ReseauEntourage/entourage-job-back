@@ -166,7 +166,7 @@ export class UsersCreationService {
   }
 
   async findOneCompany(companyId: string) {
-    return this.companiesService.findOneCompany(companyId);
+    return this.companiesService.findOne(companyId);
   }
 
   async linkUserToCompany(

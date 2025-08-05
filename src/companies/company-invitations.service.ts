@@ -47,7 +47,7 @@ export class CompanyInvitationsService {
     }
 
     // Validate company existence
-    const company = await this.companiesService.findOneCompany(companyId);
+    const company = await this.companiesService.findOne(companyId);
     if (!company) {
       throw new Error(`Company with ID ${companyId} not found`);
     }

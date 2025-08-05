@@ -2,11 +2,14 @@ import fs from 'fs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { Conversation } from 'src/messaging/models';
+import { UserProfile } from 'src/user-profiles/models';
+import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyBusinessSector } from './models/company-business-sector.model';
+import { CompanyInvitation } from './models/company-invitation.model';
 import { Company } from './models/company.model';
 
 @Injectable()
@@ -16,7 +19,7 @@ export class CompaniesService {
     private companyModel: typeof Company,
     @InjectModel(CompanyBusinessSector)
     private companyBusinessSectorModel: typeof CompanyBusinessSector,
-    private readonly S3Service: S3Service
+    private readonly s3Service: S3Service
   ) {}
 
   async findAll(limit: number, offset: number, search = '') {
@@ -36,17 +39,71 @@ export class CompaniesService {
     });
   }
 
-  async findOneCompany(companyId: string) {
+  async findOne(companyId: string) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      order: [['name', 'ASC']],
+      attributes: [
+        'id',
+        'createdAt',
+        'name',
+        'description',
+        'url',
+        'hiringUrl',
+        'linkedInUrl',
+      ],
     });
   }
+
+  async findOneWithCompanyUsersAndPendingInvitations(companyId: string) {
+    return this.companyModel.findOne({
+      where: { id: companyId },
+      include: [
+        {
+          model: User,
+          as: 'users',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'createdAt'],
+          include: [
+            {
+              model: UserProfile,
+              attributes: ['id', 'hasPicture'],
+            },
+            {
+              model: CompanyInvitation,
+              as: 'invitations',
+            },
+            {
+              model: Conversation,
+              as: 'conversations',
+              attributes: ['id'],
+              through: {
+                attributes: [],
+                as: 'conversationParticipants',
+              },
+            },
+          ],
+          through: {
+            attributes: ['isAdmin', 'role'],
+            as: 'companyUsers',
+          },
+        },
+        {
+          model: CompanyInvitation,
+          as: 'pendingInvitations',
+          where: {
+            userId: null, // Only include invitations that have not been accepted
+          },
+          required: false,
+        },
+      ],
+      order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
+    });
+  }
+
   async update(
     id: string,
     updateCompanyDto: UpdateCompanyDto
   ): Promise<Company> {
-    const company = await this.findOneCompany(id);
+    const company = await this.findOne(id);
 
     if (!company) {
       throw new NotFoundException(`Company with ID ${id} not found`);
@@ -57,7 +114,7 @@ export class CompaniesService {
       returning: true,
     });
 
-    return this.findOneCompany(id);
+    return this.findOne(id);
   }
 
   async uploadLogo(
@@ -69,7 +126,7 @@ export class CompaniesService {
     }
     const { path } = file;
     try {
-      const s3file = await this.S3Service.upload(
+      const s3file = await this.s3Service.upload(
         fs.readFileSync(path),
         'image/png',
         `${companyId}.png`,
@@ -87,7 +144,7 @@ export class CompaniesService {
     companyId: string,
     businessSectorIds: string[]
   ): Promise<void> {
-    const company = await this.findOneCompany(companyId);
+    const company = await this.findOne(companyId);
 
     if (!company) {
       throw new NotFoundException(`Company with ID ${companyId} not found`);
