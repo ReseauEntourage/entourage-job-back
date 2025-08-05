@@ -51,7 +51,6 @@ export class CompaniesService {
         'hiringUrl',
         'linkedInUrl',
       ],
-      order: [['name', 'ASC']],
     });
   }
 
@@ -96,7 +95,7 @@ export class CompaniesService {
           required: false,
         },
       ],
-      order: [['name', 'ASC']],
+      order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
     });
   }
 
