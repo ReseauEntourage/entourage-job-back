@@ -15,6 +15,10 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contracts } from 'src/common/contracts/contracts.types';
 import { Skill } from 'src/common/skills/models';
 import { Company } from 'src/companies/models/company.model';
+import {
+  WorkingExperience,
+  WorkingExperienceYears,
+} from 'src/contacts/contacts.types';
 import { WrapperModel } from 'src/utils/types';
 import { RecruitementAlertBusinessSector } from './recruitement-alert-business-sector.model';
 import { RecruitementAlertSkill } from './recruitement-alert-skill.model';
@@ -36,8 +40,8 @@ export class RecruitementAlert extends WrapperModel {
   jobName: string;
 
   @AllowNull(true)
-  @Column(DataType.INTEGER)
-  workingExperienceYears: number;
+  @Column(DataType.ENUM(...Object.values(WorkingExperienceYears)))
+  workingExperienceYears: WorkingExperience;
 
   @AllowNull(true)
   @Column(DataType.ENUM(...Object.values(Contracts)))

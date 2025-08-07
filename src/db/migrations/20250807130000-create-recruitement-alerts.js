@@ -21,7 +21,12 @@ module.exports = {
       },
       workingExperienceYears: {
         allowNull: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.ENUM(
+          'less_than_3_year',
+          'between_3_and_10_years',
+          'more_than_10_years',
+          'jnspr'
+        ),
       },
       contractType: {
         allowNull: true,
@@ -133,6 +138,9 @@ module.exports = {
     // Suppression de l'enum après avoir supprimé la table qui l'utilise
     await queryInterface.sequelize.query(
       'DROP TYPE IF EXISTS "enum_RecruitementAlerts_contractType";'
+    );
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_RecruitementAlerts_workingExperienceYears";'
     );
 
     await queryInterface.dropTable('RecruitementAlerts');

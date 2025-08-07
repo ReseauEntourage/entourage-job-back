@@ -5,6 +5,8 @@ import {
   RecruitementAlertBusinessSector,
   RecruitementAlertSkill,
 } from './models';
+import { RecruitementAlertsController } from './recruitement-alerts.controller';
+import { RecruitementAlertsService } from './recruitement-alerts.service';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import {
       RecruitementAlertSkill,
     ]),
   ],
+  providers: [RecruitementAlertsService],
+  controllers: [RecruitementAlertsController],
   exports: [SequelizeModule],
 })
 export class RecruitementAlertsModule {}
