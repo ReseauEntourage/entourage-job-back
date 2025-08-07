@@ -17,6 +17,7 @@ import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
+import { RecruitementAlertsModule } from './common/recruitement-alerts/recruitement-alerts.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
@@ -128,6 +129,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ExperiencesModule,
     FormationsModule,
     ReviewsModule,
+    RecruitementAlertsModule,
     MailsModule,
     MailjetModule,
     ExternalDatabasesModule,
