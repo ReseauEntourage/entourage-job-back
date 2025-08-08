@@ -8,6 +8,6 @@ import { PingService } from './ping.service';
   imports: [SequelizeModule.forFeature([SequelizeMeta])],
   controllers: [PingController],
   providers: [PingService],
-  exports: [SequelizeModule, PingService],
+  exports: [PingService],
 })
 export class PingModule {}
