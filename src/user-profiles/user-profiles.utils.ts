@@ -48,5 +48,6 @@ export function userProfileSearchQuery(query = '') {
       query,
       true
     ),
+    searchInColumnWhereOption('currentJob', query, true),
   ];
 }
