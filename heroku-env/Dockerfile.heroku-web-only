@@ -1,0 +1,79 @@
+FROM heroku/heroku:24
+
+# Passer à l'utilisateur root pour les opérations qui nécessitent des privilèges
+USER root
+
+# Set working directory
+WORKDIR /app
+
+# Copy application files
+COPY . .
+
+# Installation des buildpacks
+# 1. NodeJS Buildpack - Déjà inclus avec l'installation de Node.js
+# 2. Autres buildpacks courants
+RUN mkdir -p /tmp/buildpacks
+
+# Installation de Node.js et de toutes les dépendances système en une seule étape
+# pour éviter les problèmes avec apt-get
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && \
+    apt-get install -y \
+        nodejs \
+        ghostscript \
+        graphicsmagick \
+        imagemagick \
+        poppler-utils \
+        libpq-dev \
+        netcat-openbsd \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install yarn
+RUN npm install -g yarn
+
+# Copier et exécuter le script d'application des buildpacks
+COPY heroku-env/apply-buildpacks.sh /app/apply-buildpacks.sh
+RUN chmod +x /app/apply-buildpacks.sh
+RUN /app/apply-buildpacks.sh
+
+# Install app dependencies
+RUN yarn install
+
+# Build app
+RUN yarn build
+
+# Vérifier le contenu du dossier dist et le fichier d'entrée
+RUN echo "Contenu du répertoire /app/dist après la compilation :" && \
+    ls -la /app/dist && \
+    echo "Recherche de tous les fichiers 'main' dans /app/dist :" && \
+    find /app/dist -name "main*" -type f && \
+    if [ ! -f "/app/dist/main.js" ] && [ ! -f "/app/dist/main" ]; then \
+      echo "ERREUR: Ni le fichier dist/main.js ni dist/main n'ont été créés pendant la compilation"; \
+      echo "Le répertoire /app/dist contient :"; \
+      ls -la /app/dist || echo "Le répertoire /app/dist n'existe pas"; \
+      exit 1; \
+    else \
+      echo "Compilation réussie - Un fichier main a été trouvé"; \
+      ls -la /app/dist | grep main; \
+    fi
+
+# Définir les permissions correctes pour que l'utilisateur heroku puisse accéder aux fichiers
+RUN chown -R heroku:heroku /app
+
+# Set environment variables that would be set by Heroku
+ENV PORT=3002
+ENV NODE_ENV=production
+
+# Expose the port
+EXPOSE $PORT
+
+# Use our custom script to start only the web server
+COPY heroku-env/docker-heroku-entrypoint-web-only.sh /app/docker-heroku-entrypoint-web-only.sh
+RUN chmod +x /app/docker-heroku-entrypoint-web-only.sh
+
+# Revenir à l'utilisateur non privilégié heroku pour l'exécution
+USER heroku
+
+ENTRYPOINT ["/app/docker-heroku-entrypoint-web-only.sh"]

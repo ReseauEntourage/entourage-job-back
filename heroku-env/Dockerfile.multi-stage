@@ -1,0 +1,81 @@
+FROM node:20.19-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and yarn.lock
+COPY package.json yarn.lock ./
+
+# Install dependencies
+RUN yarn install --frozen-lockfile
+
+# Copy source files
+COPY . .
+
+# Build the application
+RUN yarn build
+
+# Verify build output and find the actual location of main.js
+RUN ls -la /app/dist && \
+    echo "Recherche de tous les fichiers main dans /app/dist :" && \
+    find /app/dist -name "main*.js" -type f && \
+    test -f /app/dist/src/main.js
+
+# Production image
+FROM heroku/heroku:24
+
+# Passer à l'utilisateur root pour les opérations nécessitant des privilèges
+USER root
+
+# Set working directory
+WORKDIR /app
+
+# Install Node.js 20.x
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && \
+    apt-get install -y \
+        nodejs \
+        ghostscript \
+        graphicsmagick \
+        netcat-openbsd \
+        && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install yarn
+RUN npm install -g yarn
+
+# Copy package.json and yarn.lock
+COPY package.json yarn.lock ./
+# Remplacer par notre version pour l'environnement heroku qui a le bon chemin dans les scripts
+COPY heroku-env/package.json ./package.json.heroku
+
+# Install only production dependencies
+RUN yarn install --frozen-lockfile --production
+
+# Copy compiled code from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Copy necessary configuration files
+COPY .sequelizerc ./
+COPY src/db ./src/db
+
+# Copy entry script
+COPY heroku-env/docker-heroku-entrypoint-web-only.sh ./
+RUN chmod +x ./docker-heroku-entrypoint-web-only.sh
+
+# Set environment variables
+ENV PORT=3002
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE $PORT
+
+# Set proper permissions
+RUN chown -R heroku:heroku /app
+
+# Switch back to non-root user for security
+USER heroku
+
+# Start application
+ENTRYPOINT ["./docker-heroku-entrypoint-web-only.sh"]
