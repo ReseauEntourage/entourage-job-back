@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { SkillsModule } from 'src/common/skills/skills.module';
 import {
   RecruitementAlert,
   RecruitementAlertBusinessSector,
@@ -15,6 +16,7 @@ import { RecruitementAlertsService } from './recruitement-alerts.service';
       RecruitementAlertBusinessSector,
       RecruitementAlertSkill,
     ]),
+    SkillsModule,
   ],
   providers: [RecruitementAlertsService],
   controllers: [RecruitementAlertsController],

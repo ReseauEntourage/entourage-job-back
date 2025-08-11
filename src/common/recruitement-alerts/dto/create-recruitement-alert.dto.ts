@@ -8,15 +8,21 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Contracts } from 'src/common/contracts/contracts.types';
+import { FilterConstant } from 'src/utils/types';
 
 export class CreateRecruitementAlertDto {
+  @IsUUID()
+  @IsNotEmpty()
+  companyId: string;
+
   @IsString()
   @IsNotEmpty()
   name: string;
 
   @IsString()
   @IsNotEmpty()
-  jobName: string;
+  @IsOptional()
+  jobName?: string;
 
   @IsNumber()
   @IsOptional()
@@ -26,17 +32,12 @@ export class CreateRecruitementAlertDto {
   @IsOptional()
   contractType?: Contracts;
 
-  @IsUUID()
-  @IsNotEmpty()
-  companyId: string;
-
   @IsArray()
   @IsUUID(4, { each: true })
   @IsOptional()
   businessSectorIds?: string[];
 
   @IsArray()
-  @IsUUID(4, { each: true })
   @IsOptional()
-  skillIds?: string[];
+  skills?: FilterConstant<string>[];
 }
