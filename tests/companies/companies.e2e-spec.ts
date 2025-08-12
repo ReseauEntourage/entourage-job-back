@@ -181,7 +181,7 @@ describe('Companies', () => {
       });
       loggedInCollaborator = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
-        companies: [company],
+        company: company,
       });
       companiesHelper.linkCompanyToUser({
         userId: loggedInCollaborator.user.id,

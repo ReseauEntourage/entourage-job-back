@@ -277,8 +277,17 @@ export class User extends HistorizedModel {
     through: () => CompanyUser,
     foreignKey: 'userId',
     otherKey: 'companyId',
+    as: 'companies',
   })
-  companies: Company[];
+  _companies: Company[];
+
+  @Column(DataType.VIRTUAL)
+  get company(): Company {
+    // Retourne uniquement la première entreprise si plusieurs existent
+    return this._companies && this._companies.length > 0
+      ? this._companies[0]
+      : undefined;
+  }
 
   @HasMany(() => CompanyInvitation, {
     foreignKey: 'userId',
