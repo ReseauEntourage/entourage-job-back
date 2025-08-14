@@ -13,6 +13,7 @@ import {
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contracts } from 'src/common/contracts/contracts.types';
+import { Department } from 'src/common/locations/locations.types';
 import { Skill } from 'src/common/skills/models';
 import { Company } from 'src/companies/models/company.model';
 import {
@@ -46,6 +47,10 @@ export class RecruitementAlert extends WrapperModel {
   @AllowNull(true)
   @Column(DataType.ENUM(...Object.values(Contracts)))
   contractType: Contracts;
+
+  @AllowNull(true)
+  @Column
+  department: Department;
 
   @IsUUID(4)
   @ForeignKey(() => Company)

@@ -127,7 +127,7 @@ export class UsersController {
       throw new NotFoundException();
     }
 
-    return user;
+    return user.toJSON();
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
@@ -188,7 +188,7 @@ export class UsersController {
       throw new NotFoundException();
     }
 
-    return updatedUser;
+    return updatedUser.toJSON();
   }
 
   // for admin to modify multiple users at the same time
@@ -319,6 +319,6 @@ export class UsersController {
       this.usersService.sendVerificationMail(updatedUser, token);
     }
 
-    return updatedUser;
+    return updatedUser.toJSON();
   }
 }

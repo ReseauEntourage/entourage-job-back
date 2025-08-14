@@ -2,9 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, Transaction } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
+import { Skill } from 'src/common/skills/models';
+import { SkillsService } from 'src/common/skills/skills.service';
+import { CompanyUser } from 'src/companies/models/company-user.model';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterConstant } from 'src/utils/types/Filters';
-
-import { CreateRecruitementAlertDto } from './dto';
+import { CreateRecruitementAlertDto, UpdateRecruitementAlertDto } from './dto';
 import {
   RecruitementAlert,
   RecruitementAlertBusinessSector,
@@ -20,8 +23,48 @@ export class RecruitementAlertsService {
     private recruitementAlertBusinessSectorModel: typeof RecruitementAlertBusinessSector,
     @InjectModel(RecruitementAlertSkill)
     private recruitementAlertSkillModel: typeof RecruitementAlertSkill,
-    private sequelize: Sequelize
+    @InjectModel(CompanyUser)
+    private companyUserModel: typeof CompanyUser,
+    @InjectModel(Skill)
+    private skillModel: typeof Skill,
+    private sequelize: Sequelize,
+    private userProfilesService: UserProfilesService,
+    private skillsService: SkillsService
   ) {}
+
+  async findAllByUserId(userId: string): Promise<RecruitementAlert[]> {
+    // Find company with userId
+    const companyUser = await this.companyUserModel.findOne({
+      where: { userId },
+      attributes: ['companyId'],
+    });
+
+    if (!companyUser) {
+      return [];
+    }
+
+    const companyId = companyUser.companyId;
+
+    // Fetch all recruitement alerts for the company
+    const recruitementAlerts = await this.recruitementAlertModel.findAll({
+      where: {
+        companyId,
+      },
+      include: [
+        {
+          association: 'businessSectors',
+        },
+        {
+          association: 'skills',
+        },
+        {
+          association: 'company',
+        },
+      ],
+    });
+
+    return recruitementAlerts;
+  }
 
   async create(createRecruitementAlertDto: CreateRecruitementAlertDto) {
     const { businessSectorIds, skills, ...recruitementAlertData } =
@@ -41,7 +84,6 @@ export class RecruitementAlertsService {
           transaction
         );
       }
-
       // update skills
       if (skills && skills.length > 0) {
         await this.updateSkills(recruitementAlert.id, skills, transaction);
@@ -53,9 +95,61 @@ export class RecruitementAlertsService {
     return result;
   }
 
-  async findOne(recruitementAlertId: string) {
+  async findOne(recruitementAlertId: string, transaction?: Transaction) {
     return this.recruitementAlertModel.findOne({
       where: { id: recruitementAlertId },
+      include: [
+        {
+          association: 'businessSectors',
+        },
+        {
+          association: 'skills',
+        },
+        {
+          association: 'company',
+        },
+      ],
+      transaction,
+    });
+  }
+
+  async update(
+    recruitementAlertId: string,
+    updateRecruitementAlertDto: UpdateRecruitementAlertDto
+  ) {
+    const { businessSectorIds, skills, ...recruitementAlertData } =
+      updateRecruitementAlertDto;
+
+    return this.sequelize.transaction(async (transaction) => {
+      const recruitementAlert = await this.findOne(
+        recruitementAlertId,
+        transaction
+      );
+
+      if (!recruitementAlert) {
+        throw new NotFoundException(
+          `Recruitement alert with ID ${recruitementAlertId} not found`
+        );
+      }
+
+      // Mettre à jour les données de base de l'alerte
+      if (Object.keys(recruitementAlertData).length > 0) {
+        await recruitementAlert.update(recruitementAlertData, { transaction });
+      }
+
+      if (businessSectorIds) {
+        await this.updateBusinessSectors(
+          recruitementAlertId,
+          businessSectorIds,
+          transaction
+        );
+      }
+
+      if (skills) {
+        await this.updateSkills(recruitementAlertId, skills, transaction);
+      }
+
+      return this.findOne(recruitementAlertId, transaction);
     });
   }
 
@@ -65,10 +159,10 @@ export class RecruitementAlertsService {
     transaction?: Transaction
   ) {
     // Find the recruitement alert - use the transaction for this query!
-    const recruitementAlert = await this.recruitementAlertModel.findOne({
-      where: { id: recruitementAlertId },
-      transaction,
-    });
+    const recruitementAlert = await this.findOne(
+      recruitementAlertId,
+      transaction
+    );
 
     if (!recruitementAlert) {
       console.error('Recruitement alert not found');
@@ -150,10 +244,10 @@ export class RecruitementAlertsService {
     transaction?: sequelize.Transaction
   ) {
     // Find the recruitement alert
-    const recruitementAlert = await this.recruitementAlertModel.findOne({
-      where: { id: recruitementAlertId },
-      transaction, // Pass the transaction here to see newly created records!
-    });
+    const recruitementAlert = await this.findOne(
+      recruitementAlertId,
+      transaction
+    );
 
     if (!recruitementAlert) {
       throw new NotFoundException(
@@ -165,15 +259,68 @@ export class RecruitementAlertsService {
     const t = transaction || (await this.sequelize.transaction());
 
     try {
-      // save recruitement alert skills
-      const skillsToCreate = skills.map((skill) => ({
-        recruitementAlertId,
-        skillId: skill.value,
-      }));
+      // First, check if there are any new skills to create
+      const newSkills = skills.filter((skill) => skill.__isNew__ === true);
+      let createdSkills: Skill[] = [];
 
-      await this.recruitementAlertSkillModel.bulkCreate(skillsToCreate, {
+      if (newSkills.length > 0) {
+        // Create the new skills in the database
+        const skillsToCreate = newSkills.map((skill) => ({
+          name: skill.label,
+        }));
+
+        createdSkills = await this.skillsService.bulkCreateSkills(
+          skillsToCreate,
+          t
+        );
+      }
+
+      // Get current skills
+      const currentSkills = await this.recruitementAlertSkillModel.findAll({
+        where: { recruitementAlertId },
         transaction: t,
       });
+
+      // Get current skill IDs
+      const currentSkillIds = currentSkills.map((s) => s.skillId);
+
+      // Prepare skills to create
+      const skillsToCreate = skills.map((skill) => {
+        // If this is a new skill, find its newly created ID
+        if (skill.__isNew__ === true) {
+          const createdSkill = createdSkills.find(
+            (cs) => cs.name === skill.label
+          );
+          if (createdSkill) {
+            return {
+              recruitementAlertId,
+              skillId: createdSkill.id,
+            };
+          }
+        }
+
+        return {
+          recruitementAlertId,
+          skillId: skill.value,
+        };
+      });
+
+      // First delete all existing skills
+      if (currentSkillIds.length > 0) {
+        await this.recruitementAlertSkillModel.destroy({
+          where: {
+            recruitementAlertId,
+          },
+          transaction: t,
+        });
+      }
+
+      // Then create all skills
+      if (skillsToCreate.length > 0) {
+        await this.recruitementAlertSkillModel.bulkCreate(skillsToCreate, {
+          transaction: t,
+        });
+      }
 
       // If we created our own transaction, commit it
       if (!transaction) {
@@ -188,5 +335,49 @@ export class RecruitementAlertsService {
       }
       throw error;
     }
+  }
+
+  async getRecruitementAlertMatching(recruitementAlertId: string) {
+    const recruitementAlert = await this.findOne(recruitementAlertId);
+
+    if (!recruitementAlert) {
+      throw new NotFoundException(
+        `Recruitement alert with ID ${recruitementAlertId} not found`
+      );
+    }
+
+    // Utilisation de la nouvelle méthode spécifique pour trouver les profils correspondants
+    const matchingProfiles =
+      await this.userProfilesService.findMatchingProfilesForRecruitementAlert(
+        recruitementAlert
+      );
+
+    return matchingProfiles;
+  }
+
+  async delete(recruitementAlertId: string): Promise<boolean> {
+    const recruitementAlert = await this.findOne(recruitementAlertId);
+
+    if (!recruitementAlert) {
+      throw new NotFoundException(
+        `Recruitement alert with ID ${recruitementAlertId} not found`
+      );
+    }
+
+    return this.sequelize.transaction(async (transaction) => {
+      await this.recruitementAlertBusinessSectorModel.destroy({
+        where: { recruitementAlertId },
+        transaction,
+      });
+
+      await this.recruitementAlertSkillModel.destroy({
+        where: { recruitementAlertId },
+        transaction,
+      });
+
+      await recruitementAlert.destroy({ transaction });
+
+      return true;
+    });
   }
 }

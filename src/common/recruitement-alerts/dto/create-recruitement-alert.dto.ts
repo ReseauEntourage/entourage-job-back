@@ -8,6 +8,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Contracts } from 'src/common/contracts/contracts.types';
+import { Department } from 'src/common/locations/locations.types';
 import { FilterConstant } from 'src/utils/types';
 
 export class CreateRecruitementAlertDto {
@@ -40,4 +41,8 @@ export class CreateRecruitementAlertDto {
   @IsArray()
   @IsOptional()
   skills?: FilterConstant<string>[];
+
+  @IsString()
+  @IsOptional()
+  department?: Department;
 }

@@ -18,6 +18,7 @@ import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { NudgesService } from 'src/common/nudge/nudges.service';
 import { Occupation } from 'src/common/occupations/models';
+import { RecruitementAlert } from 'src/common/recruitement-alerts/models';
 import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
 import { SkillsService } from 'src/common/skills/skills.service';
@@ -311,6 +312,152 @@ export class UserProfilesService {
         };
       })
     );
+  }
+
+  /**
+   * Méthode spécifique pour rechercher les profils correspondant à une alerte de recrutement
+   * @param recruitementAlert Alerte de recrutement à utiliser pour la recherche
+   * @returns Liste des profils correspondant aux critères de l'alerte
+   */
+  async findMatchingProfilesForRecruitementAlert(
+    recruitementAlert: RecruitementAlert
+  ): Promise<PublicProfile[]> {
+    // 1. Préparer les critères de recherche en fonction de l'alerte
+    const businessSectorIds =
+      recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
+
+    const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
+
+    // 2. Construire la requête de recherche
+    // Recherche par nom de poste (jobName) dans les expériences et le job recherché
+    const searchOptions = recruitementAlert.jobName
+      ? {
+          [Op.or]: [
+            sequelize.where(
+              sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
+              'LIKE',
+              `%${recruitementAlert.jobName.toLowerCase()}%`
+            ),
+            sequelize.where(
+              sequelize.fn('LOWER', sequelize.col('experiences.title')),
+              'LIKE',
+              `%${recruitementAlert.jobName.toLowerCase()}%`
+            ),
+            sequelize.where(
+              sequelize.fn('LOWER', sequelize.col('experiences.description')),
+              'LIKE',
+              `%${recruitementAlert.jobName.toLowerCase()}%`
+            ),
+          ],
+        }
+      : {};
+
+    // Filtre sur le département si spécifié
+    const departmentOptions = recruitementAlert.department
+      ? {
+          department: recruitementAlert.department,
+        }
+      : {};
+
+    // 3. Première requête pour filtrer les profils selon les critères spécifiés
+    const filteredProfiles = await this.userProfileModel.findAll({
+      attributes: ['id'],
+      where: {
+        ...departmentOptions,
+        ...searchOptions,
+      },
+      include: [
+        // Inclure les secteurs d'activité pour le filtrage
+        ...(businessSectorIds.length > 0
+          ? [
+              {
+                model: BusinessSector,
+                as: 'businessSectors',
+                through: { attributes: [] },
+                where: {
+                  id: { [Op.in]: businessSectorIds },
+                },
+                required: true,
+              },
+            ]
+          : []),
+        // Inclure les compétences pour le filtrage
+        ...(skillIds.length > 0
+          ? [
+              {
+                model: Skill,
+                as: 'skills',
+                through: { attributes: [] },
+                where: {
+                  id: { [Op.in]: skillIds },
+                },
+                required: true,
+              },
+            ]
+          : []),
+        // Inclure les contrats pour le filtrage
+        ...(recruitementAlert.contractType
+          ? [
+              {
+                model: Contract,
+                as: 'contracts',
+                through: { attributes: [] },
+                where: {
+                  name: recruitementAlert.contractType,
+                },
+                required: true,
+              },
+            ]
+          : []),
+        // Inclure les expériences pour la recherche par mot-clé
+        {
+          model: Experience,
+          as: 'experiences',
+          required: false,
+        },
+        // Inclure l'utilisateur pour filtrer uniquement les candidats
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'role'],
+          where: {
+            role: [UserRoles.CANDIDATE],
+            lastConnection: { [Op.ne]: null },
+          },
+          required: true,
+        },
+      ],
+    });
+
+    // 4. Deuxième requête pour obtenir tous les détails des profils filtrés
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.lastConnection" DESC'),
+      where: {
+        id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
+      },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+        },
+      ],
+    });
+
+    // 5. Transformer les profils en format public
+    return profiles.map((profile): PublicProfile => {
+      const { user, ...restProfile }: UserProfile = profile.toJSON();
+      return {
+        ...user,
+        ...restProfile,
+        id: profile.user.id,
+        lastSentMessage: null,
+        lastReceivedMessage: null,
+        averageDelayResponse: null,
+      };
+    });
   }
 
   async findAllReferedCandidates(
