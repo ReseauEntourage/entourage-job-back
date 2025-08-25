@@ -34,16 +34,14 @@ export const getUserProfileSectorOccupationsInclude = (
     {
       model: UserProfileSectorOccupation,
       as: 'sectorOccupations',
-      required: false,
+      required: isBusinessSectorsRequired,
       attributes: ['id', 'order'],
       include: [
         {
           model: BusinessSector,
           as: 'businessSector',
           required: isBusinessSectorsRequired,
-          ...(isBusinessSectorsRequired
-            ? { where: businessSectorsOptions }
-            : {}),
+          ...(businessSectorsOptions ? { where: businessSectorsOptions } : {}),
           attributes: ['id', 'name', 'prefixes'],
         },
         {
