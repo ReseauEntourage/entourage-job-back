@@ -30,6 +30,7 @@ import { MediasModule } from './medias/medias.module';
 import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { PingModule } from './ping/ping.module';
 import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
 import { PublicCVsModule } from './public-cv/public-cvs.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
@@ -141,6 +142,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     OpenAiModule,
     PublicCVsModule,
     ProfileGenerationModule,
+    PingModule,
   ],
   providers: [
     {
