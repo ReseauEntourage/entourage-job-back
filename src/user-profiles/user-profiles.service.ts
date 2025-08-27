@@ -230,7 +230,7 @@ export class UserProfilesService {
       contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
       contactTypes?.includes(ContactTypeEnum.REMOTE)
         ? {
-            [Op.or]: {
+            [Op.and]: {
               ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
                 allowPhysicalEvents: true,
               }),
