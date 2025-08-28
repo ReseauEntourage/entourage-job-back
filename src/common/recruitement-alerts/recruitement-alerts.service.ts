@@ -346,7 +346,6 @@ export class RecruitementAlertsService {
       );
     }
 
-    // Utilisation de la nouvelle méthode spécifique pour trouver les profils correspondants
     const matchingProfiles =
       await this.userProfilesService.findMatchingProfilesForRecruitementAlert(
         recruitementAlert

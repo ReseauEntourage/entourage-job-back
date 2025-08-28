@@ -322,52 +322,47 @@ export class UserProfilesService {
   async findMatchingProfilesForRecruitementAlert(
     recruitementAlert: RecruitementAlert
   ): Promise<PublicProfile[]> {
-    // 1. Préparer les critères de recherche en fonction de l'alerte
+    // Prepare criteria
     const businessSectorIds =
       recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
 
     const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
 
-    // 2. Construire la requête de recherche
-    // Recherche par nom de poste (jobName) dans les expériences et le job recherché
-    const searchOptions = recruitementAlert.jobName
-      ? {
-          [Op.or]: [
-            sequelize.where(
-              sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
-              'LIKE',
-              `%${recruitementAlert.jobName.toLowerCase()}%`
-            ),
-            sequelize.where(
-              sequelize.fn('LOWER', sequelize.col('experiences.title')),
-              'LIKE',
-              `%${recruitementAlert.jobName.toLowerCase()}%`
-            ),
-            sequelize.where(
-              sequelize.fn('LOWER', sequelize.col('experiences.description')),
-              'LIKE',
-              `%${recruitementAlert.jobName.toLowerCase()}%`
-            ),
-          ],
-        }
-      : {};
-
-    // Filtre sur le département si spécifié
+    // Construct options
+    const searchOptions = {
+      [Op.or]: [
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('experiences.title')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('experiences.description')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+      ],
+    };
     const departmentOptions = recruitementAlert.department
       ? {
           department: recruitementAlert.department,
         }
       : {};
 
-    // 3. Première requête pour filtrer les profils selon les critères spécifiés
+    const whereOptions = {
+      [Op.or]: [departmentOptions, searchOptions],
+    };
+
+    // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
       attributes: ['id'],
-      where: {
-        ...departmentOptions,
-        ...searchOptions,
-      },
+      where: whereOptions,
       include: [
-        // Inclure les secteurs d'activité pour le filtrage
         ...(businessSectorIds.length > 0
           ? [
               {
@@ -381,7 +376,6 @@ export class UserProfilesService {
               },
             ]
           : []),
-        // Inclure les compétences pour le filtrage
         ...(skillIds.length > 0
           ? [
               {
@@ -395,7 +389,6 @@ export class UserProfilesService {
               },
             ]
           : []),
-        // Inclure les contrats pour le filtrage
         ...(recruitementAlert.contractType
           ? [
               {
@@ -409,13 +402,11 @@ export class UserProfilesService {
               },
             ]
           : []),
-        // Inclure les expériences pour la recherche par mot-clé
         {
           model: Experience,
           as: 'experiences',
           required: false,
         },
-        // Inclure l'utilisateur pour filtrer uniquement les candidats
         {
           model: User,
           as: 'user',
@@ -429,7 +420,7 @@ export class UserProfilesService {
       ],
     });
 
-    // 4. Deuxième requête pour obtenir tous les détails des profils filtrés
+    // Get details on filtered profiles
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
       order: sequelize.literal('"user.lastConnection" DESC'),
@@ -446,7 +437,7 @@ export class UserProfilesService {
       ],
     });
 
-    // 5. Transformer les profils en format public
+    // Transform into PublicProfile
     return profiles.map((profile): PublicProfile => {
       const { user, ...restProfile }: UserProfile = profile.toJSON();
       return {

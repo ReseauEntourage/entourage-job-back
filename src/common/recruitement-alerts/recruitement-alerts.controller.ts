@@ -4,8 +4,8 @@ import {
   Delete,
   Get,
   Param,
-  Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -67,7 +67,7 @@ export class RecruitementAlertsController {
     }
   }
 
-  @Patch(':id')
+  @Put(':id')
   async updateRecruitementAlert(
     @Param('id') alertId: string,
     @Body() updateRecruitementAlertDto: UpdateRecruitementAlertDto
