@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from 'fs';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -322,14 +323,18 @@ export class UserProfilesService {
   async findMatchingProfilesForRecruitementAlert(
     recruitementAlert: RecruitementAlert
   ): Promise<PublicProfile[]> {
+    console.log('-----------------');
+
+    console.log('Alerte: ', recruitementAlert.name);
     // Prepare criteria
     const businessSectorIds =
       recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
+    console.log('businessSectorIds: ', businessSectorIds);
 
     const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
+    console.log('skillIds: ', skillIds);
 
-    // Construct options
-    const searchOptions = {
+    const whereOptions = {
       [Op.or]: [
         sequelize.where(
           sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
@@ -347,16 +352,12 @@ export class UserProfilesService {
           `%${recruitementAlert.jobName.toLowerCase()}%`
         ),
       ],
+      ...(recruitementAlert.department
+        ? { department: recruitementAlert.department }
+        : {}),
     };
-    const departmentOptions = recruitementAlert.department
-      ? {
-          department: recruitementAlert.department,
-        }
-      : {};
 
-    const whereOptions = {
-      [Op.or]: [departmentOptions, searchOptions],
-    };
+    console.log(whereOptions);
 
     // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
@@ -372,7 +373,7 @@ export class UserProfilesService {
                 where: {
                   id: { [Op.in]: businessSectorIds },
                 },
-                required: true,
+                required: false,
               },
             ]
           : []),
@@ -385,7 +386,7 @@ export class UserProfilesService {
                 where: {
                   id: { [Op.in]: skillIds },
                 },
-                required: true,
+                required: false,
               },
             ]
           : []),
@@ -398,7 +399,7 @@ export class UserProfilesService {
                 where: {
                   name: recruitementAlert.contractType,
                 },
-                required: true,
+                required: false,
               },
             ]
           : []),
@@ -420,6 +421,8 @@ export class UserProfilesService {
       ],
     });
 
+    console.log('found filtered profiles', filteredProfiles.length);
+
     // Get details on filtered profiles
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
@@ -437,6 +440,181 @@ export class UserProfilesService {
       ],
     });
 
+    console.log('-----------------');
+    // Transform into PublicProfile
+    return profiles.map((profile): PublicProfile => {
+      const { user, ...restProfile }: UserProfile = profile.toJSON();
+      return {
+        ...user,
+        ...restProfile,
+        id: profile.user.id,
+        lastSentMessage: null,
+        lastReceivedMessage: null,
+        averageDelayResponse: null,
+      };
+    });
+  }
+
+  async findMatchingProfilesForRecruitementAlert1(
+    recruitementAlert: RecruitementAlert
+  ): Promise<PublicProfile[]> {
+    console.log('-----------------');
+    console.log('Alerte: ', recruitementAlert.name);
+
+    // Prepare criteria
+    const businessSectorIds =
+      recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
+    console.log('businessSectorIds: ', businessSectorIds);
+
+    const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
+    console.log('skillIds: ', skillIds);
+
+    // Base conditions that are always applied
+    const whereOptions = {
+      [Op.or]: [
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('experiences.title')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('experiences.description')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+      ],
+      ...(recruitementAlert.department
+        ? { department: recruitementAlert.department }
+        : {}),
+    };
+
+    console.log(whereOptions);
+
+    // Get all profiles matching the criteria
+    const filteredProfiles = await this.userProfileModel.findAll({
+      attributes: ['id'],
+      where: whereOptions,
+      include: [
+        // Include all associations without where clauses
+        {
+          model: BusinessSector,
+          as: 'businessSectors',
+          through: { attributes: [] },
+          required: false,
+        },
+        {
+          model: Skill,
+          as: 'skills',
+          through: { attributes: [] },
+          required: false,
+        },
+        {
+          model: Contract,
+          as: 'contracts',
+          through: { attributes: [] },
+          required: false,
+        },
+        {
+          model: Experience,
+          as: 'experiences',
+          required: false,
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'role'],
+          where: {
+            role: [UserRoles.CANDIDATE],
+            lastConnection: { [Op.ne]: null },
+          },
+          required: true,
+        },
+      ],
+    });
+
+    console.log(
+      'Profils trouvés avant filtrage secondaire:',
+      filteredProfiles.length
+    );
+
+    // Appliquer le filtrage manuel sur les autres critères
+    const filteredIds = await Promise.all(
+      filteredProfiles.map(async (profile) => {
+        const fullProfile = await this.userProfileModel.findByPk(profile.id, {
+          include: [
+            {
+              model: BusinessSector,
+              as: 'businessSectors',
+            },
+            {
+              model: Skill,
+              as: 'skills',
+            },
+            {
+              model: Contract,
+              as: 'contracts',
+            },
+          ],
+        });
+
+        // Vérifier les secteurs d'activité si spécifiés
+        if (businessSectorIds.length > 0) {
+          const profileSectorIds = fullProfile.businessSectors.map(
+            (sector) => sector.id
+          );
+          if (!businessSectorIds.some((id) => profileSectorIds.includes(id))) {
+            return null;
+          }
+        }
+
+        // Vérifier les compétences si spécifiées
+        if (skillIds.length > 0) {
+          const profileSkillIds = fullProfile.skills.map((skill) => skill.id);
+          if (!skillIds.some((id) => profileSkillIds.includes(id))) {
+            return null;
+          }
+        }
+
+        // Vérifier le type de contrat si spécifié
+        if (recruitementAlert.contractType) {
+          const hasMatchingContract = fullProfile.contracts.some(
+            (contract) => contract.name === recruitementAlert.contractType
+          );
+          if (!hasMatchingContract) {
+            return null;
+          }
+        }
+
+        return profile.id;
+      })
+    );
+
+    const validIds = filteredIds.filter((id) => id !== null);
+    console.log('Profils retenus après filtrage secondaire:', validIds.length);
+
+    // Get details on filtered profiles
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: sequelize.literal('"user.lastConnection" DESC'),
+      where: {
+        id: { [Op.in]: validIds },
+      },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+        },
+      ],
+    });
+
+    console.log('-----------------');
     // Transform into PublicProfile
     return profiles.map((profile): PublicProfile => {
       const { user, ...restProfile }: UserProfile = profile.toJSON();

@@ -347,7 +347,7 @@ export class RecruitementAlertsService {
     }
 
     const matchingProfiles =
-      await this.userProfilesService.findMatchingProfilesForRecruitementAlert(
+      await this.userProfilesService.findMatchingProfilesForRecruitementAlert1(
         recruitementAlert
       );
 
