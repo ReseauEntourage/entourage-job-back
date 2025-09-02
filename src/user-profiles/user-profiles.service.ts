@@ -226,14 +226,12 @@ export class UserProfilesService {
       contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
       contactTypes?.includes(ContactTypeEnum.REMOTE)
         ? {
-            [Op.or]: {
-              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
-                allowPhysicalEvents: true,
-              }),
-              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
-                allowRemoteEvents: true,
-              }),
-            },
+            ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
+              allowPhysicalEvents: true,
+            }),
+            ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
+              allowRemoteEvents: true,
+            }),
           }
         : undefined;
 
