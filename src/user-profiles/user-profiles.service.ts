@@ -324,141 +324,6 @@ export class UserProfilesService {
     recruitementAlert: RecruitementAlert
   ): Promise<PublicProfile[]> {
     console.log('-----------------');
-
-    console.log('Alerte: ', recruitementAlert.name);
-    // Prepare criteria
-    const businessSectorIds =
-      recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
-    console.log('businessSectorIds: ', businessSectorIds);
-
-    const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
-    console.log('skillIds: ', skillIds);
-
-    const whereOptions = {
-      [Op.or]: [
-        sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
-          'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
-        ),
-        sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('experiences.title')),
-          'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
-        ),
-        sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('experiences.description')),
-          'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
-        ),
-      ],
-      ...(recruitementAlert.department
-        ? { department: recruitementAlert.department }
-        : {}),
-    };
-
-    console.log(whereOptions);
-
-    // Get all profiles matching the criteria
-    const filteredProfiles = await this.userProfileModel.findAll({
-      attributes: ['id'],
-      where: whereOptions,
-      include: [
-        ...(businessSectorIds.length > 0
-          ? [
-              {
-                model: BusinessSector,
-                as: 'businessSectors',
-                through: { attributes: [] },
-                where: {
-                  id: { [Op.in]: businessSectorIds },
-                },
-                required: false,
-              },
-            ]
-          : []),
-        ...(skillIds.length > 0
-          ? [
-              {
-                model: Skill,
-                as: 'skills',
-                through: { attributes: [] },
-                where: {
-                  id: { [Op.in]: skillIds },
-                },
-                required: false,
-              },
-            ]
-          : []),
-        ...(recruitementAlert.contractType
-          ? [
-              {
-                model: Contract,
-                as: 'contracts',
-                through: { attributes: [] },
-                where: {
-                  name: recruitementAlert.contractType,
-                },
-                required: false,
-              },
-            ]
-          : []),
-        {
-          model: Experience,
-          as: 'experiences',
-          required: false,
-        },
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'role'],
-          where: {
-            role: [UserRoles.CANDIDATE],
-            lastConnection: { [Op.ne]: null },
-          },
-          required: true,
-        },
-      ],
-    });
-
-    console.log('found filtered profiles', filteredProfiles.length);
-
-    // Get details on filtered profiles
-    const profiles = await this.userProfileModel.findAll({
-      attributes: UserProfilesAttributes,
-      order: sequelize.literal('"user.lastConnection" DESC'),
-      where: {
-        id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
-      },
-      include: [
-        ...getUserProfileInclude(),
-        {
-          model: User,
-          as: 'user',
-          attributes: UserProfilesUserAttributes,
-        },
-      ],
-    });
-
-    console.log('-----------------');
-    // Transform into PublicProfile
-    return profiles.map((profile): PublicProfile => {
-      const { user, ...restProfile }: UserProfile = profile.toJSON();
-      return {
-        ...user,
-        ...restProfile,
-        id: profile.user.id,
-        lastSentMessage: null,
-        lastReceivedMessage: null,
-        averageDelayResponse: null,
-      };
-    });
-  }
-
-  async findMatchingProfilesForRecruitementAlert1(
-    recruitementAlert: RecruitementAlert
-  ): Promise<PublicProfile[]> {
-    console.log('-----------------');
     console.log('Alerte: ', recruitementAlert.name);
 
     // Prepare criteria
@@ -471,9 +336,20 @@ export class UserProfilesService {
 
     // Base conditions that are always applied
     const whereOptions = {
+      // Job Name
       [Op.or]: [
         sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('UserProfile.introduction')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+        sequelize.where(
           sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
+          'LIKE',
+          `%${recruitementAlert.jobName.toLowerCase()}%`
+        ),
+        sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('UserProfile.description')),
           'LIKE',
           `%${recruitementAlert.jobName.toLowerCase()}%`
         ),
@@ -488,8 +364,17 @@ export class UserProfilesService {
           `%${recruitementAlert.jobName.toLowerCase()}%`
         ),
       ],
+
+      // Depatment
       ...(recruitementAlert.department
         ? { department: recruitementAlert.department }
+        : {}),
+
+      // BusinessSectors
+      ...(recruitementAlert.businessSectors?.length > 0
+        ? {
+            id: { [Op.in]: businessSectorIds },
+          }
         : {}),
     };
 
@@ -562,31 +447,17 @@ export class UserProfilesService {
           ],
         });
 
-        // Vérifier les secteurs d'activité si spécifiés
-        if (businessSectorIds.length > 0) {
-          const profileSectorIds = fullProfile.businessSectors.map(
-            (sector) => sector.id
-          );
-          if (!businessSectorIds.some((id) => profileSectorIds.includes(id))) {
-            return null;
-          }
-        }
-
-        // Vérifier les compétences si spécifiées
-        if (skillIds.length > 0) {
-          const profileSkillIds = fullProfile.skills.map((skill) => skill.id);
-          if (!skillIds.some((id) => profileSkillIds.includes(id))) {
-            return null;
-          }
-        }
-
-        // Vérifier le type de contrat si spécifié
+        // We check if the user has defined at least one contract type in his profile.
+        // If yes, then we exclude the profile if it doesnt match the alert
         if (recruitementAlert.contractType) {
-          const hasMatchingContract = fullProfile.contracts.some(
-            (contract) => contract.name === recruitementAlert.contractType
-          );
-          if (!hasMatchingContract) {
-            return null;
+          const userHasContractTypeDefined = fullProfile.contracts.length > 0;
+          if (userHasContractTypeDefined) {
+            const hasMatchingContract = fullProfile.contracts.some(
+              (contract) => contract.name === recruitementAlert.contractType
+            );
+            if (!hasMatchingContract) {
+              return null;
+            }
           }
         }
 
