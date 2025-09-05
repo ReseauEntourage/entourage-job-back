@@ -1,7 +1,8 @@
 import fs from 'fs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
+import { Department } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
@@ -21,11 +22,45 @@ export class CompaniesService {
     private readonly s3Service: S3Service
   ) {}
 
-  async findAll(limit: number, offset: number, search = '') {
-    const whereQuery = searchInColumnWhereOption('Company.name', search);
+  async findAll(query: {
+    limit: number;
+    offset: number;
+    search: string;
+    departments: Department[];
+    businessSectorIds: string[];
+  }) {
+    const {
+      limit,
+      offset,
+      search,
+      // departments,
+      businessSectorIds,
+    } = query;
+
+    // const departmentsOptions: WhereOptions<Company> =
+    //   departments?.length > 0
+    //     ? {
+    //         department: { [Op.or]: departments },
+    //       }
+    //     : {};
+
+    const businessSectorsOptions: WhereOptions<Company> =
+      businessSectorIds?.length > 0
+        ? {
+            id: { [Op.in]: businessSectorIds },
+          }
+        : {};
 
     return this.companyModel.findAll({
-      where: whereQuery,
+      include: companiesWithUsers,
+      attributes: companiesAttributes,
+      where: {
+        // ...(departmentsOptions ? departmentsOptions : {}),
+        ...(businessSectorsOptions ? businessSectorsOptions : {}),
+        ...(search
+          ? { [Op.and]: [searchInColumnWhereOption('Company.name', search)] }
+          : {}),
+      },
       ...(limit ? { limit } : {}),
       ...(offset ? { offset } : {}),
       order: [['name', 'ASC']],
