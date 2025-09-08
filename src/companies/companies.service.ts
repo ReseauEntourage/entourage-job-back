@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, WhereOptions } from 'sequelize';
+import { Op } from 'sequelize';
 import { Department } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { User } from 'src/users/models';
@@ -29,34 +29,11 @@ export class CompaniesService {
     departments: Department[];
     businessSectorIds: string[];
   }) {
-    const {
-      limit,
-      offset,
-      search,
-      // departments,
-      businessSectorIds,
-    } = query;
-
-    // const departmentsOptions: WhereOptions<Company> =
-    //   departments?.length > 0
-    //     ? {
-    //         department: { [Op.or]: departments },
-    //       }
-    //     : {};
-
-    const businessSectorsOptions: WhereOptions<Company> =
-      businessSectorIds?.length > 0
-        ? {
-            id: { [Op.in]: businessSectorIds },
-          }
-        : {};
-
+    const { limit, offset, search, departments, businessSectorIds } = query;
     return this.companyModel.findAll({
-      include: companiesWithUsers,
+      include: companiesWithUsers(departments, businessSectorIds),
       attributes: companiesAttributes,
       where: {
-        // ...(departmentsOptions ? departmentsOptions : {}),
-        ...(businessSectorsOptions ? businessSectorsOptions : {}),
         ...(search
           ? { [Op.and]: [searchInColumnWhereOption('Company.name', search)] }
           : {}),
@@ -77,14 +54,14 @@ export class CompaniesService {
     return this.companyModel.findOne({
       where: { id: companyId },
       attributes: companiesAttributes,
-      include: companiesWithUsers,
+      include: companiesWithUsers(),
     });
   }
 
   async findOneWithCompanyUsersAndPendingInvitations(companyId: string) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      include: companiesWithUsers,
+      include: companiesWithUsers(),
       order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
     });
   }
