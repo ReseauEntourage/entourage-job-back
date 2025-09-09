@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from 'fs';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -267,6 +268,7 @@ export class UserProfilesService {
         ...(contactTypesWhereClause ?? {}),
         ...(departmentsOptions ?? {}),
       },
+      logging: (sql) => console.log('REQUEST 1', sql),
     });
 
     const profiles = await this.userProfileModel.findAll({
@@ -283,6 +285,7 @@ export class UserProfilesService {
           attributes: UserProfilesUserAttributes,
         },
       ],
+      logging: (sql) => console.log('REQUEST 2', sql),
     });
 
     return Promise.all(
