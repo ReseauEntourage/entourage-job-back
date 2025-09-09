@@ -273,6 +273,8 @@ export class User extends HistorizedModel {
   @HasMany(() => CompanyUser)
   companyUsers: CompanyUser[];
 
+  companyUser: CompanyUser;
+
   @BelongsToMany(() => Company, {
     through: () => CompanyUser,
     foreignKey: 'userId',

@@ -112,4 +112,19 @@ export class Company extends Model {
 
   @BelongsTo(() => Department)
   department: Department;
+
+  get admin(): User | null {
+    if (!this.users) {
+      return null;
+    }
+
+    const adminCompanyUser = this.users.find((u) => {
+      return u.companyUser.isAdmin;
+    });
+    if (!adminCompanyUser) {
+      return null;
+    }
+
+    return this.users.find((u) => u.id === adminCompanyUser.id) || null;
+  }
 }
