@@ -199,10 +199,6 @@ export class UserProfilesService {
       contactTypes,
     } = query;
 
-    const searchOptions = search
-      ? { [Op.or]: userProfileSearchQuery(search) }
-      : {};
-
     const departmentsOptions: WhereOptions<UserProfile> =
       departments?.length > 0
         ? {
@@ -217,7 +213,7 @@ export class UserProfilesService {
           }
         : {};
 
-    const nudgesSectorsOptions: WhereOptions<Nudge> =
+    const nudgesOptions: WhereOptions<Nudge> =
       nudgeIds?.length > 0
         ? {
             id: {
@@ -230,16 +226,18 @@ export class UserProfilesService {
       contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
       contactTypes?.includes(ContactTypeEnum.REMOTE)
         ? {
-            [Op.or]: {
-              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
-                allowPhysicalEvents: true,
-              }),
-              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
-                allowRemoteEvents: true,
-              }),
-            },
+            ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
+              allowPhysicalEvents: true,
+            }),
+            ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
+              allowRemoteEvents: true,
+            }),
           }
         : undefined;
+
+    const searchOptions = search
+      ? { [Op.or]: [...userProfileSearchQuery(search)] }
+      : {};
 
     // this query is made in 2 steps because it filters the where clause inside the include
     // eg:
@@ -247,12 +245,13 @@ export class UserProfilesService {
     // but you also want the request to response his businessSectors list
     // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
     const filteredProfiles = await this.userProfileModel.findAll({
+      subQuery: false,
       offset,
       limit,
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
       include: [
-        ...getUserProfileInclude(businessSectorsOptions, nudgesSectorsOptions),
+        ...getUserProfileInclude(businessSectorsOptions, nudgesOptions),
         {
           model: User,
           as: 'user',
@@ -260,13 +259,13 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
-            ...searchOptions,
           },
         },
       ],
       where: {
-        ...(contactTypesWhereClause ? contactTypesWhereClause : {}),
-        ...(departmentsOptions ? departmentsOptions : {}),
+        ...searchOptions,
+        ...(contactTypesWhereClause ?? {}),
+        ...(departmentsOptions ?? {}),
       },
     });
 
@@ -277,7 +276,7 @@ export class UserProfilesService {
         id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
       },
       include: [
-        ...getUserProfileInclude(),
+        ...getUserProfileInclude(businessSectorsOptions, nudgesOptions),
         {
           model: User,
           as: 'user',
