@@ -323,16 +323,12 @@ export class UserProfilesService {
   async findMatchingProfilesForRecruitementAlert(
     recruitementAlert: RecruitementAlert
   ): Promise<PublicProfile[]> {
-    console.log('-----------------');
-    console.log('Alerte: ', recruitementAlert.name);
-
     // Prepare criteria
     const businessSectorIds =
       recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
-    console.log('businessSectorIds: ', businessSectorIds);
 
-    const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
-    console.log('skillIds: ', skillIds);
+    // Not used for now, we may use it later for additional filtering or ordering
+    // const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
 
     // Base conditions that are always applied
     const whereOptions = {
@@ -364,12 +360,10 @@ export class UserProfilesService {
           `%${recruitementAlert.jobName.toLowerCase()}%`
         ),
       ],
-
       // Depatment
       ...(recruitementAlert.department
         ? { department: recruitementAlert.department }
         : {}),
-
       // BusinessSectors
       ...(recruitementAlert.businessSectors?.length > 0
         ? {
@@ -377,8 +371,6 @@ export class UserProfilesService {
           }
         : {}),
     };
-
-    console.log(whereOptions);
 
     // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
@@ -422,12 +414,7 @@ export class UserProfilesService {
       ],
     });
 
-    console.log(
-      'Profils trouvés avant filtrage secondaire:',
-      filteredProfiles.length
-    );
-
-    // Appliquer le filtrage manuel sur les autres critères
+    // Apply manual filtrering that can't be done directly in the query
     const filteredIds = await Promise.all(
       filteredProfiles.map(async (profile) => {
         const fullProfile = await this.userProfileModel.findByPk(profile.id, {
@@ -466,7 +453,6 @@ export class UserProfilesService {
     );
 
     const validIds = filteredIds.filter((id) => id !== null);
-    console.log('Profils retenus après filtrage secondaire:', validIds.length);
 
     // Get details on filtered profiles
     const profiles = await this.userProfileModel.findAll({
@@ -485,7 +471,6 @@ export class UserProfilesService {
       ],
     });
 
-    console.log('-----------------');
     // Transform into PublicProfile
     return profiles.map((profile): PublicProfile => {
       const { user, ...restProfile }: UserProfile = profile.toJSON();
@@ -511,7 +496,7 @@ export class UserProfilesService {
 
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
-      order: sequelize.literal('"user.createdAt" DESC'),
+      order: sequelize.literal('"user.lastConnection" DESC'),
       include: [
         ...getUserProfileInclude(),
         {

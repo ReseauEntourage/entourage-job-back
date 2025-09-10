@@ -6,6 +6,7 @@ import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import {
   RecruitementAlert,
   RecruitementAlertBusinessSector,
+  RecruitementAlertNotifiedCandidate,
   RecruitementAlertSkill,
 } from './models';
 import { RecruitementAlertsController } from './recruitement-alerts.controller';
@@ -17,6 +18,7 @@ import { RecruitementAlertsService } from './recruitement-alerts.service';
       RecruitementAlert,
       RecruitementAlertBusinessSector,
       RecruitementAlertSkill,
+      RecruitementAlertNotifiedCandidate,
       CompanyUser,
     ]),
     SkillsModule,
@@ -24,6 +26,6 @@ import { RecruitementAlertsService } from './recruitement-alerts.service';
   ],
   providers: [RecruitementAlertsService],
   controllers: [RecruitementAlertsController],
-  exports: [SequelizeModule],
+  exports: [SequelizeModule, RecruitementAlertsService],
 })
 export class RecruitementAlertsModule {}

@@ -11,8 +11,10 @@ import { CreateRecruitementAlertDto, UpdateRecruitementAlertDto } from './dto';
 import {
   RecruitementAlert,
   RecruitementAlertBusinessSector,
+  RecruitementAlertNotifiedCandidate,
   RecruitementAlertSkill,
 } from './models';
+import { RecruitementAlertInclude } from './models/recruitement-alert.include';
 
 @Injectable()
 export class RecruitementAlertsService {
@@ -27,6 +29,8 @@ export class RecruitementAlertsService {
     private companyUserModel: typeof CompanyUser,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
+    @InjectModel(RecruitementAlertNotifiedCandidate)
+    private recruitementAlertNotifiedCandidateModel: typeof RecruitementAlertNotifiedCandidate,
     private sequelize: Sequelize,
     private userProfilesService: UserProfilesService,
     private skillsService: SkillsService
@@ -50,20 +54,16 @@ export class RecruitementAlertsService {
       where: {
         companyId,
       },
-      include: [
-        {
-          association: 'businessSectors',
-        },
-        {
-          association: 'skills',
-        },
-        {
-          association: 'company',
-        },
-      ],
+      include: RecruitementAlertInclude,
     });
 
     return recruitementAlerts;
+  }
+
+  async findAll(): Promise<RecruitementAlert[]> {
+    return this.recruitementAlertModel.findAll({
+      include: RecruitementAlertInclude,
+    });
   }
 
   async create(createRecruitementAlertDto: CreateRecruitementAlertDto) {
@@ -98,17 +98,7 @@ export class RecruitementAlertsService {
   async findOne(recruitementAlertId: string, transaction?: Transaction) {
     return this.recruitementAlertModel.findOne({
       where: { id: recruitementAlertId },
-      include: [
-        {
-          association: 'businessSectors',
-        },
-        {
-          association: 'skills',
-        },
-        {
-          association: 'company',
-        },
-      ],
+      include: RecruitementAlertInclude,
       transaction,
     });
   }
@@ -377,6 +367,30 @@ export class RecruitementAlertsService {
       await recruitementAlert.destroy({ transaction });
 
       return true;
+    });
+  }
+
+  // Finds all entries in the RecruitementAlertNotifiedCandidate table for a given alertId
+  async findRecutementAlertNotifiedCandidate(
+    alertId: string
+  ): Promise<RecruitementAlertNotifiedCandidate[]> {
+    return this.recruitementAlertNotifiedCandidateModel.findAll({
+      where: { recruitementAlertId: alertId },
+    });
+  }
+
+  // Adds entries to the RecruitementAlertNotifiedCandidate table
+  async markUsersAsNotified(alertId: string, userIds: string[]): Promise<void> {
+    if (userIds.length === 0) {
+      return;
+    }
+    const entries = userIds.map((userId) => ({
+      recruitementAlertId: alertId,
+      userId,
+    }));
+
+    await this.recruitementAlertNotifiedCandidateModel.bulkCreate(entries, {
+      ignoreDuplicates: true,
     });
   }
 }
