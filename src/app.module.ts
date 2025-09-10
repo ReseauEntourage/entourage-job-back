@@ -43,6 +43,7 @@ import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
 import { UsersStatsModule } from './users-stats/users-stats.module';
+import { WorkerModule } from './worker.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -145,6 +146,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     PublicCVsModule,
     CompaniesModule,
     ProfileGenerationModule,
+    WorkerModule,
   ],
   providers: [
     {
