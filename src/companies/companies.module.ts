@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { DepartmentsModule } from 'src/common/departments/departments.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
@@ -23,6 +24,7 @@ import { Company } from './models/company.model';
     MailsModule,
     UsersModule,
     AWSModule,
+    DepartmentsModule,
   ],
   controllers: [CompaniesController],
   providers: [CompaniesService, CompanyUsersService, CompanyInvitationsService],
