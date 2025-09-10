@@ -87,7 +87,7 @@ export const UserCandidatInclude = (): Includeable[] => {
         attributes: ['isAdmin', 'role'],
         as: 'companyUser',
       },
-      include: companiesIncludes,
+      include: companiesIncludes(),
     },
   ];
 };

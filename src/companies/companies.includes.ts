@@ -1,4 +1,4 @@
-import { IncludeOptions } from 'sequelize';
+import { IncludeOptions, Op } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/departments/models/department.model';
 import { Conversation } from 'src/messaging/models';
@@ -8,20 +8,34 @@ import { User } from 'src/users/models';
 import { PublicUserAttributes } from 'src/users/models/user.attributes';
 import { CompanyInvitation } from './models/company-invitation.model';
 
-export const companiesIncludes: IncludeOptions[] = [
+export const companiesIncludes = (
+  departments: string[] = [],
+  businessSectorIds: string[] = []
+): IncludeOptions[] => [
   {
     model: Department,
     attributes: ['id', 'name', 'value'],
+    required: departments?.length > 0,
+    where:
+      departments?.length > 0 ? { id: { [Op.in]: departments } } : undefined,
   },
   {
     model: BusinessSector,
     attributes: ['id', 'name', 'value'],
+    required: businessSectorIds?.length > 0,
+    where:
+      businessSectorIds?.length > 0
+        ? { id: { [Op.in]: businessSectorIds } }
+        : undefined,
   },
 ];
 
-export const companiesWithUsers: IncludeOptions[] = [
+export const companiesWithUsers = (
+  departments: string[] = [],
+  businessSectorIds: string[] = []
+): IncludeOptions[] => [
   // Default includes
-  ...companiesIncludes,
+  ...companiesIncludes(departments, businessSectorIds),
 
   // User includes
   {
