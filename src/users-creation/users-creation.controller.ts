@@ -213,6 +213,16 @@ export class UsersCreationController {
           createUserRegistrationDto.companyRole || 'employee',
           isAdmin
         );
+        // If user is set as company admin - update the user to make it not available to the rest of the community
+        // This is to prevent the user from being displayed in the community list
+        if (isAdmin) {
+          await this.usersCreationService.updateUserProfileByUserId(
+            createdUserId,
+            {
+              isAvailable: false,
+            }
+          );
+        }
       }
 
       // UTM
