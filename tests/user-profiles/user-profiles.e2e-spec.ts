@@ -607,7 +607,7 @@ describe('UserProfiles', () => {
             );
           });
         });
-        describe('/profile?departments[]=&businessSectors[]=&helps[]= - Read all profiles with filters', () => {
+        describe('/profile?departments[]=&businessSectors[]=&nudges[]= - Read all profiles with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -2744,7 +2744,7 @@ describe('UserProfiles', () => {
           }
         );
 
-        const candidate2HelpsInCommon = await userFactory.create(
+        const candidate2NudgesInCommon = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
             zone: AdminZones.LILLE,
@@ -2780,7 +2780,7 @@ describe('UserProfiles', () => {
         const newUsersToRecommend = [
           candidateSameRegion,
           candidate2BusinessSectorsInCommon,
-          candidate2HelpsInCommon,
+          candidate2NudgesInCommon,
         ];
 
         // Candidate wrong departement
@@ -2814,7 +2814,7 @@ describe('UserProfiles', () => {
           }
         );
 
-        // Candidate no helps in common
+        // Candidate no nudges in common
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
@@ -3011,7 +3011,7 @@ describe('UserProfiles', () => {
           }
         );
 
-        const oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon =
+        const oldRecommendedCandidatesWithOnly2BusinessSectorsAndNudgesInCommon =
           await databaseHelper.createEntities(
             userFactory,
             3,
@@ -3049,7 +3049,7 @@ describe('UserProfiles', () => {
 
         await userProfilesHelper.createUserProfileRecommendations(
           loggedInCoach.user.id,
-          oldRecommendedCandidatesWithOnly2BusinessSectorsAndHelpsInCommon.map(
+          oldRecommendedCandidatesWithOnly2BusinessSectorsAndNudgesInCommon.map(
             ({ id }) => id
           )
         );
@@ -3348,9 +3348,9 @@ describe('UserProfiles', () => {
           }
         );
 
-        const coach2HelpsInCommon = await userFactory.create(
+        const coach2NudgesInCommon = await userFactory.create(
           {
-            firstName: 'coach2HelpsInCommon',
+            firstName: 'coach2NudgesInCommon',
             role: UserRoles.COACH,
             zone: AdminZones.LILLE,
           },
@@ -3385,7 +3385,7 @@ describe('UserProfiles', () => {
         const newUsersToRecommend = [
           coachSameRegion,
           coach2BusinessSectorsInCommon,
-          coach2HelpsInCommon,
+          coach2NudgesInCommon,
         ];
 
         // Coach wrong department
@@ -3422,7 +3422,7 @@ describe('UserProfiles', () => {
           }
         );
 
-        // Coach no helps in common
+        // Coach no nudges in common
         await userFactory.create(
           {
             role: UserRoles.COACH,
@@ -3624,7 +3624,7 @@ describe('UserProfiles', () => {
           }
         );
 
-        const oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon =
+        const oldRecommendedCoachesWithOnly2BusinessSectorsAndNudgesInCommon =
           await databaseHelper.createEntities(
             userFactory,
             3,
@@ -3662,7 +3662,7 @@ describe('UserProfiles', () => {
 
         await userProfilesHelper.createUserProfileRecommendations(
           loggedInCandidate.user.id,
-          oldRecommendedCoachesWithOnly2BusinessSectorsAndHelpsInCommon.map(
+          oldRecommendedCoachesWithOnly2BusinessSectorsAndNudgesInCommon.map(
             ({ id }) => id
           )
         );
