@@ -6,7 +6,8 @@ import { Occupation } from 'src/common/occupations/models';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 
 export const getUserProfileNudgesInclude = (
-  nudgesOptions: WhereOptions<Nudge> = {}
+  nudgesOptions: WhereOptions<Nudge> = {},
+  withAttributes = true
 ): Includeable[] => {
   const isNudgesRequired = !_.isEmpty(nudgesOptions);
 
@@ -15,7 +16,9 @@ export const getUserProfileNudgesInclude = (
       model: Nudge,
       as: 'nudges',
       required: isNudgesRequired,
-      attributes: ['id', 'value', 'nameRequest', 'nameOffer', 'order'],
+      attributes: withAttributes
+        ? ['id', 'value', 'nameRequest', 'nameOffer', 'order']
+        : [],
       where: nudgesOptions,
       through: {
         attributes: [] as string[],
@@ -26,7 +29,8 @@ export const getUserProfileNudgesInclude = (
 };
 
 export const getUserProfileSectorOccupationsInclude = (
-  businessSectorsOptions: WhereOptions<BusinessSector> = {}
+  businessSectorsOptions: WhereOptions<BusinessSector> = {},
+  withAttributes = true
 ): Includeable[] => {
   const isBusinessSectorsRequired = !_.isEmpty(businessSectorsOptions);
 
@@ -35,20 +39,20 @@ export const getUserProfileSectorOccupationsInclude = (
       model: UserProfileSectorOccupation,
       as: 'sectorOccupations',
       required: isBusinessSectorsRequired,
-      attributes: ['id', 'order'],
+      attributes: withAttributes ? ['id', 'order'] : [],
       include: [
         {
           model: BusinessSector,
           as: 'businessSector',
           required: isBusinessSectorsRequired,
           ...(businessSectorsOptions ? { where: businessSectorsOptions } : {}),
-          attributes: ['id', 'name', 'prefixes'],
+          attributes: withAttributes ? ['id', 'name', 'prefixes'] : [],
         },
         {
           model: Occupation,
           as: 'occupation',
           required: false,
-          attributes: ['id', 'name'],
+          attributes: withAttributes ? ['id', 'name'] : [],
         },
       ],
     },
@@ -57,11 +61,15 @@ export const getUserProfileSectorOccupationsInclude = (
 
 export const getUserProfileInclude = (
   businessSectorsOptions: WhereOptions<BusinessSector> = {},
-  nudgesOptions: WhereOptions<Nudge> = {}
+  nudgesOptions: WhereOptions<Nudge> = {},
+  withAttributes = true
 ): Includeable[] => {
   return [
-    ...getUserProfileSectorOccupationsInclude(businessSectorsOptions),
-    ...getUserProfileNudgesInclude(nudgesOptions),
+    ...getUserProfileSectorOccupationsInclude(
+      businessSectorsOptions,
+      withAttributes
+    ),
+    ...getUserProfileNudgesInclude(nudgesOptions, withAttributes),
   ];
 };
 

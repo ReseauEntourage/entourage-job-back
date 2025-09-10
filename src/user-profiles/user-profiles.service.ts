@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from 'fs';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -226,14 +227,12 @@ export class UserProfilesService {
       contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
       contactTypes?.includes(ContactTypeEnum.REMOTE)
         ? {
-            [Op.or]: {
-              ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
-                allowPhysicalEvents: true,
-              }),
-              ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
-                allowRemoteEvents: true,
-              }),
-            },
+            ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
+              allowPhysicalEvents: true,
+            }),
+            ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
+              allowRemoteEvents: true,
+            }),
           }
         : undefined;
 
@@ -241,11 +240,7 @@ export class UserProfilesService {
       ? { [Op.or]: [...userProfileSearchQuery(search)] }
       : {};
 
-    // this query is made in 2 steps because it filters the where clause inside the include
-    // eg:
-    // you want all user having in his businessSectors one specific businessSector
-    // but you also want the request to response his businessSectors list
-    // you can't do that in one query, you have to do it in 2 steps, the first to filter, the second to get all attributes values
+    // First, we filter the profiles to get only the IDs of the profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
       subQuery: false,
       offset,
@@ -253,7 +248,7 @@ export class UserProfilesService {
       attributes: ['id'],
       order: sequelize.literal('"user.lastConnection" DESC'),
       include: [
-        ...getUserProfileInclude(businessSectorsOptions, nudgesOptions),
+        ...getUserProfileInclude(businessSectorsOptions, nudgesOptions, false),
         {
           model: User,
           as: 'user',
@@ -262,6 +257,7 @@ export class UserProfilesService {
             role,
             lastConnection: { [Op.ne]: null },
           },
+          required: true,
         },
       ],
       where: {
@@ -269,8 +265,10 @@ export class UserProfilesService {
         ...(contactTypesWhereClause ?? {}),
         ...(departmentsOptions ?? {}),
       },
+      group: ['UserProfile.id', 'user.id', 'user.lastConnection'],
     });
 
+    // Then we fetch the complete profiles with associations, based on the filtered IDs
     const profiles = await this.userProfileModel.findAll({
       attributes: UserProfilesAttributes,
       order: sequelize.literal('"user.lastConnection" DESC'),
@@ -278,7 +276,7 @@ export class UserProfilesService {
         id: { [Op.in]: filteredProfiles.map(({ id }) => id) },
       },
       include: [
-        ...getUserProfileInclude(businessSectorsOptions, nudgesOptions),
+        ...getUserProfileInclude(),
         {
           model: User,
           as: 'user',
