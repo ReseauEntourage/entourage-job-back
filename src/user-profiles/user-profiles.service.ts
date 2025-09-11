@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import fs from 'fs';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -359,15 +358,9 @@ export class UserProfilesService {
           `%${recruitementAlert.jobName.toLowerCase()}%`
         ),
       ],
-      // Depatment
+      // Department
       ...(recruitementAlert.department
         ? { department: recruitementAlert.department }
-        : {}),
-      // BusinessSectors
-      ...(recruitementAlert.businessSectors?.length > 0
-        ? {
-            id: { [Op.in]: businessSectorIds },
-          }
         : {}),
     };
 
@@ -376,12 +369,15 @@ export class UserProfilesService {
       attributes: ['id'],
       where: whereOptions,
       include: [
-        // Include all associations without where clauses
         {
           model: BusinessSector,
           as: 'businessSectors',
           through: { attributes: [] },
-          required: false,
+          required: recruitementAlert.businessSectors?.length > 0,
+          where:
+            recruitementAlert.businessSectors?.length > 0
+              ? { id: { [Op.in]: businessSectorIds } }
+              : undefined,
         },
         {
           model: Skill,
@@ -413,7 +409,7 @@ export class UserProfilesService {
       ],
     });
 
-    // Apply manual filtrering that can't be done directly in the query
+    // Apply manual filtering that can't be done directly in the query
     const filteredIds = await Promise.all(
       filteredProfiles.map(async (profile) => {
         const fullProfile = await this.userProfileModel.findByPk(profile.id, {

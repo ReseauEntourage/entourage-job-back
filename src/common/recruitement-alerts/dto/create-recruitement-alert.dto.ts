@@ -21,7 +21,6 @@ export class CreateRecruitementAlertDto {
   name: string;
 
   @IsString()
-  @IsNotEmpty()
   @IsOptional()
   jobName?: string;
 

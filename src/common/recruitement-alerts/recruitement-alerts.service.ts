@@ -371,7 +371,7 @@ export class RecruitementAlertsService {
   }
 
   // Finds all entries in the RecruitementAlertNotifiedCandidate table for a given alertId
-  async findRecutementAlertNotifiedCandidate(
+  async findRecruitementAlertNotifiedCandidate(
     alertId: string
   ): Promise<RecruitementAlertNotifiedCandidate[]> {
     return this.recruitementAlertNotifiedCandidateModel.findAll({

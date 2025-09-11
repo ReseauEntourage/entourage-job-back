@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { RequireApiKey } from 'src/api-keys/decorators';
 import { Public } from 'src/auth/guards';
 import { RecruitementAlertsService } from 'src/common/recruitement-alerts/recruitement-alerts.service';
@@ -21,7 +21,9 @@ export class WorkerController {
   // Returns a list of alertId and associated user emails to notify
   // Only returns if the alerts have new matching candidates since last notification
   @Get('/recruitement-alert')
-  async getWorkerCompanyRecruitementAlertsToSend(markAsNotified = false) {
+  async getWorkerCompanyRecruitementAlertsToSend(
+    @Query('markAsNotified') markAsNotified = true
+  ) {
     try {
       const recruitementAlertsToSend: MailerRecruitementAlert[] = [];
       // Get all recruitement alerts
@@ -41,7 +43,7 @@ export class WorkerController {
 
         // Get user ids already notified for this alert
         const alreadyNotifiedUserIds = await this.recruitementAlertsService
-          .findRecutementAlertNotifiedCandidate(alert.id)
+          .findRecruitementAlertNotifiedCandidate(alert.id)
           .then((notifiedCandidates) =>
             notifiedCandidates.map((candidate) => candidate.userId)
           );
