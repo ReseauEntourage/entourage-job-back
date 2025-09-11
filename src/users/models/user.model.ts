@@ -281,13 +281,15 @@ export class User extends HistorizedModel {
   })
   companies: Company[];
 
-  @Column(DataType.VIRTUAL)
-  get company(): Company {
-    // Retourne uniquement la première entreprise si plusieurs existent
-    return this.companies && this.companies.length > 0
-      ? this.companies[0]
-      : null;
-  }
+  @Column({
+    type: DataType.VIRTUAL,
+    get(this: User) {
+      return this.companies && this.companies.length > 0
+        ? this.companies[0]
+        : null;
+    },
+  })
+  company: Company | null;
 
   @HasMany(() => CompanyInvitation, {
     foreignKey: 'userId',
@@ -295,19 +297,15 @@ export class User extends HistorizedModel {
   })
   companyInvitations: CompanyInvitation[];
 
-  // Surcharge de la méthode toJSON pour inclure la propriété virtuelle company
-  // et exclure companies qui ne sont pas nécessaires dans la réponse
-  // Cette methode est appelée automatiquement lors de la sérialisation de l'instance User
-  // par exemple, lors de l'envoi de la réponse HTTP
-  // Utilisation du any car company est en propriété virtuelle
-  toJSON(): User {
-    const values = Object.assign({}, this.get()) as User;
-    if (values.companies) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (values as any).company = this.company;
-      delete values.companies;
-    }
-    return values;
+  toJSON() {
+    const attributes = this.get({ plain: true });
+    // Remove companies and add company
+    const { companies, ...rest } = attributes;
+    return {
+      ...rest,
+      company:
+        this.companies && this.companies.length > 0 ? this.companies[0] : null,
+    };
   }
 
   @BeforeCreate

@@ -188,7 +188,7 @@ export class UsersController {
       throw new NotFoundException();
     }
 
-    return updatedUser.toJSON();
+    return updatedUser;
   }
 
   // for admin to modify multiple users at the same time
@@ -319,6 +319,6 @@ export class UsersController {
       this.usersService.sendVerificationMail(updatedUser, token);
     }
 
-    return updatedUser.toJSON();
+    return updatedUser;
   }
 }
