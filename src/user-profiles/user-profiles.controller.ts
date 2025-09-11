@@ -296,6 +296,9 @@ export class UserProfilesController {
       userIdToGet,
       true
     );
+    const company = await this.userProfilesService.findCompanyByUserId(
+      userIdToGet
+    );
 
     if (!user || !userProfile) {
       throw new NotFoundException();
@@ -318,12 +321,13 @@ export class UserProfilesController {
     const averageDelayResponse =
       await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
-    return getPublicProfileFromUserAndUserProfile(
+    return getPublicProfileFromUserAndUserProfile({
       user,
       userProfile,
-      lastSentMessage?.createdAt,
-      lastReceivedMessage?.createdAt,
-      averageDelayResponse
-    );
+      company,
+      lastSentMessage: lastSentMessage?.createdAt,
+      lastReceivedMessage: lastReceivedMessage?.createdAt,
+      averageDelayResponse,
+    });
   }
 }

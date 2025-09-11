@@ -21,6 +21,8 @@ import { Occupation } from 'src/common/occupations/models';
 import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
 import { SkillsService } from 'src/common/skills/skills.service';
+import { CompanyUser } from 'src/companies/models/company-user.model';
+import { Company } from 'src/companies/models/company.model';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -82,6 +84,8 @@ export class UserProfilesService {
     private userProfileLanguageModel: typeof UserProfileLanguage,
     @InjectModel(UserProfileSkill)
     private userProfileSkillModel: typeof UserProfileSkill,
+    @InjectModel(CompanyUser)
+    private companyUserModel: typeof CompanyUser,
     private s3Service: S3Service,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
@@ -1140,5 +1144,19 @@ export class UserProfilesService {
     const percentage = Math.round((filledFields.length / fields.length) * 100);
 
     return percentage;
+  }
+
+  async findCompanyByUserId(userId: string): Promise<Company | null> {
+    const companyUser = await this.companyUserModel.findOne({
+      where: { userId },
+      include: [
+        {
+          model: Company,
+          as: 'company',
+        },
+      ],
+    });
+
+    return companyUser ? companyUser.company : null;
   }
 }

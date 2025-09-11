@@ -6,6 +6,7 @@ import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
+import { Company } from 'src/companies/models/company.model';
 import { UserRole } from 'src/users/users.types';
 import { FilterConstant } from 'src/utils/types';
 import { UserProfileSectorOccupation } from './models';
@@ -69,4 +70,5 @@ export type PublicProfile = {
   hasExternalCv: boolean;
   averageDelayResponse: number | null;
   hasPicture: boolean;
+  company?: Company | null;
 };
