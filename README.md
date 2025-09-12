@@ -1,6 +1,6 @@
 # LinkedOut Backend
 
-Document mis à jour le 02/08/2024
+Document mis à jour le 05/09/2025
 
 [![LinkedOut Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
 
@@ -21,6 +21,7 @@ Document mis à jour le 02/08/2024
 - `.husky` : scripts de hook de commit avec **_Husky_**
 - `/public` : stockage des ressources non dynamique accessible publiquement
 - `/src` : dossier contenant toutes les sources des différents modules de l'application
+  - `/api-keys` : module de gestion de l'authentification par clé API
   - `/db` : configuration de la base de données avec **Sequelize**
     - `/config` : configuration d'accès à la base de données
     - `/migrations`: fichiers de migration de la structure de la base
@@ -70,6 +71,18 @@ Vous devez définir deux nouveaux fichiers de variables d'environnement :
 
 - un fichier `.env` pour les variables d'environnement de l'application en mode `run`
 - un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
+
+### Configuration de l'authentification par clé API
+
+Pour utiliser l'authentification par clé API :
+
+1. Ajoutez une clé API à votre fichier `.env` :
+
+```
+MAILER_API_KEY=your_secure_api_key_here
+```
+
+2. Pour les requêtes authentifiées, incluez l'en-tête HTTP `X-API-Key` avec la valeur de votre clé API.
 
 ### Initialisation des containers
 

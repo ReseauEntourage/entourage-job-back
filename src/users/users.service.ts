@@ -4,6 +4,7 @@ import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
+import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { PublicCVsFilterKey } from 'src/public-cv/public-cvs.types';
@@ -49,6 +50,20 @@ export class UsersService {
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
       order: getUserCandidatOrder(),
+    });
+  }
+
+  async findOneWithCompanyUsers(id: string) {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: CompanyUser,
+          as: 'companyUsers',
+          attributes: ['isAdmin', 'role', 'companyId'],
+          required: false,
+        },
+      ],
     });
   }
 

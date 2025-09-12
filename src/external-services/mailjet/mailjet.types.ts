@@ -75,6 +75,7 @@ export const MailjetTemplates = {
   REFERED_CANDIDATE_FINALIZE_ACCOUNT: 6324039,
   ADMIN_NEW_REFERER_NOTIFICATION: 6328158,
   USER_ACCOUNT_DELETED: 6647841,
+  COMPANY_COLLABORATORS_INVITATION: 7175134,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

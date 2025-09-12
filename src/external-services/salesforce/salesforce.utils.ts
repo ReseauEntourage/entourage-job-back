@@ -24,11 +24,7 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
-import {
-  Programs,
-  RegistrableUserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones, AnyCantFix } from 'src/utils/types';
@@ -559,19 +555,12 @@ export function prependDuplicateIfCondition(value: string, condition: boolean) {
   return condition ? `bis_${value}` : value;
 }
 
-export function getCasquette(
-  role: RegistrableUserRole,
-  program: string
-): Casquette {
+export function getCasquette(role: RegistrableUserRole): Casquette {
   switch (role) {
     case UserRoles.CANDIDATE:
-      return program === Programs.THREE_SIXTY
-        ? Casquette.CANDIDAT_360
-        : Casquette.CANDIDAT_COUP_DE_POUCE;
+      return Casquette.CANDIDAT_COUP_DE_POUCE;
     case UserRoles.COACH:
-      return program === Programs.THREE_SIXTY
-        ? Casquette.COACH_360
-        : Casquette.COACH_COUP_DE_POUCE;
+      return Casquette.COACH_COUP_DE_POUCE;
     case UserRoles.REFERER:
       return Casquette.PRESCRIPTEUR;
   }

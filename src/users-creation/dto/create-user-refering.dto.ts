@@ -8,7 +8,7 @@ import {
 } from 'src/contacts/contacts.types';
 import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
-import { Gender, Program } from 'src/users/users.types';
+import { Gender } from 'src/users/users.types';
 
 export class CreateUserReferingDto extends PickType(User, [
   'firstName',
@@ -21,10 +21,6 @@ export class CreateUserReferingDto extends PickType(User, [
   @ApiProperty()
   @IsNumber()
   gender: Gender;
-
-  @ApiProperty()
-  @IsString()
-  program: Program;
 
   @ApiProperty()
   @IsString()

@@ -28,6 +28,7 @@ export interface FilterConstant<T, C extends AnyToFix = AnyToFix> {
   public?: string;
   recommended?: string;
   color?: string;
+  __isNew__?: boolean;
 }
 
 export type FilterObject<

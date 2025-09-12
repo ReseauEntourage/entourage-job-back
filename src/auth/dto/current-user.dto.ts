@@ -45,6 +45,7 @@ export const generateCurrentUserDto = (
     referredCandidates: user.referredCandidates || [],
     referer: user.referer || null,
     readDocuments: user.readDocuments || [],
+    company: user.company,
 
     // From UserProfile
     userProfile: generateUserProfileDto(userProfile, complete),

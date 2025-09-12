@@ -1,67 +1,68 @@
 import { FilterConstant } from 'src/utils/types';
 
-export type ContractValue =
-  | 'cdi'
-  | 'cdd'
-  | 'cdd+6'
-  | 'cdd-6'
-  | 'cddi'
-  | 'alt'
-  | 'inte'
-  | 'stage'
-  | 'form'
-  | 'pmsmp'
-  | 'other';
+export enum Contracts {
+  CDI = 'cdi',
+  CDD = 'cdd',
+  CDD_PLUS_6 = 'cdd+6',
+  CDD_MOINS_6 = 'cdd-6',
+  CDDI = 'cddi',
+  ALTERNANCE = 'alt',
+  INTERIM = 'inte',
+  STAGE = 'stage',
+  FORMATION = 'form',
+  PMSMP = 'pmsmp',
+  AUTRE = 'other',
+}
 
-export const ContractFilters: FilterConstant<ContractValue>[] = [
+export const ContractFilters: FilterConstant<Contracts>[] = [
   {
     label: 'CDI',
-    value: 'cdi',
+    value: Contracts.CDI,
     end: false,
   },
   {
     label: 'CDD + de 6 mois',
-    value: 'cdd+6',
+    value: Contracts.CDD_PLUS_6,
     end: true,
   },
   {
     label: 'CDD - de 6 mois',
-    value: 'cdd-6',
+    value: Contracts.CDD_MOINS_6,
     end: true,
   },
   {
     label: "Contrat d'insertion",
-    value: 'cddi',
+    value: Contracts.CDDI,
     end: true,
   },
   {
     label: 'Alternance',
-    value: 'alt',
+    value: Contracts.ALTERNANCE,
     end: true,
   },
   {
     label: 'Intérim',
-    value: 'inte',
+    value: Contracts.INTERIM,
     end: true,
   },
   {
     label: 'Stage',
-    value: 'stage',
+    value: Contracts.STAGE,
     end: true,
   },
   {
     label: 'Formation certifiante',
-    value: 'form',
+    value: Contracts.FORMATION,
     end: true,
   },
   {
     label: "Période d'immersion (PMSMP)",
-    value: 'pmsmp',
+    value: Contracts.PMSMP,
     end: true,
   },
   {
     label: 'Autre',
-    value: 'other',
+    value: Contracts.AUTRE,
     end: true,
   },
 ];

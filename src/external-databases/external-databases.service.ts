@@ -14,12 +14,7 @@ export class ExternalDatabasesService {
     userId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      | 'program'
-      | 'campaign'
-      | 'birthDate'
-      | 'workingRight'
-      | 'gender'
-      | 'refererEmail'
+      'campaign' | 'birthDate' | 'workingRight' | 'gender' | 'refererEmail'
     >
   ) {
     let conertedGenderType: CandidateGender;
