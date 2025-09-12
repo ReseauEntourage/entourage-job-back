@@ -1,4 +1,5 @@
 import {
+  BeforeCreate,
   BelongsTo,
   Column,
   DataType,
@@ -42,4 +43,19 @@ export class CompanyUser extends Model<CompanyUser> {
 
   @BelongsTo(() => Company)
   company: Company;
+
+  @BeforeCreate
+  static async preventMultipleCompanies(companyUser: CompanyUser) {
+    const existingAssociations = await CompanyUser.findAll({
+      where: {
+        userId: companyUser.userId,
+      },
+    });
+
+    if (existingAssociations.length > 0) {
+      throw new Error(
+        "Un utilisateur ne peut être associé qu'à une seule entreprise"
+      );
+    }
+  }
 }
