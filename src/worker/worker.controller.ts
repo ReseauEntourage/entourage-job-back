@@ -20,7 +20,7 @@ export class WorkerController {
   // Preparing data for the recruitement alert email worker
   // Returns a list of alertId and associated user emails to notify
   // Only returns if the alerts have new matching candidates since last notification
-  @Get('/recruitement-alert')
+  @Get('/recruitment-alert')
   async getWorkerCompanyRecruitementAlertsToSend(
     @Query('markAsNotified') markAsNotified = true
   ) {
