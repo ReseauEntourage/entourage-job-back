@@ -65,7 +65,7 @@ export class CompaniesService {
           include: [
             {
               model: UserProfile,
-              attributes: ['id', 'hasPicture'],
+              attributes: ['id', 'hasPicture', 'currentJob'],
             },
             {
               model: CompanyInvitation,
