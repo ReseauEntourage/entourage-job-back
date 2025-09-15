@@ -277,14 +277,36 @@ export class User extends HistorizedModel {
     through: () => CompanyUser,
     foreignKey: 'userId',
     otherKey: 'companyId',
+    as: 'companies',
   })
   companies: Company[];
+
+  @Column({
+    type: DataType.VIRTUAL,
+    get(this: User) {
+      return this.companies && this.companies.length > 0
+        ? this.companies[0]
+        : null;
+    },
+  })
+  company: Company | null;
 
   @HasMany(() => CompanyInvitation, {
     foreignKey: 'userId',
     as: 'invitations',
   })
   companyInvitations: CompanyInvitation[];
+
+  toJSON() {
+    const attributes = this.get({ plain: true });
+    // Remove companies and add company
+    const { companies, ...rest } = attributes;
+    return {
+      ...rest,
+      company:
+        this.companies && this.companies.length > 0 ? this.companies[0] : null,
+    };
+  }
 
   @BeforeCreate
   @BeforeUpdate

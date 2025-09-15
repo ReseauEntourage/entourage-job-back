@@ -63,4 +63,14 @@ export const companiesWithUsers: IncludeOptions[] = [
     },
     required: false,
   },
+
+  {
+    model: Conversation,
+    as: 'conversations',
+    attributes: ['id'],
+    through: {
+      attributes: [],
+      as: 'conversationParticipants',
+    },
+  },
 ];
