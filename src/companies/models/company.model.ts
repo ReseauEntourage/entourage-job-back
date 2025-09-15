@@ -2,11 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MinLength } from 'class-validator';
 import {
   AllowNull,
+  BelongsTo,
   BelongsToMany,
   Column,
   CreatedAt,
   DataType,
   Default,
+  ForeignKey,
   HasMany,
   IsUUID,
   Model,
@@ -15,6 +17,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/common/business-sectors/models';
+import { Department } from 'src/common/departments/models/department.model';
 import { User } from 'src/users/models';
 import { CompanyBusinessSector } from './company-business-sector.model';
 import { CompanyInvitation } from './company-invitation.model';
@@ -46,12 +49,6 @@ export class Company extends Model {
   @AllowNull(true)
   @Column
   description: string;
-
-  @ApiProperty()
-  @IsString()
-  @AllowNull(true)
-  @Column
-  city: string;
 
   @ApiProperty()
   @IsString()
@@ -105,4 +102,14 @@ export class Company extends Model {
     otherKey: 'businessSectorId',
   })
   businessSectors: BusinessSector[];
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @ForeignKey(() => Department)
+  @Column
+  departmentId: string;
+
+  @BelongsTo(() => Department)
+  department: Department;
 }

@@ -3,13 +3,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { Conversation } from 'src/messaging/models';
-import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
+import { companiesAttributes } from './companies.attributes';
+import { companiesWithUsers } from './companies.includes';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyBusinessSector } from './models/company-business-sector.model';
-import { CompanyInvitation } from './models/company-invitation.model';
 import { Company } from './models/company.model';
 
 @Injectable()
@@ -42,59 +41,15 @@ export class CompaniesService {
   async findOne(companyId: string) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      attributes: [
-        'id',
-        'createdAt',
-        'name',
-        'description',
-        'url',
-        'hiringUrl',
-        'linkedInUrl',
-      ],
+      attributes: companiesAttributes,
+      include: companiesWithUsers,
     });
   }
 
   async findOneWithCompanyUsersAndPendingInvitations(companyId: string) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      include: [
-        {
-          model: User,
-          as: 'users',
-          attributes: ['id', 'firstName', 'lastName', 'email', 'createdAt'],
-          include: [
-            {
-              model: UserProfile,
-              attributes: ['id', 'hasPicture', 'currentJob'],
-            },
-            {
-              model: CompanyInvitation,
-              as: 'invitations',
-            },
-            {
-              model: Conversation,
-              as: 'conversations',
-              attributes: ['id'],
-              through: {
-                attributes: [],
-                as: 'conversationParticipants',
-              },
-            },
-          ],
-          through: {
-            attributes: ['isAdmin', 'role'],
-            as: 'companyUsers',
-          },
-        },
-        {
-          model: CompanyInvitation,
-          as: 'pendingInvitations',
-          where: {
-            userId: null, // Only include invitations that have not been accepted
-          },
-          required: false,
-        },
-      ],
+      include: companiesWithUsers,
       order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
     });
   }
