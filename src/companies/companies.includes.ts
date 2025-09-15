@@ -29,7 +29,7 @@ export const companiesWithUsers: IncludeOptions[] = [
     include: [
       {
         model: UserProfile,
-        attributes: ['id', 'hasPicture'],
+        attributes: ['id', 'hasPicture', 'currentJob'],
       },
       {
         model: CompanyInvitation,
@@ -59,5 +59,15 @@ export const companiesWithUsers: IncludeOptions[] = [
       userId: null, // Only include invitations that have not been accepted
     },
     required: false,
+  },
+
+  {
+    model: Conversation,
+    as: 'conversations',
+    attributes: ['id'],
+    through: {
+      attributes: [],
+      as: 'conversationParticipants',
+    },
   },
 ];
