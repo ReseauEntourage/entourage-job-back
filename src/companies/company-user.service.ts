@@ -32,4 +32,27 @@ export class CompanyUsersService {
       where: { companyId, ...(userId ? { userId } : {}) },
     });
   }
+
+  async linkUserToCompany(userId: string, companyId: string | null) {
+    const existingLink = await this.companyUserModel.findOne({
+      where: { userId },
+    });
+
+    if (existingLink) {
+      // Remove existing link if it exists
+      await existingLink.destroy();
+    }
+
+    if (!companyId) {
+      await this.companyUserModel.destroy({ where: { userId } });
+      return null;
+    }
+    const newLink = await this.companyUserModel.create({
+      userId,
+      companyId,
+      isAdmin: false,
+      role: 'employee',
+    });
+    return newLink;
+  }
 }

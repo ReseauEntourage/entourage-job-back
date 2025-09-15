@@ -3,7 +3,9 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
+  InternalServerErrorException,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -107,6 +109,27 @@ export class UsersController {
     }
 
     throw new BadRequestException();
+  }
+
+  @Put('company')
+  async updateUserCompany(
+    @UserPayload('id') userId: string,
+    @UserPayload('role') userRole: UserRole,
+    @Body('companyId')
+    companyId: string | null
+  ) {
+    if (companyId && !uuidValidate(companyId)) {
+      throw new BadRequestException('companyId must be a UUID or null');
+    }
+
+    if (userRole !== UserRoles.COACH) {
+      throw new ForbiddenException();
+    }
+    try {
+      await this.usersService.linkCompany(userId, companyId);
+    } catch (err) {
+      throw new InternalServerErrorException('Could not link user to company');
+    }
   }
 
   @AdminOverride()
