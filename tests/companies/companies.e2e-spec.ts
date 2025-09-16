@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UsersHelper } from '../users/users.helper';
 import { LoggedUser } from 'src/auth/auth.types';
+import { Department } from 'src/common/departments/models/department.model';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import { Company } from 'src/companies/models/company.model';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -10,6 +11,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { DepartmentHelper } from 'tests/departments/department.helper';
 import { SlackMocks } from 'tests/mocks.types';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { CompaniesHelper } from './companies.helper';
@@ -27,11 +29,14 @@ describe('Companies', () => {
   let usersHelper: UsersHelper;
   let companiesHelper: CompaniesHelper;
   let companyFactory: CompanyFactory;
+  let departmentHelper: DepartmentHelper;
 
   let company: Company;
   let loggedInCompanyAdmin: LoggedUser;
   let loggedInCollaborator: LoggedUser;
   let loggedInRandomUser: LoggedUser;
+
+  let department01: Department;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -50,6 +55,12 @@ describe('Companies', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     companyFactory = moduleFixture.get<CompanyFactory>(CompanyFactory);
     companiesHelper = moduleFixture.get<CompaniesHelper>(CompaniesHelper);
+    departmentHelper = moduleFixture.get<DepartmentHelper>(DepartmentHelper);
+
+    await departmentHelper.deleteAllDepartments();
+    await departmentHelper.seedDepartments();
+
+    department01 = await departmentHelper.findOne({ value: '01' }); // Ain
   });
 
   afterAll(async () => {
@@ -130,6 +141,32 @@ describe('Companies', () => {
       expect(response.body).toBeDefined();
       expect(response.statusCode).toBe(200);
       expect(response.body.length).toBe(2);
+    });
+
+    it('should return a filtered list of companies by department', async () => {
+      // Create a company with a specific department
+      await companyFactory.create({
+        departmentId: department01.id,
+      });
+
+      const response = await request(server).get(
+        `/companies?search=&departments[]=${department01.id}&limit=10&offset=0`
+      );
+
+      expect(response.body).toBeDefined();
+      expect(response.statusCode).toBe(200);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            department: expect.objectContaining({
+              id: department01.id,
+              name: department01.name,
+              value: department01.value,
+            }),
+          }),
+        ])
+      );
     });
   });
 

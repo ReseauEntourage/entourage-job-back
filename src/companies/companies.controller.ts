@@ -20,6 +20,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
+import { Department } from 'src/common/locations/locations.types';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -45,9 +46,24 @@ export class CompaniesController {
   async findAll(
     @Query('limit', new ParseIntPipe()) limit: number,
     @Query('offset', new ParseIntPipe()) offset: number,
+    @Query('businessSectorIds')
+    businessSectorIds: string[],
+    @Query('departments')
+    departments: Department[],
     @Query('search') search?: string
   ) {
-    return await this.companiesService.findAll(limit, offset, search);
+    try {
+      return await this.companiesService.findAll({
+        limit,
+        offset,
+        search,
+        businessSectorIds,
+        departments,
+      });
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw new InternalServerErrorException();
+    }
   }
 
   @Get(':companyId')

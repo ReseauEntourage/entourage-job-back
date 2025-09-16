@@ -2,6 +2,7 @@ import fs from 'fs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
+import { Department } from 'src/common/locations/locations.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
@@ -21,11 +22,22 @@ export class CompaniesService {
     private readonly s3Service: S3Service
   ) {}
 
-  async findAll(limit: number, offset: number, search = '') {
-    const whereQuery = searchInColumnWhereOption('Company.name', search);
-
+  async findAll(query: {
+    limit: number;
+    offset: number;
+    search: string;
+    departments: Department[];
+    businessSectorIds: string[];
+  }) {
+    const { limit, offset, search, departments, businessSectorIds } = query;
     return this.companyModel.findAll({
-      where: whereQuery,
+      include: companiesWithUsers(departments, businessSectorIds),
+      attributes: companiesAttributes,
+      where: {
+        ...(search
+          ? { [Op.and]: [searchInColumnWhereOption('Company.name', search)] }
+          : {}),
+      },
       ...(limit ? { limit } : {}),
       ...(offset ? { offset } : {}),
       order: [['name', 'ASC']],
@@ -42,14 +54,14 @@ export class CompaniesService {
     return this.companyModel.findOne({
       where: { id: companyId },
       attributes: companiesAttributes,
-      include: companiesWithUsers,
+      include: companiesWithUsers(),
     });
   }
 
   async findOneWithCompanyUsersAndPendingInvitations(companyId: string) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      include: companiesWithUsers,
+      include: companiesWithUsers(),
       order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
     });
   }
