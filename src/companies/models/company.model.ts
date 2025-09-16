@@ -83,6 +83,8 @@ export class Company extends Model {
   @HasMany(() => CompanyUser)
   companyUsers: CompanyUser[];
 
+  companyUser: CompanyUser;
+
   @BelongsToMany(() => User, {
     through: () => CompanyUser,
     foreignKey: 'companyId',
