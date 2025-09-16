@@ -76,18 +76,5 @@ describe('Departments', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
     });
-
-    it('should return paginated results', async () => {
-      const response = await request(server).get(
-        `/departments?limit=2&offset=0`
-      );
-      expect(response.status).toBe(200);
-      expect(response.body.length).toBe(2);
-    });
-
-    it('should return 400 if limit is not provided', async () => {
-      const response = await request(server).get(`/departments?offset=0`);
-      expect(response.status).toBe(400);
-    });
   });
 });

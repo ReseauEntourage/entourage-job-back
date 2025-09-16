@@ -83,6 +83,8 @@ export class Company extends Model {
   @HasMany(() => CompanyUser)
   companyUsers: CompanyUser[];
 
+  companyUser: CompanyUser;
+
   @BelongsToMany(() => User, {
     through: () => CompanyUser,
     foreignKey: 'companyId',
@@ -125,6 +127,6 @@ export class Company extends Model {
       return null;
     }
 
-    return this.users.find((u) => u.id === adminCompanyUser.id) || null;
+    return adminCompanyUser;
   }
 }

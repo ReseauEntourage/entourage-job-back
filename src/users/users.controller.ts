@@ -150,7 +150,7 @@ export class UsersController {
       throw new NotFoundException();
     }
 
-    return user;
+    return user.toJSON();
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)

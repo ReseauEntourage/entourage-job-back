@@ -51,15 +51,6 @@ export const companiesWithUsers = (
         model: CompanyInvitation,
         as: 'invitations',
       },
-      // {
-      //   model: Conversation,
-      //   as: 'conversations',
-      //   attributes: ['id'],
-      //   through: {
-      //     attributes: [],
-      //     as: 'conversationParticipants',
-      //   },
-      // },
     ],
     through: {
       attributes: ['isAdmin', 'role'],

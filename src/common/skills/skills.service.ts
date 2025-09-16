@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize from 'sequelize';
 import { UserProfileSkill } from 'src/user-profiles/models/user-profile-skill.model';
+import { searchInColumnWhereOption } from 'src/utils/misc';
 import { Skill } from './models';
 
 @Injectable()
@@ -10,6 +11,24 @@ export class SkillsService {
     @InjectModel(Skill)
     private skillModel: typeof Skill
   ) {}
+
+  /**
+   * Find all skills with optional pagination and search functionality.
+   * @param limit The maximum number of skills to return.
+   * @param offset The number of skills to skip before starting to collect the result set.
+   * @param search A search term to filter skills by name.
+   * @returns A Promise that resolves to an array of skills.
+   */
+  async findAll(limit?: number, offset?: number, search = '') {
+    const whereQuery = searchInColumnWhereOption('name', search);
+
+    return this.skillModel.findAll({
+      where: whereQuery,
+      ...(limit ? { limit } : {}),
+      ...(offset ? { offset } : {}),
+      order: [['name', 'ASC']],
+    });
+  }
 
   /**
    * Find a skill by its name (case-insensitive).

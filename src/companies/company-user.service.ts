@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { CompanyUser } from './models/company-user.model';
 
@@ -15,16 +15,31 @@ export class CompanyUsersService {
     role,
     isAdmin,
   }: Partial<CompanyUser>) {
-    const companyUser = await this.companyUserModel.create(
-      {
-        companyId,
-        userId,
-        role,
-        isAdmin,
-      },
-      { hooks: true }
-    );
-    return companyUser;
+    try {
+      // Vérifier si l'utilisateur est déjà associé à une entreprise
+      const existingCompanyUser = await this.companyUserModel.findOne({
+        where: { userId },
+      });
+
+      if (existingCompanyUser) {
+        throw new BadRequestException(
+          "Un utilisateur ne peut être associé qu'à une seule entreprise"
+        );
+      }
+
+      const companyUser = await this.companyUserModel.create(
+        {
+          companyId,
+          userId,
+          role,
+          isAdmin,
+        },
+        { hooks: true }
+      );
+      return companyUser;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findOneCompanyUser(companyId: string, userId?: string) {
