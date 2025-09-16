@@ -68,7 +68,6 @@ export const companiesWithUsers = (
     },
     required: false,
   },
-
   {
     model: Conversation,
     as: 'conversations',
