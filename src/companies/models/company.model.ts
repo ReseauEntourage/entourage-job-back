@@ -127,6 +127,6 @@ export class Company extends Model {
       return null;
     }
 
-    return this.users.find((u) => u.id === adminCompanyUser.id) || null;
+    return adminCompanyUser;
   }
 }
