@@ -5,7 +5,7 @@ import { Conversation } from 'src/messaging/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
 import { User } from 'src/users/models';
-import { PublicUserAttributes } from 'src/users/models/user.attributes';
+import { UserAttributesVisibleByCompanyAdmins } from 'src/users/models/user.attributes';
 import { CompanyInvitation } from './models/company-invitation.model';
 
 export const companiesIncludes = (
@@ -41,7 +41,7 @@ export const companiesWithUsers = (
   {
     model: User,
     as: 'users',
-    attributes: PublicUserAttributes,
+    attributes: UserAttributesVisibleByCompanyAdmins,
     include: [
       {
         model: UserProfile,
