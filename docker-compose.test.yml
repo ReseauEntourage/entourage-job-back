@@ -16,7 +16,7 @@ services:
       DB_NAME: linkedouttest
     volumes:
       - .:/home/node
-    image: linkedout-api-worker:nestjs
+    image: linkedout-api:nestjs
     depends_on:
       - linkedout-db
 

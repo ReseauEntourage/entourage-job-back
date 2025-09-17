@@ -1,17 +1,18 @@
 services:
   ## LINKEDOUT BACKEND API
-  linkedout-api:
-    container_name: linkedout-api
+  linkedout-api-worker:
+    container_name: linkedout-api-worker
     build:
       context: ./
       target: base
       args:
         NODE_VERSION: 20.19.1
+    entrypoint: ['./docker-entrypoint.worker.sh']
     volumes:
       - .:/home/node
-    image: linkedout-api:nestjs
+    image: linkedout-api-worker:nestjs
     ports:
-      - '3002:3002'
+      - '3003:3003'
     env_file:
       - .env
     environment:

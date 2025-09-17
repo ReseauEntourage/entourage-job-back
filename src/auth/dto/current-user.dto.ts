@@ -1,3 +1,4 @@
+import { Company } from 'src/companies/models/company.model';
 import {
   generateUserProfileDto,
   UserProfileDto,
@@ -5,11 +6,13 @@ import {
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 
-export interface CurrentUserDto extends Partial<Omit<User, 'userProfile'>> {
+export interface CurrentUserDto
+  extends Partial<Omit<User, 'userProfile' | 'company'>> {
   userProfile: UserProfileDto;
   averageDelayResponse: number | null;
   responseRate: number | null;
   hasExtractedCvData: boolean;
+  company?: Partial<Company>;
 }
 
 export const generateCurrentUserDto = (
@@ -45,13 +48,17 @@ export const generateCurrentUserDto = (
     referredCandidates: user.referredCandidates || [],
     referer: user.referer || null,
     readDocuments: user.readDocuments || [],
-    company: {
-      ...user.company?.toJSON(),
-      admin: user.company?.admin || false,
-    },
     // From UserProfile
     userProfile: generateUserProfileDto(userProfile, complete),
+    company: null,
   } as CurrentUserDto;
+
+  if (user.company) {
+    dto.company = {
+      ...user.company.toJSON(),
+      admin: user.company.admin || null,
+    };
+  }
   if (hasExtractedCvData !== undefined) {
     dto.hasExtractedCvData = hasExtractedCvData;
   }
