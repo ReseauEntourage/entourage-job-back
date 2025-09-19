@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Contract } from 'src/common/contracts/models';
 import { Experience, ExperienceSkill } from 'src/common/experiences/models';
 import { Formation, FormationSkill } from 'src/common/formations/models';
-import { Language } from 'src/common/languages/models';
 import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
+import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
+import { CompanyUser } from 'src/companies/models/company-user.model';
+import { Company } from 'src/companies/models/company.model';
 import {
   Conversation,
   ConversationParticipant,
@@ -43,10 +43,6 @@ export class DatabaseHelper {
     private userProfileNudge: typeof UserProfileNudge,
     @InjectModel(Skill)
     private skillModel: typeof Skill,
-    @InjectModel(Language)
-    private languageModel: typeof Language,
-    @InjectModel(Contract)
-    private contractModel: typeof Contract,
     @InjectModel(Passion)
     private passionModel: typeof Passion,
     @InjectModel(Experience)
@@ -75,8 +71,12 @@ export class DatabaseHelper {
     private conversationParticipantModel: typeof ConversationParticipant,
     @InjectModel(UserSocialSituation)
     private userSocialSituationModel: typeof UserSocialSituation,
-    @InjectModel(BusinessSector)
-    private businessSectorModel: typeof BusinessSector
+    @InjectModel(Company)
+    private companyModel: typeof Company,
+    @InjectModel(CompanyUser)
+    private companyUserModel: typeof CompanyUser,
+    @InjectModel(CompanyInvitation)
+    private companyInvitationModel: typeof CompanyInvitation
   ) {}
 
   async resetTestDB() {
@@ -107,6 +107,9 @@ export class DatabaseHelper {
       await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
       await this.userProfileNudge.truncate(destroyOptions);
+      await this.companyUserModel.truncate(destroyOptions);
+      await this.companyInvitationModel.truncate(destroyOptions);
+      await this.companyModel.truncate(destroyOptions);
     } catch (err) {
       console.error(err);
     }

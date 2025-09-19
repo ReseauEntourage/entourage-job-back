@@ -14,7 +14,7 @@ import {
 } from 'src/contacts/contacts.types';
 import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
-import { Gender, Program, RegistrableUserRole } from 'src/users/users.types';
+import { Gender, RegistrableUserRole } from 'src/users/users.types';
 
 export class CreateUserRegistrationDto extends PickType(User, [
   'firstName',
@@ -41,11 +41,6 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsString()
   @IsOptional()
-  program: Program;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
   birthDate: Date;
 
   @ApiProperty()
@@ -56,6 +51,21 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @IsString()
   @IsOptional()
   organizationId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  companyId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  invitationId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  companyRole?: string;
 
   @ApiProperty()
   @IsString()

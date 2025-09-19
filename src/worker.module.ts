@@ -6,6 +6,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
+import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
 import { Queues } from 'src/queues/queues.types';
 import { getSequelizeOptions } from './app.module';
@@ -55,6 +56,7 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
       ttl: 60,
       limit: 100,
     }),
+    ApiKeysModule,
   ],
   providers: [
     {

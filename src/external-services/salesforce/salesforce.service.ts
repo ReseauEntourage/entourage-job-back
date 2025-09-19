@@ -17,13 +17,7 @@ import {
 import { MessagesService } from 'src/messages/messages.service';
 import { ExternalMessage } from 'src/messages/models';
 import { UsersService } from 'src/users/users.service';
-import {
-  Program,
-  Programs,
-  RegistrableUserRole,
-  UserRoles,
-} from 'src/users/users.types';
-import { getZoneFromDepartment } from 'src/utils/misc';
+import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import {
   AccountProps,
   AccountRecordType,
@@ -36,7 +30,6 @@ import {
   ExternalMessageProps,
   LeadProp,
   LeadRecordType,
-  LeadRecordTypeFromRole,
   LeadRecordTypesIds,
   ObjectName,
   ObjectNames,
@@ -835,15 +828,12 @@ export class SalesforceService {
     department,
     role,
     birthDate,
-    program,
-    campaign,
     nationality,
     accommodation,
     hasSocialWorker,
     resources,
     studiesLevel,
     workingExperience,
-    workingRight,
     jobSearchDuration,
     gender,
     structure,
@@ -852,66 +842,7 @@ export class SalesforceService {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
 
-    if (program === Programs.THREE_SIXTY) {
-      if (contactSfId) {
-        // Hack to have a contact with the same mail and phone as the prospect if it exists
-        await this.updateContactEmailAndPhone(contactSfId, {
-          email: prependDuplicateIfCondition(email, true),
-          phone: prependDuplicateIfCondition(phone, true),
-        });
-      }
-
-      const leadToCreate = {
-        id,
-        firstName,
-        lastName,
-        birthDate,
-        email,
-        phone,
-        department,
-        zone: getZoneFromDepartment(department),
-        nationality,
-        accommodation,
-        hasSocialWorker,
-        resources,
-        studiesLevel,
-        workingExperience,
-        jobSearchDuration,
-        workingRight,
-        gender,
-      };
-
-      const leadSfId = (await this.findOrCreateLead(
-        leadToCreate,
-        LeadRecordTypeFromRole[role]
-      )) as string;
-
-      // Update lead with phone and record type in case the lead already exists
-      await this.updateLeadPhoneAndRecordType(
-        leadSfId,
-        { phone: phone },
-        LeadRecordTypeFromRole[role]
-      );
-
-      if (contactSfId) {
-        // Hack to have a contact with the same mail and phone as the prospect if it exists
-        await this.updateContactEmailAndPhone(contactSfId, {
-          email: email,
-          phone: phone,
-        });
-      }
-
-      if (campaign) {
-        try {
-          // ignore exception if wrong campaign
-          await this.addLeadOrContactToCampaign({ leadId: leadSfId }, campaign);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    }
-
-    const casquette: Casquette = getCasquette(role, program);
+    const casquette: Casquette = getCasquette(role);
 
     const refererId = refererEmail
       ? (await this.findContact(refererEmail))?.Id
@@ -1217,7 +1148,6 @@ export class SalesforceService {
   async createOrUpdateSalesforceUser(
     userId: string,
     otherInfo: {
-      program: Program;
       birthDate: Date;
       campaign?: string;
       workingRight?: CandidateYesNoNSPPValue;
@@ -1242,7 +1172,6 @@ export class SalesforceService {
       birthDate: otherInfo.birthDate,
       campaign: otherInfo.campaign,
       workingRight: otherInfo.workingRight,
-      program: otherInfo.program,
       nationality: otherInfo.nationality,
       accommodation: otherInfo.accommodation,
       hasSocialWorker: otherInfo.hasSocialWorker,

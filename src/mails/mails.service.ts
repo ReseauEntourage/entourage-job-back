@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
+import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import {
@@ -428,6 +429,28 @@ export class MailsService {
       toEmail: user.email,
       templateId: MailjetTemplates.USER_ACCOUNT_DELETED,
       variables: { role: getRoleString(user) },
+    });
+  }
+
+  async sendCompanyInvitation({
+    sender,
+    email,
+    invitationWithCompany,
+  }: {
+    sender: User;
+    email: string;
+    invitationWithCompany: CompanyInvitation;
+  }) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: email,
+      templateId: MailjetTemplates.COMPANY_COLLABORATORS_INVITATION,
+      variables: {
+        companyName: invitationWithCompany.company.name,
+        senderFirstName: sender.firstName,
+        senderLastName: sender.lastName,
+        registerUrl: `${process.env.FRONT_URL}/inscription?companyId=${invitationWithCompany.company.id}&flow=coach&invitationId=${invitationWithCompany.id}`,
+        zone: sender.zone, // We don't have zone of the collaborators, so we use the sender's zone by default
+      },
     });
   }
 }

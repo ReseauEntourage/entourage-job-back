@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
-import { generateCurrentUserDto } from 'src/auth/dto/current-user.dto';
+import { LoggedUser } from 'src/auth/auth.types';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
@@ -12,7 +12,6 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { MailsServiceMock } from 'tests/mails/mails.service.mock';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
-import { UserProfilesHelper } from 'tests/user-profiles/user-profiles.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
@@ -26,7 +25,6 @@ describe('Auth', () => {
   let authHelper: AuthHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
-  let userProfilesHelper: UserProfilesHelper;
 
   const route = '/auth';
 
@@ -48,8 +46,6 @@ describe('Auth', () => {
     authHelper = moduleFixture.get<AuthHelper>(AuthHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    userProfilesHelper =
-      moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
   });
 
   afterAll(async () => {
@@ -67,10 +63,12 @@ describe('Auth', () => {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
 
   describe('/login - Login', () => {
-    let candidate: User;
+    let loggedInCandidat: LoggedUser;
+
     const password = 'Candidat123!';
+
     beforeEach(async () => {
-      candidate = await userFactory.create({
+      loggedInCandidat = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
         password: password,
       });
@@ -82,12 +80,12 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
           password,
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
-        ...candidate,
+        ...loggedInCandidat.user,
         lastConnection: response.body.user.lastConnection,
         createdAt: response.body.user.createdAt,
       });
@@ -110,7 +108,7 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
           password: 'invalidPassword',
         });
       expect(response.status).toBe(401);
@@ -131,18 +129,18 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
         });
       expect(response.status).toBe(401);
     });
     it('Should return 401, if user is deleted', async () => {
-      await userFactory.delete(candidate.id);
+      await userFactory.delete(loggedInCandidat.user.id);
       const response: APIResponse<AuthController['login']> = await request(
         app.getHttpServer()
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
           password,
         });
       expect(response.status).toBe(401);
@@ -312,12 +310,6 @@ describe('Auth', () => {
         role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
-      const loggedInCandidatProfile =
-        await userProfilesHelper.findOneProfileByUserId(
-          loggedInCandidat.user.id,
-          false
-        );
-
       const response: APIResponse<AuthController['getCurrent']> = await request(
         server
       )
@@ -325,10 +317,7 @@ describe('Auth', () => {
         .set('authorization', `Bearer ${loggedInCandidat.token}`);
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
-        ...generateCurrentUserDto(
-          loggedInCandidat.user,
-          loggedInCandidatProfile
-        ),
+        ...loggedInCandidat.user,
         lastConnection: response.body.lastConnection,
       });
     });

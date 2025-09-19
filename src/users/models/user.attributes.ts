@@ -22,6 +22,19 @@ export const UserAttributes = [
 
 export type UserAttribute = (typeof UserAttributes)[number];
 
-export const PublicUserAttributes = ['id', 'firstName', 'lastName', 'role'];
+export const PublicUserAttributes = [
+  'id',
+  'firstName',
+  'lastName',
+  'role',
+  'createdAt',
+];
 
 export type PublicUserAttribute = (typeof PublicUserAttributes)[number];
+
+export const UserAttributesVisibleByCompanyAdmins = [
+  ...PublicUserAttributes,
+  'email',
+];
+export type UserAttributeVisibleByCompanyAdmin =
+  (typeof UserAttributesVisibleByCompanyAdmins)[number];

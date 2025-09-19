@@ -1,4 +1,7 @@
 #!/bin/sh
+
+npm install -g @nestjs/cli
+
 echo "============================"
 echo "= Linkedout API is Running ="
 echo "============================"
@@ -11,7 +14,6 @@ echo "- Environment: $NODE_ENV"
 echo "- Port: $PORT"
 echo "============================"
 
-npm install -g @nestjs/cli
 
 # Start the API in the background
 yarn start:dev &

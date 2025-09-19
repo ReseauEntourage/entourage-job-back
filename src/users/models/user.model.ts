@@ -13,6 +13,7 @@ import {
   BeforeCreate,
   BeforeUpdate,
   BelongsTo,
+  BelongsToMany,
   Column,
   CreatedAt,
   DataType,
@@ -42,7 +43,11 @@ import {
   generateUrl,
   isRoleIncluded,
 } from '../users.utils';
+import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
+import { CompanyUser } from 'src/companies/models/company-user.model';
+import { Company } from 'src/companies/models/company.model';
 import { InternalMessage } from 'src/messages/models';
+import { Conversation, ConversationParticipant } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
@@ -255,8 +260,55 @@ export class User extends HistorizedModel {
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
 
+  @BelongsToMany(() => Conversation, {
+    through: () => ConversationParticipant,
+    foreignKey: 'userId',
+    otherKey: 'conversationId',
+  })
+  conversations: Conversation[];
+
   @HasMany(() => User, 'refererId')
   referredCandidates: User[];
+
+  @HasMany(() => CompanyUser)
+  companyUsers: CompanyUser[];
+
+  companyUser: CompanyUser;
+
+  @BelongsToMany(() => Company, {
+    through: () => CompanyUser,
+    foreignKey: 'userId',
+    otherKey: 'companyId',
+    as: 'companies',
+  })
+  companies: Company[];
+
+  @Column({
+    type: DataType.VIRTUAL,
+    get(this: User) {
+      return this.companies && this.companies.length > 0
+        ? this.companies[0]
+        : null;
+    },
+  })
+  company: Company | null;
+
+  @HasMany(() => CompanyInvitation, {
+    foreignKey: 'userId',
+    as: 'invitations',
+  })
+  companyInvitations: CompanyInvitation[];
+
+  toJSON() {
+    const attributes = this.get({ plain: true });
+    // Remove companies and add company
+    const { companies, ...rest } = attributes;
+    return {
+      ...rest,
+      company:
+        this.companies && this.companies.length > 0 ? this.companies[0] : null,
+    };
+  }
 
   @BeforeCreate
   @BeforeUpdate

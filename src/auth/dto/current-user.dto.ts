@@ -1,3 +1,4 @@
+import { Company } from 'src/companies/models/company.model';
 import {
   generateUserProfileDto,
   UserProfileDto,
@@ -5,11 +6,17 @@ import {
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 
-export interface CurrentUserDto extends Partial<Omit<User, 'userProfile'>> {
+export interface CurrentUserDto
+  extends Partial<
+    Omit<User, 'userProfile' | 'company' | 'candidat' | 'createdAt'>
+  > {
+  createdAt: string;
   userProfile: UserProfileDto;
   averageDelayResponse: number | null;
   responseRate: number | null;
   hasExtractedCvData: boolean;
+  company?: Partial<Company>;
+  candidat?: Partial<User['candidat']>;
 }
 
 export const generateCurrentUserDto = (
@@ -25,6 +32,10 @@ export const generateCurrentUserDto = (
   const dto = {
     // From User
     id: user.id,
+    createdAt:
+      user.createdAt instanceof Date
+        ? user.createdAt.toISOString()
+        : user.createdAt,
     whatsappZoneName: user.whatsappZoneName || null,
     whatsappZoneUrl: user.whatsappZoneUrl || null,
     whatsappZoneQR: user.whatsappZoneQR || null,
@@ -41,14 +52,36 @@ export const generateCurrentUserDto = (
     lastConnection: user.lastConnection,
     isEmailVerified: user.isEmailVerified,
     refererId: user.refererId || null,
-    candidat: user.candidat || null,
     referredCandidates: user.referredCandidates || [],
     referer: user.referer || null,
     readDocuments: user.readDocuments || [],
 
     // From UserProfile
     userProfile: generateUserProfileDto(userProfile, complete),
+
+    // Default values, may be overwritten below
+    company: null,
+    candidat: null,
   } as CurrentUserDto;
+
+  if (user.candidat) {
+    dto.candidat = {
+      employed: user.candidat?.employed || null,
+      hidden: user.candidat?.hidden || null,
+      note: user.candidat?.note || null,
+      url: user.candidat?.url || null,
+      contract: user.candidat?.contract || null,
+      endOfContract: user.candidat?.endOfContract || null,
+      lastModifiedBy: user.candidat?.lastModifiedBy || null,
+    };
+  }
+
+  if (user.company) {
+    dto.company = {
+      ...user.company.toJSON(),
+      admin: user.company.admin || null,
+    };
+  }
   if (hasExtractedCvData !== undefined) {
     dto.hasExtractedCvData = hasExtractedCvData;
   }

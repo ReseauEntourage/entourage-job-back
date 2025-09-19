@@ -10,7 +10,7 @@ import {
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import axios from 'axios';
 import { JwtAuthGuard, UserPayload } from 'src/auth/guards';
-import { ProfileGenerationService } from 'src/queues/producers/profile-generation.service';
+import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
 @ApiTags('profile-generation')

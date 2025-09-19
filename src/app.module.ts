@@ -17,8 +17,10 @@ import { InterestsModule } from './common/interests/interests.module';
 import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
+import { RecruitementAlertsModule } from './common/recruitement-alerts/recruitement-alerts.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
+import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
@@ -42,6 +44,7 @@ import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
 import { UsersStatsModule } from './users-stats/users-stats.module';
+import { WorkerControllerModule } from './worker/worker-controller.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -128,6 +131,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ExperiencesModule,
     FormationsModule,
     ReviewsModule,
+    RecruitementAlertsModule,
     MailsModule,
     MailjetModule,
     ExternalDatabasesModule,
@@ -141,7 +145,9 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MediasModule,
     OpenAiModule,
     PublicCVsModule,
+    CompaniesModule,
     ProfileGenerationModule,
+    WorkerControllerModule,
     PingModule,
   ],
   providers: [
