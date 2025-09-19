@@ -1,15 +1,24 @@
+import { Company } from 'src/companies/models/company.model';
 import { User } from 'src/users/models';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UserProfile } from './models';
 import { PublicProfile } from './user-profiles.types';
 
-export const getPublicProfileFromUserAndUserProfile = (
-  user: User,
-  userProfile: UserProfile,
-  lastSentMessage: Date,
-  lastReceivedMessage: Date,
-  averageDelayResponse: number | null
-): PublicProfile => {
+export const getPublicProfileFromUserAndUserProfile = ({
+  user,
+  userProfile,
+  company = null,
+  lastSentMessage,
+  lastReceivedMessage,
+  averageDelayResponse = null,
+}: {
+  user: User;
+  company?: Company | null;
+  userProfile: UserProfile;
+  lastSentMessage: Date;
+  lastReceivedMessage: Date;
+  averageDelayResponse: number | null;
+}): PublicProfile => {
   return {
     id: user.id,
     firstName: user.firstName,
@@ -36,6 +45,7 @@ export const getPublicProfileFromUserAndUserProfile = (
     interests: userProfile.interests,
     averageDelayResponse,
     hasPicture: userProfile.hasPicture,
+    company: company ? company : null,
   };
 };
 

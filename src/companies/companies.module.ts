@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { DepartmentsModule } from 'src/common/departments/departments.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
@@ -22,7 +22,7 @@ import { Company } from './models/company.model';
       CompanyBusinessSector,
     ]),
     MailsModule,
-    UsersModule,
+    forwardRef(() => UsersModule),
     AWSModule,
     DepartmentsModule,
   ],
