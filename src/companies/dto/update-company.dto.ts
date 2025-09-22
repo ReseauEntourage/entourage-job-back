@@ -20,7 +20,7 @@ export class UpdateCompanyDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  linkedinUrl?: string;
+  linkedInUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
