@@ -31,7 +31,7 @@ export class CompaniesService {
   }) {
     const { limit, offset, search, departments, businessSectorIds } = query;
     return this.companyModel.findAll({
-      include: companiesWithUsers(departments, businessSectorIds),
+      include: companiesWithUsers({ departments, businessSectorIds }),
       attributes: companiesAttributes,
       where: {
         ...(search
@@ -54,14 +54,17 @@ export class CompaniesService {
     return this.companyModel.findOne({
       where: { id: companyId },
       attributes: companiesAttributes,
-      include: companiesWithUsers(),
+      include: companiesWithUsers({}),
     });
   }
 
-  async findOneWithCompanyUsersAndPendingInvitations(companyId: string) {
+  async findOneWithCompanyUsersAndPendingInvitations(
+    companyId: string,
+    hasCompanyAdmin: boolean
+  ) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      include: companiesWithUsers(),
+      include: companiesWithUsers({ hasCompanyAdmin }),
       order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
     });
   }
