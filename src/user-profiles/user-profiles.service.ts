@@ -941,7 +941,7 @@ export class UserProfilesService {
       })
     );
 
-    // Remove the skills that don't exist anymore
+    // Remove the user profile skills that don't exist anymore
     await this.userProfileSkillModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
