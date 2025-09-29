@@ -7,4 +7,5 @@ export const companiesAttributes = [
   'hiringUrl',
   'linkedInUrl',
   'logoUrl',
+  'goal',
 ];
