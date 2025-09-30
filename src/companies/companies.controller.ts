@@ -13,7 +13,6 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
-  UnauthorizedException,
   forwardRef,
   Inject,
 } from '@nestjs/common';
@@ -85,18 +84,11 @@ export class CompaniesController {
     const companyUser = userWithCompanyUsers.companyUsers.find(
       (cu) => cu.companyId === companyId
     );
-    if (!companyUser) {
-      throw new UnauthorizedException(
-        `User is not part of company ${companyId}`
-      );
-    }
-    if (!companyUser.isAdmin) {
-      throw new UnauthorizedException(
-        `User does not have permission to view collaborators for company ${companyId}`
-      );
-    }
+
+    const isCompanyAdmin = companyUser?.isAdmin === true;
     return await this.companiesService.findOneWithCompanyUsersAndPendingInvitations(
-      companyId
+      companyId,
+      isCompanyAdmin
     );
   }
 

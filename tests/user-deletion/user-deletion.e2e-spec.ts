@@ -117,13 +117,6 @@ describe('UserDeletion', () => {
         role: UserRoles.REFERER,
       });
 
-      ({ candidate, coach } =
-        await userCandidatsHelper.associateCoachAndCandidate(
-          coach,
-          candidate,
-          false
-        ));
-
       loggedInCoach = await usersHelper.createLoggedInUser({
         role: UserRoles.COACH,
       });

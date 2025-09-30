@@ -31,7 +31,6 @@ Document mis à jour le 05/09/2025
   - `app.module.ts`: Module global de l'application
   - `tracer.ts`: fichier d'initialisation de la connexion à DataDog
   - `main.ts`: point d'entrée de lancement du serveur
-  - `worker.ts`: point d'entrée de lancement du worker
   - `worker.module.ts`: Module global du worker
 - `/tests`: L'ensemble des tests e2e par module
   - (...) Les différents modules testés

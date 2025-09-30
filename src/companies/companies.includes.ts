@@ -1,10 +1,11 @@
 import { IncludeOptions, Op } from 'sequelize';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/departments/models/department.model';
+import { Conversation } from 'src/messaging/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
 import { User } from 'src/users/models';
-import { PublicUserAttributes } from 'src/users/models/user.attributes';
+import { UserAttributesVisibleByCompanyAdmins } from 'src/users/models/user.attributes';
 import { CompanyInvitation } from './models/company-invitation.model';
 
 export const companiesIncludes = (
@@ -29,10 +30,15 @@ export const companiesIncludes = (
   },
 ];
 
-export const companiesWithUsers = (
-  departments: string[] = [],
-  businessSectorIds: string[] = []
-): IncludeOptions[] => [
+export const companiesWithUsers = ({
+  departments = [],
+  businessSectorIds = [],
+  hasCompanyAdmin = false,
+}: {
+  departments?: string[];
+  businessSectorIds?: string[];
+  hasCompanyAdmin?: boolean;
+}): IncludeOptions[] => [
   // Default includes
   ...companiesIncludes(departments, businessSectorIds),
 
@@ -40,17 +46,25 @@ export const companiesWithUsers = (
   {
     model: User,
     as: 'users',
-    attributes: PublicUserAttributes,
+    attributes: UserAttributesVisibleByCompanyAdmins,
     include: [
       {
         model: UserProfile,
         attributes: ['id', 'hasPicture', 'isAvailable', 'currentJob'],
         include: [...getUserProfileInclude()],
       },
-      {
-        model: CompanyInvitation,
-        as: 'invitations',
-      },
+      ...(hasCompanyAdmin
+        ? [
+            {
+              model: CompanyInvitation,
+              as: 'invitations',
+            },
+            {
+              model: Conversation,
+              as: 'conversations',
+            },
+          ]
+        : []),
     ],
     through: {
       attributes: ['isAdmin', 'role'],
@@ -59,12 +73,16 @@ export const companiesWithUsers = (
   },
 
   // Pending invitations
-  {
-    model: CompanyInvitation,
-    as: 'pendingInvitations',
-    where: {
-      userId: null, // Only include invitations that have not been accepted
-    },
-    required: false,
-  },
+  ...(hasCompanyAdmin
+    ? [
+        {
+          model: CompanyInvitation,
+          as: 'pendingInvitations',
+          where: {
+            userId: null, // Only include invitations that have not been accepted
+          },
+          required: false,
+        },
+      ]
+    : []),
 ];

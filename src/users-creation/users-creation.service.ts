@@ -66,10 +66,6 @@ export class UsersCreationService {
     return this.userCandidatsService.findOneByCandidateId(candidateId);
   }
 
-  async loginUser(user: User) {
-    return this.authService.login(user);
-  }
-
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
     return this.authService.generateRandomPasswordInJWT(expiration);
   }

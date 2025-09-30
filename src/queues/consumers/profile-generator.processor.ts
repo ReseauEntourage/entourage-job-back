@@ -6,8 +6,7 @@ import { Process, Processor } from '@nestjs/bull';
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { Job } from 'bull';
-
-import { ProfileGenerationService } from '../producers/profile-generation.service';
+import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
 import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';

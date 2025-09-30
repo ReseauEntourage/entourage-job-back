@@ -1,5 +1,11 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { QueuesService } from '../queues/producers/queues.service';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
@@ -15,14 +21,15 @@ import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
-import { QueuesService } from './queues.service';
 
 @Injectable()
 export class ProfileGenerationService {
   constructor(
     @InjectModel(ExtractedCVData)
     private extractedCVDataModel: typeof ExtractedCVData,
+    @Inject(forwardRef(() => QueuesService))
     private queuesService: QueuesService,
+    @Inject(forwardRef(() => UserProfilesService))
     private userProfileService: UserProfilesService,
     private languagesService: LanguagesService
   ) {}
