@@ -58,10 +58,6 @@ export class CompanyUsersService {
       await existingLink.destroy();
     }
 
-    if (!companyId) {
-      await this.companyUserModel.destroy({ where: { userId } });
-      return null;
-    }
     const newLink = await this.companyUserModel.create({
       userId,
       companyId,
