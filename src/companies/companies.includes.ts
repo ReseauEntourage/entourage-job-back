@@ -30,10 +30,15 @@ export const companiesIncludes = (
   },
 ];
 
-export const companiesWithUsers = (
-  departments: string[] = [],
-  businessSectorIds: string[] = []
-): IncludeOptions[] => [
+export const companiesWithUsers = ({
+  departments = [],
+  businessSectorIds = [],
+  hasCompanyAdmin = false,
+}: {
+  departments?: string[];
+  businessSectorIds?: string[];
+  hasCompanyAdmin?: boolean;
+}): IncludeOptions[] => [
   // Default includes
   ...companiesIncludes(departments, businessSectorIds),
 
@@ -48,14 +53,18 @@ export const companiesWithUsers = (
         attributes: ['id', 'hasPicture', 'isAvailable', 'currentJob'],
         include: [...getUserProfileInclude()],
       },
-      {
-        model: CompanyInvitation,
-        as: 'invitations',
-      },
-      {
-        model: Conversation,
-        as: 'conversations',
-      },
+      ...(hasCompanyAdmin
+        ? [
+            {
+              model: CompanyInvitation,
+              as: 'invitations',
+            },
+            {
+              model: Conversation,
+              as: 'conversations',
+            },
+          ]
+        : []),
     ],
     through: {
       attributes: ['isAdmin', 'role'],
@@ -64,12 +73,16 @@ export const companiesWithUsers = (
   },
 
   // Pending invitations
-  {
-    model: CompanyInvitation,
-    as: 'pendingInvitations',
-    where: {
-      userId: null, // Only include invitations that have not been accepted
-    },
-    required: false,
-  },
+  ...(hasCompanyAdmin
+    ? [
+        {
+          model: CompanyInvitation,
+          as: 'pendingInvitations',
+          where: {
+            userId: null, // Only include invitations that have not been accepted
+          },
+          required: false,
+        },
+      ]
+    : []),
 ];
