@@ -1073,20 +1073,44 @@ export class UserProfilesService {
         ? [UserRoles.COACH]
         : [UserRoles.CANDIDATE];
 
-    const sameRegionDepartmentsOptions = userProfile.department
-      ? Departments.filter(
-          ({ region }) =>
-            region ===
-            Departments.find(({ name }) => userProfile.department === name)
-              .region
-        ).map(({ name }) => name)
-      : Departments.map(({ name }) => name);
+    const isCompanyAdmin =
+      user.role === UserRoles.COACH && user.company.companyUser.isAdmin;
 
-    const nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
-    const sectorOccupations = userProfile.sectorOccupations;
-    const businessSectorIds = sectorOccupations.map(
-      (sectorOccupation) => sectorOccupation.businessSector?.id
-    );
+    let nudgeIds: string[] = [];
+    let businessSectorIds: string[] = [];
+    let sectorOccupations: UserProfileSectorOccupation[] = [];
+    let sameRegionDepartmentsOptions: Department[] = [];
+
+    // If the user is a company admin, we use company data for recommendations
+    //  else we use user profile data
+    if (isCompanyAdmin) {
+      // Nudges and sectorOccupations are not used in company admin context
+      nudgeIds = [];
+      sectorOccupations = [];
+
+      businessSectorIds = user.company.businessSectors.map(
+        (sector) => sector.id
+      );
+      sameRegionDepartmentsOptions = [
+        // Convert the department to the enum value from constants/departments.ts (eg: "Paris (75)")
+        // Because a company is linked to a single department (using model Department) but a userProfile is a string field
+        `${user.company.department.name} (${user.company.department.value})` as Department,
+      ];
+    } else {
+      nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
+      sectorOccupations = userProfile.sectorOccupations;
+      businessSectorIds = sectorOccupations.map(
+        (sectorOccupation) => sectorOccupation.businessSector?.id
+      );
+      sameRegionDepartmentsOptions = userProfile.department
+        ? Departments.filter(
+            ({ region }) =>
+              region ===
+              Departments.find(({ name }) => userProfile.department === name)
+                .region
+          ).map(({ name }) => name)
+        : Departments.map(({ name }) => name);
+    }
 
     interface UserRecommendationSQL {
       id: string;
