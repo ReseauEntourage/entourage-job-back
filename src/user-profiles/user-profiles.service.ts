@@ -1093,17 +1093,19 @@ export class UserProfilesService {
       businessSectorIds = user.company.businessSectors.map(
         (sector) => sector.id
       );
-      sameRegionDepartmentsOptions = [
-        // Convert the department to the enum value from constants/departments.ts (eg: "Paris (75)")
-        // Because a company is linked to a single department (using model Department) but a userProfile is a string field
-        `${user.company.department.name} (${user.company.department.value})` as Department,
-      ];
+      const constructedDepartment = `${user.company.department.name} (${user.company.department.value})`;
+      // Validate the constructed string against Department enum values
+      sameRegionDepartmentsOptions = Departments.filter(
+        ({ name }) => name === constructedDepartment
+      ).length
+        ? [constructedDepartment as Department]
+        : [];
     } else {
       nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
       sectorOccupations = userProfile.sectorOccupations;
-      businessSectorIds = sectorOccupations.map(
-        (sectorOccupation) => sectorOccupation.businessSector?.id
-      );
+      businessSectorIds = sectorOccupations
+        .map((sectorOccupation) => sectorOccupation.businessSector?.id)
+        .filter((id) => id !== undefined);
       sameRegionDepartmentsOptions = userProfile.department
         ? Departments.filter(
             ({ region }) =>
