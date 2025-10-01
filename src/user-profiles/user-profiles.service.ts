@@ -1074,7 +1074,9 @@ export class UserProfilesService {
         : [UserRoles.CANDIDATE];
 
     const isCompanyAdmin =
-      user.role === UserRoles.COACH && user.company.companyUser.isAdmin;
+      user.role === UserRoles.COACH &&
+      user.company &&
+      user.company.companyUser?.isAdmin;
 
     let nudgeIds: string[] = [];
     let businessSectorIds: string[] = [];
