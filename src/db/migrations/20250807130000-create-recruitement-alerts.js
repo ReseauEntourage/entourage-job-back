@@ -135,14 +135,15 @@ module.exports = {
     await queryInterface.dropTable('RecruitementAlertSkills');
     await queryInterface.dropTable('RecruitementAlertBusinessSectors');
 
-    // Suppression de l'enum après avoir supprimé la table qui l'utilise
+    // Suppression de la table principale avant de supprimer les enums
+    await queryInterface.dropTable('RecruitementAlerts');
+
+    // Suppression des enums après avoir supprimé la table qui les utilise
     await queryInterface.sequelize.query(
       'DROP TYPE IF EXISTS "enum_RecruitementAlerts_contractType";'
     );
     await queryInterface.sequelize.query(
       'DROP TYPE IF EXISTS "enum_RecruitementAlerts_workingExperienceYears";'
     );
-
-    await queryInterface.dropTable('RecruitementAlerts');
   },
 };
