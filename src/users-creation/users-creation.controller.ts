@@ -154,17 +154,24 @@ export class UsersCreationController {
         optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
+      const createdUser = await this.usersCreationService.findOneUser(
+        createdUserId
+      );
+
       if (createUserRegistrationDto.invitationId) {
         // Link the invitation to the user
         await this.usersCreationService.linkInvitationToUser(
           createdUserId,
           createUserRegistrationDto.invitationId
         );
+
+        // Send email to the company admin that the invitation has been used
+        await this.usersCreationService.sendEmailCollaboratorInvitationUsed(
+          createUserRegistrationDto.invitationId,
+          createdUser
+        );
       }
 
-      const createdUser = await this.usersCreationService.findOneUser(
-        createdUserId
-      );
       await this.usersCreationService.createExternalDBUser(createdUserId, {
         birthDate: createUserRegistrationDto.birthDate,
         workingRight: createUserRegistrationDto.workingRight,

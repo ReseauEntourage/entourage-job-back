@@ -47,4 +47,12 @@ export class CompanyUsersService {
       where: { companyId, ...(userId ? { userId } : {}) },
     });
   }
+
+  async findAdminByCompanyId(companyId: string) {
+    const companyUser = await this.companyUserModel.findOne({
+      where: { companyId, isAdmin: true },
+      include: ['user'],
+    });
+    return companyUser?.user || null;
+  }
 }
