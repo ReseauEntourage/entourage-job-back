@@ -1115,20 +1115,49 @@ export class UserProfilesService {
         ? [UserRoles.COACH]
         : [UserRoles.CANDIDATE];
 
-    const sameRegionDepartmentsOptions = userProfile.department
-      ? Departments.filter(
-          ({ region }) =>
-            region ===
-            Departments.find(({ name }) => userProfile.department === name)
-              .region
-        ).map(({ name }) => name)
-      : Departments.map(({ name }) => name);
+    const isCompanyAdmin =
+      user.role === UserRoles.COACH &&
+      user.company &&
+      user.company.companyUser?.isAdmin;
 
-    const nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
-    const sectorOccupations = userProfile.sectorOccupations;
-    const businessSectorIds = sectorOccupations.map(
-      (sectorOccupation) => sectorOccupation.businessSector?.id
-    );
+    let nudgeIds: string[] = [];
+    let businessSectorIds: string[] = [];
+    let sectorOccupations: UserProfileSectorOccupation[] = [];
+    let sameRegionDepartmentsOptions: Department[] = [];
+
+    // If the user is a company admin, we use company data for recommendations
+    //  else we use user profile data
+    if (isCompanyAdmin) {
+      // Nudges and sectorOccupations are not used in company admin context
+
+      // We take all business sectors of the company
+      businessSectorIds = user.company.businessSectors.map(
+        (sector) => sector.id
+      );
+
+      // We take the department of the company
+      const constructedDepartment = `${user.company.department.name} (${user.company.department.value})`;
+      // Validate the constructed string against Department enum values
+      sameRegionDepartmentsOptions = Departments.filter(
+        ({ name }) => name === constructedDepartment
+      ).length
+        ? [constructedDepartment as Department]
+        : [];
+    } else {
+      nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
+      sectorOccupations = userProfile.sectorOccupations;
+      businessSectorIds = sectorOccupations
+        .map((sectorOccupation) => sectorOccupation.businessSector?.id)
+        .filter((id) => id !== undefined);
+      sameRegionDepartmentsOptions = userProfile.department
+        ? Departments.filter(
+            ({ region }) =>
+              region ===
+              Departments.find(({ name }) => userProfile.department === name)
+                .region
+          ).map(({ name }) => name)
+        : Departments.map(({ name }) => name);
+    }
 
     interface UserRecommendationSQL {
       id: string;
