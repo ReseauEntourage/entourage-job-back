@@ -318,12 +318,12 @@ export class UserProfilesController {
     const averageDelayResponse =
       await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
-    return getPublicProfileFromUserAndUserProfile(
+    return getPublicProfileFromUserAndUserProfile({
       user,
       userProfile,
-      lastSentMessage?.createdAt,
-      lastReceivedMessage?.createdAt,
-      averageDelayResponse
-    );
+      lastSentMessage: lastSentMessage?.createdAt,
+      lastReceivedMessage: lastReceivedMessage?.createdAt,
+      averageDelayResponse,
+    });
   }
 }

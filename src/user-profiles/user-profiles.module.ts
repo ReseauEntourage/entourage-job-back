@@ -13,6 +13,7 @@ import { OccupationsModule } from 'src/common/occupations/occupations.module';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { Skill } from 'src/common/skills/models';
 import { SkillsModule } from 'src/common/skills/skills.module';
+import { CompanyUser } from 'src/companies/models/company-user.model';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
@@ -43,6 +44,7 @@ import { UserProfilesService } from './user-profiles.service';
       Interest,
       Skill,
       Experience,
+      CompanyUser,
     ]),
     forwardRef(() => UsersModule),
     OccupationsModule,
