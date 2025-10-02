@@ -327,6 +327,11 @@ export class UserProfilesService {
     const businessSectorIds =
       recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
 
+    const sanitizedJobName = recruitementAlert.jobName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
+      .replace(/[^a-z0-9\s]/g, ''); // Supprime les caractères spéciaux sauf espaces
     // Not used for now, we may use it later for additional filtering or ordering
     // const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
 
@@ -335,29 +340,47 @@ export class UserProfilesService {
       // Job Name
       [Op.or]: [
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.introduction')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('UserProfile.introduction'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('UserProfile.description'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.description')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('experiences.title'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('experiences.title')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('experiences.description'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('experiences.description')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn(
+              'unaccent',
+              sequelize.col('sectorOccupations.occupation.name')
+            )
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
       ],
       // Department
@@ -368,11 +391,12 @@ export class UserProfilesService {
 
     // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
-      attributes: ['id'],
+      attributes: ['id', 'introduction', 'description'],
       where: whereOptions,
       include: [
         {
           model: BusinessSector,
+          attributes: ['id'],
           as: 'businessSectors',
           through: { attributes: [] },
           required: recruitementAlert.businessSectors?.length > 0,
@@ -382,20 +406,35 @@ export class UserProfilesService {
               : undefined,
         },
         {
+          model: UserProfileSectorOccupation,
+          as: 'sectorOccupations',
+          required: false,
+          include: [
+            {
+              model: Occupation,
+              as: 'occupation',
+              required: false,
+            },
+          ],
+        },
+        {
           model: Skill,
           as: 'skills',
+          attributes: ['id'],
           through: { attributes: [] },
           required: false,
         },
         {
           model: Contract,
           as: 'contracts',
+          attributes: ['id'],
           through: { attributes: [] },
           required: false,
         },
         {
           model: Experience,
           as: 'experiences',
+          attributes: ['id', 'title', 'description'],
           required: false,
         },
         {
