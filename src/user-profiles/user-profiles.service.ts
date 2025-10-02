@@ -1087,12 +1087,13 @@ export class UserProfilesService {
     //  else we use user profile data
     if (isCompanyAdmin) {
       // Nudges and sectorOccupations are not used in company admin context
-      nudgeIds = [];
-      sectorOccupations = [];
 
+      // We take all business sectors of the company
       businessSectorIds = user.company.businessSectors.map(
         (sector) => sector.id
       );
+
+      // We take the department of the company
       const constructedDepartment = `${user.company.department.name} (${user.company.department.value})`;
       // Validate the constructed string against Department enum values
       sameRegionDepartmentsOptions = Departments.filter(
