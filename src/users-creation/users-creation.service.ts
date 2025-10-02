@@ -95,13 +95,12 @@ export class UsersCreationService {
     invitationId: string,
     createdUser: User
   ) {
-    const companyAdmin =
-      await this.companyInvitationsService.getCompanyAdminByInvitationId(
+    const companyAdmins =
+      await this.companyInvitationsService.getCompanyAdminsByInvitationId(
         invitationId
       );
-
     return this.mailsService.sendEmailCollaboratorInvitationUsed(
-      companyAdmin,
+      companyAdmins || [],
       createdUser
     );
   }

@@ -165,11 +165,18 @@ export class UsersCreationController {
           createUserRegistrationDto.invitationId
         );
 
-        // Send email to the company admin that the invitation has been used
-        await this.usersCreationService.sendEmailCollaboratorInvitationUsed(
-          createUserRegistrationDto.invitationId,
-          createdUser
-        );
+        try {
+          // Send email to the company admin that the invitation has been used
+          await this.usersCreationService.sendEmailCollaboratorInvitationUsed(
+            createUserRegistrationDto.invitationId,
+            createdUser
+          );
+        } catch (error) {
+          console.error(
+            'Failed to send collaborator invitation used email:',
+            error
+          );
+        }
       }
 
       await this.usersCreationService.createExternalDBUser(createdUserId, {

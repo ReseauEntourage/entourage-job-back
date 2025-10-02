@@ -83,13 +83,13 @@ export class CompanyInvitationsService {
     }
   }
 
-  async getCompanyAdminByInvitationId(
+  async getCompanyAdminsByInvitationId(
     invitationId: string
-  ): Promise<User | null> {
+  ): Promise<User[] | null> {
     const invitation = await this.findOneById(invitationId);
     if (!invitation) {
       throw new Error(`Invitation with ID ${invitationId} not found`);
     }
-    return this.companyUserService.findAdminByCompanyId(invitation.companyId);
+    return this.companyUserService.findAdminsByCompanyId(invitation.companyId);
   }
 }
