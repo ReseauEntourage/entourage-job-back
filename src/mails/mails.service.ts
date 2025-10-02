@@ -453,6 +453,23 @@ export class MailsService {
       },
     });
   }
+
+  async sendEmailCollaboratorInvitationUsed(
+    companyAdmin: User,
+    createdUser: User
+  ) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: companyAdmin.email,
+      templateId: MailjetTemplates.COMPANY_INVITATION_USED,
+      variables: {
+        createdUserFirstname: createdUser.firstName,
+        createdUserLastname: createdUser.lastName,
+        adminFirstName: companyAdmin.firstName,
+        loginUrl: `${process.env.FRONT_URL}/login`,
+        zone: companyAdmin.zone,
+      },
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {

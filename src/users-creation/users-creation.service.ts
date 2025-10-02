@@ -91,6 +91,21 @@ export class UsersCreationService {
     );
   }
 
+  async sendEmailCollaboratorInvitationUsed(
+    invitationId: string,
+    createdUser: User
+  ) {
+    const companyAdmin =
+      await this.companyInvitationsService.getCompanyAdminByInvitationId(
+        invitationId
+      );
+
+    return this.mailsService.sendEmailCollaboratorInvitationUsed(
+      companyAdmin,
+      createdUser
+    );
+  }
+
   async sendOnboardingJ1BAOMail(user: User) {
     return this.mailsService.sendOnboardingJ1BAOMail(user);
   }
