@@ -58,6 +58,11 @@ export class CompanyUsersService {
       await existingLink.destroy();
     }
 
+    // If companyId is null, we just remove the link
+    if (!companyId) {
+      return null;
+    }
+
     const newLink = await this.companyUserModel.create({
       userId,
       companyId,
