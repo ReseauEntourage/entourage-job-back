@@ -204,7 +204,7 @@ export class AuthService {
   }
 
   async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
     return this.mailsService.sendWelcomeMail(user);
   }
