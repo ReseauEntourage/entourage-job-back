@@ -2,9 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
-import { FilterParams } from 'src/utils/types';
 import { generatePublicCVDto, PublicCVDto } from './dto/public-cv.dto';
-import { PublicCVsFilterKey } from './public-cvs.types';
 
 @Injectable()
 export class PublicCVsService {
@@ -13,14 +11,54 @@ export class PublicCVsService {
     private userProfilesService: UserProfilesService
   ) {}
 
-  async getPublicCVs(
-    query: {
-      limit: number;
-      offset: number;
-      search: string;
-    } & FilterParams<PublicCVsFilterKey>
-  ) {
-    return this.usersService.findAllPublicCVs(query);
+  async getPublicCVs(query: { limit: number; offset: number; search: string }) {
+    const { limit = 10, offset = 0 } = query;
+    // Utiliser une taille de lot fixe au lieu de la baser sur la limite
+    const batchSize = 50; // Taille de lot fixe
+    const finalResults = [];
+    let currentOffset = offset;
+
+    // Boucle jusqu'à obtenir suffisamment de résultats ou épuiser les données disponibles
+    while (finalResults.length < limit) {
+      // Récupération d'un lot de profils publics
+      const batchQuery = { ...query, limit: batchSize, offset: currentOffset };
+      const batch = await this.usersService.findAllPublicCVs(batchQuery);
+
+      // Si aucun résultat, on a épuisé tous les profils disponibles
+      if (batch.length === 0) {
+        break;
+      }
+
+      // Filtrage des profils qui ont une photo et un taux de complétion d'au moins 70%
+      for (const user of batch) {
+        // Vérification de la présence d'une photo
+        const userProfile = user.userProfile;
+        if (!userProfile || !userProfile.hasPicture) {
+          continue; // Ignorer les profils sans photo
+        }
+
+        // Calcul du taux de complétion
+        const completionRate =
+          await this.userProfilesService.calculateProfileCompletion(user.id);
+
+        // Ne conserver que les profils avec au moins 70% de complétion
+        if (completionRate >= 70) {
+          finalResults.push(user);
+
+          // Arrêt si on a atteint la limite demandée
+          if (finalResults.length >= limit) {
+            break;
+          }
+        }
+      }
+
+      // Mise à jour de l'offset pour le prochain lot
+      currentOffset += batchSize;
+    }
+
+    // Ne retourne que le nombre de résultats demandé
+    const results = finalResults.slice(0, limit);
+    return results;
   }
 
   async getPublicCVByUserId(userId: string): Promise<PublicCVDto> {
