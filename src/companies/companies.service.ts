@@ -60,11 +60,11 @@ export class CompaniesService {
 
   async findOneWithCompanyUsersAndPendingInvitations(
     companyId: string,
-    hasCompanyAdmin: boolean
+    asCompanyAdmin: boolean
   ) {
     return this.companyModel.findOne({
       where: { id: companyId },
-      include: companiesWithUsers({ hasCompanyAdmin }),
+      include: companiesWithUsers({ asCompanyAdmin }),
       order: [[{ model: User, as: 'users' }, 'createdAt', 'DESC']],
     });
   }
