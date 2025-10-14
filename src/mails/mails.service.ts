@@ -71,7 +71,7 @@ export class MailsService {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
     if (user.role === UserRoles.COACH) {
-      if (user.company.companyUser.isAdmin) {
+      if (user.company?.companyUser?.isAdmin) {
         return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
           toEmail: user.email,
           replyTo: candidatesAdminMail,
