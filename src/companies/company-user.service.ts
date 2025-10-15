@@ -60,4 +60,28 @@ export class CompanyUsersService {
     });
     return companyUsers.map((cu) => cu.user);
   }
+
+  async linkUserToCompany(userId: string, companyId: string | null) {
+    const existingLink = await this.companyUserModel.findOne({
+      where: { userId },
+    });
+
+    if (existingLink) {
+      // Remove existing link if it exists
+      await existingLink.destroy();
+    }
+
+    // If companyId is null, we just remove the link
+    if (!companyId) {
+      return null;
+    }
+
+    const newLink = await this.companyUserModel.create({
+      userId,
+      companyId,
+      isAdmin: false,
+      role: 'employee',
+    });
+    return newLink;
+  }
 }

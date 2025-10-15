@@ -22,6 +22,7 @@ import { RecruitementAlert } from 'src/common/recruitement-alerts/models';
 import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
 import { SkillsService } from 'src/common/skills/skills.service';
+import { CompanyUser } from 'src/companies/models/company-user.model';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -83,6 +84,8 @@ export class UserProfilesService {
     private userProfileLanguageModel: typeof UserProfileLanguage,
     @InjectModel(UserProfileSkill)
     private userProfileSkillModel: typeof UserProfileSkill,
+    @InjectModel(CompanyUser)
+    private companyUserModel: typeof CompanyUser,
     private s3Service: S3Service,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
@@ -324,6 +327,11 @@ export class UserProfilesService {
     const businessSectorIds =
       recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
 
+    const sanitizedJobName = recruitementAlert.jobName
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
+      .replace(/[^a-z0-9\s]/g, ''); // Supprime les caractères spéciaux sauf espaces
     // Not used for now, we may use it later for additional filtering or ordering
     // const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
 
@@ -332,29 +340,47 @@ export class UserProfilesService {
       // Job Name
       [Op.or]: [
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.introduction')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('UserProfile.introduction'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.currentJob')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('UserProfile.description'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('UserProfile.description')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('experiences.title'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('experiences.title')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn('unaccent', sequelize.col('experiences.description'))
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
         sequelize.where(
-          sequelize.fn('LOWER', sequelize.col('experiences.description')),
+          sequelize.fn(
+            'LOWER',
+            sequelize.fn(
+              'unaccent',
+              sequelize.col('sectorOccupations.occupation.name')
+            )
+          ),
           'LIKE',
-          `%${recruitementAlert.jobName.toLowerCase()}%`
+          `%${sanitizedJobName}%`
         ),
       ],
       // Department
@@ -365,11 +391,12 @@ export class UserProfilesService {
 
     // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
-      attributes: ['id'],
+      attributes: ['id', 'introduction', 'description'],
       where: whereOptions,
       include: [
         {
           model: BusinessSector,
+          attributes: ['id'],
           as: 'businessSectors',
           through: { attributes: [] },
           required: recruitementAlert.businessSectors?.length > 0,
@@ -379,20 +406,35 @@ export class UserProfilesService {
               : undefined,
         },
         {
+          model: UserProfileSectorOccupation,
+          as: 'sectorOccupations',
+          required: false,
+          include: [
+            {
+              model: Occupation,
+              as: 'occupation',
+              required: false,
+            },
+          ],
+        },
+        {
           model: Skill,
           as: 'skills',
+          attributes: ['id'],
           through: { attributes: [] },
           required: false,
         },
         {
           model: Contract,
           as: 'contracts',
+          attributes: ['id'],
           through: { attributes: [] },
           required: false,
         },
         {
           model: Experience,
           as: 'experiences',
+          attributes: ['id', 'title', 'description'],
           required: false,
         },
         {
@@ -941,7 +983,7 @@ export class UserProfilesService {
       })
     );
 
-    // Remove the skills that don't exist anymore
+    // Remove the user profile skills that don't exist anymore
     await this.userProfileSkillModel.destroy({
       where: {
         userProfileId: userProfileToUpdate.id,
@@ -1073,20 +1115,49 @@ export class UserProfilesService {
         ? [UserRoles.COACH]
         : [UserRoles.CANDIDATE];
 
-    const sameRegionDepartmentsOptions = userProfile.department
-      ? Departments.filter(
-          ({ region }) =>
-            region ===
-            Departments.find(({ name }) => userProfile.department === name)
-              .region
-        ).map(({ name }) => name)
-      : Departments.map(({ name }) => name);
+    const isCompanyAdmin =
+      user.role === UserRoles.COACH &&
+      user.company &&
+      user.company.companyUser?.isAdmin;
 
-    const nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
-    const sectorOccupations = userProfile.sectorOccupations;
-    const businessSectorIds = sectorOccupations.map(
-      (sectorOccupation) => sectorOccupation.businessSector?.id
-    );
+    let nudgeIds: string[] = [];
+    let businessSectorIds: string[] = [];
+    let sectorOccupations: UserProfileSectorOccupation[] = [];
+    let sameRegionDepartmentsOptions: Department[] = [];
+
+    // If the user is a company admin, we use company data for recommendations
+    //  else we use user profile data
+    if (isCompanyAdmin) {
+      // Nudges and sectorOccupations are not used in company admin context
+
+      // We take all business sectors of the company
+      businessSectorIds = user.company.businessSectors.map(
+        (sector) => sector.id
+      );
+
+      // We take the department of the company
+      const constructedDepartment = `${user.company.department.name} (${user.company.department.value})`;
+      // Validate the constructed string against Department enum values
+      sameRegionDepartmentsOptions = Departments.filter(
+        ({ name }) => name === constructedDepartment
+      ).length
+        ? [constructedDepartment as Department]
+        : [];
+    } else {
+      nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
+      sectorOccupations = userProfile.sectorOccupations;
+      businessSectorIds = sectorOccupations
+        .map((sectorOccupation) => sectorOccupation.businessSector?.id)
+        .filter((id) => id !== undefined);
+      sameRegionDepartmentsOptions = userProfile.department
+        ? Departments.filter(
+            ({ region }) =>
+              region ===
+              Departments.find(({ name }) => userProfile.department === name)
+                .region
+          ).map(({ name }) => name)
+        : Departments.map(({ name }) => name);
+    }
 
     interface UserRecommendationSQL {
       id: string;
