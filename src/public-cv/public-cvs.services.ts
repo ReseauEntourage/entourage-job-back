@@ -21,7 +21,8 @@ export class PublicCVsService {
     // Boucle jusqu'à obtenir suffisamment de résultats ou épuiser les données disponibles
     while (finalResults.length < limit) {
       // Récupération d'un lot de profils publics
-      const batchQuery = { ...query, limit: batchSize, offset: currentOffset };
+      const { search, ...queryWithoutSearch } = query;
+      const batchQuery = { ...queryWithoutSearch, limit: batchSize, offset: currentOffset };
       const batch = await this.usersService.findAllPublicCVs(batchQuery);
 
       // Si aucun résultat, on a épuisé tous les profils disponibles
