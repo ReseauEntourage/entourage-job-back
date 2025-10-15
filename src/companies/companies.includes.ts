@@ -33,11 +33,11 @@ export const companiesIncludes = (
 export const companiesWithUsers = ({
   departments = [],
   businessSectorIds = [],
-  hasCompanyAdmin = false,
+  asCompanyAdmin = false,
 }: {
   departments?: string[];
   businessSectorIds?: string[];
-  hasCompanyAdmin?: boolean;
+  asCompanyAdmin?: boolean;
 }): IncludeOptions[] => [
   // Default includes
   ...companiesIncludes(departments, businessSectorIds),
@@ -53,7 +53,7 @@ export const companiesWithUsers = ({
         attributes: ['id', 'hasPicture', 'isAvailable', 'currentJob'],
         include: [...getUserProfileInclude()],
       },
-      ...(hasCompanyAdmin
+      ...(asCompanyAdmin
         ? [
             {
               model: CompanyInvitation,
@@ -69,11 +69,14 @@ export const companiesWithUsers = ({
     through: {
       attributes: ['isAdmin', 'role'],
       as: 'companyUser',
+      where: {
+        isAdmin: false,
+      },
     },
   },
 
   // Pending invitations
-  ...(hasCompanyAdmin
+  ...(asCompanyAdmin
     ? [
         {
           model: CompanyInvitation,
