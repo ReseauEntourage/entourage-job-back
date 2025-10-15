@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { User } from 'src/users/models';
 import { CompanyUser } from './models/company-user.model';
 
 @Injectable()
@@ -46,6 +47,18 @@ export class CompanyUsersService {
     return this.companyUserModel.findOne({
       where: { companyId, ...(userId ? { userId } : {}) },
     });
+  }
+
+  async findAdminsByCompanyId(companyId: string) {
+    const companyUsers = await this.companyUserModel.findAll({
+      where: { companyId, isAdmin: true },
+      include: {
+        model: User,
+        as: 'user',
+        required: true,
+      },
+    });
+    return companyUsers.map((cu) => cu.user);
   }
 
   async linkUserToCompany(userId: string, companyId: string | null) {

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { CompaniesService } from './companies.service';
+import { CompanyUsersService } from './company-user.service';
 import { CompanyInvitation } from './models/company-invitation.model';
 import { Company } from './models/company.model';
 
@@ -12,7 +13,8 @@ export class CompanyInvitationsService {
     @InjectModel(CompanyInvitation)
     private readonly companyInvitationModel: typeof CompanyInvitation,
     private readonly companiesService: CompaniesService,
-    private readonly mailsService: MailsService
+    private readonly mailsService: MailsService,
+    private readonly companyUserService: CompanyUsersService
   ) {}
 
   async findOneById(id: string) {
@@ -79,5 +81,15 @@ export class CompanyInvitationsService {
         }
       );
     }
+  }
+
+  async getCompanyAdminsByInvitationId(
+    invitationId: string
+  ): Promise<User[] | null> {
+    const invitation = await this.findOneById(invitationId);
+    if (!invitation) {
+      throw new Error(`Invitation with ID ${invitationId} not found`);
+    }
+    return this.companyUserService.findAdminsByCompanyId(invitation.companyId);
   }
 }
