@@ -66,11 +66,26 @@ export class MailsService {
   }
 
   async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
     if (user.role === UserRoles.COACH) {
+      if (user.company?.companyUser?.isAdmin) {
+        return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+          toEmail: user.email,
+          replyTo: candidatesAdminMail,
+          templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
+          variables: {
+            firstName: user.firstName,
+            siteLinkAlertRecruit: `${process.env.FRONT_URL}/backoffice/dashboard`,
+            siteLinkInvit: `${process.env.FRONT_URL}/backoffice/companies/${user.company.id}/collaborators`,
+            companyGoal: user.company.goal || '',
+            companyName: user.company.name,
+            zone: user.zone || AdminZones.HZ,
+          },
+        });
+      }
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: candidatesAdminMail,
