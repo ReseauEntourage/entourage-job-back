@@ -85,6 +85,7 @@ export class MessagingController {
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
       await this.messagingService.handleDailyConversationLimit(
         user,
+        createMessageDto.participantIds,
         createMessageDto.content
       );
       const participants = [...createMessageDto.participantIds];

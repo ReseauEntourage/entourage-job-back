@@ -36,11 +36,12 @@ export const generateSlackMsgConfigConversationReported = (
 };
 
 export const generateSlackMsgConfigUserSuspiciousUser = (
-  user: User,
+  sender: User,
+  recipients: User[],
   context: string,
   message?: string
 ): SlackBlockConfig => {
-  const adminUserProfileUrl = `${process.env.FRONT_URL}/backoffice/admin/membres/${user.id}`;
+  const adminUserProfileUrl = `${process.env.FRONT_URL}/backoffice/admin/membres/${sender.id}`;
 
   return {
     title: '🔬 Comportement suspect detecté 👿',
@@ -51,7 +52,16 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
       },
       {
         title: '👿 Qui est-ce ?',
-        content: `${user.firstName} ${user.lastName} <${user.email}>`,
+        content: `${sender.firstName} ${sender.lastName} <${sender.email}>`,
+      },
+      {
+        title: '✉️ Destinataire(s)',
+        content: recipients
+          .map(
+            (recipient) =>
+              `${recipient.firstName} ${recipient.lastName} <${recipient.email}>`
+          )
+          .join('\n'),
       },
     ],
     msgParts: [
