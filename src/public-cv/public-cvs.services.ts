@@ -4,6 +4,8 @@ import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
 import { generatePublicCVDto, PublicCVDto } from './dto/public-cv.dto';
 
+const MIN_PROFILE_COMPLETION_RATE = 70;
+
 @Injectable()
 export class PublicCVsService {
   constructor(
@@ -22,7 +24,11 @@ export class PublicCVsService {
     while (finalResults.length < limit) {
       // Récupération d'un lot de profils publics
       const { search, ...queryWithoutSearch } = query;
-      const batchQuery = { ...queryWithoutSearch, limit: batchSize, offset: currentOffset };
+      const batchQuery = {
+        ...queryWithoutSearch,
+        limit: batchSize,
+        offset: currentOffset,
+      };
       const batch = await this.usersService.findAllPublicCVs(batchQuery);
 
       // Si aucun résultat, on a épuisé tous les profils disponibles
@@ -43,7 +49,7 @@ export class PublicCVsService {
           await this.userProfilesService.calculateProfileCompletion(user.id);
 
         // Ne conserver que les profils avec au moins 70% de complétion
-        if (completionRate >= 70) {
+        if (completionRate >= MIN_PROFILE_COMPLETION_RATE) {
           finalResults.push(user);
 
           // Arrêt si on a atteint la limite demandée
