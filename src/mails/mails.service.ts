@@ -463,8 +463,8 @@ export class MailsService {
         toEmail: admin.email,
         templateId: MailjetTemplates.COMPANY_INVITATION_USED,
         variables: {
-          createdUserFirstname: createdUser.firstName,
-          createdUserLastname: createdUser.lastName,
+          createdUserFirstName: createdUser.firstName,
+          createdUserLastName: createdUser.lastName,
           adminFirstName: admin.firstName,
           loginUrl: `${process.env.FRONT_URL}/login`,
           zone: admin.zone,
