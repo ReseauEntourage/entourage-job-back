@@ -397,16 +397,31 @@ export class MessagingService {
     });
   }
 
-  async handleDailyConversationLimit(user: User, message: string) {
-    if (user.role === UserRoles.ADMIN) {
+  async handleDailyConversationLimit(
+    sender: User,
+    participantIds: string[],
+    message: string
+  ) {
+    if (sender.role === UserRoles.ADMIN) {
       // Admins can create as many conversations as they want
       return;
     }
-    const countDailyConversation = await this.countDailyConversations(user.id);
+    const countDailyConversation = await this.countDailyConversations(
+      sender.id
+    );
     if (countDailyConversation === 4 || countDailyConversation >= 7) {
+      const recipients: User[] = [];
+      for (const id of participantIds) {
+        const recipient = await this.userService.findOne(id);
+        if (recipient) {
+          recipients.push(recipient);
+        }
+      }
+
       const slackMsgConfig: SlackBlockConfig =
         generateSlackMsgConfigUserSuspiciousUser(
-          user,
+          sender,
+          recipients,
           `Un utilisateur tente de créer sa ${
             countDailyConversation + 1
           }ème conversation aujourd\'hui`,

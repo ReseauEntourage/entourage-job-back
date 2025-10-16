@@ -15,12 +15,10 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
-import { ProfileGenerationService } from 'src/queues/producers/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
-import { generateCurrentUserDto } from './dto/current-user.dto';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @ApiTags('Auth')
@@ -29,15 +27,15 @@ import { LocalAuthGuard, Public, UserPayload } from './guards';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly sessionService: SessionsService,
-    private readonly profileGenerationService: ProfileGenerationService
+    private readonly sessionService: SessionsService
   ) {}
 
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@UserPayload() user: User) {
-    const loggedInUser = await this.authService.login(user);
+    const currentUser = await this.authService.getCurrentUser(user.id);
+    const loggedInUser = await this.authService.login(currentUser);
     await this.sessionService.createOrUpdateSession(user.id);
     return loggedInUser;
   }
@@ -173,32 +171,7 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    const usersStats =
-      complete === 'true'
-        ? await this.authService.getUsersStats(updatedUser.id)
-        : undefined;
-
-    const currentUser = await this.authService.findOneUserById(updatedUser.id);
-    const currentUserProfile = await this.authService.findOneUserProfileById(
-      updatedUser.id,
-      complete === 'true'
-    );
-    const hasExtractedCvData =
-      complete === 'true'
-        ? await this.profileGenerationService.hasExtractedCVData(
-            currentUser.userProfile.id
-          )
-        : undefined;
-
-    await this.sessionService.createOrUpdateSession(currentUser.id);
-
-    return generateCurrentUserDto(
-      currentUser,
-      currentUserProfile,
-      usersStats,
-      hasExtractedCvData,
-      complete === 'true'
-    );
+    return await this.authService.getCurrentUser(id, complete === 'true');
   }
 
   @Public()

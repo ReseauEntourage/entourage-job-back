@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { S3Service } from 'src/external-services/aws/s3.service';
+import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -23,9 +23,12 @@ export class ExternalCvsService {
    * @param file - The file to be uploaded
    * @returns {Promise<string>} - The S3 key of the uploaded file
    */
-  async uploadExternalCV(userId: string, file: Express.Multer.File) {
+  async uploadExternalCV(
+    userId: string,
+    file: Express.Multer.File
+  ): Promise<string> {
     const { path } = file;
-    let uploadedCV: string;
+    let uploadedCV: S3File;
 
     try {
       uploadedCV = await this.s3Service.upload(
@@ -44,7 +47,7 @@ export class ExternalCvsService {
       await this.extractedCVDataModel.destroy({
         where: { userProfileId: userProfile.id },
       });
-      return uploadedCV;
+      return uploadedCV.key;
     } catch (error) {
       throw new InternalServerErrorException();
     } finally {

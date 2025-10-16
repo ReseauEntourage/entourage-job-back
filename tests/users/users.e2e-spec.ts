@@ -560,17 +560,6 @@ describe('Users', () => {
           it('Should return 200, and all the candidates that match all the filters', async () => {
             const organization = await organizationFactory.create({}, {}, true);
 
-            const lyonAssociatedCoaches = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                firstName: 'XXX',
-                role: UserRoles.COACH,
-                zone: AdminZones.LYON,
-                OrganizationId: organization.id,
-              }
-            );
-
             const lyonAssociatedCandidates =
               await databaseHelper.createEntities(userFactory, 2, {
                 firstName: 'XXX',
@@ -578,15 +567,6 @@ describe('Users', () => {
                 zone: AdminZones.LYON,
                 OrganizationId: organization.id,
               });
-
-            await Promise.all(
-              lyonAssociatedCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  lyonAssociatedCoaches[index],
-                  candidate
-                );
-              })
-            );
 
             const expectedCandidatesIds = [
               ...lyonAssociatedCandidates.map(({ id }) => id),
@@ -616,26 +596,6 @@ describe('Users', () => {
                 zone: AdminZones.LYON,
                 OrganizationId: organization.id,
               }
-            );
-
-            const associatedCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                firstName: 'XXX',
-                role: UserRoles.CANDIDATE,
-                zone: AdminZones.LYON,
-                OrganizationId: organization.id,
-              }
-            );
-
-            await Promise.all(
-              associatedCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  lyonAssociatedCoaches[index],
-                  candidate
-                );
-              })
             );
 
             const expectedCoachesIds = [
@@ -779,24 +739,7 @@ describe('Users', () => {
               });
           expect(response.status).toBe(401);
         });
-        it("Should return 403 if user doesn't update himself, even if they are associated", async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
-          const updates = await userFactory.create({}, {}, false);
-          const response: APIResponse<UsersController['updateUser']> =
-            await request(server)
-              .put(`${route}/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`)
-              .send({
-                phone: updates.phone,
-                firstName: updates.firstName,
-              });
-          expect(response.status).toBe(403);
-        });
+
         it('Should return 200 and updated user when a candidate update himself', async () => {
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
@@ -894,12 +837,6 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200 and updated user, and updated userCandidat when an admin update a user role', async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
@@ -1043,12 +980,6 @@ describe('Users', () => {
           expect(response.status).toBe(400);
         });
         it('Should return 200 and updated userCandidat, if logged in admin', async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
           const updatedNote = 'updated note by admin';
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
@@ -1063,12 +994,6 @@ describe('Users', () => {
           expect(response.body.lastModifiedBy).toBe(loggedInAdmin.user.id);
         });
         it('Should return 200 and updated userCandidat, if candidate updates himself', async () => {
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
           const updatedNote = 'updated note by candidat';
           const response: APIResponse<UsersController['updateUserCandidat']> =
             await request(server)
@@ -1102,7 +1027,6 @@ describe('Users', () => {
           const referer = await userFactory.create({
             role: UserRoles.REFERER,
           });
-          await userCandidatsHelper.associateCoachAndCandidate(coach, candidat);
           loggedInCandidate = await usersHelper.createLoggedInUser(
             candidat,
             {},

@@ -4,6 +4,8 @@ import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
+import { CompanyUsersService } from 'src/companies/company-user.service';
+import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { PublicCVsFilterKey } from 'src/public-cv/public-cvs.types';
@@ -37,6 +39,8 @@ export class UsersService {
     private mailsService: MailsService,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
+    @Inject(forwardRef(() => CompanyUsersService))
+    private companyUsersService: CompanyUsersService,
     private businessSectorsService: BusinessSectorsService
   ) {}
 
@@ -50,6 +54,24 @@ export class UsersService {
       include: UserCandidatInclude(),
       order: getUserCandidatOrder(),
     });
+  }
+
+  async findOneWithCompanyUsers(id: string) {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: CompanyUser,
+          as: 'companyUsers',
+          attributes: ['isAdmin', 'role', 'companyId'],
+          required: false,
+        },
+      ],
+    });
+  }
+
+  async linkCompany(userId: string, companyId: string | null) {
+    return await this.companyUsersService.linkUserToCompany(userId, companyId);
   }
 
   async findOneByMail(email: string) {

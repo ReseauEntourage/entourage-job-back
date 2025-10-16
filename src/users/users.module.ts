@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from 'src/auth/auth.module';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
+import { CompaniesModule } from 'src/companies/companies.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { UserCandidat, User } from './models';
 import { UserCandidatsService } from './user-candidats.service';
@@ -13,6 +14,7 @@ import { UsersService } from './users.service';
     SequelizeModule.forFeature([User, UserCandidat]),
     forwardRef(() => MailsModule),
     forwardRef(() => AuthModule),
+    forwardRef(() => CompaniesModule),
     BusinessSectorsModule,
   ],
   controllers: [UsersController],

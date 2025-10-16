@@ -14,7 +14,7 @@ import { DatabaseHelper } from 'tests/database.helper';
 import { S3Mocks } from 'tests/mocks.types';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 
-describe('ExternalCvsController', () => {
+describe('ExternalCvs', () => {
   let app: INestApplication;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let server: any;
@@ -25,6 +25,8 @@ describe('ExternalCvsController', () => {
   let loggedInCandidate: LoggedUser;
   let loggedInCandidateWithCv: LoggedUser;
 
+  const route = '/external-cv';
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
@@ -34,6 +36,7 @@ describe('ExternalCvsController', () => {
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();
+
     app = moduleFixture.createNestApplication();
     await app.init();
     server = app.getHttpServer();
@@ -72,7 +75,7 @@ describe('ExternalCvsController', () => {
       const buffer = Buffer.from('PDFFileContent');
       const response: APIResponse<ExternalCvsController['uploadExternalCV']> =
         await request(server)
-          .post(`/external-cv`)
+          .post(`${route}`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`)
           .set('Content-Type', 'multipart/form-data')
           .attach('file', buffer, 'test.pdf');
@@ -84,7 +87,7 @@ describe('ExternalCvsController', () => {
     it('should fail to upload an external CV if no file was provided', async () => {
       const response: APIResponse<ExternalCvsController['uploadExternalCV']> =
         await request(server)
-          .post(`/external-cv`)
+          .post(`${route}`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
       expect(response.status).toBe(400);
@@ -95,7 +98,7 @@ describe('ExternalCvsController', () => {
     it('should successfully find an external CV', async () => {
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
-          .get(`/external-cv/${loggedInCandidateWithCv.user.id}`)
+          .get(`${route}/${loggedInCandidateWithCv.user.id}`)
           .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
       expect(response.body).toHaveProperty('url');
       expect(response.status).toBe(200);
@@ -104,7 +107,7 @@ describe('ExternalCvsController', () => {
     it('should fail to find an external CV', async () => {
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
-          .get(`/external-cv/${loggedInCandidate.user.id}`)
+          .get(`${route}/${loggedInCandidate.user.id}`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
       expect(response.status).toBe(404);
     });
@@ -115,7 +118,7 @@ describe('ExternalCvsController', () => {
       // Delete the external CV
       const response: APIResponse<ExternalCvsController['deleteExternalCv']> =
         await request(server)
-          .delete(`/external-cv`)
+          .delete(`${route}`)
           .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
 
       // Compute the user profile

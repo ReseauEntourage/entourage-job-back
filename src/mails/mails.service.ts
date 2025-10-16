@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
+import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
 import {
@@ -65,11 +66,26 @@ export class MailsService {
   }
 
   async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
     const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
 
     if (user.role === UserRoles.COACH) {
+      if (user.company?.companyUser?.isAdmin) {
+        return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+          toEmail: user.email,
+          replyTo: candidatesAdminMail,
+          templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
+          variables: {
+            firstName: user.firstName,
+            siteLinkAlertRecruit: `${process.env.FRONT_URL}/backoffice/dashboard`,
+            siteLinkInvit: `${process.env.FRONT_URL}/backoffice/companies/${user.company.id}/collaborators`,
+            companyGoal: user.company.goal || '',
+            companyName: user.company.name,
+            zone: user.zone || AdminZones.HZ,
+          },
+        });
+      }
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: candidatesAdminMail,
@@ -429,6 +445,48 @@ export class MailsService {
       templateId: MailjetTemplates.USER_ACCOUNT_DELETED,
       variables: { role: getRoleString(user) },
     });
+  }
+
+  async sendCompanyInvitation({
+    sender,
+    email,
+    invitationWithCompany,
+  }: {
+    sender: User;
+    email: string;
+    invitationWithCompany: CompanyInvitation;
+  }) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: email,
+      templateId: MailjetTemplates.COMPANY_COLLABORATORS_INVITATION,
+      variables: {
+        companyName: invitationWithCompany.company.name,
+        senderFirstName: sender.firstName,
+        senderLastName: sender.lastName,
+        registerUrl: `${process.env.FRONT_URL}/inscription?companyId=${invitationWithCompany.company.id}&flow=coach&invitationId=${invitationWithCompany.id}`,
+        zone: sender.zone, // We don't have zone of the collaborators, so we use the sender's zone by default
+      },
+    });
+  }
+
+  async sendEmailCollaboratorInvitationUsed(
+    companyAdmins: User[],
+    createdUser: User
+  ) {
+    const promises = companyAdmins.map((admin) => {
+      return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+        toEmail: admin.email,
+        templateId: MailjetTemplates.COMPANY_INVITATION_USED,
+        variables: {
+          createdUserFirstName: createdUser.firstName,
+          createdUserLastName: createdUser.lastName,
+          adminFirstName: admin.firstName,
+          loginUrl: `${process.env.FRONT_URL}/login`,
+          zone: admin.zone,
+        },
+      });
+    });
+    return Promise.all(promises);
   }
 }
 

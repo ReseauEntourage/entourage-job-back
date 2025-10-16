@@ -7,6 +7,7 @@ export const generateUserProfileDto = (
   complete = false
 ): UserProfileDto => {
   const dto = {
+    id: userProfile.id,
     isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,

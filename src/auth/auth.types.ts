@@ -1,7 +1,7 @@
-import { User } from 'src/users/models';
+import { CurrentUserDto } from './dto/current-user.dto';
 
 export interface LoggedUser {
-  user: User;
+  user: CurrentUserDto;
   token: string;
 }
 

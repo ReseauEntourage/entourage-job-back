@@ -168,14 +168,6 @@ export const ContactRecordTypeFromRole: {
   [UserRoles.REFERER]: ContactRecordTypesIds.ASSOCIATION,
 };
 
-export const LeadRecordTypeFromRole: {
-  [K in RegistrableUserRole]: LeadRecordType;
-} = {
-  [UserRoles.CANDIDATE]: LeadRecordTypesIds.CANDIDATE,
-  [UserRoles.COACH]: LeadRecordTypesIds.COACH,
-  [UserRoles.REFERER]: LeadRecordTypesIds.ASSOCIATION,
-};
-
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
   [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
@@ -349,8 +341,6 @@ export enum Casquette {
   PRESCRIPTEUR = 'PRO Prescripteur',
   COACH_COUP_DE_POUCE = 'PRO Coach Coup de pouce',
   CANDIDAT_COUP_DE_POUCE = 'PRO Candidat Coup de pouce',
-  COACH_360 = 'PRO Coach 360',
-  CANDIDAT_360 = 'PRO Candidat 360',
 }
 
 export interface SalesforceBinome {
@@ -723,7 +713,6 @@ export interface UserProps {
   department: Department;
   role: RegistrableUserRole;
   birthDate: Date;
-  program: string;
   workingRight?: CandidateYesNoNSPPValue;
   campaign?: string;
   nationality?: Nationality;

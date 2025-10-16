@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
+import { CompaniesModule } from 'src/companies/companies.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers/queues.module';
@@ -18,6 +19,7 @@ import { UsersCreationService } from './users-creation.service';
     AuthModule,
     ExternalDatabasesModule,
     forwardRef(() => UserSocialSituationsModule),
+    CompaniesModule,
     QueuesModule,
     UtmModule,
   ],

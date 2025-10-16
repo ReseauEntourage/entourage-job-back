@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
+import { CompaniesService } from 'src/companies/companies.service';
+import { CompanyInvitationsService } from 'src/companies/company-invitations.service';
+import { CompanyUsersService } from 'src/companies/company-user.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
 import { MailsService } from 'src/mails/mails.service';
@@ -26,7 +29,10 @@ export class UsersCreationService {
     private externalDatabasesService: ExternalDatabasesService,
     private userSocialSituationService: UserSocialSituationsService,
     private queuesService: QueuesService,
-    private utmService: UtmService
+    private utmService: UtmService,
+    private companiesService: CompaniesService,
+    private companyUsersService: CompanyUsersService,
+    private companyInvitationsService: CompanyInvitationsService
   ) {}
 
   async createUser(createUserDto: Partial<User>) {
@@ -37,7 +43,6 @@ export class UsersCreationService {
     createdUserId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      | 'program'
       | 'workingRight'
       | 'campaign'
       | 'birthDate'
@@ -59,10 +64,6 @@ export class UsersCreationService {
 
   async findOneUserCandidatByCandidateId(candidateId: string) {
     return this.userCandidatsService.findOneByCandidateId(candidateId);
-  }
-
-  async loginUser(user: User) {
-    return this.authService.login(user);
   }
 
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
@@ -87,6 +88,20 @@ export class UsersCreationService {
       referer,
       candidate,
       token
+    );
+  }
+
+  async sendEmailCollaboratorInvitationUsed(
+    invitationId: string,
+    createdUser: User
+  ) {
+    const companyAdmins =
+      await this.companyInvitationsService.getCompanyAdminsByInvitationId(
+        invitationId
+      );
+    return this.mailsService.sendEmailCollaboratorInvitationUsed(
+      companyAdmins || [],
+      createdUser
     );
   }
 
@@ -158,5 +173,54 @@ export class UsersCreationService {
 
   async createUtm(createUtmDto: Partial<Utm>) {
     return this.utmService.create(createUtmDto);
+  }
+
+  async findOneCompany(companyId: string) {
+    return this.companiesService.findOne(companyId);
+  }
+
+  async linkUserToCompany(
+    userId: string,
+    companyId: string,
+    role: string,
+    isAdmin = false
+  ): Promise<void> {
+    const companyUser = await this.companyUsersService.findOneCompanyUser(
+      companyId,
+      userId
+    );
+
+    if (!companyUser) {
+      await this.companyUsersService.createCompanyUser({
+        userId,
+        companyId,
+        role,
+        isAdmin,
+      });
+    }
+  }
+
+  async findOneCompanyUser(companyId: string) {
+    return this.companyUsersService.findOneCompanyUser(companyId);
+  }
+
+  async linkInvitationToUser(
+    userId: string,
+    invitationId: string
+  ): Promise<void> {
+    const invitation = await this.companyInvitationsService.findOneById(
+      invitationId
+    );
+    if (!invitation) {
+      throw new Error(`Invitation with ID ${invitationId} not found`);
+    }
+    if (invitation.userId) {
+      throw new ConflictException(
+        `Invitation with ID ${invitationId} is already linked to a user`
+      );
+    }
+    await this.companyInvitationsService.update(invitationId, {
+      userId,
+    });
   }
 }

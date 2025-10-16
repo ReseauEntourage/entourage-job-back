@@ -31,7 +31,6 @@ import { LanguageHelper } from 'tests/languages/language.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
-import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 
@@ -46,7 +45,6 @@ describe('UserProfiles', () => {
   let experienceFactory: ExperienceFactory;
   let formationFactory: FormationFactory;
   let skillFactory: SkillFactory;
-  let userCandidatsHelper: UserCandidatsHelper;
   let userProfilesHelper: UserProfilesHelper;
   let internalMessageFactory: InternalMessageFactory;
   let businessSectorsHelper: BusinessSectorHelper;
@@ -91,8 +89,6 @@ describe('UserProfiles', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
-    userCandidatsHelper =
-      moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     businessSectorsHelper =
@@ -1268,12 +1264,13 @@ describe('UserProfiles', () => {
             const businessSector2 = await businessSectorsHelper.findOne({
               name: 'Sector 2',
             });
-            const lyonAssociatedCoaches = await databaseHelper.createEntities(
+
+            const lyonCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
               {
                 firstName: 'XXX',
-                role: UserRoles.COACH,
+                role: UserRoles.CANDIDATE,
               },
               {
                 userProfile: {
@@ -1291,41 +1288,8 @@ describe('UserProfiles', () => {
               }
             );
 
-            const lyonAssociatedCandidates =
-              await databaseHelper.createEntities(
-                userFactory,
-                2,
-                {
-                  firstName: 'XXX',
-                  role: UserRoles.CANDIDATE,
-                },
-                {
-                  userProfile: {
-                    department: 'Rhône (69)',
-                    sectorOccupations: [
-                      {
-                        businessSectorId: businessSector1.id,
-                      },
-                      {
-                        businessSectorId: businessSector2.id,
-                      },
-                    ],
-                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
-                  },
-                }
-              );
-
-            await Promise.all(
-              lyonAssociatedCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  lyonAssociatedCoaches[index],
-                  candidate
-                );
-              })
-            );
-
             const expectedCandidatesIds = [
-              ...lyonAssociatedCandidates.map(({ id }) => id),
+              ...lyonCandidates.map(({ id }) => id),
             ];
 
             const response: APIResponse<UserProfilesController['findAll']> =
@@ -1375,39 +1339,6 @@ describe('UserProfiles', () => {
                   nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
                 },
               }
-            );
-
-            const lyonAssociatedCandidates =
-              await databaseHelper.createEntities(
-                userFactory,
-                2,
-                {
-                  firstName: 'XXX',
-                  role: UserRoles.CANDIDATE,
-                },
-                {
-                  userProfile: {
-                    department: 'Rhône (69)',
-                    sectorOccupations: [
-                      {
-                        businessSectorId: businessSector1.id,
-                      },
-                      {
-                        businessSectorId: businessSector2.id,
-                      },
-                    ],
-                    nudges: [{ id: nudgeCv.id }, { id: nudgeNetwork.id }],
-                  },
-                }
-              );
-
-            await Promise.all(
-              lyonAssociatedCandidates.map(async (candidate, index) => {
-                return userCandidatsHelper.associateCoachAndCandidate(
-                  lyonAssociatedCoaches[index],
-                  candidate
-                );
-              })
             );
 
             const expectedCoachesIds = [
@@ -1610,13 +1541,6 @@ describe('UserProfiles', () => {
           loggedInReferer = await usersHelper.createLoggedInUser({
             role: UserRoles.REFERER,
           });
-
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
         });
 
         it('Should return 401, if user not logged in', async () => {
@@ -1976,6 +1900,7 @@ describe('UserProfiles', () => {
         });
 
         it('Should return 200 and valid data if candidate update his formations', async () => {
+          console.log('loggedInCandidate', loggedInCandidate);
           const formations = await databaseHelper.createEntities(
             formationFactory,
             2,
@@ -1983,6 +1908,8 @@ describe('UserProfiles', () => {
               userProfileId: loggedInCandidate.user.userProfile.id,
             }
           );
+
+          console.log('formations', formations);
           const sortedFormations = formations.sort(
             (a, b) => a.startDate.getTime() - b.startDate.getTime()
           );
@@ -2078,13 +2005,6 @@ describe('UserProfiles', () => {
           loggedInReferer = await usersHelper.createLoggedInUser({
             role: UserRoles.REFERER,
           });
-
-          ({ loggedInCoach, loggedInCandidate } =
-            await userCandidatsHelper.associateCoachAndCandidate(
-              loggedInCoach,
-              loggedInCandidate,
-              true
-            ));
         });
 
         it('Should return 401, if user not logged in', async () => {
@@ -2403,13 +2323,6 @@ describe('UserProfiles', () => {
         loggedInReferer = await usersHelper.createLoggedInUser({
           role: UserRoles.REFERER,
         });
-
-        ({ loggedInCoach, loggedInCandidate } =
-          await userCandidatsHelper.associateCoachAndCandidate(
-            loggedInCoach,
-            loggedInCandidate,
-            true
-          ));
       });
 
       it('Should return 401, if user not logged in', async () => {

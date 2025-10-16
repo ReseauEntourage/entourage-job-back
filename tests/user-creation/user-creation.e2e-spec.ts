@@ -14,7 +14,7 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { Programs, UserRoles } from 'src/users/users.types';
+import { UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { getZoneFromDepartment } from 'src/utils/misc';
 import { APIResponse } from 'src/utils/types';
@@ -155,6 +155,7 @@ describe('UserCreation', () => {
         whatsappZoneName,
         whatsappZoneUrl,
         whatsappZoneQR,
+        company,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -183,6 +184,7 @@ describe('UserCreation', () => {
         whatsappZoneName,
         whatsappZoneUrl,
         whatsappZoneQR,
+        company,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -276,6 +278,7 @@ describe('UserCreation', () => {
         whatsappZoneUrl,
         whatsappZoneQR,
         userSocialSituation,
+        company,
         ...candidate
       } = await userFactory.create(
         {
@@ -307,6 +310,7 @@ describe('UserCreation', () => {
           whatsappZoneName,
           whatsappZoneUrl,
           whatsappZoneQR,
+          company,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
         const response: APIResponse<UsersCreationController['createUser']> =
@@ -335,6 +339,7 @@ describe('UserCreation', () => {
           whatsappZoneName,
           whatsappZoneUrl,
           whatsappZoneQR,
+          company,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -440,7 +445,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -495,7 +499,6 @@ describe('UserCreation', () => {
         ...userProfileValues,
         password: user.password,
         campaign: '1234',
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
@@ -595,7 +598,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
@@ -723,7 +725,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
       };
 
@@ -756,7 +757,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
       };
 
@@ -792,7 +792,6 @@ describe('UserCreation', () => {
         ...userValues,
         ...userProfileValues,
         password: user.password,
-        program: Programs.THREE_SIXTY,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
         birthDate: '1996-24-04',
@@ -869,7 +868,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
       };
 
@@ -930,7 +928,6 @@ describe('UserCreation', () => {
       const userToSend = {
         ...userValues,
         ...userProfileValues,
-        program: Programs.THREE_SIXTY,
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
@@ -1031,7 +1028,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1084,7 +1080,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1137,7 +1132,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1190,7 +1184,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1243,7 +1236,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
@@ -1292,7 +1284,6 @@ describe('UserCreation', () => {
         workingRight: CandidateYesNoNSPP.YES,
         materialInsecurity: CandidateYesNo.YES,
         networkInsecurity: CandidateYesNo.NO,
-        program: Programs.THREE_SIXTY,
         birthDate: '1996-24-04',
         sectorOccupations: [
           {
