@@ -8,7 +8,6 @@ import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
-import { PublicCVsFilterKey } from 'src/public-cv/public-cvs.types';
 import { UserProfile } from 'src/user-profiles/models';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -446,13 +445,7 @@ export class UsersService {
     return this.mailsService.sendVerificationMail(user, token);
   }
 
-  async findAllPublicCVs(
-    query: {
-      limit: number;
-      offset: number;
-      search: string;
-    } & FilterParams<PublicCVsFilterKey>
-  ) {
+  async findAllPublicCVs(query: { limit: number; offset: number }) {
     const { limit, offset } = query;
 
     return this.userModel.findAll({
