@@ -19,6 +19,7 @@ import {
 } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
+  getUserCandidatOrder,
   getUserProfileRecentlyUpdatedOrder,
   UserCandidatInclude,
 } from './models/user.include';
@@ -51,6 +52,7 @@ export class UsersService {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 
@@ -77,6 +79,7 @@ export class UsersService {
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 

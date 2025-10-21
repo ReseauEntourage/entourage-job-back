@@ -92,6 +92,20 @@ export const UserCandidatInclude = (): Includeable[] => {
   ];
 };
 
+export const getUserCandidatOrder = (): Order => {
+  const userProfileOrder = getUserProfileOrder() as OrderItem[];
+
+  // Prefix all the userProfileOrder items with 'userProfile' model
+  // and 'as' alias
+  const prefixedUserProfileOrder = userProfileOrder.map((item) => {
+    if (Array.isArray(item)) {
+      return [{ model: UserProfile, as: 'userProfile' }, ...item] as OrderItem;
+    }
+    return item;
+  });
+  return prefixedUserProfileOrder;
+};
+
 export const getUserProfileRecommendationOrder = (): Order => {
   const userProfileOrder = getUserProfileOrder() as OrderItem[];
 
