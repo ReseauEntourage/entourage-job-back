@@ -132,3 +132,12 @@ export const getUserProfileRecommendationOrder = (): Order => {
     ...prefixedRecommendedUserOrder,
   ];
 };
+
+/**
+ * Retourne un ordre de tri qui trie les utilisateurs par date de mise à jour de leur profil
+ * du plus récent au plus ancien
+ */
+export const getUserProfileRecentlyUpdatedOrder = (): Order => {
+  // L'ordre de base est par userProfile.updatedAt DESC (du plus récent au plus ancien)
+  return [[{ model: UserProfile, as: 'userProfile' }, 'updatedAt', 'DESC']];
+};
