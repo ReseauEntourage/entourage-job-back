@@ -1,3 +1,5 @@
+import { ExpressAdapter } from '@bull-board/express';
+import { BullBoardModule } from '@bull-board/nestjs';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -5,6 +7,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
+import basicAuth from 'express-basic-auth';
 import { RedisOptions } from 'ioredis';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
@@ -106,6 +109,18 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
         redis: redisOptions,
       }),
     }),
+    ...(process.env.QUEUES_ADMIN_PASSWORD
+      ? [
+          BullBoardModule.forRoot({
+            route: '/queues',
+            adapter: ExpressAdapter,
+            middleware: basicAuth({
+              challenge: true,
+              users: { admin: process.env.QUEUES_ADMIN_PASSWORD },
+            }),
+          }),
+        ]
+      : []),
     CacheModule.register<RedisOptions>({
       isGlobal: true,
       store: ioRedisStore,

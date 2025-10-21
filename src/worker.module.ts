@@ -1,3 +1,5 @@
+import { ExpressAdapter } from '@bull-board/express';
+import { BullBoardModule } from '@bull-board/nestjs';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -5,11 +7,12 @@ import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
+import basicAuth from 'express-basic-auth';
 import { RedisOptions } from 'ioredis';
 import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
-import { Queues } from 'src/queues/queues.types';
 import { getSequelizeOptions } from './app.module';
+import { Queues } from './queues/queues.types';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 
 @Module({
@@ -26,6 +29,18 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
         redis: redisOptions,
       }),
     }),
+    ...(process.env.QUEUES_ADMIN_PASSWORD
+      ? [
+          BullBoardModule.forRoot({
+            route: '/queues',
+            adapter: ExpressAdapter,
+            middleware: basicAuth({
+              challenge: true,
+              users: { admin: process.env.QUEUES_ADMIN_PASSWORD },
+            }),
+          }),
+        ]
+      : []),
     BullModule.registerQueue({
       name: Queues.WORK,
       defaultJobOptions: {
@@ -38,7 +53,7 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
             ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
             : 60000,
         },
-        removeOnFail: true,
+        removeOnFail: false,
         removeOnComplete: true,
       },
     }),
