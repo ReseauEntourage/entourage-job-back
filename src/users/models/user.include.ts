@@ -92,20 +92,6 @@ export const UserCandidatInclude = (): Includeable[] => {
   ];
 };
 
-export const getUserCandidatOrder = (): Order => {
-  const userProfileOrder = getUserProfileOrder() as OrderItem[];
-
-  // Prefix all the userProfileOrder items with 'userProfile' model
-  // and 'as' alias
-  const prefixedUserProfileOrder = userProfileOrder.map((item) => {
-    if (Array.isArray(item)) {
-      return [{ model: UserProfile, as: 'userProfile' }, ...item] as OrderItem;
-    }
-    return item;
-  });
-  return prefixedUserProfileOrder;
-};
-
 export const getUserProfileRecommendationOrder = (): Order => {
   const userProfileOrder = getUserProfileOrder() as OrderItem[];
 
@@ -131,4 +117,13 @@ export const getUserProfileRecommendationOrder = (): Order => {
     [{ model: User, as: 'recUser' }, 'createdAt', 'ASC'],
     ...prefixedRecommendedUserOrder,
   ];
+};
+
+/**
+ * Retourne un ordre de tri qui trie les utilisateurs par date de mise à jour de leur profil
+ * du plus récent au plus ancien
+ */
+export const getUserProfileRecentlyUpdatedOrder = (): Order => {
+  // L'ordre de base est par userProfile.updatedAt DESC (du plus récent au plus ancien)
+  return [[{ model: UserProfile, as: 'userProfile' }, 'updatedAt', 'DESC']];
 };

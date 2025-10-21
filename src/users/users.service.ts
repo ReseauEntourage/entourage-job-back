@@ -19,7 +19,7 @@ import {
 } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
-  getUserCandidatOrder,
+  getUserProfileRecentlyUpdatedOrder,
   UserCandidatInclude,
 } from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
@@ -51,7 +51,6 @@ export class UsersService {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
     });
   }
 
@@ -78,7 +77,6 @@ export class UsersService {
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
     });
   }
 
@@ -453,7 +451,7 @@ export class UsersService {
       offset,
       attributes: PublicUserAttributes,
       include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
+      order: getUserProfileRecentlyUpdatedOrder(),
       where: {
         lastConnection: { [Op.ne]: null },
         role: UserRoles.CANDIDATE,
