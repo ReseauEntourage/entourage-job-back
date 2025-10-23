@@ -51,6 +51,14 @@ export class DepartmentHelper {
         value: '05',
         name: 'Hautes-Alpes',
       },
+      {
+        value: '75',
+        name: 'Paris',
+      },
+      {
+        value: '69',
+        name: 'Rhône',
+      },
     ];
 
     try {
