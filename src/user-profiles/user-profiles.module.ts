@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { ContractsModule } from 'src/common/contracts/contracts.module';
+import { DepartmentsModule } from 'src/common/departments/departments.module';
 import { ExperiencesModule } from 'src/common/experiences/experiences.module';
 import { Experience } from 'src/common/experiences/models';
 import { FormationsModule } from 'src/common/formations/formations.module';
@@ -62,6 +63,7 @@ import { UserProfilesService } from './user-profiles.service';
     LanguagesModule,
     ReviewsModule,
     InterestsModule,
+    DepartmentsModule,
   ],
   controllers: [UserProfilesController],
   providers: [UserProfilesService],
