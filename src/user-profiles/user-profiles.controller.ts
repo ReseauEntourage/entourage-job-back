@@ -19,7 +19,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
 import { UserPayload } from 'src/auth/guards';
-import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
   SelfGuard,
@@ -127,7 +126,7 @@ export class UserProfilesController {
     @Query('nudgeIds')
     nudgeIds: string[],
     @Query('departments')
-    departments: Department[],
+    departments: string[],
     @Query('businessSectorIds')
     businessSectorIds: string[],
     @Query('contactTypes')
