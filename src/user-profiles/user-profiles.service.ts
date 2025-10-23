@@ -202,7 +202,7 @@ export class UserProfilesService {
       contactTypes,
     } = query;
 
-    // The request permit to provide department IDs, but in the UserProfile we store department NAMES
+    // The request permits to provide department IDs, but in the UserProfile we store department NAMES
     // We need to map the IDs to names before querying
     const departmentsNames =
       departments && departments.length > 0
