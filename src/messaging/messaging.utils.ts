@@ -39,6 +39,7 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
   sender: User,
   recipients: User[],
   context: string,
+  referentSlackUserId: string,
   message?: string
 ): SlackBlockConfig => {
   const adminUserProfileUrl = `${process.env.FRONT_URL}/backoffice/admin/membres/${sender.id}`;
@@ -62,6 +63,10 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
               `${recipient.firstName} ${recipient.lastName} <${recipient.email}>`
           )
           .join('\n'),
+      },
+      {
+        title: '👮 Référent',
+        content: `<@${referentSlackUserId}>`,
       },
     ],
     msgParts: [
