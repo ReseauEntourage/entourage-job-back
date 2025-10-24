@@ -42,10 +42,12 @@ export const getPublicProfileFromUserAndUserProfile = ({
     interests: userProfile.interests,
     averageDelayResponse,
     hasPicture: userProfile.hasPicture,
-    company: {
-      ...user.company.toJSON(),
-      admin: user.company.admin,
-    },
+    company: user.company
+      ? {
+          ...user.company.toJSON(),
+          admin: user.company.admin,
+        }
+      : null,
   };
   return dto;
 };
