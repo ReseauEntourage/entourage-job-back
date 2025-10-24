@@ -2,6 +2,7 @@
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
 import { Factory } from 'src/utils/types';
 
@@ -9,7 +10,9 @@ import { Factory } from 'src/utils/types';
 export class CompanyFactory implements Factory<Company> {
   constructor(
     @InjectModel(Company)
-    private companyModel: typeof Company
+    private companyModel: typeof Company,
+    @InjectModel(CompanyUser)
+    private companyUserModel: typeof CompanyUser
   ) {}
 
   generateCompany(props: Partial<Company>): Partial<Company> {
@@ -58,5 +61,17 @@ export class CompanyFactory implements Factory<Company> {
     return {
       ...builtCompanyWithoutId,
     } as Company;
+  }
+
+  async linkAdminToCompany(
+    company: Company,
+    userId: string,
+    userCompanyProps: Partial<CompanyUser>
+  ): Promise<void> {
+    await this.companyUserModel.create({
+      companyId: company.id,
+      userId,
+      ...userCompanyProps,
+    });
   }
 }
