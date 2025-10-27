@@ -18,6 +18,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
+import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
 import {
   Self,
@@ -134,6 +135,14 @@ export class UserProfilesController {
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
+    }
+
+    if (departments) {
+      for (const dept of departments) {
+        if (uuidValidate(dept) === false) {
+          throw new BadRequestException('departmentId must be a UUID or null');
+        }
+      }
     }
 
     if (!isRoleIncluded(AllUserRoles, role)) {
