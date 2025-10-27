@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { ContractsService } from 'src/common/contracts/contracts.service';
 import { Contract } from 'src/common/contracts/models';
+import { DepartmentsService } from 'src/common/departments/departments.service';
 import { ExperiencesService } from 'src/common/experiences/experiences.service';
 import { Experience } from 'src/common/experiences/models';
 import { FormationsService } from 'src/common/formations/formations.service';
@@ -22,7 +23,6 @@ import { RecruitementAlert } from 'src/common/recruitement-alerts/models';
 import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
 import { SkillsService } from 'src/common/skills/skills.service';
-import { CompanyUser } from 'src/companies/models/company-user.model';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
@@ -84,8 +84,6 @@ export class UserProfilesService {
     private userProfileLanguageModel: typeof UserProfileLanguage,
     @InjectModel(UserProfileSkill)
     private userProfileSkillModel: typeof UserProfileSkill,
-    @InjectModel(CompanyUser)
-    private companyUserModel: typeof CompanyUser,
     private s3Service: S3Service,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
@@ -102,7 +100,8 @@ export class UserProfilesService {
     private contractsService: ContractsService,
     private languagesService: LanguagesService,
     private reviewsService: ReviewsService,
-    private interestsService: InterestsService
+    private interestsService: InterestsService,
+    private departmentsService: DepartmentsService
   ) {}
 
   async findOne(id: string) {
@@ -187,7 +186,7 @@ export class UserProfilesService {
       limit: number;
       search: string;
       nudgeIds: string[];
-      departments: Department[];
+      departments: string[];
       businessSectorIds: string[];
       contactTypes: ContactTypeEnum[];
     }
@@ -203,10 +202,19 @@ export class UserProfilesService {
       contactTypes,
     } = query;
 
+    // The request permits to provide department IDs, but in the UserProfile we store department NAMES
+    // We need to map the IDs to names before querying
+    const departmentsNames =
+      departments && departments.length > 0
+        ? await this.departmentsService.mapDepartmentsIdsToFormattedNames(
+            departments
+          )
+        : [];
+
     const departmentsOptions: WhereOptions<UserProfile> =
-      departments?.length > 0
+      departmentsNames?.length > 0
         ? {
-            department: { [Op.or]: departments },
+            department: { [Op.or]: departmentsNames },
           }
         : {};
 

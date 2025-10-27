@@ -8,6 +8,7 @@ import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
+import { Department } from 'src/common/departments/models/department.model';
 import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
@@ -27,6 +28,7 @@ import { SkillFactory } from 'tests/common/skills/skill.factory';
 import { ContractHelper } from 'tests/contracts/contract.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
+import { DepartmentHelper } from 'tests/departments/department.helper';
 import { LanguageHelper } from 'tests/languages/language.helper';
 import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
@@ -48,6 +50,7 @@ describe('UserProfiles', () => {
   let userProfilesHelper: UserProfilesHelper;
   let internalMessageFactory: InternalMessageFactory;
   let businessSectorsHelper: BusinessSectorHelper;
+  let departmentHelper: DepartmentHelper;
   let nudgesHelper: NudgesHelper;
   let contractHelper: ContractHelper;
   let languageHelper: LanguageHelper;
@@ -71,6 +74,9 @@ describe('UserProfiles', () => {
   let languageFrench: Language;
   let languageEnglish: Language;
 
+  let departmentRhone: Department;
+  let departmentParis: Department;
+
   const route = '/user';
 
   beforeAll(async () => {
@@ -93,6 +99,7 @@ describe('UserProfiles', () => {
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     businessSectorsHelper =
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
+    departmentHelper = moduleFixture.get<DepartmentHelper>(DepartmentHelper);
     nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     contractHelper = moduleFixture.get<ContractHelper>(ContractHelper);
     languageHelper = moduleFixture.get<LanguageHelper>(LanguageHelper);
@@ -162,6 +169,17 @@ describe('UserProfiles', () => {
     });
     languageEnglish = await languageHelper.findOne({
       value: 'en',
+    });
+
+    // Initialize the departments
+    await departmentHelper.deleteAllDepartments();
+    await departmentHelper.seedDepartments();
+
+    departmentRhone = await departmentHelper.findOne({
+      value: '69',
+    });
+    departmentParis = await departmentHelper.findOne({
+      value: '75',
     });
   });
 
@@ -661,11 +679,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${
-                    UserRoles.CANDIDATE
-                  }&departments[]=${encodeURIComponent(
-                    'Rhône (69)'
-                  )}&departments[]=${encodeURIComponent('Paris (75)')}`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=${departmentRhone.id}&departments[]=${departmentParis.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -729,11 +743,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${
-                    UserRoles.COACH
-                  }&departments[]=${encodeURIComponent(
-                    'Rhône (69)'
-                  )}&departments[]=${encodeURIComponent('Paris (75)')}`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=${departmentRhone.id}&departments[]=${departmentParis.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1295,13 +1305,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${
-                    UserRoles.CANDIDATE
-                  }&query=XXX&departments[]=${encodeURIComponent(
-                    'Rhône (69)'
-                  )}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${
-                    nudgeCv.id
-                  }&nudgeIds[]=${nudgeNetwork.id}`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=${departmentRhone.id}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1348,13 +1352,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${
-                    UserRoles.COACH
-                  }&query=XXX&departments[]=${encodeURIComponent(
-                    'Rhône (69)'
-                  )}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${
-                    nudgeNetwork.id
-                  }`
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=${departmentRhone.id}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1900,7 +1898,6 @@ describe('UserProfiles', () => {
         });
 
         it('Should return 200 and valid data if candidate update his formations', async () => {
-          console.log('loggedInCandidate', loggedInCandidate);
           const formations = await databaseHelper.createEntities(
             formationFactory,
             2,
@@ -1909,7 +1906,6 @@ describe('UserProfiles', () => {
             }
           );
 
-          console.log('formations', formations);
           const sortedFormations = formations.sort(
             (a, b) => a.startDate.getTime() - b.startDate.getTime()
           );
