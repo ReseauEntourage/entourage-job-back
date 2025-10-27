@@ -139,7 +139,7 @@ export class UserProfilesController {
 
     if (departments) {
       for (const dept of departments) {
-        if (uuidValidate(dept) === false) {
+        if (!uuidValidate(dept)) {
           throw new BadRequestException('departmentId must be a UUID or null');
         }
       }
