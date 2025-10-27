@@ -14,7 +14,9 @@ export class PublicCVsService {
   ) {}
 
   async getPublicCVs(query: { limit: number; offset: number; search: string }) {
-    const { limit = 10, offset = 0 } = query;
+    // S'assurer que limit et offset sont des nombres
+    const limit = Number(query.limit) || 10;
+    const offset = Number(query.offset) || 0;
     // Utiliser une taille de lot fixe au lieu de la baser sur la limite
     const batchSize = 50; // Taille de lot fixe
     const finalResults = [];
@@ -51,7 +53,6 @@ export class PublicCVsService {
         // Ne conserver que les profils avec au moins 70% de complétion
         if (completionRate >= MIN_PROFILE_COMPLETION_RATE) {
           finalResults.push(user);
-
           // Arrêt si on a atteint la limite demandée
           if (finalResults.length >= limit) {
             break;
@@ -60,7 +61,7 @@ export class PublicCVsService {
       }
 
       // Mise à jour de l'offset pour le prochain lot
-      currentOffset += batchSize;
+      currentOffset = Number(currentOffset) + Number(batchSize);
     }
 
     // Ne retourne que le nombre de résultats demandé
