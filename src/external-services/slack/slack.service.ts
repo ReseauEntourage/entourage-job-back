@@ -247,7 +247,7 @@ export class SlackService {
   async getUserIdByEmail(email: string): Promise<string | null> {
     try {
       const response = await this.app.client.users.lookupByEmail({
-        email: email,
+        email,
         token: process.env.SLACK_BOT_TOKEN,
       });
 
