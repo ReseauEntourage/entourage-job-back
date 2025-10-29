@@ -463,7 +463,7 @@ export class MailsService {
         companyName: invitationWithCompany.company.name,
         senderFirstName: sender.firstName,
         senderLastName: sender.lastName,
-        registerUrl: `${process.env.FRONT_URL}/inscription?companyName=${invitationWithCompany.company.name}&flow=coach&invitationId=${invitationWithCompany.id}`,
+        registerUrl: `${process.env.FRONT_URL}/inscription?companyName=${encodeURIComponent(invitationWithCompany.company.name)}&flow=coach&invitationId=${invitationWithCompany.id}`,
         zone: sender.zone, // We don't have zone of the collaborators, so we use the sender's zone by default
       },
     });
