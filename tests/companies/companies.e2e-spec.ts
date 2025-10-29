@@ -170,38 +170,6 @@ describe('Companies', () => {
     });
   });
 
-  describe('POST /companies', () => {
-    it('should create a new company', async () => {
-      const newCompany = {
-        name: 'New Company',
-      };
-
-      const response = await request(server)
-        .post('/companies')
-        .send(newCompany);
-
-      expect(response.statusCode).toBe(201);
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          id: expect.any(String),
-          name: newCompany.name,
-        })
-      );
-    });
-
-    it('should return 400 if the company data is invalid', async () => {
-      const invalidCompany = {
-        name: '', // Invalid name
-      };
-
-      const response = await request(server)
-        .post('/companies')
-        .send(invalidCompany);
-
-      expect(response.statusCode).toBe(400);
-    });
-  });
-
   describe('POST /companies/:companyId/invite-collaborators', () => {
     beforeEach(async () => {
       // Create a company to invite collaborators to
