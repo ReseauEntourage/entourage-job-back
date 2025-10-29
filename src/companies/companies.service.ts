@@ -64,7 +64,7 @@ export class CompaniesService {
 
   async create(
     createCompanyDto: Partial<Company>,
-    createdByUser?: Pick<User, 'email' | 'firstName' | 'lastName'>
+    createdByUser: Pick<User, 'email' | 'firstName' | 'lastName'>
   ) {
     const company = await this.companyModel.create(createCompanyDto, {
       hooks: true,
