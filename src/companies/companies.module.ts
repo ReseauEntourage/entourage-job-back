@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { DepartmentsModule } from 'src/common/departments/departments.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
+import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
 import { CompaniesController } from './companies.controller';
@@ -22,6 +23,7 @@ import { Company } from './models/company.model';
       CompanyBusinessSector,
     ]),
     MailsModule,
+    SlackModule,
     forwardRef(() => UsersModule),
     AWSModule,
     DepartmentsModule,

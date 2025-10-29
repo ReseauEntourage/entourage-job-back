@@ -179,6 +179,13 @@ export class UsersCreationService {
     return this.companiesService.findOne(companyId);
   }
 
+  async findOrCreateCompanyByName(
+    companyName: string,
+    user: Pick<User, 'email' | 'firstName' | 'lastName'>
+  ) {
+    return this.companiesService.findOrCreateByName(companyName, user);
+  }
+
   async linkUserToCompany(
     userId: string,
     companyId: string,
