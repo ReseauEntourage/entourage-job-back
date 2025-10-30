@@ -18,8 +18,8 @@ import { CompanyUser } from 'src/companies/models/company-user.model';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
-import { MessagingModule } from 'src/messaging/messaging.module';
 import { UsersModule } from 'src/users/users.module';
+import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { UserProfile, UserProfileSectorOccupation } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
 import { UserProfileFormation } from './models/user-profile-formation.model';
@@ -51,7 +51,6 @@ import { UserProfilesService } from './user-profiles.service';
     BusinessSectorsModule,
     NudgesModule,
     AWSModule,
-    MessagingModule,
     SlackModule,
     forwardRef(() => MailsModule),
     ExperiencesModule,
@@ -62,6 +61,7 @@ import { UserProfilesService } from './user-profiles.service';
     ReviewsModule,
     InterestsModule,
     DepartmentsModule,
+    UsersStatsModule,
   ],
   controllers: [UserProfilesController],
   providers: [UserProfilesService],

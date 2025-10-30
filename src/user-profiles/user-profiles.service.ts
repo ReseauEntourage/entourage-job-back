@@ -26,12 +26,12 @@ import { SkillsService } from 'src/common/skills/skills.service';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
-import { MessagingService } from 'src/messaging/messaging.service';
 import { User } from 'src/users/models';
 import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   UserProfile,
@@ -87,7 +87,7 @@ export class UserProfilesService {
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
-    private messagingService: MessagingService,
+    private usersStatsService: UsersStatsService,
     private slackService: SlackService,
     private mailsService: MailsService,
     private experiencesService: ExperiencesService,
@@ -581,7 +581,7 @@ export class UserProfilesService {
   }
 
   async getAverageDelayResponse(userId: string): Promise<number | null> {
-    return this.messagingService.getAverageDelayResponse(userId);
+    return this.usersStatsService.getAverageDelayResponse(userId);
   }
 
   async updateByUserId(
