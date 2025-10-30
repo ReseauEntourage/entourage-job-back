@@ -117,7 +117,9 @@ export class S3Service {
       ResponseContentType: contentType,
     });
 
-    return await s3GetSignedUrl(this.s3, getObjectCommand);
+    return await s3GetSignedUrl(this.s3, getObjectCommand, {
+      expiresIn: 60,
+    });
   }
 
   private async download(key: string) {

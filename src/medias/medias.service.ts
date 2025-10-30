@@ -23,24 +23,20 @@ export class MediasService {
     files: Express.Multer.File[],
     uploaderId: string
   ) {
-    try {
-      // First upload all files to S3 one by one
-      const uploadedFilesData = await Promise.all(
-        files.map(async (file) => {
-          const { fileName, s3Key } = await this.uploadMedia(file);
-          return {
-            userId: uploaderId,
-            name: fileName,
-            s3Key: s3Key.key,
-            mimeType: file.mimetype,
-            size: file.size,
-          };
-        })
-      );
-      return this.mediaModel.bulkCreate(uploadedFilesData);
-    } catch (error) {
-      throw error;
-    }
+    // First upload all files to S3 one by one
+    const uploadedFilesData = await Promise.all(
+      files.map(async (file) => {
+        const { fileName, s3Key } = await this.uploadMedia(file);
+        return {
+          userId: uploaderId,
+          name: fileName,
+          s3Key: s3Key.key,
+          mimeType: file.mimetype,
+          size: file.size,
+        };
+      })
+    );
+    return this.mediaModel.bulkCreate(uploadedFilesData);
   }
 
   async findMediasByConversationId(conversationId: string) {
