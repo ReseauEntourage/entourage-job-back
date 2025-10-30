@@ -272,34 +272,40 @@ export class MessagingService {
       }
     >
   ) {
-    if (createMessageDto.files) {
-      const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
-        createMessageDto.files,
+    try {
+      if (createMessageDto.files) {
+        const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
+          createMessageDto.files,
+          createMessageDto.authorId
+        );
+        createMessageDto.mediaIds = mediaRecords.map(
+          (media: Media) => media.id
+        );
+      }
+      const createdMessage = await this.messageModel.create(createMessageDto);
+      if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
+        await this.addMediasToMessage(
+          createdMessage.id,
+          createMessageDto.mediaIds
+        );
+      }
+      // Set conversation as seen because the user has sent a message
+      await this.setConversationHasSeen(
+        createMessageDto.conversationId,
         createMessageDto.authorId
       );
-      createMessageDto.mediaIds = mediaRecords.map((media: Media) => media.id);
-    }
-    const createdMessage = await this.messageModel.create(createMessageDto);
-    if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
-      await this.addMediasToMessage(
-        createdMessage.id,
-        createMessageDto.mediaIds
-      );
-    }
-    // Set conversation as seen because the user has sent a message
-    await this.setConversationHasSeen(
-      createMessageDto.conversationId,
-      createMessageDto.authorId
-    );
-    const message = await this.findOneMessage(createdMessage.id);
+      const message = await this.findOneMessage(createdMessage.id);
 
-    // Send notification message received to the other participants
-    const otherParticipants = message.conversation.participants.filter(
-      (participant) => participant.id !== createMessageDto.authorId
-    );
-    this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
-    // Fetch the message to return it
-    return message;
+      // Send notification message received to the other participants
+      const otherParticipants = message.conversation.participants.filter(
+        (participant) => participant.id !== createMessageDto.authorId
+      );
+      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+      // Fetch the message to return it
+      return message;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async addMediasToMessage(messageId: string, mediasId: string[]) {
