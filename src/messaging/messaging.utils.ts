@@ -64,10 +64,14 @@ export const generateSlackMsgConfigUserSuspiciousUser = (
           )
           .join('\n'),
       },
-      referentSlackUserId && {
-        title: '👮 Référent',
-        content: `<@${referentSlackUserId}>`,
-      },
+      ...(referentSlackUserId
+        ? [
+            {
+              title: '👮 Référent',
+              content: `<@${referentSlackUserId}>`,
+            },
+          ]
+        : []),
     ],
     msgParts: [
       {
