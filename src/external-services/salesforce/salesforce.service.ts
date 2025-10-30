@@ -14,8 +14,6 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
-import { MessagesService } from 'src/messages/messages.service';
-import { ExternalMessage } from 'src/messages/models';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import {
@@ -27,7 +25,6 @@ import {
   ContactRecordType,
   ContactRecordTypeFromRole,
   ErrorCodes,
-  ExternalMessageProps,
   LeadProp,
   LeadRecordType,
   LeadRecordTypesIds,
@@ -42,7 +39,6 @@ import {
   SalesforceLead,
   SalesforceObject,
   SalesforceTask,
-  TaskProps,
   UserProps,
 } from './salesforce.types';
 
@@ -57,7 +53,6 @@ import {
   mapSalesforceContactFields,
   mapSalesforceContactSocialSituationFields,
   mapSalesforceLeadFields,
-  mapSalesforceTaskFields,
   parseAddress,
   prependDuplicateIfCondition,
 } from './salesforce.utils';
@@ -79,10 +74,7 @@ export class SalesforceService {
   private salesforce: Connection;
   private isWorker = true;
 
-  constructor(
-    private messagesService: MessagesService,
-    private usersService: UsersService
-  ) {}
+  constructor(private usersService: UsersService) {}
 
   setIsWorker(isWorker: boolean) {
     this.isWorker = isWorker;
@@ -290,45 +282,6 @@ export class SalesforceService {
       }
       console.error(err);
       throw err;
-    }
-  }
-
-  async createOrUpdateTask(params: TaskProps | TaskProps[]) {
-    if (Array.isArray(params)) {
-      const records = params.map((singleParams) => {
-        return mapSalesforceTaskFields(singleParams);
-      });
-
-      return this.upsertRecord(
-        ObjectNames.TASK,
-        records,
-        'ID_Externe__c',
-        'findTaskById'
-      );
-    } else {
-      const record = mapSalesforceTaskFields(params);
-      try {
-        return (await this.upsertRecord(
-          ObjectNames.TASK,
-          record,
-          'ID_Externe__c',
-          'findTaskById'
-        )) as string;
-      } catch (err) {
-        if (
-          (err as SalesforceError).errorCode ===
-          ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD
-        ) {
-          return (await this.upsertRecord(
-            ObjectNames.TASK,
-            { ...record, WhoId: params.contactSfId },
-            'ID_Externe__c',
-            'findTaskById'
-          )) as string;
-        }
-        console.error(err);
-        throw err;
-      }
     }
   }
 
@@ -1006,98 +959,6 @@ export class SalesforceService {
     }
   }
 
-  async findOrCreateLeadFromExternalMessage({
-    firstName,
-    lastName,
-    email,
-    phone,
-    zone,
-    subject,
-    candidateFirstName,
-    candidateLastName,
-    candidateEmail,
-    externalMessageId,
-    optInNewsletter,
-  }: ExternalMessageProps): Promise<TaskProps> {
-    const leadSfId = (await this.findOrCreateLead(
-      {
-        firstName,
-        lastName,
-        company: 'NA - Formulaire Contact Candidat',
-        email,
-        phone,
-        zone,
-        autreSource: 'Formulaire_Contact_Candidat',
-        message: subject,
-        newsletter: optInNewsletter ? 'Newsletter LinkedOut' : null,
-      },
-      LeadRecordTypesIds.COMPANY
-    )) as string;
-
-    const binomeSfId = await this.findBinomeByCandidateEmail(candidateEmail);
-
-    const ownerSfId = await this.findOwnerByLeadSfId(leadSfId);
-
-    const contactSf = await this.findContact(email);
-    const contactSfId = contactSf?.Id;
-
-    return {
-      binomeSfId,
-      externalMessageId,
-      ownerSfId,
-      leadSfId,
-      contactSfId,
-      subject: `Message envoyé à ${candidateFirstName} ${candidateLastName} LinkedOut via le site`,
-      zone,
-    };
-  }
-
-  async createOrUpdateSalesforceTask(
-    task: ExternalMessageProps | ExternalMessageProps[]
-  ) {
-    if (Array.isArray(task)) {
-      let tasksToCreate: TaskProps[] = [];
-
-      for (let i = 0; i < task.length; i += 1) {
-        tasksToCreate = [
-          ...tasksToCreate,
-          await this.findOrCreateLeadFromExternalMessage(task[i]),
-        ];
-      }
-
-      return (await this.createOrUpdateTask(tasksToCreate)) as string;
-    } else {
-      const taskToCreate = await this.findOrCreateLeadFromExternalMessage(task);
-
-      return (await this.createOrUpdateTask(taskToCreate)) as string;
-    }
-  }
-
-  async findTaskFromExternalMessageId(
-    externalMessageId: string
-  ): Promise<ExternalMessageProps> {
-    const externalMessageDb = await this.messagesService.findOneExternalMessage(
-      externalMessageId
-    );
-
-    const { user, ...externalMessage }: ExternalMessage =
-      externalMessageDb.toJSON();
-
-    return {
-      candidateEmail: user.email,
-      candidateFirstName: user.firstName,
-      candidateLastName: user.lastName,
-      email: externalMessage.senderEmail,
-      externalMessageId: externalMessage.id,
-      firstName: externalMessage.senderFirstName,
-      lastName: externalMessage.senderLastName,
-      phone: externalMessage.senderEmail,
-      subject: externalMessage.subject,
-      zone: user.zone,
-      optInNewsletter: externalMessage.optInNewsletter,
-    };
-  }
-
   async findContactFromUserId(
     userId: string
   ): Promise<
@@ -1123,26 +984,6 @@ export class SalesforceService {
       department: userDb.userProfile.department,
       role: userDb.role as RegistrableUserRole,
     };
-  }
-
-  async createOrUpdateSalesforceExternalMessage(
-    externalMessageId: string | string[]
-  ) {
-    this.setIsWorker(true);
-
-    if (Array.isArray(externalMessageId)) {
-      const tasksToCreate = await Promise.all(
-        externalMessageId.map((singleExternalMessageId) => {
-          return this.findTaskFromExternalMessageId(singleExternalMessageId);
-        })
-      );
-      return this.createOrUpdateSalesforceTask(tasksToCreate);
-    } else {
-      const taskToCreate = await this.findTaskFromExternalMessageId(
-        externalMessageId
-      );
-      return this.createOrUpdateSalesforceTask(taskToCreate);
-    }
   }
 
   async createOrUpdateSalesforceUser(

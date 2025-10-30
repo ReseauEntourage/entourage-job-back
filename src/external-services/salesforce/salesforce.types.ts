@@ -347,16 +347,6 @@ export interface SalesforceBinome {
   Id?: string;
 }
 
-export interface TaskProps {
-  externalMessageId: string;
-  subject: string;
-  ownerSfId: string;
-  leadSfId: string;
-  contactSfId?: string;
-  binomeSfId: string;
-  zone: CompanyZone;
-}
-
 export interface SalesforceTask {
   Id?: string;
   ActivityDate: Date;
@@ -411,20 +401,6 @@ export interface SalesforceCampaignMember {
 export interface SalesforceUser {
   Id?: string;
   Email: string;
-}
-
-export interface ExternalMessageProps {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  zone: CompanyZone;
-  externalMessageId: string;
-  subject: string;
-  candidateFirstName: string;
-  candidateLastName: string;
-  candidateEmail: string;
-  optInNewsletter: boolean;
 }
 
 export interface ContactProps {

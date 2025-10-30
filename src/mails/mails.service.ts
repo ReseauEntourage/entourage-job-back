@@ -3,16 +3,7 @@ import _ from 'lodash';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
 import { ContactUsFormDto } from 'src/contacts/dto';
-import {
-  CustomMailParams,
-  MailjetTemplates,
-} from 'src/external-services/mailjet/mailjet.types';
-import {
-  ExternalMessageContactTypeFilters,
-  ExternalMessageSubjectFilters,
-} from 'src/messages/messages.types';
-import { InternalMessage } from 'src/messages/models';
-import { ExternalMessage } from 'src/messages/models/external-message.model';
+import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto';
 import { Conversation, Message } from 'src/messaging/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -20,7 +11,6 @@ import { Jobs } from 'src/queues/queues.types';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import { getCoachFromCandidate } from 'src/users/users.utils';
 import { getAdminMailsFromZone } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones } from 'src/utils/types';
@@ -218,89 +208,6 @@ export class MailsService {
           },
           _.isNil
         ),
-      },
-    });
-  }
-
-  async sendExternalMessageReceivedMail(
-    candidate: User,
-    message: ExternalMessage
-  ) {
-    const coach = getCoachFromCandidate(candidate);
-
-    const { candidatesAdminMail } = getAdminMailsFromZone(candidate.zone);
-
-    const mailsCC = [candidatesAdminMail];
-
-    const toEmail: CustomMailParams['toEmail'] = {
-      to: candidate.email,
-      cc: mailsCC,
-    };
-
-    if (coach) {
-      toEmail.cc = [...toEmail.cc, coach.email];
-    }
-
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail,
-      templateId: MailjetTemplates.MESSAGE_RECEIVED,
-      replyTo: message.senderEmail,
-      variables: {
-        candidateFirstName: candidate.firstName,
-        zone: candidate.zone,
-        subject: findConstantFromValue(
-          message.subject,
-          ExternalMessageSubjectFilters
-        ).label,
-        message: message.message,
-        firstName: message.senderFirstName,
-        lastName: message.senderLastName,
-        email: message.senderEmail,
-        phone: message.senderPhone || '',
-        type: message.type
-          ? findConstantFromValue(
-              message.type,
-              ExternalMessageContactTypeFilters
-            ).label
-          : '',
-      },
-    });
-  }
-
-  async sendInternalMessageByMail(
-    senderUser: User,
-    addresseeUser: User,
-    message: InternalMessage
-  ) {
-    // envoi du mail au destinataire
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: addresseeUser.email,
-      templateId: MailjetTemplates.INTERNAL_MESSAGE,
-      replyTo: senderUser.email,
-      variables: {
-        senderId: senderUser.id,
-        senderName: `${senderUser.firstName} ${senderUser.lastName}`,
-        addresseeName: `${addresseeUser.firstName} ${addresseeUser.lastName}`,
-        senderEmail: senderUser.email,
-        message: message.message,
-        zone: addresseeUser.zone,
-        subject: message.subject,
-        role: getRoleString(senderUser),
-      },
-    });
-
-    // envoi de la confirmation à l'expéditeur
-    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: senderUser.email,
-      templateId: MailjetTemplates.INTERNAL_MESSAGE_CONFIRMATION,
-      replyTo: senderUser.email,
-      variables: {
-        senderName: `${senderUser.firstName} ${senderUser.lastName}`,
-        addresseeName: `${addresseeUser.firstName} ${addresseeUser.lastName}`,
-        senderEmail: senderUser.email,
-        zone: senderUser.zone,
-        subject: message.subject,
-        role: getRoleString(senderUser),
       },
     });
   }
