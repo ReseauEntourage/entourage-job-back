@@ -238,4 +238,31 @@ export class SlackService {
       })),
     };
   };
+
+  /**
+   * Récupère l'ID utilisateur Slack à partir de son email
+   * @param email - L'adresse email de l'utilisateur
+   * @returns L'ID utilisateur Slack ou null si non trouvé
+   */
+  async getUserIdByEmail(email: string): Promise<string | null> {
+    try {
+      const response = await this.app.client.users.lookupByEmail({
+        email,
+        token: process.env.SLACK_BOT_TOKEN,
+      });
+
+      if (response.ok && response.user && response.user.id) {
+        return response.user.id;
+      } else {
+        console.error(
+          'SlackService - getUserIdByEmail - user not found:',
+          email
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error('SlackService - getUserIdByEmail - error:', error);
+      return null;
+    }
+  }
 }

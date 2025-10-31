@@ -19,6 +19,7 @@ import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
+import { getAdminMailsFromZone } from 'src/utils/misc';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
@@ -409,7 +410,7 @@ export class MessagingService {
     const countDailyConversation = await this.countDailyConversations(
       sender.id
     );
-    if (countDailyConversation === 4 || countDailyConversation >= 7) {
+    if (countDailyConversation >= 7) {
       const recipients: User[] = [];
       for (const id of participantIds) {
         const recipient = await this.userService.findOne(id);
@@ -418,6 +419,10 @@ export class MessagingService {
         }
       }
 
+      const { candidatesAdminMail } = getAdminMailsFromZone(sender.zone);
+      const referentSlackUserId = await this.slackService.getUserIdByEmail(
+        candidatesAdminMail
+      );
       const slackMsgConfig: SlackBlockConfig =
         generateSlackMsgConfigUserSuspiciousUser(
           sender,
@@ -425,6 +430,7 @@ export class MessagingService {
           `Un utilisateur tente de créer sa ${
             countDailyConversation + 1
           }ème conversation aujourd\'hui`,
+          referentSlackUserId,
           message
         );
       const slackMessage =
