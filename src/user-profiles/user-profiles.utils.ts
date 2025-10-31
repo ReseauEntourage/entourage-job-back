@@ -12,7 +12,7 @@ export const getPublicProfileFromUserAndUserProfile = ({
   userProfile: UserProfile;
   averageDelayResponse: number | null;
 }): PublicProfile => {
-  return {
+  const dto = {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -36,8 +36,14 @@ export const getPublicProfileFromUserAndUserProfile = ({
     interests: userProfile.interests,
     averageDelayResponse,
     hasPicture: userProfile.hasPicture,
-    company: user.company,
+    company: user.company
+      ? {
+          ...user.company.toJSON(),
+          admin: user.company.admin,
+        }
+      : null,
   };
+  return dto;
 };
 
 export function userProfileSearchQuery(query = '') {
