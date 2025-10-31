@@ -26,13 +26,12 @@ import { SkillsService } from 'src/common/skills/skills.service';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
-import { MessagesService } from 'src/messages/messages.service';
-import { MessagingService } from 'src/messaging/messaging.service';
 import { User } from 'src/users/models';
 import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
 import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   UserProfile,
@@ -88,9 +87,7 @@ export class UserProfilesService {
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private userCandidatsService: UserCandidatsService,
-    @Inject(forwardRef(() => MessagesService))
-    private messagesService: MessagesService,
-    private messagingService: MessagingService,
+    private usersStatsService: UsersStatsService,
     private slackService: SlackService,
     private mailsService: MailsService,
     private experiencesService: ExperiencesService,
@@ -298,14 +295,6 @@ export class UserProfilesService {
 
     return Promise.all(
       profiles.map(async (profile): Promise<PublicProfile> => {
-        const lastSentMessage = await this.getLastContact(
-          userId,
-          profile.user.id
-        );
-        const lastReceivedMessage = await this.getLastContact(
-          profile.user.id,
-          userId
-        );
         const averageDelayResponse = await this.getAverageDelayResponse(
           profile.user.id
         );
@@ -315,8 +304,6 @@ export class UserProfilesService {
           ...user,
           ...restProfile,
           id: profile.user.id,
-          lastSentMessage: lastSentMessage?.createdAt || null,
-          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
           averageDelayResponse,
         };
       })
@@ -522,8 +509,6 @@ export class UserProfilesService {
         ...user,
         ...restProfile,
         id: profile.user.id,
-        lastSentMessage: null,
-        lastReceivedMessage: null,
         averageDelayResponse: null,
       };
     });
@@ -558,14 +543,6 @@ export class UserProfilesService {
 
     return Promise.all(
       profiles.map(async (profile): Promise<PublicProfile> => {
-        const lastSentMessage = await this.getLastContact(
-          userId,
-          profile.user.id
-        );
-        const lastReceivedMessage = await this.getLastContact(
-          profile.user.id,
-          userId
-        );
         const averageDelayResponse = await this.getAverageDelayResponse(
           profile.user.id
         );
@@ -575,8 +552,6 @@ export class UserProfilesService {
           ...user,
           ...restProfile,
           id: profile.user.id,
-          lastSentMessage: lastSentMessage?.createdAt || null,
-          lastReceivedMessage: lastReceivedMessage?.createdAt || null,
           averageDelayResponse,
         };
       })
@@ -605,18 +580,8 @@ export class UserProfilesService {
     });
   }
 
-  async getLastContact(senderUserId: string, addresseeUserId: string) {
-    if (!senderUserId || !addresseeUserId) {
-      return null;
-    }
-    return this.messagesService.getLastMessageBetweenUsers(
-      senderUserId,
-      addresseeUserId
-    );
-  }
-
   async getAverageDelayResponse(userId: string): Promise<number | null> {
-    return this.messagingService.getAverageDelayResponse(userId);
+    return this.usersStatsService.getAverageDelayResponse(userId);
   }
 
   async updateByUserId(

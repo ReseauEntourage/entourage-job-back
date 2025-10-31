@@ -1,38 +1,5 @@
 # Documentation Technique de la Messagerie
 
-## Introduction
-
-La messagerie de l'application est divisée en deux parties principales : `ExternalMessage` et `Messaging`. La partie `InternalMessage` est désormais dépréciée et remplacée par le module `Messaging`. Cette documentation explique les raisons de cette transition et fournit des détails techniques sur la mise en œuvre des deux systèmes de messagerie.
-
-## ExternalMessage
-
-### Description
-
-`ExternalMessage` permet l'envoi de courriels à des candidats de la plateforme par des personnes complètement externes à la plateforme. Ce système est utilisé pour faciliter la communication entre les candidats et les recruteurs ou autres parties intéressées qui ne sont pas inscrites sur la plateforme.
-
-### Fonctionnalités
-
-- **Création de messages externes** : Les utilisateurs externes peuvent envoyer des messages aux candidats.
-- **Validation des messages** : Les messages sont validés pour s'assurer qu'ils contiennent des informations correctes et complètes.
-- **Envoi de courriels** : Les messages sont envoyés par courriel aux candidats.
-- **Notification par courriel** : Les candidats reçoivent une notification par courriel lorsqu'ils reçoivent un message externe.
-
-### Modèles et DTOs
-
-- **Modèle** : `ExternalMessage`
-- **DTO** : `CreateExternalMessageDto`
-
-### Service
-
-Le service `MessagesService` gère la logique métier pour la création et l'envoi de messages externes.
-
-## InternalMessage - DESACTIVATED
-
-A l'origine, les `InternalMessage` fonctionnaient exactement commes les `ExternalMessage` càd qu'ils n'étaient que de simple courriels envoyés au candidats ou coachs.
-Ils n'apportaient pas suffisament de latitude pour comprendre les usages fait de cette fonctionnalité. Ils pouvaient représenter des problèmes de vulnérabilité pour les utilisteurs car les conversations n'avaient plus lieu au sein de notre plateforme.
-
-## Messaging
-
 ### Description
 
 Le module `Messaging` remplace l'ancien système `InternalMessage` pour fournir une messagerie interne plus robuste et flexible. Ce module permet aux utilisateurs de la plateforme de communiquer entre eux directement via des conversations internes.

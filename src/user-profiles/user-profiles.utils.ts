@@ -6,14 +6,10 @@ import { PublicProfile } from './user-profiles.types';
 export const getPublicProfileFromUserAndUserProfile = ({
   user,
   userProfile,
-  lastSentMessage,
-  lastReceivedMessage,
   averageDelayResponse = null,
 }: {
   user: User;
   userProfile: UserProfile;
-  lastSentMessage: Date;
-  lastReceivedMessage: Date;
   averageDelayResponse: number | null;
 }): PublicProfile => {
   return {
@@ -28,8 +24,6 @@ export const getPublicProfileFromUserAndUserProfile = ({
     customNudges: userProfile.customNudges,
     description: userProfile.description,
     introduction: userProfile.introduction,
-    lastSentMessage: lastSentMessage ? lastSentMessage : null,
-    lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,
