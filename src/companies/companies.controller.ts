@@ -19,6 +19,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { validate as uuidValidate } from 'uuid';
 import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
 import { Department } from 'src/common/locations/locations.types';
@@ -54,6 +55,13 @@ export class CompaniesController {
     departments: Department[],
     @Query('search') search?: string
   ) {
+    if (departments) {
+      for (const dept of departments) {
+        if (!uuidValidate(dept)) {
+          throw new BadRequestException('departmentId must be a UUID or null');
+        }
+      }
+    }
     try {
       return await this.companiesService.findAll({
         limit,
