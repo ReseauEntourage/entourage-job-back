@@ -202,18 +202,19 @@ export class UsersCreationController {
       );
 
       // Link the company if provided
-      if (createUserRegistrationDto.companyId) {
-        const company = await this.usersCreationService.findOneCompany(
-          createUserRegistrationDto.companyId
-        );
+      if (createUserRegistrationDto.companyName) {
+        const company =
+          await this.usersCreationService.findOrCreateCompanyByName(
+            createUserRegistrationDto.companyName,
+            createdUser
+          );
         if (!company) {
-          throw new NotFoundException('Company not found');
+          throw new NotFoundException('Company was not created properly');
         }
         // Check if a user is already linked to the company
         const existingCompanyUser =
-          await this.usersCreationService.findOneCompanyUser(
-            createUserRegistrationDto.companyId
-          );
+          await this.usersCreationService.findOneCompanyUser(company.id);
+
         // If no user is linked, we can set the role as admin if applicable
         const isAdmin =
           !existingCompanyUser &&
@@ -223,7 +224,7 @@ export class UsersCreationController {
         // Create the company user
         await this.usersCreationService.linkUserToCompany(
           createdUserId,
-          createUserRegistrationDto.companyId,
+          company.id,
           createUserRegistrationDto.companyRole || 'employee',
           isAdmin
         );

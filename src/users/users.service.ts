@@ -70,8 +70,11 @@ export class UsersService {
     });
   }
 
-  async linkCompany(userId: string, companyId: string | null) {
-    return await this.companyUsersService.linkUserToCompany(userId, companyId);
+  async linkCompany(
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
+    companyId: string | null
+  ) {
+    return await this.companyUsersService.linkUserToCompany(user, companyId);
   }
 
   async findOneByMail(email: string) {

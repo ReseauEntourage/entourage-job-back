@@ -28,8 +28,6 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { CreateCompanyPipe } from './dto/create-company.pipe';
 import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
@@ -44,6 +42,7 @@ export class CompaniesController {
     private readonly usersService: UsersService
   ) {}
 
+  @Throttle(60, 60)
   @Public()
   @Get()
   async findAll(
@@ -98,18 +97,6 @@ export class CompaniesController {
       companyId,
       isCompanyAdmin
     );
-  }
-
-  @Public()
-  @Throttle(5, 60)
-  @Post()
-  async create(
-    @Body(new CreateCompanyPipe())
-    createCompanyDto: CreateCompanyDto
-  ) {
-    const createdCompany = await this.companiesService.create(createCompanyDto);
-
-    return createdCompany;
   }
 
   @Throttle(5, 60)
