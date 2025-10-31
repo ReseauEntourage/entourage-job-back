@@ -65,13 +65,4 @@ export class ExternalDatabasesService {
       }
     );
   }
-
-  async createOrUpdateExternalDBTask(externalMessageId: string) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK,
-      {
-        externalMessageId,
-      }
-    );
-  }
 }

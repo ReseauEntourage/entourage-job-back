@@ -38,9 +38,18 @@ export class CompaniesService {
       include: companiesWithUsers({ departments, businessSectorIds }),
       attributes: companiesAttributes,
       where: {
-        ...(search
-          ? { [Op.and]: [searchInColumnWhereOption('Company.name', search)] }
-          : {}),
+        [Op.and]: [
+          ...(search
+            ? [searchInColumnWhereOption('Company.name', search)]
+            : []),
+          {
+            id: {
+              [Op.in]: this.companyModel.sequelize.literal(
+                '(SELECT "companyId" FROM "CompanyUsers" WHERE "isAdmin" = true)'
+              ),
+            },
+          },
+        ],
       },
       ...(limit ? { limit } : {}),
       ...(offset ? { offset } : {}),

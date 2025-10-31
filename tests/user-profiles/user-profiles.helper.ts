@@ -54,8 +54,6 @@ export class UserProfilesHelper {
         }))
       ),
       nudges: userProfileData.nudges,
-      lastReceivedMessage: null,
-      lastSentMessage: null,
     } as Partial<UserProfile & User>;
     if (completeExpected) {
       config.experiences = expect.arrayContaining(

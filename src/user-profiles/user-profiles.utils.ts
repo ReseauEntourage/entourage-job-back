@@ -6,17 +6,13 @@ import { PublicProfile } from './user-profiles.types';
 export const getPublicProfileFromUserAndUserProfile = ({
   user,
   userProfile,
-  lastSentMessage,
-  lastReceivedMessage,
   averageDelayResponse = null,
 }: {
   user: User;
   userProfile: UserProfile;
-  lastSentMessage: Date;
-  lastReceivedMessage: Date;
   averageDelayResponse: number | null;
 }): PublicProfile => {
-  return {
+  const dto = {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -28,8 +24,6 @@ export const getPublicProfileFromUserAndUserProfile = ({
     customNudges: userProfile.customNudges,
     description: userProfile.description,
     introduction: userProfile.introduction,
-    lastSentMessage: lastSentMessage ? lastSentMessage : null,
-    lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,
@@ -42,8 +36,14 @@ export const getPublicProfileFromUserAndUserProfile = ({
     interests: userProfile.interests,
     averageDelayResponse,
     hasPicture: userProfile.hasPicture,
-    company: user.company,
+    company: user.company
+      ? {
+          ...user.company.toJSON(),
+          admin: user.company.admin,
+        }
+      : null,
   };
+  return dto;
 };
 
 export function userProfileSearchQuery(query = '') {

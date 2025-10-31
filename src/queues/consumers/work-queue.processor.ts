@@ -18,7 +18,6 @@ import {
 } from 'src/external-services/pusher/pusher.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import {
-  CreateOrUpdateSalesforceTaskJob,
   CreateOrUpdateSalesforceUserJob,
   GenerateCVPDFJob,
   Jobs,
@@ -131,22 +130,6 @@ export class WorkQueueProcessor {
     );
 
     return `PDF generated for User ${data.candidateId} : ${data.fileName}`;
-  }
-
-  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK)
-  async processCreateOrUpdateSalesforceTask(
-    job: Job<CreateOrUpdateSalesforceTaskJob>
-  ) {
-    const { data } = job;
-
-    if (process.env.ENABLE_SF === 'true') {
-      await this.salesforceService.createOrUpdateSalesforceExternalMessage(
-        data.externalMessageId
-      );
-      return `Salesforce : created or updated task '${data.externalMessageId}'`;
-    }
-
-    return `Salesforce job ignored : creation or update of task '${data.externalMessageId}'`;
   }
 
   @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_USER)

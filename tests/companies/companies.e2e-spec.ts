@@ -18,7 +18,8 @@ import { CompaniesHelper } from './companies.helper';
 import { CompanyFactory } from './company.factory';
 
 // Configuration
-const NB_COMPANIES = 4;
+const NB_COMPANIES_WITHOUT_ADMIN = 4;
+const NB_COMPANIES_WITH_ADMIN = 2;
 
 describe('Companies', () => {
   let app: INestApplication;
@@ -75,17 +76,40 @@ describe('Companies', () => {
   describe('GET /companies', () => {
     beforeEach(async () => {
       // Create some companies
-      await databaseHelper.createEntities(companyFactory, NB_COMPANIES);
+
+      // Companies without admin
+      await databaseHelper.createEntities(
+        companyFactory,
+        NB_COMPANIES_WITHOUT_ADMIN
+      );
+
+      // Companies with admin
+      const companiesWithAdmin = await databaseHelper.createEntities(
+        companyFactory,
+        NB_COMPANIES_WITH_ADMIN
+      );
+
+      const linkPromises = companiesWithAdmin.map(async (company) => {
+        const companyAdmin = await usersHelper.createLoggedInUser({
+          role: UserRoles.COACH,
+        });
+        await companyFactory.linkAdminToCompany(company, companyAdmin.user.id, {
+          isAdmin: true,
+          role: CompanyUserRole.EXECUTIVE,
+        });
+      });
+
+      await Promise.all(linkPromises);
     });
 
-    it('should return a list of companies', async () => {
+    it('should return a list of companies with admin', async () => {
       const response = await request(server).get(
         '/companies?search=&limit=10&offset=0'
       );
 
       expect(response.body).toBeDefined();
       expect(response.statusCode).toBe(200);
-      expect(response.body.length).toBe(NB_COMPANIES);
+      expect(response.body.length).toBe(NB_COMPANIES_WITH_ADMIN);
       expect(response.body).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -97,11 +121,20 @@ describe('Companies', () => {
       );
     });
 
-    it('should return a list of companies with search', async () => {
+    it('should return a list of companies with admin (with search)', async () => {
       // Create a company with a specific name
-      await companyFactory.create({
+      const companyTest = await companyFactory.create({
         name: 'Test Company',
         description: 'A company for testing purposes',
+      });
+      const companyAdmin = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+      });
+      await companiesHelper.linkCompanyToUser({
+        companyId: companyTest.id,
+        userId: companyAdmin.user.id,
+        role: CompanyUserRole.EXECUTIVE,
+        isAdmin: true,
       });
       const response = await request(server).get(
         `/companies?search=test&limit=10&offset=0`
@@ -145,8 +178,18 @@ describe('Companies', () => {
 
     it('should return a filtered list of companies by department', async () => {
       // Create a company with a specific department
-      await companyFactory.create({
+      const companyInDepartment = await companyFactory.create({
         departmentId: department01.id,
+      });
+      // Link admin to the company
+      const companyAdmin = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+      });
+      await companiesHelper.linkCompanyToUser({
+        userId: companyAdmin.user.id,
+        companyId: companyInDepartment.id,
+        role: CompanyUserRole.EXECUTIVE,
+        isAdmin: true,
       });
 
       const response = await request(server).get(

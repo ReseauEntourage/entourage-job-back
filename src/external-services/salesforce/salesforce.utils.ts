@@ -56,8 +56,6 @@ import {
   SalesforceLead,
   SalesforceLeads,
   SalesforceObject,
-  SalesforceTask,
-  TaskProps,
 } from './salesforce.types';
 
 export function formatBusinessSectors(businessSectors: BusinessSector[]) {
@@ -151,26 +149,6 @@ export function getPostalCodeFromDepartment(department: Department): string {
   return (
     postalCodeDigits + new Array(5 - postalCodeDigits.length).fill('0').join('')
   );
-}
-
-export function mapSalesforceTaskFields({
-  externalMessageId,
-  binomeSfId,
-  subject,
-  ownerSfId,
-  leadSfId,
-  zone,
-}: TaskProps): SalesforceTask {
-  return {
-    ID_Externe__c: externalMessageId,
-    ActivityDate: new Date(),
-    OwnerId: ownerSfId,
-    Status: 'Completed',
-    Subject: subject,
-    WhoId: leadSfId,
-    Bin_me__c: binomeSfId,
-    Antenne__c: zone,
-  };
 }
 
 function isLeadRecordTypeProps<T extends LeadRecordType>(

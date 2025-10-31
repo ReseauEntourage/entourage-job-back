@@ -69,9 +69,6 @@ export const companiesWithUsers = ({
     through: {
       attributes: ['isAdmin', 'role'],
       as: 'companyUser',
-      where: {
-        isAdmin: false,
-      },
     },
   },
 

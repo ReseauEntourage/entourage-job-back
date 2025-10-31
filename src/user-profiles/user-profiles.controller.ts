@@ -18,6 +18,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
+import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
 import {
   Self,
@@ -134,6 +135,14 @@ export class UserProfilesController {
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
+    }
+
+    if (departments) {
+      for (const dept of departments) {
+        if (!uuidValidate(dept)) {
+          throw new BadRequestException('departmentId must be a UUID or null');
+        }
+      }
     }
 
     if (!isRoleIncluded(AllUserRoles, role)) {
@@ -253,16 +262,6 @@ export class UserProfilesController {
     return Promise.all(
       recommendedProfiles.map(
         async (recommendedProfile): Promise<PublicProfile> => {
-          const lastSentMessage = await this.userProfilesService.getLastContact(
-            userId,
-            recommendedProfile.recUser.id
-          );
-          const lastReceivedMessage =
-            await this.userProfilesService.getLastContact(
-              recommendedProfile.recUser.id,
-              userId
-            );
-
           const averageDelayResponse =
             await this.userProfilesService.getAverageDelayResponse(
               recommendedProfile.recUser.id
@@ -276,8 +275,6 @@ export class UserProfilesController {
             ...restRecommendedUser,
             ...userProfile,
             id: recommendedProfile.recUser.id,
-            lastSentMessage: lastSentMessage?.createdAt || null,
-            lastReceivedMessage: lastReceivedMessage?.createdAt || null,
             averageDelayResponse,
           };
         }
@@ -304,24 +301,12 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    const lastSentMessage = await this.userProfilesService.getLastContact(
-      currentUserId,
-      userIdToGet
-    );
-
-    const lastReceivedMessage = await this.userProfilesService.getLastContact(
-      userIdToGet,
-      currentUserId
-    );
-
     const averageDelayResponse =
       await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
     return getPublicProfileFromUserAndUserProfile({
       user,
       userProfile,
-      lastSentMessage: lastSentMessage?.createdAt,
-      lastReceivedMessage: lastReceivedMessage?.createdAt,
       averageDelayResponse,
     });
   }

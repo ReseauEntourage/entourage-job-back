@@ -29,7 +29,6 @@ import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
-import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PingModule } from './ping/ping.module';
@@ -138,7 +137,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     SalesforceModule,
     ContactsModule,
     OrganizationsModule,
-    MessagesModule,
     ReadDocumentsModule,
     MessagingModule,
     UserSocialSituationsModule,
@@ -188,7 +186,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     SalesforceModule,
     ContactsModule,
     OrganizationsModule,
-    MessagesModule,
     MessagingModule,
     MediasModule,
     UserSocialSituationsModule,
