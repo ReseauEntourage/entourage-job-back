@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from 'src/users/models';
 import { CompaniesService } from './companies.service';
+import { CompanyCreationContext } from './companies.types';
 import { CompanyUser } from './models/company-user.model';
 
 @Injectable()
@@ -64,7 +65,7 @@ export class CompanyUsersService {
   }
 
   async linkUserToCompany(
-    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName'>,
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
     companyName: string | null
   ) {
     const existingLink = await this.companyUserModel.findOne({
@@ -83,7 +84,8 @@ export class CompanyUsersService {
 
     const company = await this.companiesService.findOrCreateByName(
       companyName,
-      user
+      user,
+      CompanyCreationContext.COACH_LINKING
     );
     const newLink = await this.companyUserModel.create({
       userId: user.id,

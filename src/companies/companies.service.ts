@@ -7,9 +7,13 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
-import { searchInColumnWhereOption } from 'src/utils/misc';
+import {
+  getAdminMailsFromZone,
+  searchInColumnWhereOption,
+} from 'src/utils/misc';
 import { companiesAttributes } from './companies.attributes';
 import { companiesWithUsers } from './companies.includes';
+import { CompanyCreationContext } from './companies.types';
 import { generateSlackMsgConfigNewCompany } from './companies.utils';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { CompanyBusinessSector } from './models/company-business-sector.model';
@@ -59,7 +63,8 @@ export class CompaniesService {
 
   async findOrCreateByName(
     name: string,
-    user: Pick<User, 'email' | 'firstName' | 'lastName'>
+    user: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>,
+    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN
   ) {
     const company = await this.companyModel.findOne({
       where: { name },
@@ -68,24 +73,28 @@ export class CompaniesService {
     if (company) {
       return company;
     }
-    return this.create({ name }, user);
+    return this.create({ name }, user, context);
   }
 
   async create(
     createCompanyDto: Partial<Company>,
-    createdByUser: Pick<User, 'email' | 'firstName' | 'lastName'>
+    createdByUser: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>,
+    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN
   ) {
     const company = await this.companyModel.create(createCompanyDto, {
       hooks: true,
     });
 
-    // TODO: Get referentSlackUserId from slack service using createdByUser info
-    const referentSlackUserId: string | null = null;
+    const { candidatesAdminMail } = getAdminMailsFromZone(createdByUser.zone);
+    const referentSlackUserId = await this.slackService.getUserIdByEmail(
+      candidatesAdminMail
+    );
 
     this.sendSlackNotificationCompanyCreated(
       company,
       createdByUser,
-      referentSlackUserId
+      referentSlackUserId,
+      context
     );
     return company;
   }
@@ -203,12 +212,14 @@ export class CompaniesService {
   async sendSlackNotificationCompanyCreated(
     company: Company,
     user: Pick<User, 'email' | 'firstName' | 'lastName'>,
-    referentSlackUserId: string | null
+    referentSlackUserId: string | null,
+    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN
   ) {
     const slackMsgConfig = generateSlackMsgConfigNewCompany(
       company,
       user,
-      referentSlackUserId
+      referentSlackUserId,
+      context
     );
     const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
     return this.slackService.sendMessage(

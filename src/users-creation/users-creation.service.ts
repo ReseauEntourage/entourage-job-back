@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { CompaniesService } from 'src/companies/companies.service';
+import { CompanyCreationContext } from 'src/companies/companies.types';
 import { CompanyInvitationsService } from 'src/companies/company-invitations.service';
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
@@ -181,9 +182,13 @@ export class UsersCreationService {
 
   async findOrCreateCompanyByName(
     companyName: string,
-    user: Pick<User, 'email' | 'firstName' | 'lastName'>
+    user: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>
   ) {
-    return this.companiesService.findOrCreateByName(companyName, user);
+    return this.companiesService.findOrCreateByName(
+      companyName,
+      user,
+      CompanyCreationContext.REGISTRATION
+    );
   }
 
   async linkUserToCompany(

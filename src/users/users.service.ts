@@ -71,7 +71,7 @@ export class UsersService {
   }
 
   async linkCompany(
-    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName'>,
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
     companyId: string | null
   ) {
     return await this.companyUsersService.linkUserToCompany(user, companyId);
