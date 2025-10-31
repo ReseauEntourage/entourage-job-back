@@ -149,8 +149,7 @@ export class CompaniesService {
         fs.readFileSync(path),
         'image/png',
         `${companyId}.png`,
-        false,
-        true
+        false
       );
       await this.update(companyId, { logoUrl: s3file.publicUrl });
     } catch (error) {

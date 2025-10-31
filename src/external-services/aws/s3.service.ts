@@ -43,8 +43,7 @@ export class S3Service {
     data: PutObjectCommandInput['Body'],
     contentType: PutObjectCommandInput['ContentType'],
     outputPath: string,
-    isPrivate = false,
-    returnPublicUrl = false
+    isPrivate = false
   ): Promise<S3File> {
     const key = `${
       contentType.includes('image/')
@@ -65,8 +64,8 @@ export class S3Service {
 
     await upload.done();
 
-    // If the public URL is not requested or the file is private, return only the key
-    if (isPrivate || !returnPublicUrl) {
+    // If the file is private, return only the key
+    if (isPrivate) {
       return { key, publicUrl: null };
     }
 
@@ -118,7 +117,7 @@ export class S3Service {
       ResponseContentType: contentType,
     });
 
-    return s3GetSignedUrl(this.s3, getObjectCommand, {
+    return await s3GetSignedUrl(this.s3, getObjectCommand, {
       expiresIn: 60,
     });
   }
