@@ -8,8 +8,8 @@ import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
 import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
-import { Queues } from 'src/queues/queues.types';
 import { getSequelizeOptions } from './app.module';
+import { Queues } from './queues/queues.types';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 
 @Module({
@@ -38,7 +38,7 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
             ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
             : 60000,
         },
-        removeOnFail: true,
+        removeOnFail: false,
         removeOnComplete: true,
       },
     }),

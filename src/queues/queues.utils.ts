@@ -14,7 +14,7 @@ export function getBullWorkQueueOptions(): BullModuleOptions {
           ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
           : 60000,
       },
-      removeOnFail: true,
+      removeOnFail: false,
       removeOnComplete: true,
     },
   };
@@ -30,7 +30,7 @@ export function getBullProfileGenerationQueueOptions(): BullModuleOptions {
         delay: 10000,
       },
       removeOnFail: false, // Garder les jobs échoués pour inspection
-      removeOnComplete: true,
+      removeOnComplete: false,
       timeout: 300000, // 5 minutes de timeout pour le job
     },
   };
