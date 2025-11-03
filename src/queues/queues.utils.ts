@@ -30,7 +30,7 @@ export function getBullProfileGenerationQueueOptions(): BullModuleOptions {
         delay: 10000,
       },
       removeOnFail: false, // Garder les jobs échoués pour inspection
-      removeOnComplete: false,
+      removeOnComplete: true,
       timeout: 300000, // 5 minutes de timeout pour le job
     },
   };
