@@ -18,8 +18,9 @@ import { CompaniesHelper } from './companies.helper';
 import { CompanyFactory } from './company.factory';
 
 // Configuration
-const NB_COMPANIES_WITHOUT_ADMIN = 4;
-const NB_COMPANIES_WITH_ADMIN = 2;
+const NB_COMPANIES_WITHOUT_REFERENT = 4;
+const NB_COMPANIES_WITH_REFERENT = 2;
+const NB_COMPANIES = NB_COMPANIES_WITHOUT_REFERENT + NB_COMPANIES_WITH_REFERENT;
 
 describe('Companies', () => {
   let app: INestApplication;
@@ -33,7 +34,7 @@ describe('Companies', () => {
   let departmentHelper: DepartmentHelper;
 
   let company: Company;
-  let loggedInCompanyAdmin: LoggedUser;
+  let loggedInCompanyReferent: LoggedUser;
   let loggedInCollaborator: LoggedUser;
   let loggedInRandomUser: LoggedUser;
 
@@ -77,39 +78,43 @@ describe('Companies', () => {
     beforeEach(async () => {
       // Create some companies
 
-      // Companies without admin
+      // Companies without referent
       await databaseHelper.createEntities(
         companyFactory,
-        NB_COMPANIES_WITHOUT_ADMIN
+        NB_COMPANIES_WITHOUT_REFERENT
       );
 
       // Companies with admin
-      const companiesWithAdmin = await databaseHelper.createEntities(
+      const companiesWithReferent = await databaseHelper.createEntities(
         companyFactory,
-        NB_COMPANIES_WITH_ADMIN
+        NB_COMPANIES_WITH_REFERENT
       );
 
-      const linkPromises = companiesWithAdmin.map(async (company) => {
-        const companyAdmin = await usersHelper.createLoggedInUser({
+      const linkPromises = companiesWithReferent.map(async (company) => {
+        const companyReferent = await usersHelper.createLoggedInUser({
           role: UserRoles.COACH,
         });
-        await companyFactory.linkAdminToCompany(company, companyAdmin.user.id, {
-          isAdmin: true,
-          role: CompanyUserRole.EXECUTIVE,
-        });
+        await companyFactory.linkAdminToCompany(
+          company,
+          companyReferent.user.id,
+          {
+            isAdmin: true,
+            role: CompanyUserRole.EXECUTIVE,
+          }
+        );
       });
 
       await Promise.all(linkPromises);
     });
 
-    it('should return a list of companies with admin', async () => {
+    it('should return a list of companies with referent only', async () => {
       const response = await request(server).get(
-        '/companies?search=&limit=10&offset=0'
+        '/companies?search=&limit=10&offset=0&onlyWithReferent=true'
       );
 
       expect(response.body).toBeDefined();
       expect(response.statusCode).toBe(200);
-      expect(response.body.length).toBe(NB_COMPANIES_WITH_ADMIN);
+      expect(response.body.length).toBe(NB_COMPANIES_WITH_REFERENT);
       expect(response.body).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -121,7 +126,26 @@ describe('Companies', () => {
       );
     });
 
-    it('should return a list of companies with admin (with search)', async () => {
+    it('should return a list of companies including without referent', async () => {
+      const response = await request(server).get(
+        '/companies?search=&limit=10&offset=0&onlyWithReferent=false'
+      );
+
+      expect(response.body).toBeDefined();
+      expect(response.statusCode).toBe(200);
+      expect(response.body.length).toBe(NB_COMPANIES);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(String),
+            name: expect.any(String),
+            description: expect.any(String),
+          }),
+        ])
+      );
+    });
+
+    it('should return a list of companies with referent (with search)', async () => {
       // Create a company with a specific name
       const companyTest = await companyFactory.create({
         name: 'Test Company',
@@ -137,7 +161,33 @@ describe('Companies', () => {
         isAdmin: true,
       });
       const response = await request(server).get(
-        `/companies?search=test&limit=10&offset=0`
+        `/companies?search=test&limit=10&offset=0&onlyWithReferent=true`
+      );
+
+      expect(response.body).toBeDefined();
+      expect(response.statusCode).toBe(200);
+      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.any(String),
+            name: expect.stringContaining('Test Company'),
+            description: expect.stringContaining(
+              'A company for testing purposes'
+            ),
+          }),
+        ])
+      );
+    });
+
+    it('should return a list of companies (with search)', async () => {
+      // Create a company with a specific name
+      await companyFactory.create({
+        name: 'Test Company',
+        description: 'A company for testing purposes',
+      });
+      const response = await request(server).get(
+        `/companies?search=test&limit=10&offset=0&onlyWithReferent=false`
       );
 
       expect(response.body).toBeDefined();
@@ -158,7 +208,7 @@ describe('Companies', () => {
 
     it('should return an empty list when no companies match the search', async () => {
       const response = await request(server).get(
-        '/companies?search=nonexistent&limit=10&offset=0'
+        '/companies?search=nonexistent&limit=10&offset=0&onlyWithReferent=false'
       );
 
       expect(response.body).toBeDefined();
@@ -168,7 +218,7 @@ describe('Companies', () => {
 
     it('should return a paginated list of companies', async () => {
       const response = await request(server).get(
-        '/companies?search=&limit=2&offset=0'
+        '/companies?search=&limit=2&offset=0&onlyWithReferent=false'
       );
 
       expect(response.body).toBeDefined();
@@ -178,22 +228,12 @@ describe('Companies', () => {
 
     it('should return a filtered list of companies by department', async () => {
       // Create a company with a specific department
-      const companyInDepartment = await companyFactory.create({
+      await companyFactory.create({
         departmentId: department01.id,
-      });
-      // Link admin to the company
-      const companyAdmin = await usersHelper.createLoggedInUser({
-        role: UserRoles.COACH,
-      });
-      await companiesHelper.linkCompanyToUser({
-        userId: companyAdmin.user.id,
-        companyId: companyInDepartment.id,
-        role: CompanyUserRole.EXECUTIVE,
-        isAdmin: true,
       });
 
       const response = await request(server).get(
-        `/companies?search=&departments[]=${department01.id}&limit=10&offset=0`
+        `/companies?search=&departments[]=${department01.id}&limit=10&offset=0&onlyWithReferent=false`
       );
 
       expect(response.body).toBeDefined();
@@ -218,11 +258,11 @@ describe('Companies', () => {
       // Create a company to invite collaborators to
       company = await companyFactory.create();
       // Create a logged in user
-      loggedInCompanyAdmin = await usersHelper.createLoggedInUser({
+      loggedInCompanyReferent = await usersHelper.createLoggedInUser({
         role: UserRoles.COACH,
       });
       companiesHelper.linkCompanyToUser({
-        userId: loggedInCompanyAdmin.user.id,
+        userId: loggedInCompanyReferent.user.id,
         companyId: company.id,
         role: CompanyUserRole.EXECUTIVE,
         isAdmin: true,
@@ -248,7 +288,7 @@ describe('Companies', () => {
 
       const response = await request(server)
         .post(`/companies/${company.id}/invite-collaborators`)
-        .set('Authorization', `Bearer ${loggedInCompanyAdmin.token}`)
+        .set('Authorization', `Bearer ${loggedInCompanyReferent.token}`)
         .send(inviteData);
 
       expect(response.statusCode).toBe(201);
