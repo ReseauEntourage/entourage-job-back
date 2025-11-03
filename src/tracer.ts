@@ -10,6 +10,10 @@ if (ENV === 'production') {
   tracer.use('pg', {
     service: 'linkedout-backend-postgres',
   });
+
+  tracer.use('express', {
+    blocklist: ['/queues/*'],
+  });
 }
 
 export { tracer };
