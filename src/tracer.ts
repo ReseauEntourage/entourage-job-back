@@ -8,7 +8,7 @@ if (ENV === 'production') {
     plugins: {
       express: {
         enabled: true,
-        blacklist: ['/queues/*'],
+        blacklist: ['/queues/*', '@bull-board/express'],
       },
     },
   } as unknown);
