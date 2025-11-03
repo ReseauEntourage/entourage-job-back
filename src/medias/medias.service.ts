@@ -30,7 +30,7 @@ export class MediasService {
         return {
           userId: uploaderId,
           name: fileName,
-          s3Key,
+          s3Key: s3Key.key,
           mimeType: file.mimetype,
           size: file.size,
         };
@@ -106,7 +106,8 @@ export class MediasService {
     const s3Key = await this.s3Service.upload(
       file.buffer,
       file.mimetype,
-      fileName
+      fileName,
+      true
     );
     return {
       fileName,
