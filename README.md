@@ -95,7 +95,7 @@ Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, v
 containers:
 
 ```
-docker exec -it linkedout-api-worker bash
+docker exec -it linkedout-api bash
 rm -r node_modules/sharp/
 npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit

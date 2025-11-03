@@ -1,6 +1,5 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-
 import { CVsModule } from 'src/cvs/cvs.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';

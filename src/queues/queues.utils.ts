@@ -14,7 +14,7 @@ export function getBullWorkQueueOptions(): BullModuleOptions {
           ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
           : 60000,
       },
-      removeOnFail: true,
+      removeOnFail: false,
       removeOnComplete: true,
     },
   };
