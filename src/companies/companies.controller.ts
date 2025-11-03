@@ -15,6 +15,7 @@ import {
   UseInterceptors,
   forwardRef,
   Inject,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
@@ -52,7 +53,8 @@ export class CompaniesController {
     businessSectorIds: string[],
     @Query('departments')
     departments: Department[],
-    @Query('search') search?: string
+    @Query('search') search?: string,
+    @Query('onlyWithReferent', new ParseBoolPipe()) onlyWithReferent = false
   ) {
     if (departments) {
       for (const dept of departments) {
@@ -68,6 +70,7 @@ export class CompaniesController {
         search,
         businessSectorIds,
         departments,
+        onlyWithReferent,
       });
     } catch (error) {
       console.error('Error in findAll:', error);

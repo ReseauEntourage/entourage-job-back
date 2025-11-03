@@ -36,8 +36,16 @@ export class CompaniesService {
     search: string;
     departments: Department[];
     businessSectorIds: string[];
+    onlyWithReferent?: boolean;
   }) {
-    const { limit, offset, search, departments, businessSectorIds } = query;
+    const {
+      limit,
+      offset,
+      search,
+      departments,
+      businessSectorIds,
+      onlyWithReferent,
+    } = query;
     return this.companyModel.findAll({
       include: companiesWithUsers({ departments, businessSectorIds }),
       attributes: companiesAttributes,
@@ -46,13 +54,17 @@ export class CompaniesService {
           ...(search
             ? [searchInColumnWhereOption('Company.name', search)]
             : []),
-          {
-            id: {
-              [Op.in]: this.companyModel.sequelize.literal(
-                '(SELECT "companyId" FROM "CompanyUsers" WHERE "isAdmin" = true)'
-              ),
-            },
-          },
+          ...(onlyWithReferent
+            ? [
+                {
+                  id: {
+                    [Op.in]: this.companyModel.sequelize.literal(
+                      '(SELECT "companyId" FROM "CompanyUsers" WHERE "isAdmin" = true)'
+                    ),
+                  },
+                },
+              ]
+            : []),
         ],
       },
       ...(limit ? { limit } : {}),
