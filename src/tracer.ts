@@ -6,14 +6,10 @@ if (ENV === 'production') {
   tracer.init({
     version: process.env.HEROKU_RELEASE_VERSION,
   });
-
-  tracer.use('pg', {
-    service: 'linkedout-backend-postgres',
-  });
-
-  tracer.use('http', {
-    blocklist: ['/queues', '/queues/*'],
-  });
 }
+
+tracer.use('pg', {
+  service: 'linkedout-backend-postgres',
+});
 
 export { tracer };
