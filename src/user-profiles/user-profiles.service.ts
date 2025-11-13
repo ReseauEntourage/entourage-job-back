@@ -443,6 +443,7 @@ export class UserProfilesService {
           where: {
             role: [UserRoles.CANDIDATE],
             lastConnection: { [Op.ne]: null },
+            isDeleted: false,
           },
           required: true,
         },
