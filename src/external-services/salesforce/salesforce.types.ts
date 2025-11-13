@@ -383,11 +383,18 @@ export interface SalesforceAccount {
 export interface SalesforceCampaign {
   Id?: string;
   Name?: string;
+  Description: string;
   Antenne__c: string;
-  StartDate: Date;
+  StartDate: string;
   Heure_de_d_but__c: string;
+  EndDate: string;
+  Heure_de_fin__c: string;
   Adresse_de_l_v_nement__c: string;
   Code_postal__c: string;
+  Type_evenement__c: string;
+  Nombre_d_inscrits__c: number;
+  En_ligne__c: boolean;
+  MeetingLink__c: string;
 }
 
 export interface SalesforceCampaignMember {

@@ -1,0 +1,42 @@
+/**
+ * Event Types Enumeration
+ */
+export enum EventType {
+  UNKNOWN = 'UNKNOWN',
+  WELCOME_SESSION = 'WELCOME_SESSION',
+  COFFEE_SESSION = 'COFFEE_SESSION',
+  NETWORKING = 'NETWORKING',
+  SPEED_MEETING = 'SPEED_MEETING',
+  PAPOTAGES_PRO = 'PAPOTAGES_PRO',
+  PHOTO_SHOOTING = 'PHOTO_SHOOTING',
+  APERO_COACH = 'APERO_COACH',
+}
+
+/**
+ * Event Mode Enumeration
+ */
+export enum EventMode {
+  ONLINE = 'online',
+  IRL = 'irl',
+}
+
+export interface Event {
+  salesForceId: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  eventType: EventType;
+  participantsCount?: number;
+  mode: EventMode;
+  meetingLink: string;
+  image?: string;
+  fullAddress: string;
+  duration: number | null;
+  format?: string;
+  goal?: string;
+  audience?: string;
+  sequences?: string[];
+}
+
+export type Events = Event[];

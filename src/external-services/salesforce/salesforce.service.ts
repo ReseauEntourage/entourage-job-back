@@ -14,6 +14,11 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
+import { EventMode, EventType } from 'src/events/event.types';
+import {
+  eventTypeToSalesforceEventType,
+  salesforceEventAttributes,
+} from 'src/events/events.utils';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import {
@@ -386,6 +391,53 @@ export class SalesforceService {
         `
       );
     return records[0]?.OwnerId;
+  }
+
+  /**
+   * Find all event campaigns
+   * @param limit Number of campaigns to retrieve
+   * @param offset Number of campaigns to skip
+   * @param search Search term to filter campaigns
+   * @returns List of event campaigns
+   */
+  async findAllEventCompaigns(
+    limit: number,
+    offset: number,
+    search = '',
+    mode?: EventMode,
+    eventType?: EventType,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _departmentId?: string // TODO: department filter not implemented yet
+  ) {
+    await this.checkIfConnected();
+
+    const currentTime = moment().format('HH:mm:ss[Z]');
+    const { records }: { records: Partial<SalesforceCampaign>[] } =
+      await this.salesforce.query(
+        `SELECT ${salesforceEventAttributes.join(', ')}
+           FROM ${ObjectNames.CAMPAIGN}
+           WHERE
+            Type = 'Event' AND R_seaux__c = 'LinkedOut'
+            AND (StartDate > TODAY OR (StartDate = TODAY AND Heure_d_but__c > '${currentTime}'))
+             ${search ? `AND Name LIKE '%${escapeQuery(search)}%'` : ''}
+              ${
+                mode === EventMode.ONLINE
+                  ? `AND En_ligne__c = 'Oui'`
+                  : mode === EventMode.IRL
+                  ? `AND En_ligne__c = 'Non'`
+                  : ''
+              }
+              ${
+                eventType
+                  ? `AND Type_evenement__c = '${escapeQuery(
+                      eventTypeToSalesforceEventType[eventType]
+                    )}'`
+                  : ''
+              }
+            LIMIT ${limit} OFFSET ${offset}
+           `
+      );
+    return records as SalesforceCampaign[];
   }
 
   async findCampaignMember(
