@@ -29,12 +29,12 @@ import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
-import { MessagesModule } from './messages/messages.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { PingModule } from './ping/ping.module';
 import { ProfileGenerationModule } from './profile-generation/profile-generation.module';
 import { PublicCVsModule } from './public-cv/public-cvs.module';
+import { QueuesBoardModule } from './queues/producers/queues-board.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
@@ -106,6 +106,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
         redis: redisOptions,
       }),
     }),
+    ...(process.env.QUEUES_ADMIN_PASSWORD ? [QueuesBoardModule] : []),
     CacheModule.register<RedisOptions>({
       isGlobal: true,
       store: ioRedisStore,
@@ -138,7 +139,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     SalesforceModule,
     ContactsModule,
     OrganizationsModule,
-    MessagesModule,
     ReadDocumentsModule,
     MessagingModule,
     UserSocialSituationsModule,
@@ -188,7 +188,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     SalesforceModule,
     ContactsModule,
     OrganizationsModule,
-    MessagesModule,
     MessagingModule,
     MediasModule,
     UserSocialSituationsModule,

@@ -1,6 +1,6 @@
 # LinkedOut Backend
 
-Document mis à jour le 05/09/2025
+Document mis à jour le 04/11/2025
 
 [![LinkedOut Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
 
@@ -13,7 +13,6 @@ Document mis à jour le 05/09/2025
 | **Sequelize**  | 9.0.2   |
 | **ESLint**     | 8.0.1   |
 | **TypeScript** | 4.3.5   |
-| **esLint**     | 8.0.1   |
 
 ## Architecture
 
@@ -33,11 +32,11 @@ Document mis à jour le 05/09/2025
   - `main.ts`: point d'entrée de lancement du serveur
   - `worker.module.ts`: Module global du worker
 - `/tests`: L'ensemble des tests e2e par module
-  - (...) Les différents modules testés
-  - custom-testing.module.ts: Le module de test
-  - database.helper.ts: Helper permettant les interactions avec la base de donnée
-  - jest-e2e.json: Fichier de configuration de Jest
-  - mocks.types.ts: Fichier de définition des Mock de services
+  - [...] Les différents modules testés
+  - `custom-testing.module.ts`: Le module de test
+  - `database.helper.ts`: Helper permettant les interactions avec la base de donnée
+  - `jest-e2e.json`: Fichier de configuration de Jest
+  - `mocks.types.ts`: Fichier de définition des Mock de services
 - `.dockerignore`: Les fichiers qui seront ignorés dans Docker
 - `.env` : à ajouter pour gérer les variables d'environnements ([cf. exemple](#fichier-env-minimal))
 - `.env.test` : à ajouter pour gérer les variables d'environnements dans le cadre des tests en local
@@ -47,8 +46,13 @@ Document mis à jour le 05/09/2025
 - `.lintstagedrc.js` : configuration pour **_lint-stagged_**
 - `.prettierrc.json` : configuration pour **_Prettier_**
 - `.sequelizerc` : configuration pour **Sequelize**
-- `docker-compose.yml`: Définition des différents containers Docker pour le développement local
+- `docker-compose.yml`: Définition des différents containers Docker pour le lancement en mode développement de l'app
+- `docker-compose.worker.yml`: Définition des différents containers Docker pour le lancement en mode développement de du worker
+- `docker-compose.test.yml`: Définition des différents containers Docker pour le lancement en mode développement des tests
 - `docker-entrypoint.sh`: Point d'entrée de lancement de l'app avec Docker
+- `docker-entrypoint.worker.sh`: Point d'entrée de lancement du worker avec Docker
+- `docker-entrypoint.test.sh`: Point d'entrée de lancement des tests avec Docker
+- `dump-db-schema.sh`: Script de génération d'un dump de la struture de base de donnée
 - `Dockerfile`: configuration du container Docker de l'application
 - `nest-cli.json`: configuration de _*nest*_ pour l'app
 - `nest-cli.worker.json`: configuration de _*nest*_ pour le worker
@@ -61,14 +65,14 @@ Document mis à jour le 05/09/2025
 
 ### Pré-requis
 
-Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJs**.
+Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJS**.
 
 ### Définition des variables d'environnement
 
 Veuillez consulter le fichier .env.dist pour connaitre les variables d'environnement utilisés dans le projet.
 Vous devez définir deux nouveaux fichiers de variables d'environnement :
 
-- un fichier `.env` pour les variables d'environnement de l'application en mode `run`
+- un fichier `.env` pour les variables d'environnement de l'application `app` et `worker`
 - un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
 
 ### Configuration de l'authentification par clé API
@@ -88,23 +92,23 @@ MAILER_API_KEY=your_secure_api_key_here
 Création des containers de l'application
 
 ```
-docker-compose up --build
+$> docker-compose up --build
 ```
 
 Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein des
 containers:
 
 ```
-docker exec -it linkedout-api-worker bash
-rm -r node_modules/sharp/
-npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
+$> docker exec -it linkedout-api bash
+$> rm -r node_modules/sharp/
+$> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
 ```
-docker exec -it linkedout-api-test bash
-rm -r node_modules/sharp/
-npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
+$> docker exec -it linkedout-api-test bash
+$> rm -r node_modules/sharp/
+$> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
@@ -113,26 +117,26 @@ exit
 Entrez dans votre container
 
 ```
-docker exec -it linkedout-api-worker bash
+$> docker exec -it linkedout-api-worker bash
 ```
 
 Pour créer la DB:
 
 ```
-yarn db:create
+$> yarn db:create
 ```
 
 Pour lancer les migrations :
 
 ```
-yarn db:migrate
+$> yarn db:migrate
 ```
 
 Pour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
 utilisateurs :
 
 ```
-yarn db:seed
+$> yarn db:seed
 ```
 
 ### Une fois la DB initialisée
@@ -146,16 +150,26 @@ Les identifiants de l'administrateur crée sont :
 ### Remplir la DB avec un dump
 
 ```
-docker exec -it linkedout-db sh
+$> docker exec -it linkedout-db sh
 psql -d linkedout -p 5432 -U linkedout -W
 ```
 
 Entrez le mdp de la BD (dans le docker compose: "linkedout"), puis exécutez la commande SQL.
 
+## Lancement du projet
+
 ### Lancer le projet en mode développement
 
+Lancement de l'application `app`
+
 ```
-docker compose up
+$> docker compose up
+```
+
+Lancement de l'application `worker`
+
+```
+$> docker compose -f docker-compose.worker.yml run --rm linkedout-api-worker
 ```
 
 ### Lancer le projet en mode production
@@ -163,34 +177,32 @@ docker compose up
 - Compiler l'application
 
 ```
-yarn build
+$> yarn build
 ```
 
 - Démarrer l'application précédemment compilé
 
 ```
-yarn start
-```
-
-- Démarrer le worker
-
-```
-yarn worker:start:dev
-```
-
-#### Mode production
-
-```
-yarn worker:start
+$> yarn start
 ```
 
 ### Prettier + Linter
 
 ```
-yarn test:eslint
+$> yarn test:eslint
 ```
 
 > Ces deux commandes sont lancées par les hooks de commit.
+
+### Monitoring des queues et tâches programmées
+
+Une interface de visualisation des queues et tâches programmées, actives, en attente, ou échoué est disponible après lancement de l'`app` à l'adresse suivante :
+
+[[Interface de gestions des queues](http://localhost:3002/queues)]
+
+> Identifiant de connexion : admin
+>
+> Mot de passe : `QUEUES_ADMIN_PASSWORD` (à définir dans le .env)
 
 ## Tests
 

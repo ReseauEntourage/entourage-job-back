@@ -21,7 +21,6 @@ import { SkillsModule } from 'src/common/skills/skills.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { ContactsModule } from 'src/contacts/contacts.module';
 import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
-import { MessagesModule } from 'src/messages/messages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
@@ -88,7 +87,6 @@ import { UsersTestingModule } from './users/users-testing.module';
     ReviewsModule,
     ContactsModule,
     OrganizationsModule,
-    MessagesModule,
     MessagingModule,
     ReadDocumentsModule,
     UsersCreationModule,

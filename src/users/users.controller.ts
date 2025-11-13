@@ -113,20 +113,15 @@ export class UsersController {
 
   @Put('company')
   async updateUserCompany(
-    @UserPayload('id') userId: string,
-    @UserPayload('role') userRole: UserRole,
-    @Body('companyId')
-    companyId: string | null
+    @UserPayload() user: User,
+    @Body('companyName')
+    companyName: string | null
   ) {
-    if (companyId && !uuidValidate(companyId)) {
-      throw new BadRequestException('companyId must be a UUID or null');
-    }
-
-    if (userRole !== UserRoles.COACH) {
+    if (user.role !== UserRoles.COACH) {
       throw new ForbiddenException();
     }
     try {
-      await this.usersService.linkCompany(userId, companyId);
+      await this.usersService.linkCompany(user, companyName);
     } catch (err) {
       throw new InternalServerErrorException('Could not link user to company');
     }

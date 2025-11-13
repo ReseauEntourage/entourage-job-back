@@ -20,6 +20,7 @@ import {
 import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
+  getUserProfileRecentlyUpdatedOrder,
   UserCandidatInclude,
 } from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
@@ -69,8 +70,11 @@ export class UsersService {
     });
   }
 
-  async linkCompany(userId: string, companyId: string | null) {
-    return await this.companyUsersService.linkUserToCompany(userId, companyId);
+  async linkCompany(
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
+    companyId: string | null
+  ) {
+    return await this.companyUsersService.linkUserToCompany(user, companyId);
   }
 
   async findOneByMail(email: string) {
@@ -453,7 +457,7 @@ export class UsersService {
       offset,
       attributes: PublicUserAttributes,
       include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
+      order: getUserProfileRecentlyUpdatedOrder(),
       where: {
         lastConnection: { [Op.ne]: null },
         role: UserRoles.CANDIDATE,

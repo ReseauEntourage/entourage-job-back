@@ -30,7 +30,6 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { DepartmentHelper } from 'tests/departments/department.helper';
 import { LanguageHelper } from 'tests/languages/language.helper';
-import { InternalMessageFactory } from 'tests/messages/internal-message.factory';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
@@ -48,7 +47,6 @@ describe('UserProfiles', () => {
   let formationFactory: FormationFactory;
   let skillFactory: SkillFactory;
   let userProfilesHelper: UserProfilesHelper;
-  let internalMessageFactory: InternalMessageFactory;
   let businessSectorsHelper: BusinessSectorHelper;
   let departmentHelper: DepartmentHelper;
   let nudgesHelper: NudgesHelper;
@@ -104,9 +102,6 @@ describe('UserProfiles', () => {
     contractHelper = moduleFixture.get<ContractHelper>(ContractHelper);
     languageHelper = moduleFixture.get<LanguageHelper>(LanguageHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    internalMessageFactory = moduleFixture.get<InternalMessageFactory>(
-      InternalMessageFactory
-    );
     experienceFactory = moduleFixture.get<ExperienceFactory>(ExperienceFactory);
     formationFactory = moduleFixture.get<FormationFactory>(FormationFactory);
     skillFactory = moduleFixture.get<SkillFactory>(SkillFactory);
@@ -1455,16 +1450,6 @@ describe('UserProfiles', () => {
           );
         });
         it('Should return 200, and last contacted dates if user has contacted other user', async () => {
-          const internalMessageReceived = await internalMessageFactory.create({
-            senderUserId: randomUser.id,
-            addresseeUserId: loggedInUser.user.id,
-          });
-
-          const internalMessageSent = await internalMessageFactory.create({
-            senderUserId: loggedInUser.user.id,
-            addresseeUserId: randomUser.id,
-          });
-
           const response: APIResponse<UserProfilesController['findByUserId']> =
             await request(server)
               .get(`${route}/profile/${randomUser.id}`)
@@ -1477,9 +1462,6 @@ describe('UserProfiles', () => {
                 randomUserProfile,
                 true
               ),
-              lastReceivedMessage:
-                internalMessageReceived.createdAt.toISOString(),
-              lastSentMessage: internalMessageSent.createdAt.toISOString(),
             })
           );
         });

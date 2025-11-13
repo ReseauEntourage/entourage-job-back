@@ -46,7 +46,6 @@ import {
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
-import { InternalMessage } from 'src/messages/models';
 import { Conversation, ConversationParticipant } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
@@ -250,12 +249,6 @@ export class User extends HistorizedModel {
     hooks: true,
   })
   userProfile: UserProfile;
-
-  @HasMany(() => InternalMessage, 'addresseeUserId')
-  receivedMessages: InternalMessage[];
-
-  @HasMany(() => InternalMessage, 'senderUserId')
-  sentMessages: InternalMessage[];
 
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];

@@ -63,8 +63,6 @@ export type PublicProfile = {
   contracts: Contract[];
   reviews: Review[];
   interests: Interest[];
-  lastSentMessage: Date;
-  lastReceivedMessage: Date;
   cvUrl?: string;
   linkedinUrl?: string;
   hasExternalCv: boolean;
