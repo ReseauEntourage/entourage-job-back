@@ -117,12 +117,16 @@ export class UserProfilesService {
   async findOneByUserId(
     userId: string,
     complete = false
-  ): Promise<UserProfile> {
+  ): Promise<UserProfile | null> {
     const userProfile = await this.userProfileModel.findOne({
       where: { userId },
       include: getUserProfileInclude(),
       order: getUserProfileOrder(),
     });
+
+    if (!userProfile) {
+      return null;
+    }
 
     if (complete) {
       // Experiences

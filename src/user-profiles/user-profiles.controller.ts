@@ -284,7 +284,6 @@ export class UserProfilesController {
 
   @Get('/:userId')
   async findByUserId(
-    @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
   ) {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
