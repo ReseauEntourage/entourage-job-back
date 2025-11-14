@@ -12,6 +12,16 @@ export enum EventType {
   APERO_COACH = 'APERO_COACH',
 }
 
+export enum SalesforceEventTypes {
+  WELCOME_SESSION = 'Rdv de bienvenue Entourage Pro',
+  COFFEE_SESSION = 'café d’information',
+  NETWORKING = 'Atelier Réseau',
+  SPEED_MEETING = 'Rencontre Réseau Pro (ex Connecteurs)',
+  PAPOTAGES_PRO = 'Papotages Pro',
+  PHOTO_SHOOTING = 'Séance photo',
+  APERO_COACH = 'Apéro coach',
+}
+
 /**
  * Event Mode Enumeration
  */

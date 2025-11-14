@@ -1,5 +1,10 @@
 import { SalesforceCampaign } from 'src/external-services/salesforce/salesforce.types';
-import { Event, EventMode, EventType } from './event.types';
+import {
+  Event,
+  EventMode,
+  EventType,
+  SalesforceEventTypes,
+} from './event.types';
 
 /**
  * Attributes to fetch from Salesforce for Event Campaigns
@@ -23,23 +28,23 @@ export const salesforceEventAttributes = [
  * Mapping from Salesforce Event Type to internal EventType
  */
 export const salesforceEventTypeToEventType: { [key: string]: EventType } = {
-  'Rdv de bienvenue Entourage Pro': EventType.WELCOME_SESSION,
-  'café d’information': EventType.COFFEE_SESSION,
-  'Atelier Réseau': EventType.NETWORKING,
-  'Rencontre Réseau Pro (ex Connecteurs)': EventType.SPEED_MEETING,
-  'Papotages Pro': EventType.PAPOTAGES_PRO,
-  'Séance photo': EventType.PHOTO_SHOOTING,
-  'Apéro coach': EventType.APERO_COACH,
+  [SalesforceEventTypes.WELCOME_SESSION]: EventType.WELCOME_SESSION,
+  [SalesforceEventTypes.COFFEE_SESSION]: EventType.COFFEE_SESSION,
+  [SalesforceEventTypes.NETWORKING]: EventType.NETWORKING,
+  [SalesforceEventTypes.SPEED_MEETING]: EventType.SPEED_MEETING,
+  [SalesforceEventTypes.PAPOTAGES_PRO]: EventType.PAPOTAGES_PRO,
+  [SalesforceEventTypes.PHOTO_SHOOTING]: EventType.PHOTO_SHOOTING,
+  [SalesforceEventTypes.APERO_COACH]: EventType.APERO_COACH,
 };
 
 export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
-  [EventType.WELCOME_SESSION]: 'Rdv de bienvenue Entourage Pro',
-  [EventType.COFFEE_SESSION]: 'Café d’information',
-  [EventType.NETWORKING]: 'Atelier Réseau',
-  [EventType.SPEED_MEETING]: 'Rencontre Réseau Pro (ex Connecteurs)',
-  [EventType.PAPOTAGES_PRO]: 'Papotages Pro',
-  [EventType.PHOTO_SHOOTING]: 'Séance photo',
-  [EventType.APERO_COACH]: 'Apéro coach',
+  [EventType.WELCOME_SESSION]: SalesforceEventTypes.WELCOME_SESSION,
+  [EventType.COFFEE_SESSION]: SalesforceEventTypes.COFFEE_SESSION,
+  [EventType.NETWORKING]: SalesforceEventTypes.NETWORKING,
+  [EventType.SPEED_MEETING]: SalesforceEventTypes.SPEED_MEETING,
+  [EventType.PAPOTAGES_PRO]: SalesforceEventTypes.PAPOTAGES_PRO,
+  [EventType.PHOTO_SHOOTING]: SalesforceEventTypes.PHOTO_SHOOTING,
+  [EventType.APERO_COACH]: SalesforceEventTypes.APERO_COACH,
   [EventType.UNKNOWN]: 'Inconnu',
 };
 
