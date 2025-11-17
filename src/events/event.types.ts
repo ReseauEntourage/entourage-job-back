@@ -14,7 +14,7 @@ export enum EventType {
 
 export enum SalesforceEventTypes {
   WELCOME_SESSION = 'Rdv de bienvenue Entourage Pro',
-  COFFEE_SESSION = 'café d’information',
+  COFFEE_SESSION = 'Café d’information',
   NETWORKING = 'Atelier Réseau',
   SPEED_MEETING = 'Rencontre Réseau Pro (ex Connecteurs)',
   PAPOTAGES_PRO = 'Papotages Pro',
