@@ -88,15 +88,12 @@ export class MessagingController {
         createMessageDto.participantIds,
         createMessageDto.content
       );
-      const participants = [...createMessageDto.participantIds];
-      // Add the current user to the participants
-      participants.push(userId);
-
-      const conversation = await this.messagingService.createConversation(
-        participants
-      );
-
-      createMessageDto.conversationId = conversation.id;
+      return this.messagingService.createConversationWithFirstMessage({
+        participantIds: createMessageDto.participantIds,
+        authorId: userId,
+        createMessageDto,
+        files,
+      });
     }
     try {
       return await this.messagingService.createMessage({

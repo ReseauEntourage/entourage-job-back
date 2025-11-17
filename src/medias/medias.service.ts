@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Transaction } from 'sequelize';
 import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { mediaAttributes } from 'src/messaging/messaging.attributes';
@@ -39,7 +40,10 @@ export class MediasService {
     return this.mediaModel.bulkCreate(uploadedFilesData);
   }
 
-  async findMediasByConversationId(conversationId: string) {
+  async findMediasByConversationId(
+    conversationId: string,
+    transaction?: Transaction
+  ) {
     // Media is linked to a message, which is linked to a conversation
     // So we need to find all messages linked to the conversation
     // And then find all medias linked to the messages but without the assiociations
@@ -65,10 +69,11 @@ export class MediasService {
           // through: { attributes: [] },
         },
       ],
+      transaction,
     });
   }
 
-  async findMediaByMessageId(messageId: string) {
+  async findMediaByMessageId(messageId: string, transaction?: Transaction) {
     return this.mediaModel.findAll({
       attributes: mediaAttributes,
       include: [
@@ -81,6 +86,7 @@ export class MediasService {
           attributes: [],
         },
       ],
+      transaction,
     });
   }
 
