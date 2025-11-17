@@ -57,7 +57,6 @@ export const additionalEventAttributesByEventType: {
 } = {
   // In case of unknown event type, provide default values
   [EventType.UNKNOWN]: {
-    image: null,
     format: null,
     goal: null,
     audience: null,
@@ -65,8 +64,6 @@ export const additionalEventAttributesByEventType: {
   },
   // Webinaire tout savoir sur Entourage pro
   [EventType.WELCOME_SESSION]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/welcome_session.png',
     format: 'Webinaire - En ligne',
     goal: 'Comprendre le fonctionnement d’Entourage Pro et permettre une première prise en main de la plateforme.',
     audience: 'Candidats et coachs de toute la France',
@@ -81,8 +78,6 @@ export const additionalEventAttributesByEventType: {
 
   // Le café Entourage pro
   [EventType.COFFEE_SESSION]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/coffee_session.png',
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Comprendre le fonctionnement d’Entourage Pro et permettre une première prise en main de la plateforme.',
     audience: 'Candidats et coachs qui le souhaitent des régions concernées',
@@ -95,8 +90,6 @@ export const additionalEventAttributesByEventType: {
 
   // L’atelier réseau
   [EventType.NETWORKING]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/welcome_session.png',
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Comprendre ce qu’est le réseau, comment l’identifier, l’activer et le cultiver.',
     audience: 'Candidats et coachs des régions concernées.',
@@ -111,8 +104,6 @@ export const additionalEventAttributesByEventType: {
 
   // La rencontre réseau
   [EventType.SPEED_MEETING]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/welcome_session.png',
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Permettre aux coachs et candidats de se rencontrer sous forme de “speed meeting” pour échanger autour de la recherche d’emploi et créer des premières opportunités.',
     audience: 'Candidats et coachs des régions concernées.',
@@ -126,8 +117,6 @@ export const additionalEventAttributesByEventType: {
 
   // Les papotages pro
   [EventType.PAPOTAGES_PRO]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/welcome_session.png',
     format: 'En ligne - Partout en France',
     goal: 'Permettre la rencontre et les échanges entre coachs et candidats autour du réseau pro.',
     audience: 'Candidats et coachs de toute la France.',
@@ -140,8 +129,6 @@ export const additionalEventAttributesByEventType: {
 
   // Le shooting photo
   [EventType.PHOTO_SHOOTING]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/welcome_session.png',
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Faire des  photos de CV, rencontrer les équipes d’entourage pro et les autres candidats.',
     audience: 'Candidats des régions concernées.',
@@ -156,8 +143,6 @@ export const additionalEventAttributesByEventType: {
 
   // Apéro coach
   [EventType.APERO_COACH]: {
-    image:
-      'https://entourage-website.s3.eu-west-3.amazonaws.com/images/events/welcome_session.png',
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Se rencontrer entre coachs de sa région pour partager autour de la mission et créer une dynamique de communauté.',
     audience: 'Les coachs des régions concernées.',
@@ -178,7 +163,7 @@ export const additionalEventAttributesByEventType: {
 export const computeModeFromSalesforceCampaign = (
   campaign: SalesforceCampaign
 ): EventMode => {
-  return campaign.En_ligne__c ? EventMode.ONLINE : EventMode.IRL;
+  return campaign.En_ligne__c === 'Oui' ? EventMode.ONLINE : EventMode.IRL;
 };
 
 /**

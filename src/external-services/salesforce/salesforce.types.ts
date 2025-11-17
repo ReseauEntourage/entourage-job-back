@@ -393,7 +393,7 @@ export interface SalesforceCampaign {
   Code_postal__c: string;
   Type_evenement__c: string;
   Nombre_d_inscrits__c: number;
-  En_ligne__c: boolean;
+  En_ligne__c: string;
   MeetingLink__c: string;
 }
 
