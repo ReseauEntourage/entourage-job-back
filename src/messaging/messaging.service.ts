@@ -286,8 +286,10 @@ export class MessagingService {
         files: Express.Multer.File[];
         mediaIds?: string[];
       }
-    >
+    >,
+    options?: { transaction?: Transaction }
   ) {
+    const transaction = options?.transaction;
     if (createMessageDto.files) {
       const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
         createMessageDto.files,
@@ -295,30 +297,47 @@ export class MessagingService {
       );
       createMessageDto.mediaIds = mediaRecords.map((media: Media) => media.id);
     }
-    const createdMessage = await this.messageModel.create(createMessageDto);
+    const createdMessage = await this.messageModel.create(createMessageDto, {
+      transaction,
+    });
     if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
       await this.addMediasToMessage(
         createdMessage.id,
-        createMessageDto.mediaIds
+        createMessageDto.mediaIds,
+        transaction
       );
     }
     // Set conversation as seen because the user has sent a message
     await this.setConversationHasSeen(
       createMessageDto.conversationId,
-      createMessageDto.authorId
+      createMessageDto.authorId,
+      transaction
     );
-    const message = await this.findOneMessage(createdMessage.id);
+    const message = await this.findOneMessage(createdMessage.id, transaction);
 
-    // Send notification message received to the other participants
-    const otherParticipants = message.conversation.participants.filter(
-      (participant) => participant.id !== createMessageDto.authorId
-    );
-    this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
-    // Fetch the message to return it
+    const notifyOtherParticipants = () => {
+      const otherParticipants = message.conversation.participants.filter(
+        (participant) => participant.id !== createMessageDto.authorId
+      );
+      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+    };
+
+    if (transaction) {
+      transaction.afterCommit(() => {
+        notifyOtherParticipants();
+      });
+    } else {
+      notifyOtherParticipants();
+    }
+
     return message;
   }
 
-  async addMediasToMessage(messageId: string, mediasId: string[]) {
+  async addMediasToMessage(
+    messageId: string,
+    mediasId: string[],
+    transaction?: Transaction
+  ) {
     if (mediasId.length === 0) {
       return;
     }
@@ -326,21 +345,27 @@ export class MessagingService {
       mediasId.map((mediaId) => ({
         messageId,
         mediaId,
-      }))
+      })),
+      { transaction }
     );
   }
 
-  async setConversationHasSeen(conversationId: string, userId: string) {
+  async setConversationHasSeen(
+    conversationId: string,
+    userId: string,
+    transaction?: Transaction
+  ) {
     const conversationParticipant =
       await this.conversationParticipantModel.findOne({
         where: {
           conversationId,
           userId,
         },
+        transaction,
       });
     if (conversationParticipant) {
       conversationParticipant.seenAt = new Date();
-      await conversationParticipant.save();
+      await conversationParticipant.save({ transaction });
     }
   }
 
@@ -392,11 +417,15 @@ export class MessagingService {
     );
   }
 
-  async findOneMessage(messageId: string) {
+  async findOneMessage(messageId: string, transaction?: Transaction) {
     const message = await this.messageModel.findByPk(messageId, {
       include: messagingMessageIncludes,
+      transaction,
     });
-    const medias = await this.mediaService.findMediaByMessageId(messageId);
+    const medias = await this.mediaService.findMediaByMessageId(
+      messageId,
+      transaction
+    );
     // Link medias to the message
     message.setDataValue('medias', medias);
     return message;
@@ -467,6 +496,40 @@ export class MessagingService {
 
   async findMediasByConversationId(conversationId: string) {
     return this.mediaService.findMediasByConversationId(conversationId);
+  }
+
+  async createConversationWithFirstMessage(params: {
+    participantIds: string[];
+    authorId: string;
+    createMessageDto: CreateMessageDto;
+    files?: Express.Multer.File[];
+  }) {
+    const sequelize = this.messageModel.sequelize;
+
+    if (!sequelize) {
+      throw new Error('Failed to initialize database transaction in createConversationWithFirstMessage: Sequelize connection unavailable');
+    }
+
+    const uniqueParticipantIds = Array.from(
+      new Set([...params.participantIds, params.authorId])
+    );
+
+    return sequelize.transaction(async (transaction) => {
+      const conversation = await this.createConversation(
+        uniqueParticipantIds,
+        transaction
+      );
+
+      return this.createMessage(
+        {
+          ...params.createMessageDto,
+          conversationId: conversation.id,
+          authorId: params.authorId,
+          files: params.files,
+        },
+        { transaction }
+      );
+    });
   }
 
   /**
