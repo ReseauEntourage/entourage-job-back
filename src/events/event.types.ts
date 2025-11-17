@@ -39,9 +39,9 @@ export interface Event {
   eventType: EventType;
   participantsCount?: number;
   mode: EventMode;
-  meetingLink: string;
+  meetingLink: string | null;
   image?: string;
-  fullAddress: string;
+  fullAddress: string | null;
   duration: number | null;
   format?: string;
   goal?: string;
