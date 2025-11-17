@@ -7,7 +7,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize } from 'sequelize';
+import { Op, Sequelize, Transaction } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -241,9 +241,19 @@ export class MessagingService {
    * Create a new conversation with the given participants
    * @param participantIds
    */
-  async createConversation(participantIds: string[]) {
-    const conversation = await this.conversationModel.create({});
-    await this.addMembersToConversation(conversation.id, participantIds);
+  async createConversation(
+    participantIds: string[],
+    transaction?: Transaction
+  ) {
+    const conversation = await this.conversationModel.create(
+      {},
+      { transaction }
+    );
+    await this.addMembersToConversation(
+      conversation.id,
+      participantIds,
+      transaction
+    );
     return conversation;
   }
 
@@ -252,12 +262,17 @@ export class MessagingService {
    * @param conversationId - The conversation to add members to
    * @param userIds - The users to add to the conversation
    */
-  async addMembersToConversation(conversationId: string, userIds: string[]) {
-    this.conversationParticipantModel.bulkCreate(
+  async addMembersToConversation(
+    conversationId: string,
+    userIds: string[],
+    transaction?: Transaction
+  ) {
+    await this.conversationParticipantModel.bulkCreate(
       userIds.map((userId) => ({
         conversationId,
         userId,
-      }))
+      })),
+      { transaction }
     );
   }
 

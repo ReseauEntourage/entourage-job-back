@@ -21,6 +21,7 @@ import {
 } from 'src/events/events.utils';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
+import { LocalBranches } from 'src/utils/types';
 import {
   AccountProps,
   AccountRecordType,
@@ -404,39 +405,79 @@ export class SalesforceService {
     limit: number,
     offset: number,
     search = '',
-    mode?: EventMode,
-    eventType?: EventType,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _departmentId?: string // TODO: department filter not implemented yet
+    modes?: EventMode[],
+    eventTypes?: EventType[],
+    localBranches?: LocalBranches[] // TODO: department filter not implemented yet
   ) {
     await this.checkIfConnected();
 
     const currentTime = moment().format('HH:mm:ss[Z]');
-    const { records }: { records: Partial<SalesforceCampaign>[] } =
-      await this.salesforce.query(
-        `SELECT ${salesforceEventAttributes.join(', ')}
+
+    // Handle modes filter
+    const modeFilters =
+      modes && modes.length > 0
+        ? `
+              AND (
+                ${modes
+                  .map((mode) => {
+                    if (mode === EventMode.ONLINE) {
+                      return `En_Ligne__c = 'Oui'`;
+                    } else if (mode === EventMode.IRL) {
+                      return `En_Ligne__c = 'Non'`;
+                    }
+                  })
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    // Handle event types filter
+    const eventTypesFilters =
+      eventTypes && eventTypes.length > 0
+        ? `
+              AND (
+                ${eventTypes
+                  .map((eventType) => {
+                    const sfEventType =
+                      eventTypeToSalesforceEventType[eventType];
+                    return `Type_evenement__c = '${sfEventType}'`;
+                  })
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    const searchCondition = search
+      ? `AND Name LIKE '%${escapeQuery(search)}%'`
+      : '';
+
+    const localBranchesCondition =
+      localBranches && localBranches.length > 0
+        ? `
+              AND (
+                ${localBranches
+                  .map(
+                    (localBranch) =>
+                      `Antenne__c = '${escapeQuery(localBranch)}'`
+                  )
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    const query = `SELECT ${salesforceEventAttributes.join(', ')}
            FROM ${ObjectNames.CAMPAIGN}
            WHERE
             Type = 'Event' AND R_seaux__c = 'LinkedOut'
             AND (StartDate > TODAY OR (StartDate = TODAY AND Heure_d_but__c > '${currentTime}'))
-             ${search ? `AND Name LIKE '%${escapeQuery(search)}%'` : ''}
-              ${
-                mode === EventMode.ONLINE
-                  ? `AND En_ligne__c = 'Oui'`
-                  : mode === EventMode.IRL
-                  ? `AND En_ligne__c = 'Non'`
-                  : ''
-              }
-              ${
-                eventType
-                  ? `AND Type_evenement__c = '${escapeQuery(
-                      eventTypeToSalesforceEventType[eventType]
-                    )}'`
-                  : ''
-              }
+            ${searchCondition}
+            ${modeFilters}
+            ${eventTypesFilters}
+            ${localBranchesCondition}
             LIMIT ${limit} OFFSET ${offset}
-           `
-      );
+           `;
+    const { records }: { records: Partial<SalesforceCampaign>[] } =
+      await this.salesforce.query(query);
     return records as SalesforceCampaign[];
   }
 

@@ -18,6 +18,7 @@ export const salesforceEventAttributes = [
   'EndDate',
   'Heure_de_fin__c',
   'Type_evenement__c',
+  'Antenne__c',
   'Adresse_de_l_v_nement__c',
   'En_ligne__c',
   'Nombre_d_inscrits__c',

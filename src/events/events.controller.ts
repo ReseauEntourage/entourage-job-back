@@ -23,20 +23,20 @@ export class EventsController {
     offset: number,
     @Query('search')
     search?: string,
-    @Query('mode')
-    mode?: EventMode,
-    @Query('eventType')
-    eventType?: EventType,
-    @Query('departmentId')
-    departmentId?: string
+    @Query('modes')
+    modes?: EventMode[],
+    @Query('eventTypes')
+    eventTypes?: EventType[],
+    @Query('departmentIds')
+    departmentIds?: string[]
   ) {
     const events = await this.eventsService.findAllEvents(
       limit,
       offset,
       search,
-      mode,
-      eventType,
-      departmentId
+      modes,
+      eventTypes,
+      departmentIds
     );
 
     return events;
