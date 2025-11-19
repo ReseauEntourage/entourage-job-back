@@ -58,7 +58,6 @@ export class MailsService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
-    const { referralMail } = getLocalBranchMailsFromZone(user.zone);
     if (user.role === UserRoles.COACH) {
       if (user.company?.companyUser?.isAdmin) {
         const { referralMail } = getLocalBranchMailsFromZone(
@@ -79,6 +78,9 @@ export class MailsService {
           },
         });
       }
+
+      const { referralMail } = getLocalBranchMailsFromZone(user.zone);
+
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: referralMail,
@@ -89,6 +91,8 @@ export class MailsService {
         },
       });
     }
+
+    const { referralMail } = getLocalBranchMailsFromZone(user.zone);
 
     if (user.role === UserRoles.CANDIDATE) {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
