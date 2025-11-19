@@ -11,7 +11,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import { getAdminMailsFromZone } from 'src/utils/misc';
+import { getLocalBranchMailsFromZone, Context } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones } from 'src/utils/types';
 
@@ -23,11 +23,11 @@ export class MailsService {
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
     token: string
   ) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
+    const { referralMail } = getLocalBranchMailsFromZone(user.zone);
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
-      replyTo: candidatesAdminMail,
+      replyTo: referralMail,
       templateId: MailjetTemplates.PASSWORD_RESET,
       variables: {
         ..._.omitBy(user, _.isNil),
@@ -41,11 +41,11 @@ export class MailsService {
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
     token: string
   ) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
+    const { referralMail } = getLocalBranchMailsFromZone(user.zone);
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
-      replyTo: candidatesAdminMail,
+      replyTo: referralMail,
       templateId: MailjetTemplates.ACCOUNT_CREATED,
       variables: {
         ..._.omitBy(user, _.isNil),
@@ -58,13 +58,16 @@ export class MailsService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(user.zone);
-
+    const { referralMail } = getLocalBranchMailsFromZone(user.zone);
     if (user.role === UserRoles.COACH) {
       if (user.company?.companyUser?.isAdmin) {
+        const { referralMail } = getLocalBranchMailsFromZone(
+          user.zone,
+          Context.COMPANY
+        );
         return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
           toEmail: user.email,
-          replyTo: candidatesAdminMail,
+          replyTo: referralMail,
           templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
           variables: {
             firstName: user.firstName,
@@ -78,7 +81,7 @@ export class MailsService {
       }
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: candidatesAdminMail,
+        replyTo: referralMail,
         templateId: MailjetTemplates.WELCOME_COACH,
         variables: {
           ..._.omitBy(user, _.isNil),
@@ -90,7 +93,7 @@ export class MailsService {
     if (user.role === UserRoles.CANDIDATE) {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: candidatesAdminMail,
+        replyTo: referralMail,
         templateId: MailjetTemplates.WELCOME_CANDIDATE,
         variables: {
           ..._.omitBy(user, _.isNil),
@@ -102,7 +105,7 @@ export class MailsService {
     if (user.role === UserRoles.REFERER) {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: candidatesAdminMail,
+        replyTo: referralMail,
         templateId: MailjetTemplates.WELCOME_REFERER,
         variables: {
           ..._.omitBy(user, _.isNil),
@@ -217,12 +220,11 @@ export class MailsService {
     reportedUser: User,
     reporterUser: User
   ) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(reportedUser.zone);
+    const { referralMail } = getLocalBranchMailsFromZone(reportedUser.zone);
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: candidatesAdminMail,
+      toEmail: referralMail,
       templateId: MailjetTemplates.USER_REPORTED_ADMIN,
-      replyTo: candidatesAdminMail,
       variables: {
         reportedFirstName: reportedUser.firstName,
         reportedLastName: reportedUser.lastName,
@@ -276,12 +278,12 @@ export class MailsService {
 
   // TODO: Call this method after completing the referer onboarding
   async sendRefererOnboardingConfirmationMail(referer: User, candidate: User) {
-    const { candidatesAdminMail } = getAdminMailsFromZone(referer.zone);
+    const { referralMail } = getLocalBranchMailsFromZone(referer.zone);
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: referer.email,
       templateId: MailjetTemplates.REFERER_ONBOARDING_CONFIRMATION,
-      replyTo: candidatesAdminMail,
+      replyTo: referralMail,
       variables: {
         refererFirstName: referer.firstName,
         candidateFirstName: candidate.firstName,
@@ -317,11 +319,14 @@ export class MailsService {
       throw new NotFoundException();
     }
 
+    const { referralMail } = getLocalBranchMailsFromZone(candidate.zone);
+
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
         to: candidate.referer.email,
-        bcc: getAdminMailsFromZone(candidate.zone).candidatesAdminMail,
+        bcc: referralMail,
       },
+      replyTo: referralMail,
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
         candidateFirstName: candidate.firstName,
@@ -334,9 +339,9 @@ export class MailsService {
   }
 
   async sendAdminNewRefererNotificationMail(referer: User) {
-    const adminFromZone = getAdminMailsFromZone(referer.zone);
+    const { referralMail } = getLocalBranchMailsFromZone(referer.zone);
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: adminFromZone.candidatesAdminMail,
+      toEmail: referralMail,
       templateId: MailjetTemplates.ADMIN_NEW_REFERER_NOTIFICATION,
       variables: {
         refererFirstName: referer.firstName,
