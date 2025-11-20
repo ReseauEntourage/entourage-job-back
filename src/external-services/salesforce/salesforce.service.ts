@@ -14,8 +14,14 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
+import { EventMode, EventType } from 'src/events/event.types';
+import {
+  eventTypeToSalesforceEventType,
+  salesforceEventAttributes,
+} from 'src/events/events.utils';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
+import { LocalBranches } from 'src/utils/types';
 import {
   AccountProps,
   AccountRecordType,
@@ -386,6 +392,93 @@ export class SalesforceService {
         `
       );
     return records[0]?.OwnerId;
+  }
+
+  /**
+   * Find all event campaigns
+   * @param limit Number of campaigns to retrieve
+   * @param offset Number of campaigns to skip
+   * @param search Search term to filter campaigns
+   * @returns List of event campaigns
+   */
+  async findAllEventCampaigns(
+    limit: number,
+    offset: number,
+    search = '',
+    modes?: EventMode[],
+    eventTypes?: EventType[],
+    localBranches?: LocalBranches[] // TODO: department filter not implemented yet
+  ) {
+    await this.checkIfConnected();
+
+    const currentTime = moment().format('HH:mm:ss[Z]');
+
+    // Handle modes filter
+    const modeFilters =
+      modes && modes.length > 0
+        ? `
+              AND (
+                ${modes
+                  .map((mode) => {
+                    if (mode === EventMode.ONLINE) {
+                      return `En_Ligne__c = 'Oui'`;
+                    } else if (mode === EventMode.IRL) {
+                      return `En_Ligne__c = 'Non'`;
+                    }
+                  })
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    // Handle event types filter
+    const eventTypesFilters =
+      eventTypes && eventTypes.length > 0
+        ? `
+              AND (
+                ${eventTypes
+                  .map((eventType) => {
+                    const sfEventType =
+                      eventTypeToSalesforceEventType[eventType];
+                    return `Type_evenement__c = '${sfEventType}'`;
+                  })
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    const searchCondition = search
+      ? `AND Name LIKE '%${escapeQuery(search)}%'`
+      : '';
+
+    const localBranchesCondition =
+      localBranches && localBranches.length > 0
+        ? `
+              AND (
+                ${localBranches
+                  .map(
+                    (localBranch) =>
+                      `Antenne__c = '${escapeQuery(localBranch)}'`
+                  )
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    const query = `SELECT ${salesforceEventAttributes.join(', ')}
+           FROM ${ObjectNames.CAMPAIGN}
+           WHERE
+            Type = 'Event' AND R_seaux__c = 'LinkedOut'
+            AND (StartDate > TODAY OR (StartDate = TODAY AND Heure_d_but__c > '${currentTime}'))
+            ${searchCondition}
+            ${modeFilters}
+            ${eventTypesFilters}
+            ${localBranchesCondition}
+            LIMIT ${limit} OFFSET ${offset}
+           `;
+    const { records }: { records: Partial<SalesforceCampaign>[] } =
+      await this.salesforce.query(query);
+    return records as SalesforceCampaign[];
   }
 
   async findCampaignMember(
