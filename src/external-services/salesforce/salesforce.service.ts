@@ -401,7 +401,7 @@ export class SalesforceService {
    * @param search Search term to filter campaigns
    * @returns List of event campaigns
    */
-  async findAllEventCompaigns(
+  async findAllEventCampaigns(
     limit: number,
     offset: number,
     search = '',

@@ -41,7 +41,7 @@ export class EventsService {
     // Convert zones to local branches
     const localBranches = zones.flatMap((zone) => LOCAL_BRANCHES_ZONES[zone]);
 
-    const sfCampaigns = await this.salesforceService.findAllEventCompaigns(
+    const sfCampaigns = await this.salesforceService.findAllEventCampaigns(
       limit,
       offset,
       search,
