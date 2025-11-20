@@ -55,13 +55,8 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
 export const additionalEventAttributesByEventType: {
   [key: string]: Partial<Event>;
 } = {
-  // In case of unknown event type, provide default values
-  [EventType.UNKNOWN]: {
-    format: null,
-    goal: null,
-    audience: null,
-    sequences: null,
-  },
+  // In case of unknown event type, provide no additional attributes
+  [EventType.UNKNOWN]: {},
   // Webinaire tout savoir sur Entourage pro
   [EventType.WELCOME_SESSION]: {
     format: 'Webinaire - En ligne',
