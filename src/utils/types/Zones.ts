@@ -11,6 +11,29 @@ export const AdminZones = {
   HZ: 'HORS ZONE',
 } as const;
 
+export enum LocalBranches {
+  NATIONAL = 'National',
+  PARIS = 'Paris',
+  LILLE = 'Lille',
+  LYON = 'Lyon',
+  RENNES = 'Rennes',
+  SEINE_SAINT_DENIS = 'Seine-Saint-Denis',
+  HAUTS_DE_SEINE = 'Hauts-de-Seine',
+  MARSEILLE = 'Marseille',
+  HZ = 'Hors zone',
+  IDF = 'IDF',
+  LORIENT = 'Lorient',
+  NANTES = 'Nantes',
+  BORDEAUX = 'Bordeaux',
+  AUTRE_REGION = 'Autre région',
+  BRETAGNE = 'Bretagne',
+  SAINT_ETIENNE = 'Saint-Étienne',
+  TOULOUSE = 'Toulouse',
+  SAINT_MALO = 'Saint-Malo',
+  GRENOBLE = 'Grenoble',
+  ROUBAIX = 'Roubaix',
+}
+
 export type AdminZone = (typeof AdminZones)[keyof typeof AdminZones];
 
 export const AdminZoneFilters: FilterConstant<AdminZone>[] = [
@@ -24,3 +47,17 @@ export const AdminZoneFilters: FilterConstant<AdminZone>[] = [
 ];
 
 export type AdminZoneFilter = (typeof AdminZoneFilters)[number];
+
+export const LOCAL_BRANCHES_ZONES: { [key in AdminZone]: LocalBranches[] } = {
+  [AdminZones.PARIS]: [LocalBranches.NATIONAL, LocalBranches.PARIS],
+  [AdminZones.LILLE]: [LocalBranches.NATIONAL, LocalBranches.LILLE],
+  [AdminZones.LYON]: [LocalBranches.NATIONAL, LocalBranches.LYON],
+  [AdminZones.RENNES]: [LocalBranches.NATIONAL, LocalBranches.RENNES],
+  [AdminZones.LORIENT]: [LocalBranches.NATIONAL, LocalBranches.LORIENT],
+  [AdminZones.SUDOUEST]: [
+    LocalBranches.NATIONAL,
+    LocalBranches.BORDEAUX,
+    LocalBranches.NANTES,
+  ],
+  [AdminZones.HZ]: [LocalBranches.NATIONAL, LocalBranches.HZ],
+};

@@ -507,7 +507,9 @@ export class MessagingService {
     const sequelize = this.messageModel.sequelize;
 
     if (!sequelize) {
-      throw new Error('Failed to initialize database transaction in createConversationWithFirstMessage: Sequelize connection unavailable');
+      throw new Error(
+        'Failed to initialize database transaction in createConversationWithFirstMessage: Sequelize connection unavailable'
+      );
     }
 
     const uniqueParticipantIds = Array.from(
