@@ -1,11 +1,11 @@
 import { Job, RecordResult } from 'jsforce';
 import * as _ from 'lodash';
 import {
-  BusinessLineFilters,
-  BusinessLineValue,
-} from 'src/common/business-lines/business-lines.types';
-import { BusinessLine } from 'src/common/business-lines/models';
-import { Department, Departments } from 'src/common/locations/locations.types';
+  BusinessSectorFilters,
+  BusinessSectorValue,
+} from 'src/common/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
+import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
@@ -24,11 +24,7 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
-import {
-  Programs,
-  RegistrableUserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { getZoneSuffixFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AdminZones, AnyCantFix } from 'src/utils/types';
@@ -39,7 +35,7 @@ import {
   LeadAccomodations,
   LeadAdministrativeSituations,
   LeadApproaches,
-  LeadBusinessLines,
+  LeadBusinessSectors,
   LeadGender,
   LeadHeardAbout,
   LeadHelpWith,
@@ -60,15 +56,13 @@ import {
   SalesforceLead,
   SalesforceLeads,
   SalesforceObject,
-  SalesforceTask,
-  TaskProps,
 } from './salesforce.types';
 
-export function formatBusinessLines(businessLines: BusinessLine[]) {
-  if (businessLines) {
+export function formatBusinessSectors(businessSectors: BusinessSector[]) {
+  if (businessSectors) {
     return _.uniq(
-      businessLines.map(({ name }) => {
-        return findConstantFromValue(name, BusinessLineFilters).label;
+      businessSectors.map(({ name }) => {
+        return findConstantFromValue(name, BusinessSectorFilters).label;
       })
     ).join(';');
   }
@@ -146,14 +140,6 @@ export function parseAddress(address: string) {
   };
 }
 
-export function getDepartmentFromPostalCode(postalCode: string): Department {
-  const deptNumber = postalCode.substring(0, 2);
-  const department = Departments.find(({ name }) => {
-    return name.includes(`(${deptNumber})`);
-  });
-  return department.name;
-}
-
 export function getPostalCodeFromDepartment(department: Department): string {
   const postalCodeRegex = /\(([^)]+)\)/;
   const postalCodeMatches = postalCodeRegex.exec(department);
@@ -163,26 +149,6 @@ export function getPostalCodeFromDepartment(department: Department): string {
   return (
     postalCodeDigits + new Array(5 - postalCodeDigits.length).fill('0').join('')
   );
-}
-
-export function mapSalesforceTaskFields({
-  externalMessageId,
-  binomeSfId,
-  subject,
-  ownerSfId,
-  leadSfId,
-  zone,
-}: TaskProps): SalesforceTask {
-  return {
-    ID_Externe__c: externalMessageId,
-    ActivityDate: new Date(),
-    OwnerId: ownerSfId,
-    Status: 'Completed',
-    Subject: subject,
-    WhoId: leadSfId,
-    Bin_me__c: binomeSfId,
-    Antenne__c: zone,
-  };
 }
 
 function isLeadRecordTypeProps<T extends LeadRecordType>(
@@ -300,7 +266,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
       socialSecurity,
       handicapped,
       bankAccount,
-      businessLines,
+      businessSectors,
       description,
       diagnostic,
       workerSfIdAsProspect,
@@ -373,9 +339,9 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
         handicapped,
         LeadYesNo
       ),
-      Familles_de_m_tiers__c: formatSalesforceValue<BusinessLineValue>(
-        businessLines,
-        LeadBusinessLines
+      Familles_de_m_tiers__c: formatSalesforceValue<BusinessSectorValue>(
+        businessSectors,
+        LeadBusinessSectors
       ),
       Diagnostic_social_par_le_prescripteur__c: diagnostic,
       Message_For__c: description,
@@ -567,19 +533,12 @@ export function prependDuplicateIfCondition(value: string, condition: boolean) {
   return condition ? `bis_${value}` : value;
 }
 
-export function getCasquette(
-  role: RegistrableUserRole,
-  program: string
-): Casquette {
+export function getCasquette(role: RegistrableUserRole): Casquette {
   switch (role) {
     case UserRoles.CANDIDATE:
-      return program === Programs.THREE_SIXTY
-        ? Casquette.CANDIDAT_360
-        : Casquette.CANDIDAT_COUP_DE_POUCE;
+      return Casquette.CANDIDAT_COUP_DE_POUCE;
     case UserRoles.COACH:
-      return program === Programs.THREE_SIXTY
-        ? Casquette.COACH_360
-        : Casquette.COACH_COUP_DE_POUCE;
+      return Casquette.COACH_COUP_DE_POUCE;
     case UserRoles.REFERER:
       return Casquette.PRESCRIPTEUR;
   }

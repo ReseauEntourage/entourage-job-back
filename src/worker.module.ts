@@ -1,24 +1,31 @@
 import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
-
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
-
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import * as redisStore from 'cache-manager-redis-store';
-import { ClientOpts } from 'redis';
+import * as ioRedisStore from 'cache-manager-ioredis';
+import { RedisOptions } from 'ioredis';
+import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
-import { Queues } from 'src/queues/queues.types';
-import { getRedisOptions, getSequelizeOptions } from './app.module';
+import { getSequelizeOptions } from './app.module';
+import { Queues } from './queues/queues.types';
+import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    RedisModule, // Module Redis partagé
     SequelizeModule.forRoot(getSequelizeOptions()),
-    BullModule.forRoot({ redis: getRedisOptions() }),
+    BullModule.forRootAsync({
+      imports: [RedisModule],
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        redis: redisOptions,
+      }),
+    }),
     BullModule.registerQueue({
       name: Queues.WORK,
       defaultJobOptions: {
@@ -31,20 +38,25 @@ import { getRedisOptions, getSequelizeOptions } from './app.module';
             ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
             : 60000,
         },
-        removeOnFail: true,
+        removeOnFail: false,
         removeOnComplete: true,
       },
     }),
-    CacheModule.register<ClientOpts>({
+    CacheModule.registerAsync<RedisOptions>({
       isGlobal: true,
-      store: redisStore,
-      ...getRedisOptions(),
+      imports: [RedisModule],
+      inject: [REDIS_OPTIONS],
+      useFactory: (redisOptions) => ({
+        store: ioRedisStore,
+        ...redisOptions,
+      }),
     }),
     ConsumersModule,
     ThrottlerModule.forRoot({
       ttl: 60,
       limit: 100,
     }),
+    ApiKeysModule,
   ],
   providers: [
     {

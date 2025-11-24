@@ -18,9 +18,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import moment from 'moment';
+import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
-import { Department } from 'src/common/locations/locations.types';
 import {
   Self,
   SelfGuard,
@@ -39,9 +38,10 @@ import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
+import { generateUserProfileDto } from './dto/user-profile.dto';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
-import { HelpValue, PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
 import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
@@ -49,6 +49,14 @@ import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
 @Controller('user/profile')
 export class UserProfilesController {
   constructor(private readonly userProfilesService: UserProfilesService) {}
+
+  @ApiBearerAuth()
+  @Get('/completion')
+  async getProfileCompletion(
+    @UserPayload('id', new ParseUUIDPipe()) id: string
+  ) {
+    return await this.userProfilesService.calculateProfileCompletion(id);
+  }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
   @UseGuards(UserPermissionsGuard)
@@ -77,7 +85,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return updatedUserProfile;
+    return generateUserProfileDto(updatedUserProfile, true);
   }
 
   @Post('/:userId/report')
@@ -116,18 +124,29 @@ export class UserProfilesController {
     role: UserRole[],
     @Query('search')
     search: string,
-    @Query('helps')
-    helps: HelpValue[],
+    @Query('nudgeIds')
+    nudgeIds: string[],
     @Query('departments')
-    departments: Department[],
-    @Query('businessLines')
-    businessLines: BusinessLineValue[]
+    departments: string[],
+    @Query('businessSectorIds')
+    businessSectorIds: string[],
+    @Query('contactTypes')
+    contactTypes: ContactTypeEnum[]
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
     }
 
+    if (departments) {
+      for (const dept of departments) {
+        if (!uuidValidate(dept)) {
+          throw new BadRequestException('departmentId must be a UUID or null');
+        }
+      }
+    }
+
     if (!isRoleIncluded(AllUserRoles, role)) {
+      console.error('Invalid role provided');
       throw new BadRequestException();
     }
 
@@ -135,15 +154,21 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    return this.userProfilesService.findAll(userId, {
-      role,
-      offset,
-      limit,
-      search,
-      helps,
-      departments,
-      businessLines,
-    });
+    try {
+      return this.userProfilesService.findAll(userId, {
+        role,
+        offset,
+        limit,
+        search,
+        nudgeIds,
+        departments,
+        businessSectorIds,
+        contactTypes,
+      });
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw new InternalServerErrorException();
+    }
   }
 
   @UserPermissions(Permissions.REFERER)
@@ -190,7 +215,7 @@ export class UserProfilesController {
       throw new InternalServerErrorException();
     }
 
-    return profileImage;
+    return profileImage.key;
   }
 
   @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
@@ -215,7 +240,7 @@ export class UserProfilesController {
 
     const oneOfCurrentRecommendedProfilesIsNotAvailable =
       currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recommendedUser?.userProfile?.isAvailable;
+        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
       });
 
     if (
@@ -237,25 +262,20 @@ export class UserProfilesController {
     return Promise.all(
       recommendedProfiles.map(
         async (recommendedProfile): Promise<PublicProfile> => {
-          const lastSentMessage = await this.userProfilesService.getLastContact(
-            userId,
-            recommendedProfile.recommendedUser.id
-          );
-          const lastReceivedMessage =
-            await this.userProfilesService.getLastContact(
-              recommendedProfile.recommendedUser.id,
-              userId
+          const averageDelayResponse =
+            await this.userProfilesService.getAverageDelayResponse(
+              recommendedProfile.recUser.id
             );
 
           const {
-            recommendedUser: { userProfile, ...restRecommendedUser },
+            recUser: { userProfile, ...restRecommendedUser },
           }: UserProfileRecommendation = recommendedProfile.toJSON();
 
           return {
             ...restRecommendedUser,
             ...userProfile,
-            lastSentMessage: lastSentMessage?.createdAt || null,
-            lastReceivedMessage: lastReceivedMessage?.createdAt || null,
+            id: recommendedProfile.recUser.id,
+            averageDelayResponse,
           };
         }
       )
@@ -264,13 +284,12 @@ export class UserProfilesController {
 
   @Get('/:userId')
   async findByUserId(
-    @UserPayload('id', new ParseUUIDPipe()) currentUserId: string,
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
   ) {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
-
     const userProfile = await this.userProfilesService.findOneByUserId(
-      userIdToGet
+      userIdToGet,
+      true
     );
 
     if (!user || !userProfile) {
@@ -281,37 +300,13 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
-    const lastSentMessage = await this.userProfilesService.getLastContact(
-      currentUserId,
-      userIdToGet
-    );
-    const lastReceivedMessage = await this.userProfilesService.getLastContact(
-      userIdToGet,
-      currentUserId
-    );
+    const averageDelayResponse =
+      await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
-    if (user.role === UserRoles.CANDIDATE) {
-      const userCandidate =
-        await this.userProfilesService.findUserCandidateByCandidateId(
-          userIdToGet
-        );
-
-      if (!userCandidate.hidden) {
-        return getPublicProfileFromUserAndUserProfile(
-          user,
-          userProfile,
-          lastSentMessage?.createdAt,
-          lastReceivedMessage?.createdAt,
-          userCandidate.url
-        );
-      }
-    }
-
-    return getPublicProfileFromUserAndUserProfile(
+    return getPublicProfileFromUserAndUserProfile({
       user,
       userProfile,
-      lastSentMessage?.createdAt,
-      lastReceivedMessage?.createdAt
-    );
+      averageDelayResponse,
+    });
   }
 }

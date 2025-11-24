@@ -1,20 +1,20 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { UserProfilesHelper } from '../users/user-profiles.helper';
+import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
 import { UsersHelper } from '../users/users.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { ExternalCvsController } from 'src/external-cvs/external-cvs.controller';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { CacheMocks, QueueMocks, S3Mocks } from 'tests/mocks.types';
+import { S3Mocks } from 'tests/mocks.types';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 
-describe('ExternalCvsController', () => {
+describe('ExternalCvs', () => {
   let app: INestApplication;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let server: any;
@@ -25,17 +25,18 @@ describe('ExternalCvsController', () => {
   let loggedInCandidate: LoggedUser;
   let loggedInCandidateWithCv: LoggedUser;
 
+  const route = '/external-cv';
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(S3Service)
       .useValue(S3Mocks)
       .compile();
+
     app = moduleFixture.createNestApplication();
     await app.init();
     server = app.getHttpServer();
@@ -74,7 +75,7 @@ describe('ExternalCvsController', () => {
       const buffer = Buffer.from('PDFFileContent');
       const response: APIResponse<ExternalCvsController['uploadExternalCV']> =
         await request(server)
-          .post(`/external-cv`)
+          .post(`${route}`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`)
           .set('Content-Type', 'multipart/form-data')
           .attach('file', buffer, 'test.pdf');
@@ -86,7 +87,7 @@ describe('ExternalCvsController', () => {
     it('should fail to upload an external CV if no file was provided', async () => {
       const response: APIResponse<ExternalCvsController['uploadExternalCV']> =
         await request(server)
-          .post(`/external-cv`)
+          .post(`${route}`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
       expect(response.status).toBe(400);
@@ -97,7 +98,7 @@ describe('ExternalCvsController', () => {
     it('should successfully find an external CV', async () => {
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
-          .get(`/external-cv/${loggedInCandidateWithCv.user.id}`)
+          .get(`${route}/${loggedInCandidateWithCv.user.id}`)
           .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
       expect(response.body).toHaveProperty('url');
       expect(response.status).toBe(200);
@@ -106,7 +107,7 @@ describe('ExternalCvsController', () => {
     it('should fail to find an external CV', async () => {
       const response: APIResponse<ExternalCvsController['findExternalCv']> =
         await request(server)
-          .get(`/external-cv/${loggedInCandidate.user.id}`)
+          .get(`${route}/${loggedInCandidate.user.id}`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
       expect(response.status).toBe(404);
     });
@@ -117,7 +118,7 @@ describe('ExternalCvsController', () => {
       // Delete the external CV
       const response: APIResponse<ExternalCvsController['deleteExternalCv']> =
         await request(server)
-          .delete(`/external-cv`)
+          .delete(`${route}`)
           .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
 
       // Compute the user profile

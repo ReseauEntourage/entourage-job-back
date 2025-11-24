@@ -40,27 +40,20 @@ export class ExternalCvsController {
     @UploadedFile() file: Express.Multer.File,
     @UserPayload() user: User
   ) {
-    if (!user.candidat) {
-      throw new BadRequestException('User is not a candidate');
-    }
     if (!file) {
       throw new BadRequestException();
     }
 
-    const externalCvS3Key = await this.externalCvsService.uploadExternalCV(
-      user.id,
-      file
-    );
-    if (!externalCvS3Key) {
+    try {
+      const externalCvS3 = await this.externalCvsService.uploadExternalCV(
+        user.id,
+        file
+      );
+      const cvFile = await this.externalCvsService.findExternalCv(externalCvS3);
+      return { url: cvFile };
+    } catch (error) {
       throw new InternalServerErrorException();
     }
-    const cvFile = await this.externalCvsService.findExternalCv(
-      externalCvS3Key
-    );
-    if (!cvFile) {
-      throw new InternalServerErrorException();
-    }
-    return { url: cvFile };
   }
 
   /**

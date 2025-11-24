@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
-import { UserProfile } from 'src/user-profiles/models';
+import {
+  CurrentUserDto,
+  generateCurrentUserDto,
+} from 'src/auth/dto/current-user.dto';
+import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 // import { UpdateUserDto } from 'src/users/dto';
 import { User, UserCandidat } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -18,21 +22,28 @@ export class UsersHelper {
     props: Partial<User> = {},
     userAssociationsProps: {
       userCandidat?: Partial<UserCandidat>;
-      userProfile?: Partial<UserProfile>;
+      userProfile?: UserProfileWithPartialAssociations;
     } = { userCandidat: {}, userProfile: {} },
     insertInDB = true
-  ): Promise<{ user: User; token: string }> {
+  ): Promise<{ user: CurrentUserDto; token: string }> {
     props.isEmailVerified = true;
-    const user = await this.userFactory.create(
+    const { id } = await this.userFactory.create(
       props,
       userAssociationsProps,
       insertInDB
     );
 
-    const { token } = await this.authService.login(user);
+    const user = await this.authService.findOneUserById(id);
+    const userProfile = await this.authService.findOneUserProfileById(
+      id,
+      false
+    );
+    const userHasCurrentUserDto = generateCurrentUserDto(user, userProfile);
+
+    const { token } = await this.authService.login(userHasCurrentUserDto);
 
     return {
-      user,
+      user: userHasCurrentUserDto,
       token: token,
     };
   }

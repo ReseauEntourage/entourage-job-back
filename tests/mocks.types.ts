@@ -8,8 +8,11 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 
 type ProviderMock<T> = { [K in keyof T]: jest.Mock };
 
-export const QueueMocks: Partial<ProviderMock<Queue>> = {
+export const QueueMocks: Partial<ProviderMock<Queue>> & {
+  redisOptions: Record<string, unknown>;
+} = {
   add: jest.fn(),
+  redisOptions: {},
 } as const;
 
 export const CacheMocks: Partial<ProviderMock<Cache>> = {
@@ -48,7 +51,6 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   createRecord: jest.fn(),
   updateRecord: jest.fn(),
   upsertRecord: jest.fn(),
-  createOrUpdateTask: jest.fn(),
   searchAccountByName: jest.fn(),
   searchAccount: jest.fn(),
   findBinomeByCandidateEmail: jest.fn(),
@@ -70,25 +72,17 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   findOrCreateCompanyContact: jest.fn(),
   findOrCreateLead: jest.fn(),
   findOrCreateLeadFromCompanyForm: jest.fn(),
-  findOrCreateLeadFromContactCandidateForm: jest.fn(),
   findOrCreateHouseholdAccount: jest.fn(),
-  createOrUpdateSalesforceExternalMessage: jest.fn(),
-  findTaskFromExternalMessageId: jest.fn(),
   findContactFromUserId: jest.fn(),
   createOrUpdateCompanySalesforceLead: jest.fn(),
-  createOrUpdateSalesforceTask: jest.fn(),
-  createOrUpdateContactCandidateSalesforceLead: jest.fn(),
   updateContactCasquetteAndAppId: jest.fn(),
   setIsWorker: jest.fn(),
   findCampaignMember: jest.fn(),
   findOrCreateCampaignMember: jest.fn(),
   findOrCreateAssociationAccount: jest.fn(),
-  findOrCreateLeadFromInscriptionCandidateForm: jest.fn(),
-  findOrCreateLeadFromExternalMessage: jest.fn(),
   findOrCreateContactFromUserRegistrationForm: jest.fn(),
   createOrUpdateSalesforceUser: jest.fn(),
   addLeadOrContactToCampaign: jest.fn(),
-  createOrUpdateInscriptionCandidateSalesforceLead: jest.fn(),
   getCandidateCampaigns: jest.fn(),
   getCoachCampaigns: jest.fn(),
   checkIfConnected: jest.fn(),
@@ -105,4 +99,5 @@ export const SlackMocks: ProviderMock<SlackService> = {
   generateSlackBlockMsg: jest.fn(),
   sendMessageUserReported: jest.fn(),
   generateProfileReportedBlocks: jest.fn(),
+  getUserIdByEmail: jest.fn(),
 } as const;

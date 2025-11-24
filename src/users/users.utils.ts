@@ -1,20 +1,16 @@
-import { BadRequestException } from '@nestjs/common';
 import _ from 'lodash';
-import { literal, Op, WhereOptions } from 'sequelize';
-import { BusinessLineValue } from 'src/common/business-lines/business-lines.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,
   searchInColumnWhereOptionRaw,
 } from 'src/utils/misc';
 import { FilterObject, FilterParams } from 'src/utils/types';
-import { User, UserCandidat } from './models';
+import { User } from './models';
 import {
-  CVStatuses,
   MemberConstantType,
   MemberFilterKey,
   MemberFilters,
-  NormalUserRoles,
   Permission,
   UserPermissions,
   UserRole,
@@ -79,37 +75,10 @@ export function capitalizeNameAndTrim(name: string) {
   return capitalizedName.trim().replace(/\s\s+/g, ' ');
 }
 
-export function getRelatedUser(member: User) {
-  if (member) {
-    if (member.candidat && member.candidat.coach) {
-      return [member.candidat.coach]; // an array because of the external coaches
-    }
-    if (member.coaches && member.coaches.length > 0) {
-      return member.coaches.map(({ candidat }) => {
-        return candidat;
-      });
-    }
-  }
-
-  return null;
-}
-
 export function getCoachFromCandidate(candidate: User) {
   if (candidate && candidate.role === UserRoles.CANDIDATE) {
     if (candidate.candidat && candidate.candidat.coach) {
       return candidate.candidat.coach;
-    }
-  }
-
-  return null;
-}
-
-export function getCandidateFromCoach(coach: User, candidateId: string) {
-  if (coach && coach.role === UserRoles.COACH) {
-    if (coach.coaches && coach.coaches.length > 0) {
-      return coach.coaches.find(({ candidat }) => {
-        return candidat.id === candidateId;
-      })?.candidat;
     }
   }
 
@@ -126,48 +95,12 @@ export function getCandidateIdFromCoachOrCandidate(member: User) {
         return candidat.candidat.id;
       });
     }
-
-    if (
-      isRoleIncluded([UserRoles.COACH], member.role) &&
-      member.coaches &&
-      member.coaches.length > 0
-    ) {
-      return member.coaches.map(({ candidat }) => {
-        return candidat.id;
-      });
-    }
   }
   return null;
 }
 
-export const formatAssociatedUserMemberOptions = (
-  key: string,
-  filterValues: FilterObject<MemberFilterKey>['associatedUser']
-) => {
-  return `(
-    ${filterValues
-      .map((currentFilterValue) => {
-        return `${key} ${currentFilterValue.value ? 'IS NOT NULL' : 'IS NULL'}`;
-      })
-      .join(' OR ')}
-    )`;
-};
-
 export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   let whereOptions: string[] = [];
-
-  let associatedUserOptionKey: string;
-  const rolesFilters = filtersObj.role.map(({ value }) => value);
-
-  if (isRoleIncluded([UserRoles.CANDIDATE], rolesFilters)) {
-    associatedUserOptionKey = '"candidat"."coachId"';
-  } else if (isRoleIncluded([UserRoles.COACH], rolesFilters)) {
-    associatedUserOptionKey = '"coaches"."candidatId"';
-  } else if (isRoleIncluded([UserRoles.REFERER], rolesFilters)) {
-    associatedUserOptionKey = '"referredCandidates"."candidatId"';
-  } else {
-    return [];
-  }
 
   if (filtersObj) {
     const keys: MemberFilterKey[] = Object.keys(
@@ -182,7 +115,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
       if (totalFilters > 0) {
         for (let i = 0; i < keys.length; i += 1) {
           if (filtersObj[keys[i]].length > 0) {
-            // TO DO: change switch to mapped object or if else
             switch (keys[i]) {
               case 'role':
                 whereOptions = [
@@ -196,38 +128,17 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
                   `"User"."zone" IN (:${keys[i]})`,
                 ];
                 break;
-              case 'associatedUser':
-                whereOptions = [
-                  ...whereOptions,
-                  `${formatAssociatedUserMemberOptions(
-                    associatedUserOptionKey,
-                    filtersObj[keys[i]]
-                  )}`,
-                ];
-                break;
               // Only candidates
-              case 'businessLines':
+              case 'businessSectorIds':
                 whereOptions = [
                   ...whereOptions,
-                  `"candidat->cvs->businessLines"."name" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'hidden':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat"."hidden" IN (:${keys[i]})`,
+                  `"userProfile->sectorOccupations->businessSectors"."id" IN (:${keys[i]})`,
                 ];
                 break;
               case 'employed':
                 whereOptions = [
                   ...whereOptions,
                   `"candidat"."employed" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'cvStatus':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat->cvs"."status" IN (:${keys[i]})`,
                 ];
                 break;
             }
@@ -238,73 +149,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
   }
 
   return whereOptions;
-}
-
-export function filterMembersByCVStatus(
-  members: User[],
-  status: FilterObject<MemberFilterKey>['cvStatus']
-) {
-  let filteredList = members;
-
-  if (members && status) {
-    filteredList = members.filter((member) => {
-      return status.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          return currentFilter.value === member.candidat.cvs[0].status;
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
-export function filterMembersByBusinessLines(
-  members: User[],
-  businessLines: FilterObject<MemberFilterKey>['businessLines']
-) {
-  let filteredList = members;
-
-  if (members && businessLines && businessLines.length > 0) {
-    filteredList = members.filter((member: User) => {
-      return businessLines.some((currentFilter) => {
-        if (member.candidat && member.candidat.cvs.length > 0) {
-          const cvBusinessLines = member.candidat.cvs[0].businessLines;
-          return (
-            cvBusinessLines &&
-            cvBusinessLines.length > 0 &&
-            cvBusinessLines
-              .map(({ name }: { name: BusinessLineValue }) => {
-                return name;
-              })
-              .includes(currentFilter.value)
-          );
-        }
-        return false;
-      });
-    });
-  }
-
-  return filteredList;
-}
-
-export function filterMembersByAssociatedUser(
-  members: User[],
-  associatedUsers: FilterObject<MemberFilterKey>['associatedUser']
-) {
-  let filteredList = members;
-
-  if (members && associatedUsers && associatedUsers.length > 0) {
-    filteredList = members.filter((member) => {
-      return associatedUsers.some((currentFilter) => {
-        const relatedUser = getRelatedUser(member);
-        return !_.isEmpty(relatedUser) === currentFilter.value;
-      });
-    });
-  }
-
-  return filteredList;
 }
 
 export function userSearchQuery(query = '', withOrganizationName = false) {
@@ -335,63 +179,20 @@ export function userSearchQueryRaw(query = '', withOrganizationName = false) {
   )`;
 }
 
-export const lastCVVersionWhereOptions: WhereOptions<UserCandidat> = {
-  version: {
-    [Op.in]: [
-      literal(`
-          SELECT MAX("CVs"."version")
-          FROM "CVs"
-          WHERE "candidatId" = "CVs"."UserId"
-          GROUP BY "CVs"."UserId"
-      `),
-    ],
-  },
-};
-
-export function generateImageNamesToDelete(prefix: string) {
-  const imageNames = Object.keys(CVStatuses).map((status) => {
-    return [`${prefix}.${status}.jpg`, `${prefix}.${status}.preview.jpg`];
-  });
-
-  return imageNames.reduce((acc, curr) => {
-    return [...acc, ...curr];
-  }, []);
-}
-
-export function getCandidateAndCoachIdDependingOnRoles(
-  user: User,
-  userToLink: User,
-  shouldRemoveLinkedUser = false
-) {
-  if (
-    isRoleIncluded(NormalUserRoles, [user.role, userToLink.role]) &&
-    user.role !== userToLink.role
-  ) {
-    return {
-      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
-      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
-    };
-  } else if (shouldRemoveLinkedUser) {
-    return {
-      candidateId: user.role === UserRoles.CANDIDATE ? user.id : userToLink.id,
-      coachId: user.role === UserRoles.COACH ? user.id : userToLink.id,
-    };
-  } else {
-    throw new BadRequestException();
-  }
-}
-
 export function getCommonMembersFilterOptions(
-  params: FilterParams<MemberFilterKey>
+  params: FilterParams<MemberFilterKey>,
+  allBusinessSectors: BusinessSector[]
 ): {
   replacements: FilterParams<MemberFilterKey>;
   filterOptions: string[];
 } {
+  const memberFilters = MemberFilters({
+    businessSectors: allBusinessSectors,
+  });
   const filtersObj = getFiltersObjectsFromQueryParams<
     MemberFilterKey,
     MemberConstantType
-  >(params, MemberFilters);
-
+  >(params, memberFilters);
   const filterOptions = getMemberOptions(filtersObj);
 
   const replacements = Object.keys(filtersObj).reduce((acc, curr) => {

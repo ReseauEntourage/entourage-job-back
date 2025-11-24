@@ -8,7 +8,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
-import { Transaction } from 'sequelize';
+import { Op, Transaction } from 'sequelize';
 import {
   AfterUpdate,
   AllowNull,
@@ -27,16 +27,24 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
+import { BusinessSector } from 'src/common/business-sectors/models';
+import { Contract } from 'src/common/contracts/models';
+import { Experience } from 'src/common/experiences/models';
+import { Formation } from 'src/common/formations/models';
+import { Interest } from 'src/common/interests/models';
+import { Language } from 'src/common/languages/models';
 import { Department } from 'src/common/locations/locations.types';
+import { Nudge } from 'src/common/nudge/models';
+import { Occupation } from 'src/common/occupations/models';
+import { Review } from 'src/common/reviews/models';
+import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
 import { getZoneFromDepartment } from 'src/utils/misc';
-import { HelpNeed } from './help-need.model';
-import { HelpOffer } from './help-offer.model';
-import { UserProfileNetworkBusinessLine } from './user-profile-network-business-line.model';
-import { UserProfileSearchAmbition } from './user-profile-search-ambition.model';
-import { UserProfileSearchBusinessLine } from './user-profile-search-business-line.model';
+import { UserProfileContract } from './user-profile-contract.model';
+import { UserProfileLanguage } from './user-profile-language.model';
+import { UserProfileNudge } from './user-profile-nudge.model';
+import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
+import { UserProfileSkill } from './user-profile-skill.model';
 
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
@@ -48,7 +56,7 @@ export enum UnavailabilityReason {
   OTHER_SUPPORT = 'other_support',
 }
 
-@Table({ tableName: 'User_Profiles' })
+@Table({ tableName: 'UserProfiles' })
 export class UserProfile extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -61,7 +69,13 @@ export class UserProfile extends Model {
   @ForeignKey(() => User)
   @AllowNull(false)
   @Column
-  UserId: string;
+  userId: string;
+
+  @ApiProperty()
+  @IsString()
+  @AllowNull(true)
+  @Column
+  introduction: string;
 
   @ApiProperty()
   @IsString()
@@ -114,6 +128,12 @@ export class UserProfile extends Model {
   optInNewsletter: boolean;
 
   @ApiProperty()
+  @IsBoolean()
+  @Default(true)
+  @Column
+  optInRecommendations: boolean;
+
+  @ApiProperty()
   @IsString()
   @AllowNull(true)
   @Column
@@ -133,62 +153,164 @@ export class UserProfile extends Model {
   @DeletedAt
   deletedAt: Date;
 
-  @BelongsTo(() => User, 'UserId')
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  allowPhysicalEvents: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  @AllowNull(false)
+  @Default(true)
+  @Column
+  allowRemoteEvents: boolean;
+
+  @BelongsTo(() => User, 'userId')
   user: User;
 
+  // Business Sectors & Occupations
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
-    () => BusinessLine,
-    () => UserProfileNetworkBusinessLine,
-    'UserProfileId',
-    'BusinessLineId'
+    () => BusinessSector,
+    () => UserProfileSectorOccupation,
+    'userProfileId',
+    'businessSectorId'
   )
-  networkBusinessLines: BusinessLine[];
-
-  @HasMany(() => UserProfileNetworkBusinessLine, 'UserProfileId')
-  userProfileNetworkBusinessLines: UserProfileNetworkBusinessLine[];
+  businessSectors: BusinessSector[];
 
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
-    () => BusinessLine,
-    () => UserProfileSearchBusinessLine,
-    'UserProfileId',
-    'BusinessLineId'
+    () => Occupation,
+    () => UserProfileSectorOccupation,
+    'userProfileId',
+    'occupationId'
   )
-  searchBusinessLines: BusinessLine[];
+  occupations: Occupation[];
 
-  @HasMany(() => UserProfileSearchBusinessLine, 'UserProfileId')
-  userProfileSearchBusinessLines: UserProfileSearchBusinessLine[];
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => UserProfileSectorOccupation, 'userProfileId')
+  sectorOccupations: UserProfileSectorOccupation[];
 
+  // Languages
   @ApiProperty()
   @IsArray()
   @IsOptional()
   @BelongsToMany(
-    () => Ambition,
-    () => UserProfileSearchAmbition,
-    'UserProfileId',
-    'AmbitionId'
+    () => Language,
+    () => UserProfileLanguage,
+    'userProfileId',
+    'languageId'
   )
-  searchAmbitions: Ambition[];
-
-  @HasMany(() => UserProfileSearchAmbition, 'UserProfileId')
-  userProfileSearchAmbitions: UserProfileSearchAmbition[];
+  languages: Language[];
 
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @HasMany(() => HelpNeed, 'UserProfileId')
-  helpNeeds: HelpNeed[];
+  @HasMany(() => UserProfileLanguage, 'userProfileId')
+  userProfileLanguages: UserProfileLanguage[];
 
+  // Contracts
   @ApiProperty()
   @IsArray()
   @IsOptional()
-  @HasMany(() => HelpOffer, 'UserProfileId')
-  helpOffers: HelpOffer[];
+  @BelongsToMany(
+    () => Contract,
+    () => UserProfileContract,
+    'userProfileId',
+    'contractId'
+  )
+  contracts: Contract[];
+
+  @HasMany(() => UserProfileContract, 'userProfileId')
+  userProfileContracts: UserProfileContract[];
+
+  // Skills
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Skill,
+    () => UserProfileSkill,
+    'userProfileId',
+    'skillId'
+  )
+  skills: Skill[];
+
+  @HasMany(() => UserProfileSkill, 'userProfileId')
+  userProfileSkills: UserProfileSkill[];
+
+  // Experiences
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => Experience, 'userProfileId')
+  experiences: Experience[];
+
+  // Formations
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => Formation, 'userProfileId')
+  formations: Formation[];
+
+  // Reviews
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => Review, 'userProfileId')
+  reviews: Review[];
+
+  // Interests
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => Interest, 'userProfileId')
+  interests: Interest[];
+
+  // Nudges
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @BelongsToMany(
+    () => Nudge,
+    () => UserProfileNudge,
+    'userProfileId',
+    'nudgeId'
+  )
+  nudges: Nudge[];
+
+  @HasMany(() => UserProfileNudge, 'userProfileId')
+  userProfileNudges: UserProfileNudge[];
+
+  // Custom Nudges
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => UserProfileNudge, {
+    foreignKey: 'userProfileId',
+    scope: {
+      content: {
+        [Op.ne]: null,
+      },
+      nudgeId: {
+        [Op.eq]: null,
+      },
+    },
+    as: 'customNudges',
+  })
+  customNudges: UserProfileNudge[];
+
+  /**
+   * Hooks
+   */
 
   @AfterUpdate
   static async updateAdminZone(
@@ -209,7 +331,7 @@ export class UserProfile extends Model {
         },
         {
           where: {
-            id: updatedUserProfile.UserId,
+            id: updatedUserProfile.userId,
           },
           ...(options?.transaction ? { transaction: options.transaction } : {}),
         }
@@ -217,3 +339,37 @@ export class UserProfile extends Model {
     }
   }
 }
+
+export type UserProfileSectorOccupationWithPartialAssociations = Partial<
+  Omit<UserProfileSectorOccupation, 'businessSector' | 'occupation'> & {
+    businessSector?: Partial<BusinessSector>;
+    occupation?: Partial<Occupation>;
+  }
+>;
+
+export type UserProfileWithPartialAssociations = Partial<
+  Omit<
+    UserProfile,
+    | 'sectorOccupations'
+    | 'nudges'
+    | 'experiences'
+    | 'formations'
+    | 'contracts'
+    | 'skills'
+    | 'userProfileLanguages'
+    | 'interests'
+    | 'customNudges'
+    | 'reviews'
+  >
+> & {
+  sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
+  nudges?: Partial<Nudge>[];
+  customNudges?: Partial<UserProfileNudge>[];
+  experiences?: Partial<Experience>[];
+  formations?: Partial<Formation>[];
+  contracts?: Partial<Contract>[];
+  skills?: Partial<Skill>[];
+  userProfileLanguages?: Partial<UserProfileLanguage>[];
+  interests?: Partial<Interest>[];
+  reviews?: Partial<Review>[];
+};

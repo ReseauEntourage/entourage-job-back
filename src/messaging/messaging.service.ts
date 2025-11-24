@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  forwardRef,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize } from 'sequelize';
+import { Op, Sequelize, Transaction } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -17,6 +19,7 @@ import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
+import { getLocalBranchMailsFromZone } from 'src/utils/misc';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
@@ -45,6 +48,7 @@ export class MessagingService {
     @InjectModel(MessageMedia)
     private messageMediaModel: typeof MessageMedia,
     private slackService: SlackService,
+    @Inject(forwardRef(() => UsersService))
     private userService: UsersService,
     private mailsService: MailsService,
     private mediaService: MediasService
@@ -113,6 +117,13 @@ export class MessagingService {
           cp.feedbackRating,
           cp.feedbackDate
         );
+
+        cp.conversation.messages = cp.conversation.messages.sort((a, b) => {
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
         return {
           ...cp.conversation.toJSON(),
           shouldGiveFeedback,
@@ -230,9 +241,19 @@ export class MessagingService {
    * Create a new conversation with the given participants
    * @param participantIds
    */
-  async createConversation(participantIds: string[]) {
-    const conversation = await this.conversationModel.create({});
-    await this.addMembersToConversation(conversation.id, participantIds);
+  async createConversation(
+    participantIds: string[],
+    transaction?: Transaction
+  ) {
+    const conversation = await this.conversationModel.create(
+      {},
+      { transaction }
+    );
+    await this.addMembersToConversation(
+      conversation.id,
+      participantIds,
+      transaction
+    );
     return conversation;
   }
 
@@ -241,12 +262,17 @@ export class MessagingService {
    * @param conversationId - The conversation to add members to
    * @param userIds - The users to add to the conversation
    */
-  async addMembersToConversation(conversationId: string, userIds: string[]) {
-    this.conversationParticipantModel.bulkCreate(
+  async addMembersToConversation(
+    conversationId: string,
+    userIds: string[],
+    transaction?: Transaction
+  ) {
+    await this.conversationParticipantModel.bulkCreate(
       userIds.map((userId) => ({
         conversationId,
         userId,
-      }))
+      })),
+      { transaction }
     );
   }
 
@@ -260,8 +286,10 @@ export class MessagingService {
         files: Express.Multer.File[];
         mediaIds?: string[];
       }
-    >
+    >,
+    options?: { transaction?: Transaction }
   ) {
+    const transaction = options?.transaction;
     if (createMessageDto.files) {
       const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
         createMessageDto.files,
@@ -269,30 +297,47 @@ export class MessagingService {
       );
       createMessageDto.mediaIds = mediaRecords.map((media: Media) => media.id);
     }
-    const createdMessage = await this.messageModel.create(createMessageDto);
+    const createdMessage = await this.messageModel.create(createMessageDto, {
+      transaction,
+    });
     if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
       await this.addMediasToMessage(
         createdMessage.id,
-        createMessageDto.mediaIds
+        createMessageDto.mediaIds,
+        transaction
       );
     }
     // Set conversation as seen because the user has sent a message
     await this.setConversationHasSeen(
       createMessageDto.conversationId,
-      createMessageDto.authorId
+      createMessageDto.authorId,
+      transaction
     );
-    const message = await this.findOneMessage(createdMessage.id);
+    const message = await this.findOneMessage(createdMessage.id, transaction);
 
-    // Send notification message received to the other participants
-    const otherParticipants = message.conversation.participants.filter(
-      (participant) => participant.id !== createMessageDto.authorId
-    );
-    this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
-    // Fetch the message to return it
+    const notifyOtherParticipants = () => {
+      const otherParticipants = message.conversation.participants.filter(
+        (participant) => participant.id !== createMessageDto.authorId
+      );
+      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+    };
+
+    if (transaction) {
+      transaction.afterCommit(() => {
+        notifyOtherParticipants();
+      });
+    } else {
+      notifyOtherParticipants();
+    }
+
     return message;
   }
 
-  async addMediasToMessage(messageId: string, mediasId: string[]) {
+  async addMediasToMessage(
+    messageId: string,
+    mediasId: string[],
+    transaction?: Transaction
+  ) {
     if (mediasId.length === 0) {
       return;
     }
@@ -300,21 +345,27 @@ export class MessagingService {
       mediasId.map((mediaId) => ({
         messageId,
         mediaId,
-      }))
+      })),
+      { transaction }
     );
   }
 
-  async setConversationHasSeen(conversationId: string, userId: string) {
+  async setConversationHasSeen(
+    conversationId: string,
+    userId: string,
+    transaction?: Transaction
+  ) {
     const conversationParticipant =
       await this.conversationParticipantModel.findOne({
         where: {
           conversationId,
           userId,
         },
+        transaction,
       });
     if (conversationParticipant) {
       conversationParticipant.seenAt = new Date();
-      await conversationParticipant.save();
+      await conversationParticipant.save({ transaction });
     }
   }
 
@@ -366,11 +417,15 @@ export class MessagingService {
     );
   }
 
-  async findOneMessage(messageId: string) {
+  async findOneMessage(messageId: string, transaction?: Transaction) {
     const message = await this.messageModel.findByPk(messageId, {
       include: messagingMessageIncludes,
+      transaction,
     });
-    const medias = await this.mediaService.findMediaByMessageId(messageId);
+    const medias = await this.mediaService.findMediaByMessageId(
+      messageId,
+      transaction
+    );
     // Link medias to the message
     message.setDataValue('medias', medias);
     return message;
@@ -387,19 +442,39 @@ export class MessagingService {
     });
   }
 
-  async handleDailyConversationLimit(user: User, message: string) {
-    if (user.role === UserRoles.ADMIN) {
+  async handleDailyConversationLimit(
+    sender: User,
+    participantIds: string[],
+    message: string
+  ) {
+    if (sender.role === UserRoles.ADMIN) {
       // Admins can create as many conversations as they want
       return;
     }
-    const countDailyConversation = await this.countDailyConversations(user.id);
-    if (countDailyConversation === 4 || countDailyConversation >= 7) {
+    const countDailyConversation = await this.countDailyConversations(
+      sender.id
+    );
+    if (countDailyConversation >= 7) {
+      const recipients: User[] = [];
+      for (const id of participantIds) {
+        const recipient = await this.userService.findOne(id);
+        if (recipient) {
+          recipients.push(recipient);
+        }
+      }
+
+      const { moderationMail } = getLocalBranchMailsFromZone(sender.zone);
+      const referentSlackUserId = await this.slackService.getUserIdByEmail(
+        moderationMail
+      );
       const slackMsgConfig: SlackBlockConfig =
         generateSlackMsgConfigUserSuspiciousUser(
-          user,
+          sender,
+          recipients,
           `Un utilisateur tente de créer sa ${
             countDailyConversation + 1
           }ème conversation aujourd\'hui`,
+          referentSlackUserId,
           message
         );
       const slackMessage =
@@ -423,6 +498,42 @@ export class MessagingService {
     return this.mediaService.findMediasByConversationId(conversationId);
   }
 
+  async createConversationWithFirstMessage(params: {
+    participantIds: string[];
+    authorId: string;
+    createMessageDto: CreateMessageDto;
+    files?: Express.Multer.File[];
+  }) {
+    const sequelize = this.messageModel.sequelize;
+
+    if (!sequelize) {
+      throw new Error(
+        'Failed to initialize database transaction in createConversationWithFirstMessage: Sequelize connection unavailable'
+      );
+    }
+
+    const uniqueParticipantIds = Array.from(
+      new Set([...params.participantIds, params.authorId])
+    );
+
+    return sequelize.transaction(async (transaction) => {
+      const conversation = await this.createConversation(
+        uniqueParticipantIds,
+        transaction
+      );
+
+      return this.createMessage(
+        {
+          ...params.createMessageDto,
+          conversationId: conversation.id,
+          authorId: params.authorId,
+          files: params.files,
+        },
+        { transaction }
+      );
+    });
+  }
+
   /**
    * Post a feedback on a conversation
    */
@@ -442,5 +553,83 @@ export class MessagingService {
     });
 
     return updatedParticipant;
+  }
+
+  /**
+   * Compute the average delay response for a user profile (in days)
+   * Based on the 10 last messages of each conversation excluding the last message (can be a message that don't need a response)
+   * and the messages sent by the user.
+   *
+   * @param userProfileId - The ID of the user profile to fetch the average delay response for
+   * @return The average delay response in days or null if no messages are found
+   */
+  async getAverageDelayResponse(userId: string): Promise<number | null> {
+    // Get all conversations for the user profile
+    const conversations = await this.conversationParticipantModel.findAll({
+      where: { userId },
+      include: [this.conversationModel],
+    });
+
+    const delays: number[] = [];
+
+    for (const participant of conversations) {
+      const conversationId = participant.conversationId;
+
+      // Get the messages of the conversation
+      const messages = await this.messageModel.findAll({
+        where: { conversationId },
+        order: [['createdAt', 'ASC']],
+      });
+
+      // Determine the received messages and the user replies
+      for (let i = 0; i < messages.length; i++) {
+        const message = messages[i];
+
+        // If the message is not from the user profile
+        if (message.authorId !== userId) {
+          // Find first reply from the user after the message
+          const reply = messages.find(
+            (m) => m.authorId === userId && m.createdAt > message.createdAt
+          );
+
+          if (reply) {
+            const delay =
+              reply.createdAt.getTime() - message.createdAt.getTime();
+            delays.push(delay);
+          }
+        }
+      }
+    }
+
+    if (delays.length === 0) return null;
+
+    const averageMs = delays.reduce((a, b) => a + b, 0) / delays.length;
+    const averageDays = averageMs / (1000 * 60 * 60 * 24);
+
+    return Math.ceil(averageDays);
+  }
+
+  /**
+   * Compute the response rate for a user profile
+   * Based on all the conversations where the user profile is a participant and no answer is given (excluding the conversations created within the last day)
+   *
+   * @param userProfileId - The ID of the user profile to fetch the response rate for
+   * @return The response rate in percentage or null if no messages are found
+   */
+  async getResponseRate(userId: string): Promise<number | null> {
+    // Get all conversations for the user profile
+    const conversations = await this.conversationParticipantModel.findAll({
+      where: { userId },
+      include: [this.conversationModel],
+    });
+
+    const totalMessages = conversations.length;
+    const answeredMessages = conversations.filter(
+      (c) => c.seenAt && c.seenAt > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ).length;
+
+    if (totalMessages === 0) return null;
+
+    return Math.round((answeredMessages / totalMessages) * 100);
   }
 }

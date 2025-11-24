@@ -1,22 +1,16 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { ContactsController } from 'src/contacts/contacts.controller';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
-import { Queues } from 'src/queues/queues.types';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { AdminZones, APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import {
-  CacheMocks,
-  MailjetMock,
-  QueueMocks,
-  SalesforceMocks,
-} from 'tests/mocks.types';
-import { ContactCandidateFormFactory } from './contact-candidate-form.factory';
+import { MailjetMock, SalesforceMocks } from 'tests/mocks.types';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { ContactCompanyFormFactory } from './contact-company-form.factory';
 import { ContactUsFormFactory } from './contact-us-form.factory';
 
@@ -28,7 +22,6 @@ describe('Contacts', () => {
   let databaseHelper: DatabaseHelper;
   let contactUsFormFactory: ContactUsFormFactory;
   let contactCompanyFormFactory: ContactCompanyFormFactory;
-  let contactCandidateFormFactory: ContactCandidateFormFactory;
 
   const route = '/contact';
 
@@ -36,10 +29,8 @@ describe('Contacts', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useClass(QueuesServiceMock)
       .overrideProvider(SalesforceService)
       .useValue(SalesforceMocks)
       .overrideProvider(MailjetService)
@@ -56,10 +47,6 @@ describe('Contacts', () => {
     contactCompanyFormFactory = moduleFixture.get<ContactCompanyFormFactory>(
       ContactCompanyFormFactory
     );
-    contactCandidateFormFactory =
-      moduleFixture.get<ContactCandidateFormFactory>(
-        ContactCandidateFormFactory
-      );
   });
 
   afterAll(async () => {
@@ -146,61 +133,6 @@ describe('Contacts', () => {
 
       const response: APIResponse<ContactsController['sendCompanyForm']> =
         await request(server).post(`${route}/company`).send(shortData);
-      expect(response.status).toBe(400);
-    });
-  });
-
-  describe('/candidate - Send candidate form answers to salesforce', () => {
-    it('Should return 201, if all content provided', async () => {
-      const formAnswers = await contactCandidateFormFactory.create({});
-      const response: APIResponse<ContactsController['sendCandidateForm']> =
-        await request(server).post(`${route}/candidate`).send(formAnswers);
-      expect(response.status).toBe(201);
-    });
-
-    it('Should return 201, if optional fields not provided', async () => {
-      const formAnswers = await contactCandidateFormFactory.create({});
-
-      const shortData = {
-        firstName: formAnswers.firstName,
-        lastName: formAnswers.lastName,
-        phone: formAnswers.phone,
-        email: formAnswers.email,
-        postalCode: formAnswers.postalCode,
-        structure: formAnswers.structure,
-        workerFirstName: formAnswers.workerFirstName,
-        workerLastName: formAnswers.workerLastName,
-        workerPhone: formAnswers.workerPhone,
-        workerEmail: formAnswers.workerEmail,
-        workingRight: formAnswers.workingRight,
-        accommodation: formAnswers.accommodation,
-        domiciliation: formAnswers.domiciliation,
-        socialSecurity: formAnswers.socialSecurity,
-        bankAccount: formAnswers.bankAccount,
-        city: formAnswers.city,
-        helpWith: formAnswers.helpWith,
-        gender: formAnswers.gender,
-        professionalSituation: formAnswers.professionalSituation,
-        registeredUnemploymentOffice: formAnswers.registeredUnemploymentOffice,
-        description: formAnswers.description,
-        heardAbout: formAnswers.heardAbout,
-      };
-
-      const response: APIResponse<ContactsController['sendCandidateForm']> =
-        await request(server).post(`${route}/candidate`).send(shortData);
-      expect(response.status).toBe(201);
-    });
-
-    it('Should return 400, if missing mandatory fields', async () => {
-      const formAnswers = await contactCandidateFormFactory.create({});
-
-      const shortData = {
-        firstName: formAnswers.firstName,
-        lastName: formAnswers.lastName,
-      };
-
-      const response: APIResponse<ContactsController['sendCandidateForm']> =
-        await request(server).post(`${route}/candidate`).send(shortData);
       expect(response.status).toBe(400);
     });
   });

@@ -14,11 +14,10 @@ export const UserAttributes = [
   'isEmailVerified',
   'createdAt',
   'refererId',
-  /*'updatedAt',*/
   'deletedAt',
-  'whatsappZoneCoachName',
-  'whatsappZoneCoachUrl',
-  'whatsappZoneCoachQR',
+  'whatsappZoneName',
+  'whatsappZoneUrl',
+  'whatsappZoneQR',
 ] as const;
 
 export type UserAttribute = (typeof UserAttributes)[number];
@@ -28,6 +27,14 @@ export const PublicUserAttributes = [
   'firstName',
   'lastName',
   'role',
-] as const;
+  'createdAt',
+];
 
 export type PublicUserAttribute = (typeof PublicUserAttributes)[number];
+
+export const UserAttributesVisibleByCompanyAdmins = [
+  ...PublicUserAttributes,
+  'email',
+];
+export type UserAttributeVisibleByCompanyAdmin =
+  (typeof UserAttributesVisibleByCompanyAdmins)[number];

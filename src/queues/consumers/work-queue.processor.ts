@@ -18,20 +18,12 @@ import {
 } from 'src/external-services/pusher/pusher.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import {
-  CacheAllCVJob,
-  CacheCVJob,
-  CreateOrUpdateSalesforceTaskJob,
   CreateOrUpdateSalesforceUserJob,
   GenerateCVPDFJob,
-  GenerateCVSearchStringJob,
   Jobs,
   NewsletterSubscriptionJob,
   Queues,
   SendMailJob,
-  SendReminderActionsJob,
-  SendReminderCVJob,
-  SendReminderInterviewTrainingJob,
-  SendReminderVideoJob,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -119,109 +111,6 @@ export class WorkQueueProcessor {
     return `Contact '${data.email}' subscribed to newsletter`;
   }
 
-  @Process(Jobs.REMINDER_CV_10)
-  async processSendReminderCV10(job: Job<SendReminderCVJob>) {
-    const { data } = job;
-
-    const sentToReminderCV10 = await this.cvsService.sendReminderAboutCV(
-      data.candidateId
-    );
-
-    return sentToReminderCV10
-      ? `Reminder about CV after 10 days sent to '${
-          data.candidateId
-        }' (${JSON.stringify(sentToReminderCV10)})`
-      : `No reminder after 10 about CV sent to '${data.candidateId}'`;
-  }
-
-  @Process(Jobs.REMINDER_CV_20)
-  async processSendReminderCV20(job: Job<SendReminderCVJob>) {
-    const { data } = job;
-
-    const sentToReminderCV20 = await this.cvsService.sendReminderAboutCV(
-      data.candidateId,
-      true
-    );
-
-    return sentToReminderCV20
-      ? `Reminder about CV after 20 days sent to '${
-          data.candidateId
-        }' (${JSON.stringify(sentToReminderCV20)})`
-      : `No reminder after 20 day about CV sent to '${data.candidateId}'`;
-  }
-
-  @Process(Jobs.REMINDER_VIDEO)
-  async processSendReminderVideo(job: Job<SendReminderVideoJob>) {
-    const { data } = job;
-
-    const sentToReminderVideo = await this.cvsService.sendReminderAboutVideo(
-      data.candidateId
-    );
-
-    return sentToReminderVideo
-      ? `Reminder about video sent to '${data.candidateId}' (${JSON.stringify(
-          sentToReminderVideo
-        )})`
-      : `No reminder about video sent to '${data.candidateId}'`;
-  }
-
-  @Process(Jobs.REMINDER_INTERVIEW_TRAINING)
-  async processSendReminderInterview(
-    job: Job<SendReminderInterviewTrainingJob>
-  ) {
-    const { data } = job;
-
-    const sentToReminderTraining =
-      await this.cvsService.sendReminderAboutInterviewTraining(
-        data.candidateId
-      );
-
-    return sentToReminderTraining
-      ? `Reminder about interview training sent to '${
-          data.candidateId
-        }' (${JSON.stringify(sentToReminderTraining)})`
-      : `No reminder about interview training sent to '${data.candidateId}'`;
-  }
-
-  @Process(Jobs.REMINDER_ACTIONS)
-  async processSendReminderActions(job: Job<SendReminderActionsJob>) {
-    const { data } = job;
-
-    const sentToReminderActions =
-      await this.cvsService.sendReminderAboutActions(data.candidateId);
-
-    return sentToReminderActions
-      ? `Reminder about actions sent to '${data.candidateId}' (${JSON.stringify(
-          sentToReminderActions
-        )})`
-      : `No reminder about actions sent to '${data.candidateId}'`;
-  }
-
-  @Process(Jobs.CACHE_CV)
-  async processCacheCV(job: Job<CacheCVJob>) {
-    const { data } = job;
-
-    const cv = await this.cvsService.findAndCacheOneByUrl(
-      data.url,
-      data.candidateId
-    );
-
-    return cv
-      ? `CV cached for User ${cv.UserId} and CV ${cv.id}${
-          data.url ? ` and URL ${data.url}` : ''
-        }`
-      : `CV not cached`;
-  }
-
-  @Process(Jobs.CACHE_ALL_CVS)
-  async processCacheAllCVs(job: Job<CacheAllCVJob>) {
-    const {} = job;
-
-    const cvs = await this.cvsService.findAndCacheAll(undefined, true);
-
-    return cvs && cvs.length > 0 ? `All published CVs cached` : `No CVs cached`;
-  }
-
   @Process(Jobs.GENERATE_CV_PDF)
   async processGenerateCVPDF(job: Job<GenerateCVPDFJob>) {
     const { data } = job;
@@ -243,31 +132,6 @@ export class WorkQueueProcessor {
     return `PDF generated for User ${data.candidateId} : ${data.fileName}`;
   }
 
-  @Process(Jobs.CREATE_CV_SEARCH_STRING)
-  async processGenerateCVSearchString(job: Job<GenerateCVSearchStringJob>) {
-    const { data } = job;
-
-    await this.cvsService.generateSearchStringFromCV(data.candidateId);
-
-    return `CV search string created for User ${data.candidateId}`;
-  }
-
-  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK)
-  async processCreateOrUpdateSalesforceTask(
-    job: Job<CreateOrUpdateSalesforceTaskJob>
-  ) {
-    const { data } = job;
-
-    if (process.env.ENABLE_SF === 'true') {
-      await this.salesforceService.createOrUpdateSalesforceExternalMessage(
-        data.externalMessageId
-      );
-      return `Salesforce : created or updated task '${data.externalMessageId}'`;
-    }
-
-    return `Salesforce job ignored : creation or update of task '${data.externalMessageId}'`;
-  }
-
   @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_USER)
   async processCreateOrUpdateSalesforceUser(
     job: Job<CreateOrUpdateSalesforceUserJob>
@@ -276,7 +140,6 @@ export class WorkQueueProcessor {
 
     if (process.env.ENABLE_SF === 'true') {
       await this.salesforceService.createOrUpdateSalesforceUser(data.userId, {
-        program: data.program,
         campaign: data.campaign,
         birthDate: data.birthDate,
         nationality: data.nationality,

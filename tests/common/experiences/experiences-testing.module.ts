@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ExperiencesModule } from 'src/common/experiences/experiences.module';
-import { ExperiencesSkillsHelper } from './experiences-skills.helper';
-import { ExperiencesHelper } from './experiences.helper';
+import { ExperienceFactory } from './experience.factory';
 
 @Module({
   imports: [ExperiencesModule],
-  providers: [ExperiencesHelper, ExperiencesSkillsHelper],
-  exports: [ExperiencesHelper, ExperiencesSkillsHelper],
+  providers: [ExperienceFactory],
+  exports: [],
 })
 export class ExperiencesTestingModule {}

@@ -1,8 +1,8 @@
 import {
-  BusinessLineFilters,
-  BusinessLineValue,
-} from 'src/common/business-lines/business-lines.types';
-import { BusinessLine } from 'src/common/business-lines/models';
+  BusinessSectorFilters,
+  BusinessSectorValue,
+} from 'src/common/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
@@ -168,14 +168,6 @@ export const ContactRecordTypeFromRole: {
   [UserRoles.REFERER]: ContactRecordTypesIds.ASSOCIATION,
 };
 
-export const LeadRecordTypeFromRole: {
-  [K in RegistrableUserRole]: LeadRecordType;
-} = {
-  [UserRoles.CANDIDATE]: LeadRecordTypesIds.CANDIDATE,
-  [UserRoles.COACH]: LeadRecordTypesIds.COACH,
-  [UserRoles.REFERER]: LeadRecordTypesIds.ASSOCIATION,
-};
-
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
   [CompanyApproaches.INFORMATION]: "Avoir plus d'informations sur LinkedOut",
@@ -321,27 +313,27 @@ export const LeadYesNoNSPP: {
   [CandidateYesNoNSPP.NSPP]: 'Je ne sais pas',
 } as const;
 
-export const LeadBusinessLines: {
-  [K in BusinessLineValue]: string;
+export const LeadBusinessSectors: {
+  [K in BusinessSectorValue]: string;
 } = {
-  la: findConstantFromValue('la', BusinessLineFilters).label,
-  aa: findConstantFromValue('aa', BusinessLineFilters).label,
-  bat: findConstantFromValue('bat', BusinessLineFilters).label,
-  rh: findConstantFromValue('rh', BusinessLineFilters).label,
-  cd: findConstantFromValue('cd', BusinessLineFilters).label,
-  asp: findConstantFromValue('asp', BusinessLineFilters).label,
-  pr: findConstantFromValue('pr', BusinessLineFilters).label,
-  mi: findConstantFromValue('mi', BusinessLineFilters).label,
-  art: findConstantFromValue('art', BusinessLineFilters).label,
-  tra: findConstantFromValue('tra', BusinessLineFilters).label,
-  id: findConstantFromValue('id', BusinessLineFilters).label,
-  sec: findConstantFromValue('sec', BusinessLineFilters).label,
-  cm: findConstantFromValue('cm', BusinessLineFilters).label,
-  ca: findConstantFromValue('ca', BusinessLineFilters).label,
-  aev: findConstantFromValue('aev', BusinessLineFilters).label,
-  sa: findConstantFromValue('sa', BusinessLineFilters).label,
-  fjr: findConstantFromValue('fjr', BusinessLineFilters).label,
-  sm: findConstantFromValue('sm', BusinessLineFilters).label,
+  la: findConstantFromValue('la', BusinessSectorFilters).label,
+  aa: findConstantFromValue('aa', BusinessSectorFilters).label,
+  bat: findConstantFromValue('bat', BusinessSectorFilters).label,
+  rh: findConstantFromValue('rh', BusinessSectorFilters).label,
+  cd: findConstantFromValue('cd', BusinessSectorFilters).label,
+  asp: findConstantFromValue('asp', BusinessSectorFilters).label,
+  pr: findConstantFromValue('pr', BusinessSectorFilters).label,
+  mi: findConstantFromValue('mi', BusinessSectorFilters).label,
+  art: findConstantFromValue('art', BusinessSectorFilters).label,
+  tra: findConstantFromValue('tra', BusinessSectorFilters).label,
+  id: findConstantFromValue('id', BusinessSectorFilters).label,
+  sec: findConstantFromValue('sec', BusinessSectorFilters).label,
+  cm: findConstantFromValue('cm', BusinessSectorFilters).label,
+  ca: findConstantFromValue('ca', BusinessSectorFilters).label,
+  aev: findConstantFromValue('aev', BusinessSectorFilters).label,
+  sa: findConstantFromValue('sa', BusinessSectorFilters).label,
+  fjr: findConstantFromValue('fjr', BusinessSectorFilters).label,
+  sm: findConstantFromValue('sm', BusinessSectorFilters).label,
 } as const;
 
 export enum Casquette {
@@ -349,22 +341,10 @@ export enum Casquette {
   PRESCRIPTEUR = 'PRO Prescripteur',
   COACH_COUP_DE_POUCE = 'PRO Coach Coup de pouce',
   CANDIDAT_COUP_DE_POUCE = 'PRO Candidat Coup de pouce',
-  COACH_360 = 'PRO Coach 360',
-  CANDIDAT_360 = 'PRO Candidat 360',
 }
 
 export interface SalesforceBinome {
   Id?: string;
-}
-
-export interface TaskProps {
-  externalMessageId: string;
-  subject: string;
-  ownerSfId: string;
-  leadSfId: string;
-  contactSfId?: string;
-  binomeSfId: string;
-  zone: CompanyZone;
 }
 
 export interface SalesforceTask {
@@ -381,7 +361,7 @@ export interface SalesforceTask {
 
 export interface AccountProps {
   name: string;
-  businessLines?: BusinessLine[];
+  businessSectors?: BusinessSector[];
   address: string;
   department: Department;
   mainAccountSfId?: string;
@@ -421,20 +401,6 @@ export interface SalesforceCampaignMember {
 export interface SalesforceUser {
   Id?: string;
   Email: string;
-}
-
-export interface ExternalMessageProps {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  zone: CompanyZone;
-  externalMessageId: string;
-  subject: string;
-  candidateFirstName: string;
-  candidateLastName: string;
-  candidateEmail: string;
-  optInNewsletter: boolean;
 }
 
 export interface ContactProps {
@@ -542,7 +508,7 @@ export interface CandidateLeadProps {
   socialSecurity?: CandidateYesNoValue;
   handicapped?: CandidateYesNoValue;
   bankAccount?: CandidateYesNoValue;
-  businessLines?: BusinessLineValue[];
+  businessSectors?: BusinessSectorValue[];
   description?: string;
   diagnostic?: string;
   zone: CompanyZone;
@@ -622,7 +588,7 @@ export interface CandidateAndWorkerLeadProps {
   socialSecurity: CandidateYesNoValue;
   handicapped?: CandidateYesNoValue;
   bankAccount: CandidateYesNoValue;
-  businessLines?: BusinessLineValue[];
+  businessSectors?: BusinessSectorValue[];
   description: string;
   heardAbout: HeardAboutValue;
   diagnostic?: string;
@@ -723,7 +689,6 @@ export interface UserProps {
   department: Department;
   role: RegistrableUserRole;
   birthDate: Date;
-  program: string;
   workingRight?: CandidateYesNoNSPPValue;
   campaign?: string;
   nationality?: Nationality;

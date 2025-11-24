@@ -1,24 +1,21 @@
 import { Module } from '@nestjs/common';
-import { AmbitionsModule } from 'src/common/ambitions/ambitions.module';
-import { BusinessLinesModule } from 'src/common/business-lines/business-lines.module';
+import { SequelizeModule } from '@nestjs/sequelize';
 import { AWSModule } from 'src/external-services/aws/aws.module';
-import { MessagesModule } from 'src/messages/messages.module';
+import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
-import { UsersModule } from 'src/users/users.module';
 import { ExternalCvsController } from './external-cvs.controller';
 import { ExternalCvsService } from './external-cvs.service';
+import { ExtractedCVData } from './models/extracted-cv-data.model';
 
 @Module({
   imports: [
-    UsersModule,
+    SequelizeModule.forFeature([ExtractedCVData]),
     UserProfilesModule,
-    AmbitionsModule,
-    BusinessLinesModule,
     AWSModule,
-    MessagesModule,
+    OpenAiModule,
   ],
   controllers: [ExternalCvsController],
   providers: [ExternalCvsService],
-  exports: [ExternalCvsService],
+  exports: [ExternalCvsService, SequelizeModule],
 })
 export class ExternalCvsModule {}

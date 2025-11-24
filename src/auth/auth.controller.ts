@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Redirect,
   UnauthorizedException,
   UseGuards,
@@ -33,7 +34,8 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@UserPayload() user: User) {
-    const loggedInUser = await this.authService.login(user);
+    const currentUser = await this.authService.getCurrentUser(user.id);
+    const loggedInUser = await this.authService.login(currentUser);
     await this.sessionService.createOrUpdateSession(user.id);
     return loggedInUser;
   }
@@ -157,7 +159,10 @@ export class AuthController {
   @Throttle(60, 60)
   @ApiBearerAuth()
   @Get('current')
-  async getCurrent(@UserPayload('id', new ParseUUIDPipe()) id: string) {
+  async getCurrent(
+    @UserPayload('id', new ParseUUIDPipe()) id: string,
+    @Query('complete') complete = 'false'
+  ) {
     // Updating current user last connection date
     const updatedUser = await this.authService.updateUser(id, {
       lastConnection: new Date(),
@@ -166,12 +171,7 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    const currentUser = await this.authService.findOneUserByMail(
-      updatedUser.email
-    );
-    await this.sessionService.createOrUpdateSession(currentUser.id);
-
-    return currentUser;
+    return await this.authService.getCurrentUser(id, complete === 'true');
   }
 
   @Public()

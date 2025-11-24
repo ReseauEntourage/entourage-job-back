@@ -33,6 +33,7 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+      OPENAI_API_KEY: ''
 
     steps:
       - uses: actions/checkout@v4

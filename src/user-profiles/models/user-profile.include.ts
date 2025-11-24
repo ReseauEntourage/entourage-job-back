@@ -1,87 +1,85 @@
 import _ from 'lodash';
-import { Includeable, WhereOptions } from 'sequelize';
-import { Ambition } from 'src/common/ambitions/models';
-import { BusinessLine } from 'src/common/business-lines/models';
-import { UserRole, UserRoles } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
-import { HelpNeed } from './help-need.model';
-import { HelpOffer } from './help-offer.model';
+import { Includeable, Order, WhereOptions } from 'sequelize';
+import { BusinessSector } from 'src/common/business-sectors/models';
+import { Nudge } from 'src/common/nudge/models';
+import { Occupation } from 'src/common/occupations/models';
+import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
 
-export function getUserProfileHelpsInclude(
-  role?: UserRole[],
-  helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
-) {
-  const isHelpsRequired = role && !_.isEmpty(helpsOptions);
-  const isCandidateHelps =
-    isHelpsRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
-  const isCoachHelps =
-    isHelpsRequired && isRoleIncluded([UserRoles.COACH], role);
+export const getUserProfileNudgesInclude = (
+  nudgesOptions: WhereOptions<Nudge> = {},
+  withAttributes = true
+): Includeable[] => {
+  const isNudgesRequired = !_.isEmpty(nudgesOptions);
 
   return [
     {
-      model: HelpNeed,
-      as: 'helpNeeds',
-      required: isCandidateHelps,
-      attributes: ['id', 'name'],
-      ...(isCandidateHelps ? { where: helpsOptions } : {}),
-    },
-    {
-      model: HelpOffer,
-      as: 'helpOffers',
-      required: isCoachHelps,
-      attributes: ['id', 'name'],
-      ...(isCoachHelps ? { where: helpsOptions } : {}),
+      model: Nudge,
+      as: 'nudges',
+      required: isNudgesRequired,
+      attributes: withAttributes
+        ? ['id', 'value', 'nameRequest', 'nameOffer', 'order']
+        : [],
+      where: nudgesOptions,
+      through: {
+        attributes: [] as string[],
+        as: 'userProfileNudges',
+      },
     },
   ];
-}
+};
 
-export function getUserProfileBusinessLinesInclude(
-  role?: UserRole[],
-  businessLinesOptions: WhereOptions<BusinessLine> = {}
-) {
-  const isBusinessLinesRequired = role && !_.isEmpty(businessLinesOptions);
-  const isCandidateBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded([UserRoles.CANDIDATE], role);
-  const isCoachBusinessLines =
-    isBusinessLinesRequired && isRoleIncluded([UserRoles.COACH], role);
+export const getUserProfileSectorOccupationsInclude = (
+  businessSectorsOptions: WhereOptions<BusinessSector> = {},
+  withAttributes = true
+): Includeable[] => {
+  const isBusinessSectorsRequired = !_.isEmpty(businessSectorsOptions);
 
   return [
     {
-      model: BusinessLine,
-      as: 'searchBusinessLines',
-      required: isCandidateBusinessLines,
-      attributes: ['id', 'name', 'order'],
-      ...(isCandidateBusinessLines ? { where: businessLinesOptions } : {}),
-    },
-    {
-      model: BusinessLine,
-      as: 'networkBusinessLines',
-      required: isCoachBusinessLines,
-      attributes: ['id', 'name', 'order'],
-      ...(isCoachBusinessLines ? { where: businessLinesOptions } : {}),
+      model: UserProfileSectorOccupation,
+      as: 'sectorOccupations',
+      required: isBusinessSectorsRequired,
+      attributes: withAttributes ? ['id', 'order'] : [],
+      include: [
+        {
+          model: BusinessSector,
+          as: 'businessSector',
+          required: isBusinessSectorsRequired,
+          ...(businessSectorsOptions ? { where: businessSectorsOptions } : {}),
+          attributes: withAttributes ? ['id', 'name', 'prefixes'] : [],
+        },
+        {
+          model: Occupation,
+          as: 'occupation',
+          required: false,
+          attributes: withAttributes ? ['id', 'name'] : [],
+        },
+      ],
     },
   ];
-}
+};
 
-export function getUserProfileAmbitionsInclude() {
+export const getUserProfileInclude = (
+  businessSectorsOptions: WhereOptions<BusinessSector> = {},
+  nudgesOptions: WhereOptions<Nudge> = {},
+  withAttributes = true
+): Includeable[] => {
   return [
-    {
-      model: Ambition,
-      as: 'searchAmbitions',
-      required: false,
-      attributes: ['id', 'name', 'prefix', 'order'],
-    },
+    ...getUserProfileSectorOccupationsInclude(
+      businessSectorsOptions,
+      withAttributes
+    ),
+    ...getUserProfileNudgesInclude(nudgesOptions, withAttributes),
   ];
-}
+};
 
-export function getUserProfileInclude(
-  role?: UserRole[],
-  businessLinesOptions: WhereOptions<BusinessLine> = {},
-  helpsOptions: WhereOptions<HelpOffer | HelpNeed> = {}
-): Includeable[] {
+export const getUserProfileOrder = (): Order => {
   return [
-    ...getUserProfileAmbitionsInclude(),
-    ...getUserProfileBusinessLinesInclude(role, businessLinesOptions),
-    ...getUserProfileHelpsInclude(role, helpsOptions),
+    [
+      { model: UserProfileSectorOccupation, as: 'sectorOccupations' },
+      'order',
+      'ASC',
+    ],
+    [{ model: Nudge, as: 'nudges' }, 'order', 'ASC'],
   ];
-}
+};

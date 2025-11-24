@@ -1,6 +1,6 @@
 # LinkedOut Backend
 
-Document mis à jour le 02/08/2024
+Document mis à jour le 04/11/2025
 
 [![LinkedOut Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
 
@@ -13,7 +13,6 @@ Document mis à jour le 02/08/2024
 | **Sequelize**  | 9.0.2   |
 | **ESLint**     | 8.0.1   |
 | **TypeScript** | 4.3.5   |
-| **esLint**     | 8.0.1   |
 
 ## Architecture
 
@@ -21,6 +20,7 @@ Document mis à jour le 02/08/2024
 - `.husky` : scripts de hook de commit avec **_Husky_**
 - `/public` : stockage des ressources non dynamique accessible publiquement
 - `/src` : dossier contenant toutes les sources des différents modules de l'application
+  - `/api-keys` : module de gestion de l'authentification par clé API
   - `/db` : configuration de la base de données avec **Sequelize**
     - `/config` : configuration d'accès à la base de données
     - `/migrations`: fichiers de migration de la structure de la base
@@ -30,14 +30,13 @@ Document mis à jour le 02/08/2024
   - `app.module.ts`: Module global de l'application
   - `tracer.ts`: fichier d'initialisation de la connexion à DataDog
   - `main.ts`: point d'entrée de lancement du serveur
-  - `worker.ts`: point d'entrée de lancement du worker
   - `worker.module.ts`: Module global du worker
 - `/tests`: L'ensemble des tests e2e par module
-  - (...) Les différents modules testés
-  - custom-testing.module.ts: Le module de test
-  - database.helper.ts: Helper permettant les interactions avec la base de donnée
-  - jest-e2e.json: Fichier de configuration de Jest
-  - mocks.types.ts: Fichier de définition des Mock de services
+  - [...] Les différents modules testés
+  - `custom-testing.module.ts`: Le module de test
+  - `database.helper.ts`: Helper permettant les interactions avec la base de donnée
+  - `jest-e2e.json`: Fichier de configuration de Jest
+  - `mocks.types.ts`: Fichier de définition des Mock de services
 - `.dockerignore`: Les fichiers qui seront ignorés dans Docker
 - `.env` : à ajouter pour gérer les variables d'environnements ([cf. exemple](#fichier-env-minimal))
 - `.env.test` : à ajouter pour gérer les variables d'environnements dans le cadre des tests en local
@@ -47,8 +46,13 @@ Document mis à jour le 02/08/2024
 - `.lintstagedrc.js` : configuration pour **_lint-stagged_**
 - `.prettierrc.json` : configuration pour **_Prettier_**
 - `.sequelizerc` : configuration pour **Sequelize**
-- `docker-compose.yml`: Définition des différents containers Docker pour le développement local
+- `docker-compose.yml`: Définition des différents containers Docker pour le lancement en mode développement de l'app
+- `docker-compose.worker.yml`: Définition des différents containers Docker pour le lancement en mode développement de du worker
+- `docker-compose.test.yml`: Définition des différents containers Docker pour le lancement en mode développement des tests
 - `docker-entrypoint.sh`: Point d'entrée de lancement de l'app avec Docker
+- `docker-entrypoint.worker.sh`: Point d'entrée de lancement du worker avec Docker
+- `docker-entrypoint.test.sh`: Point d'entrée de lancement des tests avec Docker
+- `dump-db-schema.sh`: Script de génération d'un dump de la struture de base de donnée
 - `Dockerfile`: configuration du container Docker de l'application
 - `nest-cli.json`: configuration de _*nest*_ pour l'app
 - `nest-cli.worker.json`: configuration de _*nest*_ pour le worker
@@ -61,38 +65,50 @@ Document mis à jour le 02/08/2024
 
 ### Pré-requis
 
-Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJs**.
+Pour lancer le projet vous avez besoin de **Docker** ainsi que de **NodeJS**.
 
 ### Définition des variables d'environnement
 
 Veuillez consulter le fichier .env.dist pour connaitre les variables d'environnement utilisés dans le projet.
 Vous devez définir deux nouveaux fichiers de variables d'environnement :
 
-- un fichier `.env` pour les variables d'environnement de l'application en mode `run`
+- un fichier `.env` pour les variables d'environnement de l'application `app` et `worker`
 - un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
+
+### Configuration de l'authentification par clé API
+
+Pour utiliser l'authentification par clé API :
+
+1. Ajoutez une clé API à votre fichier `.env` :
+
+```
+MAILER_API_KEY=your_secure_api_key_here
+```
+
+2. Pour les requêtes authentifiées, incluez l'en-tête HTTP `X-API-Key` avec la valeur de votre clé API.
 
 ### Initialisation des containers
 
 Création des containers de l'application
 
 ```
-docker-compose up --build
+$> docker-compose up --build
 ```
 
 Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, vous devez donc le réinstaller au sein des
 containers:
 
 ```
-docker exec -it linkedout-api-worker sh
-rm -r node_modules/sharp/
-npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
+$> docker exec -it linkedout-api bash
+$> rm -r node_modules/sharp/
+$> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
 ```
-docker exec -it linkedout-api-test sh
-rm -r node_modules/sharp/
-npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
+$> docker exec -it linkedout-api-test bash
+$> rm -r node_modules/sharp/
+$> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
@@ -101,26 +117,26 @@ exit
 Entrez dans votre container
 
 ```
-docker exec -it linkedout-api-worker bash
+$> docker exec -it linkedout-api-worker bash
 ```
 
 Pour créer la DB:
 
 ```
-yarn db:create
+$> yarn db:create
 ```
 
 Pour lancer les migrations :
 
 ```
-yarn db:migrate
+$> yarn db:migrate
 ```
 
 Pour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
 utilisateurs :
 
 ```
-yarn db:seed
+$> yarn db:seed
 ```
 
 ### Une fois la DB initialisée
@@ -134,73 +150,94 @@ Les identifiants de l'administrateur crée sont :
 ### Remplir la DB avec un dump
 
 ```
-docker exec -it linkedout-db sh
+$> docker exec -it linkedout-db sh
 psql -d linkedout -p 5432 -U linkedout -W
 ```
 
 Entrez le mdp de la BD (dans le docker compose: "linkedout"), puis exécutez la commande SQL.
 
+## Lancement du projet
+
 ### Lancer le projet en mode développement
 
+Lancement de l'application `app`
+
 ```
-docker compose up
+$> docker compose up
+```
+
+Lancement de l'application `worker`
+
+```
+$> docker compose -f docker-compose.worker.yml run --rm linkedout-api-worker
 ```
 
 ### Lancer le projet en mode production
 
-Compiler l'applicaiton
+- Compiler l'application
 
 ```
-yarn build
+$> yarn build
 ```
 
-Démarrer l'applicatin précédemment compilé
+- Démarrer l'application précédemment compilé
 
 ```
-yarn start
-```
-
-Démarrer le worker
-
-```
-yarn worker:start:dev
-```
-
-#### Mode production
-
-```
-yarn worker:start
+$> yarn start
 ```
 
 ### Prettier + Linter
 
 ```
-yarn test:eslint
+$> yarn test:eslint
 ```
 
-Ces deux commandes sont lancées par les hooks de commit.
+> Ces deux commandes sont lancées par les hooks de commit.
+
+### Monitoring des queues et tâches programmées
+
+Une interface de visualisation des queues et tâches programmées, actives, en attente, ou échoué est disponible après lancement de l'`app` à l'adresse suivante :
+
+[[Interface de gestions des queues](http://localhost:3002/queues)]
+
+> Identifiant de connexion : admin
+>
+> Mot de passe : `QUEUES_ADMIN_PASSWORD` (à définir dans le .env)
 
 ## Tests
 
-### Initialisation de la BDD de test
-
-```
-docker run --name linkedout-db-test -e POSTGRES_PASSWORD=linkedout -e POSTGRES_USER=linkedout -e POSTGRES_DB=linkedout -d -p 54300:5432 postgres
-```
+## Initialisation de la BDD de test
 
 Vous avez besoin des données du fichier `.env.test` pour les tests en local, et de renseigner le champ _DATABASE_URL_ (
 _ex:_ `postgresql://linkedout:linkedout@localhost:54300/linkedout`) avec l'adresse de l'instance **_Docker_**
 
+## Lancer les tests
+
+### En local, sur votre machine directement
+
+- Assurez vous d'avoir initialisé les migrations
+
 ```
-NODE_ENV=dev-test yarn db:migrate
+$> docker exec -it linkedout-api-test sh
 ```
 
-### Lancer les tests
+- Executez les tests e2e
 
-- `yarn test:e2e` est utilisé pour l'intégration continue pour lancer les tests avec les valeurs du fichier `.env`
-- `NODE_ENV=dev-test yarn test:e2e` pour lancer les tests en local, en utilisant le fichier `.env.test`
+```
+$> yarn run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
+```
 
-## Déploiement
+### Avec docker
+
+- L'initialisation de la base de donnée pour les tests est automatique **_avec Docker_**, et il utilise les informations contenues dans .env.test.
+
+  Le script docker-entrypoint.test.sh est executé, il commence par supprimer la base existante, la recréé, lance toutes les migrations de la branche courante et enfin execute les tests e2e.
+
+```
+$> docker compose -f docker-compose.test.yml run --rm linkedout-api-test {optionnel: test file path} {optionnel: -t "Name of test"}
+```
+
+# Déploiement
 
 Le déploiement se fait automatiquement grâce à **_Github Actions_** et **_Heroku_**.
 

@@ -1,0 +1,64 @@
+services:
+  ## LINKEDOUT BACKEND API
+  linkedout-api-worker:
+    container_name: linkedout-api-worker
+    build:
+      context: ./
+      target: base
+      args:
+        NODE_VERSION: 20.19.1
+    entrypoint: ['./docker-entrypoint.worker.sh']
+    volumes:
+      - .:/home/node
+    image: linkedout-api-worker:nestjs
+    ports:
+      - '3003:3003'
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      REDIS_HOST: linkedout-cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      DB_HOST: linkedout-db
+      DB_PORT: 5432
+      DB_USER: linkedout
+      DB_PASSWORD: linkedout
+      DB_NAME: linkedout
+    depends_on:
+      - linkedout-db
+      - linkedout-cache
+    links:
+      - linkedout-db
+      - linkedout-cache
+
+  linkedout-db:
+    image: postgres:14.1-alpine
+    container_name: linkedout-db-postgresql
+    restart: always
+    environment:
+      - POSTGRES_USER=linkedout
+      - POSTGRES_PASSWORD=linkedout
+    ports:
+      - '5432:5432'
+    command:
+      - 'postgres'
+      - '-c'
+      - 'log_temp_files=10240'
+      - '-c'
+      - 'shared_buffers=3GB'
+  ## LINKEDOUT BACKEND CACHE
+  linkedout-cache:
+    image: redis:6.2-alpine
+    container_name: linkedout-cache-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - linkedout-cache:/data
+volumes:
+  linkedout-db:
+    driver: local
+  linkedout-cache:
+    driver: local

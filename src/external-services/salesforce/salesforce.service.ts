@@ -14,31 +14,19 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
-import { MessagesService } from 'src/messages/messages.service';
-import { ExternalMessage } from 'src/messages/models';
 import { UsersService } from 'src/users/users.service';
-import {
-  Program,
-  Programs,
-  RegistrableUserRole,
-  UserRoles,
-} from 'src/users/users.types';
-import { getZoneFromDepartment } from 'src/utils/misc';
+import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import {
   AccountProps,
   AccountRecordType,
   AccountRecordTypesIds,
-  CandidateAndWorkerLeadProps,
-  CandidateInscriptionLeadProps,
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
   ContactRecordTypeFromRole,
   ErrorCodes,
-  ExternalMessageProps,
   LeadProp,
   LeadRecordType,
-  LeadRecordTypeFromRole,
   LeadRecordTypesIds,
   ObjectName,
   ObjectNames,
@@ -51,23 +39,20 @@ import {
   SalesforceLead,
   SalesforceObject,
   SalesforceTask,
-  TaskProps,
   UserProps,
 } from './salesforce.types';
 
 import {
   escapeQuery,
   executeBulkAction,
-  formatBusinessLines,
+  formatBusinessSectors,
   formatCompanyName,
   formatDepartment,
   getCasquette,
-  getDepartmentFromPostalCode,
   getPostalCodeFromDepartment,
   mapSalesforceContactFields,
   mapSalesforceContactSocialSituationFields,
   mapSalesforceLeadFields,
-  mapSalesforceTaskFields,
   parseAddress,
   prependDuplicateIfCondition,
 } from './salesforce.utils';
@@ -89,10 +74,7 @@ export class SalesforceService {
   private salesforce: Connection;
   private isWorker = true;
 
-  constructor(
-    private messagesService: MessagesService,
-    private usersService: UsersService
-  ) {}
+  constructor(private usersService: UsersService) {}
 
   setIsWorker(isWorker: boolean) {
     this.isWorker = isWorker;
@@ -303,45 +285,6 @@ export class SalesforceService {
     }
   }
 
-  async createOrUpdateTask(params: TaskProps | TaskProps[]) {
-    if (Array.isArray(params)) {
-      const records = params.map((singleParams) => {
-        return mapSalesforceTaskFields(singleParams);
-      });
-
-      return this.upsertRecord(
-        ObjectNames.TASK,
-        records,
-        'ID_Externe__c',
-        'findTaskById'
-      );
-    } else {
-      const record = mapSalesforceTaskFields(params);
-      try {
-        return (await this.upsertRecord(
-          ObjectNames.TASK,
-          record,
-          'ID_Externe__c',
-          'findTaskById'
-        )) as string;
-      } catch (err) {
-        if (
-          (err as SalesforceError).errorCode ===
-          ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD
-        ) {
-          return (await this.upsertRecord(
-            ObjectNames.TASK,
-            { ...record, WhoId: params.contactSfId },
-            'ID_Externe__c',
-            'findTaskById'
-          )) as string;
-        }
-        console.error(err);
-        throw err;
-      }
-    }
-  }
-
   async searchAccountByName(search: string, recordType: AccountRecordType) {
     const escapedSearch = search.replace(REGEX_ESCAPE, '\\$&');
     await this.checkIfConnected();
@@ -483,7 +426,13 @@ export class SalesforceService {
   }
 
   async createAccount(
-    { name, businessLines, address, department, mainAccountSfId }: AccountProps,
+    {
+      name,
+      businessSectors,
+      address,
+      department,
+      mainAccountSfId,
+    }: AccountProps,
     recordType: AccountRecordType
   ) {
     const parsedAddress = parseAddress(address);
@@ -492,7 +441,7 @@ export class SalesforceService {
       Name: mainAccountSfId
         ? formatCompanyName(name, address, department)
         : name || 'Inconnu',
-      M_tiers_LinkedOut__c: formatBusinessLines(businessLines),
+      M_tiers_LinkedOut__c: formatBusinessSectors(businessSectors),
       BillingStreet: parsedAddress.street,
       BillingCity:
         parsedAddress.city?.length > 40
@@ -675,7 +624,13 @@ export class SalesforceService {
   }
 
   async findOrCreateAccount(
-    { name, address, department, businessLines, mainAccountSfId }: AccountProps,
+    {
+      name,
+      address,
+      department,
+      businessSectors,
+      mainAccountSfId,
+    }: AccountProps,
     recordType: AccountRecordType
   ) {
     let companySfId = await this.searchAccountByName(
@@ -693,7 +648,7 @@ export class SalesforceService {
       companySfId = (await this.createAccount(
         {
           name,
-          businessLines,
+          businessSectors,
           address,
           department,
           mainAccountSfId,
@@ -817,171 +772,6 @@ export class SalesforceService {
     )) as string;
   }
 
-  async findOrCreateLeadFromContactCandidateForm({
-    workerFirstName,
-    workerLastName,
-    structure,
-    workerPosition,
-    workerEmail,
-    workerPhone,
-    firstName,
-    lastName,
-    helpWith,
-    gender,
-    birthDate,
-    address,
-    postalCode,
-    city,
-    phone,
-    email,
-    registeredUnemploymentOffice,
-    administrativeSituation,
-    workingRight,
-    accommodation,
-    professionalSituation,
-    resources,
-    domiciliation,
-    socialSecurity,
-    handicapped,
-    bankAccount,
-    businessLines,
-    description,
-    heardAbout,
-    diagnostic,
-    contactWithCoach,
-    tsPrescripteur,
-  }: CandidateAndWorkerLeadProps) {
-    const department = getDepartmentFromPostalCode(postalCode);
-
-    const structureAddress = postalCode + ' ' + city;
-
-    const associationSfId = await this.findOrCreateAccount(
-      {
-        name: structure,
-        address: structureAddress,
-        department: department,
-      },
-      AccountRecordTypesIds.ASSOCIATION
-    );
-
-    const zone = getZoneFromDepartment(department);
-
-    const workerSfId = (await this.findOrCreateLead(
-      {
-        firstName: workerFirstName,
-        lastName: workerLastName,
-        phone: workerPhone,
-        email: workerEmail,
-        position: workerPosition,
-        company: structure,
-        zone: zone,
-        heardAbout,
-        contactWithCoach,
-      },
-      LeadRecordTypesIds.ASSOCIATION
-    )) as string;
-
-    const leadToCreate = {
-      firstName,
-      lastName,
-      helpWith,
-      gender,
-      birthDate,
-      address: address ? address : structureAddress,
-      phone,
-      email,
-      registeredUnemploymentOffice,
-      administrativeSituation,
-      workingRight,
-      accommodation,
-      professionalSituation,
-      resources,
-      domiciliation,
-      socialSecurity,
-      handicapped,
-      bankAccount,
-      businessLines,
-      description,
-      diagnostic,
-      zone,
-      associationSfId,
-      tsPrescripteur,
-    };
-
-    try {
-      return (await this.createCandidateLead(
-        leadToCreate,
-        workerSfId
-      )) as string;
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-        ErrorCodes.FIELD_FILTER_VALIDATION_EXCEPTION
-      ) {
-        const { associationSfId, ...restLeadToCreate } = leadToCreate;
-        return (await this.createCandidateLead(
-          restLeadToCreate,
-          workerSfId
-        )) as string;
-      }
-      console.error(err);
-      throw err;
-    }
-  }
-
-  async findOrCreateLeadFromInscriptionCandidateForm({
-    birthdate,
-    email,
-    firstName,
-    heardAbout,
-    infoCo,
-    lastName,
-    department,
-    phone,
-    workingRight,
-    tsPrescripteur,
-  }: CandidateInscriptionLeadProps) {
-    const zone = getZoneFromDepartment(department);
-
-    const leadToCreate = {
-      firstName,
-      lastName,
-      birthDate: birthdate,
-      email,
-      phone,
-      workingRight,
-      heardAbout,
-      zone,
-      tsPrescripteur,
-      autreSource: 'Formulaire_Sourcing_Page_Travailler',
-    } as const;
-
-    try {
-      const leadId = (await this.createCandidateLead(leadToCreate)) as string;
-      if (infoCo) {
-        await this.addLeadOrContactToCampaign({ leadId }, infoCo);
-        return leadId;
-      }
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-          ErrorCodes.CANNOT_UPDATE_CONVERTED_LEAD ||
-        (err as SalesforceError).errorCode ===
-          ErrorCodes.FIELD_INTEGRITY_EXCEPTION
-      ) {
-        const contactSf = await this.findContact(email);
-        const contactSfId = contactSf?.Id;
-        await this.addLeadOrContactToCampaign(
-          { contactId: contactSfId },
-          infoCo
-        );
-        return contactSfId;
-      }
-      console.error(err);
-      throw err;
-    }
-  }
-
   async findOrCreateContactFromUserRegistrationForm({
     id,
     firstName,
@@ -991,15 +781,12 @@ export class SalesforceService {
     department,
     role,
     birthDate,
-    program,
-    campaign,
     nationality,
     accommodation,
     hasSocialWorker,
     resources,
     studiesLevel,
     workingExperience,
-    workingRight,
     jobSearchDuration,
     gender,
     structure,
@@ -1008,66 +795,7 @@ export class SalesforceService {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
 
-    if (program === Programs.THREE_SIXTY) {
-      if (contactSfId) {
-        // Hack to have a contact with the same mail and phone as the prospect if it exists
-        await this.updateContactEmailAndPhone(contactSfId, {
-          email: prependDuplicateIfCondition(email, true),
-          phone: prependDuplicateIfCondition(phone, true),
-        });
-      }
-
-      const leadToCreate = {
-        id,
-        firstName,
-        lastName,
-        birthDate,
-        email,
-        phone,
-        department,
-        zone: getZoneFromDepartment(department),
-        nationality,
-        accommodation,
-        hasSocialWorker,
-        resources,
-        studiesLevel,
-        workingExperience,
-        jobSearchDuration,
-        workingRight,
-        gender,
-      };
-
-      const leadSfId = (await this.findOrCreateLead(
-        leadToCreate,
-        LeadRecordTypeFromRole[role]
-      )) as string;
-
-      // Update lead with phone and record type in case the lead already exists
-      await this.updateLeadPhoneAndRecordType(
-        leadSfId,
-        { phone: phone },
-        LeadRecordTypeFromRole[role]
-      );
-
-      if (contactSfId) {
-        // Hack to have a contact with the same mail and phone as the prospect if it exists
-        await this.updateContactEmailAndPhone(contactSfId, {
-          email: email,
-          phone: phone,
-        });
-      }
-
-      if (campaign) {
-        try {
-          // ignore exception if wrong campaign
-          await this.addLeadOrContactToCampaign({ leadId: leadSfId }, campaign);
-        } catch (err) {
-          console.error(err);
-        }
-      }
-    }
-
-    const casquette: Casquette = getCasquette(role, program);
+    const casquette: Casquette = getCasquette(role);
 
     const refererId = refererEmail
       ? (await this.findContact(refererEmail))?.Id
@@ -1231,98 +959,6 @@ export class SalesforceService {
     }
   }
 
-  async findOrCreateLeadFromExternalMessage({
-    firstName,
-    lastName,
-    email,
-    phone,
-    zone,
-    subject,
-    candidateFirstName,
-    candidateLastName,
-    candidateEmail,
-    externalMessageId,
-    optInNewsletter,
-  }: ExternalMessageProps): Promise<TaskProps> {
-    const leadSfId = (await this.findOrCreateLead(
-      {
-        firstName,
-        lastName,
-        company: 'NA - Formulaire Contact Candidat',
-        email,
-        phone,
-        zone,
-        autreSource: 'Formulaire_Contact_Candidat',
-        message: subject,
-        newsletter: optInNewsletter ? 'Newsletter LinkedOut' : null,
-      },
-      LeadRecordTypesIds.COMPANY
-    )) as string;
-
-    const binomeSfId = await this.findBinomeByCandidateEmail(candidateEmail);
-
-    const ownerSfId = await this.findOwnerByLeadSfId(leadSfId);
-
-    const contactSf = await this.findContact(email);
-    const contactSfId = contactSf?.Id;
-
-    return {
-      binomeSfId,
-      externalMessageId,
-      ownerSfId,
-      leadSfId,
-      contactSfId,
-      subject: `Message envoyé à ${candidateFirstName} ${candidateLastName} LinkedOut via le site`,
-      zone,
-    };
-  }
-
-  async createOrUpdateSalesforceTask(
-    task: ExternalMessageProps | ExternalMessageProps[]
-  ) {
-    if (Array.isArray(task)) {
-      let tasksToCreate: TaskProps[] = [];
-
-      for (let i = 0; i < task.length; i += 1) {
-        tasksToCreate = [
-          ...tasksToCreate,
-          await this.findOrCreateLeadFromExternalMessage(task[i]),
-        ];
-      }
-
-      return (await this.createOrUpdateTask(tasksToCreate)) as string;
-    } else {
-      const taskToCreate = await this.findOrCreateLeadFromExternalMessage(task);
-
-      return (await this.createOrUpdateTask(taskToCreate)) as string;
-    }
-  }
-
-  async findTaskFromExternalMessageId(
-    externalMessageId: string
-  ): Promise<ExternalMessageProps> {
-    const externalMessageDb = await this.messagesService.findOneExternalMessage(
-      externalMessageId
-    );
-
-    const { user, ...externalMessage }: ExternalMessage =
-      externalMessageDb.toJSON();
-
-    return {
-      candidateEmail: user.email,
-      candidateFirstName: user.firstName,
-      candidateLastName: user.lastName,
-      email: externalMessage.senderEmail,
-      externalMessageId: externalMessage.id,
-      firstName: externalMessage.senderFirstName,
-      lastName: externalMessage.senderLastName,
-      phone: externalMessage.senderEmail,
-      subject: externalMessage.subject,
-      zone: user.zone,
-      optInNewsletter: externalMessage.optInNewsletter,
-    };
-  }
-
   async findContactFromUserId(
     userId: string
   ): Promise<
@@ -1350,30 +986,9 @@ export class SalesforceService {
     };
   }
 
-  async createOrUpdateSalesforceExternalMessage(
-    externalMessageId: string | string[]
-  ) {
-    this.setIsWorker(true);
-
-    if (Array.isArray(externalMessageId)) {
-      const tasksToCreate = await Promise.all(
-        externalMessageId.map((singleExternalMessageId) => {
-          return this.findTaskFromExternalMessageId(singleExternalMessageId);
-        })
-      );
-      return this.createOrUpdateSalesforceTask(tasksToCreate);
-    } else {
-      const taskToCreate = await this.findTaskFromExternalMessageId(
-        externalMessageId
-      );
-      return this.createOrUpdateSalesforceTask(taskToCreate);
-    }
-  }
-
   async createOrUpdateSalesforceUser(
     userId: string,
     otherInfo: {
-      program: Program;
       birthDate: Date;
       campaign?: string;
       workingRight?: CandidateYesNoNSPPValue;
@@ -1398,7 +1013,6 @@ export class SalesforceService {
       birthDate: otherInfo.birthDate,
       campaign: otherInfo.campaign,
       workingRight: otherInfo.workingRight,
-      program: otherInfo.program,
       nationality: otherInfo.nationality,
       accommodation: otherInfo.accommodation,
       hasSocialWorker: otherInfo.hasSocialWorker,
@@ -1415,20 +1029,6 @@ export class SalesforceService {
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {
     this.setIsWorker(false);
     return this.findOrCreateLeadFromCompanyForm(lead);
-  }
-
-  async createOrUpdateContactCandidateSalesforceLead(
-    lead: CandidateAndWorkerLeadProps
-  ) {
-    this.setIsWorker(false);
-    return this.findOrCreateLeadFromContactCandidateForm(lead);
-  }
-
-  async createOrUpdateInscriptionCandidateSalesforceLead(
-    lead: CandidateInscriptionLeadProps
-  ) {
-    this.setIsWorker(false);
-    return this.findOrCreateLeadFromInscriptionCandidateForm(lead);
   }
 
   async getCandidateCampaigns() {

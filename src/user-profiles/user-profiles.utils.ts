@@ -3,14 +3,16 @@ import { searchInColumnWhereOption } from 'src/utils/misc';
 import { UserProfile } from './models';
 import { PublicProfile } from './user-profiles.types';
 
-export const getPublicProfileFromUserAndUserProfile = (
-  user: User,
-  userProfile: UserProfile,
-  lastSentMessage: Date,
-  lastReceivedMessage: Date,
-  cvUrl?: string
-): PublicProfile => {
-  return {
+export const getPublicProfileFromUserAndUserProfile = ({
+  user,
+  userProfile,
+  averageDelayResponse = null,
+}: {
+  user: User;
+  userProfile: UserProfile;
+  averageDelayResponse: number | null;
+}): PublicProfile => {
+  const dto = {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,
@@ -18,24 +20,41 @@ export const getPublicProfileFromUserAndUserProfile = (
     isAvailable: userProfile.isAvailable,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
-    helpOffers: userProfile.helpOffers,
-    helpNeeds: userProfile.helpNeeds,
+    nudges: userProfile.nudges,
+    customNudges: userProfile.customNudges,
     description: userProfile.description,
-    searchBusinessLines: userProfile.searchBusinessLines,
-    networkBusinessLines: userProfile.networkBusinessLines,
-    searchAmbitions: userProfile.searchAmbitions,
-    lastSentMessage: lastSentMessage ? lastSentMessage : null,
-    lastReceivedMessage: lastReceivedMessage ? lastReceivedMessage : null,
-    cvUrl: cvUrl,
+    introduction: userProfile.introduction,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
+    sectorOccupations: userProfile.sectorOccupations,
+    userProfileLanguages: userProfile.userProfileLanguages,
+    experiences: userProfile.experiences,
+    formations: userProfile.formations,
+    skills: userProfile.skills,
+    contracts: userProfile.contracts,
+    reviews: userProfile.reviews,
+    interests: userProfile.interests,
+    averageDelayResponse,
+    hasPicture: userProfile.hasPicture,
+    company: user.company
+      ? {
+          ...user.company.toJSON(),
+          admin: user.company.admin,
+        }
+      : null,
   };
+  return dto;
 };
 
 export function userProfileSearchQuery(query = '') {
   return [
     searchInColumnWhereOption('user.firstName', query, true),
     searchInColumnWhereOption('user.lastName', query, true),
-    // searchInColumnWhereOption('searchAmbitions.name', query, true),
+    searchInColumnWhereOption(
+      'sectorOccupations->occupation.name',
+      query,
+      true
+    ),
+    searchInColumnWhereOption('currentJob', query, true),
   ];
 }

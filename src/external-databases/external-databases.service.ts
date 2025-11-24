@@ -14,12 +14,7 @@ export class ExternalDatabasesService {
     userId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      | 'program'
-      | 'campaign'
-      | 'birthDate'
-      | 'workingRight'
-      | 'gender'
-      | 'refererEmail'
+      'campaign' | 'birthDate' | 'workingRight' | 'gender' | 'refererEmail'
     >
   ) {
     let conertedGenderType: CandidateGender;
@@ -67,15 +62,6 @@ export class ExternalDatabasesService {
       {
         userId,
         ...data,
-      }
-    );
-  }
-
-  async createOrUpdateExternalDBTask(externalMessageId: string) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.CREATE_OR_UPDATE_SALESFORCE_TASK,
-      {
-        externalMessageId,
       }
     );
   }

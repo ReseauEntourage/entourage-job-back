@@ -1,37 +1,32 @@
-import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Cache } from 'cache-manager';
-import { Op, QueryTypes, WhereOptions } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
-import { BusinessLine } from 'src/common/business-lines/models';
-import { Department } from 'src/common/locations/locations.types';
-import { getPublishedCVQuery } from 'src/cvs/cvs.utils';
-import { CV } from 'src/cvs/models';
+import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
+import { CompanyUsersService } from 'src/companies/company-user.service';
+import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
-import { QueuesService } from 'src/queues/producers/queues.service';
-import { Jobs } from 'src/queues/queues.types';
-import { AdminZone, FilterParams, RedisKeys } from 'src/utils/types';
+import { UserProfile } from 'src/user-profiles/models';
+import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
-  PublicUserAttributes,
   User,
   UserAttributes,
   UserCandidat,
   UserCandidatAttributes,
 } from './models';
-import { UserCandidatInclude } from './models/user.include';
+import { PublicUserAttributes } from './models/user.attributes';
 import {
-  CVStatuses,
-  MemberFilterKey,
-  UserRole,
-  UserRoles,
-} from './users.types';
+  getUserCandidatOrder,
+  getUserProfileRecentlyUpdatedOrder,
+  UserCandidatInclude,
+} from './models/user.include';
+import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
 import {
   getCommonMembersFilterOptions,
-  lastCVVersionWhereOptions,
   userSearchQuery,
   userSearchQueryRaw,
 } from './users.utils';
@@ -41,11 +36,12 @@ export class UsersService {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    private queuesService: QueuesService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private mailsService: MailsService,
     @Inject(forwardRef(() => AuthService))
-    private authService: AuthService
+    private authService: AuthService,
+    @Inject(forwardRef(() => CompanyUsersService))
+    private companyUsersService: CompanyUsersService,
+    private businessSectorsService: BusinessSectorsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -55,21 +51,44 @@ export class UsersService {
   async findOne(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
+  }
+
+  async findOneWithCompanyUsers(id: string) {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: CompanyUser,
+          as: 'companyUsers',
+          attributes: ['isAdmin', 'role', 'companyId'],
+          required: false,
+        },
+      ],
+    });
+  }
+
+  async linkCompany(
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
+    companyId: string | null
+  ) {
+    return await this.companyUsersService.linkUserToCompany(user, companyId);
   }
 
   async findOneByMail(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude,
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
     });
   }
 
   async findOneComplete(id: string) {
     return this.userModel.findByPk(id, {
-      include: UserCandidatInclude,
+      include: UserCandidatInclude(),
     });
   }
 
@@ -82,10 +101,14 @@ export class UsersService {
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { filterOptions, replacements } = getCommonMembersFilterOptions({
-      ...restParams,
-      role: [UserRoles.CANDIDATE],
-    });
+    const allBusinessSectors = await this.businessSectorsService.all();
+    const { filterOptions, replacements } = getCommonMembersFilterOptions(
+      {
+        ...restParams,
+        role: [UserRoles.CANDIDATE],
+      },
+      allBusinessSectors
+    );
 
     const candidatesIds: { userId: string }[] =
       await this.userModel.sequelize.query(
@@ -97,27 +120,19 @@ export class UsersService {
 
         LEFT OUTER JOIN "User_Candidats" AS "candidat" 
           ON "User"."id" = "candidat"."candidatId"
-        LEFT OUTER JOIN "CVs" AS "candidat->cvs" 
-          ON "candidat"."candidatId" = "candidat->cvs"."UserId" 
-          AND "candidat->cvs"."deletedAt" IS NULL 
-          AND ("UserId", "version") IN (
-            SELECT
-              "CVs"."UserId" AS "candidateId", MAX("CVs"."version") AS "maxVersion" 
-            FROM "CVs"
-            GROUP BY
-              "CVs"."UserId"
-          )
-        LEFT OUTER JOIN "CV_BusinessLines" AS "candidat->cvs->businessLines->CVBusinessLine"
-          ON "candidat->cvs"."id" = "candidat->cvs->businessLines->CVBusinessLine"."CVId"
-        LEFT OUTER JOIN "BusinessLines" AS "candidat->cvs->businessLines" 
-          ON "candidat->cvs->businessLines"."id" = "candidat->cvs->businessLines->CVBusinessLine"."BusinessLineId"
         LEFT OUTER JOIN "Users" AS "candidat->coach"
           ON "candidat"."coachId" = "candidat->coach"."id" 
           AND ("candidat->coach"."deletedAt" IS NULL)
         LEFT OUTER JOIN "Organizations" AS "candidat->coach->organization"
           ON "candidat->coach"."OrganizationId" = "candidat->coach->organization"."id"
-        LEFT OUTER JOIN "Organizations" AS "organization" 
+        LEFT OUTER JOIN "Organizations" AS "organization"
           ON "User"."OrganizationId" = "organization"."id"
+        LEFT OUTER JOIN "UserProfiles" AS "userProfile"
+          ON "User"."id" = "userProfile"."userId"
+        LEFT OUTER JOIN "UserProfileSectorOccupations" AS "userProfile->sectorOccupations"
+          ON "userProfile"."id" = "userProfile->sectorOccupations"."userProfileId"
+        LEFT OUTER JOIN "BusinessSectors" AS "userProfile->sectorOccupations->businessSectors"
+          ON "userProfile->sectorOccupations"."businessSectorId" = "userProfile->sectorOccupations->businessSectors"."id"
 
         WHERE 
           "User"."deletedAt" IS NULL
@@ -151,23 +166,6 @@ export class UsersService {
           required: false,
           include: [
             {
-              model: CV,
-              as: 'cvs',
-              attributes: ['version', 'status', 'urlImg'],
-              where: {
-                ...lastCVVersionWhereOptions,
-              },
-              required: false,
-              include: [
-                {
-                  model: BusinessLine,
-                  as: 'businessLines',
-                  attributes: ['name', 'order'],
-                  required: false,
-                },
-              ],
-            },
-            {
               model: User,
               as: 'coach',
               required: false,
@@ -189,6 +187,12 @@ export class UsersService {
           attributes: ['name', 'address', 'zone', 'id'],
           required: false,
         },
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: ['id', 'hasPicture'],
+          required: false,
+        },
       ],
     });
   }
@@ -202,10 +206,14 @@ export class UsersService {
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { replacements, filterOptions } = getCommonMembersFilterOptions({
-      ...restParams,
-      role: [UserRoles.COACH],
-    });
+    const allBusinessSectors = await this.businessSectorsService.all();
+    const { replacements, filterOptions } = getCommonMembersFilterOptions(
+      {
+        ...restParams,
+        role: [UserRoles.COACH],
+      },
+      allBusinessSectors
+    );
 
     const coachesIds: { userId: string }[] =
       await this.userModel.sequelize.query(
@@ -214,14 +222,7 @@ export class UsersService {
           "User"."id" as "userId"
 
         FROM "Users" as "User"
-                     
-        LEFT OUTER JOIN "User_Candidats" AS "coaches" 
-          ON "User"."id" = "coaches"."coachId"
-        LEFT OUTER JOIN "Users" AS "coaches->candidat"
-          ON "coaches"."candidatId" = "coaches->candidat"."id" 
-          AND ("coaches->candidat"."deletedAt" IS NULL)
-        LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
-          ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
+
         LEFT OUTER JOIN "Organizations" AS "organization" 
           ON "User"."OrganizationId" = "organization"."id"
             
@@ -250,31 +251,15 @@ export class UsersService {
       order: [['firstName', 'ASC']],
       include: [
         {
-          model: UserCandidat,
-          as: 'coaches',
-          attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          required: false,
-          include: [
-            {
-              model: User,
-              as: 'candidat',
-              attributes: [...UserAttributes],
-              required: false,
-              include: [
-                {
-                  model: Organization,
-                  as: 'organization',
-                  attributes: ['name', 'address', 'zone', 'id'],
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
-        {
           model: Organization,
           as: 'organization',
           attributes: ['name', 'address', 'zone', 'id'],
+          required: false,
+        },
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: ['id', 'hasPicture'],
           required: false,
         },
       ],
@@ -290,10 +275,14 @@ export class UsersService {
   ): Promise<User[]> {
     const { limit, offset, search, ...restParams } = params;
 
-    const { replacements, filterOptions } = getCommonMembersFilterOptions({
-      ...restParams,
-      role: [UserRoles.REFERER],
-    });
+    const allBusinessSectors = await this.businessSectorsService.all();
+    const { replacements, filterOptions } = getCommonMembersFilterOptions(
+      {
+        ...restParams,
+        role: [UserRoles.REFERER],
+      },
+      allBusinessSectors
+    );
 
     const referersIds: { userId: string }[] =
       await this.userModel.sequelize.query(
@@ -303,13 +292,6 @@ export class UsersService {
 
         FROM "Users" as "User"
                      
-        LEFT OUTER JOIN "User_Candidats" AS "coaches" 
-          ON "User"."id" = "coaches"."coachId"
-        LEFT OUTER JOIN "Users" AS "coaches->candidat"
-          ON "coaches"."candidatId" = "coaches->candidat"."id" 
-          AND ("coaches->candidat"."deletedAt" IS NULL)
-        LEFT OUTER JOIN "Organizations" AS "coaches->candidat->organization"
-          ON "coaches->candidat"."OrganizationId" = "coaches->candidat->organization"."id"
         LEFT OUTER JOIN "Organizations" AS "organization" 
           ON "User"."OrganizationId" = "organization"."id"
             
@@ -363,6 +345,12 @@ export class UsersService {
           attributes: ['name', 'address', 'zone', 'id'],
           required: false,
         },
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: ['id', 'hasPicture'],
+          required: false,
+        },
       ],
     });
   }
@@ -397,21 +385,10 @@ export class UsersService {
   }
 
   async findAllCandidates(search: string) {
-    const publishedCVs: CV[] = await this.userModel.sequelize.query(
-      getPublishedCVQuery({ [Op.or]: [false] }),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
     const options = {
       attributes: [...PublicUserAttributes],
       where: {
         [Op.and]: [
-          {
-            id: publishedCVs.map((publishedCV) => {
-              return publishedCV.UserId;
-            }),
-          },
           {
             [Op.or]: userSearchQuery(search),
           },
@@ -419,81 +396,6 @@ export class UsersService {
       },
     };
     return this.userModel.findAll(options);
-  }
-
-  async findAllPublishedCandidatesByDepartmentAndBusinessLines(
-    department: Department,
-    businessLines: BusinessLine[]
-  ) {
-    const publishedCVs: CV[] = await this.userModel.sequelize.query(
-      getPublishedCVQuery(
-        { [Op.or]: [false] },
-        { [Op.or]: [department] },
-        {
-          [Op.or]: businessLines.map(({ name }) => {
-            return name;
-          }),
-        }
-      ),
-      {
-        type: QueryTypes.SELECT,
-      }
-    );
-
-    const options = {
-      attributes: [...UserAttributes],
-      where: {
-        [Op.and]: [
-          {
-            id: publishedCVs.map((publishedCV) => {
-              return publishedCV.UserId;
-            }),
-          },
-        ],
-      },
-      include: UserCandidatInclude,
-    };
-
-    return this.userModel.findAll(options);
-  }
-
-  async countSubmittedCVMembers(zone: AdminZone) {
-    const whereOptions: WhereOptions<CV> = zone
-      ? ({ zone } as WhereOptions<CV>)
-      : {};
-
-    const options: FindOptions<User> = {
-      where: {
-        ...whereOptions,
-        role: UserRoles.CANDIDATE,
-      } as WhereOptions<User>,
-      attributes: [],
-      include: [
-        {
-          model: UserCandidat,
-          as: 'candidat',
-          attributes: [],
-          required: true,
-          include: [
-            {
-              model: CV,
-              as: 'cvs',
-              attributes: [],
-              where: {
-                ...lastCVVersionWhereOptions,
-                status: CVStatuses.PENDING.value,
-              },
-            },
-          ],
-        },
-      ],
-    };
-
-    const { count: pendingCVs } = await this.userModel.findAndCountAll(options);
-
-    return {
-      pendingCVs,
-    };
   }
 
   async countOrganizationAssociatedUsers(organizationId: string) {
@@ -537,43 +439,6 @@ export class UsersService {
       where: { id },
       individualHooks: true,
     });
-  }
-
-  async sendMailsAfterMatching(candidateId: string) {
-    const candidate = await this.findOne(candidateId);
-
-    await this.mailsService.sendCVPreparationMail(candidate.toJSON());
-
-    await this.queuesService.addToWorkQueue(
-      Jobs.REMINDER_CV_10,
-      {
-        candidateId,
-      },
-      {
-        delay:
-          // delay depending on environment to make it faster in local
-          (process.env.CV_10_REMINDER_DELAY
-            ? parseFloat(process.env.CV_10_REMINDER_DELAY)
-            : 10) *
-          3600000 *
-          24,
-      }
-    );
-    await this.queuesService.addToWorkQueue(
-      Jobs.REMINDER_CV_20,
-      {
-        candidateId,
-      },
-      {
-        delay:
-          (process.env.CV_20_REMINDER_DELAY
-            ? // delay depending on environment to make it faster in local
-              parseFloat(process.env.CV_20_REMINDER_DELAY)
-            : 20) *
-          3600000 *
-          24,
-      }
-    );
   }
 
   // Get all users -except admins- that have connected once but not in the last 25 months and not deleted
@@ -622,28 +487,27 @@ export class UsersService {
     return users;
   }
 
-  // TODO fix duplicate
-  async uncacheCandidateCV(url: string) {
-    await this.cacheManager.del(RedisKeys.CV_PREFIX + url);
-  }
-
-  // TODO fix duplicate
-  async cacheCandidateCV(candidateId: string) {
-    await this.queuesService.addToWorkQueue(Jobs.CACHE_CV, {
-      candidateId,
-    });
-  }
-
-  // TODO fix duplicate
-  async cacheAllCVs() {
-    await this.queuesService.addToWorkQueue(Jobs.CACHE_ALL_CVS, {});
-  }
-
   async generateVerificationToken(user: User) {
     return this.authService.generateVerificationToken(user);
   }
 
   async sendVerificationMail(user: User, token: string) {
     return this.mailsService.sendVerificationMail(user, token);
+  }
+
+  async findAllPublicCVs(query: { limit: number; offset: number }) {
+    const { limit, offset } = query;
+
+    return this.userModel.findAll({
+      limit,
+      offset,
+      attributes: PublicUserAttributes,
+      include: UserCandidatInclude(),
+      order: getUserProfileRecentlyUpdatedOrder(),
+      where: {
+        lastConnection: { [Op.ne]: null },
+        role: UserRoles.CANDIDATE,
+      },
+    });
   }
 }

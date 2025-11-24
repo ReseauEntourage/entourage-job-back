@@ -1,18 +1,19 @@
 import {
   AllowNull,
+  BelongsToMany,
   Column,
-  CreatedAt,
   DataType,
   Default,
+  HasMany,
   IsUUID,
   PrimaryKey,
   Table,
-  UpdatedAt,
 } from 'sequelize-typescript';
-import { ContractValue } from 'src/common/contracts/contracts.types';
+import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileContract } from 'src/user-profiles/models/user-profile-contract.model';
 import { WrapperModel } from 'src/utils/types';
 
-@Table({ tableName: 'Contracts' })
+@Table({ tableName: 'Contracts', timestamps: false })
 export class Contract extends WrapperModel {
   @IsUUID(4)
   @PrimaryKey
@@ -22,11 +23,14 @@ export class Contract extends WrapperModel {
 
   @AllowNull(false)
   @Column
-  name: ContractValue;
+  name: string;
 
-  @CreatedAt
-  createdAt: Date;
+  @HasMany(() => UserProfileContract, {
+    foreignKey: 'contractId',
+    as: 'userProfileContracts',
+  })
+  userProfileContracts?: UserProfileContract[];
 
-  @UpdatedAt
-  updatedAt: Date;
+  @BelongsToMany(() => UserProfile, () => UserProfileContract, 'contractId')
+  userProfileId?: string;
 }

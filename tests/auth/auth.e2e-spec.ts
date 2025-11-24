@@ -1,15 +1,17 @@
-import { getQueueToken } from '@nestjs/bull';
-import { CACHE_MANAGER, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
-import { Queues } from 'src/queues/queues.types';
+import { LoggedUser } from 'src/auth/auth.types';
+import { MailsService } from 'src/mails/mails.service';
+import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
-import { CacheMocks, QueueMocks } from 'tests/mocks.types';
+import { MailsServiceMock } from 'tests/mails/mails.service.mock';
+import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
@@ -30,10 +32,10 @@ describe('Auth', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CustomTestingModule],
     })
-      .overrideProvider(getQueueToken(Queues.WORK))
-      .useValue(QueueMocks)
-      .overrideProvider(CACHE_MANAGER)
-      .useValue(CacheMocks)
+      .overrideProvider(QueuesService)
+      .useValue(QueuesServiceMock)
+      .overrideProvider(MailsService)
+      .useClass(MailsServiceMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -61,10 +63,12 @@ describe('Auth', () => {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
 
   describe('/login - Login', () => {
-    let candidate: User;
+    let loggedInCandidat: LoggedUser;
+
     const password = 'Candidat123!';
+
     beforeEach(async () => {
-      candidate = await userFactory.create({
+      loggedInCandidat = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
         password: password,
       });
@@ -76,12 +80,12 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
           password,
         });
       expect(response.status).toBe(201);
       expect(response.body.user).toStrictEqual({
-        ...candidate,
+        ...loggedInCandidat.user,
         lastConnection: response.body.user.lastConnection,
         createdAt: response.body.user.createdAt,
       });
@@ -104,7 +108,7 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
           password: 'invalidPassword',
         });
       expect(response.status).toBe(401);
@@ -125,18 +129,18 @@ describe('Auth', () => {
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
         });
       expect(response.status).toBe(401);
     });
     it('Should return 401, if user is deleted', async () => {
-      await userFactory.delete(candidate.id);
+      await userFactory.delete(loggedInCandidat.user.id);
       const response: APIResponse<AuthController['login']> = await request(
         app.getHttpServer()
       )
         .post(`${route}/login`)
         .send({
-          email: candidate.email,
+          email: loggedInCandidat.user.email,
           password,
         });
       expect(response.status).toBe(401);
@@ -241,7 +245,6 @@ describe('Auth', () => {
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
           ...candidate,
-          coaches: [],
           candidat: {
             ...candidate.candidat,
             note: null,
@@ -307,7 +310,6 @@ describe('Auth', () => {
         role: UserRoles.CANDIDATE,
         password: 'loggedInCandidat',
       });
-
       const response: APIResponse<AuthController['getCurrent']> = await request(
         server
       )
@@ -316,17 +318,7 @@ describe('Auth', () => {
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({
         ...loggedInCandidat.user,
-        coaches: [],
-        candidat: {
-          ...loggedInCandidat.user.candidat,
-          note: null,
-        },
-        organization: null,
         lastConnection: response.body.lastConnection,
-        createdAt: response.body.createdAt,
-        whatsappZoneCoachName: response.body.whatsappZoneCoachName,
-        whatsappZoneCoachUrl: response.body.whatsappZoneCoachUrl,
-        whatsappZoneCoachQR: response.body.whatsappZoneCoachQR,
       });
     });
     it('Should return 401, if invalid token', async () => {

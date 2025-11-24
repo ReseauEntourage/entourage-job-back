@@ -12,22 +12,22 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { encryptPassword } from 'src/auth/auth.utils';
 import { Public, UserPayload } from 'src/auth/guards';
+import {
+  COMPANY_USER_ROLE_CAN_BE_ADMIN,
+  CompanyUserRole,
+} from 'src/companies/company-user.utils';
 import { getContactStatusFromUserRole } from 'src/external-services/mailjet/mailjet.utils';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
   NormalUserRoles,
   Permissions,
-  Programs,
   RegistrableUserRoles,
   RolesWithOrganization,
   SequelizeUniqueConstraintError,
   UserRoles,
 } from 'src/users/users.types';
-import {
-  getCandidateAndCoachIdDependingOnRoles,
-  isRoleIncluded,
-} from 'src/users/users.utils';
+import { isRoleIncluded } from 'src/users/users.utils';
 import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
 import { convertYesNoToBoolean } from 'src/utils/yesNo';
 import { Utm } from 'src/utm/models';
@@ -106,60 +106,6 @@ export class UsersCreationController {
       jwtToken
     );
 
-    if (userToCreate.userToLinkId) {
-      const usersToLinkIds = [userToCreate.userToLinkId];
-
-      const userCandidatesToUpdate = await Promise.all(
-        usersToLinkIds.map(async (userToLinkId) => {
-          const userToLink = await this.usersCreationService.findOneUser(
-            userToLinkId
-          );
-
-          if (!userToLink) {
-            throw new NotFoundException();
-          }
-
-          const { candidateId, coachId } =
-            getCandidateAndCoachIdDependingOnRoles(createdUser, userToLink);
-
-          const userCandidate =
-            await this.usersCreationService.findOneUserCandidatByCandidateId(
-              candidateId
-            );
-
-          if (!userCandidate) {
-            throw new NotFoundException();
-          }
-
-          return { candidateId: candidateId, coachId: coachId };
-        })
-      );
-
-      const updatedUserCandidates =
-        await this.usersCreationService.updateAllUserCandidatLinkedUserByCandidateId(
-          userCandidatesToUpdate
-        );
-
-      if (!updatedUserCandidates) {
-        throw new NotFoundException();
-      }
-
-      await Promise.all(
-        updatedUserCandidates.map(async (updatedUserCandidate) => {
-          const previousCoach = updatedUserCandidate.previous('coach');
-          if (
-            updatedUserCandidate.coach &&
-            updatedUserCandidate.coach.id !== previousCoach?.id
-          ) {
-            await this.usersCreationService.sendMailsAfterMatching(
-              updatedUserCandidate.candidat.id
-            );
-          }
-          return updatedUserCandidate.toJSON();
-        })
-      );
-    }
-
     return this.usersCreationService.findOneUser(createdUser.id);
   }
 
@@ -173,13 +119,6 @@ export class UsersCreationController {
     if (
       !isValidPhone(createUserRegistrationDto.phone) ||
       !isRoleIncluded(RegistrableUserRoles, createUserRegistrationDto.role)
-    ) {
-      throw new BadRequestException();
-    }
-
-    if (
-      !isRoleIncluded([UserRoles.REFERER], createUserRegistrationDto.role) &&
-      !createUserRegistrationDto.program
     ) {
       throw new BadRequestException();
     }
@@ -210,22 +149,38 @@ export class UsersCreationController {
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
-        helpNeeds: createUserRegistrationDto.helpNeeds,
-        searchBusinessLines: createUserRegistrationDto.searchBusinessLines,
-        searchAmbitions: createUserRegistrationDto.searchAmbitions,
+        nudges: createUserRegistrationDto.nudges,
+        sectorOccupations: createUserRegistrationDto.sectorOccupations,
         optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
         createdUserId
       );
+
+      if (createUserRegistrationDto.invitationId) {
+        // Link the invitation to the user
+        await this.usersCreationService.linkInvitationToUser(
+          createdUserId,
+          createUserRegistrationDto.invitationId
+        );
+
+        try {
+          // Send email to the company admin that the invitation has been used
+          await this.usersCreationService.sendEmailCollaboratorInvitationUsed(
+            createUserRegistrationDto.invitationId,
+            createdUser
+          );
+        } catch (error) {
+          console.error(
+            'Failed to send collaborator invitation used email:',
+            error
+          );
+        }
+      }
+
       await this.usersCreationService.createExternalDBUser(createdUserId, {
-        program: createUserRegistrationDto.program,
         birthDate: createUserRegistrationDto.birthDate,
-        campaign:
-          createUserRegistrationDto.program === Programs.THREE_SIXTY
-            ? createUserRegistrationDto.campaign
-            : undefined,
         workingRight: createUserRegistrationDto.workingRight,
         gender: createUserRegistrationDto.gender,
         structure:
@@ -245,6 +200,45 @@ export class UsersCreationController {
           ),
         }
       );
+
+      // Link the company if provided
+      if (createUserRegistrationDto.companyName) {
+        const company =
+          await this.usersCreationService.findOrCreateCompanyByName(
+            createUserRegistrationDto.companyName,
+            createdUser
+          );
+        if (!company) {
+          throw new NotFoundException('Company was not created properly');
+        }
+        // Check if a user is already linked to the company
+        const existingCompanyUser =
+          await this.usersCreationService.findOneCompanyUser(company.id);
+
+        // If no user is linked, we can set the role as admin if applicable
+        const isAdmin =
+          !existingCompanyUser &&
+          COMPANY_USER_ROLE_CAN_BE_ADMIN.includes(
+            createUserRegistrationDto.companyRole as CompanyUserRole
+          );
+        // Create the company user
+        await this.usersCreationService.linkUserToCompany(
+          createdUserId,
+          company.id,
+          createUserRegistrationDto.companyRole || 'employee',
+          isAdmin
+        );
+        // If user is set as company admin - update the user to make it not available to the rest of the community
+        // This is to prevent the user from being displayed in the community list
+        if (isAdmin) {
+          await this.usersCreationService.updateUserProfileByUserId(
+            createdUserId,
+            {
+              isAvailable: false,
+            }
+          );
+        }
+      }
 
       // UTM
       const utmToCreate: Partial<Utm> = {
@@ -290,8 +284,10 @@ export class UsersCreationController {
       return createdUser;
     } catch (err) {
       if (((err as Error).name = SequelizeUniqueConstraintError)) {
+        console.error('Duplicate email error:', err);
         throw new ConflictException();
       }
+      console.error('Error during user registration creation:', err);
     }
   }
 
@@ -306,10 +302,6 @@ export class UsersCreationController {
     referer: User
   ) {
     if (!isValidPhone(createUserReferingDto.phone)) {
-      throw new BadRequestException();
-    }
-
-    if (!createUserReferingDto.program) {
       throw new BadRequestException();
     }
 
@@ -341,9 +333,8 @@ export class UsersCreationController {
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
-        helpNeeds: createUserReferingDto.helpNeeds,
-        searchBusinessLines: createUserReferingDto.searchBusinessLines,
-        searchAmbitions: createUserReferingDto.searchAmbitions,
+        nudges: createUserReferingDto.nudges,
+        sectorOccupations: createUserReferingDto.sectorOccupations,
       });
 
       const createdUser = await this.usersCreationService.findOneUser(
@@ -351,12 +342,7 @@ export class UsersCreationController {
       );
 
       await this.usersCreationService.createExternalDBUser(createdUserId, {
-        program: createUserReferingDto.program,
         birthDate: createUserReferingDto.birthDate,
-        campaign:
-          createUserReferingDto.program === Programs.THREE_SIXTY
-            ? createUserReferingDto.campaign
-            : undefined,
         workingRight: createUserReferingDto.workingRight,
         gender: createUserReferingDto.gender,
         refererEmail: referer.email,

@@ -10,6 +10,11 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 
+export interface S3File {
+  key: string;
+  publicUrl: string | null;
+}
+
 @Injectable()
 export class S3Service {
   private s3: S3Client;
@@ -24,12 +29,22 @@ export class S3Service {
     });
   }
 
+  /**
+   * Uploads a file to S3 and returns information about the uploaded file
+   *
+   * @param data - The file data to upload
+   * @param contentType - The content type of the file
+   * @param outputPath - The path where the file should be saved in S3
+   * @param isPrivate - Whether the file should be private (default: false)
+   * @param returnPublicUrl - Whether to return the public URL in addition to the key (default: false)
+   * @returns The S3 key of the uploaded file and optionally the public URL
+   */
   async upload(
     data: PutObjectCommandInput['Body'],
     contentType: PutObjectCommandInput['ContentType'],
     outputPath: string,
     isPrivate = false
-  ) {
+  ): Promise<S3File> {
     const key = `${
       contentType.includes('image/')
         ? process.env.AWSS3_IMAGE_DIRECTORY
@@ -49,12 +64,19 @@ export class S3Service {
 
     await upload.done();
 
-    return key;
+    // If the file is private, return only the key
+    if (isPrivate) {
+      return { key, publicUrl: null };
+    }
+
+    // Pour les fichiers publics, générer et retourner l'URL publique avec la clé
+    const publicUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${key}`;
+    return { key, publicUrl };
   }
 
   async copyFile(sourceKey: string, destKey: string) {
     const { Body } = await this.download(sourceKey);
-    await this.upload(Body, 'image/jpeg', destKey);
+    return await this.upload(Body, 'image/jpeg', destKey);
   }
 
   async deleteFiles(keys: string | string[]) {
@@ -95,7 +117,7 @@ export class S3Service {
       ResponseContentType: contentType,
     });
 
-    return s3GetSignedUrl(this.s3, getObjectCommand, {
+    return await s3GetSignedUrl(this.s3, getObjectCommand, {
       expiresIn: 60,
     });
   }
