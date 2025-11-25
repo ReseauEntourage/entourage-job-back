@@ -493,7 +493,7 @@ export class SalesforceService {
           LIMIT 1
         `
       );
-    return records[0] as SalesforceCampaign;
+    return (records[0] as SalesforceCampaign) || null;
   }
 
   async findCampaignMember(
