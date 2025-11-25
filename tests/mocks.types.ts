@@ -87,6 +87,7 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   getCoachCampaigns: jest.fn(),
   checkIfConnected: jest.fn(),
   findAllEventCampaigns: jest.fn(),
+  findEventCampaignById: jest.fn(),
 } as const;
 
 export const MailjetMock: ProviderMock<MailjetService> = {
