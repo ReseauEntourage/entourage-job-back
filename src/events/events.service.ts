@@ -49,9 +49,10 @@ export class EventsService {
       eventTypes,
       localBranches
     );
-    return sfCampaigns.map((campaign) =>
-      convertSalesforceCampaignToEvent(campaign)
-    );
+
+    return sfCampaigns
+      .map((campaign) => convertSalesforceCampaignToEvent(campaign))
+      .filter((event) => event !== null) as Events;
   }
 
   async findEventById(eventId: string): Promise<Event | null> {
