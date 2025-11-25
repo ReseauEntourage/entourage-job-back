@@ -53,10 +53,8 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
  * Additional attributes for specific Event Types
  */
 export const additionalEventAttributesByEventType: {
-  [key: string]: Partial<Event>;
+  [key: string]: Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>;
 } = {
-  // In case of unknown event type, provide no additional attributes
-  [EventType.UNKNOWN]: {},
   // Webinaire tout savoir sur Entourage pro
   [EventType.WELCOME_SESSION]: {
     format: 'Webinaire - En ligne',
@@ -125,7 +123,7 @@ export const additionalEventAttributesByEventType: {
   // Le shooting photo
   [EventType.PHOTO_SHOOTING]: {
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
-    goal: 'Faire des  photos de CV, rencontrer les équipes d’entourage pro et les autres candidats.',
+    goal: 'Faire des photos de CV, rencontrer les équipes d’Entourage Pro et les autres candidats.',
     audience: 'Candidats des régions concernées.',
     sequences: [
       'Accueil et tour de table',
@@ -191,11 +189,15 @@ export const computeEventDurationFromSalesforceCampaign = (
  */
 export const convertSalesforceCampaignToEvent = (
   campaign: SalesforceCampaign
-): Event => {
+): Event | null => {
   const eventType =
     campaign.Type_evenement__c in salesforceEventTypeToEventType
       ? salesforceEventTypeToEventType[campaign.Type_evenement__c]
       : EventType.UNKNOWN;
+
+  if (eventType === EventType.UNKNOWN) {
+    return null;
+  }
   return {
     salesForceId: campaign.Id,
     name: campaign.Name,

@@ -2,6 +2,8 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
+  NotFoundException,
+  Param,
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
@@ -40,5 +42,14 @@ export class EventsController {
     );
 
     return events;
+  }
+
+  @Get(':eventId')
+  async findById(@Param('eventId') eventId: string) {
+    const event = await this.eventsService.findEventById(eventId);
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+    return event;
   }
 }

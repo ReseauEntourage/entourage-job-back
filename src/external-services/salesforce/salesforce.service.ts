@@ -481,6 +481,21 @@ export class SalesforceService {
     return records as SalesforceCampaign[];
   }
 
+  async findEventCampaignById(eventId: string) {
+    await this.checkIfConnected();
+    const { records }: { records: Partial<SalesforceCampaign>[] } =
+      await this.salesforce.query(
+        `SELECT ${salesforceEventAttributes.join(', ')}
+          FROM ${ObjectNames.CAMPAIGN}
+          WHERE Id = '${escapeQuery(
+            eventId
+          )}' AND Type = 'Event' AND R_seaux__c = 'LinkedOut'
+          LIMIT 1
+        `
+      );
+    return (records[0] as SalesforceCampaign) || null;
+  }
+
   async findCampaignMember(
     { leadId, contactId }: { leadId?: string; contactId?: string },
     campaignId: string

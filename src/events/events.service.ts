@@ -3,7 +3,7 @@ import { DepartmentsService } from 'src/common/departments/departments.service';
 import { Departments } from 'src/common/locations/locations.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { LOCAL_BRANCHES_ZONES } from 'src/utils/types';
-import { EventMode, Events, EventType } from './event.types';
+import { Event, EventMode, Events, EventType } from './event.types';
 import { convertSalesforceCampaignToEvent } from './events.utils';
 
 @Injectable()
@@ -49,8 +49,19 @@ export class EventsService {
       eventTypes,
       localBranches
     );
-    return sfCampaigns.map((campaign) =>
-      convertSalesforceCampaignToEvent(campaign)
+
+    return sfCampaigns
+      .map((campaign) => convertSalesforceCampaignToEvent(campaign))
+      .filter((event) => event !== null) as Events;
+  }
+
+  async findEventById(eventId: string): Promise<Event | null> {
+    const sfCampaign = await this.salesforceService.findEventCampaignById(
+      eventId
     );
+    if (!sfCampaign) {
+      return null;
+    }
+    return convertSalesforceCampaignToEvent(sfCampaign);
   }
 }
