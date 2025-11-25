@@ -123,7 +123,7 @@ export const additionalEventAttributesByEventType: {
   // Le shooting photo
   [EventType.PHOTO_SHOOTING]: {
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
-    goal: 'Faire des  photos de CV, rencontrer les équipes d’Entourage Pro et les autres candidats.',
+    goal: 'Faire des photos de CV, rencontrer les équipes d’Entourage Pro et les autres candidats.',
     audience: 'Candidats des régions concernées.',
     sequences: [
       'Accueil et tour de table',
