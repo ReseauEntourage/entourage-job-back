@@ -88,6 +88,11 @@ export class UsersService {
     });
   }
 
+  /**
+   * Find all users by their emails
+   * @param emails Array of emails
+   * @returns Array of users
+   */
   async findAllByMail(emails: string[]) {
     return this.userModel.findAll({
       where: {

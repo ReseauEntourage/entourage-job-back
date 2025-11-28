@@ -550,7 +550,7 @@ export class SalesforceService {
         `SELECT Id, LeadId, ContactId, Status, Email
           FROM ${ObjectNames.CAMPAIGN_MEMBER}
           WHERE CampaignId = '${escapeQuery(campaignId)}'
-          ${status ? `AND Status = '${status}'` : ''}
+          ${status ? `AND Status = '${escapeQuery(status)}'` : ''}
         `
       );
     return records as SalesforceCampaignMember[];
