@@ -21,6 +21,7 @@ export const salesforceEventAttributes = [
   'Antenne__c',
   'Adresse_de_l_v_nement__c',
   'En_ligne__c',
+  'Nombre_de_participants__c',
   'Nombre_d_inscrits__c',
   'MeetingLink__c',
 ];
@@ -198,6 +199,12 @@ export const convertSalesforceCampaignToEvent = (
   if (eventType === EventType.UNKNOWN) {
     return null;
   }
+  const isParticipating =
+    campaign.CampaignMembers &&
+    campaign.CampaignMembers.records &&
+    campaign.CampaignMembers.records.length > 0
+      ? true
+      : false;
   return {
     salesForceId: campaign.Id,
     name: campaign.Name,
@@ -211,11 +218,13 @@ export const convertSalesforceCampaignToEvent = (
         ? `${campaign.EndDate}T${campaign.Heure_de_fin__c}`
         : null,
     eventType,
-    participantsCount: campaign.Nombre_d_inscrits__c,
+    participantsCount: campaign.Nombre_de_participants__c || 0,
+    registrationCount: campaign.Nombre_d_inscrits__c || 0,
     meetingLink: campaign.MeetingLink__c || null,
     fullAddress: campaign.Adresse_de_l_v_nement__c || null,
     mode: computeModeFromSalesforceCampaign(campaign),
     duration: computeEventDurationFromSalesforceCampaign(campaign),
+    isParticipating,
     ...additionalEventAttributesByEventType[eventType],
   };
 };

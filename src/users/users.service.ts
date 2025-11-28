@@ -86,6 +86,19 @@ export class UsersService {
     });
   }
 
+  async findAllByMail(emails: string[]) {
+    return this.userModel.findAll({
+      where: {
+        email: {
+          [Op.in]: emails.map((email) => email.toLowerCase()),
+        },
+      },
+      attributes: [...UserAttributes],
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
+    });
+  }
+
   async findOneComplete(id: string) {
     return this.userModel.findByPk(id, {
       include: UserCandidatInclude(),

@@ -2,15 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { DepartmentsService } from 'src/common/departments/departments.service';
 import { Departments } from 'src/common/locations/locations.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { SalesforceCampaignStatus } from 'src/external-services/salesforce/salesforce.types';
+import { UsersService } from 'src/users/users.service';
+import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LOCAL_BRANCHES_ZONES } from 'src/utils/types';
-import { Event, EventMode, Events, EventType } from './event.types';
+import {
+  Event,
+  EventMode,
+  Events,
+  EventType,
+  EventWithParticipants,
+} from './event.types';
 import { convertSalesforceCampaignToEvent } from './events.utils';
 
 @Injectable()
 export class EventsService {
   constructor(
     private salesforceService: SalesforceService,
-    private departmentsService: DepartmentsService
+    private departmentsService: DepartmentsService,
+    private usersService: UsersService,
+    private usersStatsService: UsersStatsService
   ) {}
 
   /**
@@ -21,6 +32,7 @@ export class EventsService {
    * @returns List of events
    */
   async findAllEvents(
+    userEmail: string,
     limit: number,
     offset: number,
     search = '',
@@ -42,6 +54,7 @@ export class EventsService {
     const localBranches = zones.flatMap((zone) => LOCAL_BRANCHES_ZONES[zone]);
 
     const sfCampaigns = await this.salesforceService.findAllEventCampaigns(
+      userEmail,
       limit,
       offset,
       search,
@@ -55,13 +68,103 @@ export class EventsService {
       .filter((event) => event !== null) as Events;
   }
 
-  async findEventById(eventId: string): Promise<Event | null> {
+  async findEventById(
+    userEmail: string,
+    eventId: string
+  ): Promise<Event | null> {
     const sfCampaign = await this.salesforceService.findEventCampaignById(
+      userEmail,
       eventId
     );
     if (!sfCampaign) {
       return null;
     }
     return convertSalesforceCampaignToEvent(sfCampaign);
+  }
+
+  async findEventWithMembersById(
+    userEmail: string,
+    eventId: string
+  ): Promise<EventWithParticipants | null> {
+    const sfCampaign = await this.findEventById(userEmail, eventId);
+    if (!sfCampaign) {
+      return null;
+    }
+    // Retrieve SF Campaign Members for the given Campaign ID
+    const members =
+      await this.salesforceService.findAllCampaignMembersByCampaignId(
+        eventId,
+        SalesforceCampaignStatus.REGISTERED
+      );
+
+    // Extract emails from Campaign Members
+    const membersEmails = members
+      .filter((member) => member.Email)
+      .map((member) => member.Email);
+
+    // Retrieve Users from CampaignMembers where Email is defined
+    const participantUsers = await this.usersService.findAllByMail(
+      membersEmails
+    );
+
+    const participants = participantUsers.map((user) => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      userProfile: {
+        id: user.userProfile.id,
+        hasPicture: user.userProfile.hasPicture,
+      },
+    }));
+
+    // Return the event along with its participants
+    return {
+      ...sfCampaign,
+      participants: participants,
+    } as EventWithParticipants;
+  }
+
+  async updateEventParticipation(
+    userEmail: string,
+    eventId: string,
+    isParticipating: boolean
+  ): Promise<void> {
+    const sfCampaign = await this.salesforceService.findEventCampaignById(
+      userEmail,
+      eventId
+    );
+    const sfContact = await this.salesforceService.findContact(userEmail);
+
+    // Error handling if campaign or contact not found
+    if (!sfCampaign) {
+      console.error(
+        `Event with ID ${eventId} not found in Salesforce, cannot update participation.`
+      );
+      throw new Error('Event not found in Salesforce');
+    }
+    if (!sfContact) {
+      console.error(
+        `Contact with email ${userEmail} not found in Salesforce, cannot update event participation.`
+      );
+      throw new Error('Contact not found in Salesforce');
+    }
+
+    // Update or create Campaign Member with the appropriate status
+    try {
+      await this.salesforceService.createOrUpdateCampaignMember(
+        { contactId: sfContact.Id },
+        sfCampaign.Id,
+        isParticipating
+          ? SalesforceCampaignStatus.REGISTERED
+          : SalesforceCampaignStatus.RESPONDED
+      );
+    } catch (error) {
+      console.error(
+        `Failed to update participation for contact ${sfContact.Id} in campaign ${sfCampaign.Id}:`,
+        error
+      );
+      throw new Error('Failed to update event participation');
+    }
   }
 }
