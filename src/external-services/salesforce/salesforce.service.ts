@@ -475,7 +475,9 @@ export class SalesforceService {
         : '';
 
     const selectUserParticipation = contactId
-      ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${contactId}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
+      ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${escapeQuery(
+          contactId
+        )}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
       : '';
     const query = `SELECT ${salesforceEventAttributes.join(
       ', '
@@ -504,7 +506,9 @@ export class SalesforceService {
       contactId = contact?.Id || null;
     }
     const selectUserParticipation = contactId
-      ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${contactId}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
+      ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${escapeQuery(
+          contactId
+        )}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
       : '';
     const { records }: { records: Partial<SalesforceCampaign>[] } =
       await this.salesforce.query(

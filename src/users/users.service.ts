@@ -9,6 +9,8 @@ import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
+import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -94,8 +96,14 @@ export class UsersService {
         },
       },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
+      include: [
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: UserProfilesAttributes,
+          order: getUserProfileOrder(),
+        },
+      ],
     });
   }
 

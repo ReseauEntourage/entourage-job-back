@@ -4,7 +4,6 @@ import { Departments } from 'src/common/locations/locations.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SalesforceCampaignStatus } from 'src/external-services/salesforce/salesforce.types';
 import { UsersService } from 'src/users/users.service';
-import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LOCAL_BRANCHES_ZONES } from 'src/utils/types';
 import {
   Event,
@@ -20,8 +19,7 @@ export class EventsService {
   constructor(
     private salesforceService: SalesforceService,
     private departmentsService: DepartmentsService,
-    private usersService: UsersService,
-    private usersStatsService: UsersStatsService
+    private usersService: UsersService
   ) {}
 
   /**
@@ -68,6 +66,12 @@ export class EventsService {
       .filter((event) => event !== null) as Events;
   }
 
+  /**
+   * Find event by ID
+   * @param userEmail email of the user making the request
+   * @param eventId Salesforce Campaign ID of the event
+   * @returns Event or null if not found
+   */
   async findEventById(
     userEmail: string,
     eventId: string
@@ -82,6 +86,12 @@ export class EventsService {
     return convertSalesforceCampaignToEvent(sfCampaign);
   }
 
+  /**
+   * Find event with participants by ID
+   * @param userEmail email of the user making the request
+   * @param eventId Salesforce Campaign ID of the event
+   * @returns Event with participants or null if not found
+   */
   async findEventWithMembersById(
     userEmail: string,
     eventId: string
@@ -113,8 +123,8 @@ export class EventsService {
       lastName: user.lastName,
       role: user.role,
       userProfile: {
-        id: user.userProfile.id,
-        hasPicture: user.userProfile.hasPicture,
+        id: user.userProfile?.id,
+        hasPicture: user.userProfile?.hasPicture,
       },
     }));
 
@@ -125,6 +135,12 @@ export class EventsService {
     } as EventWithParticipants;
   }
 
+  /**
+   * Update event participation status for a user
+   * @param userEmail email of the user making the request
+   * @param eventId Salesforce Campaign ID of the event
+   * @param isParticipating boolean indicating participation status
+   */
   async updateEventParticipation(
     userEmail: string,
     eventId: string,
@@ -141,13 +157,15 @@ export class EventsService {
       console.error(
         `Event with ID ${eventId} not found in Salesforce, cannot update participation.`
       );
-      throw new Error('Event not found in Salesforce');
+      throw new Error(`Event with ID ${eventId} not found in Salesforce`);
     }
     if (!sfContact) {
       console.error(
         `Contact with email ${userEmail} not found in Salesforce, cannot update event participation.`
       );
-      throw new Error('Contact not found in Salesforce');
+      throw new Error(
+        `Contact with email ${userEmail} not found in Salesforce`
+      );
     }
 
     // Update or create Campaign Member with the appropriate status

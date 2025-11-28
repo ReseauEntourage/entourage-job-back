@@ -199,12 +199,7 @@ export const convertSalesforceCampaignToEvent = (
   if (eventType === EventType.UNKNOWN) {
     return null;
   }
-  const isParticipating =
-    campaign.CampaignMembers &&
-    campaign.CampaignMembers.records &&
-    campaign.CampaignMembers.records.length > 0
-      ? true
-      : false;
+  const isParticipating = Boolean(campaign?.CampaignMembers?.records.length);
   return {
     salesForceId: campaign.Id,
     name: campaign.Name,

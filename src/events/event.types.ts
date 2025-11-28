@@ -58,7 +58,7 @@ export type EventParticipant = Pick<
   User,
   'id' | 'firstName' | 'lastName' | 'role'
 > & {
-  userProfile: Pick<UserProfile, 'hasPicture'>;
+  userProfile: Pick<UserProfile, 'id' | 'hasPicture'>;
 };
 
 export interface EventWithParticipants extends Event {

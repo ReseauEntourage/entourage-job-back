@@ -8,11 +8,11 @@ import {
   ParseIntPipe,
   Put,
   Query,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { EventParticipationDto } from './dto/event-participation.dto';
-import { EventParticipationPipe } from './dto/event-participation.pipe';
 import { EventMode, EventType } from './event.types';
 import { EventsService } from './events.service';
 
@@ -24,7 +24,7 @@ export class EventsController {
 
   @Get()
   async findAll(
-    @UserPayload('email') currentUserEmail: string,
+    @UserPayload('email') userEmail: string,
     @Query('limit', new DefaultValuePipe(50), new ParseIntPipe())
     limit: number,
     @Query('offset', new DefaultValuePipe(0), new ParseIntPipe())
@@ -39,7 +39,7 @@ export class EventsController {
     departmentIds?: string[]
   ) {
     const events = await this.eventsService.findAllEvents(
-      currentUserEmail,
+      userEmail,
       limit,
       offset,
       search,
@@ -83,7 +83,8 @@ export class EventsController {
   async toggleParticipation(
     @UserPayload('email') userEmail: string,
     @Param('eventId') eventId: string,
-    @Body(EventParticipationPipe) eventParticipationDto: EventParticipationDto
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    eventParticipationDto: EventParticipationDto
   ) {
     return this.eventsService.updateEventParticipation(
       userEmail,
