@@ -393,8 +393,17 @@ export interface SalesforceCampaign {
   Code_postal__c?: string;
   Type_evenement__c?: string;
   Nombre_d_inscrits__c?: number;
+  Nombre_de_participants__c?: number;
   En_ligne__c?: string;
   MeetingLink__c?: string;
+  CampaignMembers?: {
+    records: Partial<SalesforceCampaignMember>[];
+  };
+}
+
+export enum SalesforceCampaignStatus {
+  REGISTERED = 'Inscrit',
+  RESPONDED = 'Répondu',
 }
 
 export interface SalesforceCampaignMember {
@@ -403,6 +412,7 @@ export interface SalesforceCampaignMember {
   ContactId?: string;
   CampaignId: string;
   Status: string; // Inscrit
+  Email?: string;
 }
 
 export interface SalesforceUser {

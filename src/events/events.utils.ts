@@ -21,6 +21,7 @@ export const salesforceEventAttributes = [
   'Antenne__c',
   'Adresse_de_l_v_nement__c',
   'En_ligne__c',
+  'Nombre_de_participants__c',
   'Nombre_d_inscrits__c',
   'MeetingLink__c',
 ];
@@ -55,7 +56,7 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
 export const additionalEventAttributesByEventType: {
   [key: string]: Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>;
 } = {
-  // Webinaire tout savoir sur Entourage pro
+  // Webinaire tout savoir sur Entourage Pro
   [EventType.WELCOME_SESSION]: {
     format: 'Webinaire - En ligne',
     goal: 'Comprendre le fonctionnement d’Entourage Pro et permettre une première prise en main de la plateforme.',
@@ -69,7 +70,7 @@ export const additionalEventAttributesByEventType: {
     ],
   },
 
-  // Le café Entourage pro
+  // Le café Entourage Pro
   [EventType.COFFEE_SESSION]: {
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Comprendre le fonctionnement d’Entourage Pro et permettre une première prise en main de la plateforme.',
@@ -129,7 +130,7 @@ export const additionalEventAttributesByEventType: {
       'Accueil et tour de table',
       'Présentation du déroulé de la séance',
       'Shooting photo',
-      'Pendant que des candidats se font photographier, l’équipe d’Entourage pro en profite pour remonter l’utilisation de la plateforme aux autres candidats et répondre aux questions.',
+      'Pendant que des candidats se font photographier, l’équipe d’Entourage Pro en profite pour remonter l’utilisation de la plateforme aux autres candidats et répondre aux questions.',
       'Une photo de groupe pour un joli souvenir !',
     ],
   },
@@ -198,6 +199,7 @@ export const convertSalesforceCampaignToEvent = (
   if (eventType === EventType.UNKNOWN) {
     return null;
   }
+  const isParticipating = Boolean(campaign?.CampaignMembers?.records.length);
   return {
     salesForceId: campaign.Id,
     name: campaign.Name,
@@ -211,11 +213,13 @@ export const convertSalesforceCampaignToEvent = (
         ? `${campaign.EndDate}T${campaign.Heure_de_fin__c}`
         : null,
     eventType,
-    participantsCount: campaign.Nombre_d_inscrits__c,
+    participantsCount: campaign.Nombre_de_participants__c || 0,
+    registrationCount: campaign.Nombre_d_inscrits__c || 0,
     meetingLink: campaign.MeetingLink__c || null,
     fullAddress: campaign.Adresse_de_l_v_nement__c || null,
     mode: computeModeFromSalesforceCampaign(campaign),
     duration: computeEventDurationFromSalesforceCampaign(campaign),
+    isParticipating,
     ...additionalEventAttributesByEventType[eventType],
   };
 };

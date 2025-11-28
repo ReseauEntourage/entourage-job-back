@@ -1,3 +1,6 @@
+import { UserProfile } from 'src/user-profiles/models';
+import { User } from 'src/users/models';
+
 /**
  * Event Types Enumeration
  */
@@ -37,6 +40,7 @@ export interface Event {
   startDate: string;
   endDate: string;
   eventType: EventType;
+  registrationCount?: number;
   participantsCount?: number;
   mode: EventMode;
   meetingLink: string | null;
@@ -47,6 +51,18 @@ export interface Event {
   goal: string;
   audience: string;
   sequences?: string[];
+  isParticipating: boolean;
+}
+
+export type EventParticipant = Pick<
+  User,
+  'id' | 'firstName' | 'lastName' | 'role'
+> & {
+  userProfile: Pick<UserProfile, 'id' | 'hasPicture'>;
+};
+
+export interface EventWithParticipants extends Event {
+  participants: EventParticipant[];
 }
 
 export type Events = Event[];

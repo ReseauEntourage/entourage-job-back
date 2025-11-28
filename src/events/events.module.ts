@@ -3,6 +3,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { DepartmentsModule } from 'src/common/departments/departments.module';
 import { SequelizeMeta } from 'src/db/models/sequelize-meta.model';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
+import { UsersModule } from 'src/users/users.module';
+import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 
@@ -11,6 +13,8 @@ import { EventsService } from './events.service';
     SequelizeModule.forFeature([SequelizeMeta]),
     SalesforceModule,
     DepartmentsModule,
+    UsersModule,
+    UsersStatsModule,
   ],
   controllers: [EventsController],
   providers: [EventsService],

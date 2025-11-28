@@ -9,6 +9,8 @@ import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
+import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import {
@@ -83,6 +85,30 @@ export class UsersService {
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
       order: getUserCandidatOrder(),
+    });
+  }
+
+  /**
+   * Find all users by their emails
+   * @param emails Array of emails
+   * @returns Array of users
+   */
+  async findAllByMail(emails: string[]) {
+    return this.userModel.findAll({
+      where: {
+        email: {
+          [Op.in]: emails.map((email) => email.toLowerCase()),
+        },
+      },
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: UserProfilesAttributes,
+          order: getUserProfileOrder(),
+        },
+      ],
     });
   }
 

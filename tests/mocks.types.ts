@@ -67,7 +67,6 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   updateLeadPhoneAndRecordType: jest.fn(),
   createLead: jest.fn(),
   updateLead: jest.fn(),
-  createCandidateLead: jest.fn(),
   findOrCreateAccount: jest.fn(),
   findOrCreateCompanyContact: jest.fn(),
   findOrCreateLead: jest.fn(),
@@ -78,16 +77,16 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
   updateContactCasquetteAndAppId: jest.fn(),
   setIsWorker: jest.fn(),
   findCampaignMember: jest.fn(),
-  findOrCreateCampaignMember: jest.fn(),
   findOrCreateAssociationAccount: jest.fn(),
   findOrCreateContactFromUserRegistrationForm: jest.fn(),
   createOrUpdateSalesforceUser: jest.fn(),
-  addLeadOrContactToCampaign: jest.fn(),
   getCandidateCampaigns: jest.fn(),
   getCoachCampaigns: jest.fn(),
   checkIfConnected: jest.fn(),
   findAllEventCampaigns: jest.fn(),
   findEventCampaignById: jest.fn(),
+  findAllCampaignMembersByCampaignId: jest.fn(),
+  createOrUpdateCampaignMember: jest.fn(),
 } as const;
 
 export const MailjetMock: ProviderMock<MailjetService> = {
