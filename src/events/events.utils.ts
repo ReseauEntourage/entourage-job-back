@@ -56,7 +56,7 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
 export const additionalEventAttributesByEventType: {
   [key: string]: Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>;
 } = {
-  // Webinaire tout savoir sur Entourage pro
+  // Webinaire tout savoir sur Entourage Pro
   [EventType.WELCOME_SESSION]: {
     format: 'Webinaire - En ligne',
     goal: 'Comprendre le fonctionnement d’Entourage Pro et permettre une première prise en main de la plateforme.',
@@ -70,7 +70,7 @@ export const additionalEventAttributesByEventType: {
     ],
   },
 
-  // Le café Entourage pro
+  // Le café Entourage Pro
   [EventType.COFFEE_SESSION]: {
     format: 'En présentiel à Paris, Rennes, Lille et Lyon.',
     goal: 'Comprendre le fonctionnement d’Entourage Pro et permettre une première prise en main de la plateforme.',
@@ -130,7 +130,7 @@ export const additionalEventAttributesByEventType: {
       'Accueil et tour de table',
       'Présentation du déroulé de la séance',
       'Shooting photo',
-      'Pendant que des candidats se font photographier, l’équipe d’Entourage pro en profite pour remonter l’utilisation de la plateforme aux autres candidats et répondre aux questions.',
+      'Pendant que des candidats se font photographier, l’équipe d’Entourage Pro en profite pour remonter l’utilisation de la plateforme aux autres candidats et répondre aux questions.',
       'Une photo de groupe pour un joli souvenir !',
     ],
   },
