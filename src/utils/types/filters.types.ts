@@ -1,4 +1,4 @@
-import { AnyToFix } from './utils';
+import { AnyToFix } from './any.types';
 
 export type Filters<K, T extends AnyToFix = AnyToFix> = Filter<K, T>[];
 

@@ -17,6 +17,7 @@ import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import { encryptPassword, validatePassword } from './auth.utils';
 import { CurrentUserDto, generateCurrentUserDto } from './dto/current-user.dto';
+import { generateReferralDto, ReferralDto } from './dto/referral.dto';
 
 @Injectable()
 export class AuthService {
@@ -91,6 +92,14 @@ export class AuthService {
       hasExtractedCvData,
       complete
     );
+  }
+
+  async getPublicReferralInfo(userId: string): Promise<ReferralDto> {
+    const user = await this.usersService.findOne(userId);
+    if (!user || !user.referral) {
+      throw new NotFoundException();
+    }
+    return generateReferralDto(user.referral);
   }
 
   decodeJWT(token: string, ignoreExpiration?: boolean) {

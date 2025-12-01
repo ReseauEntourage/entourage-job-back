@@ -1,4 +1,5 @@
-import { AdminZone, FilterConstant } from 'src/utils/types';
+import { FilterConstant } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 // je ne souhaite pas répondre
 export const JNSPR = 'jnspr';
@@ -76,7 +77,7 @@ export const CompanyApproaches = {
 export type CompanyApproach =
   (typeof CompanyApproaches)[keyof typeof CompanyApproaches];
 
-export type CompanyZone = AdminZone | 'NATIONAL';
+export type CompanyZone = ZoneName | 'NATIONAL';
 
 export const CandidateHelpWith = {
   WORK: 'work',

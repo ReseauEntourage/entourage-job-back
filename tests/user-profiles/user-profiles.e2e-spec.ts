@@ -20,7 +20,8 @@ import {
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import { AdminZones, APIResponse } from 'src/utils/types';
+import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { ExperienceFactory } from 'tests/common/experiences/experience.factory';
 import { FormationFactory } from 'tests/common/formations/formation.factory';
@@ -1482,7 +1483,7 @@ describe('UserProfiles', () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LYON,
+              zone: ZoneName.LYON,
             },
             {
               userProfile: {
@@ -1501,7 +1502,7 @@ describe('UserProfiles', () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
               role: UserRoles.COACH,
-              zone: AdminZones.LYON,
+              zone: ZoneName.LYON,
             },
             {
               userProfile: {
@@ -1653,7 +1654,7 @@ describe('UserProfiles', () => {
               ],
             })
           );
-          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
+          expect(updatedUser.zone).toMatch(ZoneName.PARIS);
         });
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
           const updatedProfile: UserProfileWithPartialAssociations = {
@@ -1736,7 +1737,7 @@ describe('UserProfiles', () => {
             })
           );
 
-          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
+          expect(updatedUser.zone).toMatch(ZoneName.PARIS);
         });
         it('Should return 403, if referer updates his profile referer properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
@@ -2136,7 +2137,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
               refererId: loggedInReferer.user.id,
             },
             {}
@@ -2169,7 +2170,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
               refererId: loggedInReferer.user.id,
             },
             {}
@@ -2201,7 +2202,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
               refererId: loggedInReferer.user.id,
             },
             {}
@@ -2216,7 +2217,7 @@ describe('UserProfiles', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.PARIS,
+              zone: ZoneName.PARIS,
               refererId: otherLoggedInReferer.user.id,
             },
             {}
@@ -2362,7 +2363,7 @@ describe('UserProfiles', () => {
         loggedInCoach = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2385,7 +2386,7 @@ describe('UserProfiles', () => {
           3,
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2426,7 +2427,7 @@ describe('UserProfiles', () => {
         loggedInCoach = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2449,7 +2450,7 @@ describe('UserProfiles', () => {
           2,
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2469,7 +2470,7 @@ describe('UserProfiles', () => {
         const userNotAvailable = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2494,7 +2495,7 @@ describe('UserProfiles', () => {
         const userAvailable = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2537,7 +2538,7 @@ describe('UserProfiles', () => {
         loggedInCoach = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2572,7 +2573,7 @@ describe('UserProfiles', () => {
         const candidateSameRegion = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2605,7 +2606,7 @@ describe('UserProfiles', () => {
         const candidate2BusinessSectorsInCommon = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2638,7 +2639,7 @@ describe('UserProfiles', () => {
         const candidate2NudgesInCommon = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2678,7 +2679,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.PARIS,
+            zone: ZoneName.PARIS,
           },
           {
             userProfile: {
@@ -2709,7 +2710,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2739,7 +2740,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2773,7 +2774,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2804,7 +2805,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2838,7 +2839,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2872,7 +2873,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2908,7 +2909,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
             },
             {
               userProfile: {
@@ -2964,7 +2965,7 @@ describe('UserProfiles', () => {
         loggedInCandidate = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2987,7 +2988,7 @@ describe('UserProfiles', () => {
           3,
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3028,7 +3029,7 @@ describe('UserProfiles', () => {
         loggedInCandidate = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3051,7 +3052,7 @@ describe('UserProfiles', () => {
           2,
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3071,7 +3072,7 @@ describe('UserProfiles', () => {
         const userNotAvailable = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3101,7 +3102,7 @@ describe('UserProfiles', () => {
         const userAvailable = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3142,7 +3143,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'me',
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3176,7 +3177,7 @@ describe('UserProfiles', () => {
         const coachSameRegion = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3209,7 +3210,7 @@ describe('UserProfiles', () => {
         const coach2BusinessSectorsInCommon = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3243,7 +3244,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'coach2NudgesInCommon',
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3283,7 +3284,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.PARIS,
+            zone: ZoneName.PARIS,
           },
           {
             userProfile: {
@@ -3317,7 +3318,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3348,7 +3349,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'oneHelpInCommon',
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3382,7 +3383,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3416,7 +3417,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3450,7 +3451,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3485,7 +3486,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'sameProfile',
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3521,7 +3522,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
             },
             {
               userProfile: {

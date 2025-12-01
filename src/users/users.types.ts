@@ -2,12 +2,8 @@ import { Op } from 'sequelize';
 import { BusinessSectorFilters } from 'src/common/business-sectors/business-sectors.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 
-import {
-  AdminZone,
-  AdminZoneFilters,
-  FilterConstant,
-  Filters,
-} from 'src/utils/types';
+import { FilterConstant, Filters } from 'src/utils/types';
+import { ZoneName, ZoneNameFilters } from 'src/utils/types/zones.types';
 
 export const UserRoles = {
   CANDIDATE: 'Candidat',
@@ -87,7 +83,7 @@ export type Gender = (typeof Genders)[keyof typeof Genders];
 
 export interface MemberOptions {
   role: { [Op.or]: UserRole[] };
-  zone: { [Op.or]: AdminZone[] };
+  zone: { [Op.or]: ZoneName[] };
   businessSectorIds: { [Op.in]: string[] };
   employed: { [Op.or]: boolean[] };
 }
@@ -100,7 +96,7 @@ export const EmployedFilters: FilterConstant<boolean>[] = [
 ];
 
 export type MemberConstantType =
-  | (typeof AdminZoneFilters)[number]['value']
+  | (typeof ZoneNameFilters)[number]['value']
   | (typeof BusinessSectorFilters)[number]['value']
   | (typeof EmployedFilters)[number]['value'];
 
@@ -116,7 +112,7 @@ export const MemberFilters = ({
   },
   {
     key: 'zone',
-    constants: AdminZoneFilters,
+    constants: ZoneNameFilters,
     title: 'Zone',
   },
   {

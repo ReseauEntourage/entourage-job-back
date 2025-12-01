@@ -1,0 +1,63 @@
+import _ from 'lodash';
+import { DepartmentCode } from './departments.types';
+import { FilterConstant } from './filters.types';
+import { SfLocalBranchName } from './local-branches.types';
+
+export enum ZoneName {
+  PARIS = 'PARIS',
+  LYON = 'LYON',
+  LILLE = 'LILLE',
+  LORIENT = 'LORIENT',
+  RENNES = 'RENNES',
+  SUDOUEST = 'SUDOUEST',
+  HZ = 'HORS ZONE',
+}
+
+export enum ZoneSuffix {
+  PARIS = 'PARIS',
+  LYON = 'LYON',
+  LILLE = 'LILLE',
+  LORIENT = 'LORIENT',
+  RENNES = 'RENNES',
+  SUDOUEST = 'SUDOUEST',
+  HZ = 'HZ',
+}
+
+export enum ReferralGroup {
+  MAIN = 'main',
+  COMPANY = 'company',
+}
+
+export enum ModerationGroup {
+  MAIN = 'main',
+  COMPANY = 'company',
+}
+
+export type Referral = {
+  name: string;
+  email: string;
+  img: string;
+  slackEmail: string;
+};
+
+export type Zone = {
+  name: ZoneName;
+  suffix: ZoneSuffix;
+  departmentCodes: DepartmentCode[];
+  sfLocalBranches: SfLocalBranchName[];
+  referral: {
+    [key in ReferralGroup]: Referral;
+  };
+};
+
+export const ZoneNameFilters: FilterConstant<ZoneName>[] = [
+  { value: ZoneName.PARIS, label: _.capitalize(ZoneName.PARIS) },
+  { value: ZoneName.LILLE, label: _.capitalize(ZoneName.LILLE) },
+  { value: ZoneName.LYON, label: _.capitalize(ZoneName.LYON) },
+  { value: ZoneName.LORIENT, label: _.capitalize(ZoneName.LORIENT) },
+  { value: ZoneName.RENNES, label: _.capitalize(ZoneName.RENNES) },
+  { value: ZoneName.SUDOUEST, label: _.capitalize(ZoneName.SUDOUEST) },
+  { value: ZoneName.HZ, label: _.capitalize(ZoneName.HZ) },
+];
+
+export type ZoneNameFilter = (typeof ZoneNameFilters)[number];

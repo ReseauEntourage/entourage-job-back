@@ -6,6 +6,7 @@ import {
   Default,
   HasMany,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
   UpdatedAt,
@@ -13,10 +14,9 @@ import {
 import { ExperienceSkill } from 'src/common/experiences/models';
 import { FormationSkill } from 'src/common/formations/models';
 import { UserProfileSkill } from 'src/user-profiles/models/user-profile-skill.model';
-import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Skills' })
-export class Skill extends WrapperModel {
+export class Skill extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

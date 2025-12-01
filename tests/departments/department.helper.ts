@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Department } from 'src/common/departments/models/department.model';
+import { DepartmentCode } from 'src/utils/types/departments.types';
 import { DepartmentFactory } from './department.factory';
 
 @Injectable()
@@ -32,31 +33,31 @@ export class DepartmentHelper {
   async seedDepartments() {
     const departments = [
       {
-        value: '01',
+        value: DepartmentCode.Ain,
         name: 'Ain',
       },
       {
-        value: '02',
+        value: DepartmentCode.Aisne,
         name: 'Aisne',
       },
       {
-        value: '03',
+        value: DepartmentCode.Allier,
         name: 'Allier',
       },
       {
-        value: '04',
+        value: DepartmentCode.AlpesDeHauteProvence,
         name: 'Alpes-de-Haute-Provence',
       },
       {
-        value: '05',
+        value: DepartmentCode.HautesAlpes,
         name: 'Hautes-Alpes',
       },
       {
-        value: '75',
+        value: DepartmentCode.Paris,
         name: 'Paris',
       },
       {
-        value: '69',
+        value: DepartmentCode.Rhone,
         name: 'Rhône',
       },
     ];

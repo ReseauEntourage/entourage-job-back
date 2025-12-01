@@ -1,4 +1,4 @@
-import { AdminZone } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 export type MailerRecruitementAlert = {
   alertId: string;
@@ -6,5 +6,5 @@ export type MailerRecruitementAlert = {
   newCandidatesCount: number;
   companyAdminEmail: string;
   firstName: string;
-  zone: AdminZone;
+  zone: ZoneName;
 };

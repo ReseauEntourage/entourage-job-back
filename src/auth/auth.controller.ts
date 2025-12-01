@@ -174,6 +174,15 @@ export class AuthController {
     return await this.authService.getCurrentUser(id, complete === 'true');
   }
 
+  @Throttle(60, 60)
+  @ApiBearerAuth()
+  @Get('current/referral')
+  async getCurrentReferral(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    return await this.authService.getPublicReferralInfo(userId);
+  }
+
   @Public()
   @Post('verify-email')
   async verifyEmail(@Body('token') token: string): Promise<void> {

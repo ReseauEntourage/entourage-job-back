@@ -51,11 +51,13 @@ import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserSocialSituation } from 'src/user-social-situations/models/user-social-situation.model';
-import { AdminZone, HistorizedModel } from 'src/utils/types';
 import {
   WhatsappCandidateByZone,
   WhatsappCoachByZone,
-} from 'src/utils/types/WhatsappZone';
+} from 'src/utils/constants/whatsapp-groups';
+import { Zones } from 'src/utils/constants/zones';
+import { HistorizedModel } from 'src/utils/types';
+import { Referral, ReferralGroup, ZoneName } from 'src/utils/types/zones.types';
 import { UserCandidat } from './user-candidat.model';
 
 @Table({ tableName: 'Users' })
@@ -173,7 +175,7 @@ export class User extends HistorizedModel {
   @IsString()
   @AllowNull(true)
   @Column
-  zone: AdminZone;
+  zone: ZoneName;
 
   @ApiProperty()
   @IsBoolean()
@@ -191,7 +193,7 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneName(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -203,7 +205,7 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneUrl(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -214,8 +216,21 @@ export class User extends HistorizedModel {
   }
 
   @Column(DataType.VIRTUAL)
+  get referral(): Referral | undefined {
+    const zone = this.getDataValue('zone') as ZoneName;
+    if (!zone) {
+      return undefined;
+    }
+    const referralGroup =
+      this.company && this.company?.companyUser?.isAdmin
+        ? ReferralGroup.COMPANY
+        : ReferralGroup.MAIN;
+    return Zones[zone].referral[referralGroup];
+  }
+
+  @Column(DataType.VIRTUAL)
   get whatsappZoneQR(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';

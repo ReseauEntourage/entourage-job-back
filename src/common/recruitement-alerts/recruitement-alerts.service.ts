@@ -6,7 +6,7 @@ import { Skill } from 'src/common/skills/models';
 import { SkillsService } from 'src/common/skills/skills.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
-import { FilterConstant } from 'src/utils/types/Filters';
+import { FilterConstant } from 'src/utils/types/filters.types';
 import { CreateRecruitementAlertDto, UpdateRecruitementAlertDto } from './dto';
 import {
   RecruitementAlert,

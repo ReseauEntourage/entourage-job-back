@@ -3,7 +3,7 @@ import { RequireApiKey } from 'src/api-keys/decorators';
 import { Public } from 'src/auth/guards';
 import { RecruitementAlertsService } from 'src/common/recruitement-alerts/recruitement-alerts.service';
 import { UsersService } from 'src/users/users.service';
-import { getZoneFromDepartment } from 'src/utils/misc';
+import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { MailerRecruitementAlert } from './MailerRecruitementAlert';
 
 // secured by API key
@@ -72,7 +72,7 @@ export class WorkerController {
             newCandidatesCount: newMatchingUsers.length,
             companyAdminEmail: adminUserDetails.email,
             firstName: adminUserDetails.firstName,
-            zone: getZoneFromDepartment(
+            zone: getZoneNameFromDepartment(
               adminUserDetails.userProfile.department
             ),
           });

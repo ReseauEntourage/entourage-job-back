@@ -4,13 +4,14 @@ import {
   DataType,
   Default,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { WrapperModel } from 'src/utils/types';
+import { DepartmentCode } from 'src/utils/types/departments.types';
 
 @Table({ tableName: 'Departments', timestamps: false })
-export class Department extends WrapperModel {
+export class Department extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
@@ -23,5 +24,5 @@ export class Department extends WrapperModel {
 
   @AllowNull(false)
   @Column
-  value: string;
+  value: DepartmentCode;
 }

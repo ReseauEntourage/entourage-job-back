@@ -28,7 +28,7 @@ import {
   UserRoles,
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
-import { getZoneFromDepartment, isValidPhone } from 'src/utils/misc';
+import { getZoneNameFromDepartment, isValidPhone } from 'src/utils/misc';
 import { convertYesNoToBoolean } from 'src/utils/yesNo';
 import { Utm } from 'src/utm/models';
 import {
@@ -125,7 +125,9 @@ export class UsersCreationController {
 
     const { hash, salt } = encryptPassword(createUserRegistrationDto.password);
 
-    const zone = getZoneFromDepartment(createUserRegistrationDto.department);
+    const zone = getZoneNameFromDepartment(
+      createUserRegistrationDto.department
+    );
 
     const userToCreate: Partial<User> = {
       firstName: createUserRegistrationDto.firstName,
@@ -308,7 +310,7 @@ export class UsersCreationController {
     const userRandomPassword = generateFakePassword();
     const { hash, salt } = encryptPassword(userRandomPassword);
 
-    const zone = getZoneFromDepartment(createUserReferingDto.department);
+    const zone = getZoneNameFromDepartment(createUserReferingDto.department);
 
     const userToCreate: Partial<User> = {
       refererId: referer.id,

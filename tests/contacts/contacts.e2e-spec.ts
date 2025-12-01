@@ -6,7 +6,8 @@ import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { AdminZones, APIResponse } from 'src/utils/types';
+import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { MailjetMock, SalesforceMocks } from 'tests/mocks.types';
@@ -145,7 +146,7 @@ describe('Contacts', () => {
         .post(`${route}/newsletter`)
         .send({
           email: 'john@gmail.com',
-          zone: AdminZones.LYON,
+          zone: ZoneName.LYON,
           status: 'PARTICULIER' as ContactStatus,
         });
       expect(response.status).toBe(201);
@@ -167,7 +168,7 @@ describe('Contacts', () => {
         .post(`${route}/newsletter`)
         .send({
           email: null,
-          zone: AdminZones.LYON,
+          zone: ZoneName.LYON,
           status: 'PARTICULIER' as ContactStatus,
         });
       expect(response.status).toBe(400);

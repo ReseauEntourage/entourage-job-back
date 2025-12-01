@@ -11,7 +11,8 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { UserRoles } from 'src/users/users.types';
-import { AdminZones, APIResponse } from 'src/utils/types';
+import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
@@ -430,7 +431,7 @@ describe('Users', () => {
               2,
               {
                 role: UserRoles.CANDIDATE,
-                zone: AdminZones.LYON,
+                zone: ZoneName.LYON,
               }
             );
             const parisCandidates = await databaseHelper.createEntities(
@@ -438,17 +439,17 @@ describe('Users', () => {
               2,
               {
                 role: UserRoles.CANDIDATE,
-                zone: AdminZones.PARIS,
+                zone: ZoneName.PARIS,
               }
             );
             await databaseHelper.createEntities(userFactory, 2, {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
             });
 
             await databaseHelper.createEntities(userFactory, 2, {
               role: UserRoles.COACH,
-              zone: AdminZones.LYON,
+              zone: ZoneName.LYON,
             });
 
             const expectedCandidatesIds = [
@@ -459,7 +460,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&zone[]=${ZoneName.LYON}&zone[]=${ZoneName.PARIS}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -474,7 +475,7 @@ describe('Users', () => {
               2,
               {
                 role: UserRoles.COACH,
-                zone: AdminZones.LYON,
+                zone: ZoneName.LYON,
               }
             );
             const parisCoaches = await databaseHelper.createEntities(
@@ -482,17 +483,17 @@ describe('Users', () => {
               2,
               {
                 role: UserRoles.COACH,
-                zone: AdminZones.PARIS,
+                zone: ZoneName.PARIS,
               }
             );
             await databaseHelper.createEntities(userFactory, 2, {
               role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
             });
 
             await databaseHelper.createEntities(userFactory, 2, {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LYON,
+              zone: ZoneName.LYON,
             });
 
             const expectedCoachesIds = [
@@ -503,7 +504,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&zone[]=${AdminZones.LYON}&zone[]=${AdminZones.PARIS}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&zone[]=${ZoneName.LYON}&zone[]=${ZoneName.PARIS}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -564,7 +565,7 @@ describe('Users', () => {
               await databaseHelper.createEntities(userFactory, 2, {
                 firstName: 'XXX',
                 role: UserRoles.CANDIDATE,
-                zone: AdminZones.LYON,
+                zone: ZoneName.LYON,
                 OrganizationId: organization.id,
               });
 
@@ -575,7 +576,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${AdminZones.LYON}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${ZoneName.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -593,7 +594,7 @@ describe('Users', () => {
               {
                 firstName: 'XXX',
                 role: UserRoles.COACH,
-                zone: AdminZones.LYON,
+                zone: ZoneName.LYON,
                 OrganizationId: organization.id,
               }
             );
@@ -605,7 +606,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${AdminZones.LYON}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${ZoneName.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -624,7 +625,7 @@ describe('Users', () => {
               {
                 firstName: 'XXX',
                 role: UserRoles.REFERER,
-                zone: AdminZones.LYON,
+                zone: ZoneName.LYON,
                 OrganizationId: organization.id,
               }
             );
@@ -634,7 +635,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.REFERER}&query=XXX&zone[]=${AdminZones.LYON}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.REFERER}&query=XXX&zone[]=${ZoneName.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);

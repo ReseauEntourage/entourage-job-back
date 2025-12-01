@@ -17,7 +17,7 @@ import {
 } from 'src/contacts/dto';
 import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
 import { isValidPhone } from 'src/utils/misc';
-import { AdminZone } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { ContactsService } from './contacts.service';
 
 // TODO change to /contacts
@@ -61,7 +61,7 @@ export class ContactsController {
   @Post('newsletter')
   async addContactForNewsletter(
     @Body('email') email: string,
-    @Body('zone') zone?: AdminZone,
+    @Body('zone') zone?: ZoneName,
     @Body('status') status?: ContactStatus
   ) {
     if (!email || !validator.isEmail(email)) {

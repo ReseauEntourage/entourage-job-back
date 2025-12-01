@@ -16,7 +16,7 @@ import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
-import { getZoneFromDepartment } from 'src/utils/misc';
+import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { APIResponse } from 'src/utils/types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
@@ -460,7 +460,7 @@ describe('UserCreation', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           ...userValues,
-          zone: getZoneFromDepartment(userProfileValues.department),
+          zone: getZoneNameFromDepartment(userProfileValues.department),
           userProfile: expect.objectContaining({
             department: userProfileValues.department,
             nudges: expect.arrayContaining(
@@ -511,7 +511,7 @@ describe('UserCreation', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           ...userValues,
-          zone: getZoneFromDepartment(userProfileValues.department),
+          zone: getZoneNameFromDepartment(userProfileValues.department),
           userProfile: expect.objectContaining({
             department: userProfileValues.department,
           }),
@@ -561,7 +561,7 @@ describe('UserCreation', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           ...userValues,
-          zone: getZoneFromDepartment(userProfileValues.department),
+          zone: getZoneNameFromDepartment(userProfileValues.department),
           organization: {
             id: organization.id,
             name: organization.name,
@@ -610,7 +610,7 @@ describe('UserCreation', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           ...userValues,
-          zone: getZoneFromDepartment(userProfileValues.department),
+          zone: getZoneNameFromDepartment(userProfileValues.department),
           userProfile: expect.objectContaining({
             department: userProfileValues.department,
           }),
@@ -881,7 +881,7 @@ describe('UserCreation', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           ...userValues,
-          zone: getZoneFromDepartment(userProfileValues.department),
+          zone: getZoneNameFromDepartment(userProfileValues.department),
           userProfile: expect.objectContaining({
             department: userProfileValues.department,
             nudges: expect.arrayContaining(
@@ -944,7 +944,7 @@ describe('UserCreation', () => {
       expect(response.body).toEqual(
         expect.objectContaining({
           ...userValues,
-          zone: getZoneFromDepartment(userProfileValues.department),
+          zone: getZoneNameFromDepartment(userProfileValues.department),
           userProfile: expect.objectContaining({
             department: userProfileValues.department,
             nudges: expect.arrayContaining(

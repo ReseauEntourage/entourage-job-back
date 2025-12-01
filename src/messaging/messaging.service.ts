@@ -19,7 +19,6 @@ import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
-import { getAdminMailsFromZone } from 'src/utils/misc';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
@@ -463,9 +462,9 @@ export class MessagingService {
         }
       }
 
-      const { candidatesAdminMail } = getAdminMailsFromZone(sender.zone);
+      const moderatorSlackEmail = sender.referral.slackEmail;
       const referentSlackUserId = await this.slackService.getUserIdByEmail(
-        candidatesAdminMail
+        moderatorSlackEmail
       );
       const slackMsgConfig: SlackBlockConfig =
         generateSlackMsgConfigUserSuspiciousUser(
