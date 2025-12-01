@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
@@ -22,6 +23,7 @@ import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { CronModule } from './cron/cron.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
@@ -107,6 +109,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
       }),
     }),
     ...(process.env.QUEUES_ADMIN_PASSWORD ? [QueuesBoardModule] : []),
+    ScheduleModule.forRoot(),
     CacheModule.register<RedisOptions>({
       isGlobal: true,
       store: ioRedisStore,
@@ -143,6 +146,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     MessagingModule,
     UserSocialSituationsModule,
     MediasModule,
+    CronModule,
     OpenAiModule,
     PublicCVsModule,
     CompaniesModule,

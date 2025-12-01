@@ -8,7 +8,8 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
 import {
-  getAdminMailsFromZone,
+  Context,
+  getLocalBranchMailsFromZone,
   searchInColumnWhereOption,
 } from 'src/utils/misc';
 import { companiesAttributes } from './companies.attributes';
@@ -97,9 +98,12 @@ export class CompaniesService {
       hooks: true,
     });
 
-    const { candidatesAdminMail } = getAdminMailsFromZone(createdByUser.zone);
+    const { moderationMail } = getLocalBranchMailsFromZone(
+      createdByUser.zone,
+      Context.COMPANY
+    );
     const referentSlackUserId = await this.slackService.getUserIdByEmail(
-      candidatesAdminMail
+      moderationMail
     );
 
     this.sendSlackNotificationCompanyCreated(

@@ -1,6 +1,6 @@
 {
   "name": "linkedout-backend",
-  "version": "2.28.2",
+  "version": "2.28.3",
   "license": "ISC",
   "engines": {
     "node": "20.x"
@@ -44,6 +44,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^9.0.3",
     "@nestjs/platform-express": "^9.4.1",
+    "@nestjs/schedule": "^6.0.0",
     "@nestjs/sequelize": "^9.0.2",
     "@nestjs/swagger": "^6.3.0",
     "@nestjs/throttler": "^4.0.0",
@@ -96,7 +97,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^7.0.0",
-    "@nestjs/cli": "^9.5.0",
+    "@nestjs/cli": "^11.0.12",
     "@nestjs/schematics": "^9.2.0",
     "@nestjs/testing": "^9.4.1",
     "@types/bull": "^3.15.8",
