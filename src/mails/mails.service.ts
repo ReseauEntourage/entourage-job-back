@@ -57,13 +57,13 @@ export class MailsService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
-    const referralMainEmail = Zones[user.zone]?.referral?.main?.email;
-
     if (user.role === UserRoles.COACH) {
       if (user.company?.companyUser?.isAdmin) {
+        const referralCompanyEmail = Zones[user.zone]?.referral?.company?.email;
+
         return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
           toEmail: user.email,
-          replyTo: referralMainEmail,
+          replyTo: referralCompanyEmail,
           templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
           variables: {
             firstName: user.firstName,
@@ -75,6 +75,8 @@ export class MailsService {
           },
         });
       }
+
+      const referralMainEmail = Zones[user.zone]?.referral?.company?.email;
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: referralMainEmail,
@@ -86,6 +88,7 @@ export class MailsService {
       });
     }
 
+    const referralMainEmail = Zones[user.zone]?.referral?.company?.email;
     if (user.role === UserRoles.CANDIDATE) {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
@@ -301,6 +304,7 @@ export class MailsService {
         to: candidate.referer.email,
         bcc: referralMainEmail,
       },
+      replyTo: referralMainEmail,
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
         candidateFirstName: candidate.firstName,

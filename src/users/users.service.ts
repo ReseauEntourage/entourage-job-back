@@ -467,6 +467,52 @@ export class UsersService {
     });
   }
 
+  // Get all users -except admins- that have connected once but not in the last 25 months and not deleted
+  async getInactiveUsersForDeletion() {
+    const inactiveUsers: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      candidatUrl: string | null;
+    }[] = await this.userModel.sequelize.query(
+      `
+          SELECT
+              "Users"."id" as id,
+              "Users"."firstName" as "firstName",
+              "Users"."lastName" as "lastName",
+              uc."url" as "candidatUrl"
+          FROM
+              "Users"
+          LEFT OUTER JOIN "User_Candidats" uc
+              ON "Users"."id" = uc."candidatId"
+          WHERE
+            -- has already signed in --
+            "Users"."lastConnection" IS NOT NULL
+            -- isInactiveSince --
+            AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+            -- is not deleted --
+            AND "Users"."deletedAt" IS NULL
+            -- Filter on role --
+            AND "Users".role NOT IN ('Admin')
+      ;`,
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+      }
+    );
+
+    const users: Partial<User>[] = inactiveUsers.map((user) => {
+      return {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        candidat: { url: user.candidatUrl },
+      } as Partial<User>;
+    });
+
+    return users;
+  }
+
   async generateVerificationToken(user: User) {
     return this.authService.generateVerificationToken(user);
   }
