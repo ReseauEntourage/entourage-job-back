@@ -19,6 +19,7 @@ import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
+import { Zones } from 'src/utils/constants/zones';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
@@ -462,7 +463,8 @@ export class MessagingService {
         }
       }
 
-      const moderatorSlackEmail = sender.referral.slackEmail;
+      const moderatorSlackEmail =
+        Zones[sender.zone]?.referral?.main?.slackEmail;
       const referentSlackUserId = await this.slackService.getUserIdByEmail(
         moderatorSlackEmail
       );
