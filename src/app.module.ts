@@ -24,6 +24,7 @@ import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { CronModule } from './cron/cron.module';
+import { EventsModule } from './events/events.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { MailjetModule } from './external-services/mailjet/mailjet.module';
@@ -153,6 +154,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ProfileGenerationModule,
     WorkerControllerModule,
     PingModule,
+    EventsModule,
   ],
   providers: [
     {
