@@ -8,6 +8,7 @@ const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
 export const Zones: { [key in ZoneName]: Zone } = {
   [ZoneName.PARIS]: {
     name: ZoneName.PARIS,
+    sfName: ZoneName.PARIS,
     suffix: ZoneSuffix.PARIS,
     departmentCodes: [],
     sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.PARIS],
@@ -28,6 +29,7 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.LYON]: {
     name: ZoneName.LYON,
+    sfName: ZoneName.LYON,
     suffix: ZoneSuffix.LYON,
     departmentCodes: [],
     sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.LYON],
@@ -48,6 +50,7 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.LILLE]: {
     name: ZoneName.LILLE,
+    sfName: ZoneName.LILLE,
     suffix: ZoneSuffix.LILLE,
     departmentCodes: [],
     sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.LILLE],
@@ -68,6 +71,7 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.LORIENT]: {
     name: ZoneName.LORIENT,
+    sfName: ZoneName.LORIENT,
     suffix: ZoneSuffix.LORIENT,
     departmentCodes: [],
     sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.LORIENT],
@@ -88,6 +92,7 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.RENNES]: {
     name: ZoneName.RENNES,
+    sfName: ZoneName.RENNES,
     suffix: ZoneSuffix.RENNES,
     departmentCodes: [],
     sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.RENNES],
@@ -108,6 +113,7 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.SUDOUEST]: {
     name: ZoneName.SUDOUEST,
+    sfName: ZoneName.HZ, // Salesforce uses 'HZ' for 'SUDOUEST'
     suffix: ZoneSuffix.SUDOUEST,
     departmentCodes: [],
     sfLocalBranches: [
@@ -132,6 +138,7 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.HZ]: {
     name: ZoneName.HZ,
+    sfName: ZoneName.HZ,
     suffix: ZoneSuffix.HZ,
     departmentCodes: [],
     sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.HZ],

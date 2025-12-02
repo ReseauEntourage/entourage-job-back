@@ -13,6 +13,9 @@ export enum ZoneName {
   HZ = 'HORS ZONE',
 }
 
+// Salesforce zone names exclude 'SUDOUEST' and use 'HZ' instead
+export type SfZoneName = Exclude<ZoneName, 'SUDOUEST'>;
+
 export enum ZoneSuffix {
   PARIS = 'PARIS',
   LYON = 'LYON',
@@ -39,6 +42,7 @@ export type PublicStaffContact = Omit<InternalStaffContact, 'slackEmail'>;
 
 export type Zone = {
   name: ZoneName;
+  sfName: SfZoneName;
   suffix: ZoneSuffix;
   departmentCodes: DepartmentCode[];
   sfLocalBranches: SfLocalBranchName[];
