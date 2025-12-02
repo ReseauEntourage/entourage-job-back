@@ -155,7 +155,7 @@ describe('UserCreation', () => {
         whatsappZoneName,
         whatsappZoneUrl,
         whatsappZoneQR,
-        referral,
+        staffContact,
         company,
         ...user
       } = await userFactory.create({}, {}, false);
@@ -185,7 +185,7 @@ describe('UserCreation', () => {
         whatsappZoneName,
         whatsappZoneUrl,
         whatsappZoneQR,
-        referral,
+        staffContact,
         company,
         ...user
       } = await userFactory.create({}, {}, false);
@@ -279,7 +279,7 @@ describe('UserCreation', () => {
         whatsappZoneName,
         whatsappZoneUrl,
         whatsappZoneQR,
-        referral,
+        staffContact,
         userSocialSituation,
         company,
         ...candidate
@@ -313,7 +313,7 @@ describe('UserCreation', () => {
           whatsappZoneName,
           whatsappZoneUrl,
           whatsappZoneQR,
-          referral,
+          staffContact,
           company,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
@@ -343,7 +343,7 @@ describe('UserCreation', () => {
           whatsappZoneName,
           whatsappZoneUrl,
           whatsappZoneQR,
-          referral,
+          staffContact,
           company,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
@@ -374,7 +374,7 @@ describe('UserCreation', () => {
           whatsappZoneName,
           whatsappZoneUrl,
           whatsappZoneQR,
-          referral,
+          staffContact,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
 
@@ -401,7 +401,7 @@ describe('UserCreation', () => {
           whatsappZoneName,
           whatsappZoneUrl,
           whatsappZoneQR,
-          referral,
+          staffContact,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 

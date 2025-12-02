@@ -51,8 +51,10 @@ export class SlackService {
     reason: string,
     comment: string
   ): Promise<void> => {
-    const referralSlackEmail = userReported.referral?.slackEmail;
-    const slackReferralUserId = await this.getUserIdByEmail(referralSlackEmail);
+    const staffContactSlackEmail = userReported.staffContact?.slackEmail;
+    const slackStaffContactUserId = await this.getUserIdByEmail(
+      staffContactSlackEmail
+    );
     return this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       this.generateProfileReportedBlocks(
@@ -60,7 +62,7 @@ export class SlackService {
         userReported,
         reason,
         comment,
-        slackReferralUserId
+        slackStaffContactUserId
       ),
       `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
     );
@@ -118,7 +120,7 @@ export class SlackService {
     userReported: User,
     reason: string,
     comment: string,
-    slackReferralUserId: string | null
+    slackStaffContactUserId: string | null
   ) => {
     return this.generateSlackBlockMsg({
       title: '🚨 Un profil a été signalé',
@@ -129,8 +131,8 @@ export class SlackService {
         },
         {
           title: 'Référent de la personne signalée',
-          content: slackReferralUserId
-            ? `<@${slackReferralUserId}>`
+          content: slackStaffContactUserId
+            ? `<@${slackStaffContactUserId}>`
             : 'Aucun référent assigné',
         },
       ],

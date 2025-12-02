@@ -464,7 +464,7 @@ export class MessagingService {
       }
 
       const moderatorSlackEmail =
-        Zones[sender.zone]?.referral?.main?.slackEmail;
+        Zones[sender.zone]?.staffContact?.main?.slackEmail;
       const referentSlackUserId = await this.slackService.getUserIdByEmail(
         moderatorSlackEmail
       );

@@ -97,7 +97,7 @@ export class CompaniesService {
 
     const zone = Zones[createdByUser.zone];
     if (zone) {
-      const moderationSlackEmail = zone.referral.company.slackEmail;
+      const moderationSlackEmail = zone.staffContact.company.slackEmail;
 
       const referentSlackUserId = await this.slackService.getUserIdByEmail(
         moderationSlackEmail

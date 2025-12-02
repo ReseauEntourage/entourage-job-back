@@ -23,17 +23,12 @@ export enum ZoneSuffix {
   HZ = 'HZ',
 }
 
-export enum ReferralGroup {
+export enum StaffContactGroup {
   MAIN = 'main',
   COMPANY = 'company',
 }
 
-export enum ModerationGroup {
-  MAIN = 'main',
-  COMPANY = 'company',
-}
-
-export type Referral = {
+export type StaffContact = {
   name: string;
   email: string;
   img: string;
@@ -45,8 +40,8 @@ export type Zone = {
   suffix: ZoneSuffix;
   departmentCodes: DepartmentCode[];
   sfLocalBranches: SfLocalBranchName[];
-  referral: {
-    [key in ReferralGroup]: Referral;
+  staffContact: {
+    [key in StaffContactGroup]: StaffContact;
   };
 };
 

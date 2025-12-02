@@ -17,7 +17,10 @@ import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import { encryptPassword, validatePassword } from './auth.utils';
 import { CurrentUserDto, generateCurrentUserDto } from './dto/current-user.dto';
-import { generateReferralDto, ReferralDto } from './dto/referral.dto';
+import {
+  generateStaffContactDto,
+  StaffContactDto,
+} from './dto/staff-contact.dto';
 
 @Injectable()
 export class AuthService {
@@ -94,12 +97,12 @@ export class AuthService {
     );
   }
 
-  async getPublicReferralInfo(userId: string): Promise<ReferralDto> {
+  async getPublicStaffContactInfo(userId: string): Promise<StaffContactDto> {
     const user = await this.usersService.findOne(userId);
-    if (!user || !user.referral) {
+    if (!user || !user.staffContact) {
       throw new NotFoundException();
     }
-    return generateReferralDto(user.referral);
+    return generateStaffContactDto(user.staffContact);
   }
 
   decodeJWT(token: string, ignoreExpiration?: boolean) {

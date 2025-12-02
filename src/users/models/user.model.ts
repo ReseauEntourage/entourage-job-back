@@ -57,7 +57,11 @@ import {
 } from 'src/utils/constants/whatsapp-groups';
 import { Zones } from 'src/utils/constants/zones';
 import { HistorizedModel } from 'src/utils/types';
-import { Referral, ReferralGroup, ZoneName } from 'src/utils/types/zones.types';
+import {
+  StaffContact,
+  StaffContactGroup,
+  ZoneName,
+} from 'src/utils/types/zones.types';
 import { UserCandidat } from './user-candidat.model';
 
 @Table({ tableName: 'Users' })
@@ -216,16 +220,16 @@ export class User extends HistorizedModel {
   }
 
   @Column(DataType.VIRTUAL)
-  get referral(): Referral | undefined {
+  get staffContact(): StaffContact | undefined {
     const zone = this.getDataValue('zone') as ZoneName;
     if (!zone) {
       return undefined;
     }
-    const referralGroup =
+    const staffContact =
       this.company && this.company?.companyUser?.isAdmin
-        ? ReferralGroup.COMPANY
-        : ReferralGroup.MAIN;
-    return Zones[zone].referral[referralGroup];
+        ? StaffContactGroup.COMPANY
+        : StaffContactGroup.MAIN;
+    return Zones[zone].staffContact[staffContact];
   }
 
   @Column(DataType.VIRTUAL)

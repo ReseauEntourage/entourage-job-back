@@ -176,11 +176,11 @@ export class AuthController {
 
   @Throttle(60, 60)
   @ApiBearerAuth()
-  @Get('current/referral')
-  async getCurrentReferral(
+  @Get('current/staff-contact')
+  async getCurrentUserStaffContact(
     @UserPayload('id', new ParseUUIDPipe()) userId: string
   ) {
-    return await this.authService.getPublicReferralInfo(userId);
+    return await this.authService.getPublicStaffContactInfo(userId);
   }
 
   @Public()
