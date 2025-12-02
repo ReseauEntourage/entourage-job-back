@@ -220,6 +220,11 @@ export class MailsService {
     reportedUser: User,
     reporterUser: User
   ) {
+    if (!reportedUser.staffContact) {
+      throw new NotFoundException(
+        `No staff contact found for zone ${reportedUser.zone}`
+      );
+    }
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: reportedUser.staffContact.email,
       templateId: MailjetTemplates.USER_REPORTED_ADMIN,

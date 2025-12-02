@@ -221,14 +221,14 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get staffContact(): StaffContact | undefined {
-    const zone = this.getDataValue('zone') as ZoneName;
-    if (!zone) {
-      return undefined;
-    }
+    const zone = (this.getDataValue('zone') as ZoneName) || ZoneName.HZ;
     const staffContact =
       this.company && this.company?.companyUser?.isAdmin
         ? StaffContactGroup.COMPANY
         : StaffContactGroup.MAIN;
+    if (!(zone in Zones)) {
+      return undefined;
+    }
     return Zones[zone].staffContact[staffContact];
   }
 
