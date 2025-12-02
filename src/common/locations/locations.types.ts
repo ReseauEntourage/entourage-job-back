@@ -6,6 +6,7 @@ export type DepartmentType = {
   name: string;
   zone: ZoneName;
   region: string;
+  code: DepartmentCode;
 };
 
 export const Departments = [
@@ -422,6 +423,7 @@ export const Departments = [
     name: 'Haut-Rhin (68)',
     zone: ZoneName.HZ,
     region: 'Grand Est',
+    code: DepartmentCode.HautRhin,
   },
   {
     name: 'Rhône (69)',
