@@ -5,6 +5,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import * as uuid from 'uuid';
 import { Department } from 'src/common/departments/models/department.model';
 import { Factory } from 'src/utils/types';
+import { DepartmentCode } from 'src/utils/types/departments.types';
 
 @Injectable()
 export class DepartmentFactory implements Factory<Department> {
@@ -19,7 +20,7 @@ export class DepartmentFactory implements Factory<Department> {
     return {
       id: uuid.v4(),
       name: name,
-      value: props.value || name.slice(0, 3),
+      value: (props.value || name.slice(0, 3)) as DepartmentCode,
     };
   }
 

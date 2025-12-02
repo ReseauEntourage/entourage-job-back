@@ -6,15 +6,15 @@ import {
   Default,
   HasMany,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileContract } from 'src/user-profiles/models/user-profile-contract.model';
-import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Contracts', timestamps: false })
-export class Contract extends WrapperModel {
+export class Contract extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

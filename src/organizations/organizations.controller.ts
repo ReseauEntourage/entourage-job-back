@@ -18,7 +18,7 @@ import { Public } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { isValidPhone } from 'src/utils/misc';
-import { AdminZone } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import {
   CreateOrganizationDto,
   CreateOrganizationPipe,
@@ -44,7 +44,7 @@ export class OrganizationsController {
     @Query('limit', new ParseIntPipe()) limit: number,
     @Query('offset', new ParseIntPipe()) offset: number,
     @Query('search') search?: string,
-    @Query('zone') zone?: AdminZone | AdminZone[]
+    @Query('zone') zone?: ZoneName | ZoneName[]
   ) {
     const organizations = await this.organizationsService.findAll(
       limit,

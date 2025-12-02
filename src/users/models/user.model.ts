@@ -51,11 +51,17 @@ import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserSocialSituation } from 'src/user-social-situations/models/user-social-situation.model';
-import { AdminZone, HistorizedModel } from 'src/utils/types';
 import {
   WhatsappCandidateByZone,
   WhatsappCoachByZone,
-} from 'src/utils/types/WhatsappZone';
+} from 'src/utils/constants/whatsapp-groups';
+import { Zones } from 'src/utils/constants/zones';
+import { HistorizedModel } from 'src/utils/types';
+import {
+  InternalStaffContact,
+  StaffContactGroup,
+  ZoneName,
+} from 'src/utils/types/zones.types';
 import { UserCandidat } from './user-candidat.model';
 
 @Table({ tableName: 'Users' })
@@ -173,7 +179,7 @@ export class User extends HistorizedModel {
   @IsString()
   @AllowNull(true)
   @Column
-  zone: AdminZone;
+  zone: ZoneName;
 
   @ApiProperty()
   @IsBoolean()
@@ -191,7 +197,7 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneName(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -203,7 +209,7 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneUrl(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -213,9 +219,31 @@ export class User extends HistorizedModel {
       : WhatsappCandidateByZone[zone].url || '';
   }
 
+  /**
+   * Get the staff contact information based on the user's zone and company admin status
+   * Requires 'zone' and 'role' to be set on the User instance and 'company' to be loaded if applicable
+   * @returns StaffContact information or undefined if zone is invalid
+   */
+  @Column(DataType.VIRTUAL)
+  get staffContact(): InternalStaffContact | undefined {
+    const zone = (this.getDataValue('zone') as ZoneName) || ZoneName.HZ;
+
+    // Check if companies association is loaded
+    const hasCompanies = this.companies !== undefined;
+    const staffContactGroup =
+      hasCompanies && this.company && this.company?.companyUser?.isAdmin
+        ? StaffContactGroup.COMPANY
+        : StaffContactGroup.MAIN;
+
+    if (!(zone in Zones)) {
+      return undefined;
+    }
+    return Zones[zone].staffContact[staffContactGroup];
+  }
+
   @Column(DataType.VIRTUAL)
   get whatsappZoneQR(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';

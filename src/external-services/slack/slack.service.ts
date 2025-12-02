@@ -51,13 +51,18 @@ export class SlackService {
     reason: string,
     comment: string
   ): Promise<void> => {
+    const staffContactSlackEmail = userReported.staffContact?.slackEmail;
+    const slackStaffContactUserId = await this.getUserIdByEmail(
+      staffContactSlackEmail
+    );
     return this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       this.generateProfileReportedBlocks(
         userReporter,
         userReported,
         reason,
-        comment
+        comment,
+        slackStaffContactUserId
       ),
       `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
     );
@@ -114,7 +119,8 @@ export class SlackService {
     userReporter: User,
     userReported: User,
     reason: string,
-    comment: string
+    comment: string,
+    slackStaffContactUserId: string | null
   ) => {
     return this.generateSlackBlockMsg({
       title: '🚨 Un profil a été signalé',
@@ -122,6 +128,12 @@ export class SlackService {
         {
           title: 'Signalé par',
           content: `\n${userReporter.firstName} ${userReporter.lastName} <${userReporter.email}>`,
+        },
+        {
+          title: 'Référent de la personne signalée',
+          content: slackStaffContactUserId
+            ? `<@${slackStaffContactUserId}>`
+            : 'Aucun référent assigné',
         },
       ],
       msgParts: [

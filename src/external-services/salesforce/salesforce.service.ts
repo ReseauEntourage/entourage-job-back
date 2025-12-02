@@ -21,7 +21,7 @@ import {
 } from 'src/events/events.utils';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
-import { LocalBranches } from 'src/utils/types';
+import { SfLocalBranchName } from 'src/utils/types/local-branches.types';
 import {
   AccountProps,
   AccountRecordType,
@@ -409,7 +409,7 @@ export class SalesforceService {
     search = '',
     modes?: EventMode[],
     eventTypes?: EventType[],
-    localBranches?: LocalBranches[] // TODO: department filter not implemented yet
+    localBranches?: SfLocalBranchName[]
   ) {
     await this.checkIfConnected();
 

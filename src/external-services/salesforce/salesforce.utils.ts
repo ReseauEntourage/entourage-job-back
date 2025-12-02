@@ -25,9 +25,10 @@ import {
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
-import { getZoneSuffixFromDepartment } from 'src/utils/misc';
+import { Zones } from 'src/utils/constants/zones';
+import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { AdminZones, AnyCantFix } from 'src/utils/types';
+import { AnyCantFix } from 'src/utils/types';
 import {
   Casquette,
   ContactProps,
@@ -72,7 +73,8 @@ export function formatDepartment(department: Department) {
   if (!department) {
     return 'National';
   }
-  return _.capitalize(AdminZones[getZoneSuffixFromDepartment(department)]);
+  const zoneName = getZoneNameFromDepartment(department);
+  return _.capitalize(Zones[zoneName].name);
 }
 
 export function formatRegions(region: CompanyZone) {

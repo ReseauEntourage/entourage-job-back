@@ -17,6 +17,10 @@ import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import { encryptPassword, validatePassword } from './auth.utils';
 import { CurrentUserDto, generateCurrentUserDto } from './dto/current-user.dto';
+import {
+  generateStaffContactDto,
+  StaffContactDto,
+} from './dto/staff-contact.dto';
 
 @Injectable()
 export class AuthService {
@@ -91,6 +95,14 @@ export class AuthService {
       hasExtractedCvData,
       complete
     );
+  }
+
+  async getPublicStaffContactInfo(userId: string): Promise<StaffContactDto> {
+    const user = await this.usersService.findOne(userId);
+    if (!user || !user.staffContact) {
+      throw new NotFoundException();
+    }
+    return generateStaffContactDto(user.staffContact);
   }
 
   decodeJWT(token: string, ignoreExpiration?: boolean) {

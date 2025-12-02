@@ -4,7 +4,7 @@ import { Departments } from 'src/common/locations/locations.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SalesforceCampaignStatus } from 'src/external-services/salesforce/salesforce.types';
 import { UsersService } from 'src/users/users.service';
-import { LOCAL_BRANCHES_ZONES } from 'src/utils/types';
+import { Zones } from 'src/utils/constants/zones';
 import {
   Event,
   EventMode,
@@ -43,13 +43,13 @@ export class EventsService {
         departmentIds || []
       );
 
-    // Convert department names to AdminZones
+    // Convert department names to Zones
     const zones = Departments.filter((dept) =>
       departmentNames.includes(dept.name)
     ).map((dept) => dept.zone);
 
-    // Convert zones to local branches
-    const localBranches = zones.flatMap((zone) => LOCAL_BRANCHES_ZONES[zone]);
+    // Retrieve local branches from zones
+    const localBranches = zones.flatMap((zone) => Zones[zone].sfLocalBranches);
 
     const sfCampaigns = await this.salesforceService.findAllEventCampaigns(
       userEmail,

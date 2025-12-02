@@ -12,7 +12,8 @@ import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Gender, UserRoles } from 'src/users/users.types';
 import { capitalizeNameAndTrim } from 'src/users/users.utils';
-import { AdminZones, Factory } from 'src/utils/types';
+import { Factory } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class UserFactory implements Factory<User> {
@@ -42,7 +43,7 @@ export class UserFactory implements Factory<User> {
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       address: faker.address.streetAddress(),
       lastConnection: new Date(),
-      zone: AdminZones.PARIS,
+      zone: ZoneName.PARIS,
       hashReset: faker.datatype.uuid(),
       saltReset: faker.datatype.uuid(),
       createdAt: moment().toDate(),

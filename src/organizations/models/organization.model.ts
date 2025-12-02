@@ -15,7 +15,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
-import { AdminZone } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { OrganizationReferent } from './organization-referent.model';
 
 @Table({ tableName: 'Organizations' })
@@ -43,7 +43,7 @@ export class Organization extends Model {
   @IsString()
   @AllowNull(false)
   @Column
-  zone: AdminZone;
+  zone: ZoneName;
 
   @HasOne(() => OrganizationReferent, 'OrganizationId')
   organizationReferent: OrganizationReferent;

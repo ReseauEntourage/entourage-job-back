@@ -5,13 +5,13 @@ import {
   DataType,
   Default,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Occupations', updatedAt: false })
-export class Occupation extends WrapperModel {
+export class Occupation extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

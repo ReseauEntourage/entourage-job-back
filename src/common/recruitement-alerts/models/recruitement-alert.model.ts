@@ -8,6 +8,7 @@ import {
   ForeignKey,
   HasMany,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
@@ -20,12 +21,11 @@ import {
   WorkingExperience,
   WorkingExperienceYears,
 } from 'src/contacts/contacts.types';
-import { WrapperModel } from 'src/utils/types';
 import { RecruitementAlertBusinessSector } from './recruitement-alert-business-sector.model';
 import { RecruitementAlertSkill } from './recruitement-alert-skill.model';
 
 @Table({ tableName: 'RecruitementAlerts', timestamps: true })
-export class RecruitementAlert extends WrapperModel {
+export class RecruitementAlert extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

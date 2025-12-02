@@ -7,11 +7,8 @@ import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
-import {
-  Context,
-  getLocalBranchMailsFromZone,
-  searchInColumnWhereOption,
-} from 'src/utils/misc';
+import { Zones } from 'src/utils/constants/zones';
+import { searchInColumnWhereOption } from 'src/utils/misc';
 import { companiesAttributes } from './companies.attributes';
 import { companiesWithUsers } from './companies.includes';
 import { CompanyCreationContext } from './companies.types';
@@ -98,20 +95,21 @@ export class CompaniesService {
       hooks: true,
     });
 
-    const { moderationMail } = getLocalBranchMailsFromZone(
-      createdByUser.zone,
-      Context.COMPANY
-    );
-    const referentSlackUserId = await this.slackService.getUserIdByEmail(
-      moderationMail
-    );
+    const zone = Zones[createdByUser.zone];
+    if (zone) {
+      const moderationSlackEmail = zone.staffContact.company.slackEmail;
 
-    this.sendSlackNotificationCompanyCreated(
-      company,
-      createdByUser,
-      referentSlackUserId,
-      context
-    );
+      const referentSlackUserId = await this.slackService.getUserIdByEmail(
+        moderationSlackEmail
+      );
+
+      this.sendSlackNotificationCompanyCreated(
+        company,
+        createdByUser,
+        referentSlackUserId,
+        context
+      );
+    }
     return company;
   }
 
