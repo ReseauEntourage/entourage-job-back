@@ -77,11 +77,10 @@ export class MailsService {
         });
       }
 
-      const staffContactCompanyEmail =
-        Zones[user.zone]?.staffContact?.company?.email;
+      const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: staffContactCompanyEmail,
+        replyTo: staffContactMainEmail,
         templateId: MailjetTemplates.WELCOME_COACH,
         variables: {
           ..._.omitBy(user, _.isNil),
@@ -90,8 +89,7 @@ export class MailsService {
       });
     }
 
-    const staffContactMainEmail =
-      Zones[user.zone]?.staffContact?.company?.email;
+    const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
     if (user.role === UserRoles.CANDIDATE) {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
