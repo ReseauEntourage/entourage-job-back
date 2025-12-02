@@ -463,14 +463,9 @@ export class SalesforceService {
     const localBranchesCondition =
       localBranches && localBranches.length > 0
         ? `
-              AND (
-                ${localBranches
-                  .map(
-                    (localBranch) =>
-                      `Antenne__c = '${escapeQuery(localBranch)}'`
-                  )
-                  .join(' OR ')}
-              )
+              AND Antenne__c INCLUDES (${localBranches
+                .map((b) => `'${escapeQuery(b)}'`)
+                .join(', ')})
             `
         : '';
 
