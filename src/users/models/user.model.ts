@@ -58,7 +58,7 @@ import {
 import { Zones } from 'src/utils/constants/zones';
 import { HistorizedModel } from 'src/utils/types';
 import {
-  StaffContact,
+  InternalStaffContact,
   StaffContactGroup,
   ZoneName,
 } from 'src/utils/types/zones.types';
@@ -219,17 +219,26 @@ export class User extends HistorizedModel {
       : WhatsappCandidateByZone[zone].url || '';
   }
 
+  /**
+   * Get the staff contact information based on the user's zone and company admin status
+   * Requires 'zone' and 'role' to be set on the User instance and 'company' to be loaded if applicable
+   * @returns StaffContact information or undefined if zone is invalid
+   */
   @Column(DataType.VIRTUAL)
-  get staffContact(): StaffContact | undefined {
+  get staffContact(): InternalStaffContact | undefined {
     const zone = (this.getDataValue('zone') as ZoneName) || ZoneName.HZ;
-    const staffContact =
-      this.company && this.company?.companyUser?.isAdmin
+
+    // Check if companies association is loaded
+    const hasCompanies = this.companies !== undefined;
+    const staffContactGroup =
+      hasCompanies && this.company && this.company?.companyUser?.isAdmin
         ? StaffContactGroup.COMPANY
         : StaffContactGroup.MAIN;
+
     if (!(zone in Zones)) {
       return undefined;
     }
-    return Zones[zone].staffContact[staffContact];
+    return Zones[zone].staffContact[staffContactGroup];
   }
 
   @Column(DataType.VIRTUAL)

@@ -1,13 +1,9 @@
-import { StaffContact } from 'src/utils/types/zones.types';
+import { PublicStaffContact } from 'src/utils/types/zones.types';
 
-export interface StaffContactDto {
-  name: string;
-  email: string;
-  img: string;
-}
+export type StaffContactDto = PublicStaffContact;
 
 export const generateStaffContactDto = (
-  staffContact: StaffContact
+  staffContact: PublicStaffContact
 ): StaffContactDto => {
   return {
     name: staffContact.name,

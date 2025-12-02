@@ -1,6 +1,10 @@
 import { SfLocalBranchName } from '../types/local-branches.types';
 import { Zone, ZoneName, ZoneSuffix } from '../types/zones.types';
 
+const awsS3Url = process.env.AWSS3_URL || '';
+const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
+const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
+
 export const Zones: { [key in ZoneName]: Zone } = {
   [ZoneName.PARIS]: {
     name: ZoneName.PARIS,
@@ -10,13 +14,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Clothilde B.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/clothilde.jpg`,
+        img: `${imageBasePath}staff-pictures/clothilde.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_PARIS,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_PARIS,
       },
@@ -30,13 +34,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Alice D.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/alice.jpg`,
+        img: `${imageBasePath}staff-pictures/alice.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LYON,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LYON,
       },
@@ -50,13 +54,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Julien D.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/julien.png`,
+        img: `${imageBasePath}staff-pictures/julien.png`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LILLE,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LILLE,
       },
@@ -70,13 +74,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Mathilde G.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/mathilde.jpg`,
+        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_LORIENT,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LORIENT,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LORIENT,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LORIENT,
       },
@@ -90,13 +94,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Mathilde G.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/mathilde.jpg`,
+        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
       },
@@ -114,13 +118,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Valentine R.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/valentine.jpg`,
+        img: `${imageBasePath}staff-pictures/valentine.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_SUDOUEST,
       },
@@ -134,13 +138,13 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       main: {
         name: 'Valentine R.',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/valentine.jpg`,
+        img: `${imageBasePath}staff-pictures/valentine.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
       },
       company: {
         name: 'Pauline de Kergal',
-        img: `${process.env.AWSS3_URL}${process.env.AWSS3_IMAGE_DIRECTORY}staff-pictures/pauline.jpg`,
+        img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_HZ,
       },

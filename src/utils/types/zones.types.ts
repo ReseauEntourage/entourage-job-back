@@ -28,12 +28,14 @@ export enum StaffContactGroup {
   COMPANY = 'company',
 }
 
-export type StaffContact = {
+export type InternalStaffContact = {
   name: string;
   email: string;
   img: string;
   slackEmail: string;
 };
+
+export type PublicStaffContact = Omit<InternalStaffContact, 'slackEmail'>;
 
 export type Zone = {
   name: ZoneName;
@@ -41,7 +43,7 @@ export type Zone = {
   departmentCodes: DepartmentCode[];
   sfLocalBranches: SfLocalBranchName[];
   staffContact: {
-    [key in StaffContactGroup]: StaffContact;
+    [key in StaffContactGroup]: InternalStaffContact;
   };
 };
 

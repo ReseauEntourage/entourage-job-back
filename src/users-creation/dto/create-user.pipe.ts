@@ -31,7 +31,7 @@ export class CreateUserPipe
     });
 
     if (errors.length > 0) {
-      console.error(errors);
+      console.error('Validation errors in CreateUserPipe:', errors);
       throw new BadRequestException();
     }
     return value;
