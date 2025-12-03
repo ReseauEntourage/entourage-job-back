@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from 'src/users/models';
+import { companiesAttributes } from './companies.attributes';
 import { CompaniesService } from './companies.service';
 import { CompanyCreationContext } from './companies.types';
 import { CompanyUser } from './models/company-user.model';
+import { Company } from './models/company.model';
 
 @Injectable()
 export class CompanyUsersService {
@@ -70,10 +72,25 @@ export class CompanyUsersService {
   ) {
     const existingLink = await this.companyUserModel.findOne({
       where: { userId: user.id },
+      include: [
+        {
+          model: Company,
+          as: 'company',
+          attributes: companiesAttributes,
+          required: true,
+        },
+      ],
     });
 
     if (existingLink) {
-      // Remove existing link if it exists
+      // If companyName is the same as existing link, do nothing
+      if (companyName) {
+        const existingCompanyName = existingLink.company.name;
+        if (existingCompanyName === companyName) {
+          return existingLink;
+        }
+      }
+      // Else, remove existing link if it exists
       await existingLink.destroy();
     }
 
