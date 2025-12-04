@@ -85,20 +85,13 @@ export interface MemberOptions {
   role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: ZoneName[] };
   businessSectorIds: { [Op.in]: string[] };
-  employed: { [Op.or]: boolean[] };
 }
 
 export type MemberFilterKey = keyof MemberOptions;
 
-export const EmployedFilters: FilterConstant<boolean>[] = [
-  { label: 'En emploi', value: true },
-  { label: "Recherche d'emploi", value: false },
-];
-
 export type MemberConstantType =
   | (typeof ZoneNameFilters)[number]['value']
-  | (typeof BusinessSectorFilters)[number]['value']
-  | (typeof EmployedFilters)[number]['value'];
+  | (typeof BusinessSectorFilters)[number]['value'];
 
 export const MemberFilters = ({
   businessSectors,
@@ -122,11 +115,6 @@ export const MemberFilters = ({
       label: sector.name,
     })) as FilterConstant<string>[],
     title: 'Secteurs d’activité',
-  },
-  {
-    key: 'employed',
-    constants: EmployedFilters,
-    title: 'En emploi',
   },
 ];
 

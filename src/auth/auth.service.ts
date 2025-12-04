@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
+import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
@@ -184,7 +185,10 @@ export class AuthService {
     return this.usersService.findOne(id);
   }
 
-  async findOneUserProfileById(id: string, complete = false) {
+  async findOneUserProfileById(
+    id: string,
+    complete = false
+  ): Promise<UserProfile | null> {
     return await this.userProfileService.findOneByUserId(id, complete);
   }
 

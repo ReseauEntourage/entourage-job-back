@@ -12,8 +12,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
-import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
-import { UserCandidatsService } from 'src/users/user-candidats.service';
+import { User, UserSocialSituation } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Utm } from 'src/utm/models';
 import { UtmService } from 'src/utm/utm.service';
@@ -25,7 +24,6 @@ export class UsersCreationService {
     private authService: AuthService,
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
-    private userCandidatsService: UserCandidatsService,
     private mailsService: MailsService,
     private externalDatabasesService: ExternalDatabasesService,
     private userSocialSituationService: UserSocialSituationsService,
@@ -61,10 +59,6 @@ export class UsersCreationService {
 
   async findOneUser(id: string) {
     return this.usersService.findOne(id);
-  }
-
-  async findOneUserCandidatByCandidateId(candidateId: string) {
-    return this.userCandidatsService.findOneByCandidateId(candidateId);
   }
 
   generateRandomPasswordInJWT(expiration: string | number = '1d') {
@@ -120,24 +114,6 @@ export class UsersCreationService {
 
   async sendAdminNewRefererNotificationMail(referer: User) {
     return this.mailsService.sendAdminNewRefererNotificationMail(referer);
-  }
-
-  async updateUserCandidatByCandidateId(
-    candidateId: string,
-    updateUserCandidatDto: Partial<UserCandidat>
-  ) {
-    return this.userCandidatsService.updateByCandidateId(
-      candidateId,
-      updateUserCandidatDto
-    );
-  }
-
-  async updateAllUserCandidatLinkedUserByCandidateId(
-    candidatesAndCoachesIds: { candidateId: string; coachId: string }[]
-  ): Promise<UserCandidat[]> {
-    return this.userCandidatsService.updateAllLinkedCoachesByCandidatesIds(
-      candidatesAndCoachesIds
-    );
   }
 
   async updateUserProfileByUserId(

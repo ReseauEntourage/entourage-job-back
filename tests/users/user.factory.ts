@@ -8,7 +8,7 @@ import { encryptPassword } from 'src/auth/auth.utils';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
-import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
+import { User, UserSocialSituation } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { Gender, UserRoles } from 'src/users/users.types';
 import { capitalizeNameAndTrim } from 'src/users/users.utils';
@@ -20,8 +20,6 @@ export class UserFactory implements Factory<User> {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    @InjectModel(UserCandidat)
-    private userCandidatModel: typeof UserCandidat,
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private userSocialSituationsService: UserSocialSituationsService
@@ -61,10 +59,9 @@ export class UserFactory implements Factory<User> {
   async create(
     props: Partial<User> = {},
     userAssociationsProps: {
-      userCandidat?: Partial<UserCandidat>;
       userProfile?: UserProfileWithPartialAssociations;
       userSocialCondition?: Partial<UserSocialSituation>;
-    } = { userCandidat: {}, userProfile: {}, userSocialCondition: {} },
+    } = { userProfile: {}, userSocialCondition: {} },
     insertInDB = true
   ): Promise<User> {
     props.isEmailVerified = true;
@@ -72,30 +69,6 @@ export class UserFactory implements Factory<User> {
     const userId = faker.datatype.uuid();
     if (insertInDB) {
       await this.userModel.create({ ...userData, id: userId }, { hooks: true });
-      if (userAssociationsProps?.userCandidat) {
-        if (userData.role === UserRoles.CANDIDATE) {
-          await this.userCandidatModel.update(
-            { ...userAssociationsProps.userCandidat },
-            {
-              where: {
-                candidatId: userId,
-              },
-              individualHooks: true,
-            }
-          );
-        } else if (userData.role === UserRoles.COACH) {
-          await this.userCandidatModel.update(
-            { ...userAssociationsProps.userCandidat },
-            {
-              where: {
-                coachId: userId,
-              },
-              individualHooks: true,
-            }
-          );
-        }
-      }
-
       if (userAssociationsProps?.userProfile) {
         await this.userProfilesService.updateByUserId(userId, {
           ...userAssociationsProps.userProfile,

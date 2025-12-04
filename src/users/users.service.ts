@@ -13,12 +13,7 @@ import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.at
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
-import {
-  User,
-  UserAttributes,
-  UserCandidat,
-  UserCandidatAttributes,
-} from './models';
+import { User, UserAttributes } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
@@ -186,28 +181,6 @@ export class UsersService {
       order: [['firstName', 'ASC']],
       include: [
         {
-          model: UserCandidat,
-          as: 'candidat',
-          attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          required: false,
-          include: [
-            {
-              model: User,
-              as: 'coach',
-              required: false,
-              attributes: [...UserAttributes],
-              include: [
-                {
-                  model: Organization,
-                  as: 'organization',
-                  attributes: ['name', 'address', 'zone', 'id'],
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
-        {
           model: Organization,
           as: 'organization',
           attributes: ['name', 'address', 'zone', 'id'],
@@ -349,21 +322,6 @@ export class UsersService {
           model: User,
           as: 'referredCandidates',
           attributes: [...UserAttributes],
-          include: [
-            {
-              model: UserCandidat,
-              as: 'candidat',
-              attributes: [...UserCandidatAttributes],
-              paranoid: false,
-              include: [
-                {
-                  model: User,
-                  as: 'candidat',
-                  attributes: [...UserAttributes],
-                },
-              ],
-            },
-          ],
         },
         {
           model: Organization,

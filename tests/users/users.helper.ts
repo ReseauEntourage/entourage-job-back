@@ -6,7 +6,7 @@ import {
 } from 'src/auth/dto/current-user.dto';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
 // import { UpdateUserDto } from 'src/users/dto';
-import { User, UserCandidat } from 'src/users/models';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserFactory } from './user.factory';
 
@@ -21,9 +21,8 @@ export class UsersHelper {
   async createLoggedInUser(
     props: Partial<User> = {},
     userAssociationsProps: {
-      userCandidat?: Partial<UserCandidat>;
       userProfile?: UserProfileWithPartialAssociations;
-    } = { userCandidat: {}, userProfile: {} },
+    } = { userProfile: {} },
     insertInDB = true
   ): Promise<{ user: CurrentUserDto; token: string }> {
     props.isEmailVerified = true;
@@ -52,9 +51,4 @@ export class UsersHelper {
     const user = await this.usersService.findOne(userId);
     return user?.toJSON();
   }
-
-  // async updateUser(userId: string, props: UpdateUserDto): Promise<User> {
-  //   const updatedUser = await this.usersService.update(userId, props);
-  //   return updatedUser?.toJSON();
-  // }
 }

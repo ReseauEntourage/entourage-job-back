@@ -28,7 +28,6 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
-import { UserCandidatsService } from 'src/users/user-candidats.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
@@ -86,7 +85,6 @@ export class UserProfilesService {
     private s3Service: S3Service,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
-    private userCandidatsService: UserCandidatsService,
     private usersStatsService: UsersStatsService,
     private slackService: SlackService,
     private mailsService: MailsService,
@@ -173,10 +171,6 @@ export class UserProfilesService {
 
   async findOneUser(userId: string) {
     return this.usersService.findOne(userId);
-  }
-
-  async findUserCandidateByCandidateId(candidateId: string) {
-    return this.userCandidatsService.findOneByCandidateId(candidateId);
   }
 
   async findAll(

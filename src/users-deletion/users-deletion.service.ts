@@ -3,8 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
-import { User, UserCandidat } from 'src/users/models';
-import { UserCandidatsService } from 'src/users/user-candidats.service';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 
 @Injectable()
@@ -12,7 +11,6 @@ export class UsersDeletionService {
   constructor(
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
-    private userCandidatsService: UserCandidatsService,
     private s3Service: S3Service
   ) {}
 
@@ -22,16 +20,6 @@ export class UsersDeletionService {
 
   async updateUser(userId: string, updateUserDto: UpdateUserDto) {
     return this.usersService.update(userId, updateUserDto);
-  }
-
-  async updateUserCandidatByCandidatId(
-    candidateId: string,
-    updateUserCandidatDto: Partial<UserCandidat>
-  ) {
-    return this.userCandidatsService.updateByCandidateId(
-      candidateId,
-      updateUserCandidatDto
-    );
   }
 
   async removeUser(userId: string) {
@@ -65,11 +53,6 @@ export class UsersDeletionService {
       email: `${Date.now()}@${uuid()}.deleted`,
       phone: null,
       address: null,
-    });
-
-    await this.updateUserCandidatByCandidatId(id, {
-      note: null,
-      url: `deleted-${id.substring(0, 8)}`,
     });
 
     await this.removeUserProfile(id);

@@ -14,7 +14,6 @@ import { APIResponse } from 'src/utils/types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
-import { UserCandidatsHelper } from 'tests/users/user-candidats.helper';
 import { UserFactory } from 'tests/users/user.factory';
 import { UsersHelper } from 'tests/users/users.helper';
 
@@ -26,7 +25,6 @@ describe('UserDeletion', () => {
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
-  let userCandidatsHelper: UserCandidatsHelper;
   let userProfilesHelper: UserProfilesHelper;
 
   const route = '/user';
@@ -47,8 +45,6 @@ describe('UserDeletion', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
-    userCandidatsHelper =
-      moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     userProfilesHelper =
       moduleFixture.get<UserProfilesHelper>(UserProfilesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
@@ -151,25 +147,6 @@ describe('UserDeletion', () => {
 
       const user = await usersHelper.findUser(candidate.id);
       expect(user).toBeFalsy();
-
-      const userCandidatByCoachIdAndCandidateId =
-        await userCandidatsHelper.findOneUserCandidat({
-          candidateId: candidate.id,
-          coachId: coach.id,
-        });
-      const userCandidatByCandidateId =
-        await userCandidatsHelper.findOneUserCandidat({
-          candidateId: candidate.id,
-        });
-      const userCandidatByCoachId =
-        await userCandidatsHelper.findOneUserCandidat({
-          coachId: coach.id,
-        });
-
-      expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
-      expect(userCandidatByCandidateId).toBeTruthy();
-      expect(userCandidatByCoachId).toBeFalsy();
-
       const userProfile = await userProfilesHelper.findOneProfileByUserId(
         candidate.id
       );
@@ -186,24 +163,6 @@ describe('UserDeletion', () => {
 
       const user = await usersHelper.findUser(coach.id);
       expect(user).toBeFalsy();
-
-      const userCandidatByCoachIdAndCandidateId =
-        await userCandidatsHelper.findOneUserCandidat({
-          candidateId: candidate.id,
-          coachId: coach.id,
-        });
-      const userCandidatByCandidateId =
-        await userCandidatsHelper.findOneUserCandidat({
-          candidateId: candidate.id,
-        });
-      const userCandidatByCoachId =
-        await userCandidatsHelper.findOneUserCandidat({
-          coachId: coach.id,
-        });
-
-      expect(userCandidatByCoachIdAndCandidateId).toBeFalsy();
-      expect(userCandidatByCandidateId).toBeTruthy();
-      expect(userCandidatByCoachId).toBeFalsy();
 
       const userProfile = await userProfilesHelper.findOneProfileByUserId(
         coach.id

@@ -23,7 +23,7 @@ import {
 } from 'src/user-profiles/models';
 import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
-import { User, UserCandidat, UserSocialSituation } from 'src/users/models';
+import { User, UserSocialSituation } from 'src/users/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
@@ -31,8 +31,6 @@ export class DatabaseHelper {
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
-    @InjectModel(UserCandidat)
-    private userCandidatModel: typeof UserCandidat,
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
     @InjectModel(UserProfileSectorOccupation)
@@ -102,7 +100,6 @@ export class DatabaseHelper {
       await this.reviewModel.truncate(destroyOptions);
       await this.organizationModel.truncate(destroyOptions);
       await this.organizationReferentModel.truncate(destroyOptions);
-      await this.userCandidatModel.truncate(destroyOptions);
       await this.userSocialSituationModel.truncate(destroyOptions);
       await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
