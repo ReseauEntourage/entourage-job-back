@@ -175,7 +175,7 @@ export class EventsService {
         sfCampaign.Id,
         isParticipating
           ? SalesforceCampaignStatus.REGISTERED
-          : SalesforceCampaignStatus.RESPONDED
+          : SalesforceCampaignStatus.CANCELED
       );
     } catch (error) {
       console.error(

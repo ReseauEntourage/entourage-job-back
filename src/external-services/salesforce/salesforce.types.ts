@@ -404,6 +404,7 @@ export interface SalesforceCampaign {
 export enum SalesforceCampaignStatus {
   REGISTERED = 'Inscrit',
   RESPONDED = 'Répondu',
+  CANCELED = 'A annulé',
 }
 
 export interface SalesforceCampaignMember {
