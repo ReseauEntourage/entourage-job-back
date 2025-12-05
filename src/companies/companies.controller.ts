@@ -86,10 +86,10 @@ export class CompaniesController {
   @Get(':companyId/collaborators')
   async findCompanyCollaborators(
     @Param('companyId') companyId: string,
-    @UserPayload() user: JWTUserPayload
+    @UserPayload('id') userId: string
   ) {
     const userWithCompanyUsers =
-      await this.usersService.findOneWithCompanyUsers(user.id);
+      await this.usersService.findOneWithCompanyUsers(userId);
     // Ensure the user has the right to view collaborators
     const companyUser = userWithCompanyUsers.companyUsers.find(
       (cu) => cu.companyId === companyId
@@ -161,7 +161,7 @@ export class CompaniesController {
   async inviteCollaborators(
     @Param('companyId') companyId: string,
     @Body() inviteCollaboratorsDto: InviteCollaboratorsDto,
-    @UserPayload() user: JWTUserPayload
+    @UserPayload('id') user: JWTUserPayload
   ) {
     // Validate the provided emails
     if (inviteCollaboratorsDto.emails.length === 0) {

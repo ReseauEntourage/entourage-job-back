@@ -83,7 +83,7 @@ export class ExternalCvsController {
    * @param user - The current user signed in
    */
   @Delete()
-  async deleteExternalCv(@UserPayload() user: JWTUserPayload) {
-    await this.externalCvsService.deleteExternalCv(user.id);
+  async deleteExternalCv(@UserPayload('id') userId: string) {
+    await this.externalCvsService.deleteExternalCv(userId);
   }
 }

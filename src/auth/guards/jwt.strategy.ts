@@ -31,6 +31,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || !!user.deletedAt) {
       throw new UnauthorizedException();
     }
-    return user;
+    return { ...user };
   }
 }

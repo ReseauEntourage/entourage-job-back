@@ -17,7 +17,6 @@ import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { User } from 'src/users/models';
-import { JWTUserPayload } from 'src/users/users.types';
 import { AuthService } from './auth.service';
 import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
@@ -34,10 +33,10 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@UserPayload() user: JWTUserPayload) {
-    const currentUser = await this.authService.getCurrentUser(user.id);
+  async login(@UserPayload('id') userId: string) {
+    const currentUser = await this.authService.getCurrentUser(userId);
     const loggedInUser = await this.authService.login(currentUser);
-    await this.sessionService.createOrUpdateSession(user.id);
+    await this.sessionService.createOrUpdateSession(userId);
     return loggedInUser;
   }
 
