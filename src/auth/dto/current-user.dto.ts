@@ -16,7 +16,6 @@ export interface CurrentUserDto
   responseRate: number | null;
   hasExtractedCvData: boolean;
   company?: Partial<Company>;
-  candidat?: Partial<User['candidat']>;
 }
 
 export const generateCurrentUserDto = (
@@ -61,20 +60,7 @@ export const generateCurrentUserDto = (
 
     // Default values, may be overwritten below
     company: null,
-    candidat: null,
   } as CurrentUserDto;
-
-  if (user.candidat) {
-    dto.candidat = {
-      employed: user.candidat?.employed || null,
-      hidden: user.candidat?.hidden || null,
-      note: user.candidat?.note || null,
-      url: user.candidat?.url || null,
-      contract: user.candidat?.contract || null,
-      endOfContract: user.candidat?.endOfContract || null,
-      lastModifiedBy: user.candidat?.lastModifiedBy || null,
-    };
-  }
 
   if (user.company) {
     dto.company = {

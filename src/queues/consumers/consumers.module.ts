@@ -1,6 +1,5 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
-import { CVsModule } from 'src/cvs/cvs.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
@@ -17,7 +16,6 @@ import { WorkQueueProcessor } from './work-queue.processor';
   imports: [
     BullModule.registerQueue(getBullWorkQueueOptions()),
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
-    CVsModule,
     MailjetModule,
     OpenAiModule,
     SalesforceModule,

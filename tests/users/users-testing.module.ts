@@ -7,7 +7,6 @@ import { UserSocialSituationsModule } from 'src/user-social-situations/user-soci
 import { UsersModule } from 'src/users/users.module';
 import { BusinessSectorsTestingModule } from 'tests/business-sectors/business-sectors-testing.module';
 import { NudgesTestingModule } from 'tests/nudges/nudges-testing.module';
-import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
 
@@ -21,12 +20,7 @@ import { UsersHelper } from './users.helper';
     NudgesTestingModule,
     BusinessSectorsTestingModule,
   ],
-  providers: [
-    UsersHelper,
-    UserCandidatsHelper,
-    UserProfilesHelper,
-    UserFactory,
-  ],
-  exports: [UsersHelper, UserCandidatsHelper, UserProfilesHelper, UserFactory],
+  providers: [UsersHelper, UserProfilesHelper, UserFactory],
+  exports: [UsersHelper, UserProfilesHelper, UserFactory],
 })
 export class UsersTestingModule {}

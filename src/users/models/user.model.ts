@@ -8,7 +8,6 @@ import {
 } from 'class-validator';
 import {
   AfterCreate,
-  AfterDestroy,
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
@@ -38,11 +37,7 @@ import {
   UserRole,
   UserRoles,
 } from '../users.types';
-import {
-  capitalizeNameAndTrim,
-  generateUrl,
-  isRoleIncluded,
-} from '../users.utils';
+import { capitalizeNameAndTrim, isRoleIncluded } from '../users.utils';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
@@ -62,7 +57,6 @@ import {
   StaffContactGroup,
   ZoneName,
 } from 'src/utils/types/zones.types';
-import { UserCandidat } from './user-candidat.model';
 
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {
@@ -253,13 +247,6 @@ export class User extends HistorizedModel {
       : WhatsappCandidateByZone[zone].qr;
   }
 
-  // si candidat regarder candidat
-  @HasOne(() => UserCandidat, {
-    foreignKey: 'candidatId',
-    hooks: true,
-  })
-  candidat?: UserCandidat;
-
   @HasOne(() => UserSocialSituation, {
     foreignKey: 'userId',
     hooks: true,
@@ -343,14 +330,6 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (createdUser.role === UserRoles.CANDIDATE) {
-      await UserCandidat.create(
-        {
-          candidatId: createdUser.id,
-        },
-        { hooks: true }
-      );
-    }
     await UserProfile.create(
       {
         userId: createdUser.id,
@@ -363,100 +342,19 @@ export class User extends HistorizedModel {
   static async manageRoleChange(userToUpdate: User) {
     const previousUserValues: Partial<User> = userToUpdate.previous();
     if (
-      userToUpdate &&
-      userToUpdate.role &&
-      previousUserValues &&
-      previousUserValues.role !== undefined &&
-      previousUserValues.role !== userToUpdate.role
+      isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
+      !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
     ) {
-      if (
-        previousUserValues.role === UserRoles.CANDIDATE &&
-        userToUpdate.role !== UserRoles.CANDIDATE
-      ) {
-        await UserCandidat.destroy({
-          where: {
-            candidatId: userToUpdate.id,
-          },
-        });
-      } else if (
-        previousUserValues.role !== UserRoles.CANDIDATE &&
-        userToUpdate.role === UserRoles.CANDIDATE
-      ) {
-        if (previousUserValues.role === UserRoles.COACH) {
-          await UserCandidat.update(
-            {
-              coachId: null,
-            },
-            {
-              where: {
-                coachId: userToUpdate.id,
-              },
-            }
-          );
-        }
-
-        await UserCandidat.create(
-          {
-            candidatId: userToUpdate.id,
-            url: generateUrl(userToUpdate),
-          },
-          { hooks: true }
-        );
-      }
-
-      if (
-        isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
-        !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
-      ) {
-        await User.update(
-          {
-            OrganizationId: null,
-          },
-          {
-            where: {
-              id: userToUpdate.id,
-            },
-          }
-        );
-      }
-    }
-  }
-
-  @BeforeUpdate
-  static async manageNameChange(userToUpdate: User) {
-    const previousUserValues = userToUpdate.previous();
-    if (
-      userToUpdate &&
-      userToUpdate.role === UserRoles.CANDIDATE &&
-      previousUserValues &&
-      previousUserValues.firstName != undefined &&
-      previousUserValues.firstName !== userToUpdate.firstName
-    ) {
-      await UserCandidat.update(
+      await User.update(
         {
-          url: generateUrl(userToUpdate),
+          OrganizationId: null,
         },
         {
           where: {
-            candidatId: userToUpdate.id,
+            id: userToUpdate.id,
           },
         }
       );
     }
-  }
-
-  @AfterDestroy
-  static async unbindCoach(destroyedUser: User) {
-    await UserCandidat.update(
-      {
-        coachId: null,
-      },
-      {
-        where: {
-          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
-            destroyedUser.id,
-        },
-      }
-    );
   }
 }

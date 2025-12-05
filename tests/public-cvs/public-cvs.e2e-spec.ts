@@ -309,7 +309,6 @@ describe('PublicCVs', () => {
       expect(response.body[0]).toHaveProperty('role');
 
       // Direct Relationships
-      expect(response.body[0].candidat).toBeDefined();
       expect(response.body[0].userProfile).toBeDefined();
 
       // User Profile Attributes

@@ -12,7 +12,7 @@ export class ReadDocumentsService {
   ) {}
 
   async findOneUser(userId: string) {
-    return this.usersService.findOne(userId);
+    return this.usersService.findOneWithRelations(userId);
   }
 
   async createReadDocument(UserId: string, documentName: string) {

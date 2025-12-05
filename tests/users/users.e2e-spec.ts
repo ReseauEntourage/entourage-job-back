@@ -8,7 +8,6 @@ import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { UserCandidat } from 'src/users/models';
 import { UsersController } from 'src/users/users.controller';
 import { UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
@@ -18,7 +17,6 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
-import { UserCandidatsHelper } from './user-candidats.helper';
 import { UserFactory } from './user.factory';
 import { UsersHelper } from './users.helper';
 
@@ -30,7 +28,6 @@ describe('Users', () => {
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
   let usersHelper: UsersHelper;
-  let userCandidatsHelper: UserCandidatsHelper;
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
 
@@ -55,8 +52,6 @@ describe('Users', () => {
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
-    userCandidatsHelper =
-      moduleFixture.get<UserCandidatsHelper>(UserCandidatsHelper);
     businessSectorsHelper =
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
@@ -418,7 +413,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/members?zone[]=&employed[]=&hidden[]=&businessSectors[]= - Read all members as admin with filters', () => {
+        describe('/members?zone[]=&hidden[]=&businessSectors[]= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -513,43 +508,6 @@ describe('Users', () => {
               expect.arrayContaining(response.body.map(({ id }) => id))
             );
           });
-          it('Should return 200, and all the candidates that matches the employed filter', async () => {
-            const employedCandidates = await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  employed: true,
-                },
-              }
-            );
-            await databaseHelper.createEntities(
-              userFactory,
-              2,
-              {
-                role: UserRoles.CANDIDATE,
-              },
-              {
-                userCandidat: {
-                  employed: false,
-                },
-              }
-            );
-            const response: APIResponse<UsersController['findMembers']> =
-              await request(server)
-                .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&employed[]=true`
-                )
-                .set('authorization', `Bearer ${loggedInAdmin.token}`);
-            expect(response.status).toBe(200);
-            expect(response.body.length).toBe(2);
-            expect(employedCandidates.map(({ id }) => id)).toEqual(
-              expect.arrayContaining(response.body.map(({ id }) => id))
-            );
-          });
         });
         describe('/members - Read all members as admin with all filters', () => {
           let loggedInAdmin: LoggedUser;
@@ -576,7 +534,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&employed[]=false&query=XXX&zone[]=${ZoneName.LYON}`
+                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&query=XXX&zone[]=${ZoneName.LYON}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -837,7 +795,7 @@ describe('Users', () => {
               });
           expect(response.status).toBe(400);
         });
-        it('Should return 200 and updated user, and updated userCandidat when an admin update a user role', async () => {
+        it('Should return 200 and updated user when an admin update a user role', async () => {
           const response: APIResponse<UsersController['updateUser']> =
             await request(server)
               .put(`${route}/${loggedInCandidate.user.id}`)
@@ -847,12 +805,6 @@ describe('Users', () => {
               });
           expect(response.status).toBe(200);
           expect(response.body.role).toEqual(UserRoles.COACH);
-
-          const userCandidat = await userCandidatsHelper.findOneUserCandidat({
-            coachId: loggedInCandidate.user.id,
-          });
-
-          expect(userCandidat).toBeFalsy();
         });
       });
       describe('/changePwd - Update password', () => {
@@ -906,402 +858,6 @@ describe('Users', () => {
                 newPassword: 'Candidat123?',
               });
           expect(response.status).toBe(200);
-        });
-      });
-      describe('/candidate/:candidateId - Update userCandidat', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
-          });
-        });
-
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .send({
-                hidden: false,
-                note: 'updated note',
-              });
-          expect(response.status).toBe(401);
-        });
-        it("Should return 403, if candidat doesn't update himself", async () => {
-          const otherCandidat = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${otherCandidat.id}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`)
-              .send({
-                employed: false,
-                note: 'updated note by other',
-              });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if coach updates candidate not associated to him', async () => {
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`)
-              .send({
-                employed: false,
-                note: 'updated note by not associated coach',
-              });
-          expect(response.status).toBe(403);
-        });
-        it('Should return 400, if candidate updates associated coach id', async () => {
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`)
-              .send({
-                coachId: loggedInCoach.user.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 400, if coach updates associated candidate id', async () => {
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCoach.user.id}`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`)
-              .send({
-                candidatId: loggedInCandidate.user.id,
-              });
-          expect(response.status).toBe(400);
-        });
-        it('Should return 200 and updated userCandidat, if logged in admin', async () => {
-          const updatedNote = 'updated note by admin';
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                employed: false,
-                note: updatedNote,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body.note).toMatch(updatedNote);
-          expect(response.body.lastModifiedBy).toBe(loggedInAdmin.user.id);
-        });
-        it('Should return 200 and updated userCandidat, if candidate updates himself', async () => {
-          const updatedNote = 'updated note by candidat';
-          const response: APIResponse<UsersController['updateUserCandidat']> =
-            await request(server)
-              .put(`${route}/candidate/${loggedInCandidate.user.id}`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`)
-              .send({
-                hidden: false,
-                note: updatedNote,
-              });
-          expect(response.status).toBe(200);
-          expect(response.body.note).toMatch(updatedNote);
-          expect(response.body.lastModifiedBy).toBe(loggedInCandidate.user.id);
-        });
-      });
-      describe('/candidate/checkUpdate - Check if update has been made on userCandidat note', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          const candidat = await userFactory.create({
-            role: UserRoles.CANDIDATE,
-          });
-          const coach = await userFactory.create({
-            role: UserRoles.COACH,
-          });
-          const referer = await userFactory.create({
-            role: UserRoles.REFERER,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser(
-            candidat,
-            {},
-            false
-          );
-          loggedInCoach = await usersHelper.createLoggedInUser(
-            coach,
-            {},
-            false
-          );
-          loggedInReferer = await usersHelper.createLoggedInUser(
-            referer,
-            {},
-            false
-          );
-        });
-        it('Should return 401, if user not logged in', async () => {
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server).get(
-            `${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`
-          );
-
-          expect(response.status).toBe(401);
-        });
-        it('Should return 403, if admin checks if note has been updated', async () => {
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if referer checks if note has been updated', async () => {
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInReferer.token}`);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 200 and noteHasBeenModified, if coach checks if note has been updated', async () => {
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            loggedInCandidate.user.id
-          );
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.noteHasBeenModified).toBe(true);
-        });
-        it('Should return 200 and noteHasBeenModified be false, if coach reads note', async () => {
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            null
-          );
-
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.noteHasBeenModified).toBe(false);
-        });
-        it('Should return 200 and noteHasBeenModified be false, if coach is the last one to have updated note', async () => {
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            loggedInCoach.user.id
-          );
-
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.noteHasBeenModified).toBe(false);
-        });
-
-        it('Should return 200 and noteHasBeenModified, if candidat checks if note has been updated', async () => {
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            loggedInCoach.user.id
-          );
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.noteHasBeenModified).toBe(true);
-        });
-        it('Should return 200 and noteHasBeenModified be false, if candidat reads note', async () => {
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            null
-          );
-
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.noteHasBeenModified).toBe(false);
-        });
-        it('Should return 200 and noteHasBeenModified be false, if candidat is the last one to have updated note', async () => {
-          await userCandidatsHelper.setLastModifiedBy(
-            loggedInCandidate.user.id,
-            loggedInCandidate.user.id
-          );
-
-          const response: APIResponse<
-            UsersController['checkNoteHasBeenModified']
-          > = await request(server)
-            .get(`${route}/candidate/checkUpdate/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`);
-          expect(response.status).toBe(200);
-          expect(response.body.noteHasBeenModified).toBe(false);
-        });
-      });
-    });
-    describe('U - Update many Users', () => {
-      describe('/bulk - Bulk update users', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
-
-        beforeEach(async () => {
-          loggedInAdmin = await usersHelper.createLoggedInUser({
-            role: UserRoles.ADMIN,
-          });
-          loggedInCandidate = await usersHelper.createLoggedInUser({
-            role: UserRoles.CANDIDATE,
-          });
-          loggedInCoach = await usersHelper.createLoggedInUser({
-            role: UserRoles.COACH,
-          });
-          loggedInReferer = await usersHelper.createLoggedInUser({
-            role: UserRoles.REFERER,
-          });
-        });
-
-        it('Should return 200, and updated opportunities ids, if admin bulk updates some users', async () => {
-          const originalUsers = await databaseHelper.createEntities(
-            userFactory,
-            5,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userCandidat: { hidden: true },
-            }
-          );
-          const originalUsersIds = originalUsers.map(({ id }) => {
-            return id;
-          });
-          const response: APIResponse<UsersController['updateAll']> =
-            await request(server)
-              .put(`${route}/candidate/bulk`)
-              .set('authorization', `Bearer ${loggedInAdmin.token}`)
-              .send({
-                attributes: {
-                  hidden: true,
-                },
-                ids: originalUsersIds,
-              });
-
-          expect(response.status).toBe(200);
-          const { nbUpdated, updatedIds } = response.body;
-          const updatedUserCandidats =
-            await userCandidatsHelper.findAllUserCandidatsById(
-              originalUsersIds
-            );
-
-          expect(nbUpdated).toBeLessThanOrEqual(originalUsers.length);
-          expect(originalUsersIds).toEqual(
-            expect.arrayContaining(updatedIds.sort())
-          );
-          expect(
-            updatedUserCandidats.map((user: UserCandidat) => {
-              return user.toJSON();
-            })
-          ).toEqual(
-            expect.not.arrayContaining([
-              expect.objectContaining({
-                hidden: false,
-              }),
-            ])
-          );
-        });
-        it('Should return 403, if logged in as candidate', async () => {
-          const originalUsers = await databaseHelper.createEntities(
-            userFactory,
-            5,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userCandidat: { hidden: true },
-            }
-          );
-          const originalUsersIds = originalUsers.map(({ id }) => {
-            return id;
-          });
-          const responseCandidate: APIResponse<UsersController['updateAll']> =
-            await request(server)
-              .put(`${route}/candidate/bulk`)
-              .set('authorization', `Bearer ${loggedInCandidate.token}`)
-              .send({
-                attributes: {
-                  hidden: true,
-                },
-                ids: originalUsersIds,
-              });
-          expect(responseCandidate.status).toBe(403);
-        });
-        it('Should return 403, if logged in as coach', async () => {
-          const originalUsers = await databaseHelper.createEntities(
-            userFactory,
-            5,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userCandidat: { hidden: true },
-            }
-          );
-          const originalUsersIds = originalUsers.map(({ id }) => {
-            return id;
-          });
-          const responseCoach: APIResponse<UsersController['updateAll']> =
-            await request(server)
-              .put(`${route}/candidate/bulk`)
-              .set('authorization', `Bearer ${loggedInCoach.token}`)
-              .send({
-                attributes: {
-                  hidden: true,
-                },
-                ids: originalUsersIds,
-              });
-          expect(responseCoach.status).toBe(403);
-        });
-
-        it('Should return 403, if logged in as referer', async () => {
-          const originalUsers = await databaseHelper.createEntities(
-            userFactory,
-            5,
-            {
-              role: UserRoles.CANDIDATE,
-            },
-            {
-              userCandidat: { hidden: true },
-            }
-          );
-          const originalUsersIds = originalUsers.map(({ id }) => {
-            return id;
-          });
-          const responseCoach: APIResponse<UsersController['updateAll']> =
-            await request(server)
-              .put(`${route}/candidate/bulk`)
-              .set('authorization', `Bearer ${loggedInReferer.token}`)
-              .send({
-                attributes: {
-                  hidden: true,
-                },
-                ids: originalUsersIds,
-              });
-          expect(responseCoach.status).toBe(403);
         });
       });
     });

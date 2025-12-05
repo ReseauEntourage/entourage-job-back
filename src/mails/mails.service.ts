@@ -350,7 +350,7 @@ export class MailsService {
     email,
     invitationWithCompany,
   }: {
-    sender: User;
+    sender: Pick<User, 'id' | 'firstName' | 'lastName' | 'zone'>;
     email: string;
     invitationWithCompany: CompanyInvitation;
   }) {

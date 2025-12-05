@@ -6,7 +6,6 @@ import {
   searchInColumnWhereOptionRaw,
 } from 'src/utils/misc';
 import { FilterObject, FilterParams } from 'src/utils/types';
-import { User } from './models';
 import {
   MemberConstantType,
   MemberFilterKey,
@@ -14,7 +13,6 @@ import {
   Permission,
   UserPermissions,
   UserRole,
-  UserRoles,
 } from './users.types';
 
 export function isRoleIncluded(
@@ -46,10 +44,6 @@ export function hasPermission(
   );
 }
 
-export function generateUrl(user: User) {
-  return `${user.firstName.toLowerCase()}-${user.id.substring(0, 8)}`;
-}
-
 export function capitalizeNameAndTrim(name: string) {
   if (!name) {
     // we need to keep its value if its '', null or undefined
@@ -73,30 +67,6 @@ export function capitalizeNameAndTrim(name: string) {
     .join('-');
 
   return capitalizedName.trim().replace(/\s\s+/g, ' ');
-}
-
-export function getCoachFromCandidate(candidate: User) {
-  if (candidate && candidate.role === UserRoles.CANDIDATE) {
-    if (candidate.candidat && candidate.candidat.coach) {
-      return candidate.candidat.coach;
-    }
-  }
-
-  return null;
-}
-
-export function getCandidateIdFromCoachOrCandidate(member: User) {
-  if (member) {
-    if (member.role === UserRoles.CANDIDATE) {
-      return member.id;
-    }
-    if (isRoleIncluded([UserRoles.REFERER], member.role)) {
-      return member.referredCandidates.map(({ candidat }) => {
-        return candidat.candidat.id;
-      });
-    }
-  }
-  return null;
 }
 
 export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
@@ -133,12 +103,6 @@ export function getMemberOptions(filtersObj: FilterObject<MemberFilterKey>) {
                 whereOptions = [
                   ...whereOptions,
                   `"userProfile->sectorOccupations->businessSectors"."id" IN (:${keys[i]})`,
-                ];
-                break;
-              case 'employed':
-                whereOptions = [
-                  ...whereOptions,
-                  `"candidat"."employed" IN (:${keys[i]})`,
                 ];
                 break;
             }

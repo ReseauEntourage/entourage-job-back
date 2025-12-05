@@ -3,9 +3,12 @@ import { UserProfile, UserProfileWithPartialAssociations } from '../models';
 export interface UserProfileDto extends UserProfileWithPartialAssociations {}
 
 export const generateUserProfileDto = (
-  userProfile: UserProfile,
+  userProfile: UserProfile | null,
   complete = false
 ): UserProfileDto => {
+  if (!userProfile) {
+    return null;
+  }
   const dto = {
     id: userProfile.id,
     isAvailable: userProfile.isAvailable,

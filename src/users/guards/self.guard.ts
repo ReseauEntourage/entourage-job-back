@@ -16,10 +16,9 @@ export class SelfGuard implements CanActivate {
       context.getHandler()
     );
 
-    const adminOverride = this.reflector.get<boolean>(
-      ADMIN_OVERRIDE,
-      context.getHandler()
-    );
+    const adminOverride =
+      this.reflector.get<boolean>(ADMIN_OVERRIDE, context.getHandler()) ??
+      false;
 
     if (!selfIdKeys || selfIdKeys.length === 0) {
       return false;
