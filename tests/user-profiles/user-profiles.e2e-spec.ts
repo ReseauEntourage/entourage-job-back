@@ -2283,7 +2283,7 @@ describe('UserProfiles', () => {
   });
 
   describe('UserProfiles Recommendations Context', () => {
-    describe('GET /user/profile/recommendations/:userId - Get user recommendations', () => {
+    describe('GET /user/profile/recommendations - Get user recommendations', () => {
       let loggedInAdmin: LoggedUser;
       let loggedInCandidate: LoggedUser;
       let loggedInCoach: LoggedUser;
@@ -2307,9 +2307,7 @@ describe('UserProfiles', () => {
       it('Should return 401, if user not logged in', async () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
-        > = await request(server).get(
-          `${route}/profile/recommendations/${loggedInCandidate.user.id}`
-        );
+        > = await request(server).get(`${route}/profile/recommendations`);
 
         expect(response.status).toBe(401);
       });
@@ -2318,7 +2316,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInAdmin.token}`);
         expect(response.status).toBe(403);
       });
@@ -2327,7 +2325,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInAdmin.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInAdmin.token}`);
         expect(response.status).toBe(403);
       });
@@ -2336,7 +2334,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(403);
       });
@@ -2345,7 +2343,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInReferer.token}`);
         expect(response.status).toBe(403);
       });
@@ -2354,7 +2352,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(403);
       });
@@ -2411,7 +2409,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2522,7 +2520,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2949,7 +2947,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3013,7 +3011,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3126,7 +3124,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations/`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3562,7 +3560,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body.length).toBe(newUsersToRecommend.length);

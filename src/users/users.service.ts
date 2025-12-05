@@ -435,7 +435,7 @@ export class UsersService {
       individualHooks: true,
     });
 
-    const updatedUser = await this.findOne(id);
+    const updatedUser = await this.findOneWithRelations(id);
 
     if (!updatedUser) {
       return null;
