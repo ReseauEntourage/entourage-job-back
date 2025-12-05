@@ -39,7 +39,6 @@ import { User } from './models';
 
 import { UsersService } from './users.service';
 import {
-  JWTUserPayload,
   MemberFilterKey,
   Permissions,
   SequelizeUniqueConstraintError,
@@ -106,10 +105,11 @@ export class UsersController {
 
   @Put('company')
   async updateUserCompany(
-    @UserPayload() user: JWTUserPayload,
+    @UserPayload('id') userId: string,
     @Body('companyName')
     companyName: string | null
   ) {
+    const user = await this.usersService.findOneWithCompanyUsers(userId);
     if (user.role !== UserRoles.COACH) {
       throw new ForbiddenException();
     }
@@ -127,9 +127,9 @@ export class UsersController {
   async findUser(@Param('id') userId: string) {
     let user: User;
     if (validator.isEmail(userId)) {
-      user = await this.usersService.findOneByMail(userId);
+      user = await this.usersService.findOneByMailWithRelations(userId);
     } else if (uuidValidate(userId)) {
-      user = await this.usersService.findOne(userId);
+      user = await this.usersService.findOneWithRelations(userId);
     } else {
       throw new BadRequestException();
     }
@@ -192,7 +192,7 @@ export class UsersController {
       throw new BadRequestException();
     }
 
-    const oldUser = await this.usersService.findOne(userId);
+    const oldUser = await this.usersService.findOneWithRelations(userId);
 
     let updatedUser: User;
     try {

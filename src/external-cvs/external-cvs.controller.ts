@@ -14,7 +14,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
-import { JWTUserPayload } from 'src/users/users.types';
 import { ExternalCvsService } from './external-cvs.service';
 
 @ApiTags('ExternalCvs')
@@ -38,7 +37,7 @@ export class ExternalCvsController {
   @Post()
   async uploadExternalCV(
     @UploadedFile() file: Express.Multer.File,
-    @UserPayload() user: JWTUserPayload
+    @UserPayload('id') userId: string
   ) {
     if (!file) {
       throw new BadRequestException();
@@ -46,7 +45,7 @@ export class ExternalCvsController {
 
     try {
       const externalCvS3 = await this.externalCvsService.uploadExternalCV(
-        user.id,
+        userId,
         file
       );
       const cvFile = await this.externalCvsService.findExternalCv(externalCvS3);

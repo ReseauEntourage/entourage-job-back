@@ -20,13 +20,7 @@ import {
   getUserProfileRecentlyUpdatedOrder,
   UserCandidatInclude,
 } from './models/user.include';
-import { JWTUserPayloadAttributes } from './users.attributes';
-import {
-  MemberFilterKey,
-  UserRole,
-  UserRoles,
-  JWTUserPayload,
-} from './users.types';
+import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
 import {
   getCommonMembersFilterOptions,
@@ -54,14 +48,61 @@ export class UsersService {
   async findOne(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
+    });
+  }
+
+  async findOneByMail(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...UserAttributes],
+    });
+  }
+
+  async findOneByMailWithRelations(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...UserAttributes],
       include: UserCandidatInclude(),
       order: getUserCandidatOrder(),
     });
   }
 
-  async findOneForJwtPayload(id: string): Promise<JWTUserPayload> {
+  async findOneWithRelations(id: string) {
     return this.userModel.findByPk(id, {
-      attributes: [...JWTUserPayloadAttributes],
+      attributes: [...UserAttributes],
+      include: UserCandidatInclude(),
+      order: getUserCandidatOrder(),
+    });
+  }
+
+  async findOneForJwtPayload(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'role',
+        'zone',
+        'isEmailVerified',
+        'deletedAt',
+      ],
+    });
+  }
+
+  async findOneForJwtPayloadByEmail(email: string): Promise<User> {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'role',
+        'zone',
+        'isEmailVerified',
+        'deletedAt',
+      ],
     });
   }
 
@@ -84,15 +125,6 @@ export class UsersService {
     companyId: string | null
   ) {
     return await this.companyUsersService.linkUserToCompany(user, companyId);
-  }
-
-  async findOneByMail(email: string) {
-    return this.userModel.findOne({
-      where: { email: email.toLowerCase() },
-      attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
-    });
   }
 
   /**

@@ -38,7 +38,7 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string) {
-    const user = await this.usersService.findOneByMail(email);
+    const user = await this.usersService.findOneForJwtPayloadByEmail(email);
     if (user) {
       const { password: userPassword, salt: userSalt } =
         await this.usersService.findOneComplete(user.id);
@@ -99,7 +99,7 @@ export class AuthService {
   }
 
   async getPublicStaffContactInfo(userId: string): Promise<StaffContactDto> {
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOneWithRelations(userId);
     if (!user || !user.staffContact) {
       throw new NotFoundException();
     }
@@ -174,7 +174,7 @@ export class AuthService {
   }
 
   async findOneUserByMail(email: string) {
-    return this.usersService.findOneByMail(email);
+    return this.usersService.findOneByMailWithRelations(email);
   }
 
   async findOneUserProfileByUserId(id: string, complete = false) {
@@ -182,7 +182,7 @@ export class AuthService {
   }
 
   async findOneUserById(id: string) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOneWithRelations(id);
   }
 
   async findOneUserProfileById(

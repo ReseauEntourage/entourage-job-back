@@ -170,7 +170,7 @@ export class UserProfilesService {
   }
 
   async findOneUser(userId: string) {
-    return this.usersService.findOne(userId);
+    return this.usersService.findOneWithRelations(userId);
   }
 
   async findAll(

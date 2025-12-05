@@ -5,11 +5,18 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { FilterConstant, Filters } from 'src/utils/types';
 import { ZoneName, ZoneNameFilters } from 'src/utils/types/zones.types';
 import { User } from './models/user.model';
-import { JWTUserPayloadAttributes } from './users.attributes';
+import {
+  jwtUserPayloadAttributes,
+  minimalUserAttributes,
+} from './users.attributes';
 
-export type JWTUserPayloadAttribute = (typeof JWTUserPayloadAttributes)[number];
-
+// JWT User Payload
+export type JWTUserPayloadAttribute = (typeof jwtUserPayloadAttributes)[number];
 export type JWTUserPayload = Pick<User, JWTUserPayloadAttribute>;
+
+// Minimal User
+export type MinimalUserAttribute = (typeof minimalUserAttributes)[number];
+export type MinimalUser = Pick<User, MinimalUserAttribute>;
 
 export const UserRoles = {
   CANDIDATE: 'Candidat',

@@ -48,7 +48,7 @@ export class UsersHelper {
   }
 
   async findUser(userId: string): Promise<User> {
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOneWithRelations(userId);
     return user?.toJSON();
   }
 }

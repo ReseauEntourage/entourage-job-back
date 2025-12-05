@@ -82,7 +82,9 @@ export class UserFactory implements Factory<User> {
         );
       }
     }
-    const dbUser = await this.usersService.findOne(userData.id || userId);
+    const dbUser = await this.usersService.findOneWithRelations(
+      userData.id || userId
+    );
     if (dbUser) {
       return dbUser.toJSON();
     }

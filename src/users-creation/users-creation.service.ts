@@ -58,7 +58,7 @@ export class UsersCreationService {
   }
 
   async findOneUser(id: string) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOneWithRelations(id);
   }
 
   generateRandomPasswordInJWT(expiration: string | number = '1d') {

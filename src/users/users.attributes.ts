@@ -1,10 +1,9 @@
-export const JWTUserPayloadAttributes = [
+export const jwtUserPayloadAttributes = ['email', 'id'] as const;
+
+export const minimalUserAttributes = [
   'id',
-  'email',
   'firstName',
   'lastName',
   'role',
   'zone',
-  'isEmailVerified',
-  'deletedAt',
 ] as const;

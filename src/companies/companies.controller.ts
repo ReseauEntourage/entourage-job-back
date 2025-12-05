@@ -26,7 +26,6 @@ import { Public, UserPayload } from 'src/auth/guards';
 import { Department } from 'src/common/locations/locations.types';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { UsersService } from 'src/users/users.service';
-import { JWTUserPayload } from 'src/users/users.types';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
 import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
@@ -109,7 +108,7 @@ export class CompaniesController {
     @UserPayload('id') userId: string
   ) {
     try {
-      const user = await this.usersService.findOne(userId);
+      const user = await this.usersService.findOneWithRelations(userId);
       const companyId = user.company?.id;
       if (!companyId) {
         throw new NotFoundException(`Company not found`);
@@ -144,7 +143,7 @@ export class CompaniesController {
       throw new BadRequestException();
     }
     try {
-      const user = await this.usersService.findOne(userId);
+      const user = await this.usersService.findOneWithRelations(userId);
       const companyId = user.company?.id;
       if (!companyId) {
         throw new NotFoundException('Company not found for the user.');
@@ -161,7 +160,7 @@ export class CompaniesController {
   async inviteCollaborators(
     @Param('companyId') companyId: string,
     @Body() inviteCollaboratorsDto: InviteCollaboratorsDto,
-    @UserPayload('id') user: JWTUserPayload
+    @UserPayload('id') userId: string
   ) {
     // Validate the provided emails
     if (inviteCollaboratorsDto.emails.length === 0) {
@@ -178,6 +177,8 @@ export class CompaniesController {
         throw new BadRequestException(`Invalid email format: ${email}`);
       }
     });
+
+    const user = await this.usersService.findOne(userId);
 
     // Proceed with inviting collaborators
     return await this.companyInvitationsService.inviteCollaborators(

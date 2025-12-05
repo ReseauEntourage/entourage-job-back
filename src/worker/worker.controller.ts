@@ -14,7 +14,7 @@ import { MailerRecruitementAlert } from './MailerRecruitementAlert';
 export class WorkerController {
   constructor(
     private readonly recruitementAlertsService: RecruitementAlertsService,
-    private readonly userService: UsersService
+    private readonly usersService: UsersService
   ) {}
 
   // Preparing data for the recruitement alert email worker
@@ -62,7 +62,7 @@ export class WorkerController {
             // noone to notify
             continue;
           }
-          const adminUserDetails = await this.userService.findOne(
+          const adminUserDetails = await this.usersService.findOneWithRelations(
             companyAdmin.userId
           );
 

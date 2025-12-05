@@ -15,7 +15,7 @@ export class UsersDeletionService {
   ) {}
 
   async findOneUser(userId: string) {
-    return this.usersService.findOne(userId);
+    return this.usersService.findOneWithRelations(userId);
   }
 
   async updateUser(userId: string, updateUserDto: UpdateUserDto) {
