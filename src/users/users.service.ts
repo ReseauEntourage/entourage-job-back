@@ -77,32 +77,14 @@ export class UsersService {
 
   async findOneForJwtPayload(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
-      attributes: [
-        'id',
-        'email',
-        'firstName',
-        'lastName',
-        'role',
-        'zone',
-        'isEmailVerified',
-        'deletedAt',
-      ],
+      attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],
     });
   }
 
   async findOneForJwtPayloadByEmail(email: string): Promise<User> {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
-      attributes: [
-        'id',
-        'email',
-        'firstName',
-        'lastName',
-        'role',
-        'zone',
-        'isEmailVerified',
-        'deletedAt',
-      ],
+      attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],
     });
   }
 
