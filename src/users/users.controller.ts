@@ -39,6 +39,7 @@ import { User } from './models';
 
 import { UsersService } from './users.service';
 import {
+  JWTUserPayload,
   MemberFilterKey,
   Permissions,
   SequelizeUniqueConstraintError,
@@ -105,7 +106,7 @@ export class UsersController {
 
   @Put('company')
   async updateUserCompany(
-    @UserPayload() user: User,
+    @UserPayload() user: JWTUserPayload,
     @Body('companyName')
     companyName: string | null
   ) {

@@ -4,6 +4,12 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 
 import { FilterConstant, Filters } from 'src/utils/types';
 import { ZoneName, ZoneNameFilters } from 'src/utils/types/zones.types';
+import { User } from './models/user.model';
+import { JWTUserPayloadAttributes } from './users.attributes';
+
+export type JWTUserPayloadAttribute = (typeof JWTUserPayloadAttributes)[number];
+
+export type JWTUserPayload = Pick<User, JWTUserPayloadAttribute>;
 
 export const UserRoles = {
   CANDIDATE: 'Candidat',

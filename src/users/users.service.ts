@@ -20,7 +20,13 @@ import {
   getUserProfileRecentlyUpdatedOrder,
   UserCandidatInclude,
 } from './models/user.include';
-import { MemberFilterKey, UserRole, UserRoles } from './users.types';
+import { JWTUserPayloadAttributes } from './users.attributes';
+import {
+  MemberFilterKey,
+  UserRole,
+  UserRoles,
+  JWTUserPayload,
+} from './users.types';
 
 import {
   getCommonMembersFilterOptions,
@@ -50,6 +56,12 @@ export class UsersService {
       attributes: [...UserAttributes],
       include: UserCandidatInclude(),
       order: getUserCandidatOrder(),
+    });
+  }
+
+  async findOneForJwtPayload(id: string): Promise<JWTUserPayload> {
+    return this.userModel.findByPk(id, {
+      attributes: [...JWTUserPayloadAttributes],
     });
   }
 

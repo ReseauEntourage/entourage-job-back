@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard, UserPayload } from 'src/auth/guards';
-import { User } from 'src/users/models';
 import { CreateRecruitementAlertDto, UpdateRecruitementAlertDto } from './dto';
 import { RecruitementAlertsService } from './recruitement-alerts.service';
 
@@ -35,9 +34,8 @@ export class RecruitementAlertsController {
   }
 
   @Get()
-  async getRecruitementAlerts(@UserPayload() user: User) {
+  async getRecruitementAlerts(@UserPayload('id') userId: string) {
     try {
-      const userId = user.id;
       return await this.recruitementAlertsService.findAllByUserId(userId);
     } catch (error) {
       console.error(error);

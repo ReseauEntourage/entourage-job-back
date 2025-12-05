@@ -443,10 +443,11 @@ export class MessagingService {
   }
 
   async handleDailyConversationLimit(
-    sender: User,
+    senderId: string,
     participantIds: string[],
     message: string
   ) {
+    const sender = await this.userService.findOne(senderId);
     if (sender.role === UserRoles.ADMIN) {
       // Admins can create as many conversations as they want
       return;
