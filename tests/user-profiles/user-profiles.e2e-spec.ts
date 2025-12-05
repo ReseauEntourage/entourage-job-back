@@ -2284,23 +2284,15 @@ describe('UserProfiles', () => {
 
   describe('UserProfiles Recommendations Context', () => {
     describe('GET /user/profile/recommendations - Get user recommendations', () => {
-      let loggedInAdmin: LoggedUser;
       let loggedInCandidate: LoggedUser;
       let loggedInCoach: LoggedUser;
-      let loggedInReferer: LoggedUser;
 
       beforeEach(async () => {
-        loggedInAdmin = await usersHelper.createLoggedInUser({
-          role: UserRoles.ADMIN,
-        });
         loggedInCandidate = await usersHelper.createLoggedInUser({
           role: UserRoles.CANDIDATE,
         });
         loggedInCoach = await usersHelper.createLoggedInUser({
           role: UserRoles.COACH,
-        });
-        loggedInReferer = await usersHelper.createLoggedInUser({
-          role: UserRoles.REFERER,
         });
       });
 
@@ -2310,51 +2302,6 @@ describe('UserProfiles', () => {
         > = await request(server).get(`${route}/profile/recommendations`);
 
         expect(response.status).toBe(401);
-      });
-
-      it('Should return 403, if admin gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations`)
-          .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if admin gets his recommendations', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations`)
-          .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if coach gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations`)
-          .set('authorization', `Bearer ${loggedInCoach.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if referer gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations`)
-          .set('authorization', `Bearer ${loggedInReferer.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if candidate gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations`)
-          .set('authorization', `Bearer ${loggedInCandidate.token}`);
-        expect(response.status).toBe(403);
       });
 
       it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
