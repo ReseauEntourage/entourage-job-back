@@ -50,9 +50,14 @@ export class MailjetService {
       console.error(error);
       console.error('Mailjet Connection Reset : Refreshing Instances');
       this.refreshInstances();
-      return await this.mailjetTransactional
-        .post('send', MailjetOptions.MAILS)
-        .request(mailjetParams);
+      try {
+        return await this.mailjetTransactional
+          .post('send', MailjetOptions.MAILS)
+          .request(mailjetParams);
+      } catch (error) {
+        console.error('Second attempt failed:', error);
+        throw error;
+      }
     }
   }
 
