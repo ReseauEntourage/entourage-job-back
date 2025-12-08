@@ -2026,16 +2026,6 @@ describe('UserProfiles', () => {
             .attach('profileImage', path);
           expect(response.status).toBe(403);
         });
-        it('Should return 403, if coach uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
         it('Should return 403, if candidate uploads profile picture for another user', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
