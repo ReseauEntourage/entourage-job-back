@@ -190,7 +190,7 @@ export class UserProfilesController {
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
   @Post('/upload-image')
   async uploadProfileImage(
-    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
     if (!file) {
