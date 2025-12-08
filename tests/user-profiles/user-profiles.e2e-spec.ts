@@ -1961,7 +1961,7 @@ describe('UserProfiles', () => {
           );
         });
       });
-      describe('PUT /profile/uploadImage/:id - Upload user profile picture', () => {
+      describe('PUT /profile/upload-image - Upload user profile picture', () => {
         let path: string;
 
         let loggedInAdmin: LoggedUser;
@@ -1990,7 +1990,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
 
@@ -2000,47 +2000,17 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
         });
-        it('Should return 403, if admin uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if referer uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInReferer.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if candidate uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
         it('Should return 201, if candidate uploads his profile picture', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2050,7 +2020,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInReferer.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2060,7 +2030,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2069,7 +2039,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2079,7 +2049,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);

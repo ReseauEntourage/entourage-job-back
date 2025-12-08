@@ -187,10 +187,8 @@ export class UserProfilesController {
     });
   }
 
-  @Self('params.userId')
-  @UseGuards(SelfGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
-  @Post('/uploadImage/:userId')
+  @Post('/upload-image')
   async uploadProfileImage(
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @UploadedFile() file: Express.Multer.File
