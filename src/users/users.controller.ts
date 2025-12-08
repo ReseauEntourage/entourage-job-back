@@ -23,16 +23,12 @@ import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { UserPayload } from 'src/auth/guards';
 import {
   UpdateUserDto,
-  UpdateUserCandidatDto,
   UpdateUserRestrictedDto,
   UpdateUserRestrictedPipe,
 } from 'src/users/dto';
 import { isValidPhone } from 'src/utils/misc';
 import { FilterParams } from 'src/utils/types';
-import { UpdateUserCandidatPipe } from './dto/update-user-candidat.pipe';
 import {
-  LinkedUser,
-  LinkedUserGuard,
   Self,
   SelfGuard,
   UserPermissions,
@@ -41,7 +37,6 @@ import {
 import { AdminOverride } from './guards/admin-override.decorator';
 import { User } from './models';
 
-import { UserCandidatsService } from './user-candidats.service';
 import { UsersService } from './users.service';
 import {
   MemberFilterKey,
@@ -57,10 +52,7 @@ import { isRoleIncluded } from './users.utils';
 @ApiBearerAuth()
 @Controller('user')
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly userCandidatsService: UserCandidatsService
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
@@ -113,10 +105,11 @@ export class UsersController {
 
   @Put('company')
   async updateUserCompany(
-    @UserPayload() user: User,
+    @UserPayload('id') userId: string,
     @Body('companyName')
     companyName: string | null
   ) {
+    const user = await this.usersService.findOneWithCompanyUsers(userId);
     if (user.role !== UserRoles.COACH) {
       throw new ForbiddenException();
     }
@@ -134,9 +127,9 @@ export class UsersController {
   async findUser(@Param('id') userId: string) {
     let user: User;
     if (validator.isEmail(userId)) {
-      user = await this.usersService.findOneByMail(userId);
+      user = await this.usersService.findOneByMailWithRelations(userId);
     } else if (uuidValidate(userId)) {
-      user = await this.usersService.findOne(userId);
+      user = await this.usersService.findOneWithRelations(userId);
     } else {
       throw new BadRequestException();
     }
@@ -146,29 +139,6 @@ export class UsersController {
     }
 
     return user.toJSON();
-  }
-
-  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
-  @UseGuards(UserPermissionsGuard)
-  @Get('candidate/checkUpdate/:candidateId')
-  async checkNoteHasBeenModified(
-    @UserPayload('role') role: UserRole,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string
-  ) {
-    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
-      candidateId
-    );
-
-    if (!userCandidat) {
-      throw new NotFoundException();
-    }
-
-    const { lastModifiedBy } = userCandidat.toJSON();
-
-    return {
-      noteHasBeenModified: !!lastModifiedBy && lastModifiedBy !== userId,
-    };
   }
 
   @Put('changePwd')
@@ -209,92 +179,11 @@ export class UsersController {
     return updatedUser;
   }
 
-  // for admin to modify multiple users at the same time
-  @UserPermissions(Permissions.ADMIN)
-  @UseGuards(UserPermissionsGuard)
-  @Put('candidate/bulk')
-  async updateAll(
-    @Body('attributes', UpdateUserRestrictedPipe)
-    updateUserCandidatDto: UpdateUserCandidatDto,
-    @Body('ids') usersIds: string[]
-  ) {
-    const { nbUpdated, updatedUserCandidats } =
-      await this.userCandidatsService.updateAll(
-        usersIds,
-        updateUserCandidatDto
-      );
-
-    return {
-      nbUpdated,
-      updatedIds: updatedUserCandidats.map((user) => {
-        return user.candidatId;
-      }),
-    };
-  }
-
-  @LinkedUser('params.candidateId')
-  @UseGuards(LinkedUserGuard)
-  @Put('candidate/:candidateId')
-  async updateUserCandidat(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @Body(new UpdateUserCandidatPipe())
-    updateUserCandidatDto: UpdateUserCandidatDto
-  ) {
-    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
-      candidateId
-    );
-
-    if (!userCandidat) {
-      throw new NotFoundException();
-    }
-
-    const updatedUserCandidat =
-      await this.userCandidatsService.updateByCandidateId(candidateId, {
-        ...updateUserCandidatDto,
-        lastModifiedBy: userId,
-      });
-
-    return updatedUserCandidat;
-  }
-
-  @LinkedUser('params.candidateId')
-  @UseGuards(LinkedUserGuard)
-  @UserPermissions(Permissions.CANDIDATE, Permissions.COACH)
-  @UseGuards(UserPermissionsGuard)
-  @Put('candidate/read/:candidateId')
-  async setNoteHasBeenRead(
-    @Param('candidateId', new ParseUUIDPipe()) candidateId: string,
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
-  ) {
-    const userCandidat = await this.userCandidatsService.findOneByCandidateId(
-      candidateId
-    );
-
-    if (!userCandidat) {
-      throw new NotFoundException();
-    }
-
-    const { lastModifiedBy } = userCandidat.toJSON();
-
-    const updatedUserCandidat =
-      await this.userCandidatsService.updateByCandidateId(candidateId, {
-        lastModifiedBy: lastModifiedBy !== userId ? null : lastModifiedBy,
-      });
-
-    if (!updatedUserCandidat) {
-      throw new NotFoundException();
-    }
-
-    return updatedUserCandidat;
-  }
-
   @AdminOverride()
   @Self('params.id')
   @UseGuards(SelfGuard)
   @Put(':id')
   async updateUser(
-    @UserPayload('role') role: UserRole,
     @Param('id', new ParseUUIDPipe()) userId: string,
     // Do not instantiante UpdateUserRestrictedPipe so that Request can be injected
     @Body(UpdateUserRestrictedPipe) updateUserDto: UpdateUserRestrictedDto
@@ -303,7 +192,7 @@ export class UsersController {
       throw new BadRequestException();
     }
 
-    const oldUser = await this.usersService.findOne(userId);
+    const oldUser = await this.usersService.findOneWithRelations(userId);
 
     let updatedUser: User;
     try {

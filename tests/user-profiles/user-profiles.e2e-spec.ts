@@ -1961,7 +1961,7 @@ describe('UserProfiles', () => {
           );
         });
       });
-      describe('PUT /profile/uploadImage/:id - Upload user profile picture', () => {
+      describe('PUT /profile/upload-image - Upload user profile picture', () => {
         let path: string;
 
         let loggedInAdmin: LoggedUser;
@@ -1990,7 +1990,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
 
@@ -2000,57 +2000,17 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
         });
-        it('Should return 403, if admin uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if referer uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInReferer.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if coach uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if candidate uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
         it('Should return 201, if candidate uploads his profile picture', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2060,7 +2020,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInReferer.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2070,7 +2030,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2079,7 +2039,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2089,7 +2049,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2283,80 +2243,25 @@ describe('UserProfiles', () => {
   });
 
   describe('UserProfiles Recommendations Context', () => {
-    describe('GET /user/profile/recommendations/:userId - Get user recommendations', () => {
-      let loggedInAdmin: LoggedUser;
+    describe('GET /user/profile/recommendations - Get user recommendations', () => {
       let loggedInCandidate: LoggedUser;
       let loggedInCoach: LoggedUser;
-      let loggedInReferer: LoggedUser;
 
       beforeEach(async () => {
-        loggedInAdmin = await usersHelper.createLoggedInUser({
-          role: UserRoles.ADMIN,
-        });
         loggedInCandidate = await usersHelper.createLoggedInUser({
           role: UserRoles.CANDIDATE,
         });
         loggedInCoach = await usersHelper.createLoggedInUser({
           role: UserRoles.COACH,
         });
-        loggedInReferer = await usersHelper.createLoggedInUser({
-          role: UserRoles.REFERER,
-        });
       });
 
       it('Should return 401, if user not logged in', async () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
-        > = await request(server).get(
-          `${route}/profile/recommendations/${loggedInCandidate.user.id}`
-        );
+        > = await request(server).get(`${route}/profile/recommendations`);
 
         expect(response.status).toBe(401);
-      });
-
-      it('Should return 403, if admin gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
-          .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if admin gets his recommendations', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInAdmin.user.id}`)
-          .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if coach gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
-          .set('authorization', `Bearer ${loggedInCoach.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if referer gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
-          .set('authorization', `Bearer ${loggedInReferer.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if candidate gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
-          .set('authorization', `Bearer ${loggedInCandidate.token}`);
-        expect(response.status).toBe(403);
       });
 
       it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
@@ -2411,7 +2316,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2522,7 +2427,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2949,7 +2854,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3013,7 +2918,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3126,7 +3031,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3562,7 +3467,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body.length).toBe(newUsersToRecommend.length);

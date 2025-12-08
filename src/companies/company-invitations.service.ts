@@ -42,7 +42,11 @@ export class CompanyInvitationsService {
     return this.findOneById(id);
   }
 
-  async inviteCollaborators(sender: User, companyId: string, emails: string[]) {
+  async inviteCollaborators(
+    sender: Pick<User, 'id' | 'firstName' | 'lastName' | 'zone'>,
+    companyId: string,
+    emails: string[]
+  ) {
     // Validate input
     if (emails.length === 0) {
       throw new Error('No emails provided for invitation');

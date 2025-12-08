@@ -49,7 +49,7 @@ export class MessagingService {
     private messageMediaModel: typeof MessageMedia,
     private slackService: SlackService,
     @Inject(forwardRef(() => UsersService))
-    private userService: UsersService,
+    private usersService: UsersService,
     private mailsService: MailsService,
     private mediaService: MediasService
   ) {}
@@ -395,7 +395,9 @@ export class MessagingService {
     reporterUserId: string
   ) {
     const conversation = await this.findConversation(conversationId);
-    const reporterUser = await this.userService.findOne(reporterUserId);
+    const reporterUser = await this.usersService.findOneWithRelations(
+      reporterUserId
+    );
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
@@ -443,10 +445,11 @@ export class MessagingService {
   }
 
   async handleDailyConversationLimit(
-    sender: User,
+    senderId: string,
     participantIds: string[],
     message: string
   ) {
+    const sender = await this.usersService.findOneWithRelations(senderId);
     if (sender.role === UserRoles.ADMIN) {
       // Admins can create as many conversations as they want
       return;
@@ -457,7 +460,7 @@ export class MessagingService {
     if (countDailyConversation >= 7) {
       const recipients: User[] = [];
       for (const id of participantIds) {
-        const recipient = await this.userService.findOne(id);
+        const recipient = await this.usersService.findOneWithRelations(id);
         if (recipient) {
           recipients.push(recipient);
         }

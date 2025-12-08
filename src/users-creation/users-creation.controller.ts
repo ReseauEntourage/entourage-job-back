@@ -300,12 +300,13 @@ export class UsersCreationController {
   async createUserRefering(
     @Body(new CreateUserReferingPipe())
     createUserReferingDto: CreateUserReferingDto,
-    @UserPayload()
-    referer: User
+    @UserPayload('id')
+    refererId: string
   ) {
     if (!isValidPhone(createUserReferingDto.phone)) {
       throw new BadRequestException();
     }
+    const referer = await this.usersCreationService.findOneUser(refererId);
 
     const userRandomPassword = generateFakePassword();
     const { hash, salt } = encryptPassword(userRandomPassword);

@@ -1073,7 +1073,7 @@ export class SalesforceService {
       | 'role'
     >
   > {
-    const userDb = await this.usersService.findOne(userId);
+    const userDb = await this.usersService.findOneWithRelations(userId);
 
     return {
       id: userDb.id,

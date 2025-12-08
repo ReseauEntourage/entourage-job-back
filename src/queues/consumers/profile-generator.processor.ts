@@ -7,7 +7,6 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { Job } from 'bull';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
-import { detectPdftocairoPath } from 'src/cvs/cvs.utils';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
@@ -19,6 +18,7 @@ import {
   Queues,
   GenerateProfileFromPDFJob,
 } from 'src/queues/queues.types';
+import { detectPdftocairoPath } from 'src/utils/misc/pdf-to-cairo';
 
 @Processor(Queues.PROFILE_GENERATION)
 @Injectable()

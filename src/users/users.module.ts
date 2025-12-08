@@ -4,21 +4,20 @@ import { AuthModule } from 'src/auth/auth.module';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { MailsModule } from 'src/mails/mails.module';
-import { UserCandidat, User } from './models';
-import { UserCandidatsService } from './user-candidats.service';
+import { User } from './models';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, UserCandidat]),
+    SequelizeModule.forFeature([User]),
     forwardRef(() => MailsModule),
     forwardRef(() => AuthModule),
     forwardRef(() => CompaniesModule),
     BusinessSectorsModule,
   ],
   controllers: [UsersController],
-  providers: [UsersService, UserCandidatsService],
-  exports: [UsersService, UserCandidatsService, SequelizeModule],
+  providers: [UsersService],
+  exports: [UsersService, SequelizeModule],
 })
 export class UsersModule {}

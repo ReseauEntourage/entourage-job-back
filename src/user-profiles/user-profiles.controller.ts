@@ -187,12 +187,10 @@ export class UserProfilesController {
     });
   }
 
-  @Self('params.userId')
-  @UseGuards(SelfGuard)
   @UseInterceptors(FileInterceptor('profileImage', { dest: 'uploads/' }))
-  @Post('/uploadImage/:userId')
+  @Post('/upload-image')
   async uploadProfileImage(
-    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @UploadedFile() file: Express.Multer.File
   ) {
     if (!file) {
@@ -218,13 +216,9 @@ export class UserProfilesController {
     return profileImage.key;
   }
 
-  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
-  @UseGuards(UserPermissionsGuard)
-  @Self('params.userId')
-  @UseGuards(SelfGuard)
-  @Get('/recommendations/:userId')
+  @Get('/recommendations')
   async findRecommendationsByUserId(
-    @Param('userId', new ParseUUIDPipe()) userId: string
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
   ): Promise<PublicProfile[]> {
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);

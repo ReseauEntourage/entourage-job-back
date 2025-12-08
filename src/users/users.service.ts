@@ -13,17 +13,12 @@ import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.at
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
-import {
-  User,
-  UserAttributes,
-  UserCandidat,
-  UserCandidatAttributes,
-} from './models';
+import { User, UserAttributes } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
   getUserProfileRecentlyUpdatedOrder,
-  UserCandidatInclude,
+  UserIncludes,
 } from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
@@ -53,8 +48,43 @@ export class UsersService {
   async findOne(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
+    });
+  }
+
+  async findOneByMail(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...UserAttributes],
+    });
+  }
+
+  async findOneByMailWithRelations(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...UserAttributes],
+      include: UserIncludes(),
       order: getUserCandidatOrder(),
+    });
+  }
+
+  async findOneWithRelations(id: string) {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: UserIncludes(),
+      order: getUserCandidatOrder(),
+    });
+  }
+
+  async findOneForJwtPayload(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],
+    });
+  }
+
+  async findOneForJwtPayloadByEmail(email: string): Promise<User> {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],
     });
   }
 
@@ -77,15 +107,6 @@ export class UsersService {
     companyId: string | null
   ) {
     return await this.companyUsersService.linkUserToCompany(user, companyId);
-  }
-
-  async findOneByMail(email: string) {
-    return this.userModel.findOne({
-      where: { email: email.toLowerCase() },
-      attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
-      order: getUserCandidatOrder(),
-    });
   }
 
   /**
@@ -114,7 +135,7 @@ export class UsersService {
 
   async findOneComplete(id: string) {
     return this.userModel.findByPk(id, {
-      include: UserCandidatInclude(),
+      include: UserIncludes(),
     });
   }
 
@@ -185,28 +206,6 @@ export class UsersService {
       },
       order: [['firstName', 'ASC']],
       include: [
-        {
-          model: UserCandidat,
-          as: 'candidat',
-          attributes: ['coachId', 'candidatId', ...UserCandidatAttributes],
-          required: false,
-          include: [
-            {
-              model: User,
-              as: 'coach',
-              required: false,
-              attributes: [...UserAttributes],
-              include: [
-                {
-                  model: Organization,
-                  as: 'organization',
-                  attributes: ['name', 'address', 'zone', 'id'],
-                  required: false,
-                },
-              ],
-            },
-          ],
-        },
         {
           model: Organization,
           as: 'organization',
@@ -349,21 +348,6 @@ export class UsersService {
           model: User,
           as: 'referredCandidates',
           attributes: [...UserAttributes],
-          include: [
-            {
-              model: UserCandidat,
-              as: 'candidat',
-              attributes: [...UserCandidatAttributes],
-              paranoid: false,
-              include: [
-                {
-                  model: User,
-                  as: 'candidat',
-                  attributes: [...UserAttributes],
-                },
-              ],
-            },
-          ],
         },
         {
           model: Organization,
@@ -451,7 +435,7 @@ export class UsersService {
       individualHooks: true,
     });
 
-    const updatedUser = await this.findOne(id);
+    const updatedUser = await this.findOneWithRelations(id);
 
     if (!updatedUser) {
       return null;
@@ -528,7 +512,7 @@ export class UsersService {
       limit,
       offset,
       attributes: PublicUserAttributes,
-      include: UserCandidatInclude(),
+      include: UserIncludes(),
       order: getUserProfileRecentlyUpdatedOrder(),
       where: {
         lastConnection: { [Op.ne]: null },
