@@ -18,7 +18,7 @@ import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
   getUserProfileRecentlyUpdatedOrder,
-  UserCandidatInclude,
+  UserIncludes,
 } from './models/user.include';
 import { MemberFilterKey, UserRole, UserRoles } from './users.types';
 
@@ -62,7 +62,7 @@ export class UsersService {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
+      include: UserIncludes(),
       order: getUserCandidatOrder(),
     });
   }
@@ -70,7 +70,7 @@ export class UsersService {
   async findOneWithRelations(id: string) {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
-      include: UserCandidatInclude(),
+      include: UserIncludes(),
       order: getUserCandidatOrder(),
     });
   }
@@ -135,7 +135,7 @@ export class UsersService {
 
   async findOneComplete(id: string) {
     return this.userModel.findByPk(id, {
-      include: UserCandidatInclude(),
+      include: UserIncludes(),
     });
   }
 
@@ -512,7 +512,7 @@ export class UsersService {
       limit,
       offset,
       attributes: PublicUserAttributes,
-      include: UserCandidatInclude(),
+      include: UserIncludes(),
       order: getUserProfileRecentlyUpdatedOrder(),
       where: {
         lastConnection: { [Op.ne]: null },

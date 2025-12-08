@@ -178,7 +178,7 @@ export class CompaniesController {
       }
     });
 
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOneWithRelations(userId);
 
     // Proceed with inviting collaborators
     return await this.companyInvitationsService.inviteCollaborators(

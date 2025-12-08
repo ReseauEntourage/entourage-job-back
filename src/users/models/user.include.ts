@@ -14,7 +14,7 @@ import {
 import { UserAttributes } from './user.attributes';
 import { User } from './user.model';
 
-export const UserCandidatInclude = (): Includeable[] => {
+export const UserIncludes = (): Includeable[] => {
   return [
     {
       model: User,

@@ -342,6 +342,11 @@ export class User extends HistorizedModel {
   static async manageRoleChange(userToUpdate: User) {
     const previousUserValues: Partial<User> = userToUpdate.previous();
     if (
+      userToUpdate &&
+      userToUpdate.role &&
+      previousUserValues &&
+      previousUserValues.role !== undefined &&
+      previousUserValues.role !== userToUpdate.role &&
       isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
       !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
     ) {

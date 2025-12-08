@@ -3031,7 +3031,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
