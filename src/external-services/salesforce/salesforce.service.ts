@@ -485,6 +485,7 @@ export class SalesforceService {
             ${modeFilters}
             ${eventTypesFilters}
             ${localBranchesCondition}
+            ORDER BY StartDate ASC, Heure_d_but__c ASC
             LIMIT ${limit} OFFSET ${offset}
            `;
     const { records }: { records: Partial<SalesforceCampaign>[] } =
