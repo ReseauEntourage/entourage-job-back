@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
@@ -9,6 +10,7 @@ import { RedisOptions } from 'ioredis';
 import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
 import { getSequelizeOptions } from './app.module';
+import { CronModule } from './cron/cron.module';
 import { Queues } from './queues/queues.types';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 
@@ -52,11 +54,13 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
       }),
     }),
     ConsumersModule,
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot({
       ttl: 60,
       limit: 100,
     }),
     ApiKeysModule,
+    CronModule,
   ],
   providers: [
     {

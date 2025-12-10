@@ -28,4 +28,9 @@ export class CronService {
       })
     );
   }
+
+  @Cron(CronExpression.EVERY_5_SECONDS)
+  async testCronEveryMinute() {
+    this.logger.log('Cron every 5 seconds works!');
+  }
 }
