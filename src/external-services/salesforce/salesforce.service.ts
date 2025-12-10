@@ -432,7 +432,8 @@ export class SalesforceService {
                     if (mode === EventMode.ONLINE) {
                       return `En_Ligne__c = 'Oui'`;
                     } else if (mode === EventMode.IRL) {
-                      return `En_Ligne__c = 'Non'`;
+                      // By default, events are considered IRL when En_Ligne__c is 'Non' or null
+                      return `(En_Ligne__c = 'Non' OR En_Ligne__c IS NULL)`;
                     }
                   })
                   .join(' OR ')}
