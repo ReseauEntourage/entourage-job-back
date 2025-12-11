@@ -460,25 +460,35 @@ export class UsersService {
       candidatUrl: string | null;
     }[] = await this.userModel.sequelize.query(
       `
-          SELECT
-              "Users"."id" as id,
-              "Users"."firstName" as "firstName",
-              "Users"."lastName" as "lastName",
-              uc."url" as "candidatUrl"
-          FROM
-              "Users"
-          LEFT OUTER JOIN "User_Candidats" uc
-              ON "Users"."id" = uc."candidatId"
-          WHERE
-            -- has already signed in --
-            "Users"."lastConnection" IS NOT NULL
-            -- isInactiveSince --
-            AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+        SELECT
+            "Users"."id" as id,
+            "Users"."firstName" as "firstName",
+            "Users"."lastName" as "lastName",
+            "Users"."lastConnection" as "lastConnection",
+            "Users"."createdAt" as "createdAt"
+        FROM
+            "Users"
+        WHERE
+            (
+                ( -- has already signed in --
+                    "Users"."lastConnection" IS NOT NULL
+                    -- isInactiveSince --
+                    AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+                )
+                OR ( -- has never signed in --
+                    "Users"."lastConnection" IS NULL
+                    -- createdAt is old enough --
+                    AND "Users"."createdAt" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+                )
+            )
             -- is not deleted --
             AND "Users"."deletedAt" IS NULL
             -- Filter on role --
             AND "Users".role NOT IN ('Admin')
-      ;`,
+        ORDER BY
+            "Users"."lastConnection" ASC,
+            "Users"."createdAt" ASC;
+      `,
       {
         type: QueryTypes.SELECT,
         raw: true,
