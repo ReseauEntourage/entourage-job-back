@@ -17,7 +17,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: { sub: string }) {
     const { sub } = payload;
 
-    const user = await this.usersService.findOne(sub);
+    const user = await this.usersService.findOneForJwtPayload(sub);
 
     /*
           verify if 
@@ -31,6 +31,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || !!user.deletedAt) {
       throw new UnauthorizedException();
     }
-    return user.toJSON();
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role, // used for permission guards
+    };
   }
 }

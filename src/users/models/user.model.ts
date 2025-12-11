@@ -8,7 +8,6 @@ import {
 } from 'class-validator';
 import {
   AfterCreate,
-  AfterDestroy,
   AllowNull,
   BeforeCreate,
   BeforeUpdate,
@@ -38,11 +37,7 @@ import {
   UserRole,
   UserRoles,
 } from '../users.types';
-import {
-  capitalizeNameAndTrim,
-  generateUrl,
-  isRoleIncluded,
-} from '../users.utils';
+import { capitalizeNameAndTrim, isRoleIncluded } from '../users.utils';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
@@ -51,12 +46,17 @@ import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserSocialSituation } from 'src/user-social-situations/models/user-social-situation.model';
-import { AdminZone, HistorizedModel } from 'src/utils/types';
 import {
   WhatsappCandidateByZone,
   WhatsappCoachByZone,
-} from 'src/utils/types/WhatsappZone';
-import { UserCandidat } from './user-candidat.model';
+} from 'src/utils/constants/whatsapp-groups';
+import { Zones } from 'src/utils/constants/zones';
+import { HistorizedModel } from 'src/utils/types';
+import {
+  InternalStaffContact,
+  StaffContactGroup,
+  ZoneName,
+} from 'src/utils/types/zones.types';
 
 @Table({ tableName: 'Users' })
 export class User extends HistorizedModel {
@@ -173,7 +173,7 @@ export class User extends HistorizedModel {
   @IsString()
   @AllowNull(true)
   @Column
-  zone: AdminZone;
+  zone: ZoneName;
 
   @ApiProperty()
   @IsBoolean()
@@ -191,7 +191,7 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneName(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -203,7 +203,7 @@ export class User extends HistorizedModel {
 
   @Column(DataType.VIRTUAL)
   get whatsappZoneUrl(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -213,9 +213,31 @@ export class User extends HistorizedModel {
       : WhatsappCandidateByZone[zone].url || '';
   }
 
+  /**
+   * Get the staff contact information based on the user's zone and company admin status
+   * Requires 'zone' and 'role' to be set on the User instance and 'company' to be loaded if applicable
+   * @returns StaffContact information or undefined if zone is invalid
+   */
+  @Column(DataType.VIRTUAL)
+  get staffContact(): InternalStaffContact | undefined {
+    const zone = (this.getDataValue('zone') as ZoneName) || ZoneName.HZ;
+
+    // Check if companies association is loaded
+    const hasCompanies = this.companies !== undefined;
+    const staffContactGroup =
+      hasCompanies && this.company && this.company?.companyUser?.isAdmin
+        ? StaffContactGroup.COMPANY
+        : StaffContactGroup.MAIN;
+
+    if (!(zone in Zones)) {
+      return undefined;
+    }
+    return Zones[zone].staffContact[staffContactGroup];
+  }
+
   @Column(DataType.VIRTUAL)
   get whatsappZoneQR(): string {
-    const zone = this.getDataValue('zone') as AdminZone;
+    const zone = this.getDataValue('zone') as ZoneName;
     const isCoach = this.getDataValue('role') === UserRoles.COACH;
     if (!zone) {
       return '';
@@ -224,13 +246,6 @@ export class User extends HistorizedModel {
       ? WhatsappCoachByZone[zone].qr
       : WhatsappCandidateByZone[zone].qr;
   }
-
-  // si candidat regarder candidat
-  @HasOne(() => UserCandidat, {
-    foreignKey: 'candidatId',
-    hooks: true,
-  })
-  candidat?: UserCandidat;
 
   @HasOne(() => UserSocialSituation, {
     foreignKey: 'userId',
@@ -315,14 +330,6 @@ export class User extends HistorizedModel {
 
   @AfterCreate
   static async createAssociations(createdUser: User) {
-    if (createdUser.role === UserRoles.CANDIDATE) {
-      await UserCandidat.create(
-        {
-          candidatId: createdUser.id,
-        },
-        { hooks: true }
-      );
-    }
     await UserProfile.create(
       {
         userId: createdUser.id,
@@ -339,96 +346,20 @@ export class User extends HistorizedModel {
       userToUpdate.role &&
       previousUserValues &&
       previousUserValues.role !== undefined &&
-      previousUserValues.role !== userToUpdate.role
+      previousUserValues.role !== userToUpdate.role &&
+      isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
+      !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
     ) {
-      if (
-        previousUserValues.role === UserRoles.CANDIDATE &&
-        userToUpdate.role !== UserRoles.CANDIDATE
-      ) {
-        await UserCandidat.destroy({
-          where: {
-            candidatId: userToUpdate.id,
-          },
-        });
-      } else if (
-        previousUserValues.role !== UserRoles.CANDIDATE &&
-        userToUpdate.role === UserRoles.CANDIDATE
-      ) {
-        if (previousUserValues.role === UserRoles.COACH) {
-          await UserCandidat.update(
-            {
-              coachId: null,
-            },
-            {
-              where: {
-                coachId: userToUpdate.id,
-              },
-            }
-          );
-        }
-
-        await UserCandidat.create(
-          {
-            candidatId: userToUpdate.id,
-            url: generateUrl(userToUpdate),
-          },
-          { hooks: true }
-        );
-      }
-
-      if (
-        isRoleIncluded(RolesWithOrganization, previousUserValues.role) &&
-        !isRoleIncluded(RolesWithOrganization, userToUpdate.role)
-      ) {
-        await User.update(
-          {
-            OrganizationId: null,
-          },
-          {
-            where: {
-              id: userToUpdate.id,
-            },
-          }
-        );
-      }
-    }
-  }
-
-  @BeforeUpdate
-  static async manageNameChange(userToUpdate: User) {
-    const previousUserValues = userToUpdate.previous();
-    if (
-      userToUpdate &&
-      userToUpdate.role === UserRoles.CANDIDATE &&
-      previousUserValues &&
-      previousUserValues.firstName != undefined &&
-      previousUserValues.firstName !== userToUpdate.firstName
-    ) {
-      await UserCandidat.update(
+      await User.update(
         {
-          url: generateUrl(userToUpdate),
+          OrganizationId: null,
         },
         {
           where: {
-            candidatId: userToUpdate.id,
+            id: userToUpdate.id,
           },
         }
       );
     }
-  }
-
-  @AfterDestroy
-  static async unbindCoach(destroyedUser: User) {
-    await UserCandidat.update(
-      {
-        coachId: null,
-      },
-      {
-        where: {
-          [destroyedUser.role === UserRoles.COACH ? 'coachId' : 'candidatId']:
-            destroyedUser.id,
-        },
-      }
-    );
   }
 }

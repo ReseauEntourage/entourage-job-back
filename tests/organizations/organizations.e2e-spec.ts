@@ -7,7 +7,8 @@ import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
-import { AdminZones, APIResponse } from 'src/utils/types';
+import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
@@ -215,7 +216,7 @@ describe('Organizations', () => {
 
         beforeEach(async () => {
           organization = await organizationFactory.create(
-            { name: 'GGG', zone: AdminZones.LILLE },
+            { name: 'GGG', zone: ZoneName.LILLE },
             {},
             true
           );
@@ -242,14 +243,14 @@ describe('Organizations', () => {
           organizations = await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'XXX', zone: AdminZones.PARIS },
+            { name: 'XXX', zone: ZoneName.PARIS },
             {},
             true
           );
           await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'YYY', zone: AdminZones.LYON },
+            { name: 'YYY', zone: ZoneName.LYON },
             {},
             true
           );
@@ -274,7 +275,7 @@ describe('Organizations', () => {
           ];
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server).get(
-              `${route}?limit=50&offset=0&zone[]=${AdminZones.PARIS}`
+              `${route}?limit=50&offset=0&zone[]=${ZoneName.PARIS}`
             );
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);

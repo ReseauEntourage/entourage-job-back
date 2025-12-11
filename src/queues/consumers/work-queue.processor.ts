@@ -9,17 +9,11 @@ import {
   Processor,
 } from '@nestjs/bull';
 import { Job } from 'bull';
-import { CVsService } from 'src/cvs/cvs.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
-import {
-  PusherChannels,
-  PusherEvents,
-} from 'src/external-services/pusher/pusher.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import {
   CreateOrUpdateSalesforceUserJob,
-  GenerateCVPDFJob,
   Jobs,
   NewsletterSubscriptionJob,
   Queues,
@@ -32,7 +26,6 @@ export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
     private pusherService: PusherService,
-    private cvsService: CVsService,
     private salesforceService: SalesforceService
   ) {}
 
@@ -109,27 +102,6 @@ export class WorkQueueProcessor {
     await this.mailjetService.sendContact(data);
 
     return `Contact '${data.email}' subscribed to newsletter`;
-  }
-
-  @Process(Jobs.GENERATE_CV_PDF)
-  async processGenerateCVPDF(job: Job<GenerateCVPDFJob>) {
-    const { data } = job;
-
-    await this.cvsService.generatePDFFromCV(
-      data.candidateId,
-      data.token,
-      data.fileName
-    );
-
-    await this.pusherService.sendEvent(
-      PusherChannels.CV_PDF,
-      PusherEvents.CV_PDF_DONE,
-      {
-        candidateId: data.candidateId,
-      }
-    );
-
-    return `PDF generated for User ${data.candidateId} : ${data.fileName}`;
   }
 
   @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_USER)

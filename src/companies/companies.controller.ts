@@ -25,7 +25,6 @@ import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
 import { Department } from 'src/common/locations/locations.types';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
-import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
@@ -86,10 +85,10 @@ export class CompaniesController {
   @Get(':companyId/collaborators')
   async findCompanyCollaborators(
     @Param('companyId') companyId: string,
-    @UserPayload() user: User
+    @UserPayload('id') userId: string
   ) {
     const userWithCompanyUsers =
-      await this.usersService.findOneWithCompanyUsers(user.id);
+      await this.usersService.findOneWithCompanyUsers(userId);
     // Ensure the user has the right to view collaborators
     const companyUser = userWithCompanyUsers.companyUsers.find(
       (cu) => cu.companyId === companyId
@@ -106,9 +105,10 @@ export class CompaniesController {
   @Put()
   async update(
     @Body() updateCompanyDto: UpdateCompanyDto,
-    @UserPayload() user: User
+    @UserPayload('id') userId: string
   ) {
     try {
+      const user = await this.usersService.findOneWithRelations(userId);
       const companyId = user.company?.id;
       if (!companyId) {
         throw new NotFoundException(`Company not found`);
@@ -137,12 +137,13 @@ export class CompaniesController {
   @Post('logo')
   async uploadCompanyLogo(
     @UploadedFile() file: Express.Multer.File,
-    @UserPayload() user: User
+    @UserPayload('id') userId: string
   ) {
     if (!file) {
       throw new BadRequestException();
     }
     try {
+      const user = await this.usersService.findOneWithRelations(userId);
       const companyId = user.company?.id;
       if (!companyId) {
         throw new NotFoundException('Company not found for the user.');
@@ -159,7 +160,7 @@ export class CompaniesController {
   async inviteCollaborators(
     @Param('companyId') companyId: string,
     @Body() inviteCollaboratorsDto: InviteCollaboratorsDto,
-    @UserPayload() user: User
+    @UserPayload('id') userId: string
   ) {
     // Validate the provided emails
     if (inviteCollaboratorsDto.emails.length === 0) {
@@ -176,6 +177,8 @@ export class CompaniesController {
         throw new BadRequestException(`Invalid email format: ${email}`);
       }
     });
+
+    const user = await this.usersService.findOneWithRelations(userId);
 
     // Proceed with inviting collaborators
     return await this.companyInvitationsService.inviteCollaborators(

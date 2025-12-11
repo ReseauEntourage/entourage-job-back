@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
+import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
@@ -17,6 +18,10 @@ import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import { encryptPassword, validatePassword } from './auth.utils';
 import { CurrentUserDto, generateCurrentUserDto } from './dto/current-user.dto';
+import {
+  generateStaffContactDto,
+  StaffContactDto,
+} from './dto/staff-contact.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,7 +38,7 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string) {
-    const user = await this.usersService.findOneByMail(email);
+    const user = await this.usersService.findOneForJwtPayloadByEmail(email);
     if (user) {
       const { password: userPassword, salt: userSalt } =
         await this.usersService.findOneComplete(user.id);
@@ -91,6 +96,14 @@ export class AuthService {
       hasExtractedCvData,
       complete
     );
+  }
+
+  async getPublicStaffContactInfo(userId: string): Promise<StaffContactDto> {
+    const user = await this.usersService.findOneWithRelations(userId);
+    if (!user || !user.staffContact) {
+      throw new NotFoundException();
+    }
+    return generateStaffContactDto(user.staffContact);
   }
 
   decodeJWT(token: string, ignoreExpiration?: boolean) {
@@ -161,7 +174,7 @@ export class AuthService {
   }
 
   async findOneUserByMail(email: string) {
-    return this.usersService.findOneByMail(email);
+    return this.usersService.findOneByMailWithRelations(email);
   }
 
   async findOneUserProfileByUserId(id: string, complete = false) {
@@ -169,10 +182,13 @@ export class AuthService {
   }
 
   async findOneUserById(id: string) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOneWithRelations(id);
   }
 
-  async findOneUserProfileById(id: string, complete = false) {
+  async findOneUserProfileById(
+    id: string,
+    complete = false
+  ): Promise<UserProfile | null> {
     return await this.userProfileService.findOneByUserId(id, complete);
   }
 

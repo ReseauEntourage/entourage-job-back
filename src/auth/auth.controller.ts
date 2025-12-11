@@ -33,10 +33,10 @@ export class AuthController {
   @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@UserPayload() user: User) {
-    const currentUser = await this.authService.getCurrentUser(user.id);
+  async login(@UserPayload('id') userId: string) {
+    const currentUser = await this.authService.getCurrentUser(userId);
     const loggedInUser = await this.authService.login(currentUser);
-    await this.sessionService.createOrUpdateSession(user.id);
+    await this.sessionService.createOrUpdateSession(userId);
     return loggedInUser;
   }
 
@@ -172,6 +172,15 @@ export class AuthController {
     }
 
     return await this.authService.getCurrentUser(id, complete === 'true');
+  }
+
+  @Throttle(60, 60)
+  @ApiBearerAuth()
+  @Get('current/staff-contact')
+  async getCurrentUserStaffContact(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    return await this.authService.getPublicStaffContactInfo(userId);
   }
 
   @Public()

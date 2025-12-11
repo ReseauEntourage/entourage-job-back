@@ -2,12 +2,21 @@ import { Op } from 'sequelize';
 import { BusinessSectorFilters } from 'src/common/business-sectors/business-sectors.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 
+import { FilterConstant, Filters } from 'src/utils/types';
+import { ZoneName, ZoneNameFilters } from 'src/utils/types/zones.types';
+import { User } from './models/user.model';
 import {
-  AdminZone,
-  AdminZoneFilters,
-  FilterConstant,
-  Filters,
-} from 'src/utils/types';
+  jwtUserPayloadAttributes,
+  minimalUserAttributes,
+} from './users.attributes';
+
+// JWT User Payload
+export type JWTUserPayloadAttribute = (typeof jwtUserPayloadAttributes)[number];
+export type JWTUserPayload = Pick<User, JWTUserPayloadAttribute>;
+
+// Minimal User
+export type MinimalUserAttribute = (typeof minimalUserAttributes)[number];
+export type MinimalUser = Pick<User, MinimalUserAttribute>;
 
 export const UserRoles = {
   CANDIDATE: 'Candidat',
@@ -87,22 +96,15 @@ export type Gender = (typeof Genders)[keyof typeof Genders];
 
 export interface MemberOptions {
   role: { [Op.or]: UserRole[] };
-  zone: { [Op.or]: AdminZone[] };
+  zone: { [Op.or]: ZoneName[] };
   businessSectorIds: { [Op.in]: string[] };
-  employed: { [Op.or]: boolean[] };
 }
 
 export type MemberFilterKey = keyof MemberOptions;
 
-export const EmployedFilters: FilterConstant<boolean>[] = [
-  { label: 'En emploi', value: true },
-  { label: "Recherche d'emploi", value: false },
-];
-
 export type MemberConstantType =
-  | (typeof AdminZoneFilters)[number]['value']
-  | (typeof BusinessSectorFilters)[number]['value']
-  | (typeof EmployedFilters)[number]['value'];
+  | (typeof ZoneNameFilters)[number]['value']
+  | (typeof BusinessSectorFilters)[number]['value'];
 
 export const MemberFilters = ({
   businessSectors,
@@ -116,7 +118,7 @@ export const MemberFilters = ({
   },
   {
     key: 'zone',
-    constants: AdminZoneFilters,
+    constants: ZoneNameFilters,
     title: 'Zone',
   },
   {
@@ -126,11 +128,6 @@ export const MemberFilters = ({
       label: sector.name,
     })) as FilterConstant<string>[],
     title: 'Secteurs d’activité',
-  },
-  {
-    key: 'employed',
-    constants: EmployedFilters,
-    title: 'En emploi',
   },
 ];
 

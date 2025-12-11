@@ -245,10 +245,6 @@ describe('Auth', () => {
         expect(response.status).toBe(201);
         expect(response.body).toStrictEqual({
           ...candidate,
-          candidat: {
-            ...candidate.candidat,
-            note: null,
-          },
           organization: null,
           lastConnection: response.body.lastConnection,
           createdAt: response.body.createdAt,

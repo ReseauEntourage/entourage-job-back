@@ -92,7 +92,7 @@ export class PublicCVsService {
    * Private methods
    */
   private async findOneUser(userId: string) {
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOneWithRelations(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }

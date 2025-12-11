@@ -4,13 +4,13 @@ import {
   DataType,
   Default,
   IsUUID,
+  Model,
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { WrapperModel } from 'src/utils/types';
 
 @Table({ tableName: 'Interests', timestamps: false })
-export class Interest extends WrapperModel {
+export class Interest extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)

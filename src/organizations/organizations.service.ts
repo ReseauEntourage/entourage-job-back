@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { and } from 'sequelize';
 import { UsersService } from 'src/users/users.service';
 import { searchInColumnWhereOption } from 'src/utils/misc';
-import { AdminZone } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { UpdateOrganizationDto } from './dto';
 import { Organization } from './models';
 import { OrganizationReferent } from './models/organization-referent.model';
@@ -35,7 +35,7 @@ export class OrganizationsService {
     limit: number,
     offset: number,
     search = '',
-    zone?: AdminZone | AdminZone[]
+    zone?: ZoneName | ZoneName[]
   ) {
     const searchQuery = searchInColumnWhereOption('Organization.name', search);
     const whereQuery = zone ? and(searchQuery, { zone: zone }) : searchQuery;

@@ -11,7 +11,6 @@ echo "- NPM version: $(npm -v)"
 echo "- Operating system: $(uname -a)"
 echo "- Current working directory: $(pwd)"
 echo "- Environment: $NODE_ENV"
-echo "- Port: $WORKER_PORT"
 echo "================================="
 
 # Start the worker

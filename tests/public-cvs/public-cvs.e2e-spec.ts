@@ -8,7 +8,8 @@ import { PublicCVsController } from 'src/public-cv/public-cvs.controller';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import { AdminZones, APIResponse } from 'src/utils/types';
+import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
@@ -112,7 +113,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.CANDIDATE,
-        zone: AdminZones.LILLE,
+        zone: ZoneName.LILLE,
         firstName: 'Candidat',
         lastName: 'Complet',
         phone: '0102030405',
@@ -183,7 +184,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.CANDIDATE,
-        zone: AdminZones.LILLE,
+        zone: ZoneName.LILLE,
         firstName: 'Candidat',
         lastName: 'Sans Photo',
       },
@@ -210,7 +211,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.CANDIDATE,
-        zone: AdminZones.LILLE,
+        zone: ZoneName.LILLE,
         firstName: 'Candidat',
         lastName: 'Incomplet',
       },
@@ -241,7 +242,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.COACH,
-        zone: AdminZones.PARIS,
+        zone: ZoneName.PARIS,
       },
       {
         userProfile: {
@@ -308,7 +309,6 @@ describe('PublicCVs', () => {
       expect(response.body[0]).toHaveProperty('role');
 
       // Direct Relationships
-      expect(response.body[0].candidat).toBeDefined();
       expect(response.body[0].userProfile).toBeDefined();
 
       // User Profile Attributes

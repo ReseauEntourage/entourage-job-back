@@ -4,7 +4,8 @@ import { Injectable } from '@nestjs/common';
 import phone from 'phone';
 import { CompanyApproaches, HeardAbout } from 'src/contacts/contacts.types';
 import { ContactCompanyFormDto } from 'src/contacts/dto';
-import { AdminZoneFilters, Factory } from 'src/utils/types';
+import { Factory } from 'src/utils/types';
+import { ZoneNameFilters } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class ContactCompanyFormFactory
@@ -23,7 +24,7 @@ export class ContactCompanyFormFactory
       company: faker.company.name(),
       position: faker.word.noun(2),
       zone: faker.helpers.arrayElement(
-        AdminZoneFilters.map(({ value }) => value)
+        ZoneNameFilters.map(({ value }) => value)
       ),
       approach: faker.helpers.objectValue(CompanyApproaches),
       heardAbout: faker.helpers.objectValue(HeardAbout),

@@ -20,7 +20,8 @@ import {
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import { AdminZones, APIResponse } from 'src/utils/types';
+import { APIResponse } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
 import { ExperienceFactory } from 'tests/common/experiences/experience.factory';
 import { FormationFactory } from 'tests/common/formations/formation.factory';
@@ -1482,7 +1483,7 @@ describe('UserProfiles', () => {
           loggedInCandidate = await usersHelper.createLoggedInUser(
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LYON,
+              zone: ZoneName.LYON,
             },
             {
               userProfile: {
@@ -1501,7 +1502,7 @@ describe('UserProfiles', () => {
           loggedInCoach = await usersHelper.createLoggedInUser(
             {
               role: UserRoles.COACH,
-              zone: AdminZones.LYON,
+              zone: ZoneName.LYON,
             },
             {
               userProfile: {
@@ -1653,7 +1654,7 @@ describe('UserProfiles', () => {
               ],
             })
           );
-          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
+          expect(updatedUser.zone).toMatch(ZoneName.PARIS);
         });
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
           const updatedProfile: UserProfileWithPartialAssociations = {
@@ -1736,7 +1737,7 @@ describe('UserProfiles', () => {
             })
           );
 
-          expect(updatedUser.zone).toMatch(AdminZones.PARIS);
+          expect(updatedUser.zone).toMatch(ZoneName.PARIS);
         });
         it('Should return 403, if referer updates his profile referer properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
@@ -1960,7 +1961,7 @@ describe('UserProfiles', () => {
           );
         });
       });
-      describe('PUT /profile/uploadImage/:id - Upload user profile picture', () => {
+      describe('PUT /profile/upload-image - Upload user profile picture', () => {
         let path: string;
 
         let loggedInAdmin: LoggedUser;
@@ -1989,7 +1990,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
 
@@ -1999,57 +2000,17 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInAdmin.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
           expect(response.status).toBe(201);
         });
-        it('Should return 403, if admin uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if referer uploads a profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInReferer.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if coach uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
-            .set('authorization', `Bearer ${loggedInCoach.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
-        it('Should return 403, if candidate uploads profile picture for another user', async () => {
-          const response: APIResponse<
-            UserProfilesController['uploadProfileImage']
-          > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
-            .set('authorization', `Bearer ${loggedInCandidate.token}`)
-            .set('Content-Type', 'multipart/form-data')
-            .attach('profileImage', path);
-          expect(response.status).toBe(403);
-        });
         it('Should return 201, if candidate uploads his profile picture', async () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2059,7 +2020,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInReferer.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2069,7 +2030,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCandidate.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2078,7 +2039,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data')
             .attach('profileImage', path);
@@ -2088,7 +2049,7 @@ describe('UserProfiles', () => {
           const response: APIResponse<
             UserProfilesController['uploadProfileImage']
           > = await request(server)
-            .post(`${route}/profile/uploadImage/${loggedInCoach.user.id}`)
+            .post(`${route}/profile/upload-image`)
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .set('Content-Type', 'multipart/form-data');
           expect(response.status).toBe(400);
@@ -2136,7 +2097,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
               refererId: loggedInReferer.user.id,
             },
             {}
@@ -2169,7 +2130,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
               refererId: loggedInReferer.user.id,
             },
             {}
@@ -2201,7 +2162,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
               refererId: loggedInReferer.user.id,
             },
             {}
@@ -2216,7 +2177,7 @@ describe('UserProfiles', () => {
             5,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.PARIS,
+              zone: ZoneName.PARIS,
               refererId: otherLoggedInReferer.user.id,
             },
             {}
@@ -2282,87 +2243,32 @@ describe('UserProfiles', () => {
   });
 
   describe('UserProfiles Recommendations Context', () => {
-    describe('GET /user/profile/recommendations/:userId - Get user recommendations', () => {
-      let loggedInAdmin: LoggedUser;
+    describe('GET /user/profile/recommendations - Get user recommendations', () => {
       let loggedInCandidate: LoggedUser;
       let loggedInCoach: LoggedUser;
-      let loggedInReferer: LoggedUser;
 
       beforeEach(async () => {
-        loggedInAdmin = await usersHelper.createLoggedInUser({
-          role: UserRoles.ADMIN,
-        });
         loggedInCandidate = await usersHelper.createLoggedInUser({
           role: UserRoles.CANDIDATE,
         });
         loggedInCoach = await usersHelper.createLoggedInUser({
           role: UserRoles.COACH,
         });
-        loggedInReferer = await usersHelper.createLoggedInUser({
-          role: UserRoles.REFERER,
-        });
       });
 
       it('Should return 401, if user not logged in', async () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
-        > = await request(server).get(
-          `${route}/profile/recommendations/${loggedInCandidate.user.id}`
-        );
+        > = await request(server).get(`${route}/profile/recommendations`);
 
         expect(response.status).toBe(401);
-      });
-
-      it('Should return 403, if admin gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
-          .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if admin gets his recommendations', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInAdmin.user.id}`)
-          .set('authorization', `Bearer ${loggedInAdmin.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if coach gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
-          .set('authorization', `Bearer ${loggedInCoach.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if referer gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
-          .set('authorization', `Bearer ${loggedInReferer.token}`);
-        expect(response.status).toBe(403);
-      });
-
-      it('Should return 403, if candidate gets recommendations for another user', async () => {
-        const response: APIResponse<
-          UserProfilesController['findRecommendationsByUserId']
-        > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
-          .set('authorization', `Bearer ${loggedInCandidate.token}`);
-        expect(response.status).toBe(403);
       });
 
       it('Should return 200 and actual recommendations, if coach gets his recent recommendations', async () => {
         loggedInCoach = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2385,7 +2291,7 @@ describe('UserProfiles', () => {
           3,
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2410,7 +2316,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2426,7 +2332,7 @@ describe('UserProfiles', () => {
         loggedInCoach = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2449,7 +2355,7 @@ describe('UserProfiles', () => {
           2,
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2469,7 +2375,7 @@ describe('UserProfiles', () => {
         const userNotAvailable = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2494,7 +2400,7 @@ describe('UserProfiles', () => {
         const userAvailable = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2521,7 +2427,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2537,7 +2443,7 @@ describe('UserProfiles', () => {
         loggedInCoach = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2572,7 +2478,7 @@ describe('UserProfiles', () => {
         const candidateSameRegion = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2605,7 +2511,7 @@ describe('UserProfiles', () => {
         const candidate2BusinessSectorsInCommon = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2638,7 +2544,7 @@ describe('UserProfiles', () => {
         const candidate2NudgesInCommon = await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2678,7 +2584,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.PARIS,
+            zone: ZoneName.PARIS,
           },
           {
             userProfile: {
@@ -2709,7 +2615,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2739,7 +2645,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2773,7 +2679,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2804,7 +2710,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2838,7 +2744,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2872,7 +2778,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -2908,7 +2814,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.CANDIDATE,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
             },
             {
               userProfile: {
@@ -2948,7 +2854,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCoach.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -2964,7 +2870,7 @@ describe('UserProfiles', () => {
         loggedInCandidate = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -2987,7 +2893,7 @@ describe('UserProfiles', () => {
           3,
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3012,7 +2918,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3028,7 +2934,7 @@ describe('UserProfiles', () => {
         loggedInCandidate = await usersHelper.createLoggedInUser(
           {
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3051,7 +2957,7 @@ describe('UserProfiles', () => {
           2,
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3071,7 +2977,7 @@ describe('UserProfiles', () => {
         const userNotAvailable = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3101,7 +3007,7 @@ describe('UserProfiles', () => {
         const userAvailable = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LYON,
+            zone: ZoneName.LYON,
           },
           {
             userProfile: {
@@ -3125,7 +3031,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
@@ -3142,7 +3048,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'me',
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3176,7 +3082,7 @@ describe('UserProfiles', () => {
         const coachSameRegion = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3209,7 +3115,7 @@ describe('UserProfiles', () => {
         const coach2BusinessSectorsInCommon = await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3243,7 +3149,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'coach2NudgesInCommon',
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3283,7 +3189,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.PARIS,
+            zone: ZoneName.PARIS,
           },
           {
             userProfile: {
@@ -3317,7 +3223,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3348,7 +3254,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'oneHelpInCommon',
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3382,7 +3288,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3416,7 +3322,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3450,7 +3356,7 @@ describe('UserProfiles', () => {
         await userFactory.create(
           {
             role: UserRoles.COACH,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3485,7 +3391,7 @@ describe('UserProfiles', () => {
           {
             firstName: 'sameProfile',
             role: UserRoles.CANDIDATE,
-            zone: AdminZones.LILLE,
+            zone: ZoneName.LILLE,
           },
           {
             userProfile: {
@@ -3521,7 +3427,7 @@ describe('UserProfiles', () => {
             3,
             {
               role: UserRoles.COACH,
-              zone: AdminZones.LILLE,
+              zone: ZoneName.LILLE,
             },
             {
               userProfile: {
@@ -3561,7 +3467,7 @@ describe('UserProfiles', () => {
         const response: APIResponse<
           UserProfilesController['findRecommendationsByUserId']
         > = await request(server)
-          .get(`${route}/profile/recommendations/${loggedInCandidate.user.id}`)
+          .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
         expect(response.body.length).toBe(newUsersToRecommend.length);

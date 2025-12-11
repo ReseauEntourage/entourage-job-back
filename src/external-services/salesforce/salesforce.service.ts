@@ -14,8 +14,14 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
+import { EventMode, EventType } from 'src/events/event.types';
+import {
+  eventTypeToSalesforceEventType,
+  salesforceEventAttributes,
+} from 'src/events/events.utils';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
+import { SfLocalBranchName } from 'src/utils/types/local-branches.types';
 import {
   AccountProps,
   AccountRecordType,
@@ -40,6 +46,7 @@ import {
   SalesforceObject,
   SalesforceTask,
   UserProps,
+  SalesforceCampaignStatus,
 } from './salesforce.types';
 
 import {
@@ -388,6 +395,133 @@ export class SalesforceService {
     return records[0]?.OwnerId;
   }
 
+  /**
+   * Find all event campaigns
+   * @param limit Number of campaigns to retrieve
+   * @param offset Number of campaigns to skip
+   * @param search Search term to filter campaigns
+   * @returns List of event campaigns
+   */
+  async findAllEventCampaigns(
+    userEmail: string,
+    limit: number,
+    offset: number,
+    search = '',
+    modes?: EventMode[],
+    eventTypes?: EventType[],
+    localBranches?: SfLocalBranchName[]
+  ) {
+    await this.checkIfConnected();
+
+    const currentTime = moment().format('HH:mm:ss[Z]');
+
+    // Retrieve contactId if userEmail is provided
+    let contactId: string | null = null;
+    if (userEmail) {
+      const contact = await this.findContact(userEmail);
+      contactId = contact?.Id || null;
+    }
+
+    // Handle modes filter
+    const modeFilters =
+      modes && modes.length > 0
+        ? `
+              AND (
+                ${modes
+                  .map((mode) => {
+                    if (mode === EventMode.ONLINE) {
+                      return `En_Ligne__c = 'Oui'`;
+                    } else if (mode === EventMode.IRL) {
+                      // By default, events are considered IRL when En_Ligne__c is 'Non' or null
+                      return `(En_Ligne__c = 'Non' OR En_Ligne__c = NULL)`;
+                    }
+                  })
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    // Handle event types filter
+    const eventTypesFilters =
+      eventTypes && eventTypes.length > 0
+        ? `
+              AND (
+                ${eventTypes
+                  .map((eventType) => {
+                    const sfEventType =
+                      eventTypeToSalesforceEventType[eventType];
+                    return `Type_evenement__c = '${sfEventType}'`;
+                  })
+                  .join(' OR ')}
+              )
+            `
+        : '';
+
+    const searchCondition = search
+      ? `AND Name LIKE '%${escapeQuery(search)}%'`
+      : '';
+
+    const localBranchesCondition =
+      localBranches && localBranches.length > 0
+        ? `
+              AND Antenne__c INCLUDES (${localBranches
+                .map((b) => `'${escapeQuery(b)}'`)
+                .join(', ')})
+            `
+        : '';
+
+    const selectUserParticipation = contactId
+      ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${escapeQuery(
+          contactId
+        )}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
+      : '';
+    const query = `SELECT ${salesforceEventAttributes.join(
+      ', '
+    )}${selectUserParticipation}
+           FROM ${ObjectNames.CAMPAIGN}
+           WHERE
+            Type = 'Event' AND R_seaux__c = 'LinkedOut'
+            AND (StartDate > TODAY OR (StartDate = TODAY AND Heure_d_but__c > '${currentTime}'))
+            ${searchCondition}
+            ${modeFilters}
+            ${eventTypesFilters}
+            ${localBranchesCondition}
+            ORDER BY StartDate ASC, Heure_d_but__c ASC
+            LIMIT ${limit} OFFSET ${offset}
+           `;
+    const { records }: { records: Partial<SalesforceCampaign>[] } =
+      await this.salesforce.query(query);
+    return records;
+  }
+
+  async findEventCampaignById(userEmail: string, eventId: string) {
+    await this.checkIfConnected();
+    // Retrieve contactId if userEmail is provided
+    let contactId: string | null = null;
+    if (userEmail) {
+      const contact = await this.findContact(userEmail);
+      contactId = contact?.Id || null;
+    }
+    const selectUserParticipation = contactId
+      ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${escapeQuery(
+          contactId
+        )}' AND Status = '${SalesforceCampaignStatus.REGISTERED}' LIMIT 1)`
+      : '';
+    const { records }: { records: Partial<SalesforceCampaign>[] } =
+      await this.salesforce.query(
+        `SELECT ${salesforceEventAttributes.join(
+          ', '
+        )} ${selectUserParticipation}
+          FROM ${ObjectNames.CAMPAIGN}
+          WHERE Id = '${escapeQuery(
+            eventId
+          )}' AND Type = 'Event' AND R_seaux__c = 'LinkedOut'
+          LIMIT 1
+        `
+      );
+    return (records[0] as SalesforceCampaign) || null;
+  }
+
   async findCampaignMember(
     { leadId, contactId }: { leadId?: string; contactId?: string },
     campaignId: string
@@ -401,6 +535,22 @@ export class SalesforceService {
            AND CampaignId = '${escapeQuery(campaignId)}' Limit 1`
       );
     return records[0]?.Id;
+  }
+
+  async findAllCampaignMembersByCampaignId(
+    campaignId: string,
+    status?: SalesforceCampaignStatus
+  ) {
+    await this.checkIfConnected();
+    const { records }: { records: Partial<SalesforceCampaignMember>[] } =
+      await this.salesforce.query(
+        `SELECT Id, LeadId, ContactId, Status, Email
+          FROM ${ObjectNames.CAMPAIGN_MEMBER}
+          WHERE CampaignId = '${escapeQuery(campaignId)}'
+          ${status ? `AND Status = '${escapeQuery(status)}'` : ''}
+        `
+      );
+    return records as SalesforceCampaignMember[];
   }
 
   async findBinomeByCandidateSfId<T extends string>(id: T) {
@@ -880,82 +1030,34 @@ export class SalesforceService {
     return contactSfId;
   }
 
-  async findOrCreateCampaignMember(
+  async createOrUpdateCampaignMember(
     leadOrContactId: { leadId?: string; contactId?: string },
-    campaignId: string
+    campaignId: string,
+    status: SalesforceCampaignStatus
   ) {
-    try {
-      const campaignMemberSfId = await this.findCampaignMember(
-        leadOrContactId,
-        campaignId
-      );
-      const { leadId, contactId } = leadOrContactId;
-      if (!campaignMemberSfId) {
-        await this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
-          ...(leadId
-            ? {
-                LeadId: leadId,
-              }
-            : { ContactId: contactId }),
-          CampaignId: campaignId,
-          Status: 'Inscrit',
-        });
-      }
-    } catch (err) {
-      if ((err as SalesforceError).errorCode === ErrorCodes.DUPLICATE_VALUE) {
-        return;
-      }
-      console.error(err);
-      throw err;
-    }
-  }
+    this.setIsWorker(false);
+    await this.checkIfConnected();
 
-  async addLeadOrContactToCampaign(
-    leadOrContactId: { leadId?: string; contactId?: string },
-    campaignId: string
-  ) {
-    try {
-      await this.findOrCreateCampaignMember(leadOrContactId, campaignId);
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode === ErrorCodes.UNABLE_TO_LOCK_ROW
-      ) {
-        // eslint-disable-next-line no-console
-        console.log('LOCK ROW IN createCampaignMemberInfoCo');
-        await this.findOrCreateCampaignMember(leadOrContactId, campaignId);
-      }
-      console.error(err);
-      throw err;
-    }
-  }
-
-  async createCandidateLead(
-    leadToCreate: LeadProp<typeof LeadRecordTypesIds.CANDIDATE>,
-    workerSfId?: string
-  ) {
-    try {
-      if (workerSfId)
-        leadToCreate = { ...leadToCreate, workerSfIdAsProspect: workerSfId };
-      return (await this.findOrCreateLead(
-        leadToCreate,
-        LeadRecordTypesIds.CANDIDATE
-      )) as string;
-    } catch (err) {
-      if (
-        (err as SalesforceError).errorCode ===
-        ErrorCodes.FIELD_INTEGRITY_EXCEPTION
-      ) {
-        if (workerSfId) {
-          delete leadToCreate.workerSfIdAsProspect;
-          leadToCreate = { ...leadToCreate, workerSfIdAsContact: workerSfId };
-        }
-        return (await this.findOrCreateLead(
-          leadToCreate,
-          LeadRecordTypesIds.CANDIDATE
-        )) as string;
-      }
-      console.error(err);
-      throw err;
+    const campaignMemberSfId = await this.findCampaignMember(
+      leadOrContactId,
+      campaignId
+    );
+    const { leadId, contactId } = leadOrContactId;
+    if (!campaignMemberSfId) {
+      await this.createRecord(ObjectNames.CAMPAIGN_MEMBER, {
+        ...(leadId
+          ? {
+              LeadId: leadId,
+            }
+          : { ContactId: contactId }),
+        CampaignId: campaignId,
+        Status: status,
+      });
+    } else {
+      await this.updateRecord(ObjectNames.CAMPAIGN_MEMBER, {
+        Id: campaignMemberSfId,
+        Status: status,
+      });
     }
   }
 
@@ -973,7 +1075,7 @@ export class SalesforceService {
       | 'role'
     >
   > {
-    const userDb = await this.usersService.findOne(userId);
+    const userDb = await this.usersService.findOneWithRelations(userId);
 
     return {
       id: userDb.id,

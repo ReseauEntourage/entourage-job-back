@@ -11,8 +11,6 @@ services:
     volumes:
       - .:/home/node
     image: linkedout-api-worker:nestjs
-    ports:
-      - '3003:3003'
     env_file:
       - .env
     environment:

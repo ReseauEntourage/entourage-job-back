@@ -383,11 +383,27 @@ export interface SalesforceAccount {
 export interface SalesforceCampaign {
   Id?: string;
   Name?: string;
-  Antenne__c: string;
-  StartDate: Date;
-  Heure_de_d_but__c: string;
-  Adresse_de_l_v_nement__c: string;
-  Code_postal__c: string;
+  Description?: string;
+  Antenne__c?: string;
+  StartDate?: string;
+  Heure_de_d_but__c?: string;
+  EndDate?: string;
+  Heure_de_fin__c?: string;
+  Adresse_de_l_v_nement__c?: string;
+  Code_postal__c?: string;
+  Type_evenement__c?: string;
+  Nombre_d_inscrits__c?: number;
+  Nombre_de_participants__c?: number;
+  En_ligne__c?: string;
+  MeetingLink__c?: string;
+  CampaignMembers?: {
+    records: Partial<SalesforceCampaignMember>[];
+  };
+}
+
+export enum SalesforceCampaignStatus {
+  REGISTERED = 'Inscrit',
+  RESPONDED = 'Répondu',
 }
 
 export interface SalesforceCampaignMember {
@@ -396,6 +412,7 @@ export interface SalesforceCampaignMember {
   ContactId?: string;
   CampaignId: string;
   Status: string; // Inscrit
+  Email?: string;
 }
 
 export interface SalesforceUser {

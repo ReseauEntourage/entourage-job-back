@@ -14,7 +14,6 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
-import { User } from 'src/users/models/user.model';
 import {
   CreateMessagePipe,
   CreateMessageDto,
@@ -59,7 +58,6 @@ export class MessagingController {
   @Post('messages')
   @UseInterceptors(FilesInterceptor('files', 10))
   async postMessage(
-    @UserPayload() user: User,
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body(new CreateMessagePipe())
     createMessageDto: CreateMessageDto,
@@ -84,7 +82,7 @@ export class MessagingController {
     // Create the conversation if needed
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
       await this.messagingService.handleDailyConversationLimit(
-        user,
+        userId,
         createMessageDto.participantIds,
         createMessageDto.content
       );

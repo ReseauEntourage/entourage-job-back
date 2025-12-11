@@ -6,7 +6,8 @@ import phone from 'phone';
 import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { OrganizationsService } from 'src/organizations/organizations.service';
-import { AdminZones, Factory } from 'src/utils/types';
+import { Factory } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class OrganizationFactory implements Factory<Organization> {
@@ -22,7 +23,7 @@ export class OrganizationFactory implements Factory<Organization> {
     const fakeData: Partial<Organization> = {
       name: faker.company.name(),
       address: faker.address.streetAddress(),
-      zone: AdminZones.PARIS,
+      zone: ZoneName.PARIS,
     };
 
     return {

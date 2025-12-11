@@ -39,7 +39,7 @@ import { Occupation } from 'src/common/occupations/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
-import { getZoneFromDepartment } from 'src/utils/misc';
+import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { UserProfileContract } from './user-profile-contract.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
@@ -313,7 +313,7 @@ export class UserProfile extends Model {
    */
 
   @AfterUpdate
-  static async updateAdminZone(
+  static async updateZone(
     updatedUserProfile: UserProfile,
     options: { transaction: Transaction }
   ) {
@@ -327,7 +327,7 @@ export class UserProfile extends Model {
     ) {
       await User.update(
         {
-          zone: getZoneFromDepartment(updatedUserProfile.department),
+          zone: getZoneNameFromDepartment(updatedUserProfile.department),
         },
         {
           where: {

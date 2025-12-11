@@ -11,18 +11,11 @@ import {
   getUserProfileInclude,
   getUserProfileOrder,
 } from 'src/user-profiles/models/user-profile.include';
-import { UserCandidatAttributes } from './user-candidat.attributes';
-import { UserCandidat } from './user-candidat.model';
 import { UserAttributes } from './user.attributes';
 import { User } from './user.model';
 
-export const UserCandidatInclude = (): Includeable[] => {
+export const UserIncludes = (): Includeable[] => {
   return [
-    {
-      model: UserCandidat,
-      as: 'candidat',
-      attributes: [...UserCandidatAttributes],
-    },
     {
       model: User,
       as: 'referer',
@@ -41,21 +34,6 @@ export const UserCandidatInclude = (): Includeable[] => {
       model: User,
       as: 'referredCandidates',
       attributes: [...UserAttributes],
-      include: [
-        {
-          model: UserCandidat,
-          as: 'candidat',
-          attributes: [...UserCandidatAttributes],
-          paranoid: false,
-          include: [
-            {
-              model: User,
-              as: 'candidat',
-              attributes: [...UserAttributes],
-            },
-          ],
-        },
-      ],
     },
     {
       model: UserSocialSituation,

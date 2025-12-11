@@ -1,6 +1,6 @@
 import { BulkContactManagement } from 'node-mailjet';
 import { RequestConstructorConfig } from 'node-mailjet/declarations/request/Request';
-import { AdminZone } from 'src/utils/types';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 export const MailjetOptions: { [K in string]: RequestConstructorConfig } = {
   MAILS: { version: 'v3.1' },
@@ -26,7 +26,7 @@ export interface CustomMailParams {
 
 export interface CustomContactParams {
   email: string;
-  zone: AdminZone;
+  zone: ZoneName;
   status: ContactStatus;
 }
 
@@ -49,7 +49,7 @@ export const MailjetListActions = MailjetListActionsValues as Record<
 
 export interface MailjetContactProperties {
   [MailjetContactTagNames.NEWSLETTER]: boolean;
-  [MailjetContactTagNames.ZONE]: AdminZone;
+  [MailjetContactTagNames.ZONE]: ZoneName;
   [MailjetContactTagNames.STATUS]: ContactStatus;
 }
 
