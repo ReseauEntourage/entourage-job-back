@@ -30,6 +30,5 @@ RUN yarn install
 
 # EXPOSE PORTS
 EXPOSE 3002
-EXPOSE 3003
 
 ENTRYPOINT ["/bin/sh", "docker-entrypoint.sh"]
