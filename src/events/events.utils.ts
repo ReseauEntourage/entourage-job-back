@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { SalesforceCampaign } from 'src/external-services/salesforce/salesforce.types';
 import {
   Event,
@@ -183,6 +184,13 @@ export const computeEventDurationFromSalesforceCampaign = (
   return null;
 };
 
+const parseSalesforceTime = (date: string, time: string) => {
+  // Salesforce records times in UTC (with 'Z' suffix), but they are actually in Europe/Paris time
+  const cleanTime = time.replace('Z', '');
+  // We parse the time in Europe/Paris timezone
+  return moment.tz(`${date}T${cleanTime}`, 'Europe/Paris').format();
+};
+
 /**
  * Convert Salesforce Campaign to internal Event representation
  * @param campaign SalesforceCampaign
@@ -206,11 +214,11 @@ export const convertSalesforceCampaignToEvent = (
     description: campaign.Description,
     startDate:
       campaign.StartDate && campaign.Heure_de_d_but__c
-        ? `${campaign.StartDate}T${campaign.Heure_de_d_but__c}`
+        ? parseSalesforceTime(campaign.StartDate, campaign.Heure_de_d_but__c)
         : null,
     endDate:
       campaign.EndDate && campaign.Heure_de_fin__c
-        ? `${campaign.EndDate}T${campaign.Heure_de_fin__c}`
+        ? parseSalesforceTime(campaign.EndDate, campaign.Heure_de_fin__c)
         : null,
     eventType,
     participantsCount: campaign.Nombre_de_participants__c || 0,
