@@ -20,6 +20,7 @@ export const Jobs = {
   SEND_MAIL: 'send_mail',
   NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription',
   CREATE_OR_UPDATE_SALESFORCE_USER: 'create_or_update_salesforce_user',
+  CREATE_OR_UPDATE_SALESFORCE_COMPANY: 'create_or_update_salesforce_company',
   GENERATE_PROFILE_FROM_PDF: 'generate_profile_from_pdf',
 } as const;
 
@@ -30,6 +31,7 @@ type JobsData = {
   [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
   [Jobs.NEWSLETTER_SUBSCRIPTION]: NewsletterSubscriptionJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_USER]: CreateOrUpdateSalesforceUserJob;
+  [Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY]: CreateOrUpdateSalesforceCompanyJob;
   [Jobs.GENERATE_PROFILE_FROM_PDF]: GenerateProfileFromPDFJob;
 };
 
@@ -63,6 +65,12 @@ export interface CreateOrUpdateSalesforceUserJob {
   gender?: CandidateGender;
   refererEmail?: string;
   structure?: string;
+}
+
+export interface CreateOrUpdateSalesforceCompanyJob {
+  name?: string;
+  department?: string;
+  phone?: string;
 }
 
 export interface GenerateProfileFromPDFJob {

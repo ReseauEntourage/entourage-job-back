@@ -10,9 +10,9 @@ import {
 } from '@nestjs/bull';
 import { Job } from 'bull';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
-import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import {
+  CreateOrUpdateSalesforceCompanyJob,
   CreateOrUpdateSalesforceUserJob,
   Jobs,
   NewsletterSubscriptionJob,
@@ -25,7 +25,6 @@ import { AnyCantFix } from 'src/utils/types';
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
-    private pusherService: PusherService,
     private salesforceService: SalesforceService
   ) {}
 
@@ -130,5 +129,21 @@ export class WorkQueueProcessor {
     }
 
     return `Salesforce job ignored : creation or update of user '${data.userId}'`;
+  }
+
+  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY)
+  async processCreateOrUpdateSalesforceCompany(
+    job: Job<CreateOrUpdateSalesforceCompanyJob>
+  ) {
+    const { data } = job;
+    if (process.env.ENABLE_SF === 'true') {
+      await this.salesforceService.createOrUpdateSalesforceCompany(data.name, {
+        department: data.department,
+        phone: data.phone,
+      });
+      return `Salesforce : created or updated company '${data.name}'`;
+    }
+
+    return `Salesforce job ignored : creation or update of company '${data.name}'`;
   }
 }

@@ -65,4 +65,17 @@ export class ExternalDatabasesService {
       }
     );
   }
+
+  async createOrUpdateExternalDBCompany(
+    companyName: string,
+    data: { department?: string; phone?: string }
+  ): Promise<void> {
+    await this.queuesService.addToWorkQueue(
+      Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY,
+      {
+        name: companyName,
+        ...data,
+      }
+    );
+  }
 }

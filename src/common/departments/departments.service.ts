@@ -32,6 +32,10 @@ export class DepartmentsService {
     });
   }
 
+  async findOne(id: string) {
+    return this.departmentModel.findByPk(id);
+  }
+
   async mapDepartmentsIdsToFormattedNames(departmentIds: string[]) {
     if (departmentIds.length === 0) {
       return [];
