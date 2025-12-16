@@ -10,7 +10,6 @@ import {
 } from '@nestjs/bull';
 import { Job } from 'bull';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
-import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import {
   CreateOrUpdateSalesforceUserJob,
@@ -25,7 +24,6 @@ import { AnyCantFix } from 'src/utils/types';
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
-    private pusherService: PusherService,
     private salesforceService: SalesforceService
   ) {}
 

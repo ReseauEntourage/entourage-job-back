@@ -1,5 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { Client, ContactSubscription, SendEmailV3_1 } from 'node-mailjet';
+import { Injectable, Logger } from '@nestjs/common';
+import Mailjet, {
+  Client,
+  ContactSubscription,
+  SendEmailV3_1,
+} from 'node-mailjet';
 
 import {
   CustomContactParams,
@@ -14,22 +18,30 @@ import { createMail } from './mailjet.utils';
 
 @Injectable()
 export class MailjetService {
-  private mailjetTransactional: Client;
-  private mailjetNewsletter: Client;
+  private readonly logger = new Logger(MailjetService.name);
+
+  private mailjetTransactional: Client | null = null;
+  private mailjetNewsletter: Client | null = null;
 
   constructor() {
-    this.refreshInstances();
-  }
+    if (!process.env.MAILJET_PUB || !process.env.MAILJET_SEC) {
+      throw new Error('Mailjet transactional API keys are not set');
+    }
+    this.mailjetTransactional = Mailjet.apiConnect(
+      process.env.MAILJET_PUB,
+      process.env.MAILJET_SEC
+    );
 
-  refreshInstances() {
-    this.mailjetTransactional = new Client({
-      apiKey: `${process.env.MAILJET_PUB}`,
-      apiSecret: `${process.env.MAILJET_SEC}`,
-    });
-    this.mailjetNewsletter = new Client({
-      apiKey: `${process.env.MAILJET_NEWSLETTER_PUB}`,
-      apiSecret: `${process.env.MAILJET_NEWSLETTER_SEC}`,
-    });
+    if (
+      !process.env.MAILJET_NEWSLETTER_PUB ||
+      !process.env.MAILJET_NEWSLETTER_SEC
+    ) {
+      throw new Error('Mailjet newsletter API keys are not set');
+    }
+    this.mailjetNewsletter = Mailjet.apiConnect(
+      process.env.MAILJET_NEWSLETTER_PUB,
+      process.env.MAILJET_NEWSLETTER_SEC
+    );
   }
 
   async sendMail(params: CustomMailParams | CustomMailParams[]) {
@@ -47,17 +59,8 @@ export class MailjetService {
         .post('send', MailjetOptions.MAILS)
         .request(mailjetParams);
     } catch (error) {
-      console.error(error);
-      console.error('Mailjet Connection Reset : Refreshing Instances');
-      this.refreshInstances();
-      try {
-        return await this.mailjetTransactional
-          .post('send', MailjetOptions.MAILS)
-          .request(mailjetParams);
-      } catch (error) {
-        console.error('Second attempt failed:', error);
-        throw error;
-      }
+      this.logger.error(error);
+      throw error;
     }
   }
 
@@ -92,14 +95,8 @@ export class MailjetService {
         .action('managecontact')
         .request(contact);
     } catch (error) {
-      console.error(error);
-      console.error('Mailjet Connection Reset : Refreshing Instances');
-      this.refreshInstances();
-      return await this.mailjetNewsletter
-        .post('contactslist', MailjetOptions.CONTACTS)
-        .id(parseInt(process.env.MAILJET_NEWSLETTER_LIST_ID))
-        .action('managecontact')
-        .request(contact);
+      this.logger.error(error);
+      throw error;
     }
   }
 }
