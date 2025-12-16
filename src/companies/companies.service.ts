@@ -169,7 +169,7 @@ export class CompaniesService {
       this.externalDatabasesService.createOrUpdateExternalDBCompany(
         company.name,
         {
-          department: department.displayName ?? undefined,
+          department: department?.displayName ?? undefined,
         }
       );
     }
