@@ -360,13 +360,18 @@ export class SalesforceService {
           recordType ? `AND RecordTypeId = '${recordType}'` : ''
         } LIMIT 1`
       );
-    return records[0]
-      ? {
-          Id: records[0]?.Id,
-          Casquettes_r_les__c: ((records[0]?.Casquettes_r_les__c).split(';') ||
-            []) as Casquette[],
-        }
-      : null;
+    if (!records[0]) {
+      return null;
+    }
+    const casquettesRaw = records[0]?.Casquettes_r_les__c;
+    const casquettes =
+      casquettesRaw && casquettesRaw.length > 0
+        ? (casquettesRaw.split(';') as Casquette[])
+        : [];
+    return {
+      Id: records[0]?.Id,
+      Casquettes_r_les__c: casquettes,
+    };
   }
 
   async findLead<T extends LeadRecordType>(email: string, recordType?: T) {
