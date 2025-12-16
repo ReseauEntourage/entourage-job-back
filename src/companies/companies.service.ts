@@ -163,9 +163,9 @@ export class CompaniesService {
     });
 
     if (updateInExternalDB) {
-      const department = await this.departmentsService.findOne(
-        updateCompanyDto.departmentId
-      );
+      const department = updateCompanyDto.departmentId
+        ? await this.departmentsService.findOne(updateCompanyDto.departmentId)
+        : undefined;
       this.externalDatabasesService.createOrUpdateExternalDBCompany(
         company.name,
         {
