@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { User } from 'src/users/models';
 import { companiesAttributes } from './companies.attributes';
 import { CompaniesService } from './companies.service';
@@ -12,7 +13,8 @@ export class CompanyUsersService {
   constructor(
     @InjectModel(CompanyUser)
     private companyUserModel: typeof CompanyUser,
-    private readonly companiesService: CompaniesService
+    private readonly companiesService: CompaniesService,
+    private readonly externalDatabasesService: ExternalDatabasesService
   ) {}
 
   async createCompanyUser({
@@ -68,8 +70,29 @@ export class CompanyUsersService {
 
   async linkUserToCompany(
     user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
-    companyName: string | null
+    companyName: string | null,
+    updateInExternalDB = true
   ) {
+    // If companyName is provided, find or create the company
+    let company: Company | null = null;
+    if (companyName) {
+      company = await this.companiesService.findOrCreateByName(
+        companyName,
+        user,
+        CompanyCreationContext.COACH_LINKING
+      );
+    }
+
+    // If updateInExternalDB is true, update the external DB
+    if (updateInExternalDB) {
+      this.externalDatabasesService.updateUserCompanyExternalDBCompany(
+        user.id,
+        // If company is null, pass null to unlink the user from any company
+        company?.id || null
+      );
+    }
+
+    // Check for existing link
     const existingLink = await this.companyUserModel.findOne({
       where: { userId: user.id },
       include: [
@@ -90,7 +113,6 @@ export class CompanyUsersService {
           return existingLink;
         }
       }
-      // Else, remove existing link if it exists
       await existingLink.destroy();
     }
 
@@ -99,17 +121,14 @@ export class CompanyUsersService {
       return null;
     }
 
-    const company = await this.companiesService.findOrCreateByName(
-      companyName,
-      user,
-      CompanyCreationContext.COACH_LINKING
-    );
+    // If no existing link, create a new one
     const newLink = await this.companyUserModel.create({
       userId: user.id,
       companyId: company.id,
       isAdmin: false,
       role: 'employee',
     });
+
     return newLink;
   }
 }

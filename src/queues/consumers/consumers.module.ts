@@ -1,5 +1,6 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
+import { CompaniesModule } from 'src/companies/companies.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
@@ -20,6 +21,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     OpenAiModule,
     SalesforceModule,
     ProfileGenerationModule,
+    CompaniesModule,
   ],
   providers: [WorkQueueProcessor, ProfileGeneratorProcessor, PusherService],
   exports: [WorkQueueProcessor, ProfileGeneratorProcessor],

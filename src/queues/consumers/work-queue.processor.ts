@@ -8,7 +8,8 @@ import {
   Process,
   Processor,
 } from '@nestjs/bull';
-import { Job } from 'bull';
+import { Job, Queue } from 'bull';
+import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import {
@@ -18,6 +19,7 @@ import {
   NewsletterSubscriptionJob,
   Queues,
   SendMailJob,
+  UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -25,7 +27,8 @@ import { AnyCantFix } from 'src/utils/types';
 export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
-    private salesforceService: SalesforceService
+    private salesforceService: SalesforceService,
+    private companiesService: CompaniesService
   ) {}
 
   @OnQueueActive()
@@ -125,6 +128,16 @@ export class WorkQueueProcessor {
         refererEmail: data.refererEmail,
         structure: data.structure,
       });
+      // If companyId is provided, create or update the company in Salesforce
+      if (data.companyId) {
+        const company = await this.companiesService.findOne(data.companyId);
+        if (!company) throw new Error('Company not found');
+        const queue = job.queue as Queue<CreateOrUpdateSalesforceCompanyJob>;
+        await queue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY, {
+          name: company.name,
+          userId: data.userId,
+        });
+      }
       return `Salesforce : created or updated user '${data.userId}'`;
     }
 
@@ -141,9 +154,35 @@ export class WorkQueueProcessor {
         department: data.department,
         phone: data.phone,
       });
+      // If userId is provided, update the user's company in Salesforce
+      if (data.userId) {
+        const company = await this.companiesService.findOneByName(data.name);
+        if (!company) throw new Error('Company not found');
+        const queue = job.queue as Queue<UpdateSalesforceUserCompanyJob>;
+        await queue.add(Jobs.UPDATE_SALESFORCE_USER_COMPANY, {
+          userId: data.userId,
+          companyId: company.id,
+        });
+      }
       return `Salesforce : created or updated company '${data.name}'`;
     }
 
     return `Salesforce job ignored : creation or update of company '${data.name}'`;
+  }
+
+  @Process(Jobs.UPDATE_SALESFORCE_USER_COMPANY)
+  async processUpdateSalesforceUserCompany(
+    job: Job<UpdateSalesforceUserCompanyJob>
+  ) {
+    const { data } = job;
+    if (process.env.ENABLE_SF === 'true') {
+      const company = await this.companiesService.findOne(data.companyId);
+      await this.salesforceService.updateSalesforceUserCompany(
+        data.userId,
+        company ? company.name : null
+      );
+      return `Salesforce : updated user '${data.userId}' company to '${data.companyId}'`;
+    }
+    return `Salesforce job ignored : update of user '${data.userId}' company to '${data.companyId}'`;
   }
 }

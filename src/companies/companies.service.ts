@@ -75,16 +75,20 @@ export class CompaniesService {
     });
   }
 
-  async findOrCreateByName(
-    name: string,
-    user: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>,
-    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN,
-    createInExternalDB = true
-  ) {
-    let company = await this.companyModel.findOne({
+  async findOneByName(name: string) {
+    return this.companyModel.findOne({
       where: { name },
       attributes: companiesAttributes,
     });
+  }
+
+  async findOrCreateByName(
+    name: string,
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
+    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN,
+    createInExternalDB = true
+  ) {
+    let company = await this.findOneByName(name);
     if (company) {
       return company;
     }
@@ -94,7 +98,10 @@ export class CompaniesService {
 
   async create(
     createCompanyDto: Pick<Company, 'name'>,
-    createdByUser: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>,
+    createdByUser: Pick<
+      User,
+      'id' | 'email' | 'firstName' | 'lastName' | 'zone'
+    >,
     context: CompanyCreationContext = CompanyCreationContext.UNKNOWN,
     createInExternalDB = true
   ) {
@@ -105,7 +112,9 @@ export class CompaniesService {
     if (createInExternalDB) {
       await this.externalDatabasesService.createOrUpdateExternalDBCompany(
         company.name,
-        {} // No additional data
+        {
+          userId: createdByUser.id, // Pass the userId who created the company to be linked after creation
+        }
       );
     }
 

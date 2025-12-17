@@ -15,7 +15,7 @@ export class ExternalDatabasesService {
     otherInfo: Pick<
       CreateUserRegistrationDto,
       'campaign' | 'birthDate' | 'workingRight' | 'gender' | 'refererEmail'
-    >
+    > & { companyId?: string }
   ) {
     let conertedGenderType: CandidateGender;
     switch (otherInfo.gender) {
@@ -68,13 +68,26 @@ export class ExternalDatabasesService {
 
   async createOrUpdateExternalDBCompany(
     companyName: string,
-    data: { department?: string; phone?: string }
+    data: { department?: string; phone?: string; userId?: string }
   ): Promise<void> {
     await this.queuesService.addToWorkQueue(
       Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY,
       {
         name: companyName,
         ...data,
+      }
+    );
+  }
+
+  async updateUserCompanyExternalDBCompany(
+    userId: string,
+    companyId: string | null
+  ): Promise<void> {
+    await this.queuesService.addToWorkQueue(
+      Jobs.UPDATE_SALESFORCE_USER_COMPANY,
+      {
+        userId,
+        companyId,
       }
     );
   }
