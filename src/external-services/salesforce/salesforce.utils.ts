@@ -99,8 +99,8 @@ export function formatSalesforceValue<T extends string>(
 
 export function formatCompanyName(
   name: string,
-  address: string,
-  department: Department
+  department: Department,
+  address?: string
 ) {
   return `${name || 'Inconnu'} - ${address || 'Inconnu'} - ${
     department || 'Inconnu'

@@ -362,9 +362,11 @@ export interface SalesforceTask {
 export interface AccountProps {
   name: string;
   businessSectors?: BusinessSector[];
-  address: string;
-  department: Department;
+  address?: string;
+  department?: Department;
   mainAccountSfId?: string;
+  phone?: string;
+  organizationType?: 'Entreprise';
 }
 
 export interface SalesforceAccount {
@@ -377,6 +379,8 @@ export interface SalesforceAccount {
   RecordTypeId: AccountRecordType;
   Reseaux__c: 'LinkedOut';
   Antenne__c: string;
+  Type_org__c?: 'Entreprise';
+  Phone?: string;
   ParentId: string;
 }
 

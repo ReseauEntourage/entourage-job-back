@@ -11,7 +11,7 @@ export const companyCreationContextVerbose = {
 };
 
 export const generateSlackMsgConfigNewCompany = (
-  company: Company,
+  company: Pick<Company, 'id' | 'name'>,
   user: Pick<User, 'email' | 'firstName' | 'lastName'>,
   referentSlackUserId: string | null,
   context: CompanyCreationContext = CompanyCreationContext.UNKNOWN

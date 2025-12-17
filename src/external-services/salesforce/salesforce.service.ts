@@ -383,6 +383,20 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
+  async findCompanyFromCompanyName(name: string) {
+    await this.checkIfConnected();
+    const { records }: { records: Partial<SalesforceAccount>[] } =
+      await this.salesforce.query(
+        `SELECT Id, Name
+          FROM ${ObjectNames.ACCOUNT}
+          WHERE Name = '${escapeQuery(name)}'
+          AND RecordTypeId = '${AccountRecordTypesIds.COMPANY}'
+          LIMIT 1
+        `
+      );
+    return records[0] || null;
+  }
+
   async findOwnerByLeadSfId<T extends LeadRecordType>(id: string) {
     await this.checkIfConnected();
     const { records }: { records: Partial<SalesforceLead<T>>[] } =
@@ -582,26 +596,59 @@ export class SalesforceService {
       address,
       department,
       mainAccountSfId,
+      phone,
+      organizationType,
     }: AccountProps,
     recordType: AccountRecordType
   ) {
-    const parsedAddress = parseAddress(address);
+    let parsedAddress = null;
+    if (address) {
+      parsedAddress = parseAddress(address);
+    }
 
     return this.createRecord(ObjectNames.ACCOUNT, {
       Name: mainAccountSfId
-        ? formatCompanyName(name, address, department)
+        ? formatCompanyName(name, department, address)
         : name || 'Inconnu',
       M_tiers_LinkedOut__c: formatBusinessSectors(businessSectors),
-      BillingStreet: parsedAddress.street,
+      BillingStreet: parsedAddress?.street,
       BillingCity:
-        parsedAddress.city?.length > 40
-          ? parsedAddress.city.substring(0, 40)
-          : parsedAddress.city,
-      BillingPostalCode: parsedAddress.postalCode,
+        parsedAddress?.city?.length > 40
+          ? parsedAddress?.city.substring(0, 40)
+          : parsedAddress?.city,
+      BillingPostalCode: parsedAddress?.postalCode,
       Reseaux__c: 'LinkedOut',
       Antenne__c: formatDepartment(department),
       RecordTypeId: recordType,
       ParentId: mainAccountSfId,
+      Phone: phone,
+      Type_org__c: organizationType,
+    });
+  }
+
+  async updateAccount<T extends AccountRecordType>(
+    accountSfId: string,
+    recordType: T,
+    data: AccountProps
+  ) {
+    let parsedAddress = null;
+    if (data.address) {
+      parsedAddress = parseAddress(data.address);
+    }
+
+    return this.updateRecord(ObjectNames.ACCOUNT, {
+      Id: accountSfId,
+      Name: data.name,
+      M_tiers_LinkedOut__c: formatBusinessSectors(data.businessSectors),
+      BillingStreet: parsedAddress?.street,
+      BillingCity:
+        parsedAddress?.city?.length > 40
+          ? parsedAddress?.city.substring(0, 40)
+          : parsedAddress?.city,
+      BillingPostalCode: parsedAddress?.postalCode,
+      Antenne__c: formatDepartment(data.department),
+      RecordTypeId: recordType,
+      Phone: data.phone,
     });
   }
 
@@ -784,7 +831,7 @@ export class SalesforceService {
     recordType: AccountRecordType
   ) {
     let companySfId = await this.searchAccountByName(
-      formatCompanyName(name, address, department),
+      formatCompanyName(name, department, address),
       recordType
     );
 
@@ -1126,6 +1173,35 @@ export class SalesforceService {
       refererEmail: otherInfo.refererEmail,
       structure: otherInfo.structure,
     });
+  }
+
+  async createOrUpdateSalesforceCompany(
+    companyName: string,
+    data: { department?: string; phone?: string }
+  ) {
+    this.setIsWorker(false);
+
+    const createUpdateDto = {
+      name: companyName,
+      department: data.department,
+      phone: data.phone,
+      organizationType: 'Entreprise',
+    };
+    const sfCompany = await this.findCompanyFromCompanyName(companyName);
+
+    if (!sfCompany) {
+      const newCompanyId = await this.createAccount(
+        createUpdateDto as AccountProps,
+        AccountRecordTypesIds.COMPANY
+      );
+      return newCompanyId;
+    }
+    await this.updateAccount(
+      sfCompany.Id,
+      AccountRecordTypesIds.COMPANY,
+      createUpdateDto as AccountProps
+    );
+    return sfCompany.Id;
   }
 
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {
