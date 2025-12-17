@@ -85,7 +85,7 @@ export class CompanyUsersService {
 
     // If updateInExternalDB is true, update the external DB
     if (updateInExternalDB) {
-      this.externalDatabasesService.updateUserCompanyExternalDBCompany(
+      await this.externalDatabasesService.updateUserCompanyExternalDBCompany(
         user.id,
         // If company is null, pass null to unlink the user from any company
         company?.id || null
