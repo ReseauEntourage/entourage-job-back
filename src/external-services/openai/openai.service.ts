@@ -74,7 +74,9 @@ export class OpenAiService {
       return extractedData;
     } catch (error) {
       throw new Error(
-        `Impossible d'extraire les données du CV à partir d'images: ${error.toString()}`
+        `Impossible d'extraire les données du CV à partir d'images: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
   }

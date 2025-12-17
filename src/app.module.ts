@@ -25,7 +25,6 @@ import { ContactsModule } from './contacts/contacts.module';
 import { EventsModule } from './events/events.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
-import { MailjetModule } from './external-services/mailjet/mailjet.module';
 import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { MailsModule } from './mails/mails.module';
@@ -135,7 +134,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     ReviewsModule,
     RecruitementAlertsModule,
     MailsModule,
-    MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
     ContactsModule,
@@ -185,7 +183,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     FormationsModule,
     ReviewsModule,
     MailsModule,
-    MailjetModule,
     ExternalDatabasesModule,
     SalesforceModule,
     ContactsModule,
