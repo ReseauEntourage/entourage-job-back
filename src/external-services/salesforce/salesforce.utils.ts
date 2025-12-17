@@ -479,8 +479,7 @@ export const mapSalesforceContactFields = (
   });
 
   return {
-    LastName:
-      lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
+    LastName: lastName?.length > 80 ? lastName.substring(0, 80) : lastName,
     FirstName: firstName,
     Email: email
       ?.replace(/\+/g, '.')
@@ -490,7 +489,7 @@ export const mapSalesforceContactFields = (
     Title: position,
     AccountId: companySfId,
     Date_de_naissance__c: birthDate,
-    Casquettes_r_les__c: casquettes.join(';'),
+    Casquettes_r_les__c: casquettes?.join(';') || undefined,
     Reseaux__c: 'LinkedOut',
     RecordTypeId: recordType,
     Antenne__c: formatDepartment(department),

@@ -825,87 +825,6 @@ export class SalesforceService {
     return companySfId;
   }
 
-  async findOrCreateAccount(
-    {
-      name,
-      address,
-      department,
-      businessSectors,
-      mainAccountSfId,
-    }: AccountProps,
-    recordType: AccountRecordType
-  ) {
-    let companySfId = await this.searchAccountByName(
-      formatCompanyName(name, department, address),
-      recordType
-    );
-
-    if (!companySfId) {
-      companySfId = await this.searchAccountByName(
-        name || 'Inconnu',
-        recordType
-      );
-    }
-    if (!companySfId) {
-      companySfId = (await this.createAccount(
-        {
-          name,
-          businessSectors,
-          address,
-          department,
-          mainAccountSfId,
-        },
-        recordType
-      )) as string;
-    }
-    return companySfId;
-  }
-
-  async findOrCreateCompanyContact(
-    {
-      contactMail,
-      email,
-      department,
-      mainCompanySfId,
-      companySfId,
-      firstName,
-      lastName,
-      phone,
-      position,
-    }: ContactProps & { contactMail: string; mainCompanySfId: string },
-    recordType: ContactRecordType
-  ) {
-    const recruiterSf = await this.findContact(
-      contactMail || email,
-      recordType
-    );
-    let recruiterSfId = recruiterSf?.Id;
-
-    if (!recruiterSfId) {
-      recruiterSfId = (await this.createContact(
-        contactMail
-          ? {
-              email: contactMail,
-              department,
-              companySfId: mainCompanySfId || companySfId,
-              casquettes: [Casquette.CONTACT_ENTREPRISE_FINANCEUR],
-            }
-          : {
-              firstName,
-              lastName,
-              email,
-              phone,
-              position,
-              department,
-              companySfId: mainCompanySfId || companySfId,
-              casquettes: [Casquette.CONTACT_ENTREPRISE_FINANCEUR],
-            },
-        recordType
-      )) as string;
-    }
-    return recruiterSfId;
-  }
-
   async findOrCreateLead<T extends LeadRecordType>(
     lead: LeadProp<T>,
     recordType: T
@@ -1195,10 +1114,10 @@ export class SalesforceService {
     const sfCompany = await this.findCompanyFromCompanyName(companyName);
 
     if (!sfCompany) {
-      const newCompanyId = await this.createAccount(
+      const newCompanyId = (await this.createAccount(
         createUpdateDto as AccountProps,
         AccountRecordTypesIds.COMPANY
-      );
+      )) as string;
       return newCompanyId;
     }
     await this.updateAccount(
@@ -1207,6 +1126,61 @@ export class SalesforceService {
       createUpdateDto as AccountProps
     );
     return sfCompany.Id;
+  }
+
+  /**
+   * Link or unlink a Salesforce contact to a company account in Salesforce
+   * If companyId is null or company not found, link the contact to a household account instead
+   *
+   * @param userId user's id in our database
+   * @param companyName company name to link the user to in Salesforce, or null to unlink from any company
+   */
+  async updateSalesforceUserCompany(
+    userId: string,
+    companyName: string | null
+  ) {
+    this.setIsWorker(true);
+
+    const userToUpdate = await this.findContactFromUserId(userId);
+
+    const contactSf = await this.findContact(userToUpdate.email);
+
+    if (!contactSf || !contactSf.Id) {
+      throw new Error(`Contact not found in Salesforce for user ${userId}`);
+    }
+
+    // Find the company in Salesforce if companyName is provided
+    let accountSfId = null;
+    if (companyName)
+      accountSfId = await this.createOrUpdateSalesforceCompany(companyName, {});
+
+    const contactSfId = contactSf.Id;
+
+    // If no company found or companyName is null, unlink the contact from any company and link to household account
+    if (!accountSfId) {
+      // Create or find household account
+      const householdAccountId = await this.findOrCreateHouseholdAccount({
+        name: `${userToUpdate.firstName} ${userToUpdate.lastName} Foyer`,
+        department: userToUpdate.department,
+        address: getPostalCodeFromDepartment(userToUpdate.department),
+      });
+      accountSfId = householdAccountId;
+    }
+
+    if (!accountSfId) {
+      throw new Error(
+        `Company account or household account not found or created for user ${userId} with companyName ${companyName}`
+      );
+    }
+
+    // Link the contact to the new company or unlink if companyId is null
+    await this.updateContact(
+      contactSfId,
+      {
+        companySfId: accountSfId,
+      },
+      ContactRecordTypeFromRole[userToUpdate.role]
+    );
   }
 
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {

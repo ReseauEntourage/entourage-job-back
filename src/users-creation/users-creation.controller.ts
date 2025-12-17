@@ -181,38 +181,19 @@ export class UsersCreationController {
         }
       }
 
-      await this.usersCreationService.createExternalDBUser(createdUserId, {
-        birthDate: createUserRegistrationDto.birthDate,
-        workingRight: createUserRegistrationDto.workingRight,
-        gender: createUserRegistrationDto.gender,
-        structure:
-          createdUser.role === UserRoles.REFERER
-            ? createdUser.organization.name
-            : undefined,
-      });
-
-      await this.usersCreationService.updateUserSocialSituationByUserId(
-        createdUserId,
-        {
-          materialInsecurity: convertYesNoToBoolean(
-            createUserRegistrationDto.materialInsecurity
-          ),
-          networkInsecurity: convertYesNoToBoolean(
-            createUserRegistrationDto.networkInsecurity
-          ),
-        }
-      );
-
       // Link the company if provided
+      let companyId: string | null = null;
       if (createUserRegistrationDto.companyName) {
         const company =
           await this.usersCreationService.findOrCreateCompanyByName(
             createUserRegistrationDto.companyName,
-            createdUser
+            createdUser,
+            false // Do not create in external DB yet, will be done with the user creation
           );
         if (!company) {
           throw new NotFoundException('Company was not created properly');
         }
+        companyId = company.id;
         // Check if a user is already linked to the company
         const existingCompanyUser =
           await this.usersCreationService.findOneCompanyUser(company.id);
@@ -241,6 +222,29 @@ export class UsersCreationController {
           );
         }
       }
+
+      await this.usersCreationService.createExternalDBUser(createdUserId, {
+        birthDate: createUserRegistrationDto.birthDate,
+        workingRight: createUserRegistrationDto.workingRight,
+        gender: createUserRegistrationDto.gender,
+        structure:
+          createdUser.role === UserRoles.REFERER
+            ? createdUser.organization.name
+            : undefined,
+        companyId,
+      });
+
+      await this.usersCreationService.updateUserSocialSituationByUserId(
+        createdUserId,
+        {
+          materialInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.materialInsecurity
+          ),
+          networkInsecurity: convertYesNoToBoolean(
+            createUserRegistrationDto.networkInsecurity
+          ),
+        }
+      );
 
       // UTM
       const utmToCreate: Partial<Utm> = {
