@@ -71,7 +71,7 @@ export interface CreateOrUpdateSalesforceUserJob {
 }
 
 export interface CreateOrUpdateSalesforceCompanyJob {
-  name?: string;
+  name: string;
   department?: string;
   phone?: string;
   userId?: string;

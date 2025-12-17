@@ -116,8 +116,8 @@ export class CompanyUsersService {
       await existingLink.destroy();
     }
 
-    // If companyName is null, we just remove the link
-    if (!companyName) {
+    // If companyName is null or company is null, we just remove the link
+    if (!companyName || !company) {
       return null;
     }
 
