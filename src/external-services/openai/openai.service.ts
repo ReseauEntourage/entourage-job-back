@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ChatCompletionContentPart } from 'openai/resources/chat';
 import { cvSchema, CvSchemaType } from './openai.schemas';
@@ -6,6 +6,7 @@ import { cvSchema, CvSchemaType } from './openai.schemas';
 @Injectable()
 export class OpenAiService {
   private readonly openai: OpenAI;
+  private readonly logger = new Logger(OpenAiService.name);
 
   constructor() {
     this.openai = new OpenAI({
@@ -73,6 +74,11 @@ export class OpenAiService {
 
       return extractedData;
     } catch (error) {
+      this.logger.error(
+        `Erreur lors de l'extraction des données du CV à partir d'images: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       throw new Error(
         `Impossible d'extraire les données du CV à partir d'images: ${
           error instanceof Error ? error.message : String(error)
