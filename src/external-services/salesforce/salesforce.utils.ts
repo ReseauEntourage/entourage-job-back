@@ -33,6 +33,7 @@ import {
   Casquette,
   ContactProps,
   ContactRecordType,
+  ContactRecordTypesIds,
   LeadAccomodations,
   LeadAdministrativeSituations,
   LeadApproaches,
@@ -79,6 +80,26 @@ export function formatDepartment(department: Department) {
 
 export function formatRegions(region: CompanyZone) {
   return _.capitalize(region);
+}
+
+export function determineContactRecordType(
+  role: RegistrableUserRole,
+  isCompanyAdmin: boolean
+): ContactRecordType {
+  switch (role) {
+    case UserRoles.CANDIDATE:
+      return ContactRecordTypesIds.PRECARIOUS;
+    case UserRoles.COACH:
+      return isCompanyAdmin
+        ? ContactRecordTypesIds.COMPANY
+        : ContactRecordTypesIds.NEIGHBOR;
+    case UserRoles.REFERER:
+      return ContactRecordTypesIds.ASSOCIATION;
+    default:
+      throw new Error(
+        'Invalid RegistrableUserRole for determining contact record type'
+      );
+  }
 }
 
 export function formatSalesforceValue<T extends string>(
@@ -453,7 +474,7 @@ export const mapSalesforceContactFields = (
     phone,
     position,
     department,
-    companySfId,
+    accountSfId,
     casquettes,
     birthDate,
     nationality,
@@ -487,7 +508,7 @@ export const mapSalesforceContactFields = (
       .replace(/[\u0300-\u036f]/g, ''),
     Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
     Title: position,
-    AccountId: companySfId,
+    AccountId: accountSfId,
     Date_de_naissance__c: birthDate,
     Casquettes_r_les__c: casquettes?.join(';') || undefined,
     Reseaux__c: 'LinkedOut',

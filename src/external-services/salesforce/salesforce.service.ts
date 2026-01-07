@@ -29,7 +29,6 @@ import {
   CompanyLeadProps,
   ContactProps,
   ContactRecordType,
-  ContactRecordTypeFromRole,
   ErrorCodes,
   LeadProp,
   LeadRecordType,
@@ -50,6 +49,7 @@ import {
 } from './salesforce.types';
 
 import {
+  determineContactRecordType,
   escapeQuery,
   executeBulkAction,
   formatBusinessSectors,
@@ -790,10 +790,10 @@ export class SalesforceService {
     department,
     address,
   }: AccountProps) {
-    let companySfId = await this.searchAccount(`${name} ${address}`);
+    let accountSfId = await this.searchAccount(`${name} ${address}`);
 
-    if (!companySfId) {
-      companySfId = (await this.createAccount(
+    if (!accountSfId) {
+      accountSfId = (await this.createAccount(
         {
           name,
           department,
@@ -802,7 +802,7 @@ export class SalesforceService {
         AccountRecordTypesIds.HOUSEHOLD
       )) as string;
     }
-    return companySfId;
+    return accountSfId;
   }
 
   async findOrCreateAssociationAccount({
@@ -810,10 +810,10 @@ export class SalesforceService {
     address,
     department,
   }: AccountProps) {
-    let companySfId = await this.searchAccount(name);
+    let accountSfId = await this.searchAccount(name);
 
-    if (!companySfId) {
-      companySfId = (await this.createAccount(
+    if (!accountSfId) {
+      accountSfId = (await this.createAccount(
         {
           name,
           address: address,
@@ -822,7 +822,7 @@ export class SalesforceService {
         AccountRecordTypesIds.ASSOCIATION
       )) as string;
     }
-    return companySfId;
+    return accountSfId;
   }
 
   async findOrCreateLead<T extends LeadRecordType>(
@@ -912,6 +912,8 @@ export class SalesforceService {
     gender,
     structure,
     refererEmail,
+    isCompanyAdmin = false,
+    position,
   }: UserProps) {
     const contactSf = await this.findContact(email);
     let contactSfId = contactSf?.Id;
@@ -926,7 +928,7 @@ export class SalesforceService {
     if (!contactSfId) {
       const leadSfId = await this.findLead(email);
 
-      const companySfId =
+      const accountSfId =
         role === UserRoles.REFERER
           ? await this.findOrCreateAssociationAccount({
               name: structure,
@@ -948,7 +950,7 @@ export class SalesforceService {
         email: prependDuplicateIfCondition(email, !!leadSfId),
         phone: prependDuplicateIfCondition(phone, !!leadSfId),
         department,
-        companySfId,
+        accountSfId,
         nationality,
         accommodation,
         hasSocialWorker,
@@ -958,14 +960,15 @@ export class SalesforceService {
         jobSearchDuration,
         gender,
         refererId,
-      };
+        position,
+      } as ContactProps;
 
       contactSfId = (await this.createContact(
         {
           ...contactToCreate,
           casquettes: [casquette],
         },
-        ContactRecordTypeFromRole[role]
+        determineContactRecordType(role, isCompanyAdmin)
       )) as string;
 
       if (leadSfId) {
@@ -1075,6 +1078,8 @@ export class SalesforceService {
       gender?: CandidateGender;
       refererEmail?: string;
       structure?: string;
+      isCompanyAdmin?: boolean;
+      position?: string;
     }
   ) {
     this.setIsWorker(true);
@@ -1096,6 +1101,8 @@ export class SalesforceService {
       gender: otherInfo.gender,
       refererEmail: otherInfo.refererEmail,
       structure: otherInfo.structure,
+      isCompanyAdmin: otherInfo.isCompanyAdmin,
+      position: otherInfo.position,
     });
   }
 
@@ -1137,7 +1144,8 @@ export class SalesforceService {
    */
   async updateSalesforceUserCompany(
     userId: string,
-    companyName: string | null
+    companyName: string | null,
+    isCompanyAdmin = false
   ) {
     this.setIsWorker(true);
 
@@ -1169,7 +1177,7 @@ export class SalesforceService {
 
     if (!accountSfId) {
       throw new Error(
-        `Company account or household account not found or created for user ${userId} with companyName ${companyName}`
+        `SF Account not found or created for user ${userId} with companyName ${companyName}`
       );
     }
 
@@ -1177,9 +1185,9 @@ export class SalesforceService {
     await this.updateContact(
       contactSfId,
       {
-        companySfId: accountSfId,
+        accountSfId,
       },
-      ContactRecordTypeFromRole[userToUpdate.role]
+      determineContactRecordType(userToUpdate.role, isCompanyAdmin)
     );
   }
 
