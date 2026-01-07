@@ -2,6 +2,7 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -64,7 +65,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
   invitationId?: string;
 
   @ApiProperty()
-  @IsString()
+  @IsEnum(CompanyUserRole)
   @IsOptional()
   companyRole?: CompanyUserRole;
 

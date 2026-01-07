@@ -95,6 +95,10 @@ export function determineContactRecordType(
         : ContactRecordTypesIds.NEIGHBOR;
     case UserRoles.REFERER:
       return ContactRecordTypesIds.ASSOCIATION;
+    default:
+      throw new Error(
+        'Invalid RegistrableUserRole for determining contact record type'
+      );
   }
 }
 

@@ -912,7 +912,7 @@ export class SalesforceService {
     gender,
     structure,
     refererEmail,
-    isCompanyAdmin,
+    isCompanyAdmin = false,
     position,
   }: UserProps) {
     const contactSf = await this.findContact(email);
