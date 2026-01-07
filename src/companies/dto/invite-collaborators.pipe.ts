@@ -6,15 +6,16 @@ import {
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateCompanyDto } from './create-company.dto';
+import { InviteCollaboratorsDto } from './invite-collaborators.dto';
 
 export class inviteCollaboratorsPipe
-  implements PipeTransform<CreateCompanyDto, Promise<CreateCompanyDto>>
+  implements
+    PipeTransform<InviteCollaboratorsDto, Promise<InviteCollaboratorsDto>>
 {
   async transform(
-    value: CreateCompanyDto,
+    value: InviteCollaboratorsDto,
     { metatype }: ArgumentMetadata
-  ): Promise<CreateCompanyDto> {
+  ): Promise<InviteCollaboratorsDto> {
     if (!metatype || !inviteCollaboratorsPipe.toValidate(metatype)) {
       return value;
     }

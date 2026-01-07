@@ -143,6 +143,9 @@ export class WorkQueueProcessor {
         gender: data.gender,
         refererEmail: data.refererEmail,
         structure: data.structure,
+        isCompanyAdmin: data.isCompanyAdmin,
+        // The "Position" field in Salesforce corresponds to the user's role in the company
+        position: data.companyRole,
       });
       // If companyId is provided, create or update the company in Salesforce
       if (data.companyId) {
@@ -206,9 +209,12 @@ export class WorkQueueProcessor {
     if (process.env.ENABLE_SF === 'true') {
       const company = await this.companiesService.findOne(data.companyId);
       if (!company) throw new Error('Company not found');
+      const isAdmin = company.admin && company.admin.id === data.userId;
+
       await this.salesforceService.updateSalesforceUserCompany(
         data.userId,
-        company ? company.name : null
+        company ? company.name : null,
+        isAdmin
       );
       return `Salesforce : updated user '${data.userId}' company to '${data.companyId}'`;
     }

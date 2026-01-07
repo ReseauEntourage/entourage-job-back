@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
+import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
@@ -65,7 +66,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
   @ApiProperty()
   @IsString()
   @IsOptional()
-  companyRole?: string;
+  companyRole?: CompanyUserRole;
 
   @ApiProperty()
   @IsString()

@@ -1,3 +1,4 @@
+import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateAccommodation,
   CandidateGender,
@@ -68,6 +69,8 @@ export interface CreateOrUpdateSalesforceUserJob {
   refererEmail?: string;
   structure?: string;
   companyId?: string;
+  isCompanyAdmin?: boolean;
+  companyRole?: CompanyUserRole;
 }
 
 export interface CreateOrUpdateSalesforceCompanyJob {
