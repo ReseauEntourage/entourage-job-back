@@ -1,22 +1,22 @@
 import { ZoneName } from '../types/zones.types';
 
 export const WhatsappCoachByZone = {
-  [ZoneName.PARIS]: {
+  [ZoneName.IDF]: {
     name: 'IDF // Paris, 92, 93',
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-paris.png',
     url: process.env.WHATSAPP_COACH_URL_PARIS as string,
   },
-  [ZoneName.LYON]: {
+  [ZoneName.AURA]: {
     name: 'Rhône // Lyon',
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-lyon.png',
     url: process.env.WHATSAPP_COACH_URL_LYON as string,
   },
-  [ZoneName.LILLE]: {
+  [ZoneName.NORD]: {
     name: 'Nord // Lille',
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-lille.png',
     url: process.env.WHATSAPP_COACH_URL_LILLE as string,
   },
-  [ZoneName.RENNES]: {
+  [ZoneName.BRETAGNE]: {
     name: 'Bretagne // Rennes & Lorient',
     qr: '/static/img/whatsapp-qrcode-coach/whatsapp-qrcode-rennes-lorient.png',
     url: process.env.WHATSAPP_COACH_URL_RENNES_LORIENT as string,
@@ -40,22 +40,22 @@ export const WhatsappCoachByZone = {
 };
 
 export const WhatsappCandidateByZone = {
-  [ZoneName.PARIS]: {
+  [ZoneName.IDF]: {
     name: 'IDF // Paris, 92, 93',
     qr: '/static/img/whatsapp-qrcode-candidat/whatsapp-qrcode-paris.png',
     url: process.env.WHATSAPP_CANDIDAT_URL_PARIS as string,
   },
-  [ZoneName.LYON]: {
+  [ZoneName.AURA]: {
     name: 'Rhône // Lyon',
     qr: '/static/img/whatsapp-qrcode-candidat/whatsapp-qrcode-lyon.png',
     url: process.env.WHATSAPP_CANDIDAT_URL_LYON as string,
   },
-  [ZoneName.LILLE]: {
+  [ZoneName.NORD]: {
     name: 'Nord // Lille',
     qr: '/static/img/whatsapp-qrcode-candidat/whatsapp-qrcode-lille.png',
     url: process.env.WHATSAPP_CANDIDAT_URL_LILLE as string,
   },
-  [ZoneName.RENNES]: {
+  [ZoneName.BRETAGNE]: {
     name: 'Bretagne // Rennes & Lorient',
     qr: '/static/img/whatsapp-qrcode-candidat/whatsapp-qrcode-rennes-lorient.png',
     url: process.env.WHATSAPP_CANDIDAT_URL_RENNES_LORIENT as string,

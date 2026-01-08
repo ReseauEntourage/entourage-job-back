@@ -20,8 +20,3 @@ export enum SfLocalBranchName {
   GRENOBLE = 'Grenoble', // deprecated
   ROUBAIX = 'Roubaix', // deprecated
 }
-
-export type LocalBranch = {
-  name: SfLocalBranchName;
-  address: string;
-};

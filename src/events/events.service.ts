@@ -5,6 +5,7 @@ import { SalesforceService } from 'src/external-services/salesforce/salesforce.s
 import { SalesforceCampaignStatus } from 'src/external-services/salesforce/salesforce.types';
 import { UsersService } from 'src/users/users.service';
 import { Zones } from 'src/utils/constants/zones';
+import { SfLocalBranchName } from 'src/utils/types/local-branches.types';
 import {
   Event,
   EventMode,
@@ -49,7 +50,9 @@ export class EventsService {
     ).map((dept) => dept.zone);
 
     // Retrieve local branches from zones
-    const localBranches = zones.flatMap((zone) => Zones[zone].sfLocalBranches);
+    const localBranches = zones.flatMap((zone) =>
+      Zones[zone].sfLocalBranchNames.concat([SfLocalBranchName.NATIONAL])
+    );
 
     const sfCampaigns = await this.salesforceService.findAllEventCampaigns(
       userEmail,

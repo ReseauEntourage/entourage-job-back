@@ -75,7 +75,7 @@ export function formatDepartment(department: Department) {
     return 'National';
   }
   const zoneName = getZoneNameFromDepartment(department);
-  return _.capitalize(Zones[zoneName].sfName);
+  return _.capitalize(Zones[zoneName].sfLocalBranchNames[0]); // TODO: handle multiple local branches per zone
 }
 
 export function formatRegions(region: CompanyZone) {
