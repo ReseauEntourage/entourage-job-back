@@ -1,5 +1,9 @@
 import fs from 'fs';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { DepartmentsService } from 'src/common/departments/departments.service';
@@ -172,15 +176,20 @@ export class CompaniesService {
     });
 
     if (updateInExternalDB) {
-      const department = updateCompanyDto.departmentId
-        ? await this.departmentsService.findOne(updateCompanyDto.departmentId)
-        : undefined;
-      this.externalDatabasesService.createOrUpdateExternalDBCompany(
-        company.name,
-        {
-          department: department?.displayName ?? undefined,
+      if (updateCompanyDto.departmentId) {
+        const department = await this.departmentsService.findOne(
+          updateCompanyDto.departmentId
+        );
+        if (!department) {
+          throw new BadRequestException('Invalid department ID');
         }
-      );
+        this.externalDatabasesService.createOrUpdateExternalDBCompany(
+          company.name,
+          {
+            department: department?.displayName ?? undefined,
+          }
+        );
+      }
     }
 
     return this.findOne(id);
@@ -201,7 +210,7 @@ export class CompaniesService {
         `${companyId}.png`,
         false
       );
-      await this.update(companyId, { logoUrl: s3file.publicUrl });
+      await this.update(companyId, { logoUrl: s3file.publicUrl }, false);
     } catch (error) {
       console.error('Error uploading logo:', error);
       throw new Error('Failed to upload logo');
