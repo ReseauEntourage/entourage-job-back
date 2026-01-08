@@ -500,26 +500,42 @@ export const mapSalesforceContactFields = (
   });
 
   return {
-    LastName: lastName?.length > 80 ? lastName.substring(0, 80) : lastName,
-    FirstName: firstName,
+    LastName: lastName
+      ? lastName.length > 80
+        ? lastName.substring(0, 80)
+        : lastName
+      : undefined,
+    FirstName: firstName || undefined,
     Email: email
-      ?.replace(/\+/g, '.')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''),
-    Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-    Title: position,
-    AccountId: accountSfId,
-    Date_de_naissance__c: birthDate,
-    Casquettes_r_les__c: casquettes?.join(';') || undefined,
+      ? email
+          ?.replace(/\+/g, '.')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+      : undefined,
+    Phone: phone
+      ? phone.length > 40
+        ? phone.substring(0, 40)
+        : phone
+      : undefined,
+    Title: position || undefined,
+    AccountId: accountSfId || undefined,
+    Date_de_naissance__c: birthDate || undefined,
+    Casquettes_r_les__c: casquettes
+      ? casquettes.join(';') || undefined
+      : undefined,
     Reseaux__c: 'LinkedOut',
-    RecordTypeId: recordType,
-    Antenne__c: formatDepartment(department),
-    MailingPostalCode: getPostalCodeFromDepartment(department),
-    ID_App_Entourage_Pro__c: id || '',
+    RecordTypeId: recordType || undefined,
+    Antenne__c: department ? formatDepartment(department) : undefined,
+    MailingPostalCode: department
+      ? getPostalCodeFromDepartment(department)
+      : undefined,
+    ID_App_Entourage_Pro__c: id || undefined,
     Source__c: 'Lead entrant',
     ...socialSituationFields,
-    Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
-    TS_prescripteur__c: refererId,
+    Genre__c: gender
+      ? formatSalesforceValue<CandidateGender>(gender, LeadGender)
+      : undefined,
+    TS_prescripteur__c: refererId || undefined,
   };
 };
 
