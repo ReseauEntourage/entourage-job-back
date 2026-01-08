@@ -14,22 +14,27 @@ export class ExternalDatabasesService {
     userId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      'campaign' | 'birthDate' | 'workingRight' | 'gender' | 'refererEmail'
-    > & { companyId?: string }
+      | 'campaign'
+      | 'birthDate'
+      | 'workingRight'
+      | 'gender'
+      | 'refererEmail'
+      | 'companyRole'
+    > & { companyId?: string; isCompanyAdmin?: boolean }
   ) {
-    let conertedGenderType: CandidateGender;
+    let convertedGenderType: CandidateGender;
     switch (otherInfo.gender) {
       case Genders.MALE:
-        conertedGenderType = CandidateGenders.MALE;
+        convertedGenderType = CandidateGenders.MALE;
         break;
       case Genders.FEMALE:
-        conertedGenderType = CandidateGenders.FEMALE;
+        convertedGenderType = CandidateGenders.FEMALE;
         break;
       case Genders.OTHER:
-        conertedGenderType = CandidateGenders.OTHER;
+        convertedGenderType = CandidateGenders.OTHER;
         break;
       case undefined:
-        conertedGenderType = null;
+        convertedGenderType = null;
         break;
       default:
         throw new Error('Invalid gender value');
@@ -40,7 +45,7 @@ export class ExternalDatabasesService {
       {
         userId,
         ...otherInfo,
-        gender: conertedGenderType,
+        gender: convertedGenderType,
       }
     );
   }
@@ -62,6 +67,8 @@ export class ExternalDatabasesService {
       {
         userId,
         ...data,
+        // Defaulting to false because social situation is only for Candidates, so they can't be company admins
+        isCompanyAdmin: false,
       }
     );
   }

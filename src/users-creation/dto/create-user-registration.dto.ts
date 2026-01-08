@@ -2,12 +2,14 @@ import { ApiProperty, PickType } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
+import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
@@ -63,9 +65,9 @@ export class CreateUserRegistrationDto extends PickType(User, [
   invitationId?: string;
 
   @ApiProperty()
-  @IsString()
+  @IsEnum(CompanyUserRole)
   @IsOptional()
-  companyRole?: string;
+  companyRole?: CompanyUserRole;
 
   @ApiProperty()
   @IsString()

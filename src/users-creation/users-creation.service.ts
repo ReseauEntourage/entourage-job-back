@@ -49,7 +49,8 @@ export class UsersCreationService {
       | 'gender'
       | 'structure'
       | 'refererEmail'
-    > & { companyId?: string }
+      | 'companyRole'
+    > & { companyId?: string; isCompanyAdmin?: boolean }
   ) {
     return this.externalDatabasesService.createExternalDBUser(
       createdUserId,
