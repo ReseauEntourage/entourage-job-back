@@ -33,6 +33,7 @@ import {
   AdminRole,
   Gender,
   Genders,
+  OnboardingStatus,
   RolesWithOrganization,
   UserRole,
   UserRoles,
@@ -179,6 +180,14 @@ export class User extends HistorizedModel {
   @IsBoolean()
   @Column
   isEmailVerified: boolean;
+
+  @AllowNull(false)
+  @Column(DataType.ENUM(...Object.values(OnboardingStatus)))
+  onboardingStatus: OnboardingStatus;
+
+  @AllowNull(true)
+  @Column
+  onboardingCompletedAt: Date;
 
   @CreatedAt
   createdAt: Date;
