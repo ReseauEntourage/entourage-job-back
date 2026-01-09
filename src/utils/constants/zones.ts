@@ -6,12 +6,10 @@ const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
 const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
 
 export const Zones: { [key in ZoneName]: Zone } = {
-  [ZoneName.PARIS]: {
-    name: ZoneName.PARIS,
-    sfName: ZoneName.PARIS,
+  [ZoneName.IDF]: {
+    name: ZoneName.IDF,
+    sfLocalBranchNames: [SfLocalBranchName.PARIS],
     suffix: ZoneSuffix.PARIS,
-    departmentCodes: [],
-    sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.PARIS],
     staffContact: {
       main: {
         name: 'Clothilde B.',
@@ -27,12 +25,10 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
     },
   },
-  [ZoneName.LYON]: {
-    name: ZoneName.LYON,
-    sfName: ZoneName.LYON,
+  [ZoneName.AURA]: {
+    name: ZoneName.AURA,
+    sfLocalBranchNames: [SfLocalBranchName.LYON],
     suffix: ZoneSuffix.LYON,
-    departmentCodes: [],
-    sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.LYON],
     staffContact: {
       main: {
         name: 'Alice D.',
@@ -48,12 +44,10 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
     },
   },
-  [ZoneName.LILLE]: {
-    name: ZoneName.LILLE,
-    sfName: ZoneName.LILLE,
+  [ZoneName.NORD]: {
+    name: ZoneName.NORD,
+    sfLocalBranchNames: [SfLocalBranchName.LILLE],
     suffix: ZoneSuffix.LILLE,
-    departmentCodes: [],
-    sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.LILLE],
     staffContact: {
       main: {
         name: 'Julien D.',
@@ -69,33 +63,33 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
     },
   },
-  [ZoneName.LORIENT]: {
-    name: ZoneName.LORIENT,
-    sfName: ZoneName.LORIENT,
-    suffix: ZoneSuffix.LORIENT,
-    departmentCodes: [],
-    sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.LORIENT],
+  [ZoneName.BRETAGNE]: {
+    name: ZoneName.BRETAGNE,
+    sfLocalBranchNames: [SfLocalBranchName.RENNES],
+    suffix: ZoneSuffix.RENNES,
     staffContact: {
       main: {
         name: 'Mathilde G.',
         img: `${imageBasePath}staff-pictures/mathilde.jpg`,
-        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LORIENT,
-        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LORIENT,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
       },
       company: {
         name: 'Pauline de Kergal',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
-        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LORIENT,
-        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LORIENT,
+        email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
+        slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
       },
     },
   },
-  [ZoneName.RENNES]: {
-    name: ZoneName.RENNES,
-    sfName: ZoneName.RENNES,
+
+  // To be removed in the future, in favor of Bretagne zone but can't be done now
+  // due to the fact that only the zone is stored in DB and we need a local branch
+  // to sync in Salesforce
+  [ZoneName.LORIENT]: {
+    name: ZoneName.LORIENT,
+    sfLocalBranchNames: [SfLocalBranchName.LORIENT],
     suffix: ZoneSuffix.RENNES,
-    departmentCodes: [],
-    sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.RENNES],
     staffContact: {
       main: {
         name: 'Mathilde G.',
@@ -113,14 +107,8 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.SUDOUEST]: {
     name: ZoneName.SUDOUEST,
-    sfName: ZoneName.HZ, // Salesforce uses 'HZ' for 'SUDOUEST'
+    sfLocalBranchNames: [SfLocalBranchName.BORDEAUX],
     suffix: ZoneSuffix.SUDOUEST,
-    departmentCodes: [],
-    sfLocalBranches: [
-      SfLocalBranchName.NATIONAL,
-      SfLocalBranchName.BORDEAUX,
-      SfLocalBranchName.NANTES,
-    ],
     staffContact: {
       main: {
         name: 'Valentine R.',
@@ -138,10 +126,8 @@ export const Zones: { [key in ZoneName]: Zone } = {
   },
   [ZoneName.HZ]: {
     name: ZoneName.HZ,
-    sfName: ZoneName.HZ,
+    sfLocalBranchNames: [SfLocalBranchName.HZ],
     suffix: ZoneSuffix.HZ,
-    departmentCodes: [],
-    sfLocalBranches: [SfLocalBranchName.NATIONAL, SfLocalBranchName.HZ],
     staffContact: {
       main: {
         name: 'Valentine R.',

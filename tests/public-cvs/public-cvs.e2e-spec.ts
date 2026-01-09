@@ -113,7 +113,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.CANDIDATE,
-        zone: ZoneName.LILLE,
+        zone: ZoneName.NORD,
         firstName: 'Candidat',
         lastName: 'Complet',
         phone: '0102030405',
@@ -184,7 +184,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.CANDIDATE,
-        zone: ZoneName.LILLE,
+        zone: ZoneName.NORD,
         firstName: 'Candidat',
         lastName: 'Sans Photo',
       },
@@ -211,7 +211,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.CANDIDATE,
-        zone: ZoneName.LILLE,
+        zone: ZoneName.NORD,
         firstName: 'Candidat',
         lastName: 'Incomplet',
       },
@@ -242,7 +242,7 @@ describe('PublicCVs', () => {
       1,
       {
         role: UserRoles.COACH,
-        zone: ZoneName.PARIS,
+        zone: ZoneName.IDF,
       },
       {
         userProfile: {

@@ -41,7 +41,7 @@ export class UserFactory implements Factory<User> {
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
       address: faker.address.streetAddress(),
       lastConnection: new Date(),
-      zone: ZoneName.PARIS,
+      zone: ZoneName.IDF,
       hashReset: faker.datatype.uuid(),
       saltReset: faker.datatype.uuid(),
       createdAt: moment().toDate(),

@@ -23,7 +23,7 @@ export class OrganizationFactory implements Factory<Organization> {
     const fakeData: Partial<Organization> = {
       name: faker.company.name(),
       address: faker.address.streetAddress(),
-      zone: ZoneName.PARIS,
+      zone: ZoneName.IDF,
     };
 
     return {

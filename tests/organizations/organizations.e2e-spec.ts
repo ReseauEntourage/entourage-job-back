@@ -216,7 +216,7 @@ describe('Organizations', () => {
 
         beforeEach(async () => {
           organization = await organizationFactory.create(
-            { name: 'GGG', zone: ZoneName.LILLE },
+            { name: 'GGG', zone: ZoneName.NORD },
             {},
             true
           );
@@ -243,14 +243,14 @@ describe('Organizations', () => {
           organizations = await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'XXX', zone: ZoneName.PARIS },
+            { name: 'XXX', zone: ZoneName.IDF },
             {},
             true
           );
           await databaseHelper.createEntities(
             organizationFactory,
             5,
-            { name: 'YYY', zone: ZoneName.LYON },
+            { name: 'YYY', zone: ZoneName.AURA },
             {},
             true
           );
@@ -275,7 +275,7 @@ describe('Organizations', () => {
           ];
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server).get(
-              `${route}?limit=50&offset=0&zone[]=${ZoneName.PARIS}`
+              `${route}?limit=50&offset=0&zone[]=${ZoneName.IDF}`
             );
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);
