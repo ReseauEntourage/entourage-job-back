@@ -38,6 +38,7 @@ export const salesforceEventTypeToEventType: { [key: string]: EventType } = {
   [SalesforceEventTypes.PAPOTAGES_PRO]: EventType.PAPOTAGES_PRO,
   [SalesforceEventTypes.PHOTO_SHOOTING]: EventType.PHOTO_SHOOTING,
   [SalesforceEventTypes.APERO_COACH]: EventType.APERO_COACH,
+  [SalesforceEventTypes.WORKSHOP]: EventType.WORKSHOP,
 };
 
 export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
@@ -48,6 +49,7 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
   [EventType.PAPOTAGES_PRO]: SalesforceEventTypes.PAPOTAGES_PRO,
   [EventType.PHOTO_SHOOTING]: SalesforceEventTypes.PHOTO_SHOOTING,
   [EventType.APERO_COACH]: SalesforceEventTypes.APERO_COACH,
+  [EventType.WORKSHOP]: SalesforceEventTypes.WORKSHOP,
   [EventType.UNKNOWN]: 'Inconnu',
 };
 
@@ -147,6 +149,14 @@ export const additionalEventAttributesByEventType: {
       'Explication de ce temps convivial',
       'Libre échanges discussions',
     ],
+  },
+
+  // Atelier Entourage Pro
+  [EventType.WORKSHOP]: {
+    format: '',
+    goal: '',
+    audience: '',
+    sequences: [],
   },
 };
 
