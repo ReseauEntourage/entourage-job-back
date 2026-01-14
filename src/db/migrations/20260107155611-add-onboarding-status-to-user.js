@@ -16,7 +16,7 @@ module.exports = {
       allowNull: true,
     });
 
-    // Optionally, you can add code here to initialize the onboardingStatus for existing users
+    // Set onboardingStatus to 'completed' and set onboardingCompletedAt to current timestamp for users who have read the 'CharteEthique' document
     await queryInterface.sequelize.query(
       `
         UPDATE "Users" u
