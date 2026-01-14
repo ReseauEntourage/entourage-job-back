@@ -425,6 +425,8 @@ export class SalesforceService {
     userEmail: string,
     limit: number,
     offset: number,
+    includePastEvents: boolean,
+    isParticipating: boolean | null,
     search = '',
     modes?: EventMode[],
     eventTypes?: EventType[],
@@ -489,6 +491,30 @@ export class SalesforceService {
             `
         : '';
 
+    let isParticipatingCondition = '';
+    if (contactId && isParticipating === true) {
+      isParticipatingCondition = `
+              AND Id IN (
+                SELECT CampaignId
+                FROM ${ObjectNames.CAMPAIGN_MEMBER}
+                WHERE ContactId = '${escapeQuery(contactId)}'
+                AND Status = '${SalesforceCampaignStatus.REGISTERED}'
+              )
+            `;
+    } else if (contactId && isParticipating === false) {
+      isParticipatingCondition = `
+              AND Id NOT IN (
+                SELECT CampaignId
+                FROM ${ObjectNames.CAMPAIGN_MEMBER}
+                WHERE ContactId = '${escapeQuery(contactId)}'
+                AND Status = '${SalesforceCampaignStatus.REGISTERED}'
+              )
+            `;
+    }
+    const pastEventsCondition = includePastEvents
+      ? ''
+      : `AND (StartDate > TODAY OR (StartDate = TODAY AND Heure_d_but__c >= '${currentTime}'))`;
+
     const selectUserParticipation = contactId
       ? `, (SELECT Id FROM CampaignMembers WHERE ContactId = '${escapeQuery(
           contactId
@@ -500,11 +526,12 @@ export class SalesforceService {
            FROM ${ObjectNames.CAMPAIGN}
            WHERE
             Type = 'Event' AND R_seaux__c = 'LinkedOut'
-            AND (StartDate > TODAY OR (StartDate = TODAY AND Heure_d_but__c > '${currentTime}'))
             ${searchCondition}
             ${modeFilters}
             ${eventTypesFilters}
             ${localBranchesCondition}
+            ${isParticipatingCondition}
+            ${pastEventsCondition}
             ORDER BY StartDate ASC, Heure_d_but__c ASC
             LIMIT ${limit} OFFSET ${offset}
            `;
