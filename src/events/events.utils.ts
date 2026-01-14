@@ -153,9 +153,9 @@ export const additionalEventAttributesByEventType: {
 
   // Atelier Entourage Pro
   [EventType.WORKSHOP]: {
-    format: '',
-    goal: '',
-    audience: '',
+    format: 'Webinaire - En ligne',
+    goal: 'Un atelier animé par un coach de la communauté Entourage Pro pour travailler sur un thème de l’insertion professionnelle.',
+    audience: 'Candidats et coachs de la communauté',
     sequences: [],
   },
 };
