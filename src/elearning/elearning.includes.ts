@@ -44,6 +44,6 @@ export const generateElearningUnitIncludes = ({
     as: 'userCompletions',
     attributes: ELEARNING_COMPLETION_ATTRIBUTES,
     where: { ...(userId ? { userId } : {}) },
-    required: userId ? true : false,
+    required: false,
   },
 ];

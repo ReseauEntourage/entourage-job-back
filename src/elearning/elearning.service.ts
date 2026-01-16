@@ -36,7 +36,6 @@ export class ElearningService {
     userId?: string
   ): Promise<ElearningUnit[]> {
     return this.elearningUnitModel.findAll({
-      where: {},
       attributes: ELEARNING_UNIT_ATTRIBUTES,
       include: generateElearningUnitIncludes({ userRole, userId }),
       limit,

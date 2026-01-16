@@ -36,6 +36,10 @@ module.exports = {
         allowNull: true,
         type: Sequelize.INTEGER,
       },
+      order: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
+      },
     });
 
     // Table de liaison entre ElearningUnits et rôles utilisateurs
@@ -46,7 +50,7 @@ module.exports = {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
       },
-      elearningUnitId: {
+      unitId: {
         allowNull: false,
         type: Sequelize.UUID,
         references: {
@@ -136,6 +140,10 @@ module.exports = {
       label: {
         allowNull: false,
         type: Sequelize.TEXT,
+      },
+      order: {
+        allowNull: false,
+        type: Sequelize.INTEGER,
       },
       isCorrect: {
         allowNull: false,

@@ -34,7 +34,7 @@ export class ElearningUnitRole extends Model {
   @ForeignKey(() => ElearningUnit)
   @IsUUID(4)
   @Column
-  elearningUnitId: string;
+  unitId: string;
 
   @AllowNull(false)
   @IsString()

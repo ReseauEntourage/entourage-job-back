@@ -53,7 +53,7 @@ export class ElearningUnit extends Model {
   @HasMany(() => ElearningQuestion, 'unitId')
   questions: ElearningQuestion[];
 
-  @HasMany(() => ElearningUnitRole, 'elearningUnitId')
+  @HasMany(() => ElearningUnitRole, 'unitId')
   roles: ElearningUnitRole[];
 
   @HasMany(() => ElearningCompletion, 'unitId')
