@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Put,
   Query,
@@ -29,6 +30,12 @@ export class EventsController {
     limit: number,
     @Query('offset', new DefaultValuePipe(0), new ParseIntPipe())
     offset: number,
+    @Query(
+      'includingPastEvents',
+      new DefaultValuePipe(false),
+      new ParseBoolPipe()
+    )
+    includingPastEvents: boolean,
     @Query('search')
     search?: string,
     @Query('modes')
@@ -36,12 +43,16 @@ export class EventsController {
     @Query('eventTypes')
     eventTypes?: EventType[],
     @Query('departmentIds')
-    departmentIds?: string[]
+    departmentIds?: string[],
+    @Query('isParticipating')
+    isParticipating?: string
   ) {
     const events = await this.eventsService.findAllEvents(
       userEmail,
       limit,
       offset,
+      includingPastEvents,
+      isParticipating === undefined ? null : isParticipating === 'true',
       search,
       modes,
       eventTypes,

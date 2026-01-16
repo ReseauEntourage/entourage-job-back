@@ -10,7 +10,7 @@ import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserSocialSituationsService } from 'src/user-social-situations/user-social-situations.service';
 import { User, UserSocialSituation } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { Gender, UserRoles } from 'src/users/users.types';
+import { Gender, OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { capitalizeNameAndTrim } from 'src/users/users.utils';
 import { Factory } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
@@ -46,6 +46,8 @@ export class UserFactory implements Factory<User> {
       saltReset: faker.datatype.uuid(),
       createdAt: moment().toDate(),
       updatedAt: moment().toDate(),
+      onboardingStatus: props.onboardingStatus || OnboardingStatus.NOT_STARTED,
+      onboardingCompletedAt: props.onboardingCompletedAt || null,
     };
 
     return {
