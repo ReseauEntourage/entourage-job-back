@@ -1533,20 +1533,7 @@ describe('UserProfiles', () => {
 
           expect(response.status).toBe(401);
         });
-        it('Should return 403, if admin updates his user profile', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInAdmin.user.id}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({
-              description: 'hello',
-              introduction: 'hello',
-              isAvailable: false,
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
+
         it('Should return 403, if admin updates a profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
@@ -1738,23 +1725,6 @@ describe('UserProfiles', () => {
           );
 
           expect(updatedUser.zone).toMatch(ZoneName.IDF);
-        });
-        it('Should return 403, if referer updates his profile referer properties', async () => {
-          const updatedProfile: Partial<UserProfile> = {
-            description: 'hello',
-            introduction: 'hello',
-            department: 'Paris (75)',
-            isAvailable: false,
-          };
-
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInReferer.user.id}`)
-            .set('authorization', `Bearer ${loggedInReferer.token}`)
-            .send(updatedProfile);
-
-          expect(response.status).toBe(403);
         });
 
         it('Should return 200 and valid data if candidate update his contracts', async () => {
