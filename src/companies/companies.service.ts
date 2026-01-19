@@ -1,8 +1,14 @@
 import fs from 'fs';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
+import { DepartmentsService } from 'src/common/departments/departments.service';
 import { Department } from 'src/common/locations/locations.types';
+import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
@@ -25,7 +31,9 @@ export class CompaniesService {
     @InjectModel(CompanyBusinessSector)
     private companyBusinessSectorModel: typeof CompanyBusinessSector,
     private readonly s3Service: S3Service,
-    private readonly slackService: SlackService
+    private readonly slackService: SlackService,
+    private readonly externalDatabasesService: ExternalDatabasesService,
+    private readonly departmentsService: DepartmentsService
   ) {}
 
   async findAll(query: {
@@ -71,29 +79,48 @@ export class CompaniesService {
     });
   }
 
-  async findOrCreateByName(
-    name: string,
-    user: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>,
-    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN
-  ) {
-    const company = await this.companyModel.findOne({
+  async findOneByName(name: string) {
+    return this.companyModel.findOne({
       where: { name },
       attributes: companiesAttributes,
     });
+  }
+
+  async findOrCreateByName(
+    name: string,
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
+    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN,
+    createInExternalDB = true
+  ) {
+    let company = await this.findOneByName(name);
     if (company) {
       return company;
     }
-    return this.create({ name }, user, context);
+    company = await this.create({ name }, user, context, createInExternalDB);
+    return company;
   }
 
   async create(
-    createCompanyDto: Partial<Company>,
-    createdByUser: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>,
-    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN
+    createCompanyDto: Pick<Company, 'name'>,
+    createdByUser: Pick<
+      User,
+      'id' | 'email' | 'firstName' | 'lastName' | 'zone'
+    >,
+    context: CompanyCreationContext = CompanyCreationContext.UNKNOWN,
+    createInExternalDB = true
   ) {
     const company = await this.companyModel.create(createCompanyDto, {
       hooks: true,
     });
+
+    if (createInExternalDB) {
+      await this.externalDatabasesService.createOrUpdateExternalDBCompany(
+        company.name,
+        {
+          userId: createdByUser.id, // Pass the userId who created the company to be linked after creation
+        }
+      );
+    }
 
     const zone = Zones[createdByUser.zone];
     if (zone) {
@@ -134,7 +161,8 @@ export class CompaniesService {
 
   async update(
     id: string,
-    updateCompanyDto: UpdateCompanyDto
+    updateCompanyDto: UpdateCompanyDto,
+    updateInExternalDB = true
   ): Promise<Company> {
     const company = await this.findOne(id);
 
@@ -146,6 +174,23 @@ export class CompaniesService {
       where: { id },
       returning: true,
     });
+
+    if (updateInExternalDB) {
+      if (updateCompanyDto.departmentId) {
+        const department = await this.departmentsService.findOne(
+          updateCompanyDto.departmentId
+        );
+        if (!department) {
+          throw new BadRequestException('Invalid department ID');
+        }
+        this.externalDatabasesService.createOrUpdateExternalDBCompany(
+          company.name,
+          {
+            department: department?.displayName ?? undefined,
+          }
+        );
+      }
+    }
 
     return this.findOne(id);
   }
@@ -165,7 +210,7 @@ export class CompaniesService {
         `${companyId}.png`,
         false
       );
-      await this.update(companyId, { logoUrl: s3file.publicUrl });
+      await this.update(companyId, { logoUrl: s3file.publicUrl }, false);
     } catch (error) {
       console.error('Error uploading logo:', error);
       throw new Error('Failed to upload logo');
@@ -223,7 +268,7 @@ export class CompaniesService {
   }
 
   async sendSlackNotificationCompanyCreated(
-    company: Company,
+    company: Pick<Company, 'id' | 'name'>,
     user: Pick<User, 'email' | 'firstName' | 'lastName'>,
     referentSlackUserId: string | null,
     context: CompanyCreationContext = CompanyCreationContext.UNKNOWN

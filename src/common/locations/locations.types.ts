@@ -12,19 +12,19 @@ export type DepartmentType = {
 export const Departments = [
   {
     name: 'Ain (01)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Ain,
   },
   {
     name: 'Aisne (02)',
-    zone: ZoneName.LILLE,
+    zone: ZoneName.NORD,
     region: 'Hauts-de-France',
     code: DepartmentCode.Aisne,
   },
   {
     name: 'Allier (03)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Allier,
   },
@@ -48,7 +48,7 @@ export const Departments = [
   },
   {
     name: 'Ardèche (07)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Ardeche,
   },
@@ -96,7 +96,7 @@ export const Departments = [
   },
   {
     name: 'Cantal (15)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Cantal,
   },
@@ -132,7 +132,7 @@ export const Departments = [
   },
   {
     name: "Côtes-d'Armor (22)",
-    zone: ZoneName.RENNES,
+    zone: ZoneName.BRETAGNE,
     region: 'Bretagne',
     code: DepartmentCode.CotesDArmor,
   },
@@ -156,7 +156,7 @@ export const Departments = [
   },
   {
     name: 'Drôme (26)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Drome,
   },
@@ -174,7 +174,7 @@ export const Departments = [
   },
   {
     name: 'Finistère (29)',
-    zone: ZoneName.RENNES,
+    zone: ZoneName.BRETAGNE,
     region: 'Bretagne',
     code: DepartmentCode.Finistere,
   },
@@ -222,7 +222,7 @@ export const Departments = [
   },
   {
     name: 'Ille-et-Vilaine (35)',
-    zone: ZoneName.RENNES,
+    zone: ZoneName.BRETAGNE,
     region: 'Bretagne',
     code: DepartmentCode.IlleEtVilaine,
   },
@@ -240,7 +240,7 @@ export const Departments = [
   },
   {
     name: 'Isère (38)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Isere,
   },
@@ -264,13 +264,13 @@ export const Departments = [
   },
   {
     name: 'Loire (42)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Loire,
   },
   {
     name: 'Haute-Loire (43)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.HauteLoire,
   },
@@ -348,8 +348,7 @@ export const Departments = [
   },
   {
     name: 'Morbihan (56)',
-    zone: ZoneName.LORIENT,
-    // TODO put back to Bretagne
+    zone: ZoneName.LORIENT, // TODO: Change to BRETAGNE in the future
     region: 'Lorient',
     code: DepartmentCode.Morbihan,
   },
@@ -367,13 +366,13 @@ export const Departments = [
   },
   {
     name: 'Nord (59)',
-    zone: ZoneName.LILLE,
+    zone: ZoneName.NORD,
     region: 'Hauts-de-France',
     code: DepartmentCode.Nord,
   },
   {
     name: 'Oise (60)',
-    zone: ZoneName.LILLE,
+    zone: ZoneName.NORD,
     region: 'Hauts-de-France',
     code: DepartmentCode.Oise,
   },
@@ -385,13 +384,13 @@ export const Departments = [
   },
   {
     name: 'Pas-de-Calais (62)',
-    zone: ZoneName.LILLE,
+    zone: ZoneName.NORD,
     region: 'Hauts-de-France',
     code: DepartmentCode.PasDeCalais,
   },
   {
     name: 'Puy-de-Dôme (63)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.PuyDeDome,
   },
@@ -427,7 +426,7 @@ export const Departments = [
   },
   {
     name: 'Rhône (69)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Rhone,
   },
@@ -451,19 +450,19 @@ export const Departments = [
   },
   {
     name: 'Savoie (73)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.Savoie,
   },
   {
     name: 'Haute-Savoie (74)',
-    zone: ZoneName.LYON,
+    zone: ZoneName.AURA,
     region: 'Auvergne-Rhône-Alpes',
     code: DepartmentCode.HauteSavoie,
   },
   {
     name: 'Paris (75)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.Paris,
   },
@@ -475,13 +474,13 @@ export const Departments = [
   },
   {
     name: 'Seine-et-Marne (77)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.SeineEtMarne,
   },
   {
     name: 'Yvelines (78)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.Yvelines,
   },
@@ -493,7 +492,7 @@ export const Departments = [
   },
   {
     name: 'Somme (80)',
-    zone: ZoneName.LILLE,
+    zone: ZoneName.NORD,
     region: 'Hauts-de-France',
     code: DepartmentCode.Somme,
   },
@@ -559,31 +558,31 @@ export const Departments = [
   },
   {
     name: 'Essonne (91)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.Essonne,
   },
   {
     name: 'Hauts-de-Seine (92)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.HautsDeSeine,
   },
   {
     name: 'Seine-Saint-Denis (93)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.SeineSaintDenis,
   },
   {
     name: 'Val-de-Marne (94)',
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.ValDeMarne,
   },
   {
     name: "Val-d'Oise (95)",
-    zone: ZoneName.PARIS,
+    zone: ZoneName.IDF,
     region: 'Île-de-France',
     code: DepartmentCode.ValDOise,
   },

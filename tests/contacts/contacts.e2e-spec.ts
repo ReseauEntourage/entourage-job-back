@@ -146,7 +146,7 @@ describe('Contacts', () => {
         .post(`${route}/newsletter`)
         .send({
           email: 'john@gmail.com',
-          zone: ZoneName.LYON,
+          zone: ZoneName.AURA,
           status: 'PARTICULIER' as ContactStatus,
         });
       expect(response.status).toBe(201);
@@ -168,7 +168,7 @@ describe('Contacts', () => {
         .post(`${route}/newsletter`)
         .send({
           email: null,
-          zone: ZoneName.LYON,
+          zone: ZoneName.AURA,
           status: 'PARTICULIER' as ContactStatus,
         });
       expect(response.status).toBe(400);

@@ -25,4 +25,11 @@ export class Department extends Model {
   @AllowNull(false)
   @Column
   value: DepartmentCode;
+
+  @Column(DataType.VIRTUAL)
+  get displayName(): string {
+    const name = this.getDataValue('name') as string;
+    const value = this.getDataValue('value') as string;
+    return `${name} (${value})`;
+  }
 }

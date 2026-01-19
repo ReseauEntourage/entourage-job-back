@@ -181,7 +181,52 @@ export class UsersCreationController {
         }
       }
 
+      // Link the company if provided
+      let companyId: string | null = null;
+      let isCompanyAdmin = false;
+      if (createUserRegistrationDto.companyName) {
+        const company =
+          await this.usersCreationService.findOrCreateCompanyByName(
+            createUserRegistrationDto.companyName,
+            createdUser,
+            false // Do not create in external DB yet, will be done with the user creation
+          );
+        if (!company) {
+          throw new NotFoundException('Company was not created properly');
+        }
+        companyId = company.id;
+        // Check if a user is already linked to the company
+        const existingCompanyUser =
+          await this.usersCreationService.findOneCompanyUser(company.id);
+
+        // If no user is linked, we can set the role as admin if applicable
+        isCompanyAdmin =
+          !existingCompanyUser &&
+          COMPANY_USER_ROLE_CAN_BE_ADMIN.includes(
+            createUserRegistrationDto.companyRole as CompanyUserRole
+          );
+        // Create the company user
+        await this.usersCreationService.linkUserToCompany(
+          createdUserId,
+          company.id,
+          createUserRegistrationDto.companyRole || CompanyUserRole.EMPLOYEE,
+          isCompanyAdmin
+        );
+        // If user is set as company admin - update the user to make it not available to the rest of the community
+        // This is to prevent the user from being displayed in the community list
+        if (isCompanyAdmin) {
+          await this.usersCreationService.updateUserProfileByUserId(
+            createdUserId,
+            {
+              isAvailable: false,
+            }
+          );
+        }
+      }
+
       await this.usersCreationService.createExternalDBUser(createdUserId, {
+        companyRole:
+          createUserRegistrationDto.companyRole || CompanyUserRole.EMPLOYEE,
         birthDate: createUserRegistrationDto.birthDate,
         workingRight: createUserRegistrationDto.workingRight,
         gender: createUserRegistrationDto.gender,
@@ -189,6 +234,8 @@ export class UsersCreationController {
           createdUser.role === UserRoles.REFERER
             ? createdUser.organization.name
             : undefined,
+        companyId,
+        isCompanyAdmin,
       });
 
       await this.usersCreationService.updateUserSocialSituationByUserId(
@@ -202,45 +249,6 @@ export class UsersCreationController {
           ),
         }
       );
-
-      // Link the company if provided
-      if (createUserRegistrationDto.companyName) {
-        const company =
-          await this.usersCreationService.findOrCreateCompanyByName(
-            createUserRegistrationDto.companyName,
-            createdUser
-          );
-        if (!company) {
-          throw new NotFoundException('Company was not created properly');
-        }
-        // Check if a user is already linked to the company
-        const existingCompanyUser =
-          await this.usersCreationService.findOneCompanyUser(company.id);
-
-        // If no user is linked, we can set the role as admin if applicable
-        const isAdmin =
-          !existingCompanyUser &&
-          COMPANY_USER_ROLE_CAN_BE_ADMIN.includes(
-            createUserRegistrationDto.companyRole as CompanyUserRole
-          );
-        // Create the company user
-        await this.usersCreationService.linkUserToCompany(
-          createdUserId,
-          company.id,
-          createUserRegistrationDto.companyRole || 'employee',
-          isAdmin
-        );
-        // If user is set as company admin - update the user to make it not available to the rest of the community
-        // This is to prevent the user from being displayed in the community list
-        if (isAdmin) {
-          await this.usersCreationService.updateUserProfileByUserId(
-            createdUserId,
-            {
-              isAvailable: false,
-            }
-          );
-        }
-      }
 
       // UTM
       const utmToCreate: Partial<Utm> = {

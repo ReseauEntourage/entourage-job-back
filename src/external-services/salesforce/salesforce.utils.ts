@@ -33,6 +33,7 @@ import {
   Casquette,
   ContactProps,
   ContactRecordType,
+  ContactRecordTypesIds,
   LeadAccomodations,
   LeadAdministrativeSituations,
   LeadApproaches,
@@ -74,11 +75,31 @@ export function formatDepartment(department: Department) {
     return 'National';
   }
   const zoneName = getZoneNameFromDepartment(department);
-  return _.capitalize(Zones[zoneName].sfName);
+  return _.capitalize(Zones[zoneName].sfLocalBranchNames[0]); // TODO: handle multiple local branches per zone
 }
 
 export function formatRegions(region: CompanyZone) {
   return _.capitalize(region);
+}
+
+export function determineContactRecordType(
+  role: RegistrableUserRole,
+  isCompanyAdmin: boolean
+): ContactRecordType {
+  switch (role) {
+    case UserRoles.CANDIDATE:
+      return ContactRecordTypesIds.PRECARIOUS;
+    case UserRoles.COACH:
+      return isCompanyAdmin
+        ? ContactRecordTypesIds.COMPANY
+        : ContactRecordTypesIds.NEIGHBOR;
+    case UserRoles.REFERER:
+      return ContactRecordTypesIds.ASSOCIATION;
+    default:
+      throw new Error(
+        'Invalid RegistrableUserRole for determining contact record type'
+      );
+  }
 }
 
 export function formatSalesforceValue<T extends string>(
@@ -99,8 +120,8 @@ export function formatSalesforceValue<T extends string>(
 
 export function formatCompanyName(
   name: string,
-  address: string,
-  department: Department
+  department: Department,
+  address?: string
 ) {
   return `${name || 'Inconnu'} - ${address || 'Inconnu'} - ${
     department || 'Inconnu'
@@ -453,7 +474,7 @@ export const mapSalesforceContactFields = (
     phone,
     position,
     department,
-    companySfId,
+    accountSfId,
     casquettes,
     birthDate,
     nationality,
@@ -479,27 +500,42 @@ export const mapSalesforceContactFields = (
   });
 
   return {
-    LastName:
-      lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
-    FirstName: firstName,
+    LastName: lastName
+      ? lastName.length > 80
+        ? lastName.substring(0, 80)
+        : lastName
+      : undefined,
+    FirstName: firstName || undefined,
     Email: email
-      ?.replace(/\+/g, '.')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''),
-    Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
-    Title: position,
-    AccountId: companySfId,
-    Date_de_naissance__c: birthDate,
-    Casquettes_r_les__c: casquettes.join(';'),
+      ? email
+          ?.replace(/\+/g, '.')
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+      : undefined,
+    Phone: phone
+      ? phone.length > 40
+        ? phone.substring(0, 40)
+        : phone
+      : undefined,
+    Title: position || undefined,
+    AccountId: accountSfId || undefined,
+    Date_de_naissance__c: birthDate || undefined,
+    Casquettes_r_les__c: casquettes
+      ? casquettes.join(';') || undefined
+      : undefined,
     Reseaux__c: 'LinkedOut',
-    RecordTypeId: recordType,
-    Antenne__c: formatDepartment(department),
-    MailingPostalCode: getPostalCodeFromDepartment(department),
-    ID_App_Entourage_Pro__c: id || '',
+    RecordTypeId: recordType || undefined,
+    Antenne__c: department ? formatDepartment(department) : undefined,
+    MailingPostalCode: department
+      ? getPostalCodeFromDepartment(department)
+      : undefined,
+    ID_App_Entourage_Pro__c: id || undefined,
     Source__c: 'Lead entrant',
     ...socialSituationFields,
-    Genre__c: formatSalesforceValue<CandidateGender>(gender, LeadGender),
-    TS_prescripteur__c: refererId,
+    Genre__c: gender
+      ? formatSalesforceValue<CandidateGender>(gender, LeadGender)
+      : undefined,
+    TS_prescripteur__c: refererId || undefined,
   };
 };
 

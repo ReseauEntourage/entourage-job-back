@@ -38,7 +38,7 @@ import {
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
 
-import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
+import { RegistrableUserRole } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { AnyCantFix } from 'src/utils/types';
 
@@ -99,8 +99,6 @@ export type SalesforceObject<
 > = SalesforceObjects<K>[T];
 
 export const ContactRecordTypesIds = {
-  COACH: '0017Q0000031pRpQAI',
-  CANDIDATE: '001Jv000004iD0rIAE',
   COMPANY: '0127Q000000UomWQAS',
   ASSOCIATION: '0127Q000000Uhq0QAC',
   PRECARIOUS: '012Jv000000wYfdIAE',
@@ -159,14 +157,6 @@ export type SalesforceLeads = {
 };
 
 export type SalesforceLead<T extends LeadRecordType> = SalesforceLeads[T];
-
-export const ContactRecordTypeFromRole: {
-  [K in RegistrableUserRole]: ContactRecordType;
-} = {
-  [UserRoles.CANDIDATE]: ContactRecordTypesIds.PRECARIOUS,
-  [UserRoles.COACH]: ContactRecordTypesIds.NEIGHBOR,
-  [UserRoles.REFERER]: ContactRecordTypesIds.ASSOCIATION,
-};
 
 export const LeadApproaches: { [K in CompanyApproach]: string } = {
   [CompanyApproaches.DONATION]: 'Soutenir le projet (mécénat)',
@@ -362,9 +352,11 @@ export interface SalesforceTask {
 export interface AccountProps {
   name: string;
   businessSectors?: BusinessSector[];
-  address: string;
-  department: Department;
+  address?: string;
+  department?: Department;
   mainAccountSfId?: string;
+  phone?: string;
+  organizationType?: 'Entreprise';
 }
 
 export interface SalesforceAccount {
@@ -377,6 +369,8 @@ export interface SalesforceAccount {
   RecordTypeId: AccountRecordType;
   Reseaux__c: 'LinkedOut';
   Antenne__c: string;
+  Type_org__c?: 'Entreprise';
+  Phone?: string;
   ParentId: string;
 }
 
@@ -429,7 +423,7 @@ export interface ContactProps {
   birthDate?: Date;
   position?: string;
   department?: Department;
-  companySfId?: string;
+  accountSfId?: string;
   casquettes?: Casquette[];
   nationality?: Nationality;
   accommodation?: CandidateAccommodation;
@@ -467,6 +461,7 @@ export interface SalesforceContact {
   Type_de_ressources__c?: string;
   Genre__c: string;
   TS_prescripteur__c?: string;
+  Fonction?: string;
 }
 
 export interface CompanyLeadProps {
@@ -718,4 +713,6 @@ export interface UserProps {
   gender?: CandidateGender;
   structure?: string;
   refererEmail?: string;
+  isCompanyAdmin?: boolean;
+  position?: string;
 }

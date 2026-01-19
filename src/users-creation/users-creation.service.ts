@@ -49,7 +49,8 @@ export class UsersCreationService {
       | 'gender'
       | 'structure'
       | 'refererEmail'
-    >
+      | 'companyRole'
+    > & { companyId?: string; isCompanyAdmin?: boolean }
   ) {
     return this.externalDatabasesService.createExternalDBUser(
       createdUserId,
@@ -158,12 +159,14 @@ export class UsersCreationService {
 
   async findOrCreateCompanyByName(
     companyName: string,
-    user: Pick<User, 'email' | 'firstName' | 'lastName' | 'zone'>
+    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'zone'>,
+    createInExternalDB = true
   ) {
     return this.companiesService.findOrCreateByName(
       companyName,
       user,
-      CompanyCreationContext.REGISTRATION
+      CompanyCreationContext.REGISTRATION,
+      createInExternalDB
     );
   }
 
