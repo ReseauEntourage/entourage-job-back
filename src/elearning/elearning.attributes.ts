@@ -10,6 +10,7 @@ export const ELEARNING_UNIT_ATTRIBUTES: (keyof ElearningUnit)[] = [
   'description',
   'videoUrl',
   'durationMinutes',
+  'order',
 ];
 
 export const ELEARNING_QUESTION_ATTRIBUTES: (keyof ElearningQuestion)[] = [

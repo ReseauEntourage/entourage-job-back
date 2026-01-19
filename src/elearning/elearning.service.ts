@@ -40,6 +40,7 @@ export class ElearningService {
       include: generateElearningUnitIncludes({ userRole, userId }),
       limit,
       offset,
+      order: [['order', 'ASC']],
     });
   }
 

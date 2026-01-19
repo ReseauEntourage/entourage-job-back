@@ -46,9 +46,14 @@ export class ElearningUnit extends Model {
   videoUrl: string;
 
   @AllowNull(true)
-  @Column
   @IsNumber()
+  @Column
   durationMinutes?: number;
+
+  @AllowNull(false)
+  @IsNumber()
+  @Column
+  order: number;
 
   @HasMany(() => ElearningQuestion, 'unitId')
   questions: ElearningQuestion[];

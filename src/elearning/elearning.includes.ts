@@ -16,6 +16,7 @@ export const generateElearningQuestionsIncludes = (): IncludeOptions[] => [
     model: ElearningAnswer,
     as: 'answers',
     attributes: ELEARNING_ANSWER_ATTRIBUTES,
+    order: [['order', 'ASC']],
   },
 ];
 
@@ -31,6 +32,7 @@ export const generateElearningUnitIncludes = ({
     as: 'questions',
     attributes: ELEARNING_QUESTION_ATTRIBUTES,
     include: generateElearningQuestionsIncludes(),
+    order: [['order', 'ASC']],
   },
   {
     model: ElearningUnitRole,

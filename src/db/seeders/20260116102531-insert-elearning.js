@@ -9,9 +9,9 @@ module.exports = {
     await queryInterface.bulkInsert('ElearningUnits', [
       {
         id: elearningUnitsIds[0],
-        title: 'Comprendre mon rôle de coach sur Entourage Job',
+        title: 'Comprendre mon rôle de coach sur Entourage Pro',
         description:
-          'Cette vidéo explique le rôle des coachs sur la plateforme Entourage Job.',
+          'Cette vidéo explique le rôle des coachs sur la plateforme Entourage Pro.',
         videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         durationMinutes: 10,
         order: 1,
@@ -20,9 +20,9 @@ module.exports = {
       },
       {
         id: elearningUnitsIds[1],
-        title: 'Comprendre mon rôle de candidat sur Entourage Job',
+        title: 'Comprendre mon rôle de candidat sur Entourage Pro',
         description:
-          'Cette vidéo explique le rôle des candidats sur la plateforme Entourage Job.',
+          'Cette vidéo explique le rôle des candidats sur la plateforme Entourage Pro.',
         videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         durationMinutes: 10,
         order: 1,
@@ -31,9 +31,9 @@ module.exports = {
       },
       {
         id: elearningUnitsIds[2],
-        title: "Utiliser les outils d'Entourage Job",
+        title: "Utiliser les outils d'Entourage Pro",
         description:
-          'Cette vidéo présente les différents outils disponibles sur la plateforme Entourage Job.',
+          'Cette vidéo présente les différents outils disponibles sur la plateforme Entourage Pro.',
         videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         durationMinutes: 15,
         order: 2,
@@ -89,7 +89,7 @@ module.exports = {
       {
         id: elearningQuestionsIds[0],
         unitId: elearningUnitsIds[0],
-        label: 'Quel est le rôle principal d’un coach sur Entourage Job ?',
+        label: 'Quel est le rôle principal d’un coach sur Entourage Pro ?',
         order: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -105,7 +105,7 @@ module.exports = {
       {
         id: elearningQuestionsIds[2],
         unitId: elearningUnitsIds[1],
-        label: 'Quel est le rôle principal d’un candidat sur Entourage Job ?',
+        label: 'Quel est le rôle principal d’un candidat sur Entourage Pro ?',
         order: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -123,7 +123,7 @@ module.exports = {
         id: elearningQuestionsIds[4],
         unitId: elearningUnitsIds[2],
         label:
-          'Quels outils sont disponibles sur Entourage Job pour les utilisateurs ?',
+          'Quels outils sont disponibles sur Entourage Pro pour les utilisateurs ?',
         order: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
