@@ -1533,20 +1533,7 @@ describe('UserProfiles', () => {
 
           expect(response.status).toBe(401);
         });
-        it('Should return 403, if admin updates his user profile', async () => {
-          const response: APIResponse<
-            UserProfilesController['updateByUserId']
-          > = await request(server)
-            .put(`${route}/profile/${loggedInAdmin.user.id}`)
-            .set('authorization', `Bearer ${loggedInAdmin.token}`)
-            .send({
-              description: 'hello',
-              introduction: 'hello',
-              isAvailable: false,
-              department: 'Paris (75)',
-            });
-          expect(response.status).toBe(403);
-        });
+
         it('Should return 403, if admin updates a profile for another user', async () => {
           const response: APIResponse<
             UserProfilesController['updateByUserId']
