@@ -9,7 +9,7 @@ import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UsersController } from 'src/users/users.controller';
-import { UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
@@ -716,6 +716,7 @@ describe('Users', () => {
           expect(response.body.phone).toEqual(updates.phone);
           expect(response.body.address).toEqual(updates.address);
         });
+
         it('Should return 200 and updated user when a referer update himself', async () => {
           const updates = await userFactory.create({}, {}, false);
           const response: APIResponse<UsersController['updateUser']> =
@@ -805,6 +806,42 @@ describe('Users', () => {
               });
           expect(response.status).toBe(200);
           expect(response.body.role).toEqual(UserRoles.COACH);
+        });
+        it('Should return 400 when the onboardingStatus is invalid', async () => {
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: 'INVALID_STATUS',
+              });
+          expect(response.status).toBe(400);
+        });
+        it('Should return 200 when the onboardingStatus is in_progress', async () => {
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.IN_PROGRESS,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body.onboardingStatus).toBe(
+            OnboardingStatus.IN_PROGRESS
+          );
+        });
+        it('Should return 200 when the onboardingStatus is completed', async () => {
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.COMPLETED,
+              });
+          expect(response.status).toBe(200);
+          expect(response.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
         });
       });
       describe('/changePwd - Update password', () => {

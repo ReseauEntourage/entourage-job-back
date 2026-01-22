@@ -39,6 +39,7 @@ export class UpdateUserRestrictedPipe
     const { role } = this.request.user;
 
     if (errors.length > 0 && !hasPermission(Permissions.ADMIN, role)) {
+      console.error(errors);
       throw new BadRequestException();
     }
     return value;
