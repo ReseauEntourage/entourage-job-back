@@ -46,6 +46,11 @@ export class ElearningAnswer extends Model {
   @Column
   isCorrect: boolean;
 
+  @AllowNull(false)
+  @IsString()
+  @Column(DataType.TEXT)
+  explaination: string;
+
   @BelongsTo(() => ElearningQuestion)
   question: ElearningQuestion;
 }

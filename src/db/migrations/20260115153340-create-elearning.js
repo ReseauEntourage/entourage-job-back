@@ -150,6 +150,11 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
+      explaination: {
+        allowNull: true,
+        type: Sequelize.TEXT,
+        defaultValue: null,
+      },
     });
 
     await queryInterface.createTable('ElearningCompletions', {
@@ -202,6 +207,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeConstraint(
+      'ElearningCompletions',
+      'unique_elearning_completion_per_user_per_unit'
+    );
     await queryInterface.dropTable('ElearningCompletions');
     await queryInterface.dropTable('ElearningAnswers');
     await queryInterface.dropTable('ElearningQuestions');
