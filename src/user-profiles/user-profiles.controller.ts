@@ -58,8 +58,6 @@ export class UserProfilesController {
     return await this.userProfilesService.calculateProfileCompletion(id);
   }
 
-  @UserPermissions(Permissions.CANDIDATE, Permissions.RESTRICTED_COACH)
-  @UseGuards(UserPermissionsGuard)
   @Self('params.userId')
   @UseGuards(SelfGuard)
   @Put('/:userId')
@@ -288,10 +286,6 @@ export class UserProfilesController {
 
     if (!user || !userProfile) {
       throw new NotFoundException();
-    }
-
-    if (user.role === UserRoles.ADMIN) {
-      throw new BadRequestException();
     }
 
     const averageDelayResponse =
