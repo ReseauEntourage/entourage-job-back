@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import { ChatCompletionContentPart } from 'openai/resources/chat';
+import {
+  ChatCompletionContentPart,
+  ChatCompletionMessage,
+} from 'openai/resources/chat';
 import { cvSchema, CvSchemaType } from './openai.schemas';
 
 @Injectable()
 export class OpenAiService {
   private readonly openai: OpenAI;
+  private readonly logger = new Logger(OpenAiService.name);
 
   constructor() {
     this.openai = new OpenAI({
@@ -39,7 +43,9 @@ export class OpenAiService {
     try {
       const response = await this.openai.chat.completions.create({
         model: 'o4-mini-2025-04-16',
-        max_completion_tokens: 4096,
+        max_completion_tokens: Number(
+          process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096
+        ),
         messages: [
           {
             role: 'system',
@@ -51,25 +57,52 @@ export class OpenAiService {
             content: content,
           },
         ],
-        functions: [
+        tools: [
           {
-            name: 'extract_cv_data',
-            description: "Extraire les données structurées d'un CV",
-            parameters: cvSchema,
+            type: 'function',
+            function: {
+              name: 'extract_cv_data',
+              description: "Extraire les données structurées d'un CV",
+              parameters: cvSchema,
+            },
           },
         ],
-        function_call: { name: 'extract_cv_data' },
+        tool_choice: {
+          type: 'function',
+          function: { name: 'extract_cv_data' },
+        },
       });
 
-      // Récupérer le résultat
-      const functionCall = response.choices[0].message.function_call;
+      const choice = response.choices?.[0];
+      const toolCalls = (choice?.message as ChatCompletionMessage)?.tool_calls;
+      const functionArgs = toolCalls?.[0]?.function?.arguments;
 
-      if (!functionCall) {
-        throw new Error();
+      if (!functionArgs) {
+        const finishReason = choice?.finish_reason;
+        const usage = response.usage;
+        this.logger.error(
+          `OpenAI: aucun tool_call retourné (finish_reason=${String(
+            finishReason
+          )}). usage=${JSON.stringify(usage)}`
+        );
+
+        if (finishReason === 'length') {
+          throw new Error(
+            `OpenAI a coupé la réponse par limite de tokens (finish_reason=length). ` +
+              `Essaie de réduire le nombre/poids des images, ou augmente OPENAI_MAX_COMPLETION_TOKENS. ` +
+              `usage=${JSON.stringify(usage)}`
+          );
+        }
+
+        throw new Error(
+          `Aucun tool_call n'a été retourné par l'API OpenAI (finish_reason=${String(
+            finishReason
+          )}).`
+        );
       }
 
       // Analyser les arguments JSON
-      const extractedData = JSON.parse(functionCall.arguments) as CvSchemaType;
+      const extractedData = JSON.parse(functionArgs) as CvSchemaType;
 
       return extractedData;
     } catch (error) {
