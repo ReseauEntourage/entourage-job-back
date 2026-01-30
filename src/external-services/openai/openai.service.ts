@@ -50,7 +50,7 @@ export class OpenAiService {
           {
             role: 'system',
             content:
-              "Tu es un expert en analyse de CV. Tu dois extraire toutes les informations pertinentes d'un CV à partir d'images et les structurer selon le schéma JSON demandé. Le document peut être sur plusieurs pages, analyse toutes les pages. Pour l'introduction, rédige un court résumé du CV à la première personne en mettant en avant les compétences clés, l'expérience et la formation de la personne.",
+              "Tu es un expert en analyse de CV. Tu dois extraire toutes les informations pertinentes d'un CV à partir d'images et les structurer selon le schéma JSON demandé. Le document peut être sur plusieurs pages, analyse toutes les pages. Pour la description, rédige un court résumé du CV à la première personne en mettant en avant les compétences clés, l'expérience et la formation de la personne.",
           },
           {
             role: 'user',
