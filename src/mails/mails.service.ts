@@ -272,6 +272,7 @@ export class MailsService {
             addresseeName: `${addressee.firstName} ${addressee.lastName}`,
             zone: addressee.zone,
             role: addressee.role,
+            message: message.content,
             conversationUrl,
           },
         });
