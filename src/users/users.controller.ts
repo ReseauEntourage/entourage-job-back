@@ -192,7 +192,7 @@ export class UsersController {
       throw new BadRequestException();
     }
 
-    const oldUser = await this.usersService.findOneWithRelations(userId);
+    const oldUser = await this.usersService.findOne(userId);
 
     let updatedUser: User;
     try {
