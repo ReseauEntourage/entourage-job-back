@@ -279,6 +279,7 @@ export class MailsService {
             addresseeId: addressee.id,
 
             // Message
+            message: message.content,
             conversationUrl,
 
             // General
