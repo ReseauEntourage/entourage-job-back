@@ -157,6 +157,8 @@ describe('UserCreation', () => {
         whatsappZoneQR,
         staffContact,
         company,
+        onboardingCompletedAt,
+        onboardingStatus,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -188,6 +190,7 @@ describe('UserCreation', () => {
         staffContact,
         company,
         onboardingCompletedAt,
+        onboardingStatus,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -284,6 +287,7 @@ describe('UserCreation', () => {
         userSocialSituation,
         company,
         onboardingCompletedAt,
+        onboardingStatus,
         ...candidate
       } = await userFactory.create(
         {
@@ -318,6 +322,7 @@ describe('UserCreation', () => {
           staffContact,
           company,
           onboardingCompletedAt,
+          onboardingStatus,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
         const response: APIResponse<UsersCreationController['createUser']> =
@@ -349,6 +354,7 @@ describe('UserCreation', () => {
           staffContact,
           company,
           onboardingCompletedAt,
+          onboardingStatus,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -379,6 +385,8 @@ describe('UserCreation', () => {
           whatsappZoneUrl,
           whatsappZoneQR,
           staffContact,
+          onboardingCompletedAt,
+          onboardingStatus,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
 
@@ -406,6 +414,8 @@ describe('UserCreation', () => {
           whatsappZoneUrl,
           whatsappZoneQR,
           staffContact,
+          onboardingCompletedAt,
+          onboardingStatus,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
