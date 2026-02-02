@@ -31,11 +31,11 @@ export class EventsController {
     @Query('offset', new DefaultValuePipe(0), new ParseIntPipe())
     offset: number,
     @Query(
-      'includingPastEvents',
+      'includePastEvents',
       new DefaultValuePipe(false),
       new ParseBoolPipe()
     )
-    includingPastEvents: boolean,
+    includePastEvents: boolean,
     @Query('search')
     search?: string,
     @Query('modes')
@@ -51,7 +51,7 @@ export class EventsController {
       userEmail,
       limit,
       offset,
-      includingPastEvents,
+      includePastEvents,
       isParticipating === undefined ? null : isParticipating === 'true',
       search,
       modes,
