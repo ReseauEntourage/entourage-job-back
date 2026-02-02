@@ -842,6 +842,7 @@ describe('Users', () => {
           expect(response.body.onboardingStatus).toBe(
             OnboardingStatus.COMPLETED
           );
+          expect(new Date(response.body.onboardingCompletedAt)).not.toBeNull();
         });
       });
       describe('/changePwd - Update password', () => {
