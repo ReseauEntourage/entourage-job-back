@@ -266,13 +266,24 @@ export class MailsService {
           toEmail: addressee.email,
           templateId: MailjetTemplates.MESSAGING_MESSAGE,
           variables: {
+            // Sender
             senderId: message.authorId,
-            senderName: `${message.author.firstName} ${message.author.lastName}`,
+            senderFirstName: message.author.firstName,
+            senderLastName: message.author.lastName,
             senderRole: message.author.role,
-            addresseeName: `${addressee.firstName} ${addressee.lastName}`,
+
+            // Addressee
+            addresseeFirstName: addressee.firstName,
+            addresseeLastName: addressee.lastName,
+            addresseeRole: addressee.role,
+            addresseeId: addressee.id,
+
+            // Message
+            conversationUrl,
+
+            // General
             zone: addressee.zone,
             role: addressee.role,
-            conversationUrl,
           },
         });
       })

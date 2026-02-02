@@ -187,6 +187,7 @@ describe('UserCreation', () => {
         whatsappZoneQR,
         staffContact,
         company,
+        onboardingCompletedAt,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -282,6 +283,7 @@ describe('UserCreation', () => {
         staffContact,
         userSocialSituation,
         company,
+        onboardingCompletedAt,
         ...candidate
       } = await userFactory.create(
         {
@@ -315,6 +317,7 @@ describe('UserCreation', () => {
           whatsappZoneQR,
           staffContact,
           company,
+          onboardingCompletedAt,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
         const response: APIResponse<UsersCreationController['createUser']> =
@@ -345,6 +348,7 @@ describe('UserCreation', () => {
           whatsappZoneQR,
           staffContact,
           company,
+          onboardingCompletedAt,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
