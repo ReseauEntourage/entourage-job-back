@@ -137,7 +137,7 @@ module.exports = {
         questionId: elearningQuestionsIds[0],
         label: 'Accompagner les candidats dans leur recherche d’emploi',
         isCorrect: true,
-        explaination:
+        explanation:
           'Le rôle principal d’un coach est d’accompagner les candidats.',
         order: 1,
         createdAt: new Date(),
@@ -148,7 +148,7 @@ module.exports = {
         questionId: elearningQuestionsIds[0],
         label: 'Publier des offres d’emploi',
         isCorrect: false,
-        explaination:
+        explanation:
           "Publier des offres d’emploi n'est pas le rôle principal d’un coach.",
         order: 2,
         createdAt: new Date(),
@@ -158,7 +158,7 @@ module.exports = {
         id: uuid.v4(),
         questionId: elearningQuestionsIds[1],
         label: 'En les guidant et en leur fournissant des ressources',
-        explaination: 'Un coach aide un candidat en le guidant.',
+        explanation: 'Un coach aide un candidat en le guidant.',
         isCorrect: true,
         order: 1,
         createdAt: new Date(),
@@ -168,7 +168,7 @@ module.exports = {
         id: uuid.v4(),
         questionId: elearningQuestionsIds[1],
         label: 'En leur trouvant directement un emploi',
-        explaination:
+        explanation:
           "Un coach n'est pas responsable de trouver un emploi pour le candidat.",
         isCorrect: false,
         order: 2,
@@ -181,7 +181,7 @@ module.exports = {
         questionId: elearningQuestionsIds[2],
         label: 'Rechercher activement des opportunités d’emploi',
         isCorrect: true,
-        explaination:
+        explanation:
           'Le rôle principal d’un candidat est de rechercher des opportunités.',
         order: 1,
         createdAt: new Date(),
@@ -192,7 +192,7 @@ module.exports = {
         questionId: elearningQuestionsIds[2],
         label: 'Coacher d’autres candidats',
         isCorrect: false,
-        explaination:
+        explanation:
           "Coacher d’autres candidats n'est pas le rôle principal d’un candidat.",
         order: 2,
         createdAt: new Date(),
@@ -203,7 +203,7 @@ module.exports = {
         questionId: elearningQuestionsIds[3],
         label:
           'En utilisant les ressources et le soutien disponibles sur la plateforme',
-        explaination:
+        explanation:
           'Un candidat peut maximiser ses chances en utilisant les ressources et le soutien disponibles sur la plateforme.',
         isCorrect: true,
         order: 1,
@@ -214,7 +214,7 @@ module.exports = {
         id: uuid.v4(),
         questionId: elearningQuestionsIds[3],
         label: 'En attendant que les offres d’emploi arrivent',
-        explaination:
+        explanation:
           'Un candidat ne doit pas simplement attendre que les offres d’emploi arrivent.',
         isCorrect: false,
         order: 2,
@@ -227,7 +227,7 @@ module.exports = {
         questionId: elearningQuestionsIds[4],
         label: 'Tableau de bord, messagerie, et ressources de formation',
         isCorrect: true,
-        explaination:
+        explanation:
           'Les outils disponibles incluent le tableau de bord, la messagerie, et les ressources de formation.',
         order: 1,
         createdAt: new Date(),
@@ -238,7 +238,7 @@ module.exports = {
         questionId: elearningQuestionsIds[4],
         label: 'Jeux en ligne',
         isCorrect: false,
-        explaination:
+        explanation:
           'Les jeux en ligne ne sont pas des outils disponibles sur la plateforme.',
         order: 2,
         createdAt: new Date(),

@@ -150,7 +150,7 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
-      explaination: {
+      explanation: {
         allowNull: true,
         type: Sequelize.TEXT,
         defaultValue: null,

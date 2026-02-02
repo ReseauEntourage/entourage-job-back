@@ -23,7 +23,7 @@ export const ELEARNING_ANSWER_ATTRIBUTES: (keyof ElearningAnswer)[] = [
   'id',
   'label',
   'isCorrect',
-  'explaination',
+  'explanation',
 ];
 
 export const ELEARNING_UNIT_ROLE_ATTRIBUTES: (keyof ElearningUnitRole)[] = [

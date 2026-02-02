@@ -49,7 +49,7 @@ export class ElearningAnswer extends Model {
   @AllowNull(false)
   @IsString()
   @Column(DataType.TEXT)
-  explaination: string;
+  explanation: string;
 
   @BelongsTo(() => ElearningQuestion)
   question: ElearningQuestion;
