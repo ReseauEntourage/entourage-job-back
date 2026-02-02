@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   NotFoundException,
   Param,
   ParseUUIDPipe,
@@ -8,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { UserPayload } from 'src/auth/guards';
 import {
   Self,
   SelfGuard,
@@ -59,5 +61,17 @@ export class UserSocialSituationsController {
     }
 
     return updatedUserSocialSituation;
+  }
+
+  @Get()
+  async getSocialSituationForCurrentUser(@UserPayload('id') userId: string) {
+    const userSocialSituation =
+      await this.userSocialSituationsService.findOneByUserId(userId);
+
+    if (!userSocialSituation) {
+      throw new NotFoundException();
+    }
+
+    return userSocialSituation;
   }
 }

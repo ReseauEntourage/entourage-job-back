@@ -60,6 +60,10 @@ export const generateCurrentUserDto = (
 
     // Default values, may be overwritten below
     company: null,
+
+    // Onboarding completion status
+    onboardingStatus: user.onboardingStatus,
+    onboardingCompletedAt: user.onboardingCompletedAt,
   } as CurrentUserDto;
 
   if (user.company) {

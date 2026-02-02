@@ -1,20 +1,16 @@
-import { Departments } from 'src/common/locations/locations.types';
-
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {
   type: 'object',
   properties: {
-    introduction: { type: 'string', maxLength: 500 },
-    description: { type: 'string', maxLength: 1000 },
-    department: {
+    description: {
       type: 'string',
-      enum: Departments.map((dept) => dept.name),
+      maxLength: 500,
+      description:
+        'Résumé du CV à la première personne, mettant en avant les compétences clés, l expérience et la formation de la personne',
     },
-    linkedinUrl: { type: 'string' },
-    transport: { type: 'string' },
     skills: {
       type: 'array',
       items: {
@@ -26,17 +22,6 @@ export const cvSchema = {
         required: ['name'],
       },
       maxItems: 50,
-    },
-    nudges: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          order: { type: 'number' },
-        },
-        required: ['name'],
-      },
     },
     experiences: {
       type: 'array',
@@ -139,6 +124,7 @@ export const cvSchema = {
         },
         required: ['name'],
       },
+      description: "Liste des centres d'intérêt",
     },
   },
 };
@@ -148,10 +134,7 @@ export interface CvSchemaType {
   schemaVersion: number;
 
   // UserProfile fields
-  introduction?: string;
   description?: string;
-  department?: string;
-  linkedinUrl?: string;
 
   //Skills
   skills?: Array<{ name: string; order?: number }>;
@@ -188,9 +171,6 @@ export interface CvSchemaType {
     value: string; // Code ISO 639-1 de la langue
     level?: string;
   }>;
-
-  // Todo: Adapt when implemented
-  transport?: string;
 
   interests?: Array<{ name: string }>;
 
