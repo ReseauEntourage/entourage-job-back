@@ -182,9 +182,10 @@ export class User extends HistorizedModel {
   @Column
   isEmailVerified: boolean;
 
-  @Column(DataType.ENUM(...Object.values(OnboardingStatus)))
   @IsEnum(OnboardingStatus)
+  @Default(OnboardingStatus.NOT_STARTED)
   @IsOptional()
+  @Column(DataType.ENUM(...Object.values(OnboardingStatus)))
   onboardingStatus: OnboardingStatus;
 
   @AllowNull(true)
