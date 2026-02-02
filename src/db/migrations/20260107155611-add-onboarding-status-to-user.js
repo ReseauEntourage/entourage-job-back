@@ -35,6 +35,11 @@ module.exports = {
     // Remove onboardingStatus column from Users table
     await queryInterface.removeColumn('Users', 'onboardingStatus');
 
+    // Remove ENUM type onboardingStatus
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_Users_onboardingStatus";'
+    );
+
     // Remove onboardingCompletedAt column from Users table
     await queryInterface.removeColumn('Users', 'onboardingCompletedAt');
   },
