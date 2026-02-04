@@ -21,6 +21,7 @@ import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
   NormalUserRoles,
+  OnboardingStatus,
   Permissions,
   RegistrableUserRoles,
   RolesWithOrganization,
@@ -212,9 +213,16 @@ export class UsersCreationController {
           createUserRegistrationDto.companyRole || CompanyUserRole.EMPLOYEE,
           isCompanyAdmin
         );
+
         // If user is set as company admin - update the user to make it not available to the rest of the community
         // This is to prevent the user from being displayed in the community list
         if (isCompanyAdmin) {
+          // TODO: This is should be removed when the onboarding step for company admin creation is implemented in the new onboarding
+          // - Set the onboardingStatus to completed in user because the company admin onboarding is not implemented yet (use legacy version)
+          await this.usersCreationService.updateUserById(createdUserId, {
+            onboardingStatus: OnboardingStatus.COMPLETED,
+          });
+
           await this.usersCreationService.updateUserProfileByUserId(
             createdUserId,
             {

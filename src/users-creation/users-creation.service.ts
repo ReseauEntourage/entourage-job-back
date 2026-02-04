@@ -117,6 +117,10 @@ export class UsersCreationService {
     return this.mailsService.sendAdminNewRefererNotificationMail(referer);
   }
 
+  async updateUserById(userId: string, updateUserDto: Partial<User>) {
+    return this.usersService.update(userId, updateUserDto);
+  }
+
   async updateUserProfileByUserId(
     userId: string,
     updateUserProfileDto: Partial<UserProfile> & {
