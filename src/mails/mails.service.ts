@@ -99,7 +99,6 @@ export class MailsService {
         templateId: MailjetTemplates.WELCOME_CANDIDATE_COACH,
         variables: {
           ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
-          firstName: user.firstName,
           ..._.omitBy(user, _.isNil),
           zone: user.zone || ZoneName.HZ,
         },
