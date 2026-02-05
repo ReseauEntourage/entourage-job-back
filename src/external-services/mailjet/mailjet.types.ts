@@ -55,6 +55,7 @@ export interface MailjetContactProperties {
 
 export const MailjetTemplates = {
   ACCOUNT_CREATED: 3920498,
+  WELCOME_CANDIDATE_COACH: 7718550,
   WELCOME_COACH_COMPANY_ADMIN: 7312888,
   WELCOME_REFERER: 6324333,
   PASSWORD_RESET: 3271976,
@@ -73,6 +74,7 @@ export const MailjetTemplates = {
   USER_ACCOUNT_DELETED: 6647841,
   COMPANY_COLLABORATORS_INVITATION: 7175134,
   COMPANY_INVITATION_USED: 7316486,
+  ELEARNING_ALL_UNITS_COMPLETED: 7720521,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

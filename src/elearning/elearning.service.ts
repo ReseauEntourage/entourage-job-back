@@ -1,25 +1,34 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { UserRole } from 'src/users/users.types';
+import { MailsService } from 'src/mails/mails.service';
+import { User } from 'src/users/models';
+import { UsersService } from 'src/users/users.service';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import {
   ELEARNING_UNIT_ATTRIBUTES,
   ELEARNING_COMPLETION_ATTRIBUTES,
 } from './elearning.attributes';
 import { generateElearningUnitIncludes } from './elearning.includes';
 import { ElearningCompletion } from './models/elearning-completion.model';
+import { ElearningUnitRole } from './models/elearning-unit-role.model';
 import { ElearningUnit } from './models/elearning-unit.model';
 
 @Injectable()
 export class ElearningService {
+  private readonly logger = new Logger(ElearningService.name);
+
   constructor(
     @InjectModel(ElearningUnit)
     private elearningUnitModel: typeof ElearningUnit,
     @InjectModel(ElearningCompletion)
-    private elearningCompletionModel: typeof ElearningCompletion
+    private elearningCompletionModel: typeof ElearningCompletion,
+    readonly mailsService: MailsService,
+    readonly usersService: UsersService
   ) {}
 
   /**
@@ -90,6 +99,8 @@ export class ElearningService {
       validatedAt: new Date(),
     });
 
+    await this.onElearningUnitCompleted(userId);
+
     return this.findOneElearningCompletionById(completion.id);
   }
 
@@ -111,5 +122,83 @@ export class ElearningService {
     }
 
     await completion.destroy();
+  }
+
+  async computeElearningCompletionRate(user: User): Promise<number> {
+    const userRole = user?.role;
+    if (!userRole) {
+      return 0;
+    }
+
+    const totalUnitsCount = await this.elearningUnitModel.count({
+      distinct: true,
+      col: 'id',
+      include: [
+        {
+          model: ElearningUnitRole,
+          as: 'roles',
+          attributes: [],
+          where: { role: userRole },
+          required: true,
+        },
+      ],
+    });
+    if (totalUnitsCount === 0) {
+      return 0;
+    }
+
+    const completionsCount = await this.elearningCompletionModel.count({
+      distinct: true,
+      col: 'unitId',
+      where: { userId: user.id },
+      include: [
+        {
+          model: ElearningUnit,
+          as: 'unit',
+          attributes: [],
+          required: true,
+          include: [
+            {
+              model: ElearningUnitRole,
+              as: 'roles',
+              attributes: [],
+              where: { role: userRole },
+              required: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    return (completionsCount / totalUnitsCount) * 100;
+  }
+
+  // -- PRIVATE METHODS --
+
+  /**
+   * This method is called when an elearning unit is completed by a user.
+   * @param userId
+   */
+  private async onElearningUnitCompleted(userId: string) {
+    const user = await this.usersService.findOne(userId);
+
+    // If the user is a candidate or coach, we check if they have completed all
+    // elearning units and send them a congratulation mail if it's the case
+    if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
+      void this.computeElearningCompletionRate(user)
+        .then(async (completionRate) => {
+          if (completionRate >= 100) {
+            if (user) {
+              await this.mailsService.sendAllElearningUnitsCompletedMail(user);
+            }
+          }
+        })
+        .catch((error) => {
+          this.logger.error(
+            `Failed to process onElearningUnitCompleted for userId=${userId}`,
+            error instanceof Error ? error.stack : undefined
+          );
+        });
+    }
   }
 }

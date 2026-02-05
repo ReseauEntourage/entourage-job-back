@@ -215,7 +215,10 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    await this.authService.sendWelcomeMail(updatedUser);
+    // If it's the first time the user verify his email, we send him a welcome mail
+    if (!user.lastConnection) {
+      await this.authService.sendWelcomeMail(updatedUser);
+    }
 
     return;
   }

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { MailsModule } from 'src/mails/mails.module';
+import { UsersModule } from 'src/users/users.module';
 import { ElearningController } from './elearning.controller';
 import { ElearningService } from './elearning.service';
 import { ElearningAnswer } from './models/elearning-answer.model';
@@ -17,6 +19,8 @@ import { ElearningUnit } from './models/elearning-unit.model';
       ElearningAnswer,
       ElearningCompletion,
     ]),
+    MailsModule,
+    UsersModule,
   ],
   controllers: [ElearningController],
   providers: [ElearningService],
