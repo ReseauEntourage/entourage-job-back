@@ -375,6 +375,18 @@ export class MailsService {
     });
     return Promise.all(promises);
   }
+
+  async sendAllElearningUnitsCompletedMail(user: User) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: process.env.MAILJET_CONTACT_EMAIL,
+      templateId: MailjetTemplates.ELEARNING_ALL_UNITS_COMPLETED,
+      variables: {
+        firstName: user.firstName,
+        role: getRoleString(user),
+        zone: user.zone,
+      },
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {
