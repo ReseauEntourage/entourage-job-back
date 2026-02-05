@@ -57,46 +57,21 @@ export class MailsService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
-    if (user.role === UserRoles.COACH) {
-      if (user.company?.companyUser?.isAdmin) {
-        const staffContactCompanyEmail =
-          Zones[user.zone]?.staffContact?.company?.email;
-
-        return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-          toEmail: user.email,
-          replyTo: staffContactCompanyEmail,
-          templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
-          variables: {
-            firstName: user.firstName,
-            siteLinkAlertRecruit: `${process.env.FRONT_URL}/backoffice/dashboard`,
-            siteLinkInvit: `${process.env.FRONT_URL}/backoffice/companies/${user.company.id}/collaborators`,
-            companyGoal: user.company.goal || '',
-            companyName: user.company.name,
-            zone: user.zone || ZoneName.HZ,
-          },
-        });
-      }
-
-      const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
-      return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-        toEmail: user.email,
-        replyTo: staffContactMainEmail,
-        templateId: MailjetTemplates.WELCOME_COACH,
-        variables: {
-          ..._.omitBy(user, _.isNil),
-          zone: user.zone || ZoneName.HZ,
-        },
-      });
-    }
-
     const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
-    if (user.role === UserRoles.CANDIDATE) {
+    const staffContactCompanyEmail =
+      Zones[user.zone]?.staffContact?.company?.email;
+
+    if (user.role === UserRoles.COACH && user.company?.companyUser?.isAdmin) {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: staffContactMainEmail,
-        templateId: MailjetTemplates.WELCOME_CANDIDATE,
+        replyTo: staffContactCompanyEmail,
+        templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
         variables: {
-          ..._.omitBy(user, _.isNil),
+          firstName: user.firstName,
+          siteLinkAlertRecruit: `${process.env.FRONT_URL}/backoffice/dashboard`,
+          siteLinkInvit: `${process.env.FRONT_URL}/backoffice/companies/${user.company.id}/collaborators`,
+          companyGoal: user.company.goal || '',
+          companyName: user.company.name,
           zone: user.zone || ZoneName.HZ,
         },
       });
