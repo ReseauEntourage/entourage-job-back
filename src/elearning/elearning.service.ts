@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
+import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import {
@@ -123,8 +124,7 @@ export class ElearningService {
     await completion.destroy();
   }
 
-  async computeElearningCompletionRate(userId: string): Promise<number> {
-    const user = await this.usersService.findOne(userId);
+  async computeElearningCompletionRate(user: User): Promise<number> {
     const userRole = user?.role;
     if (!userRole) {
       return 0;
@@ -150,7 +150,7 @@ export class ElearningService {
     const completionsCount = await this.elearningCompletionModel.count({
       distinct: true,
       col: 'unitId',
-      where: { userId },
+      where: { userId: user.id },
       include: [
         {
           model: ElearningUnit,
@@ -185,7 +185,7 @@ export class ElearningService {
     // If the user is a candidate or coach, we check if they have completed all
     // elearning units and send them a congratulation mail if it's the case
     if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
-      void this.computeElearningCompletionRate(userId)
+      void this.computeElearningCompletionRate(user)
         .then(async (completionRate) => {
           if (completionRate >= 100) {
             if (user) {
