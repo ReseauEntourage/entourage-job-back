@@ -57,6 +57,9 @@ export class MailsService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
+    const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
+
+    // Send welcome message for company admins
     if (user.role === UserRoles.COACH && user.company?.companyUser?.isAdmin) {
       const staffContactCompanyEmail =
         Zones[user.zone]?.staffContact?.company?.email;
@@ -75,13 +78,28 @@ export class MailsService {
       });
     }
 
+    // Send welcome message for referers
     if (user.role === UserRoles.REFERER) {
-      const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: staffContactMainEmail,
         templateId: MailjetTemplates.WELCOME_REFERER,
         variables: {
+          ..._.omitBy(user, _.isNil),
+          zone: user.zone || ZoneName.HZ,
+        },
+      });
+    }
+
+    // Send welcome message for candidates and coaches
+    if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
+      return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+        toEmail: user.email,
+        replyTo: staffContactMainEmail,
+        templateId: MailjetTemplates.WELCOME_CANDIDATE_COACH,
+        variables: {
+          ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
+          firstName: user.firstName,
           ..._.omitBy(user, _.isNil),
           zone: user.zone || ZoneName.HZ,
         },

@@ -215,7 +215,10 @@ export class AuthController {
       throw new NotFoundException();
     }
 
-    await this.authService.sendWelcomeMail(updatedUser);
+    // The email can be verify if the user email changed his email, so we need to check if user already received welcome mail
+    if (!user.lastConnection) {
+      await this.authService.sendWelcomeMail(updatedUser);
+    }
 
     return;
   }
