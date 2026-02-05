@@ -105,10 +105,6 @@ export class UsersCreationService {
     return this.mailsService.sendOnboardingJ1BAOMail(user);
   }
 
-  async sendOnboardingJ3WebinarMail(user: User) {
-    return this.mailsService.sendOnboardingJ3WebinarMail(user);
-  }
-
   async sendOnboardingJ4ContactAdviceMail(user: User) {
     return this.mailsService.sendOnboardingJ4ContactAdviceMail(user);
   }

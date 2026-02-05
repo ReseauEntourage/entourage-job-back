@@ -147,25 +147,6 @@ export class MailsService {
     );
   }
 
-  async sendOnboardingJ3WebinarMail(user: User) {
-    return this.queuesService.addToWorkQueue(
-      Jobs.SEND_MAIL,
-      {
-        toEmail: user.email,
-        templateId: MailjetTemplates.ONBOARDING_J3_WEBINAR,
-        variables: {
-          firstName: user.firstName,
-          role: getRoleString(user),
-          zone: user.zone,
-        },
-      },
-      {
-        // 3 jours après la création du compte
-        delay: 3600000 * 24 * 3,
-      }
-    );
-  }
-
   async sendOnboardingJ4ContactAdviceMail(user: User) {
     const roleString = getRoleString(user);
     return this.queuesService.addToWorkQueue(
