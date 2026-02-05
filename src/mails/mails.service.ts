@@ -57,11 +57,9 @@ export class MailsService {
   async sendWelcomeMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
   ) {
-    const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
-    const staffContactCompanyEmail =
-      Zones[user.zone]?.staffContact?.company?.email;
-
     if (user.role === UserRoles.COACH && user.company?.companyUser?.isAdmin) {
+      const staffContactCompanyEmail =
+        Zones[user.zone]?.staffContact?.company?.email;
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: staffContactCompanyEmail,
@@ -78,6 +76,7 @@ export class MailsService {
     }
 
     if (user.role === UserRoles.REFERER) {
+      const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: staffContactMainEmail,
