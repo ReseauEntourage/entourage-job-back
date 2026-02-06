@@ -119,8 +119,9 @@ export const Queues = {
 
 export type Queue = (typeof Queues)[keyof typeof Queues];
 
+// Note: in Bull/BullMQ, lower numeric values are processed first (higher priority).
 export enum QueuePriority {
+  HIGH = 1,
+  NORMAL = 10,
   LOW = 100,
-  NORMAL = 2,
-  HIGH = 10,
 }
