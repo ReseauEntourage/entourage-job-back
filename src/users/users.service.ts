@@ -537,9 +537,9 @@ export class UsersService {
   }
 
   /**
-   * Get candidates and coaches that have not completed their onboarding and were created since exactly a certain number of days
+   * Get candidates and coaches that have not completed their onboarding
    * @param daysSinceCreation
-   * @returns Array of users with their profile that have not completed their onboarding and were created since exactly a certain number of days
+   * @returns Array of users that have not completed their onboarding
    */
   async getUsersNotCompletedOnboarding(daysSinceCreation: number) {
     const users = await this.userModel.findAll({
