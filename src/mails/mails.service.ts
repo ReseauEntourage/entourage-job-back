@@ -386,6 +386,19 @@ export class MailsService {
       },
     });
   }
+
+  async sendReminderToCompleteOnboarding(user: User) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.ONBOARDING_REMINDER,
+      variables: {
+        firstName: user.firstName,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        role: getRoleString(user),
+        zone: user.zone,
+      },
+    });
+  }
 }
 
 const getRoleString = (user: User): string => {

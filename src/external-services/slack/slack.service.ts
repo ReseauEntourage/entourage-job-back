@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { App, Block, KnownBlock } from '@slack/bolt';
 import { User } from 'src/users/models';
 import {
@@ -14,6 +14,7 @@ import {
 @Injectable()
 export class SlackService {
   private app: App;
+  private logger = new Logger(SlackService.name);
 
   constructor() {
     this.app = new App({
@@ -31,7 +32,28 @@ export class SlackService {
   sendMessage = async (
     channel: string,
     blocks: (Block | KnownBlock)[],
-    message: string
+    message?: string
+  ) => {
+    return this.app.client.chat
+      .postMessage({
+        channel: channel,
+        text: message,
+        token: process.env.SLACK_BOT_TOKEN,
+        blocks: blocks,
+      })
+      .then((res) => {
+        return res;
+      })
+      .catch((error) => {
+        this.logger.error('SlackService - sendMessage - error: ', error);
+      });
+  };
+
+  sendReplyMessage = async (
+    channel: string,
+    thread_ts: string,
+    blocks: (Block | KnownBlock)[],
+    message?: string
   ): Promise<void> => {
     try {
       await this.app.client.chat.postMessage({
@@ -39,9 +61,10 @@ export class SlackService {
         text: message,
         token: process.env.SLACK_BOT_TOKEN,
         blocks: blocks,
+        thread_ts: thread_ts,
       });
     } catch (error) {
-      console.error('SlackService - sendMessage - error: ', error);
+      this.logger.error('SlackService - sendReplyMessage - error: ', error);
     }
   };
 
@@ -55,7 +78,7 @@ export class SlackService {
     const slackStaffContactUserId = await this.getUserIdByEmail(
       staffContactSlackEmail
     );
-    return this.sendMessage(
+    await this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       this.generateProfileReportedBlocks(
         userReporter,
@@ -149,6 +172,48 @@ export class SlackService {
       ],
     });
   };
+
+  async generateTechNotificationBlocks(
+    success: boolean,
+    title: string,
+    context: SlackMsgContext[],
+    message?: string
+  ) {
+    return this.generateSlackBlockMsg({
+      title: `${
+        success ? ':steam_locomotive::railway_car::railway_car:' : ':warning:'
+      } ${title} - env: ${process.env.HEROKU_APP_NAME}`,
+      context: context,
+      msgParts: [
+        ...(message
+          ? [
+              {
+                content: message,
+              },
+            ]
+          : []),
+      ],
+    });
+  }
+
+  async sendTechnicalMonitoringMessage(
+    success: boolean,
+    title: string,
+    context: SlackMsgContext[],
+    details?: string,
+    channel = slackChannels.TECH_PRO_MONITORING
+  ) {
+    // Send slack notification with summary of users that have not completed onboarding
+    const slackMessage = await this.sendMessage(
+      channel,
+      await this.generateTechNotificationBlocks(success, title, context),
+      title
+    );
+
+    if (slackMessage && details) {
+      await this.sendReplyMessage(channel, slackMessage.ts, [], details);
+    }
+  }
 
   /***************** */
   /* Private methods */
@@ -266,14 +331,14 @@ export class SlackService {
       if (response.ok && response.user && response.user.id) {
         return response.user.id;
       } else {
-        console.error(
+        this.logger.error(
           'SlackService - getUserIdByEmail - user not found:',
           email
         );
         return null;
       }
     } catch (error) {
-      console.error('SlackService - getUserIdByEmail - error:', error);
+      this.logger.error('SlackService - getUserIdByEmail - error:', error);
       return null;
     }
   }

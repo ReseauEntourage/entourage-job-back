@@ -20,7 +20,12 @@ import {
   getUserProfileRecentlyUpdatedOrder,
   UserIncludes,
 } from './models/user.include';
-import { MemberFilterKey, UserRole, UserRoles } from './users.types';
+import {
+  MemberFilterKey,
+  OnboardingStatus,
+  UserRole,
+  UserRoles,
+} from './users.types';
 
 import {
   getCommonMembersFilterOptions,
@@ -529,5 +534,49 @@ export class UsersService {
         role: UserRoles.CANDIDATE,
       },
     });
+  }
+
+  /**
+   * Get candidates and coaches that have not completed their onboarding
+   * @param daysSinceCreation
+   * @returns Array of users that have not completed their onboarding
+   */
+  async getUsersNotCompletedOnboarding(daysSinceCreation: number) {
+    const users = await this.userModel.findAll({
+      attributes: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'onboardingStatus',
+        'createdAt',
+        'zone',
+        'role',
+      ],
+      where: {
+        role: {
+          [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
+        },
+        createdAt: {
+          [Op.gte]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              daysSinceCreation * 24 * 60 * 60 * 1000
+          ),
+          [Op.lt]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
+          ),
+        },
+        onboardingStatus: {
+          [Op.ne]: OnboardingStatus.COMPLETED,
+        },
+      },
+    });
+
+    return users;
+  }
+
+  async sendReminderToCompleteOnboarding(user: User) {
+    return this.mailsService.sendReminderToCompleteOnboarding(user);
   }
 }

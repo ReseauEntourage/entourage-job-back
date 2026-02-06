@@ -3,6 +3,10 @@ export const slackChannels = {
     process.env.NODE_ENV === 'production'
       ? 'moderation_entourage-pro'
       : 'dev-moderation_entourage-pro',
+  TECH_PRO_MONITORING:
+    process.env.NODE_ENV === 'production'
+      ? 'tech-pro-monitoring'
+      : 'tech-pro-monitoring-dev',
 };
 
 export interface SlackMsgContextMrkdwn {

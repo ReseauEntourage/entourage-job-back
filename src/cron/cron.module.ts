@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { UsersModule } from 'src/users/users.module';
-import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
+import { QueuesModule } from 'src/queues/producers';
 import { CronService } from './cron.service';
 
 @Module({
-  imports: [UsersModule, UsersDeletionModule],
+  imports: [QueuesModule],
   providers: [CronService],
 })
 export class CronModule {}
