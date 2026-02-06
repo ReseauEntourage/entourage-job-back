@@ -55,7 +55,7 @@ export class CronTasksProcessor {
 
   @OnQueueError()
   onError(error: Error) {
-    this.logger.error(`An error occured on the work queue : "${error}"`);
+    this.logger.error(`An error occurred on the cron-tasks queue : "${error}"`);
   }
 
   @Process()
