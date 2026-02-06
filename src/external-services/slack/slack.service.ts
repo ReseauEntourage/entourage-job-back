@@ -211,7 +211,7 @@ export class SlackService {
     );
 
     if (slackMessage && details) {
-      this.sendReplyMessage(channel, slackMessage.ts, [], details);
+      await this.sendReplyMessage(channel, slackMessage.ts, [], details);
     }
   }
 
