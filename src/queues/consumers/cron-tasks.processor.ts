@@ -179,10 +179,12 @@ export class CronTasksProcessor {
       `Found ${users.length} users that have not completed onboarding`
     );
 
-    users.forEach((user) => {
-      this.logger.log(`Sending reminder to user ${user.id}`);
-      void this.usersService.sendReminderToCompleteOnboarding(user);
-    });
+    await Promise.all(
+      users.map(async (user) => {
+        this.logger.log(`Sending reminder to user ${user.id}`);
+        await this.usersService.sendReminderToCompleteOnboarding(user);
+      })
+    );
 
     this.slackService.sendTechnicalMonitoringMessage(
       true,
