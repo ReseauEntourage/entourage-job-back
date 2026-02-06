@@ -9,7 +9,9 @@ export class QueuesService {
     @InjectQueue(Queues.WORK)
     private workQueue: Queue,
     @InjectQueue(Queues.PROFILE_GENERATION)
-    private readonly profileGenerationQueue: Queue
+    private readonly profileGenerationQueue: Queue,
+    @InjectQueue(Queues.CRON_TASKS)
+    private readonly cronTasksQueue: Queue
   ) {}
 
   async addToWorkQueue<T extends Job>(
@@ -26,5 +28,13 @@ export class QueuesService {
     opts?: JobOptions
   ) {
     return this.profileGenerationQueue.add(type, data, opts);
+  }
+
+  async addToCronTasksQueue<T extends Job>(
+    type: T,
+    data: JobData<T>,
+    opts?: JobOptions
+  ) {
+    return this.cronTasksQueue.add(type, data, opts);
   }
 }

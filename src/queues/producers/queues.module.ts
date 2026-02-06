@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import {
   getBullWorkQueueOptions,
   getBullProfileGenerationQueueOptions,
+  getBullCronTasksQueueOptions,
 } from '../queues.utils';
 import { QueuesService } from './queues.service';
 
@@ -10,6 +11,7 @@ import { QueuesService } from './queues.service';
   imports: [
     BullModule.registerQueue(getBullWorkQueueOptions()),
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
+    BullModule.registerQueue(getBullCronTasksQueueOptions()),
   ],
   providers: [QueuesService],
   exports: [QueuesService],

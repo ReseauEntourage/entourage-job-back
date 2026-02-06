@@ -5,11 +5,16 @@ import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
+import { SlackModule } from 'src/external-services/slack/slack.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import {
   getBullWorkQueueOptions,
   getBullProfileGenerationQueueOptions,
+  getBullCronTasksQueueOptions,
 } from 'src/queues/queues.utils';
+import { UsersModule } from 'src/users/users.module';
+import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
+import { CronTasksProcessor } from './cron-tasks.processor';
 import { ProfileGeneratorProcessor } from './profile-generator.processor';
 import { WorkQueueProcessor } from './work-queue.processor';
 
@@ -17,13 +22,23 @@ import { WorkQueueProcessor } from './work-queue.processor';
   imports: [
     BullModule.registerQueue(getBullWorkQueueOptions()),
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
+    // Add a bull queue for cron tasks if needed in the future
+    BullModule.registerQueue(getBullCronTasksQueueOptions()),
     MailjetModule,
     OpenAiModule,
     SalesforceModule,
     ProfileGenerationModule,
     CompaniesModule,
+    SlackModule,
+    UsersModule,
+    UsersDeletionModule,
   ],
-  providers: [WorkQueueProcessor, ProfileGeneratorProcessor, PusherService],
-  exports: [WorkQueueProcessor, ProfileGeneratorProcessor],
+  providers: [
+    WorkQueueProcessor,
+    ProfileGeneratorProcessor,
+    PusherService,
+    CronTasksProcessor,
+  ],
+  exports: [WorkQueueProcessor, ProfileGeneratorProcessor, CronTasksProcessor],
 })
 export class ConsumersModule {}
