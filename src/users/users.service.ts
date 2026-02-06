@@ -558,16 +558,14 @@ export class UsersService {
           [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
         },
         createdAt: {
-          [Op.between]: [
-            new Date(
-              new Date().setHours(0, 0, 0, 0) -
-                daysSinceCreation * 24 * 60 * 60 * 1000
-            ),
-            new Date(
-              new Date().setHours(0, 0, 0, 0) -
-                (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
-            ),
-          ],
+          [Op.gte]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              daysSinceCreation * 24 * 60 * 60 * 1000
+          ),
+          [Op.lt]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
+          ),
         },
         onboardingStatus: {
           [Op.ne]: OnboardingStatus.COMPLETED,
