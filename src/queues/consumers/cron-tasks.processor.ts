@@ -166,7 +166,7 @@ export class CronTasksProcessor {
    * @returns A message indicating the result of the operation
    */
   @Process(Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING)
-  async processSendMail() {
+  async remindUsersNotCompletedOnboarding() {
     const DAY_DELAY_BEFORE_SENDING_REMINDER = 7;
 
     this.logger.log(
