@@ -2,6 +2,7 @@ import fs from 'fs';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
+import moment from 'moment';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
@@ -1350,5 +1351,57 @@ export class UserProfilesService {
     const percentage = Math.round((filledFields.length / fields.length) * 100);
 
     return percentage;
+  }
+
+  async retrieveOrComputeRecommendationsForUserId(
+    user: User,
+    userProfile: UserProfile
+  ): Promise<PublicProfile[]> {
+    const oneWeekAgo = moment().subtract(1, 'week');
+
+    const currentRecommendedProfiles = await this.findRecommendationsByUserId(
+      user.id
+    );
+
+    const oneOfCurrentRecommendedProfilesIsNotAvailable =
+      currentRecommendedProfiles.some((recommendedProfile) => {
+        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
+      });
+
+    if (
+      !userProfile.lastRecommendationsDate ||
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
+      currentRecommendedProfiles.length < 3 ||
+      oneOfCurrentRecommendedProfilesIsNotAvailable
+    ) {
+      await this.removeRecommendationsByUserId(user.id);
+      await this.updateRecommendationsByUserId(user.id);
+      await this.updateByUserId(user.id, {
+        lastRecommendationsDate: moment().toDate(),
+      });
+    }
+
+    const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
+
+    return Promise.all(
+      recommendedProfiles.map(
+        async (recommendedProfile): Promise<PublicProfile> => {
+          const averageDelayResponse = await this.getAverageDelayResponse(
+            recommendedProfile.recUser.id
+          );
+
+          const {
+            recUser: { userProfile, ...restRecommendedUser },
+          }: UserProfileRecommendation = recommendedProfile.toJSON();
+
+          return {
+            ...restRecommendedUser,
+            ...userProfile,
+            id: recommendedProfile.recUser.id,
+            averageDelayResponse,
+          };
+        }
+      )
+    );
   }
 }
