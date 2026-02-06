@@ -179,25 +179,95 @@ export class CronTasksProcessor {
       `Found ${users.length} users that have not completed onboarding`
     );
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       users.map(async (user) => {
         this.logger.log(`Sending reminder to user ${user.id}`);
         await this.usersService.sendReminderToCompleteOnboarding(user);
+        return user.id;
       })
     );
 
-    this.slackService.sendTechnicalMonitoringMessage(
-      true,
+    const remindedUserIds: Array<string | number> = [];
+    const failedReminders: Array<{
+      userId: string | number;
+      reason: unknown;
+    }> = [];
+
+    results.forEach((result, index) => {
+      const userId = users[index]?.id;
+      if (result.status === 'fulfilled') {
+        remindedUserIds.push(result.value);
+        return;
+      }
+
+      failedReminders.push({ userId, reason: result.reason });
+      this.logger.error(
+        `Failed sending reminder to user ${userId}`,
+        result.reason
+      );
+    });
+
+    const successCount = remindedUserIds.length;
+    const failureCount = failedReminders.length;
+    const totalToRemind = users.length;
+    const isSuccess = failureCount === 0;
+
+    const failedUserIdsPreview = failedReminders
+      .slice(0, 10)
+      .map(({ userId }) => `- ${userId}`)
+      .join('\n');
+    const failedReasonsPreview = failedReminders
+      .slice(0, 10)
+      .map(({ userId, reason }) => `- ${userId}: ${String(reason)}`)
+      .join('\n');
+
+    const details = isSuccess
+      ? `${successCount} users were sent a reminder to complete their onboarding`
+      : [
+          `Some reminders could not be sent.`,
+          `Total to remind: ${totalToRemind}`,
+          `Sent successfully: ${successCount}`,
+          `Failed: ${failureCount}`,
+          failedUserIdsPreview
+            ? `Failed user IDs (first 10):\n${failedUserIdsPreview}`
+            : undefined,
+          failedReasonsPreview
+            ? `Errors (first 10):\n${failedReasonsPreview}`
+            : undefined,
+        ]
+          .filter(Boolean)
+          .join('\n');
+
+    await this.slackService.sendTechnicalMonitoringMessage(
+      isSuccess,
       '🤷‍♂️ Remind user to complete their onboarding',
       [
         {
           title: 'Delay before sending reminder',
           content: `${DAY_DELAY_BEFORE_SENDING_REMINDER} days`,
         },
+        {
+          title: 'Users to remind',
+          content: `${totalToRemind}`,
+        },
+        {
+          title: 'Sent successfully',
+          content: `${successCount}`,
+        },
+        {
+          title: 'Failed sends',
+          content: `${failureCount}`,
+        },
       ],
-      `${users.length} users have not completed onboarding in the last ${DAY_DELAY_BEFORE_SENDING_REMINDER} days`
+      details
     );
 
-    return `Reminders sent to ${users.length} users that have not completed onboarding`;
+    if (!isSuccess) {
+      throw new Error(
+        `Failed sending ${failureCount}/${totalToRemind} onboarding reminders`
+      );
+    }
+
+    return `Reminders sent to ${successCount} users that have not completed onboarding`;
   }
 }
