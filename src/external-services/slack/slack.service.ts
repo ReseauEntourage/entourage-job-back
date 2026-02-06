@@ -78,7 +78,7 @@ export class SlackService {
     const slackStaffContactUserId = await this.getUserIdByEmail(
       staffContactSlackEmail
     );
-    this.sendMessage(
+    await this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       this.generateProfileReportedBlocks(
         userReporter,
