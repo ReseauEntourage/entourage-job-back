@@ -22,7 +22,6 @@ import { WorkQueueProcessor } from './work-queue.processor';
   imports: [
     BullModule.registerQueue(getBullWorkQueueOptions()),
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
-    // Add a bull queue for cron tasks if needed in the future
     BullModule.registerQueue(getBullCronTasksQueueOptions()),
     MailjetModule,
     OpenAiModule,
