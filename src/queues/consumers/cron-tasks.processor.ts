@@ -167,7 +167,7 @@ export class CronTasksProcessor {
    */
   @Process(Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING)
   async remindUsersNotCompletedOnboarding() {
-    const DAY_DELAY_BEFORE_SENDING_REMINDER = 7;
+    const DAY_DELAY_BEFORE_SENDING_REMINDER = 3;
 
     this.logger.log(
       'Sending reminder to users that have not completed onboarding...'
