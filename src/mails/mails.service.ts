@@ -420,11 +420,11 @@ export class MailsService {
             ? publicProfile?.sectorOccupations[0]?.occupation.name
             : publicProfile?.currentJob || '',
         businessSector1:
-          publicProfile?.sectorOccupations[0].businessSector.name || '',
+          publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
         businessSector2:
-          publicProfile?.sectorOccupations[1]?.businessSector.name || '',
+          publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
         businessSector3:
-          publicProfile?.sectorOccupations[2]?.businessSector.name || '',
+          publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
         profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
       })
     );
