@@ -37,8 +37,9 @@ import {
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
-    private logger = new Logger(UsersService.name),
     @InjectModel(User)
     private userModel: typeof User,
     private mailsService: MailsService,
