@@ -18,9 +18,10 @@ import { ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class MailsService {
-  constructor(private queuesService: QueuesService) {}
-
-  logger = new Logger(MailsService.name);
+  constructor(
+    private queuesService: QueuesService,
+    private logger: Logger = new Logger(MailsService.name)
+  ) {}
 
   async sendPasswordResetLinkMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
@@ -427,6 +428,7 @@ export class MailsService {
           publicProfile?.sectorOccupations[1]?.businessSector.name || '',
         businessSector3:
           publicProfile?.sectorOccupations[2]?.businessSector.name || '',
+        profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
       })
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
