@@ -4,6 +4,8 @@ import { AuthModule } from 'src/auth/auth.module';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { QueuesModule } from 'src/queues/producers/queues.module';
+import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { User } from './models';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -14,6 +16,8 @@ import { UsersService } from './users.service';
     forwardRef(() => MailsModule),
     forwardRef(() => AuthModule),
     forwardRef(() => CompaniesModule),
+    forwardRef(() => UserProfilesModule),
+    QueuesModule,
     BusinessSectorsModule,
   ],
   controllers: [UsersController],

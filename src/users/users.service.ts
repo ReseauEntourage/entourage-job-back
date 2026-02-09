@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
@@ -8,9 +8,11 @@ import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { Organization } from 'src/organizations/models';
+import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import { User, UserAttributes } from './models';
@@ -36,6 +38,7 @@ import {
 @Injectable()
 export class UsersService {
   constructor(
+    private logger = new Logger(UsersService.name),
     @InjectModel(User)
     private userModel: typeof User,
     private mailsService: MailsService,
@@ -43,6 +46,8 @@ export class UsersService {
     private authService: AuthService,
     @Inject(forwardRef(() => CompanyUsersService))
     private companyUsersService: CompanyUsersService,
+    @Inject(forwardRef(() => UserProfilesService))
+    private userProfilesService: UserProfilesService,
     private businessSectorsService: BusinessSectorsService
   ) {}
 
@@ -435,6 +440,13 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const shouldCheckOnboardingTransition =
+      updateUserDto.onboardingStatus !== undefined;
+
+    const previousUser = shouldCheckOnboardingTransition
+      ? await this.findOne(id)
+      : null;
+
     await this.userModel.update(updateUserDto, {
       where: { id },
       individualHooks: true,
@@ -446,7 +458,45 @@ export class UsersService {
       return null;
     }
 
+    if (
+      updateUserDto.onboardingStatus === OnboardingStatus.COMPLETED &&
+      previousUser?.onboardingStatus !== OnboardingStatus.COMPLETED
+    ) {
+      const userProfile = await this.userProfilesService.findOneByUserId(
+        updatedUser.id
+      );
+      if (!userProfile) {
+        throw new Error(
+          `UserProfile not found for user with id ${updatedUser.id}`
+        );
+      }
+      const recommendedProfiles =
+        await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+          updatedUser,
+          userProfile
+        );
+      void this.sendOnboardingCompletedMail(
+        updatedUser,
+        recommendedProfiles
+      ).catch((err) => {
+        this.logger.error(
+          `Failed to send onboarding completed mail to user with id ${updatedUser.id}`,
+          err
+        );
+      });
+    }
+
     return updatedUser.toJSON();
+  }
+
+  async sendOnboardingCompletedMail(
+    user: User,
+    recommendedProfiles: PublicProfileDto[]
+  ) {
+    return this.mailsService.sendOnboardingCompletedMail(
+      user,
+      recommendedProfiles
+    );
   }
 
   async remove(id: string) {

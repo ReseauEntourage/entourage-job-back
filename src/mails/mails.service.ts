@@ -8,6 +8,7 @@ import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto
 import { Conversation, Message } from 'src/messaging/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -396,6 +397,48 @@ export class MailsService {
         ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
         role: getRoleString(user),
         zone: user.zone,
+      },
+    });
+  }
+
+  async sendOnboardingCompletedMail(
+    user: User,
+    recommendedPublicProfiles: PublicProfileDto[]
+  ) {
+    const awsS3Url = process.env.AWSS3_URL || '';
+    const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
+    const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
+    const formattedRecommendedProfiles = recommendedPublicProfiles.map(
+      (publicProfile) => ({
+        imageUrl: publicProfile.hasPicture
+          ? `${imageBasePath}${publicProfile.id}.profile.jpg`
+          : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png',
+        firstName: publicProfile?.firstName || '',
+        zone: publicProfile?.zone || '',
+        workTitle:
+          publicProfile.role === UserRoles.CANDIDATE
+            ? publicProfile?.sectorOccupations[0]?.occupation.name
+            : publicProfile?.currentJob || '',
+        businessSector1:
+          publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
+        businessSector2:
+          publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
+        businessSector3:
+          publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
+        profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
+      })
+    );
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.ONBOARDING_COMPLETED,
+      variables: {
+        firstName: user.firstName,
+        role: getRoleString(user),
+        zone: user.zone,
+        reco1: formattedRecommendedProfiles[0] || '',
+        reco2: formattedRecommendedProfiles[1] || '',
+        reco3: formattedRecommendedProfiles[2] || '',
+        nbReco: formattedRecommendedProfiles.length,
       },
     });
   }

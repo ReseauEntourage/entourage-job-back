@@ -30,6 +30,7 @@ export const PublicUserAttributes = [
   'lastName',
   'role',
   'createdAt',
+  'zone',
 ];
 
 export type PublicUserAttribute = (typeof PublicUserAttributes)[number];
