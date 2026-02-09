@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
@@ -38,6 +38,7 @@ import {
 @Injectable()
 export class UsersService {
   constructor(
+    private logger = new Logger(UsersService.name),
     @InjectModel(User)
     private userModel: typeof User,
     private mailsService: MailsService,
@@ -474,7 +475,15 @@ export class UsersService {
           updatedUser,
           userProfile
         );
-      this.sendOnboardingCompletedMail(updatedUser, recommendedProfiles);
+      void this.sendOnboardingCompletedMail(
+        updatedUser,
+        recommendedProfiles
+      ).catch((err) => {
+        this.logger.error(
+          `Failed to send onboarding completed mail to user with id ${updatedUser.id}`,
+          err
+        );
+      });
     }
 
     return updatedUser.toJSON();
