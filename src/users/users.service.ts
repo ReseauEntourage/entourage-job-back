@@ -464,6 +464,11 @@ export class UsersService {
       const userProfile = await this.userProfilesService.findOneByUserId(
         updatedUser.id
       );
+      if (!userProfile) {
+        throw new Error(
+          `UserProfile not found for user with id ${updatedUser.id}`
+        );
+      }
       const recommendedProfiles =
         await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
           updatedUser,

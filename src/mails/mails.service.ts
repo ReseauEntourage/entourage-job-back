@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
@@ -18,10 +18,7 @@ import { ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class MailsService {
-  constructor(
-    private queuesService: QueuesService,
-    private logger: Logger = new Logger(MailsService.name)
-  ) {}
+  constructor(private queuesService: QueuesService) {}
 
   async sendPasswordResetLinkMail(
     user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
