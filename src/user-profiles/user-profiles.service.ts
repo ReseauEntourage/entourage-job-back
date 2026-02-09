@@ -32,6 +32,10 @@ import { getUserProfileRecommendationOrder } from 'src/users/models/user.include
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
+import {
+  generatePublicProfileDto,
+  PublicProfileDto,
+} from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
   UserProfile,
@@ -52,7 +56,7 @@ import {
   getUserProfileInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
-import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
+import { ContactTypeEnum } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
 const UserProfileRecommendationsWeights = {
@@ -186,7 +190,7 @@ export class UserProfilesService {
       businessSectorIds: string[];
       contactTypes: ContactTypeEnum[];
     }
-  ): Promise<PublicProfile[]> {
+  ): Promise<PublicProfileDto[]> {
     const {
       role,
       offset,
@@ -293,7 +297,7 @@ export class UserProfilesService {
     });
 
     return Promise.all(
-      profiles.map(async (profile): Promise<PublicProfile> => {
+      profiles.map(async (profile): Promise<PublicProfileDto> => {
         const averageDelayResponse = await this.getAverageDelayResponse(
           profile.user.id
         );
@@ -316,7 +320,7 @@ export class UserProfilesService {
    */
   async findMatchingProfilesForRecruitementAlert(
     recruitementAlert: RecruitementAlert
-  ): Promise<PublicProfile[]> {
+  ): Promise<PublicProfileDto[]> {
     // Prepare criteria
     const businessSectorIds =
       recruitementAlert.businessSectors?.map((sector) => sector.id) || [];
@@ -502,14 +506,8 @@ export class UserProfilesService {
     });
 
     // Transform into PublicProfile
-    return profiles.map((profile): PublicProfile => {
-      const { user, ...restProfile }: UserProfile = profile.toJSON();
-      return {
-        ...user,
-        ...restProfile,
-        id: profile.user.id,
-        averageDelayResponse: null,
-      };
+    return profiles.map((profile): PublicProfileDto => {
+      return generatePublicProfileDto(profile.user, profile, null);
     });
   }
 
@@ -519,7 +517,7 @@ export class UserProfilesService {
       offset: number;
       limit: number;
     }
-  ): Promise<PublicProfile[]> {
+  ): Promise<PublicProfileDto[]> {
     const { offset, limit } = query;
 
     const profiles = await this.userProfileModel.findAll({
@@ -541,18 +539,16 @@ export class UserProfilesService {
     });
 
     return Promise.all(
-      profiles.map(async (profile): Promise<PublicProfile> => {
+      profiles.map(async (profile): Promise<PublicProfileDto> => {
         const averageDelayResponse = await this.getAverageDelayResponse(
           profile.user.id
         );
 
-        const { user, ...restProfile }: UserProfile = profile.toJSON();
-        return {
-          ...user,
-          ...restProfile,
-          id: profile.user.id,
-          averageDelayResponse,
-        };
+        return generatePublicProfileDto(
+          profile.user,
+          profile,
+          averageDelayResponse
+        );
       })
     );
   }
@@ -1356,7 +1352,7 @@ export class UserProfilesService {
   async retrieveOrComputeRecommendationsForUserId(
     user: User,
     userProfile: UserProfile
-  ): Promise<PublicProfile[]> {
+  ): Promise<PublicProfileDto[]> {
     const oneWeekAgo = moment().subtract(1, 'week');
 
     const currentRecommendedProfiles = await this.findRecommendationsByUserId(
@@ -1384,23 +1380,12 @@ export class UserProfilesService {
     const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
 
     return Promise.all(
-      recommendedProfiles.map(
-        async (recommendedProfile): Promise<PublicProfile> => {
-          const averageDelayResponse = await this.getAverageDelayResponse(
-            recommendedProfile.recUser.id
-          );
-
-          const {
-            recUser: { userProfile, ...restRecommendedUser },
-          }: UserProfileRecommendation = recommendedProfile.toJSON();
-
-          return {
-            ...restRecommendedUser,
-            ...userProfile,
-            id: recommendedProfile.recUser.id,
-            averageDelayResponse,
-          };
-        }
+      recommendedProfiles.map((recoProfile) =>
+        generatePublicProfileDto(
+          recoProfile.recUser,
+          recoProfile.recUser.userProfile,
+          null
+        )
       )
     );
   }
