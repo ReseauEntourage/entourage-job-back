@@ -199,10 +199,7 @@ export function mapSalesforceLeadFields<T extends LeadRecordType>(
     LastName:
       lastName?.length > 80 ? lastName.substring(0, 80) : lastName || 'Inconnu',
     FirstName: firstName,
-    Email: email
-      ?.replace(/\+/g, '.')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, ''),
+    Email: email.normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
     Phone: phone?.length > 40 ? phone.substring(0, 40) : phone,
     Reseaux__c: 'LinkedOut',
     RecordTypeId: recordType,
@@ -507,10 +504,7 @@ export const mapSalesforceContactFields = (
       : undefined,
     FirstName: firstName || undefined,
     Email: email
-      ? email
-          ?.replace(/\+/g, '.')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
+      ? email.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       : undefined,
     Phone: phone
       ? phone.length > 40
