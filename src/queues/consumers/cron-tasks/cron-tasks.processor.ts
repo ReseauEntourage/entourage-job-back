@@ -192,7 +192,7 @@ export class CronTasksProcessor {
       },
     ];
 
-    void Promise.allSettled(
+    await Promise.allSettled(
       postOnboardingCompletionConfig.map(
         async ({
           delaySinceOnboardingCompletion,
@@ -271,7 +271,7 @@ export class CronTasksProcessor {
     const results = await Promise.allSettled(
       userProfileNotCompleted.map(async (user) => {
         this.logger.log(`Preparing mail for user ${user.id}`);
-        this.usersService.sendReminderToCompleteProfile(user);
+        await this.usersService.sendReminderToCompleteProfile(user);
       })
     );
 
