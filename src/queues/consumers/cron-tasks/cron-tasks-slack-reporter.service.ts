@@ -63,7 +63,7 @@ export class CronTasksSlackReporterService {
       `An error occurred during this cron task. Details below:`,
       ...statsLines,
       failedItemIdsPreview
-        ? `'Failed IDs:'\n${failedItemIdsPreview}`
+        ? `Failed IDs:\n${failedItemIdsPreview}`
         : undefined,
       failedReasonsPreview ? `Errors:\n${failedReasonsPreview}` : undefined,
     ]
