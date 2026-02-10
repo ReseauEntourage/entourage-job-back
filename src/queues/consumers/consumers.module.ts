@@ -14,7 +14,8 @@ import {
 } from 'src/queues/queues.utils';
 import { UsersModule } from 'src/users/users.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
-import { CronTasksProcessor } from './cron-tasks.processor';
+import { CronTasksSlackReporterService } from './cron-tasks/cron-tasks-slack-reporter.service';
+import { CronTasksProcessor } from './cron-tasks/cron-tasks.processor';
 import { ProfileGeneratorProcessor } from './profile-generator.processor';
 import { WorkQueueProcessor } from './work-queue.processor';
 
@@ -36,6 +37,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     WorkQueueProcessor,
     ProfileGeneratorProcessor,
     PusherService,
+    CronTasksSlackReporterService,
     CronTasksProcessor,
   ],
   exports: [WorkQueueProcessor, ProfileGeneratorProcessor, CronTasksProcessor],

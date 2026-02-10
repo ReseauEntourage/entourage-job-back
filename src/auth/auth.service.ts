@@ -225,10 +225,6 @@ export class AuthService {
     return this.mailsService.sendWelcomeMail(user);
   }
 
-  async sendOnboardingJ1BAOMail(user: User) {
-    return this.mailsService.sendOnboardingJ1BAOMail(user);
-  }
-
   async getUsersStats(userId: string) {
     return {
       averageDelayResponse:

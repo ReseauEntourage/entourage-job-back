@@ -77,6 +77,7 @@ export const MailjetTemplates = {
   COMPANY_COLLABORATORS_INVITATION: 7175134,
   COMPANY_INVITATION_USED: 7316486,
   ELEARNING_ALL_UNITS_COMPLETED: 7720521,
+  NOT_COMPLETED_PROFILE_REMINDER: 6559282,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

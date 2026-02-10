@@ -120,51 +120,37 @@ export class MailsService {
     });
   }
 
-  async sendOnboardingJ1BAOMail(user: User) {
-    return this.queuesService.addToWorkQueue(
-      Jobs.SEND_MAIL,
-      {
-        toEmail: user.email,
-        templateId: MailjetTemplates.ONBOARDING_J1_BAO,
-        variables: {
-          firstName: user.firstName,
-          role: getRoleString(user),
-          zone: user.zone,
-        },
+  async sendOnboardingBAOMail(user: User) {
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.ONBOARDING_J1_BAO,
+      variables: {
+        firstName: user.firstName,
+        role: getRoleString(user),
+        zone: user.zone,
       },
-      {
-        // 1 jour après la création du compte
-        delay: 3600000 * 24 * 1,
-      }
-    );
+    });
   }
 
-  async sendOnboardingJ4ContactAdviceMail(user: User) {
+  async sendOnboardingContactAdviceMail(user: User) {
     const roleString = getRoleString(user);
-    return this.queuesService.addToWorkQueue(
-      Jobs.SEND_MAIL,
-      {
-        toEmail: user.email,
-        templateId: MailjetTemplates.ONBOARDING_J4_CONTACT_ADVICE,
-        variables: {
-          subject:
-            roleString === 'Candidat'
-              ? 'Et si tu demandais un coup de main ? ✋'
-              : '10 façons de devenir un super coach 💡',
-          firstName: user.firstName,
-          role: roleString,
-          zone: user.zone,
-          toolboxUrl:
-            roleString === 'Candidat'
-              ? process.env.TOOLBOX_CANDIDATE_URL
-              : process.env.TOOLBOX_COACH_URL,
-        },
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.ONBOARDING_J4_CONTACT_ADVICE,
+      variables: {
+        subject:
+          roleString === 'Candidat'
+            ? 'Et si tu demandais un coup de main ? ✋'
+            : '10 façons de devenir un super coach 💡',
+        firstName: user.firstName,
+        role: roleString,
+        zone: user.zone,
+        toolboxUrl:
+          roleString === 'Candidat'
+            ? process.env.TOOLBOX_CANDIDATE_URL
+            : process.env.TOOLBOX_COACH_URL,
       },
-      {
-        // 4 jours après la création du compte
-        delay: 3600000 * 24 * 4,
-      }
-    );
+    });
   }
 
   async sendContactUsMail(contactUsFormDto: ContactUsFormDto) {
@@ -439,6 +425,18 @@ export class MailsService {
         reco2: formattedRecommendedProfiles[1] || '',
         reco3: formattedRecommendedProfiles[2] || '',
         nbReco: formattedRecommendedProfiles.length,
+      },
+    });
+  }
+
+  async sendReminderToCompleteProfile(user: User) {
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.NOT_COMPLETED_PROFILE_REMINDER,
+      variables: {
+        firstName: user.firstName,
+        role: getRoleString(user),
+        zone: user.zone,
       },
     });
   }

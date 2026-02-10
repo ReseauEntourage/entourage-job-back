@@ -352,11 +352,18 @@ export class User extends HistorizedModel {
 
   @BeforeUpdate
   static async setOnboardingCompletedAt(userToUpdate: User) {
-    const previousUserValues: Partial<User> = userToUpdate.previous();
+    if (!userToUpdate.changed('onboardingStatus')) {
+      return;
+    }
+
+    const previousOnboardingStatus = userToUpdate.previous(
+      'onboardingStatus'
+    ) as OnboardingStatus | undefined;
+
     if (
       userToUpdate.onboardingStatus === OnboardingStatus.COMPLETED &&
-      previousUserValues &&
-      previousUserValues.onboardingStatus !== OnboardingStatus.COMPLETED
+      previousOnboardingStatus !== OnboardingStatus.COMPLETED &&
+      !userToUpdate.onboardingCompletedAt
     ) {
       userToUpdate.onboardingCompletedAt = new Date();
     }
