@@ -7,6 +7,7 @@ import { BusinessSectorsService } from 'src/common/business-sectors/business-sec
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
+import { userProfileAttributes } from 'src/messaging/messaging.attributes';
 import { Organization } from 'src/organizations/models';
 import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
@@ -451,6 +452,7 @@ export class UsersService {
     await this.userModel.update(updateUserDto, {
       where: { id },
       individualHooks: true,
+      hooks: true,
     });
 
     const updatedUser = await this.findOneWithRelations(id);
@@ -471,17 +473,22 @@ export class UsersService {
           `UserProfile not found for user with id ${updatedUser.id}`
         );
       }
-      const recommendedProfiles =
-        await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+
+      // Prepare recommendations in background without awaiting the result and send onboarding completed mail to user
+      void new Promise(async (resolve) => {
+        const recommendedProfiles =
+          await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+            updatedUser,
+            userProfile
+          );
+        await this.sendOnboardingCompletedMail(
           updatedUser,
-          userProfile
+          recommendedProfiles
         );
-      void this.sendOnboardingCompletedMail(
-        updatedUser,
-        recommendedProfiles
-      ).catch((err) => {
+        resolve(null);
+      }).catch((err) => {
         this.logger.error(
-          `Failed to send onboarding completed mail to user with id ${updatedUser.id}`,
+          `Failed to prepare recommendations for user with id ${updatedUser.id} after onboarding completion`,
           err
         );
       });
@@ -629,5 +636,115 @@ export class UsersService {
 
   async sendReminderToCompleteOnboarding(user: User) {
     return this.mailsService.sendReminderToCompleteOnboarding(user);
+  }
+
+  async sendOnboardingBAOMailToUser(user: User) {
+    return this.mailsService.sendOnboardingBAOMail(user);
+  }
+
+  async sendOnboardingContactAdviceMail(user: User) {
+    return this.mailsService.sendOnboardingContactAdviceMail(user);
+  }
+
+  async getUsersCompletedOnboardingSinceDelay(
+    daysSinceOnboardingCompletion: number
+  ) {
+    const users = await this.userModel.findAll({
+      attributes: [...UserAttributes],
+      where: {
+        role: {
+          [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
+        },
+        onboardingCompletedAt: {
+          [Op.gte]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              daysSinceOnboardingCompletion * 24 * 60 * 60 * 1000
+          ),
+          [Op.lt]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              (daysSinceOnboardingCompletion - 1) * 24 * 60 * 60 * 1000
+          ),
+        },
+        onboardingStatus: OnboardingStatus.COMPLETED,
+      },
+    });
+
+    return users;
+  }
+
+  async getUsersWithNotCompletedProfile(daysAfterOnboardingCompletion: number) {
+    const endDate = new Date(
+      new Date().setHours(0, 0, 0, 0) -
+        (daysAfterOnboardingCompletion - 1) * 24 * 60 * 60 * 1000
+    );
+    const startDate = new Date(
+      new Date().setHours(0, 0, 0, 0) -
+        daysAfterOnboardingCompletion * 24 * 60 * 60 * 1000
+    );
+
+    const rawMatchingUsers: { id: string }[] =
+      await this.userModel.sequelize.query(
+        `
+        SELECT DISTINCT
+          "User"."id" as id
+
+        FROM "Users" as "User"
+        LEFT OUTER JOIN "UserProfiles" as "userProfile"
+          ON "User"."id" = "userProfile"."userId"
+
+        WHERE "User"."deletedAt" IS NULL
+          AND "User"."onboardingStatus" = :onboardingStatus
+          AND "User"."onboardingCompletedAt" >= :startDate
+          AND "User"."onboardingCompletedAt" < :endDate
+          AND "User"."role" IN (:candidateRole, :coachRole)
+          AND (
+            "userProfile"."description" IS NULL
+            OR "userProfile"."hasPicture" = FALSE
+            OR NOT EXISTS (
+              SELECT 1
+              FROM "UserProfileSectorOccupations" as upso
+              WHERE upso."userProfileId" = "userProfile"."id"
+                AND upso."businessSectorId" IS NOT NULL
+                AND upso."occupationId" IS NOT NULL
+            )
+          );
+        `,
+        {
+          type: QueryTypes.SELECT,
+          raw: true,
+          replacements: {
+            onboardingStatus: OnboardingStatus.COMPLETED,
+            startDate,
+            endDate,
+            candidateRole: UserRoles.CANDIDATE,
+            coachRole: UserRoles.COACH,
+          },
+        }
+      );
+
+    const userIds = rawMatchingUsers.map((user) => user.id);
+
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    return this.userModel.findAll({
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: userProfileAttributes,
+          required: false,
+        },
+      ],
+      where: {
+        id: userIds,
+      },
+    });
+  }
+
+  async sendReminderToCompleteProfile(user: User) {
+    return this.mailsService.sendReminderToCompleteProfile(user);
   }
 }

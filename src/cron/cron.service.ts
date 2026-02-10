@@ -54,4 +54,44 @@ export class CronService {
       status: 'processing',
     };
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async preparePostOnboardingCompletionMails() {
+    this.logger.log('Cron job started: preparePostOnboardingCompletionMails');
+
+    // Create a job that will be processed by the CronTasksProcessor
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_POST_ONBOARDING_COMPLETION_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async prepareNotCompletedProfileMails() {
+    this.logger.log('Cron job started: prepareNotCompletedProfileMails');
+
+    // Create a job that will be processed by the CronTasksProcessor
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_NOT_COMPLETED_PROFILE_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
 }

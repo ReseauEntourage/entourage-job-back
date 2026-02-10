@@ -32,6 +32,9 @@ export const Jobs = {
   SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING:
     'send_reminder_to_user_not_completed_onboarding',
   DELETE_INACTIVE_USERS: 'delete_inactive_users',
+  PREPARE_POST_ONBOARDING_COMPLETION_MAILS:
+    'prepare_post_onboarding_completion_mails',
+  PREPARE_NOT_COMPLETED_PROFILE_MAILS: 'prepare_not_completed_profile_mails',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -51,6 +54,8 @@ type JobsData = {
   // Cron tasks jobs
   [Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING]: SendReminderToUserNotCompletedOnboardingJob;
   [Jobs.DELETE_INACTIVE_USERS]: DeleteInactiveUsersJob;
+  [Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS]: PreparePostOnboardingCompletionMailsJob;
+  [Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS]: PrepareNotCompletedProfileMailsJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -110,6 +115,10 @@ export interface GenerateProfileFromPDFJob {
 export interface SendReminderToUserNotCompletedOnboardingJob {}
 
 export interface DeleteInactiveUsersJob {}
+
+export interface PreparePostOnboardingCompletionMailsJob {}
+
+export interface PrepareNotCompletedProfileMailsJob {}
 
 export const Queues = {
   WORK: 'work',
