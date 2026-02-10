@@ -481,7 +481,10 @@ export class UsersService {
             updatedUser,
             userProfile
           );
-        this.sendOnboardingCompletedMail(updatedUser, recommendedProfiles);
+        await this.sendOnboardingCompletedMail(
+          updatedUser,
+          recommendedProfiles
+        );
         resolve(null);
       }).catch((err) => {
         this.logger.error(
