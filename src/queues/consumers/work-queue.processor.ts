@@ -252,10 +252,16 @@ export class WorkQueueProcessor {
           user,
           userProfile
         );
-      await this.usersService.sendOnboardingCompletedMail(
-        user,
-        recommendedProfiles
-      );
+      if (recommendedProfiles.length > 0) {
+        await this.usersService.sendOnboardingCompletedMail(
+          user,
+          recommendedProfiles
+        );
+      } else {
+        this.logger.log(
+          `No recommended profiles found for user with id ${userId} after onboarding completion`
+        );
+      }
     } catch (err) {
       this.logger.error(
         `Failed to prepare recommendations for user with id ${user.id} after onboarding completion`,
