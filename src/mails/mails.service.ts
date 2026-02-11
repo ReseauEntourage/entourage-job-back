@@ -425,7 +425,7 @@ export class MailsService {
       `Sending all elearning units completed mail for user with id ${user.id}`
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: process.env.MAILJET_CONTACT_EMAIL,
+      toEmail: user.email,
       templateId: MailjetTemplates.ELEARNING_ALL_UNITS_COMPLETED,
       variables: {
         firstName: user.firstName,
