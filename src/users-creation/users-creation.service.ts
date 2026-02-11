@@ -101,14 +101,6 @@ export class UsersCreationService {
     );
   }
 
-  async sendOnboardingJ1BAOMail(user: User) {
-    return this.mailsService.sendOnboardingJ1BAOMail(user);
-  }
-
-  async sendOnboardingJ4ContactAdviceMail(user: User) {
-    return this.mailsService.sendOnboardingJ4ContactAdviceMail(user);
-  }
-
   async sendAdminNewRefererNotificationMail(referer: User) {
     return this.mailsService.sendAdminNewRefererNotificationMail(referer);
   }

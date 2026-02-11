@@ -10,10 +10,10 @@ export class CronService {
   constructor(private readonly queuesService: QueuesService) {}
 
   /**
-   * This method is called every day at 1 AM.
+   * This method is called every 1st day of the month at midnight.
    * It will delete every user that has not been connected for specific amount of months defined.
    */
-  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
   async deleteInactiveUsers() {
     this.logger.log('Cron job started: deleteInactiveUsers');
     // Create a job that will be processed by the CronTasksProcessor
@@ -47,6 +47,46 @@ export class CronService {
 
     this.logger.log(
       `Job SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async preparePostOnboardingCompletionMails() {
+    this.logger.log('Cron job started: preparePostOnboardingCompletionMails');
+
+    // Create a job that will be processed by the CronTasksProcessor
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_POST_ONBOARDING_COMPLETION_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async prepareNotCompletedProfileMails() {
+    this.logger.log('Cron job started: prepareNotCompletedProfileMails');
+
+    // Create a job that will be processed by the CronTasksProcessor
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_NOT_COMPLETED_PROFILE_MAILS created (Job ID: ${job.id})`
     );
 
     return {

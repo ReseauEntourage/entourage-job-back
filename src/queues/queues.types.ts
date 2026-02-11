@@ -27,11 +27,15 @@ export const Jobs = {
   CREATE_OR_UPDATE_SALESFORCE_COMPANY: 'create_or_update_salesforce_company',
   GENERATE_PROFILE_FROM_PDF: 'generate_profile_from_pdf',
   UPDATE_SALESFORCE_USER_COMPANY: 'update_salesforce_user_company',
+  ON_ONBOARDING_COMPLETED: 'on_onboarding_completed',
 
   // Jobs related to cron tasks
   SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING:
     'send_reminder_to_user_not_completed_onboarding',
   DELETE_INACTIVE_USERS: 'delete_inactive_users',
+  PREPARE_POST_ONBOARDING_COMPLETION_MAILS:
+    'prepare_post_onboarding_completion_mails',
+  PREPARE_NOT_COMPLETED_PROFILE_MAILS: 'prepare_not_completed_profile_mails',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -47,10 +51,13 @@ type JobsData = {
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY]: CreateOrUpdateSalesforceCompanyJob;
   [Jobs.GENERATE_PROFILE_FROM_PDF]: GenerateProfileFromPDFJob;
   [Jobs.UPDATE_SALESFORCE_USER_COMPANY]: UpdateSalesforceUserCompanyJob;
+  [Jobs.ON_ONBOARDING_COMPLETED]: OnOnboardingCompletedJob;
 
   // Cron tasks jobs
   [Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING]: SendReminderToUserNotCompletedOnboardingJob;
   [Jobs.DELETE_INACTIVE_USERS]: DeleteInactiveUsersJob;
+  [Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS]: PreparePostOnboardingCompletionMailsJob;
+  [Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS]: PrepareNotCompletedProfileMailsJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -100,6 +107,10 @@ export interface UpdateSalesforceUserCompanyJob {
   companyId: string | null;
 }
 
+export interface OnOnboardingCompletedJob {
+  userId: string;
+}
+
 export interface GenerateProfileFromPDFJob {
   s3Key: string;
   userProfileId: string;
@@ -110,6 +121,10 @@ export interface GenerateProfileFromPDFJob {
 export interface SendReminderToUserNotCompletedOnboardingJob {}
 
 export interface DeleteInactiveUsersJob {}
+
+export interface PreparePostOnboardingCompletionMailsJob {}
+
+export interface PrepareNotCompletedProfileMailsJob {}
 
 export const Queues = {
   WORK: 'work',

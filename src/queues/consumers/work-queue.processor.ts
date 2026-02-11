@@ -17,10 +17,13 @@ import {
   CreateOrUpdateSalesforceUserJob,
   Jobs,
   NewsletterSubscriptionJob,
+  OnOnboardingCompletedJob,
   Queues,
   SendMailJob,
   UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { UsersService } from 'src/users/users.service';
 
 @Processor(Queues.WORK)
 export class WorkQueueProcessor {
@@ -29,7 +32,9 @@ export class WorkQueueProcessor {
   constructor(
     private mailjetService: MailjetService,
     private salesforceService: SalesforceService,
-    private companiesService: CompaniesService
+    private companiesService: CompaniesService,
+    private usersService: UsersService,
+    private userProfilesService: UserProfilesService
   ) {}
 
   @OnQueueActive()
@@ -219,5 +224,44 @@ export class WorkQueueProcessor {
       return `Salesforce : updated user '${data.userId}' company to '${data.companyId}'`;
     }
     return `Salesforce job ignored : update of user '${data.userId}' company to '${data.companyId}'`;
+  }
+
+  @Process(Jobs.ON_ONBOARDING_COMPLETED)
+  async processOnOnboardingCompleted(job: Job) {
+    const { data } = job;
+    const { userId } = data as OnOnboardingCompletedJob;
+
+    this.logger.log(
+      `Processing onboarding completion for user with id ${userId}`
+    );
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      this.logger.error(`User with id ${userId} not found`);
+      throw new Error(`User with id ${userId} not found`);
+    }
+
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+    if (!userProfile) {
+      this.logger.error(`UserProfile not found for user with id ${userId}`);
+      throw new Error(`UserProfile not found for user with id ${userId}`);
+    }
+
+    try {
+      const recommendedProfiles =
+        await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+          user,
+          userProfile
+        );
+      await this.usersService.sendOnboardingCompletedMail(
+        user,
+        recommendedProfiles
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to prepare recommendations for user with id ${user.id} after onboarding completion`,
+        err
+      );
+    }
+    return `Processed onboarding completion for user with id ${userId}`;
   }
 }
