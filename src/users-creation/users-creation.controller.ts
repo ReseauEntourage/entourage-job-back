@@ -280,7 +280,7 @@ export class UsersCreationController {
 
       // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
-        await this.usersCreationService.sendAdminNewRefererNotificationMail(
+        await this.usersCreationService.sendAdminNewRefererNotifications(
           createdUser
         );
       }
@@ -368,6 +368,11 @@ export class UsersCreationController {
       );
 
       await this.usersCreationService.sendFinalizeAccountReferedUser(
+        createdUser,
+        referer
+      );
+
+      await this.usersCreationService.sendAdminNewReferalNotifications(
         createdUser,
         referer
       );
