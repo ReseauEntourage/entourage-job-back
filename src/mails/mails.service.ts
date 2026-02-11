@@ -403,7 +403,7 @@ export class MailsService {
         zone: publicProfile?.zone || '',
         workTitle:
           publicProfile.role === UserRoles.CANDIDATE
-            ? publicProfile?.sectorOccupations[0]?.occupation.name
+            ? publicProfile?.sectorOccupations?.[0]?.occupation?.name || ''
             : publicProfile?.currentJob || '',
         businessSector1:
           publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
