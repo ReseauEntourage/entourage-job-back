@@ -12,6 +12,7 @@ import {
   getBullProfileGenerationQueueOptions,
   getBullCronTasksQueueOptions,
 } from 'src/queues/queues.utils';
+import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { CronTasksSlackReporterService } from './cron-tasks/cron-tasks-slack-reporter.service';
@@ -32,6 +33,8 @@ import { WorkQueueProcessor } from './work-queue.processor';
     SlackModule,
     UsersModule,
     UsersDeletionModule,
+    UsersModule,
+    UserProfilesModule,
   ],
   providers: [
     WorkQueueProcessor,

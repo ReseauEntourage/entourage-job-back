@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
 import { FindOptions } from 'sequelize/types/model';
@@ -9,11 +9,12 @@ import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { userProfileAttributes } from 'src/messaging/messaging.attributes';
 import { Organization } from 'src/organizations/models';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
-import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import { User, UserAttributes } from './models';
@@ -38,8 +39,6 @@ import {
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
-
   constructor(
     @InjectModel(User)
     private userModel: typeof User,
@@ -48,9 +47,8 @@ export class UsersService {
     private authService: AuthService,
     @Inject(forwardRef(() => CompanyUsersService))
     private companyUsersService: CompanyUsersService,
-    @Inject(forwardRef(() => UserProfilesService))
-    private userProfilesService: UserProfilesService,
-    private businessSectorsService: BusinessSectorsService
+    private businessSectorsService: BusinessSectorsService,
+    private queuesService: QueuesService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -465,32 +463,8 @@ export class UsersService {
       updateUserDto.onboardingStatus === OnboardingStatus.COMPLETED &&
       previousUser?.onboardingStatus !== OnboardingStatus.COMPLETED
     ) {
-      const userProfile = await this.userProfilesService.findOneByUserId(
-        updatedUser.id
-      );
-      if (!userProfile) {
-        throw new Error(
-          `UserProfile not found for user with id ${updatedUser.id}`
-        );
-      }
-
-      // Prepare recommendations in background without awaiting the result and send onboarding completed mail to user
-      void new Promise(async (resolve) => {
-        const recommendedProfiles =
-          await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
-            updatedUser,
-            userProfile
-          );
-        await this.sendOnboardingCompletedMail(
-          updatedUser,
-          recommendedProfiles
-        );
-        resolve(null);
-      }).catch((err) => {
-        this.logger.error(
-          `Failed to prepare recommendations for user with id ${updatedUser.id} after onboarding completion`,
-          err
-        );
+      await this.queuesService.addToWorkQueue(Jobs.ON_ONBOARDING_COMPLETED, {
+        userId: updatedUser.id,
       });
     }
 

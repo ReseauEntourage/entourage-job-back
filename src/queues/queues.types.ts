@@ -27,6 +27,7 @@ export const Jobs = {
   CREATE_OR_UPDATE_SALESFORCE_COMPANY: 'create_or_update_salesforce_company',
   GENERATE_PROFILE_FROM_PDF: 'generate_profile_from_pdf',
   UPDATE_SALESFORCE_USER_COMPANY: 'update_salesforce_user_company',
+  ON_ONBOARDING_COMPLETED: 'on_onboarding_completed',
 
   // Jobs related to cron tasks
   SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING:
@@ -50,6 +51,7 @@ type JobsData = {
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY]: CreateOrUpdateSalesforceCompanyJob;
   [Jobs.GENERATE_PROFILE_FROM_PDF]: GenerateProfileFromPDFJob;
   [Jobs.UPDATE_SALESFORCE_USER_COMPANY]: UpdateSalesforceUserCompanyJob;
+  [Jobs.ON_ONBOARDING_COMPLETED]: OnOnboardingCompletedJob;
 
   // Cron tasks jobs
   [Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING]: SendReminderToUserNotCompletedOnboardingJob;
@@ -103,6 +105,10 @@ export interface CreateOrUpdateSalesforceCompanyJob {
 export interface UpdateSalesforceUserCompanyJob {
   userId: string;
   companyId: string | null;
+}
+
+export interface OnOnboardingCompletedJob {
+  userId: string;
 }
 
 export interface GenerateProfileFromPDFJob {
