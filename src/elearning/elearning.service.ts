@@ -15,7 +15,6 @@ import {
 } from './elearning.attributes';
 import { generateElearningUnitIncludes } from './elearning.includes';
 import { ElearningCompletion } from './models/elearning-completion.model';
-import { ElearningUnitRole } from './models/elearning-unit-role.model';
 import { ElearningUnit } from './models/elearning-unit.model';
 
 @Injectable()
@@ -124,53 +123,17 @@ export class ElearningService {
     await completion.destroy();
   }
 
-  async computeElearningCompletionRate(user: User): Promise<number> {
-    const userRole = user?.role;
-    if (!userRole) {
-      return 0;
-    }
-
-    const totalUnitsCount = await this.elearningUnitModel.count({
-      distinct: true,
-      col: 'id',
-      include: [
-        {
-          model: ElearningUnitRole,
-          as: 'roles',
-          attributes: [],
-          where: { role: userRole },
-          required: true,
-        },
-      ],
+  async allUnitsNotCompletedByUser(user: User): Promise<ElearningUnit[]> {
+    const userRole = user.role as UserRole;
+    const units = await this.elearningUnitModel.findAll({
+      attributes: ELEARNING_UNIT_ATTRIBUTES,
+      include: generateElearningUnitIncludes({ userRole, userId: user.id }),
+      order: [['order', 'ASC']],
     });
-    if (totalUnitsCount === 0) {
-      return 0;
-    }
-
-    const completionsCount = await this.elearningCompletionModel.count({
-      distinct: true,
-      col: 'unitId',
-      where: { userId: user.id },
-      include: [
-        {
-          model: ElearningUnit,
-          as: 'unit',
-          attributes: [],
-          required: true,
-          include: [
-            {
-              model: ElearningUnitRole,
-              as: 'roles',
-              attributes: [],
-              where: { role: userRole },
-              required: true,
-            },
-          ],
-        },
-      ],
+    return units.filter((unit) => {
+      const completion = unit.userCompletions?.[0];
+      return !completion || !completion.validatedAt;
     });
-
-    return (completionsCount / totalUnitsCount) * 100;
   }
 
   // -- PRIVATE METHODS --
@@ -185,9 +148,13 @@ export class ElearningService {
     // If the user is a candidate or coach, we check if they have completed all
     // elearning units and send them a congratulation mail if it's the case
     if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
-      void this.computeElearningCompletionRate(user)
-        .then(async (completionRate) => {
-          if (completionRate >= 100) {
+      this.allUnitsNotCompletedByUser(user)
+        .then(async (notCompletedUnits) => {
+          const allCompleted = notCompletedUnits.length === 0;
+          this.logger.log(
+            `User with id ${userId} has completed all elearning units: ${allCompleted}`
+          );
+          if (allCompleted) {
             if (user) {
               await this.mailsService.sendAllElearningUnitsCompletedMail(user);
             }
