@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import _ from 'lodash';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { HeardAboutFilters } from 'src/contacts/contacts.types';
@@ -18,6 +18,7 @@ import { ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class MailsService {
+  private readonly logger = new Logger(MailsService.name);
   constructor(private queuesService: QueuesService) {}
 
   async sendPasswordResetLinkMail(
@@ -42,6 +43,9 @@ export class MailsService {
     token: string
   ) {
     const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
+    this.logger.log(
+      `Sending new account mail to user with email ${user.email}`
+    );
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
@@ -64,6 +68,9 @@ export class MailsService {
     if (user.role === UserRoles.COACH && user.company?.companyUser?.isAdmin) {
       const staffContactCompanyEmail =
         Zones[user.zone]?.staffContact?.company?.email;
+      this.logger.log(
+        `Sending welcome mail to company admin with email ${user.email}`
+      );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: staffContactCompanyEmail,
@@ -81,6 +88,9 @@ export class MailsService {
 
     // Send welcome message for referers
     if (user.role === UserRoles.REFERER) {
+      this.logger.log(
+        `Sending welcome mail to referer with email ${user.email}`
+      );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: staffContactMainEmail,
@@ -94,6 +104,9 @@ export class MailsService {
 
     // Send welcome message for candidates and coaches
     if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
+      this.logger.log(
+        `Sending welcome mail to user with email ${user.email} and role ${user.role}`
+      );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
         replyTo: staffContactMainEmail,
@@ -108,6 +121,9 @@ export class MailsService {
   }
 
   async sendVerificationMail(user: User, token: string) {
+    this.logger.log(
+      `Sending verification mail to user with email ${user.email}`
+    );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
@@ -121,6 +137,9 @@ export class MailsService {
   }
 
   async sendOnboardingBAOMail(user: User) {
+    this.logger.log(
+      `Sending onboarding BAO mail to user with email ${user.email}`
+    );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.ONBOARDING_J1_BAO,
@@ -133,6 +152,9 @@ export class MailsService {
   }
 
   async sendOnboardingContactAdviceMail(user: User) {
+    this.logger.log(
+      `Sending onboarding contact advice mail to user with email ${user.email}`
+    );
     const roleString = getRoleString(user);
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
@@ -154,6 +176,7 @@ export class MailsService {
   }
 
   async sendContactUsMail(contactUsFormDto: ContactUsFormDto) {
+    this.logger.log(`Sending contact us mail from ${contactUsFormDto.email}`);
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: process.env.MAILJET_CONTACT_EMAIL,
       templateId: MailjetTemplates.CONTACT_FORM,
@@ -179,7 +202,11 @@ export class MailsService {
     reportedUser: User,
     reporterUser: User
   ) {
+    this.logger.log(
+      `Sending user reported mail to staff contact with email ${reportedUser.staffContact?.email}`
+    );
     if (!reportedUser.staffContact) {
+      this.logger.error(`No staff contact found for zone ${reportedUser.zone}`);
       throw new NotFoundException(
         `No staff contact found for zone ${reportedUser.zone}`
       );
@@ -204,6 +231,9 @@ export class MailsService {
     reportedConversation: Conversation,
     reporterUser: User
   ) {
+    this.logger.log(
+      `Sending conversation reported mail to staff contact with email ${reporterUser.staffContact?.email}`
+    );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: 'contact@entourage-pro.fr',
       templateId: MailjetTemplates.CONVERSATION_REPORTED_ADMIN,
@@ -216,7 +246,13 @@ export class MailsService {
       },
     });
   }
+
   async sendNewMessageNotifMail(message: Message, addressees: User[]) {
+    this.logger.log(
+      `Sending new message notification mail to addressees: ${addressees
+        .map((a) => a.email)
+        .join(', ')}`
+    );
     const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${message.authorId}`;
 
     await Promise.all(
@@ -255,6 +291,9 @@ export class MailsService {
     candidate: User,
     token: string
   ) {
+    this.logger.log(
+      `Sending refered candidate finalize account mail to candidate with email ${candidate.email}`
+    );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: candidate.email,
       templateId: MailjetTemplates.REFERED_CANDIDATE_FINALIZE_ACCOUNT,
@@ -271,6 +310,9 @@ export class MailsService {
   }
 
   async sendRefererCandidateHasVerifiedAccountMail(candidate: User) {
+    this.logger.log(
+      `Sending referer candidate has verified account mail to referer with email ${candidate.referer?.email}`
+    );
     if (candidate.referer === null) {
       throw new NotFoundException();
     }
@@ -295,6 +337,11 @@ export class MailsService {
   }
 
   async sendAdminNewRefererNotificationMail(referer: User) {
+    this.logger.log(
+      `Sending admin new referer notification mail to staff contact with email ${
+        Zones[referer.zone]?.staffContact?.main?.email
+      }`
+    );
     const staffContactMainEmail =
       Zones[referer.zone]?.staffContact?.main?.email;
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
@@ -309,6 +356,9 @@ export class MailsService {
   }
 
   async sendUserDeletionEmail(user: User) {
+    this.logger.log(
+      `Sending user deletion mail to user with email ${user.email}`
+    );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.USER_ACCOUNT_DELETED,
@@ -325,6 +375,9 @@ export class MailsService {
     email: string;
     invitationWithCompany: CompanyInvitation;
   }) {
+    this.logger.log(
+      `Sending company invitation mail to ${email} from sender with email ${sender.id}`
+    );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: email,
       templateId: MailjetTemplates.COMPANY_COLLABORATORS_INVITATION,
@@ -346,6 +399,11 @@ export class MailsService {
     companyAdmins: User[],
     createdUser: User
   ) {
+    this.logger.log(
+      `Sending collaborator invitation used mail to company admins with emails ${companyAdmins
+        .map((admin) => admin.email)
+        .join(', ')}`
+    );
     const promises = companyAdmins.map((admin) => {
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: admin.email,
@@ -363,6 +421,9 @@ export class MailsService {
   }
 
   async sendAllElearningUnitsCompletedMail(user: User) {
+    this.logger.log(
+      `Sending all elearning units completed mail for user with id ${user.id}`
+    );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: process.env.MAILJET_CONTACT_EMAIL,
       templateId: MailjetTemplates.ELEARNING_ALL_UNITS_COMPLETED,
@@ -372,9 +433,15 @@ export class MailsService {
         zone: user.zone,
       },
     });
+    this.logger.log(
+      `Sent all elearning units completed mail for user with id ${user.id}`
+    );
   }
 
   async sendReminderToCompleteOnboarding(user: User) {
+    this.logger.log(
+      `Sending reminder to complete onboarding mail to user with email ${user.email}`
+    );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.ONBOARDING_REMINDER,
@@ -391,6 +458,9 @@ export class MailsService {
     user: User,
     recommendedPublicProfiles: PublicProfileDto[]
   ) {
+    this.logger.log(
+      `Sending onboarding completed mail to user with email ${user.email}`
+    );
     const awsS3Url = process.env.AWSS3_URL || '';
     const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
     const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
@@ -430,6 +500,9 @@ export class MailsService {
   }
 
   async sendReminderToCompleteProfile(user: User) {
+    this.logger.log(
+      `Sending reminder to complete profile mail to user with email ${user.email}`
+    );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.NOT_COMPLETED_PROFILE_REMINDER,

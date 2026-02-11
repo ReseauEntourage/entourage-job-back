@@ -1,10 +1,12 @@
 import { InjectQueue } from '@nestjs/bull';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JobOptions, Queue } from 'bull';
 import { Job, JobData, Queues } from '../queues.types';
 
 @Injectable()
 export class QueuesService {
+  private readonly logger = new Logger(QueuesService.name);
+
   constructor(
     @InjectQueue(Queues.WORK)
     private workQueue: Queue,
@@ -19,6 +21,7 @@ export class QueuesService {
     data: JobData<T>,
     opts?: JobOptions
   ) {
+    this.logger.log(`Adding job to work queue: ${type}`);
     return this.workQueue.add(type, data, opts);
   }
 
@@ -27,6 +30,7 @@ export class QueuesService {
     data: JobData<T>,
     opts?: JobOptions
   ) {
+    this.logger.log(`Adding job to profile generation queue: ${type}`);
     return this.profileGenerationQueue.add(type, data, opts);
   }
 
@@ -35,6 +39,7 @@ export class QueuesService {
     data: JobData<T>,
     opts?: JobOptions
   ) {
+    this.logger.log(`Adding job to cron tasks queue: ${type}`);
     return this.cronTasksQueue.add(type, data, opts);
   }
 }

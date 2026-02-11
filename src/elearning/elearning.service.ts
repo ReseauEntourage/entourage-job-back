@@ -20,7 +20,6 @@ import { ElearningUnit } from './models/elearning-unit.model';
 @Injectable()
 export class ElearningService {
   private readonly logger = new Logger(ElearningService.name);
-
   constructor(
     @InjectModel(ElearningUnit)
     private elearningUnitModel: typeof ElearningUnit,
@@ -145,6 +144,13 @@ export class ElearningService {
   private async onElearningUnitCompleted(userId: string) {
     const user = await this.usersService.findOne(userId);
 
+    if (!user) {
+      this.logger.error(
+        `User with id ${userId} not found while processing onElearningUnitCompleted`
+      );
+      return;
+    }
+
     // If the user is a candidate or coach, we check if they have completed all
     // elearning units and send them a congratulation mail if it's the case
     if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
@@ -156,6 +162,9 @@ export class ElearningService {
           );
           if (allCompleted) {
             if (user) {
+              this.logger.log(
+                `User with id ${userId} has completed all elearning units, sending congratulation mail`
+              );
               await this.mailsService.sendAllElearningUnitsCompletedMail(user);
             }
           }
