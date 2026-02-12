@@ -108,7 +108,7 @@ export class UsersCreationService {
     await this.slackService.sendAdminNewRefererNotification(referer);
   }
 
-  async sendAdminNewReferalNotifications(referredUser: User, referer: User) {
+  async sendAdminNewReferingNotifications(referredUser: User, referer: User) {
     await this.slackService.sendAdminNewReferingNotification(
       referredUser,
       referer

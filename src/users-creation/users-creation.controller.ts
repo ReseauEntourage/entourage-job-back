@@ -372,7 +372,7 @@ export class UsersCreationController {
         referer
       );
 
-      await this.usersCreationService.sendAdminNewReferalNotifications(
+      await this.usersCreationService.sendAdminNewReferingNotifications(
         createdUser,
         referer
       );
