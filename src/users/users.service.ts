@@ -531,16 +531,13 @@ export class UsersService {
         raw: true,
       }
     );
-
-    const users: Partial<User>[] = inactiveUsers.map((user) => {
+    const users = inactiveUsers.map((user) => {
       return {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        candidat: { url: user.candidatUrl },
-      } as Partial<User>;
+      };
     });
-
     return users;
   }
 

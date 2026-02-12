@@ -41,12 +41,11 @@ export class UsersDeletionService {
     });
     return this.userProfilesService.removeByUserId(id);
   }
-
-  async deleteCompleteUser(user: User): Promise<{ userDeleted: number }> {
-    const { id, firstName, lastName } = user.toJSON();
-
+  async deleteCompleteUser(
+    user: Pick<User, 'id' | 'firstName' | 'lastName'>
+  ): Promise<{ userDeleted: number }> {
+    const { id, firstName, lastName } = user;
     await this.removeFiles(id, firstName, lastName);
-
     await this.updateUser(id, {
       firstName: 'Utilisateur',
       lastName: 'supprimé',

@@ -76,7 +76,7 @@ export class CronTasksProcessor {
     const results = await Promise.allSettled(
       inactiveUsers.map(async (user) => {
         this.logger.log(`Deleting user ${user.id}`);
-        await this.usersDeletionService.deleteCompleteUser(user as User);
+        await this.usersDeletionService.deleteCompleteUser(user);
       })
     );
 
