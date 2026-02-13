@@ -102,4 +102,7 @@ export const SlackMocks: ProviderMock<SlackService> = {
   sendMessageUserReported: jest.fn(),
   generateProfileReportedBlocks: jest.fn(),
   getUserIdByEmail: jest.fn(),
+  sendTechnicalMonitoringMessage: jest.fn(),
+  sendReplyMessage: jest.fn(),
+  generateTechNotificationBlocks: jest.fn(),
 } as const;

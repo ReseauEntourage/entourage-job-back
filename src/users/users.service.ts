@@ -7,7 +7,11 @@ import { BusinessSectorsService } from 'src/common/business-sectors/business-sec
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
+import { userProfileAttributes } from 'src/messaging/messaging.attributes';
 import { Organization } from 'src/organizations/models';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
+import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
@@ -20,7 +24,12 @@ import {
   getUserProfileRecentlyUpdatedOrder,
   UserIncludes,
 } from './models/user.include';
-import { MemberFilterKey, UserRole, UserRoles } from './users.types';
+import {
+  MemberFilterKey,
+  OnboardingStatus,
+  UserRole,
+  UserRoles,
+} from './users.types';
 
 import {
   getCommonMembersFilterOptions,
@@ -38,7 +47,8 @@ export class UsersService {
     private authService: AuthService,
     @Inject(forwardRef(() => CompanyUsersService))
     private companyUsersService: CompanyUsersService,
-    private businessSectorsService: BusinessSectorsService
+    private businessSectorsService: BusinessSectorsService,
+    private queuesService: QueuesService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -430,9 +440,17 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const shouldCheckOnboardingTransition =
+      updateUserDto.onboardingStatus !== undefined;
+
+    const previousUser = shouldCheckOnboardingTransition
+      ? await this.findOne(id)
+      : null;
+
     await this.userModel.update(updateUserDto, {
       where: { id },
       individualHooks: true,
+      hooks: true,
     });
 
     const updatedUser = await this.findOneWithRelations(id);
@@ -441,7 +459,26 @@ export class UsersService {
       return null;
     }
 
+    if (
+      updateUserDto.onboardingStatus === OnboardingStatus.COMPLETED &&
+      previousUser?.onboardingStatus !== OnboardingStatus.COMPLETED
+    ) {
+      await this.queuesService.addToWorkQueue(Jobs.ON_ONBOARDING_COMPLETED, {
+        userId: updatedUser.id,
+      });
+    }
+
     return updatedUser.toJSON();
+  }
+
+  async sendOnboardingCompletedMail(
+    user: User,
+    recommendedProfiles: PublicProfileDto[]
+  ) {
+    return this.mailsService.sendOnboardingCompletedMail(
+      user,
+      recommendedProfiles
+    );
   }
 
   async remove(id: string) {
@@ -494,16 +531,13 @@ export class UsersService {
         raw: true,
       }
     );
-
-    const users: Partial<User>[] = inactiveUsers.map((user) => {
+    const users = inactiveUsers.map((user) => {
       return {
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        candidat: { url: user.candidatUrl },
-      } as Partial<User>;
+      };
     });
-
     return users;
   }
 
@@ -529,5 +563,159 @@ export class UsersService {
         role: UserRoles.CANDIDATE,
       },
     });
+  }
+
+  /**
+   * Get candidates and coaches that have not completed their onboarding
+   * @param daysSinceCreation
+   * @returns Array of users that have not completed their onboarding
+   */
+  async getUsersNotCompletedOnboarding(daysSinceCreation: number) {
+    const users = await this.userModel.findAll({
+      attributes: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'onboardingStatus',
+        'createdAt',
+        'zone',
+        'role',
+      ],
+      where: {
+        role: {
+          [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
+        },
+        createdAt: {
+          [Op.gte]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              daysSinceCreation * 24 * 60 * 60 * 1000
+          ),
+          [Op.lt]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
+          ),
+        },
+        onboardingStatus: {
+          [Op.ne]: OnboardingStatus.COMPLETED,
+        },
+      },
+    });
+
+    return users;
+  }
+
+  async sendReminderToCompleteOnboarding(user: User) {
+    return this.mailsService.sendReminderToCompleteOnboarding(user);
+  }
+
+  async sendOnboardingBAOMailToUser(user: User) {
+    return this.mailsService.sendOnboardingBAOMail(user);
+  }
+
+  async sendOnboardingContactAdviceMail(user: User) {
+    return this.mailsService.sendOnboardingContactAdviceMail(user);
+  }
+
+  async getUsersCompletedOnboardingSinceDelay(
+    daysSinceOnboardingCompletion: number
+  ) {
+    const users = await this.userModel.findAll({
+      attributes: [...UserAttributes],
+      where: {
+        role: {
+          [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
+        },
+        onboardingCompletedAt: {
+          [Op.gte]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              daysSinceOnboardingCompletion * 24 * 60 * 60 * 1000
+          ),
+          [Op.lt]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              (daysSinceOnboardingCompletion - 1) * 24 * 60 * 60 * 1000
+          ),
+        },
+        onboardingStatus: OnboardingStatus.COMPLETED,
+      },
+    });
+
+    return users;
+  }
+
+  async getUsersWithNotCompletedProfile(daysAfterOnboardingCompletion: number) {
+    const endDate = new Date(
+      new Date().setHours(0, 0, 0, 0) -
+        (daysAfterOnboardingCompletion - 1) * 24 * 60 * 60 * 1000
+    );
+    const startDate = new Date(
+      new Date().setHours(0, 0, 0, 0) -
+        daysAfterOnboardingCompletion * 24 * 60 * 60 * 1000
+    );
+
+    const rawMatchingUsers: { id: string }[] =
+      await this.userModel.sequelize.query(
+        `
+        SELECT DISTINCT
+          "User"."id" as id
+
+        FROM "Users" as "User"
+        LEFT OUTER JOIN "UserProfiles" as "userProfile"
+          ON "User"."id" = "userProfile"."userId"
+
+        WHERE "User"."deletedAt" IS NULL
+          AND "User"."onboardingStatus" = :onboardingStatus
+          AND "User"."onboardingCompletedAt" >= :startDate
+          AND "User"."onboardingCompletedAt" < :endDate
+          AND "User"."role" IN (:candidateRole, :coachRole)
+          AND (
+            "userProfile"."description" IS NULL
+            OR "userProfile"."hasPicture" = FALSE
+            OR NOT EXISTS (
+              SELECT 1
+              FROM "UserProfileSectorOccupations" as upso
+              WHERE upso."userProfileId" = "userProfile"."id"
+                AND upso."businessSectorId" IS NOT NULL
+                AND upso."occupationId" IS NOT NULL
+            )
+          );
+        `,
+        {
+          type: QueryTypes.SELECT,
+          raw: true,
+          replacements: {
+            onboardingStatus: OnboardingStatus.COMPLETED,
+            startDate,
+            endDate,
+            candidateRole: UserRoles.CANDIDATE,
+            coachRole: UserRoles.COACH,
+          },
+        }
+      );
+
+    const userIds = rawMatchingUsers.map((user) => user.id);
+
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    return this.userModel.findAll({
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: UserProfile,
+          as: 'userProfile',
+          attributes: userProfileAttributes,
+          required: false,
+        },
+      ],
+      where: {
+        id: userIds,
+      },
+    });
+  }
+
+  async sendReminderToCompleteProfile(user: User) {
+    return this.mailsService.sendReminderToCompleteProfile(user);
   }
 }

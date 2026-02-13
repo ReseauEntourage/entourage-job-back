@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEmail as IsEmailClassValidator,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -33,6 +34,7 @@ import {
   AdminRole,
   Gender,
   Genders,
+  OnboardingStatus,
   RolesWithOrganization,
   UserRole,
   UserRoles,
@@ -179,6 +181,16 @@ export class User extends HistorizedModel {
   @IsBoolean()
   @Column
   isEmailVerified: boolean;
+
+  @IsEnum(OnboardingStatus)
+  @Default(OnboardingStatus.NOT_STARTED)
+  @IsOptional()
+  @Column(DataType.ENUM(...Object.values(OnboardingStatus)))
+  onboardingStatus: OnboardingStatus;
+
+  @AllowNull(true)
+  @Column
+  onboardingCompletedAt: Date;
 
   @CreatedAt
   createdAt: Date;
@@ -336,6 +348,25 @@ export class User extends HistorizedModel {
       },
       { hooks: true }
     );
+  }
+
+  @BeforeUpdate
+  static async setOnboardingCompletedAt(userToUpdate: User) {
+    if (!userToUpdate.changed('onboardingStatus')) {
+      return;
+    }
+
+    const previousOnboardingStatus = userToUpdate.previous(
+      'onboardingStatus'
+    ) as OnboardingStatus | undefined;
+
+    if (
+      userToUpdate.onboardingStatus === OnboardingStatus.COMPLETED &&
+      previousOnboardingStatus !== OnboardingStatus.COMPLETED &&
+      !userToUpdate.onboardingCompletedAt
+    ) {
+      userToUpdate.onboardingCompletedAt = new Date();
+    }
   }
 
   @BeforeUpdate

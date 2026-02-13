@@ -17,7 +17,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import moment from 'moment';
 import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
 import {
@@ -34,15 +33,17 @@ import {
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
+import {
+  generatePublicProfileDto,
+  PublicProfileDto,
+} from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
-import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfilesService } from './user-profiles.service';
-import { ContactTypeEnum, PublicProfile } from './user-profiles.types';
-import { getPublicProfileFromUserAndUserProfile } from './user-profiles.utils';
+import { ContactTypeEnum } from './user-profiles.types';
 
 @ApiTags('UserProfiles')
 @ApiBearerAuth()
@@ -217,7 +218,7 @@ export class UserProfilesController {
   @Get('/recommendations')
   async findRecommendationsByUserId(
     @UserPayload('id', new ParseUUIDPipe()) userId: string
-  ): Promise<PublicProfile[]> {
+  ): Promise<PublicProfileDto[]> {
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
 
@@ -225,52 +226,9 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    const oneWeekAgo = moment().subtract(1, 'week');
-
-    const currentRecommendedProfiles =
-      await this.userProfilesService.findRecommendationsByUserId(userId);
-
-    const oneOfCurrentRecommendedProfilesIsNotAvailable =
-      currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
-      });
-
-    if (
-      !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecommendedProfiles.length < 3 ||
-      oneOfCurrentRecommendedProfilesIsNotAvailable
-    ) {
-      await this.userProfilesService.removeRecommendationsByUserId(userId);
-      await this.userProfilesService.updateRecommendationsByUserId(userId);
-      await this.userProfilesService.updateByUserId(userId, {
-        lastRecommendationsDate: moment().toDate(),
-      });
-    }
-
-    const recommendedProfiles =
-      await this.userProfilesService.findRecommendationsByUserId(userId);
-
-    return Promise.all(
-      recommendedProfiles.map(
-        async (recommendedProfile): Promise<PublicProfile> => {
-          const averageDelayResponse =
-            await this.userProfilesService.getAverageDelayResponse(
-              recommendedProfile.recUser.id
-            );
-
-          const {
-            recUser: { userProfile, ...restRecommendedUser },
-          }: UserProfileRecommendation = recommendedProfile.toJSON();
-
-          return {
-            ...restRecommendedUser,
-            ...userProfile,
-            id: recommendedProfile.recUser.id,
-            averageDelayResponse,
-          };
-        }
-      )
+    return this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+      user,
+      userProfile
     );
   }
 
@@ -291,10 +249,6 @@ export class UserProfilesController {
     const averageDelayResponse =
       await this.userProfilesService.getAverageDelayResponse(userIdToGet);
 
-    return getPublicProfileFromUserAndUserProfile({
-      user,
-      userProfile,
-      averageDelayResponse,
-    });
+    return generatePublicProfileDto(user, userProfile, averageDelayResponse);
   }
 }

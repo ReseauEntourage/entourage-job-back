@@ -21,4 +21,5 @@ export const UserProfilesUserAttributes = [
   'role',
   'lastConnection',
   'createdAt',
+  'zone',
 ];

@@ -18,6 +18,8 @@ export const UserAttributes = [
   'whatsappZoneName',
   'whatsappZoneUrl',
   'whatsappZoneQR',
+  'onboardingStatus',
+  'onboardingCompletedAt',
 ] as const;
 
 export type UserAttribute = (typeof UserAttributes)[number];
@@ -28,6 +30,7 @@ export const PublicUserAttributes = [
   'lastName',
   'role',
   'createdAt',
+  'zone',
 ];
 
 export type PublicUserAttribute = (typeof PublicUserAttributes)[number];

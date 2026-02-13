@@ -10,7 +10,6 @@ import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { LanguagesService } from 'src/common/languages/languages.service';
-import { Department } from 'src/common/locations/locations.types';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
 import {
   CvSchemaType,
@@ -157,9 +156,7 @@ export class ProfileGenerationService {
   ): Promise<void> {
     try {
       // Mise à jour des informations de base du profil utilisateur
-      const userProfileDto: Partial<UserProfileWithPartialAssociations> & {
-        nudgeIds?: string[];
-      } = {};
+      const userProfileDto: Partial<UserProfileWithPartialAssociations> = {};
 
       const userProfile = await this.userProfileService.findOneByUserId(userId);
       if (!userProfile) {
@@ -168,19 +165,9 @@ export class ProfileGenerationService {
 
       userProfileDto.userId = userId;
 
-      if (cvData.introduction) {
-        userProfileDto.introduction = cvData.introduction;
-      }
       if (cvData.description) {
         userProfileDto.description = cvData.description;
       }
-      if (cvData.department) {
-        userProfileDto.department = cvData.department as Department;
-      }
-      if (cvData.linkedinUrl) {
-        userProfileDto.linkedinUrl = cvData.linkedinUrl;
-      }
-
       if (cvData.skills) {
         userProfileDto.skills = cvData.skills.map((skill) => ({
           name: skill.name,
