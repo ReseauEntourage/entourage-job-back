@@ -1,11 +1,4 @@
-import {
-  BadRequestException,
-  forwardRef,
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -22,6 +15,12 @@ import { UserRoles } from 'src/users/users.types';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
+import {
+  ErrorMessagingCantParticipate,
+  ErrorMessagingInvalidMessage,
+  ErrorMessagingNeedParticipantsOrConversationId,
+  ErrorMessagingReachedDailyConversationLimit,
+} from './messaging.errors';
 import {
   messagingConversationIncludes,
   messagingMessageIncludes,
@@ -53,16 +52,64 @@ export class MessagingService {
     private mediaService: MediasService
   ) {}
 
-  /**
-   * User can participate to a conversation
-   */
-  async canParticipate(userId: string, createMessageDto: CreateMessageDto) {
+  async createMessageWithConversation(
+    createMessageDto: CreateMessageDto,
+    userId: string,
+    files?: Express.Multer.File[]
+  ) {
+    if ((!files || files.length <= 0) && createMessageDto.content.length <= 0) {
+      throw new ErrorMessagingInvalidMessage(
+        'Le message doit contenir au moins un caractère.'
+      );
+    }
     if (!createMessageDto.conversationId && !createMessageDto.participantIds) {
-      throw new BadRequestException(
+      throw new ErrorMessagingNeedParticipantsOrConversationId(
         'Vous devez fournir un identifiant de conversation ou une liste de participants.'
       );
     }
 
+    // Check if user can participate
+    const canParticipate = await this.canParticipate(userId, createMessageDto);
+    if (!canParticipate) {
+      throw new ErrorMessagingCantParticipate();
+    }
+
+    const sequelize = this.messageModel.sequelize;
+    if (!sequelize) {
+      throw new Error(
+        'Failed to initialize database transaction in createConversationWithFirstMessage: Sequelize connection unavailable'
+      );
+    }
+    return await sequelize.transaction(async (transaction) => {
+      // Create the conversation if needed
+      let conversationId = createMessageDto.conversationId;
+      if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+        const conversation = await this.createConversation(
+          {
+            authorId: userId,
+            participantIds: createMessageDto.participantIds,
+            messageContent: createMessageDto.content,
+          },
+          { transaction }
+        );
+        conversationId = conversation.id;
+      }
+      return this.createMessage(
+        {
+          ...createMessageDto,
+          conversationId: conversationId,
+          authorId: userId,
+          files: files,
+        },
+        { transaction }
+      );
+    });
+  }
+
+  /**
+   * User can participate to a conversation
+   */
+  async canParticipate(userId: string, createMessageDto: CreateMessageDto) {
     // Ignore if the conversationId is not provided but the participantIds are
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
       return true;
@@ -240,113 +287,34 @@ export class MessagingService {
    * Create a new conversation with the given participants
    * @param participantIds
    */
-  async createConversation(
-    participantIds: string[],
-    transaction?: Transaction
+  private async createConversation(
+    {
+      authorId,
+      participantIds,
+      messageContent,
+    }: { authorId: string; participantIds: string[]; messageContent?: string },
+    options?: { transaction?: Transaction }
   ) {
+    await this.handleDailyConversationLimit(
+      authorId,
+      participantIds,
+      messageContent
+    );
+
+    const uniqueParticipantIds = Array.from(
+      new Set([...participantIds, authorId])
+    );
+
     const conversation = await this.conversationModel.create(
       {},
-      { transaction }
+      { transaction: options?.transaction }
     );
     await this.addMembersToConversation(
       conversation.id,
-      participantIds,
-      transaction
+      uniqueParticipantIds,
+      options?.transaction
     );
     return conversation;
-  }
-
-  /**
-   * Add members to a conversation
-   * @param conversationId - The conversation to add members to
-   * @param userIds - The users to add to the conversation
-   */
-  async addMembersToConversation(
-    conversationId: string,
-    userIds: string[],
-    transaction?: Transaction
-  ) {
-    await this.conversationParticipantModel.bulkCreate(
-      userIds.map((userId) => ({
-        conversationId,
-        userId,
-      })),
-      { transaction }
-    );
-  }
-
-  /**
-   * Create a new message
-   * @param message - The message to create
-   */
-  async createMessage(
-    createMessageDto: Partial<
-      Message & {
-        files: Express.Multer.File[];
-        mediaIds?: string[];
-      }
-    >,
-    options?: { transaction?: Transaction }
-  ) {
-    const transaction = options?.transaction;
-    if (createMessageDto.files) {
-      const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
-        createMessageDto.files,
-        createMessageDto.authorId
-      );
-      createMessageDto.mediaIds = mediaRecords.map((media: Media) => media.id);
-    }
-    const createdMessage = await this.messageModel.create(createMessageDto, {
-      transaction,
-    });
-    if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
-      await this.addMediasToMessage(
-        createdMessage.id,
-        createMessageDto.mediaIds,
-        transaction
-      );
-    }
-    // Set conversation as seen because the user has sent a message
-    await this.setConversationHasSeen(
-      createMessageDto.conversationId,
-      createMessageDto.authorId,
-      transaction
-    );
-    const message = await this.findOneMessage(createdMessage.id, transaction);
-
-    const notifyOtherParticipants = () => {
-      const otherParticipants = message.conversation.participants.filter(
-        (participant) => participant.id !== createMessageDto.authorId
-      );
-      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
-    };
-
-    if (transaction) {
-      transaction.afterCommit(() => {
-        notifyOtherParticipants();
-      });
-    } else {
-      notifyOtherParticipants();
-    }
-
-    return message;
-  }
-
-  async addMediasToMessage(
-    messageId: string,
-    mediasId: string[],
-    transaction?: Transaction
-  ) {
-    if (mediasId.length === 0) {
-      return;
-    }
-    await this.messageMediaModel.bulkCreate(
-      mediasId.map((mediaId) => ({
-        messageId,
-        mediaId,
-      })),
-      { transaction }
-    );
   }
 
   async setConversationHasSeen(
@@ -432,112 +400,10 @@ export class MessagingService {
     return message;
   }
 
-  async countDailyConversations(userId: string) {
-    return this.conversationParticipantModel.count({
-      where: {
-        userId,
-        createdAt: {
-          [Op.gte]: new Date(new Date().setHours(0, 0, 0, 0)),
-        },
-      },
-    });
-  }
-
-  async handleDailyConversationLimit(
-    senderId: string,
-    participantIds: string[],
-    message: string
-  ) {
-    const sender = await this.usersService.findOneWithRelations(senderId);
-    if (sender.role === UserRoles.ADMIN) {
-      // Admins can create as many conversations as they want
-      return;
-    }
-    const countDailyConversation = await this.countDailyConversations(
-      sender.id
-    );
-    if (countDailyConversation >= 7) {
-      const recipients: User[] = [];
-      for (const id of participantIds) {
-        const recipient = await this.usersService.findOneWithRelations(id);
-        if (recipient) {
-          recipients.push(recipient);
-        }
-      }
-
-      const moderatorSlackEmail = sender.staffContact?.slackEmail;
-      const referentSlackUserId = await this.slackService.getUserIdByEmail(
-        moderatorSlackEmail
-      );
-      const slackMsgConfig: SlackBlockConfig =
-        generateSlackMsgConfigUserSuspiciousUser(
-          sender,
-          recipients,
-          `Un utilisateur tente de créer sa ${
-            countDailyConversation + 1
-          }ème conversation aujourd\'hui`,
-          referentSlackUserId,
-          message
-        );
-      const slackMessage =
-        this.slackService.generateSlackBlockMsg(slackMsgConfig);
-      this.slackService.sendMessage(
-        slackChannels.ENTOURAGE_PRO_MODERATION,
-        slackMessage,
-        'Conversation de la messagerie signalée'
-      );
-    }
-
-    if (countDailyConversation >= 7) {
-      throw new HttpException(
-        'DAILY_CONVERSATION_LIMIT_REACHED',
-        HttpStatus.TOO_MANY_REQUESTS
-      );
-    }
-  }
-
-  async findMediasByConversationId(conversationId: string) {
-    return this.mediaService.findMediasByConversationId(conversationId);
-  }
-
-  async createConversationWithFirstMessage(params: {
-    participantIds: string[];
-    authorId: string;
-    createMessageDto: CreateMessageDto;
-    files?: Express.Multer.File[];
-  }) {
-    const sequelize = this.messageModel.sequelize;
-
-    if (!sequelize) {
-      throw new Error(
-        'Failed to initialize database transaction in createConversationWithFirstMessage: Sequelize connection unavailable'
-      );
-    }
-
-    const uniqueParticipantIds = Array.from(
-      new Set([...params.participantIds, params.authorId])
-    );
-
-    return sequelize.transaction(async (transaction) => {
-      const conversation = await this.createConversation(
-        uniqueParticipantIds,
-        transaction
-      );
-
-      return this.createMessage(
-        {
-          ...params.createMessageDto,
-          conversationId: conversation.id,
-          authorId: params.authorId,
-          files: params.files,
-        },
-        { transaction }
-      );
-    });
-  }
-
   /**
-   * Post a feedback on a conversation
+   * Create a feedback for a conversation participant
+   * @param postFeedbackDto - The feedback to create
+   * @returns The updated conversation participant with the feedback
    */
   async postFeedback(postFeedbackDto: PostFeedbackDto) {
     const conversationParticipant =
@@ -633,5 +499,176 @@ export class MessagingService {
     if (totalMessages === 0) return null;
 
     return Math.round((answeredMessages / totalMessages) * 100);
+  }
+
+  /**
+   * === PRIVATE METHODS ===
+   */
+
+  /**
+   * Find medias linked to a conversation
+   * @param conversationId
+   * @returns the medias linked to the conversation
+   */
+  async findMediasByConversationId(conversationId: string) {
+    return this.mediaService.findMediasByConversationId(conversationId);
+  }
+  /**
+   * Add members to a conversation
+   * @param conversationId - The conversation to add members to
+   * @param userIds - The users to add to the conversation
+   */
+  private async addMembersToConversation(
+    conversationId: string,
+    userIds: string[],
+    transaction?: Transaction
+  ) {
+    await this.conversationParticipantModel.bulkCreate(
+      userIds.map((userId) => ({
+        conversationId,
+        userId,
+      })),
+      { transaction }
+    );
+  }
+
+  /**
+   * Create a new message
+   * @param message - The message to create
+   */
+  private async createMessage(
+    createMessageDto: Partial<
+      Message & {
+        files: Express.Multer.File[];
+        mediaIds?: string[];
+      }
+    >,
+    options?: { transaction?: Transaction }
+  ) {
+    const transaction = options?.transaction;
+    if (createMessageDto.files) {
+      const mediaRecords = await this.mediaService.bulkUploadAndCreateMedias(
+        createMessageDto.files,
+        createMessageDto.authorId
+      );
+      createMessageDto.mediaIds = mediaRecords.map((media: Media) => media.id);
+    }
+    const createdMessage = await this.messageModel.create(createMessageDto, {
+      transaction,
+    });
+    if (createMessageDto.mediaIds && createMessageDto.mediaIds.length > 0) {
+      await this.addMediasToMessage(
+        createdMessage.id,
+        createMessageDto.mediaIds,
+        transaction
+      );
+    }
+    // Set conversation as seen because the user has sent a message
+    await this.setConversationHasSeen(
+      createMessageDto.conversationId,
+      createMessageDto.authorId,
+      transaction
+    );
+    const message = await this.findOneMessage(createdMessage.id, transaction);
+
+    const notifyOtherParticipants = () => {
+      const otherParticipants = message.conversation.participants.filter(
+        (participant) => participant.id !== createMessageDto.authorId
+      );
+      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+    };
+
+    if (transaction) {
+      transaction.afterCommit(() => {
+        notifyOtherParticipants();
+      });
+    } else {
+      notifyOtherParticipants();
+    }
+
+    return message;
+  }
+
+  private async addMediasToMessage(
+    messageId: string,
+    mediasId: string[],
+    transaction?: Transaction
+  ) {
+    if (mediasId.length === 0) {
+      return;
+    }
+    await this.messageMediaModel.bulkCreate(
+      mediasId.map((mediaId) => ({
+        messageId,
+        mediaId,
+      })),
+      { transaction }
+    );
+  }
+
+  private async handleDailyConversationLimit(
+    senderId: string,
+    participantIds: string[],
+    message?: string
+  ) {
+    const sender = await this.usersService.findOneWithRelations(senderId);
+    if (sender.role === UserRoles.ADMIN) {
+      // Admins can create as many conversations as they want
+      return;
+    }
+    const countDailyConversation = await this.countDailyConversations(
+      sender.id
+    );
+    if (countDailyConversation >= 7) {
+      const recipients: User[] = [];
+      for (const id of participantIds) {
+        const recipient = await this.usersService.findOneWithRelations(id);
+        if (recipient) {
+          recipients.push(recipient);
+        }
+      }
+
+      const moderatorSlackEmail = sender.staffContact?.slackEmail;
+      const referentSlackUserId = await this.slackService.getUserIdByEmail(
+        moderatorSlackEmail
+      );
+      const slackMsgConfig: SlackBlockConfig =
+        generateSlackMsgConfigUserSuspiciousUser(
+          sender,
+          recipients,
+          `Un utilisateur tente de créer sa ${
+            countDailyConversation + 1
+          }ème conversation aujourd\'hui`,
+          referentSlackUserId,
+          message || 'Aucun message fourni'
+        );
+      const slackMessage =
+        this.slackService.generateSlackBlockMsg(slackMsgConfig);
+      this.slackService.sendMessage(
+        slackChannels.ENTOURAGE_PRO_MODERATION,
+        slackMessage,
+        'Conversation de la messagerie signalée'
+      );
+    }
+
+    if (countDailyConversation >= 7) {
+      throw new ErrorMessagingReachedDailyConversationLimit();
+    }
+  }
+
+  /**
+   * Count the number of conversations created by a user in the last 24 hours
+   * @param userId - The ID of the user to count the conversations for
+   * @returns The number of conversations created by the user in the last 24 hours
+   */
+  async countDailyConversations(userId: string) {
+    return this.conversationParticipantModel.count({
+      where: {
+        userId,
+        createdAt: {
+          [Op.gte]: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
+      },
+    });
   }
 }

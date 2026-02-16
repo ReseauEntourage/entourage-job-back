@@ -11,6 +11,7 @@ export class CreateMessageDto extends PickType(Message, ['content'] as const) {
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
   conversationId?: string;
 
   @ApiProperty()
