@@ -55,7 +55,7 @@ export class CronService {
     };
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  // @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async preparePostOnboardingCompletionMails() {
     this.logger.log('Cron job started: preparePostOnboardingCompletionMails');
 
@@ -75,7 +75,7 @@ export class CronService {
     };
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  // @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async prepareNotCompletedProfileMails() {
     this.logger.log('Cron job started: prepareNotCompletedProfileMails');
 
