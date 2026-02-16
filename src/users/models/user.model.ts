@@ -244,9 +244,6 @@ export class User extends HistorizedModel {
       staffContactGroup = StaffContactGroup.CANDIDATE; // Use candidate contact for candidates
     }
 
-    if (!(zone in Zones)) {
-      return undefined;
-    }
     return Zones[zone].staffContact[staffContactGroup];
   }
 
