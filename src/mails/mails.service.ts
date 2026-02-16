@@ -30,6 +30,7 @@ export class MailsService {
         firstName: user.firstName,
         role: getRoleString(user),
         zone: user.zone || ZoneName.HZ,
+        staffContact: user.staffContact,
         token,
       },
     });
@@ -50,6 +51,7 @@ export class MailsService {
         firstName: user.firstName,
         role: getRoleString(user),
         zone: user.zone || ZoneName.HZ,
+        staffContact: user.staffContact,
         token,
       },
     });
@@ -72,6 +74,7 @@ export class MailsService {
           companyGoal: user.company.goal || '',
           companyName: user.company.name,
           zone: user.zone || ZoneName.HZ,
+          staffContact: user.staffContact,
         },
       });
     }
@@ -90,6 +93,7 @@ export class MailsService {
           firstName: user.firstName,
           role: user.role,
           zone: user.zone || ZoneName.HZ,
+          staffContact: user.staffContact,
         },
       });
     }
@@ -109,6 +113,7 @@ export class MailsService {
           firstName: user.firstName,
           role: user.role,
           zone: user.zone || ZoneName.HZ,
+          staffContact: user.staffContact,
         },
       });
     }
@@ -127,6 +132,7 @@ export class MailsService {
         toEmail: user.email,
         token,
         zone: user.zone,
+        staffContact: user.staffContact,
       },
     });
   }
@@ -142,6 +148,7 @@ export class MailsService {
         firstName: user.firstName,
         role: getRoleString(user),
         zone: user.zone,
+        staffContact: user.staffContact,
       },
     });
   }
@@ -166,6 +173,7 @@ export class MailsService {
           roleString === 'Candidat'
             ? process.env.TOOLBOX_CANDIDATE_URL
             : process.env.TOOLBOX_COACH_URL,
+        staffContact: user.staffContact,
       },
     });
   }
@@ -275,6 +283,7 @@ export class MailsService {
             // General
             zone: addressee.zone,
             role: addressee.role,
+            staffContact: addressee.staffContact,
           },
         });
       })
@@ -300,6 +309,7 @@ export class MailsService {
         organizationName: referer.organization.name,
         finalizeAccountUrl: `${process.env.FRONT_URL}/finaliser-compte-oriente?token=${token}`,
         zone: candidate.zone,
+        staffContact: candidate.staffContact,
       },
     });
   }
@@ -325,6 +335,7 @@ export class MailsService {
         candidateLastName: candidate.lastName,
         refererFirstName: candidate.referer.firstName,
         zone: candidate.zone,
+        staffContact: candidate.referer.staffContact,
         loginUrl: `${process.env.FRONT_URL}/login`,
       },
     });
@@ -362,12 +373,12 @@ export class MailsService {
     email,
     invitationWithCompany,
   }: {
-    sender: Pick<User, 'id' | 'firstName' | 'lastName' | 'zone'>;
+    sender: User;
     email: string;
     invitationWithCompany: CompanyInvitation;
   }) {
     this.logger.log(
-      `Sending company invitation mail to ${email} from sender with email ${sender.id}`
+      `Sending company invitation mail to ${email} from sender with email ${sender.email}`
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: email,
@@ -382,6 +393,7 @@ export class MailsService {
           invitationWithCompany.company.name
         )}&flow=coach&invitationId=${invitationWithCompany.id}`,
         zone: sender.zone, // We don't have zone of the collaborators, so we use the sender's zone by default
+        staffContact: sender.staffContact,
       },
     });
   }
@@ -405,6 +417,7 @@ export class MailsService {
           adminFirstName: admin.firstName,
           loginUrl: `${process.env.FRONT_URL}/login`,
           zone: admin.zone,
+          staffContact: admin.staffContact,
         },
       });
     });
@@ -422,6 +435,7 @@ export class MailsService {
         firstName: user.firstName,
         role: getRoleString(user),
         zone: user.zone,
+        staffContact: user.staffContact,
       },
     });
     this.logger.log(
@@ -441,6 +455,7 @@ export class MailsService {
         ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
         role: getRoleString(user),
         zone: user.zone,
+        staffContact: user.staffContact,
       },
     });
   }
@@ -482,6 +497,7 @@ export class MailsService {
         firstName: user.firstName,
         role: getRoleString(user),
         zone: user.zone,
+        staffContact: user.staffContact,
         reco1: formattedRecommendedProfiles[0] || '',
         reco2: formattedRecommendedProfiles[1] || '',
         reco3: formattedRecommendedProfiles[2] || '',
@@ -501,6 +517,7 @@ export class MailsService {
         firstName: user.firstName,
         role: getRoleString(user),
         zone: user.zone,
+        staffContact: user.staffContact,
       },
     });
   }
