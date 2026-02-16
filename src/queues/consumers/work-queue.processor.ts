@@ -12,6 +12,7 @@ import { Job, Queue } from 'bull';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { MessagingService } from 'src/messaging/messaging.service';
 import {
   CreateOrUpdateSalesforceCompanyJob,
   CreateOrUpdateSalesforceUserJob,
@@ -20,6 +21,7 @@ import {
   OnOnboardingCompletedJob,
   Queues,
   SendMailJob,
+  SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -34,7 +36,8 @@ export class WorkQueueProcessor {
     private salesforceService: SalesforceService,
     private companiesService: CompaniesService,
     private usersService: UsersService,
-    private userProfilesService: UserProfilesService
+    private userProfilesService: UserProfilesService,
+    private messagingService: MessagingService
   ) {}
 
   @OnQueueActive()
@@ -246,6 +249,17 @@ export class WorkQueueProcessor {
       throw new Error(`UserProfile not found for user with id ${userId}`);
     }
 
+    // Send a welcome message from a staff member in the messaging system
+    const welcomeMessageToSend =
+      await this.usersService.generatePostOnboardingWelcomeMessage(user);
+    if (welcomeMessageToSend) {
+      const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
+      await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+        addresseeId: data.userId,
+        message: welcomeMessageToSend,
+      });
+    }
+
     try {
       const recommendedProfiles =
         await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
@@ -269,5 +283,37 @@ export class WorkQueueProcessor {
       );
     }
     return `Processed onboarding completion for user with id ${userId}`;
+  }
+
+  @Process(Jobs.SEND_STAFF_MESSAGING_MESSAGE)
+  async processSendStaffMessagingMessage(
+    job: Job<SendStaffMessagingMessageJob>
+  ) {
+    const { data } = job;
+    const { addresseeId, message } = data;
+
+    const addressee = await this.usersService.findOne(addresseeId);
+
+    const staffContactEmail = addressee.staffContact.entourageProEmail;
+    const staffContactEpUser = await this.usersService.findOneByMail(
+      staffContactEmail
+    );
+    if (!staffContactEpUser) {
+      this.logger.error(
+        `Staff contact with email ${staffContactEmail} not found for user with id ${addresseeId}`
+      );
+      throw new Error(
+        `Staff contact with email ${staffContactEmail} not found`
+      );
+    }
+
+    await this.messagingService.createMessageWithConversation(
+      {
+        content: message,
+        participantIds: [addresseeId],
+      },
+      staffContactEpUser.id
+    );
+    return `Message sent from staff member with email ${staffContactEmail} to user with id ${addresseeId}`;
   }
 }

@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize, Transaction } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -36,6 +36,7 @@ import { Message } from './models/message.model';
 
 @Injectable()
 export class MessagingService {
+  private readonly logger = new Logger(MessagingService.name);
   constructor(
     @InjectModel(Message)
     private messageModel: typeof Message,
@@ -51,6 +52,8 @@ export class MessagingService {
     private mailsService: MailsService,
     private mediaService: MediasService
   ) {}
+
+  private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
 
   async createMessageWithConversation(
     createMessageDto: CreateMessageDto,
@@ -83,16 +86,38 @@ export class MessagingService {
     return await sequelize.transaction(async (transaction) => {
       // Create the conversation if needed
       let conversationId = createMessageDto.conversationId;
-      if (!createMessageDto.conversationId && createMessageDto.participantIds) {
-        const conversation = await this.createConversation(
-          {
-            authorId: userId,
-            participantIds: createMessageDto.participantIds,
-            messageContent: createMessageDto.content,
-          },
-          { transaction }
+      if (!conversationId && createMessageDto.participantIds) {
+        const normalizedParticipantIds = this.normalizeParticipantIds(
+          userId,
+          createMessageDto.participantIds
         );
-        conversationId = conversation.id;
+
+        // We always include the author in a conversation; at least 2 unique users are required.
+        if (normalizedParticipantIds.length < 2) {
+          throw new ErrorMessagingNeedParticipantsOrConversationId(
+            'Vous devez fournir au moins un participant ou un identifiant de conversation.'
+          );
+        }
+
+        const existingConversationId =
+          await this.findConversationIdByExactParticipants(
+            normalizedParticipantIds,
+            { transaction }
+          );
+
+        if (existingConversationId) {
+          conversationId = existingConversationId;
+        } else {
+          const conversation = await this.createConversation(
+            {
+              authorId: userId,
+              participantIds: createMessageDto.participantIds,
+              messageContent: createMessageDto.content,
+            },
+            { transaction }
+          );
+          conversationId = conversation.id;
+        }
       }
       return this.createMessage(
         {
@@ -104,6 +129,50 @@ export class MessagingService {
         { transaction }
       );
     });
+  }
+
+  private normalizeParticipantIds(authorId: string, participantIds: string[]) {
+    return Array.from(new Set([...(participantIds || []), authorId]))
+      .filter(Boolean)
+      .sort();
+  }
+
+  /**
+   * Returns an existing conversation id whose participants match EXACTLY the given set.
+   * Order does not matter; duplicates are ignored by the caller via normalizeParticipantIds.
+   */
+  private async findConversationIdByExactParticipants(
+    participantIds: string[],
+    options?: { transaction?: Transaction }
+  ): Promise<string | null> {
+    const participantCount = participantIds.length;
+
+    // Match conversations that:
+    // 1) contain all requested participants (and only them)
+    // 2) have exactly participantCount participants total
+    const matches = await this.conversationParticipantModel.findAll({
+      attributes: ['conversationId'],
+      where: {
+        userId: {
+          [Op.in]: participantIds,
+        },
+      },
+      group: ['conversationId'],
+      having: Sequelize.and(
+        Sequelize.literal(`COUNT(DISTINCT "userId") = ${participantCount}`),
+        Sequelize.literal(
+          `(SELECT COUNT(DISTINCT "userId") FROM "ConversationParticipants" cp2 WHERE cp2."conversationId" = "ConversationParticipant"."conversationId") = ${participantCount}`
+        )
+      ),
+      transaction: options?.transaction,
+    });
+
+    const firstMatch = matches?.[0];
+    if (!firstMatch) {
+      return null;
+    }
+
+    return firstMatch.getDataValue('conversationId') as string;
   }
 
   /**
@@ -619,7 +688,7 @@ export class MessagingService {
     const countDailyConversation = await this.countDailyConversations(
       sender.id
     );
-    if (countDailyConversation >= 7) {
+    if (countDailyConversation > this.DAILY_CONVERSATION_LIMIT_THRESHOLD) {
       const recipients: User[] = [];
       for (const id of participantIds) {
         const recipient = await this.usersService.findOneWithRelations(id);
@@ -649,9 +718,7 @@ export class MessagingService {
         slackMessage,
         'Conversation de la messagerie signalée'
       );
-    }
 
-    if (countDailyConversation >= 7) {
       throw new ErrorMessagingReachedDailyConversationLimit();
     }
   }
