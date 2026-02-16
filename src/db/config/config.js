@@ -24,6 +24,7 @@ module.exports = {
     use_env_variable: 'DATABASE_URL',
     dialect: 'postgres',
     dialectOptions: {
+      application_name: 'entourage-pro-backend',
       ssl: {
         require: true,
         rejectUnauthorized: false,
