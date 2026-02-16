@@ -66,10 +66,7 @@ export class UsersCreationService {
     return this.authService.generateRandomPasswordInJWT(expiration);
   }
 
-  async sendNewAccountMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
-    token: string
-  ) {
+  async sendNewAccountMail(user: User, token: string) {
     return this.mailsService.sendNewAccountMail(user, token);
   }
 

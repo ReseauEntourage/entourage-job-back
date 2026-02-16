@@ -11,6 +11,12 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.PARIS],
     suffix: ZoneSuffix.PARIS,
     staffContact: {
+      candidate: {
+        name: 'Clothilde B.',
+        img: `${imageBasePath}staff-pictures/clothilde.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_PARIS,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_PARIS,
+      },
       main: {
         name: 'Clothilde B.',
         img: `${imageBasePath}staff-pictures/clothilde.jpg`,
@@ -30,6 +36,12 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.LYON],
     suffix: ZoneSuffix.LYON,
     staffContact: {
+      candidate: {
+        name: 'Alice D.',
+        img: `${imageBasePath}staff-pictures/alice.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LYON,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LYON,
+      },
       main: {
         name: 'Alice D.',
         img: `${imageBasePath}staff-pictures/alice.jpg`,
@@ -49,6 +61,12 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.LILLE],
     suffix: ZoneSuffix.LILLE,
     staffContact: {
+      candidate: {
+        name: 'Julien D.',
+        img: `${imageBasePath}staff-pictures/julien.png`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LILLE,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LILLE,
+      },
       main: {
         name: 'Julien D.',
         img: `${imageBasePath}staff-pictures/julien.png`,
@@ -68,6 +86,12 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.RENNES],
     suffix: ZoneSuffix.RENNES,
     staffContact: {
+      candidate: {
+        name: 'Mathilde G.',
+        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
+      },
       main: {
         name: 'Mathilde G.',
         img: `${imageBasePath}staff-pictures/mathilde.jpg`,
@@ -91,6 +115,12 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.LORIENT],
     suffix: ZoneSuffix.RENNES,
     staffContact: {
+      candidate: {
+        name: 'Mathilde G.',
+        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
+      },
       main: {
         name: 'Mathilde G.',
         img: `${imageBasePath}staff-pictures/mathilde.jpg`,
@@ -110,9 +140,15 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.BORDEAUX],
     suffix: ZoneSuffix.SUDOUEST,
     staffContact: {
+      candidate: {
+        name: 'Laure D.',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
+      },
       main: {
-        name: 'Valentine R.',
-        img: `${imageBasePath}staff-pictures/valentine.jpg`,
+        name: 'Laure D.',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
       },
@@ -129,9 +165,15 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.HZ],
     suffix: ZoneSuffix.HZ,
     staffContact: {
+      candidate: {
+        name: 'Laure D.',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
+      },
       main: {
-        name: 'Valentine R.',
-        img: `${imageBasePath}staff-pictures/valentine.jpg`,
+        name: 'Laure D.',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
       },

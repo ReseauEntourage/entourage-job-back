@@ -12,7 +12,6 @@ import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
-import { Zones } from 'src/utils/constants/zones';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { ZoneName } from 'src/utils/types/zones.types';
 
@@ -21,59 +20,50 @@ export class MailsService {
   private readonly logger = new Logger(MailsService.name);
   constructor(private queuesService: QueuesService) {}
 
-  async sendPasswordResetLinkMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
-    token: string
-  ) {
-    const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
+  async sendPasswordResetLinkMail(user: User, token: string) {
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
-      replyTo: staffContactMainEmail,
+      replyTo: user.staffContact.email,
       templateId: MailjetTemplates.PASSWORD_RESET,
       variables: {
-        ..._.omitBy(user, _.isNil),
+        id: user.id,
+        firstName: user.firstName,
+        role: getRoleString(user),
         zone: user.zone || ZoneName.HZ,
         token,
       },
     });
   }
 
-  async sendNewAccountMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
-    token: string
-  ) {
-    const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
+  async sendNewAccountMail(user: User, token: string) {
+    const staffContactEmail = user.staffContact.email;
     this.logger.log(
       `Sending new account mail to user with email ${user.email}`
     );
 
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
-      replyTo: staffContactMainEmail,
+      replyTo: staffContactEmail,
       templateId: MailjetTemplates.ACCOUNT_CREATED,
       variables: {
-        ..._.omitBy(user, _.isNil),
+        id: user.id,
+        firstName: user.firstName,
+        role: getRoleString(user),
         zone: user.zone || ZoneName.HZ,
         token,
       },
     });
   }
 
-  async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
-  ) {
-    const staffContactMainEmail = Zones[user.zone]?.staffContact?.main?.email;
-
+  async sendWelcomeMail(user: User) {
     // Send welcome message for company admins
     if (user.role === UserRoles.COACH && user.company?.companyUser?.isAdmin) {
-      const staffContactCompanyEmail =
-        Zones[user.zone]?.staffContact?.company?.email;
       this.logger.log(
         `Sending welcome mail to company admin with email ${user.email}`
       );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: staffContactCompanyEmail,
+        replyTo: user.staffContact.email,
         templateId: MailjetTemplates.WELCOME_COACH_COMPANY_ADMIN,
         variables: {
           firstName: user.firstName,
@@ -93,10 +83,12 @@ export class MailsService {
       );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: staffContactMainEmail,
+        replyTo: user.staffContact.email,
         templateId: MailjetTemplates.WELCOME_REFERER,
         variables: {
-          ..._.omitBy(user, _.isNil),
+          id: user.id,
+          firstName: user.firstName,
+          role: user.role,
           zone: user.zone || ZoneName.HZ,
         },
       });
@@ -109,11 +101,13 @@ export class MailsService {
       );
       return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
         toEmail: user.email,
-        replyTo: staffContactMainEmail,
+        replyTo: user.staffContact.email,
         templateId: MailjetTemplates.WELCOME_CANDIDATE_COACH,
         variables: {
           ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
-          ..._.omitBy(user, _.isNil),
+          id: user.id,
+          firstName: user.firstName,
+          role: user.role,
           zone: user.zone || ZoneName.HZ,
         },
       });
@@ -126,6 +120,7 @@ export class MailsService {
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
+      replyTo: user.staffContact.email,
       templateId: MailjetTemplates.USER_EMAIL_VERIFICATION,
       variables: {
         firstName: user.firstName,
@@ -317,14 +312,13 @@ export class MailsService {
       throw new NotFoundException();
     }
 
-    const staffContactMainEmail =
-      Zones[candidate.zone]?.staffContact?.main?.email;
+    const staffContactEmail = candidate.referer.staffContact.email;
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: {
         to: candidate.referer.email,
-        bcc: staffContactMainEmail,
+        bcc: staffContactEmail,
       },
-      replyTo: staffContactMainEmail,
+      replyTo: staffContactEmail,
       templateId: MailjetTemplates.REFERER_CANDIDATE_HAS_FINALIZED_ACCOUNT,
       variables: {
         candidateFirstName: candidate.firstName,
@@ -337,13 +331,10 @@ export class MailsService {
   }
 
   async sendAdminNewRefererNotificationMail(referer: User) {
+    const staffContactMainEmail = referer.staffContact.email;
     this.logger.log(
-      `Sending admin new referer notification mail to staff contact with email ${
-        Zones[referer.zone]?.staffContact?.main?.email
-      }`
+      `Sending admin new referer notification mail to staff contact with email ${staffContactMainEmail}`
     );
-    const staffContactMainEmail =
-      Zones[referer.zone]?.staffContact?.main?.email;
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: staffContactMainEmail,
       templateId: MailjetTemplates.ADMIN_NEW_REFERER_NOTIFICATION,

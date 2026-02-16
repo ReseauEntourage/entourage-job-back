@@ -451,6 +451,7 @@ export class UsersService {
       where: { id },
       individualHooks: true,
       hooks: true,
+      returning: true,
     });
 
     const updatedUser = await this.findOneWithRelations(id);
@@ -468,7 +469,7 @@ export class UsersService {
       });
     }
 
-    return updatedUser.toJSON();
+    return updatedUser;
   }
 
   async sendOnboardingCompletedMail(

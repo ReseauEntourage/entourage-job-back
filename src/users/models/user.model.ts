@@ -233,13 +233,16 @@ export class User extends HistorizedModel {
   @Column(DataType.VIRTUAL)
   get staffContact(): InternalStaffContact | undefined {
     const zone = (this.getDataValue('zone') as ZoneName) || ZoneName.HZ;
-
     // Check if companies association is loaded
     const hasCompanies = this.companies !== undefined;
-    const staffContactGroup =
-      hasCompanies && this.company && this.company?.companyUser?.isAdmin
-        ? StaffContactGroup.COMPANY
-        : StaffContactGroup.MAIN;
+
+    let staffContactGroup = StaffContactGroup.MAIN; // Default to main contact
+    if (hasCompanies && this.company && this.company?.companyUser?.isAdmin) {
+      staffContactGroup = StaffContactGroup.COMPANY; // Use company contact for company admins
+    }
+    if (this.role === UserRoles.CANDIDATE) {
+      staffContactGroup = StaffContactGroup.CANDIDATE; // Use candidate contact for candidates
+    }
 
     if (!(zone in Zones)) {
       return undefined;
