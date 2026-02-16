@@ -192,10 +192,7 @@ export class AuthService {
     return await this.userProfileService.findOneByUserId(id, complete);
   }
 
-  async sendPasswordResetLinkMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
-    token: string
-  ) {
+  async sendPasswordResetLinkMail(user: User, token: string) {
     return this.mailsService.sendPasswordResetLinkMail(user, token);
   }
 
@@ -219,9 +216,7 @@ export class AuthService {
     );
   }
 
-  async sendWelcomeMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email' | 'company'>
-  ) {
+  async sendWelcomeMail(user: User) {
     return this.mailsService.sendWelcomeMail(user);
   }
 

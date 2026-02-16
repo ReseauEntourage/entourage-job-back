@@ -63,18 +63,7 @@ export class AuthController {
       user.id
     );
 
-    const { id, firstName, role, zone } = updatedUser;
-
-    await this.authService.sendPasswordResetLinkMail(
-      {
-        id,
-        firstName,
-        role,
-        zone,
-        email,
-      },
-      token
-    );
+    await this.authService.sendPasswordResetLinkMail(updatedUser, token);
 
     return;
   }

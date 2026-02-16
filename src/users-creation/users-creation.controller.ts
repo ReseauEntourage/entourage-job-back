@@ -93,18 +93,8 @@ export class UsersCreationController {
         throw new ConflictException();
       }
     }
-    const { id, firstName, role, zone, email } = createdUser.toJSON();
 
-    await this.usersCreationService.sendNewAccountMail(
-      {
-        id,
-        firstName,
-        role,
-        zone,
-        email,
-      },
-      jwtToken
-    );
+    await this.usersCreationService.sendNewAccountMail(createdUser, jwtToken);
 
     return this.usersCreationService.findOneUser(createdUser.id);
   }
