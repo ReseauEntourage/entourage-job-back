@@ -722,24 +722,28 @@ export class UsersService {
 
   async generatePostOnboardingWelcomeMessage(user: User) {
     if (user.role === UserRoles.CANDIDATE) {
-      return `Bonjour ${user.firstName},\n
-        Bienvenue sur Entourage Pro, je suis ${user.staffContact.name}, votre référent sur la plateforme.\n
-        Je suis là pour vous accompagner si vous avez la moindre question : contacter un coach, préparer un premier échange ou savoir comment bénéficier au mieux du réseau Entourage Pro.\n
-        👉 Vous pouvez dès maintenant parcourir les profils de coachs et envoyer un premier message. Quelques lignes suffisent pour démarrer la conversation.\n
-        Les mises en relation sont simples, bienveillantes et sans engagement.\n
-        À très bientôt,\n
-        ${user.staffContact.name}
-      `;
+      return [
+        `Bonjour ${user.firstName},`,
+        '',
+        `Bienvenue sur Entourage Pro, je suis ${user.staffContact.name}, votre référent sur la plateforme.`,
+        'Je suis là pour vous accompagner si vous avez la moindre question : contacter un coach, préparer un premier échange ou savoir comment bénéficier au mieux du réseau Entourage Pro.',
+        '👉 Vous pouvez dès maintenant parcourir les profils de coachs et envoyer un premier message. Quelques lignes suffisent pour démarrer la conversation.',
+        'Les mises en relation sont simples, bienveillantes et sans engagement.',
+        'À très bientôt,',
+        `${user.staffContact.name}`,
+      ].join('\n');
     } else if (user.role === UserRoles.COACH) {
-      return `Bonjour ${user.firstName},\n
-        Ravi(e) de vous accueillir comme coach sur Entourage Pro.\n
-        Je suis ${user.staffContact.name}, votre référent sur la plateforme.\n
-        Je suis disponible si vous avez besoin d’aide pour démarrer, comprendre le fonctionnement ou optimiser votre profil.\n
-        👉 Vous pouvez dès maintenant consulter les profils des candidats et initier un premier contact si un parcours vous interpelle. Un message simple et personnalisé suffit à lancer l’échange.\n
-        Merci pour votre engagement au service du réseau.\n
-        Je reste à votre disposition,\n
-        ${user.staffContact.name}
-      `;
+      return [
+        `Bonjour ${user.firstName},`,
+        '',
+        'Ravi(e) de vous accueillir comme coach sur Entourage Pro.',
+        `Je suis ${user.staffContact.name}, votre référent sur la plateforme.`,
+        'Je suis disponible si vous avez besoin d’aide pour démarrer, comprendre le fonctionnement ou optimiser votre profil.',
+        '👉 Vous pouvez dès maintenant consulter les profils des candidats et initier un premier contact si un parcours vous interpelle. Un message simple et personnalisé suffit à lancer l’échange.',
+        'Merci pour votre engagement au service du réseau.',
+        'Je reste à votre disposition,',
+        `${user.staffContact.name}`,
+      ].join('\n');
     }
     return null;
   }

@@ -331,15 +331,17 @@ export class WorkQueueProcessor {
       );
       return `No messages provided for bulk sending staff messaging message`;
     }
-    for (const { addresseeEmail, message } of messages) {
-      // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
-      const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
-      await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
-        addresseeEmail,
-        message,
-      });
-    }
+    const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
 
+    await Promise.all(
+      messages.map(({ addresseeEmail, message }) =>
+        // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
+        queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+          addresseeEmail,
+          message,
+        })
+      )
+    );
     return `Bulk message sent from staff member to users with emails ${messages
       .map((m) => m.addresseeEmail)
       .join(', ')}`;
