@@ -725,7 +725,7 @@ export class UsersService {
       return [
         `Bonjour ${user.firstName},`,
         '',
-        `Bienvenue sur Entourage Pro, je suis ${user.staffContact.name}, votre référent sur la plateforme.`,
+        `Bienvenue sur Entourage Pro, je suis ${user.staffContact.name}, votre point de contact sur la plateforme.`,
         '',
         'Je suis là pour vous accompagner si vous avez la moindre question : contacter un coach, préparer un premier échange ou savoir comment bénéficier au mieux du réseau Entourage Pro.',
         '',
@@ -740,9 +740,9 @@ export class UsersService {
       return [
         `Bonjour ${user.firstName},`,
         '',
-        'Ravi(e) de vous accueillir comme coach sur Entourage Pro.',
+        'Je vous souhaite la bienvenue en tant que coach sur Entourage Pro.',
         '',
-        `Je suis ${user.staffContact.name}, votre référent sur la plateforme.`,
+        `Je suis ${user.staffContact.name}, votre point de contact sur la plateforme.`,
         '',
         'Je suis disponible si vous avez besoin d’aide pour démarrer, comprendre le fonctionnement ou optimiser votre profil.',
         '',
