@@ -164,7 +164,7 @@ export class MailsService {
       variables: {
         subject:
           roleString === 'Candidat'
-            ? 'Et si tu demandais un coup de main ? ✋'
+            ? 'Et si vous demandiez un coup de main ? ✋'
             : '10 façons de devenir un super coach 💡',
         firstName: user.firstName,
         role: roleString,
