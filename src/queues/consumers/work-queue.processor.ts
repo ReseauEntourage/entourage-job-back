@@ -238,7 +238,7 @@ export class WorkQueueProcessor {
     this.logger.log(
       `Processing onboarding completion for user with id ${userId}`
     );
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOneWithRelations(userId);
     if (!user) {
       this.logger.error(`User with id ${userId} not found`);
       throw new Error(`User with id ${userId} not found`);
@@ -293,7 +293,9 @@ export class WorkQueueProcessor {
     const { data } = job;
     const { addresseeEmail, message } = data;
 
-    const addressee = await this.usersService.findOneByMail(addresseeEmail);
+    const addressee = await this.usersService.findOneByMailWithRelations(
+      addresseeEmail
+    );
 
     const staffContactEmail = addressee.staffContact.entourageProEmail;
     const staffContactEpUser = await this.usersService.findOneByMail(
