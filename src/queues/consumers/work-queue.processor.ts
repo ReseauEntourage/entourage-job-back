@@ -12,7 +12,9 @@ import { Job, Queue } from 'bull';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { MessagingService } from 'src/messaging/messaging.service';
 import {
+  BulkSendStaffMessagingMessageJob,
   CreateOrUpdateSalesforceCompanyJob,
   CreateOrUpdateSalesforceUserJob,
   Jobs,
@@ -20,6 +22,7 @@ import {
   OnOnboardingCompletedJob,
   Queues,
   SendMailJob,
+  SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -34,7 +37,8 @@ export class WorkQueueProcessor {
     private salesforceService: SalesforceService,
     private companiesService: CompaniesService,
     private usersService: UsersService,
-    private userProfilesService: UserProfilesService
+    private userProfilesService: UserProfilesService,
+    private messagingService: MessagingService
   ) {}
 
   @OnQueueActive()
@@ -234,7 +238,7 @@ export class WorkQueueProcessor {
     this.logger.log(
       `Processing onboarding completion for user with id ${userId}`
     );
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findOneWithRelations(userId);
     if (!user) {
       this.logger.error(`User with id ${userId} not found`);
       throw new Error(`User with id ${userId} not found`);
@@ -244,6 +248,17 @@ export class WorkQueueProcessor {
     if (!userProfile) {
       this.logger.error(`UserProfile not found for user with id ${userId}`);
       throw new Error(`UserProfile not found for user with id ${userId}`);
+    }
+
+    // Send a welcome message from a staff member in the messaging system
+    const welcomeMessageToSend =
+      await this.usersService.generatePostOnboardingWelcomeMessage(user);
+    if (welcomeMessageToSend) {
+      const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
+      await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+        addresseeEmail: user.email,
+        message: welcomeMessageToSend,
+      });
     }
 
     try {
@@ -269,5 +284,68 @@ export class WorkQueueProcessor {
       );
     }
     return `Processed onboarding completion for user with id ${userId}`;
+  }
+
+  @Process(Jobs.SEND_STAFF_MESSAGING_MESSAGE)
+  async processSendStaffMessagingMessage(
+    job: Job<SendStaffMessagingMessageJob>
+  ) {
+    const { data } = job;
+    const { addresseeEmail, message } = data;
+
+    const addressee = await this.usersService.findOneByMailWithRelations(
+      addresseeEmail
+    );
+
+    const staffContactEmail = addressee.staffContact.entourageProEmail;
+    const staffContactEpUser = await this.usersService.findOneByMail(
+      staffContactEmail
+    );
+    if (!staffContactEpUser) {
+      this.logger.error(
+        `Staff contact with email ${staffContactEmail} not found for user with email ${addresseeEmail}`
+      );
+      throw new Error(
+        `Staff contact with email ${staffContactEmail} not found`
+      );
+    }
+
+    await this.messagingService.createMessageWithConversation(
+      {
+        content: message,
+        participantIds: [addressee.id],
+      },
+      staffContactEpUser.id
+    );
+    return `Message sent from staff member with email ${staffContactEmail} to user with email ${addresseeEmail}`;
+  }
+
+  @Process(Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE)
+  async processBulkSendStaffMessagingMessage(
+    job: Job<BulkSendStaffMessagingMessageJob>
+  ) {
+    const { data } = job;
+    const { messages } = data;
+
+    if (messages.length === 0) {
+      this.logger.warn(
+        `No messages provided for bulk sending staff messaging message`
+      );
+      return `No messages provided for bulk sending staff messaging message`;
+    }
+    const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
+
+    await Promise.all(
+      messages.map(({ addresseeEmail, message }) =>
+        // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
+        queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+          addresseeEmail,
+          message,
+        })
+      )
+    );
+    return `Bulk message sent from staff member to users with emails ${messages
+      .map((m) => m.addresseeEmail)
+      .join(', ')}`;
   }
 }
