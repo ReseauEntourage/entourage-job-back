@@ -14,6 +14,7 @@ import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import {
+  BulkSendStaffMessagingMessageJob,
   CreateOrUpdateSalesforceCompanyJob,
   CreateOrUpdateSalesforceUserJob,
   Jobs,
@@ -315,5 +316,32 @@ export class WorkQueueProcessor {
       staffContactEpUser.id
     );
     return `Message sent from staff member with email ${staffContactEmail} to user with id ${addresseeId}`;
+  }
+
+  @Process(Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE)
+  async processBulkSendStaffMessagingMessage(
+    job: Job<BulkSendStaffMessagingMessageJob>
+  ) {
+    const { data } = job;
+    const { message, addresseeIds } = data;
+
+    if (addresseeIds.length === 0) {
+      this.logger.warn(
+        `No addressee ids provided for bulk sending staff messaging message`
+      );
+      return `No addressee ids provided for bulk sending staff messaging message`;
+    }
+    for (const addresseeId of addresseeIds) {
+      // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
+      const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
+      await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+        addresseeId,
+        message,
+      });
+    }
+
+    return `Bulk message sent from staff member to users with ids ${addresseeIds.join(
+      ', '
+    )}`;
   }
 }

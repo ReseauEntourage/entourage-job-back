@@ -29,6 +29,7 @@ export const Jobs = {
   UPDATE_SALESFORCE_USER_COMPANY: 'update_salesforce_user_company',
   ON_ONBOARDING_COMPLETED: 'on_onboarding_completed',
   SEND_STAFF_MESSAGING_MESSAGE: 'send_staff_messaging_message',
+  BULK_SEND_STAFF_MESSAGING_MESSAGE: 'bulk_send_staff_messaging_message',
 
   // Jobs related to cron tasks
   SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING:
@@ -54,6 +55,7 @@ type JobsData = {
   [Jobs.UPDATE_SALESFORCE_USER_COMPANY]: UpdateSalesforceUserCompanyJob;
   [Jobs.ON_ONBOARDING_COMPLETED]: OnOnboardingCompletedJob;
   [Jobs.SEND_STAFF_MESSAGING_MESSAGE]: SendStaffMessagingMessageJob;
+  [Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE]: BulkSendStaffMessagingMessageJob;
 
   // Cron tasks jobs
   [Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING]: SendReminderToUserNotCompletedOnboardingJob;
@@ -115,6 +117,11 @@ export interface OnOnboardingCompletedJob {
 
 export interface SendStaffMessagingMessageJob {
   addresseeId: string;
+  message: string;
+}
+
+export interface BulkSendStaffMessagingMessageJob {
+  addresseeIds: string[];
   message: string;
 }
 
