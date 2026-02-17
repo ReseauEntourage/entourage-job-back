@@ -323,15 +323,15 @@ export class WorkQueueProcessor {
     job: Job<BulkSendStaffMessagingMessageJob>
   ) {
     const { data } = job;
-    const { message, addresseeIds } = data;
+    const { messages } = data;
 
-    if (addresseeIds.length === 0) {
+    if (messages.length === 0) {
       this.logger.warn(
-        `No addressee ids provided for bulk sending staff messaging message`
+        `No messages provided for bulk sending staff messaging message`
       );
-      return `No addressee ids provided for bulk sending staff messaging message`;
+      return `No messages provided for bulk sending staff messaging message`;
     }
-    for (const addresseeId of addresseeIds) {
+    for (const { addresseeId, message } of messages) {
       // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
       const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
       await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
@@ -340,8 +340,8 @@ export class WorkQueueProcessor {
       });
     }
 
-    return `Bulk message sent from staff member to users with ids ${addresseeIds.join(
-      ', '
-    )}`;
+    return `Bulk message sent from staff member to users with ids ${messages
+      .map((m) => m.addresseeId)
+      .join(', ')}`;
   }
 }

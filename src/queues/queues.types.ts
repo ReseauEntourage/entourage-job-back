@@ -121,8 +121,7 @@ export interface SendStaffMessagingMessageJob {
 }
 
 export interface BulkSendStaffMessagingMessageJob {
-  addresseeIds: string[];
-  message: string;
+  messages: SendStaffMessagingMessageJob[];
 }
 
 export interface GenerateProfileFromPDFJob {
