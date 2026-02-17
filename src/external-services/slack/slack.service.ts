@@ -80,7 +80,7 @@ export class SlackService {
     );
     await this.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
-      this.generateProfileReportedBlocks(
+      await this.generateProfileReportedBlocks(
         userReporter,
         userReported,
         reason,
@@ -88,6 +88,46 @@ export class SlackService {
         slackStaffContactUserId
       ),
       `Le profil de ${userReported.firstName} ${userReported.lastName} a été signalé`
+    );
+  };
+
+  sendAdminNewRefererNotification = async (referer: User): Promise<void> => {
+    const staffContactSlackEmail = referer.staffContact?.slackEmail;
+    let slackStaffContactUserId = null;
+    if (staffContactSlackEmail) {
+      slackStaffContactUserId = await this.getUserIdByEmail(
+        staffContactSlackEmail
+      );
+    }
+    await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      await this.generateRegisteredRefererBlocks(
+        referer,
+        slackStaffContactUserId
+      ),
+      `Nouveau prescripteur inscrit : ${referer.firstName} ${referer.lastName}`
+    );
+  };
+
+  sendAdminNewReferingNotification = async (
+    referredUser: User,
+    referer: User
+  ): Promise<void> => {
+    const staffContactSlackEmail = referredUser.staffContact?.slackEmail;
+    let slackStaffContactUserId = null;
+    if (staffContactSlackEmail) {
+      slackStaffContactUserId = await this.getUserIdByEmail(
+        staffContactSlackEmail
+      );
+    }
+    await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      await this.generateReferedCandidateBlocks(
+        referredUser,
+        referer,
+        slackStaffContactUserId
+      ),
+      `Un nouveau candidat a été orienté : ${referredUser.firstName} ${referredUser.lastName}`
     );
   };
 
@@ -138,7 +178,7 @@ export class SlackService {
    * @param comment - The comment of the report
    * @returns blocks for the message
    */
-  generateProfileReportedBlocks = (
+  generateProfileReportedBlocks = async (
     userReporter: User,
     userReported: User,
     reason: string,
@@ -172,6 +212,59 @@ export class SlackService {
       ],
     });
   };
+
+  async generateRegisteredRefererBlocks(
+    referer: User,
+    slackStaffContactUserId: string | null
+  ) {
+    return this.generateSlackBlockMsg({
+      title: "👋 Nouveau prescripteur d'association inscrit",
+      context: [
+        {
+          title: 'Référent de la personne inscrite',
+          content: slackStaffContactUserId
+            ? `<@${slackStaffContactUserId}>`
+            : 'Aucun référent assigné',
+        },
+      ],
+      msgParts: [
+        {
+          content: `Nouveau prescripteur inscrit : ${referer.firstName} ${referer.lastName} <${referer.email}>`,
+        },
+        {
+          content: `Ce prescripteur est rattaché à l'association : ${
+            referer.organization?.name || 'Aucune'
+          }`,
+        },
+      ],
+    });
+  }
+
+  async generateReferedCandidateBlocks(
+    referredUser: User,
+    referer: User,
+    slackStaffContactUserId: string | null
+  ) {
+    return this.generateSlackBlockMsg({
+      title: '👋 Nouveau candidat orienté',
+      context: [
+        {
+          title: 'Référent de la personne orientée',
+          content: slackStaffContactUserId
+            ? `<@${slackStaffContactUserId}>`
+            : 'Aucun référent assigné',
+        },
+      ],
+      msgParts: [
+        {
+          content: `Nouveau candidat orienté : ${referredUser.firstName} ${referredUser.lastName} <${referredUser.email}>`,
+        },
+        {
+          content: `Ce candidat a été orienté par : ${referer.firstName} ${referer.lastName}`,
+        },
+      ],
+    });
+  }
 
   async generateTechNotificationBlocks(
     success: boolean,

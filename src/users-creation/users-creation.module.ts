@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
+import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers/queues.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
@@ -14,6 +15,7 @@ import { UsersCreationService } from './users-creation.service';
 @Module({
   imports: [
     MailsModule,
+    SlackModule,
     forwardRef(() => UsersModule),
     forwardRef(() => UserProfilesModule),
     AuthModule,
