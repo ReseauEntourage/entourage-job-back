@@ -256,7 +256,7 @@ export class WorkQueueProcessor {
     if (welcomeMessageToSend) {
       const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
       await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
-        addresseeId: data.userId,
+        addresseeEmail: user.email,
         message: welcomeMessageToSend,
       });
     }
@@ -291,9 +291,9 @@ export class WorkQueueProcessor {
     job: Job<SendStaffMessagingMessageJob>
   ) {
     const { data } = job;
-    const { addresseeId, message } = data;
+    const { addresseeEmail, message } = data;
 
-    const addressee = await this.usersService.findOne(addresseeId);
+    const addressee = await this.usersService.findOneByMail(addresseeEmail);
 
     const staffContactEmail = addressee.staffContact.entourageProEmail;
     const staffContactEpUser = await this.usersService.findOneByMail(
@@ -301,7 +301,7 @@ export class WorkQueueProcessor {
     );
     if (!staffContactEpUser) {
       this.logger.error(
-        `Staff contact with email ${staffContactEmail} not found for user with id ${addresseeId}`
+        `Staff contact with email ${staffContactEmail} not found for user with email ${addresseeEmail}`
       );
       throw new Error(
         `Staff contact with email ${staffContactEmail} not found`
@@ -311,11 +311,11 @@ export class WorkQueueProcessor {
     await this.messagingService.createMessageWithConversation(
       {
         content: message,
-        participantIds: [addresseeId],
+        participantIds: [addressee.id],
       },
       staffContactEpUser.id
     );
-    return `Message sent from staff member with email ${staffContactEmail} to user with id ${addresseeId}`;
+    return `Message sent from staff member with email ${staffContactEmail} to user with email ${addresseeEmail}`;
   }
 
   @Process(Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE)
@@ -331,17 +331,17 @@ export class WorkQueueProcessor {
       );
       return `No messages provided for bulk sending staff messaging message`;
     }
-    for (const { addresseeId, message } of messages) {
+    for (const { addresseeEmail, message } of messages) {
       // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
       const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
       await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
-        addresseeId,
+        addresseeEmail,
         message,
       });
     }
 
-    return `Bulk message sent from staff member to users with ids ${messages
-      .map((m) => m.addresseeId)
+    return `Bulk message sent from staff member to users with emails ${messages
+      .map((m) => m.addresseeEmail)
       .join(', ')}`;
   }
 }

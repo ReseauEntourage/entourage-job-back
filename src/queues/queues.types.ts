@@ -116,7 +116,7 @@ export interface OnOnboardingCompletedJob {
 }
 
 export interface SendStaffMessagingMessageJob {
-  addresseeId: string;
+  addresseeEmail: string;
   message: string;
 }
 
