@@ -298,15 +298,23 @@ export class WorkQueueProcessor {
     );
 
     const staffContactEmail = addressee.staffContact.entourageProEmail;
+    if (!staffContactEmail) {
+      this.logger.error(
+        `No staff contact email found for user with email ${addresseeEmail}, zone: ${addressee.zone}`
+      );
+      throw new Error(
+        `No staff contact email found for user with email ${addresseeEmail}, zone: ${addressee.zone}`
+      );
+    }
     const staffContactEpUser = await this.usersService.findOneByMail(
       staffContactEmail
     );
     if (!staffContactEpUser) {
       this.logger.error(
-        `Staff contact with email ${staffContactEmail} not found for user with email ${addresseeEmail}`
+        `Staff contact with email ${staffContactEmail} not found for user with email ${addresseeEmail}, zone: ${addressee.zone}`
       );
       throw new Error(
-        `Staff contact with email ${staffContactEmail} not found`
+        `Staff contact with email ${staffContactEmail} not found for user with email ${addresseeEmail}, zone: ${addressee.zone}`
       );
     }
 
