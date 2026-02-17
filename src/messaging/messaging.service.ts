@@ -724,9 +724,9 @@ export class MessagingService {
   }
 
   /**
-   * Count the number of conversations created by a user in the last 24 hours
+   * Count the number of conversations created by a user that day
    * @param userId - The ID of the user to count the conversations for
-   * @returns The number of conversations created by the user in the last 24 hours
+   * @returns The number of conversations created by the user that day
    */
   async countDailyConversations(userId: string) {
     return this.conversationParticipantModel.count({
