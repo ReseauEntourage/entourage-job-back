@@ -579,7 +579,7 @@ export class MessagingService {
    * @param conversationId
    * @returns the medias linked to the conversation
    */
-  async findMediasByConversationId(conversationId: string) {
+  private async findMediasByConversationId(conversationId: string) {
     return this.mediaService.findMediasByConversationId(conversationId);
   }
   /**
