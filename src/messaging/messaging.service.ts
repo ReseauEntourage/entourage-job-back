@@ -688,7 +688,7 @@ export class MessagingService {
     const countDailyConversation = await this.countDailyConversations(
       sender.id
     );
-    if (countDailyConversation >= this.DAILY_CONVERSATION_LIMIT_THRESHOLD) {
+    if (countDailyConversation >= this.DAILY_CONVERSATION_LIMIT_THRESHOLD - 1) {
       const recipients: User[] = [];
       for (const id of participantIds) {
         const recipient = await this.usersService.findOneWithRelations(id);
