@@ -93,6 +93,7 @@ function OnQueueEvent(event) {
 const OnQueueCompleted = () => OnQueueEvent('completed');
 const OnQueueActive = () => OnQueueEvent('active');
 const OnQueueFailed = () => OnQueueEvent('failed');
+const OnQueueWaiting = () => OnQueueEvent('waiting');
 const OnQueueStalled = () => OnQueueEvent('stalled');
 const OnQueueProgress = () => OnQueueEvent('progress');
 const OnQueueError = () => OnQueueEvent('error');
@@ -142,6 +143,7 @@ module.exports = {
   OnQueueCompleted,
   OnQueueError,
   OnQueueFailed,
+  OnQueueWaiting,
   OnQueueProgress,
   OnQueueStalled,
 
