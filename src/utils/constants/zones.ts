@@ -11,17 +11,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.PARIS],
     suffix: ZoneSuffix.PARIS,
     staffContact: {
-      main: {
-        name: 'Clothilde B.',
+      candidate: {
+        name: 'Clothilde',
         img: `${imageBasePath}staff-pictures/clothilde.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_PARIS,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_PARIS,
+      },
+      main: {
+        name: 'Clothilde',
+        img: `${imageBasePath}staff-pictures/clothilde.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_PARIS,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_PARIS,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_PARIS,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_PARIS,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_PARIS,
       },
     },
   },
@@ -30,17 +42,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.LYON],
     suffix: ZoneSuffix.LYON,
     staffContact: {
-      main: {
-        name: 'Alice D.',
+      candidate: {
+        name: 'Alice',
         img: `${imageBasePath}staff-pictures/alice.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LYON,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LYON,
+      },
+      main: {
+        name: 'Alice',
+        img: `${imageBasePath}staff-pictures/alice.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LYON,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LYON,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LYON,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LYON,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_LYON,
       },
     },
   },
@@ -49,17 +73,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.LILLE],
     suffix: ZoneSuffix.LILLE,
     staffContact: {
-      main: {
-        name: 'Julien D.',
+      candidate: {
+        name: 'Julien',
         img: `${imageBasePath}staff-pictures/julien.png`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LILLE,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LILLE,
+      },
+      main: {
+        name: 'Julien',
+        img: `${imageBasePath}staff-pictures/julien.png`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_LILLE,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_LILLE,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_LILLE,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LILLE,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_LILLE,
       },
     },
   },
@@ -68,17 +104,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.RENNES],
     suffix: ZoneSuffix.RENNES,
     staffContact: {
-      main: {
-        name: 'Mathilde G.',
+      candidate: {
+        name: 'Mathilde',
         img: `${imageBasePath}staff-pictures/mathilde.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
+      },
+      main: {
+        name: 'Mathilde',
+        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_RENNES,
       },
     },
   },
@@ -91,17 +139,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.LORIENT],
     suffix: ZoneSuffix.RENNES,
     staffContact: {
-      main: {
-        name: 'Mathilde G.',
+      candidate: {
+        name: 'Mathilde',
         img: `${imageBasePath}staff-pictures/mathilde.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
+      },
+      main: {
+        name: 'Mathilde',
+        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_RENNES,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_RENNES,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_RENNES,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_RENNES,
       },
     },
   },
@@ -110,17 +170,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.BORDEAUX],
     suffix: ZoneSuffix.SUDOUEST,
     staffContact: {
-      main: {
-        name: 'Valentine R.',
-        img: `${imageBasePath}staff-pictures/valentine.jpg`,
+      candidate: {
+        name: 'Laure',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_SUDOUEST,
+      },
+      main: {
+        name: 'Laure',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_SUDOUEST,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_SUDOUEST,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_SUDOUEST,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_SUDOUEST,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_SUDOUEST,
       },
     },
   },
@@ -129,17 +201,29 @@ export const Zones: { [key in ZoneName]: Zone } = {
     sfLocalBranchNames: [SfLocalBranchName.HZ],
     suffix: ZoneSuffix.HZ,
     staffContact: {
-      main: {
-        name: 'Valentine R.',
-        img: `${imageBasePath}staff-pictures/valentine.jpg`,
+      candidate: {
+        name: 'Laure',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
         email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_HZ,
+      },
+      main: {
+        name: 'Laure',
+        img: `${imageBasePath}staff-pictures/laure.jpg`,
+        email: process.env.STAFF_CONTACT_MAIN_EMAIL_HZ,
+        slackEmail: process.env.STAFF_CONTACT_MAIN_SLACK_EMAIL_HZ,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_MAIN_ENTOURAGE_PRO_EMAIL_HZ,
       },
       company: {
-        name: 'Pauline de Kergal',
+        name: 'Pauline',
         img: `${imageBasePath}staff-pictures/pauline.jpg`,
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_HZ,
+        entourageProEmail:
+          process.env.STAFF_CONTACT_COMPANIES_ENTOURAGE_PRO_EMAIL_HZ,
       },
     },
   },

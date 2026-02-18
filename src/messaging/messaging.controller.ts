@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
@@ -23,6 +25,12 @@ import {
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { UserInConversation } from './guards/user-in-conversation';
+import {
+  ErrorMessagingCantParticipate,
+  ErrorMessagingInvalidMessage,
+  ErrorMessagingNeedParticipantsOrConversationId,
+  ErrorMessagingReachedDailyConversationLimit,
+} from './messaging.errors';
 import { MessagingService } from './messaging.service';
 
 @ApiTags('Messaging')
@@ -63,44 +71,34 @@ export class MessagingController {
     createMessageDto: CreateMessageDto,
     @UploadedFiles() files?: Express.Multer.File[]
   ) {
-    // Check if user can participate
-    const canParticipate = await this.messagingService.canParticipate(
-      userId,
-      createMessageDto
-    );
-    if (!canParticipate) {
-      throw new UnauthorizedException(
-        'Vous ne pouvez pas participer à cette conversation.'
-      );
-    }
-    if ((!files || files.length <= 0) && createMessageDto.content.length <= 0) {
-      throw new BadRequestException(
-        'Le message doit contenir au moins un caractère.'
-      );
-    }
-
-    // Create the conversation if needed
-    if (!createMessageDto.conversationId && createMessageDto.participantIds) {
-      await this.messagingService.handleDailyConversationLimit(
-        userId,
-        createMessageDto.participantIds,
-        createMessageDto.content
-      );
-      return this.messagingService.createConversationWithFirstMessage({
-        participantIds: createMessageDto.participantIds,
-        authorId: userId,
-        createMessageDto,
-        files,
-      });
-    }
     try {
-      return await this.messagingService.createMessage({
-        authorId: userId,
-        ...createMessageDto,
-        files,
-      });
+      const message = await this.messagingService.createMessageWithConversation(
+        createMessageDto,
+        userId,
+        files
+      );
+      return message;
     } catch (error) {
-      console.error(error);
+      if (
+        error instanceof ErrorMessagingNeedParticipantsOrConversationId ||
+        error instanceof ErrorMessagingInvalidMessage
+      ) {
+        throw new BadRequestException(error.message);
+      } else if (error instanceof ErrorMessagingCantParticipate) {
+        throw new UnauthorizedException(
+          'Vous ne pouvez pas participer à cette conversation.'
+        );
+      } else if (error instanceof ErrorMessagingReachedDailyConversationLimit) {
+        throw new HttpException(
+          'DAILY_CONVERSATION_LIMIT_REACHED',
+          HttpStatus.TOO_MANY_REQUESTS
+        );
+      } else {
+        throw new HttpException(
+          'An error occurred while posting the message.',
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
     }
   }
 

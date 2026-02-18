@@ -6,6 +6,7 @@ import { CompanyInvitationsService } from 'src/companies/company-invitations.ser
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
+import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -25,6 +26,7 @@ export class UsersCreationService {
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private mailsService: MailsService,
+    private slackService: SlackService,
     private externalDatabasesService: ExternalDatabasesService,
     private userSocialSituationService: UserSocialSituationsService,
     private queuesService: QueuesService,
@@ -66,10 +68,7 @@ export class UsersCreationService {
     return this.authService.generateRandomPasswordInJWT(expiration);
   }
 
-  async sendNewAccountMail(
-    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>,
-    token: string
-  ) {
+  async sendNewAccountMail(user: User, token: string) {
     return this.mailsService.sendNewAccountMail(user, token);
   }
 
@@ -101,8 +100,16 @@ export class UsersCreationService {
     );
   }
 
-  async sendAdminNewRefererNotificationMail(referer: User) {
-    return this.mailsService.sendAdminNewRefererNotificationMail(referer);
+  async sendAdminNewRefererNotifications(referer: User) {
+    await this.mailsService.sendAdminNewRefererNotificationMail(referer);
+    await this.slackService.sendAdminNewRefererNotification(referer);
+  }
+
+  async sendAdminNewReferingNotifications(referredUser: User, referer: User) {
+    await this.slackService.sendAdminNewReferingNotification(
+      referredUser,
+      referer
+    );
   }
 
   async updateUserById(userId: string, updateUserDto: Partial<User>) {

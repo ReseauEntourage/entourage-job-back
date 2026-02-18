@@ -451,6 +451,7 @@ export class UsersService {
       where: { id },
       individualHooks: true,
       hooks: true,
+      returning: true,
     });
 
     const updatedUser = await this.findOneWithRelations(id);
@@ -468,7 +469,7 @@ export class UsersService {
       });
     }
 
-    return updatedUser.toJSON();
+    return updatedUser;
   }
 
   async sendOnboardingCompletedMail(
@@ -717,5 +718,43 @@ export class UsersService {
 
   async sendReminderToCompleteProfile(user: User) {
     return this.mailsService.sendReminderToCompleteProfile(user);
+  }
+
+  async generatePostOnboardingWelcomeMessage(user: User) {
+    if (user.role === UserRoles.CANDIDATE) {
+      return [
+        `Bonjour ${user.firstName},`,
+        '',
+        `Bienvenue sur Entourage Pro, je suis ${user.staffContact.name}, votre point de contact sur la plateforme.`,
+        '',
+        'Je suis là pour vous accompagner si vous avez la moindre question : contacter un coach, préparer un premier échange ou savoir comment bénéficier au mieux du réseau Entourage Pro.',
+        '',
+        '👉 Vous pouvez dès maintenant parcourir les profils de coachs et envoyer un premier message. Quelques lignes suffisent pour démarrer la conversation.',
+        '',
+        'Les mises en relation sont simples, bienveillantes et sans engagement.',
+        '',
+        'À très bientôt,',
+        `${user.staffContact.name}`,
+      ].join('\n');
+    } else if (user.role === UserRoles.COACH) {
+      return [
+        `Bonjour ${user.firstName},`,
+        '',
+        'Je vous souhaite la bienvenue en tant que coach sur Entourage Pro.',
+        '',
+        `Je suis ${user.staffContact.name}, votre point de contact sur la plateforme.`,
+        '',
+        'Je suis disponible si vous avez besoin d’aide pour démarrer, comprendre le fonctionnement ou optimiser votre profil.',
+        '',
+        '👉 Vous pouvez dès maintenant consulter les profils des candidats et initier un premier contact si un parcours vous interpelle. Un message simple et personnalisé suffit à lancer l’échange.',
+        '',
+        'Merci pour votre engagement au service du réseau.',
+        '',
+        'Je reste à votre disposition,',
+        '',
+        `${user.staffContact.name}`,
+      ].join('\n');
+    }
+    return null;
   }
 }

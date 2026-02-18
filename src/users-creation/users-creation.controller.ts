@@ -93,18 +93,8 @@ export class UsersCreationController {
         throw new ConflictException();
       }
     }
-    const { id, firstName, role, zone, email } = createdUser.toJSON();
 
-    await this.usersCreationService.sendNewAccountMail(
-      {
-        id,
-        firstName,
-        role,
-        zone,
-        email,
-      },
-      jwtToken
-    );
+    await this.usersCreationService.sendNewAccountMail(createdUser, jwtToken);
 
     return this.usersCreationService.findOneUser(createdUser.id);
   }
@@ -280,7 +270,7 @@ export class UsersCreationController {
 
       // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
-        await this.usersCreationService.sendAdminNewRefererNotificationMail(
+        await this.usersCreationService.sendAdminNewRefererNotifications(
           createdUser
         );
       }
@@ -368,6 +358,11 @@ export class UsersCreationController {
       );
 
       await this.usersCreationService.sendFinalizeAccountReferedUser(
+        createdUser,
+        referer
+      );
+
+      await this.usersCreationService.sendAdminNewReferingNotifications(
         createdUser,
         referer
       );

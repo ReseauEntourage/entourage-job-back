@@ -25,6 +25,7 @@ export enum ZoneSuffix {
 export enum StaffContactGroup {
   MAIN = 'main',
   COMPANY = 'company',
+  CANDIDATE = 'candidate',
 }
 
 export type InternalStaffContact = {
@@ -32,9 +33,13 @@ export type InternalStaffContact = {
   email: string;
   img: string;
   slackEmail: string;
+  entourageProEmail: string;
 };
 
-export type PublicStaffContact = Omit<InternalStaffContact, 'slackEmail'>;
+export type PublicStaffContact = Omit<
+  InternalStaffContact,
+  'slackEmail' | 'entourageProEmail'
+>;
 
 export type Zone = {
   name: ZoneName;

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsString, MaxLength } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -37,7 +37,6 @@ export class Message extends Model {
   @ApiProperty()
   @IsString()
   @AllowNull(false)
-  @MinLength(1)
   @MaxLength(12000)
   @Column
   content: string;

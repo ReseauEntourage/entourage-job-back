@@ -87,6 +87,33 @@ describe('MESSAGING', () => {
    */
   describe('CRUD Messages', () => {
     describe('C - Create Messages - /messaging/messages', () => {
+      it('should return 201 and not create a new conversation when posting with participantIds if an exact conversation already exists', async () => {
+        // Create the conversation
+        let conversation = await conversationFactory.create();
+
+        await messagingHelper.associationParticipantsToConversation(
+          conversation.id,
+          [loggedInCandidate.user.id, loggedInCoach.user.id]
+        );
+        const nbConversationBefore = await messagingHelper.countConversation();
+
+        const response: APIResponse<MessagingController['postMessage']> =
+          await request(server)
+            .post(`/messaging/messages`)
+            .send({
+              content: 'Super message',
+              participantIds: [loggedInCoach.user.id],
+            })
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+        const nbConversationAfter = await messagingHelper.countConversation();
+        conversation = await messagingHelper.findConversation(conversation.id);
+
+        expect(response.status).toBe(201);
+        expect(nbConversationAfter).toBe(nbConversationBefore);
+        expect(conversation.messages.length).toBe(1);
+      });
+
       it('should return 201 but not create a conversation if a conversation between coach and candidate already exists', async () => {
         // Create the conversation
         const conversation = await conversationFactory.create();
