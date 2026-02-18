@@ -12,6 +12,7 @@ export enum EventType {
   SPEED_MEETING = 'SPEED_MEETING',
   PAPOTAGES_PRO = 'PAPOTAGES_PRO',
   PHOTO_SHOOTING = 'PHOTO_SHOOTING',
+  APERO_ENTOURAGE = 'APERO_ENTOURAGE',
   APERO_COACH = 'APERO_COACH',
   WORKSHOP = 'WORKSHOP',
 }
@@ -25,6 +26,7 @@ export enum SalesforceEventTypes {
   PHOTO_SHOOTING = 'Séance photo',
   APERO_COACH = 'Apéro coach',
   WORKSHOP = 'Atelier Entourage Pro',
+  APERO_ENTOURAGE = 'Apéro Entourage',
 }
 
 /**

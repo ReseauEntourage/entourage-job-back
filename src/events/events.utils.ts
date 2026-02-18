@@ -38,6 +38,7 @@ export const salesforceEventTypeToEventType: { [key: string]: EventType } = {
   [SalesforceEventTypes.PAPOTAGES_PRO]: EventType.PAPOTAGES_PRO,
   [SalesforceEventTypes.PHOTO_SHOOTING]: EventType.PHOTO_SHOOTING,
   [SalesforceEventTypes.APERO_COACH]: EventType.APERO_COACH,
+  [SalesforceEventTypes.APERO_ENTOURAGE]: EventType.APERO_ENTOURAGE,
   [SalesforceEventTypes.WORKSHOP]: EventType.WORKSHOP,
 };
 
@@ -49,6 +50,7 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
   [EventType.PAPOTAGES_PRO]: SalesforceEventTypes.PAPOTAGES_PRO,
   [EventType.PHOTO_SHOOTING]: SalesforceEventTypes.PHOTO_SHOOTING,
   [EventType.APERO_COACH]: SalesforceEventTypes.APERO_COACH,
+  [EventType.APERO_ENTOURAGE]: SalesforceEventTypes.APERO_ENTOURAGE,
   [EventType.WORKSHOP]: SalesforceEventTypes.WORKSHOP,
   [EventType.UNKNOWN]: 'Inconnu',
 };
@@ -148,6 +150,16 @@ export const additionalEventAttributesByEventType: {
       'Icebreaker',
       'Explication de ce temps convivial',
       'Libre échanges discussions',
+    ],
+  },
+
+  [EventType.APERO_ENTOURAGE]: {
+    format: 'En présentiel',
+    goal: 'Rencontrer coachs et candidats et échanger dans un cadre convivial sur les recherches d’opportunités des candidats',
+    audience: 'Candidats et coachs qui le souhaitent des régions concernées',
+    sequences: [
+      'Accueil et tour de table',
+      'Échanges conviviaux et temps d’échanges autour de la recherche d’emploi de chacun et chacune',
     ],
   },
 
