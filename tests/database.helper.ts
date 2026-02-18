@@ -9,6 +9,11 @@ import { Skill } from 'src/common/skills/models';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
+import { ElearningAnswer } from 'src/elearning/models/elearning-answer.model';
+import { ElearningCompletion } from 'src/elearning/models/elearning-completion.model';
+import { ElearningQuestion } from 'src/elearning/models/elearning-question.model';
+import { ElearningUnitRole } from 'src/elearning/models/elearning-unit-role.model';
+import { ElearningUnit } from 'src/elearning/models/elearning-unit.model';
 import {
   Conversation,
   ConversationParticipant,
@@ -74,7 +79,17 @@ export class DatabaseHelper {
     @InjectModel(CompanyUser)
     private companyUserModel: typeof CompanyUser,
     @InjectModel(CompanyInvitation)
-    private companyInvitationModel: typeof CompanyInvitation
+    private companyInvitationModel: typeof CompanyInvitation,
+    @InjectModel(ElearningAnswer)
+    private elearningAnswerModel: typeof ElearningAnswer,
+    @InjectModel(ElearningQuestion)
+    private elearningQuestionModel: typeof ElearningQuestion,
+    @InjectModel(ElearningCompletion)
+    private elearningCompletionModel: typeof ElearningCompletion,
+    @InjectModel(ElearningUnitRole)
+    private elearningUnitRoleModel: typeof ElearningUnitRole,
+    @InjectModel(ElearningUnit)
+    private elearningUnitModel: typeof ElearningUnit
   ) {}
 
   async resetTestDB() {
@@ -83,6 +98,11 @@ export class DatabaseHelper {
       force: true,
     };
     try {
+      await this.elearningAnswerModel.truncate(destroyOptions);
+      await this.elearningQuestionModel.truncate(destroyOptions);
+      await this.elearningCompletionModel.truncate(destroyOptions);
+      await this.elearningUnitRoleModel.truncate(destroyOptions);
+      await this.elearningUnitModel.truncate(destroyOptions);
       await this.messageModel.truncate(destroyOptions);
       await this.conversationParticipantModel.truncate(destroyOptions);
       await this.conversationModel.truncate(destroyOptions);
