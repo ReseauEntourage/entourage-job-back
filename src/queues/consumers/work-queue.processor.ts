@@ -230,6 +230,11 @@ export class WorkQueueProcessor {
     return `Salesforce job ignored : update of user '${data.userId}' company to '${data.companyId}'`;
   }
 
+  /**
+   * Process onboarding completion for a user (can be all user roles)
+   * @param job
+   * @returns
+   */
   @Process(Jobs.ON_ONBOARDING_COMPLETED)
   async processOnOnboardingCompleted(job: Job) {
     const { data } = job;

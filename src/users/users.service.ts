@@ -721,6 +721,7 @@ export class UsersService {
   }
 
   async generatePostOnboardingWelcomeMessage(user: User) {
+    const isCompanyAdmin = user.company?.companyUser?.isAdmin;
     if (user.role === UserRoles.CANDIDATE) {
       return [
         `Bonjour ${user.firstName},`,
@@ -736,7 +737,7 @@ export class UsersService {
         'À très bientôt,',
         `${user.staffContact.name}`,
       ].join('\n');
-    } else if (user.role === UserRoles.COACH) {
+    } else if (user.role === UserRoles.COACH && !isCompanyAdmin) {
       return [
         `Bonjour ${user.firstName},`,
         '',
