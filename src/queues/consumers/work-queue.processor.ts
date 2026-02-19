@@ -308,6 +308,15 @@ export class WorkQueueProcessor {
       addresseeEmail
     );
 
+    if (!addressee) {
+      this.logger.error(
+        `Addressee with email ${addresseeEmail} not found in the system`
+      );
+      throw new Error(
+        `Addressee with email ${addresseeEmail} not found in the system`
+      );
+    }
+
     const staffContactEmail = addressee.staffContact.entourageProEmail;
     if (!staffContactEmail) {
       this.logger.error(
