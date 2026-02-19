@@ -260,10 +260,16 @@ export class WorkQueueProcessor {
       await this.usersService.generatePostOnboardingWelcomeMessage(user);
     if (welcomeMessageToSend) {
       const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
-      await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
-        addresseeEmail: user.email,
-        message: welcomeMessageToSend,
-      });
+      await queue.add(
+        Jobs.SEND_STAFF_MESSAGING_MESSAGE,
+        {
+          addresseeEmail: user.email,
+          message: welcomeMessageToSend,
+        },
+        {
+          delay: 60 * 60 * 1000, // 1 hour
+        }
+      );
     }
 
     try {
@@ -351,10 +357,16 @@ export class WorkQueueProcessor {
     await Promise.all(
       messages.map(({ addresseeEmail, message }) =>
         // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
-        queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
-          addresseeEmail,
-          message,
-        })
+        queue.add(
+          Jobs.SEND_STAFF_MESSAGING_MESSAGE,
+          {
+            addresseeEmail,
+            message,
+          },
+          {
+            delay: 60 * 60 * 1000, // 1 hour
+          }
+        )
       )
     );
     return `Bulk message sent from staff member to users with emails ${messages
