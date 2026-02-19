@@ -9,15 +9,19 @@ import {
 import { MailsService } from 'src/mails/mails.service';
 import { MediasService } from 'src/medias/medias.service';
 import { Media } from 'src/medias/models';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
+import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { userAttributes } from './messaging.attributes';
 import {
   ErrorMessagingCantParticipate,
   ErrorMessagingInvalidMessage,
+  ErrorMessagingMailingListInvalid,
   ErrorMessagingNeedParticipantsOrConversationId,
   ErrorMessagingReachedDailyConversationLimit,
 } from './messaging.errors';
@@ -26,6 +30,7 @@ import {
   messagingMessageIncludes,
 } from './messaging.includes';
 import {
+  bindVariableInContent,
   determineIfShoudGiveFeedback,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
@@ -37,6 +42,7 @@ import { Message } from './models/message.model';
 @Injectable()
 export class MessagingService {
   private readonly logger = new Logger(MessagingService.name);
+
   constructor(
     @InjectModel(Message)
     private messageModel: typeof Message,
@@ -50,7 +56,8 @@ export class MessagingService {
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private mailsService: MailsService,
-    private mediaService: MediasService
+    private mediaService: MediasService,
+    private queuesService: QueuesService
   ) {}
 
   private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
@@ -737,5 +744,54 @@ export class MessagingService {
         },
       },
     });
+  }
+
+  async createMailingList(createMailingListDto: CreateMailingListDto) {
+    const { recipientEmails, content } = createMailingListDto;
+    // Check if emails exists in the database and get the corresponding users
+    const users = await this.usersService.findByEmails(recipientEmails);
+    const existingEmails = users.map((user) => user.email);
+    const nonExistingEmails = recipientEmails.filter(
+      (email) => !existingEmails.includes(email)
+    );
+    if (nonExistingEmails.length > 0) {
+      throw new ErrorMessagingMailingListInvalid(
+        `Les emails suivants n'existent pas dans la base de données: ${nonExistingEmails.join(
+          ', '
+        )}`
+      );
+    }
+    // Check all users are CANDIDATE or COACH role
+    const invalidRoleUsers = users.filter(
+      (user) =>
+        user.role !== UserRoles.CANDIDATE && user.role !== UserRoles.COACH
+    );
+    if (invalidRoleUsers.length > 0) {
+      throw new ErrorMessagingMailingListInvalid(
+        `Les utilisateurs suivants n'ont pas un rôle valide (CANDIDATE ou COACH): ${invalidRoleUsers
+          .map((user) => user.email)
+          .join(', ')}`
+      );
+    }
+
+    const messages = recipientEmails.map((email) => {
+      const user = users.find((u) => u.email === email);
+      return {
+        addresseeEmail: email,
+        message: bindVariableInContent(content, {
+          email: email,
+          firstName: user?.firstName || '',
+          lastName: user?.lastName || '',
+          staffContactName: user?.staffContact?.name || '',
+        }),
+      };
+    });
+
+    await this.queuesService.addToWorkQueue(
+      Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE,
+      {
+        messages,
+      }
+    );
   }
 }

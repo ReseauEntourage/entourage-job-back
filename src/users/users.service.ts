@@ -68,6 +68,17 @@ export class UsersService {
     });
   }
 
+  async findByEmails(emails: string[]) {
+    return this.userModel.findAll({
+      where: {
+        email: {
+          [Op.in]: emails.map((email) => email.toLowerCase()),
+        },
+      },
+      attributes: [...UserAttributes],
+    });
+  }
+
   async findOneByMailWithRelations(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
