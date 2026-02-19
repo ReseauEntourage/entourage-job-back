@@ -366,16 +366,10 @@ export class WorkQueueProcessor {
     await Promise.all(
       messages.map(({ addresseeEmail, message }) =>
         // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
-        queue.add(
-          Jobs.SEND_STAFF_MESSAGING_MESSAGE,
-          {
-            addresseeEmail,
-            message,
-          },
-          {
-            delay: 60 * 60 * 1000, // 1 hour
-          }
-        )
+        queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+          addresseeEmail,
+          message,
+        })
       )
     );
     return `Bulk message sent from staff member to users with emails ${messages

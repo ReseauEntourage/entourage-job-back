@@ -25,3 +25,10 @@ export class ErrorMessagingInvalidMessage extends Error {
     this.name = 'ErrorMessagingInvalidMessage';
   }
 }
+
+export class ErrorMessagingMailingListInvalid extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ErrorMessagingMailingListInvalid';
+  }
+}

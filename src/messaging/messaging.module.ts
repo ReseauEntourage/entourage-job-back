@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { MediasModule } from 'src/medias/medias.module';
+import { QueuesModule } from 'src/queues/producers';
 import { UsersModule } from 'src/users/users.module';
 import { MessagingController } from './messaging.controller';
 import { MessagingService } from './messaging.service';
@@ -22,6 +23,7 @@ import {
       MessageMedia,
     ]),
     SlackModule,
+    QueuesModule,
     forwardRef(() => MailsModule),
     forwardRef(() => UsersModule),
     forwardRef(() => MediasModule),
