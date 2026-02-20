@@ -808,17 +808,19 @@ export class UsersService {
         cp."userId" as "addresseeId",
         m."id" as "messageId"
       FROM "Messages" m
+      INNER JOIN (
+        SELECT "conversationId"
+        FROM "Messages"
+        GROUP BY "conversationId"
+        HAVING COUNT(*) = 1
+      ) AS single_message_conversations
+        ON single_message_conversations."conversationId" = m."conversationId"
       INNER JOIN "Users" author
         ON author."id" = m."authorId"
       INNER JOIN "ConversationParticipants" cp
         ON cp."conversationId" = m."conversationId"
       WHERE m."createdAt" >= :startDate
         AND m."createdAt" < :endDate
-        AND (
-          SELECT COUNT(*)
-          FROM "Messages" m2
-          WHERE m2."conversationId" = m."conversationId"
-        ) = 1
         AND author."deletedAt" IS NULL
         AND author."role" IN (:roles)
         AND cp."userId" <> m."authorId"
@@ -854,11 +856,11 @@ export class UsersService {
     const items = Array.from(messageMap.entries());
     const results = await Promise.all(
       items.map(async ([, { authorId, addresseeIds }]) => {
-        const author = await this.findOneWithRelations(authorId);
-        const authorProfile = await this.userProfilesService.findOneByUserId(
-          authorId
-        );
-        const addressees = await this.findByIds(addresseeIds);
+        const [author, authorProfile, addressees] = await Promise.all([
+          this.findOneWithRelations(authorId),
+          this.userProfilesService.findOneByUserId(authorId),
+          this.findByIdsWithRelations(addresseeIds),
+        ]);
         if (!author || !authorProfile || addressees.length === 0) {
           return null;
         }
