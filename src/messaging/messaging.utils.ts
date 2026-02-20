@@ -1,5 +1,6 @@
 import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
+import { ErrorMessagingMailingListInvalid } from './messaging.errors';
 import { Conversation } from './models';
 
 export const generateSlackMsgConfigConversationReported = (
@@ -125,4 +126,27 @@ export const determineIfShoudGiveFeedback = (
     !userHasGivenFeedback;
 
   return shouldGiveFeedback;
+};
+
+export const bindVariableInContent = (
+  content: string,
+  variables: Record<string, string>
+): string => {
+  let boundContent = content;
+  for (const [key, value] of Object.entries(variables)) {
+    const placeholder = `{{${key}}}`;
+    boundContent = boundContent.replace(
+      new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      value
+    );
+  }
+  // Vérifie s'il reste des variables non remplacées
+  const unreplaced = boundContent.match(/{{[^}]+}}/g);
+  if (unreplaced) {
+    throw new ErrorMessagingMailingListInvalid(
+      'Votre message contient des variables non reconnues : ' +
+        unreplaced.join(', ')
+    );
+  }
+  return boundContent;
 };

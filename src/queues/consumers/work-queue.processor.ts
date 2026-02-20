@@ -230,6 +230,11 @@ export class WorkQueueProcessor {
     return `Salesforce job ignored : update of user '${data.userId}' company to '${data.companyId}'`;
   }
 
+  /**
+   * Process onboarding completion for a user (can be all user roles)
+   * @param job
+   * @returns
+   */
   @Process(Jobs.ON_ONBOARDING_COMPLETED)
   async processOnOnboardingCompleted(job: Job) {
     const { data } = job;
@@ -303,6 +308,15 @@ export class WorkQueueProcessor {
       addresseeEmail
     );
 
+    if (!addressee) {
+      this.logger.error(
+        `Addressee with email ${addresseeEmail} not found in the system`
+      );
+      throw new Error(
+        `Addressee with email ${addresseeEmail} not found in the system`
+      );
+    }
+
     const staffContactEmail = addressee.staffContact.entourageProEmail;
     if (!staffContactEmail) {
       this.logger.error(
@@ -352,16 +366,10 @@ export class WorkQueueProcessor {
     await Promise.all(
       messages.map(({ addresseeEmail, message }) =>
         // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
-        queue.add(
-          Jobs.SEND_STAFF_MESSAGING_MESSAGE,
-          {
-            addresseeEmail,
-            message,
-          },
-          {
-            delay: 60 * 60 * 1000, // 1 hour
-          }
-        )
+        queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+          addresseeEmail,
+          message,
+        })
       )
     );
     return `Bulk message sent from staff member to users with emails ${messages

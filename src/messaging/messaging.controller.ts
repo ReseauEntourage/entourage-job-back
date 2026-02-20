@@ -5,6 +5,7 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  Logger,
   Param,
   ParseUUIDPipe,
   Post,
@@ -16,18 +17,23 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
+import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
+import { Permissions } from 'src/users/users.types';
 import {
   CreateMessagePipe,
   CreateMessageDto,
   PostFeedbackPipe,
   PostFeedbackDto,
 } from './dto';
+import { CreateMailingListDto } from './dto/create-mailing-list.dto';
+import { CreateMailingListPipe } from './dto/create-mailing-list.pipe';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { UserInConversation } from './guards/user-in-conversation';
 import {
   ErrorMessagingCantParticipate,
   ErrorMessagingInvalidMessage,
+  ErrorMessagingMailingListInvalid,
   ErrorMessagingNeedParticipantsOrConversationId,
   ErrorMessagingReachedDailyConversationLimit,
 } from './messaging.errors';
@@ -37,6 +43,7 @@ import { MessagingService } from './messaging.service';
 @ApiBearerAuth()
 @Controller('messaging')
 export class MessagingController {
+  readonly logger = new Logger(MessagingController.name);
   constructor(private readonly messagingService: MessagingService) {}
 
   @Get('conversations')
@@ -125,7 +132,31 @@ export class MessagingController {
     try {
       return this.messagingService.postFeedback(postFeedbackDto);
     } catch (error) {
-      console.error(error);
+      this.logger.error(error);
+    }
+  }
+
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Post('mailing-lists')
+  async createMailingList(
+    @Body(new CreateMailingListPipe())
+    createMailingListDto: CreateMailingListDto
+  ) {
+    try {
+      return await this.messagingService.createMailingList(
+        createMailingListDto
+      );
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof ErrorMessagingMailingListInvalid) {
+        throw new BadRequestException(error.message);
+      } else {
+        throw new HttpException(
+          'An error occurred while creating the mailing list.',
+          HttpStatus.INTERNAL_SERVER_ERROR
+        );
+      }
     }
   }
 }
