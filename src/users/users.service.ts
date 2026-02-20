@@ -852,30 +852,32 @@ export class UsersService {
     });
 
     const items = Array.from(messageMap.entries());
-    return await Promise.all(
-      items
-        .map(async ([, { authorId, addresseeIds }]) => {
-          const author = await this.findOneWithRelations(authorId);
-          const authorProfile = await this.userProfilesService.findOneByUserId(
-            authorId
+    const results = await Promise.all(
+      items.map(async ([, { authorId, addresseeIds }]) => {
+        const author = await this.findOneWithRelations(authorId);
+        const authorProfile = await this.userProfilesService.findOneByUserId(
+          authorId
+        );
+        const addressees = await this.findByIds(addresseeIds);
+        if (!author || !authorProfile || addressees.length === 0) {
+          return null;
+        }
+        const recommendedProfiles =
+          await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+            author,
+            authorProfile
           );
-          const addressees = await this.findByIds(addresseeIds);
-          if (!author || !authorProfile || addressees.length === 0) {
-            return null;
-          }
-          const recommendedProfiles =
-            await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
-              author,
-              authorProfile
-            );
-          return {
-            id: authorId,
-            user: author,
-            addressees,
-            recommendedProfiles,
-          };
-        })
-        .filter((result) => result !== null)
+        return {
+          id: authorId,
+          user: author,
+          addressees,
+          recommendedProfiles,
+        };
+      })
+    );
+
+    return results.filter(
+      (result): result is NoResponseToFirstMessageResultDto => result !== null
     );
   }
 
