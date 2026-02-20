@@ -251,7 +251,7 @@ export class CronTasksProcessor {
       )
     );
 
-    return `Preparation of onboarding completed relationship cycle mails succeeded for all configured delays.`;
+    return `Preparation of onboarding completed relationship cycle mails started for all configured delays.`;
   }
 
   @Process(Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS)
@@ -301,12 +301,9 @@ export class CronTasksProcessor {
       this.logger.error(
         `Failed preparing mail for ${failures.length}/${userProfileNotCompleted.length} users that have not completed their profile ${DAYS_AFTER_ONBOARDING_COMPLETION} days after onboarding completion`
       );
-      throw new Error(
-        `Failed preparing mail for ${failures.length}/${userProfileNotCompleted.length} users that have not completed their profile ${DAYS_AFTER_ONBOARDING_COMPLETION} days after onboarding completion`
-      );
     }
 
-    return `Preparation of ${userProfileNotCompleted.length} mails for users that have not completed their profile succeeded.`;
+    return `Preparation of ${userProfileNotCompleted.length} mails for users that have not completed their profile started.`;
   }
 
   @Process(Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS)
@@ -363,11 +360,8 @@ export class CronTasksProcessor {
       this.logger.error(
         `Failed preparing mail for ${failures.length}/${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message ${DAYS_SINCE_FIRST_MESSAGE_SENT} days after sending the first message`
       );
-      throw new Error(
-        `Failed preparing mail for ${failures.length}/${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message ${DAYS_SINCE_FIRST_MESSAGE_SENT} days after sending the first message`
-      );
     }
 
-    return `Preparation of mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message succeeded.`;
+    return `Preparation of mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message started.`;
   }
 }
