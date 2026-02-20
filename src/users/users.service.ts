@@ -134,6 +134,17 @@ export class UsersService {
     });
   }
 
+  async findByIds(ids: string[]) {
+    return this.userModel.findAll({
+      where: {
+        id: {
+          [Op.in]: ids,
+        },
+      },
+      attributes: [...UserAttributes],
+    });
+  }
+
   async findOneForJwtPayload(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
       attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],
@@ -848,7 +859,7 @@ export class UsersService {
           const authorProfile = await this.userProfilesService.findOneByUserId(
             authorId
           );
-          const addressees = await this.findByIdsWithRelations(addresseeIds);
+          const addressees = await this.findByIds(addresseeIds);
           if (!author || !authorProfile || addressees.length === 0) {
             return null;
           }
