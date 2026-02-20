@@ -251,7 +251,7 @@ export class CronTasksProcessor {
       )
     );
 
-    return `Preparation of onboarding completed relationship cycle mails started for all configured delays.`;
+    return `Preparation of onboarding completed relationship cycle mails succeeded for all configured delays.`;
   }
 
   @Process(Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS)
@@ -301,8 +301,73 @@ export class CronTasksProcessor {
       this.logger.error(
         `Failed preparing mail for ${failures.length}/${userProfileNotCompleted.length} users that have not completed their profile ${DAYS_AFTER_ONBOARDING_COMPLETION} days after onboarding completion`
       );
+      throw new Error(
+        `Failed preparing mail for ${failures.length}/${userProfileNotCompleted.length} users that have not completed their profile ${DAYS_AFTER_ONBOARDING_COMPLETION} days after onboarding completion`
+      );
     }
 
-    return `Preparation of mails for users that have not completed their profile started.`;
+    return `Preparation of ${userProfileNotCompleted.length} mails for users that have not completed their profile succeeded.`;
+  }
+
+  @Process(Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS)
+  async prepareUserWithoutResponseToFirstMessageMails() {
+    const DAYS_SINCE_FIRST_MESSAGE_SENT = 5;
+
+    this.logger.log(
+      `Preparing mails for users that have no response to their first message...`
+    );
+    const usersWithoutResponseToFirstMessageResults =
+      await this.usersService.getUsersWithNoResponseToFirstMessage(
+        DAYS_SINCE_FIRST_MESSAGE_SENT
+      );
+
+    this.logger.log(
+      `Found ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message`
+    );
+
+    this.logger.log(
+      `Preparing mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message...`
+    );
+    const results = await Promise.allSettled(
+      usersWithoutResponseToFirstMessageResults.map(async (dto) => {
+        this.logger.log(
+          `Preparing mail for user ${dto.user.id} that have no response to their first message`
+        );
+        return await this.usersService.sendMailForNoResponseToFirstMessage(dto);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      usersWithoutResponseToFirstMessageResults,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed preparing mail for user ${userId} that have no response to their first message ${DAYS_SINCE_FIRST_MESSAGE_SENT} days after sending the first message`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📩 No response to first message reminder - J+${DAYS_SINCE_FIRST_MESSAGE_SENT}`,
+      {
+        total: usersWithoutResponseToFirstMessageResults.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing mail for ${failures.length}/${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message ${DAYS_SINCE_FIRST_MESSAGE_SENT} days after sending the first message`
+      );
+      throw new Error(
+        `Failed preparing mail for ${failures.length}/${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message ${DAYS_SINCE_FIRST_MESSAGE_SENT} days after sending the first message`
+      );
+    }
+
+    return `Preparation of mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message succeeded.`;
   }
 }

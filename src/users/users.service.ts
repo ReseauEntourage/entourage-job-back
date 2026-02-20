@@ -15,6 +15,7 @@ import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
 import { User, UserAttributes } from './models';
@@ -37,6 +38,15 @@ import {
   userSearchQueryRaw,
 } from './users.utils';
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+export type NoResponseToFirstMessageResultDto = {
+  id: string;
+  user: User;
+  recommendedProfiles: PublicProfileDto[];
+  addressees: User[];
+};
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -48,7 +58,9 @@ export class UsersService {
     @Inject(forwardRef(() => CompanyUsersService))
     private companyUsersService: CompanyUsersService,
     private businessSectorsService: BusinessSectorsService,
-    private queuesService: QueuesService
+    private queuesService: QueuesService,
+    @Inject(forwardRef(() => UserProfilesService))
+    private userProfilesService: UserProfilesService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -101,6 +113,19 @@ export class UsersService {
       where: {
         email: {
           [Op.in]: emails.map((email) => email.toLowerCase()),
+        },
+      },
+      attributes: [...UserAttributes],
+      include: UserIncludes(),
+      order: getUserCandidatOrder(),
+    });
+  }
+
+  async findByIdsWithRelations(ids: string[]) {
+    return this.userModel.findAll({
+      where: {
+        id: {
+          [Op.in]: ids,
         },
       },
       attributes: [...UserAttributes],
@@ -506,6 +531,16 @@ export class UsersService {
     );
   }
 
+  async sendMailForNoResponseToFirstMessage(
+    dto: NoResponseToFirstMessageResultDto
+  ) {
+    return this.mailsService.sendMailForNoResponseToFirstMessage(
+      dto.user,
+      dto.addressees.map((addressee) => addressee.firstName).join(', '),
+      dto.recommendedProfiles
+    );
+  }
+
   async remove(id: string) {
     return this.userModel.destroy({
       where: { id },
@@ -738,6 +773,99 @@ export class UsersService {
         id: userIds,
       },
     });
+  }
+
+  async getUsersWithNoResponseToFirstMessage(
+    daysSinceFirstMessage: number,
+    roles: UserRole[] = [UserRoles.CANDIDATE, UserRoles.COACH]
+  ): Promise<NoResponseToFirstMessageResultDto[]> {
+    const startDate = new Date(
+      new Date().setHours(0, 0, 0, 0) - daysSinceFirstMessage * DAY_IN_MS
+    );
+    const endDate = new Date(
+      new Date().setHours(0, 0, 0, 0) - (daysSinceFirstMessage - 1) * DAY_IN_MS
+    );
+
+    const rows: {
+      authorId: string;
+      addresseeId: string;
+      messageId: string;
+    }[] = await this.userModel.sequelize.query(
+      `
+      SELECT
+        m."authorId" as "authorId",
+        cp."userId" as "addresseeId",
+        m."id" as "messageId"
+      FROM "Messages" m
+      INNER JOIN "Users" author
+        ON author."id" = m."authorId"
+      INNER JOIN "ConversationParticipants" cp
+        ON cp."conversationId" = m."conversationId"
+      WHERE m."createdAt" >= :startDate
+        AND m."createdAt" < :endDate
+        AND (
+          SELECT COUNT(*)
+          FROM "Messages" m2
+          WHERE m2."conversationId" = m."conversationId"
+        ) = 1
+        AND author."deletedAt" IS NULL
+        AND author."role" IN (:roles)
+        AND cp."userId" <> m."authorId"
+      `,
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: {
+          startDate,
+          endDate,
+          roles,
+        },
+      }
+    );
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    // Create a structure to link authors to their addressees (one by message)
+    const messageMap = new Map<
+      string,
+      { authorId: string; addresseeIds: string[] }
+    >();
+    rows.forEach(({ authorId, addresseeId, messageId }) => {
+      if (!messageMap.has(messageId)) {
+        messageMap.set(messageId, { authorId, addresseeIds: [addresseeId] });
+      } else {
+        messageMap.get(messageId).addresseeIds.push(addresseeId);
+      }
+    });
+
+    const items = Array.from(messageMap.entries());
+    return await Promise.all(
+      items
+        .map(async ([, { authorId, addresseeIds }]) => {
+          const author = await this.findOneWithRelations(authorId);
+          const authorProfile = await this.userProfilesService.findOneByUserId(
+            authorId
+          );
+          const addressees = await this.findByIdsWithRelations(addresseeIds);
+          if (!author || !authorProfile || addressees.length === 0) {
+            return null;
+          }
+          const recommendedProfiles =
+            await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+              author,
+              authorProfile
+            );
+          return {
+            id: authorId,
+            user: author,
+            addressees,
+            recommendedProfiles,
+          };
+        })
+        .filter((result) => result !== null)
+    );
   }
 
   async sendReminderToCompleteProfile(user: User) {
