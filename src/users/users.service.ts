@@ -96,6 +96,19 @@ export class UsersService {
     });
   }
 
+  async findByEmailsWithRelations(emails: string[]) {
+    return this.userModel.findAll({
+      where: {
+        email: {
+          [Op.in]: emails.map((email) => email.toLowerCase()),
+        },
+      },
+      attributes: [...UserAttributes],
+      include: UserIncludes(),
+      order: getUserCandidatOrder(),
+    });
+  }
+
   async findOneForJwtPayload(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
       attributes: ['id', 'email', 'role', 'isEmailVerified', 'deletedAt'],

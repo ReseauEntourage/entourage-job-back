@@ -749,7 +749,9 @@ export class MessagingService {
   async createMailingList(createMailingListDto: CreateMailingListDto) {
     const { recipientEmails, content } = createMailingListDto;
     // Check if emails exists in the database and get the corresponding users
-    const users = await this.usersService.findByEmails(recipientEmails);
+    const users = await this.usersService.findByEmailsWithRelations(
+      recipientEmails
+    );
     const existingEmails = users.map((user) => user.email);
     const nonExistingEmails = recipientEmails.filter(
       (email) => !existingEmails.includes(email)

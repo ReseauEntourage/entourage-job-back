@@ -132,7 +132,7 @@ export class MessagingController {
     try {
       return this.messagingService.postFeedback(postFeedbackDto);
     } catch (error) {
-      console.error(error);
+      this.logger.error(error);
     }
   }
 
@@ -148,7 +148,7 @@ export class MessagingController {
         createMailingListDto
       );
     } catch (error) {
-      console.error(error);
+      this.logger.error(error);
       if (error instanceof ErrorMessagingMailingListInvalid) {
         throw new BadRequestException(error.message);
       } else {
