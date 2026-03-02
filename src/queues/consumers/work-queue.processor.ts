@@ -230,6 +230,11 @@ export class WorkQueueProcessor {
     return `Salesforce job ignored : update of user '${data.userId}' company to '${data.companyId}'`;
   }
 
+  /**
+   * Process onboarding completion for a user (can be all user roles)
+   * @param job
+   * @returns
+   */
   @Process(Jobs.ON_ONBOARDING_COMPLETED)
   async processOnOnboardingCompleted(job: Job) {
     const { data } = job;
@@ -255,10 +260,16 @@ export class WorkQueueProcessor {
       await this.usersService.generatePostOnboardingWelcomeMessage(user);
     if (welcomeMessageToSend) {
       const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
-      await queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
-        addresseeEmail: user.email,
-        message: welcomeMessageToSend,
-      });
+      await queue.add(
+        Jobs.SEND_STAFF_MESSAGING_MESSAGE,
+        {
+          addresseeEmail: user.email,
+          message: welcomeMessageToSend,
+        },
+        {
+          delay: 60 * 60 * 1000, // 1 hour
+        }
+      );
     }
 
     try {
@@ -296,6 +307,15 @@ export class WorkQueueProcessor {
     const addressee = await this.usersService.findOneByMailWithRelations(
       addresseeEmail
     );
+
+    if (!addressee) {
+      this.logger.error(
+        `Addressee with email ${addresseeEmail} not found in the system`
+      );
+      throw new Error(
+        `Addressee with email ${addresseeEmail} not found in the system`
+      );
+    }
 
     const staffContactEmail = addressee.staffContact.entourageProEmail;
     if (!staffContactEmail) {

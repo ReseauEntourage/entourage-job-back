@@ -11,7 +11,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
-import { UserRoles } from 'src/users/users.types';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { ZoneName } from 'src/utils/types/zones.types';
 
@@ -467,29 +467,10 @@ export class MailsService {
     this.logger.log(
       `Sending onboarding completed mail to user with email ${user.email}`
     );
-    const awsS3Url = process.env.AWSS3_URL || '';
-    const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
-    const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
-    const formattedRecommendedProfiles = recommendedPublicProfiles.map(
-      (publicProfile) => ({
-        imageUrl: publicProfile.hasPicture
-          ? `${imageBasePath}${publicProfile.id}.profile.jpg`
-          : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png',
-        firstName: publicProfile?.firstName || '',
-        zone: publicProfile?.zone || '',
-        workTitle:
-          publicProfile.role === UserRoles.CANDIDATE
-            ? publicProfile?.sectorOccupations?.[0]?.occupation?.name || ''
-            : publicProfile?.currentJob || '',
-        businessSector1:
-          publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
-        businessSector2:
-          publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
-        businessSector3:
-          publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
-        profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
-      })
-    );
+    const formattedRecommendedProfiles =
+      await this.formatRecommendedProfilesFromPublicProfiles(
+        recommendedPublicProfiles
+      );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.ONBOARDING_COMPLETED,
@@ -521,10 +502,68 @@ export class MailsService {
       },
     });
   }
+
+  async sendMailForNoResponseToFirstMessage(
+    user: User,
+    addresseesFirstNames: string,
+    recommendedPublicProfiles: PublicProfileDto[]
+  ) {
+    this.logger.log(
+      `Sending mail for no response to first message to user with email ${user.email}`
+    );
+
+    const formattedRecommendedProfiles =
+      await this.formatRecommendedProfilesFromPublicProfiles(
+        recommendedPublicProfiles
+      );
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.NO_RESPONSE_TO_FIRST_MESSAGE,
+      variables: {
+        firstName: user.firstName,
+        role: getRoleStringFromRole(user.role),
+        zone: user.zone,
+        staffContact: user.staffContact,
+        reco1: formattedRecommendedProfiles[0] || '',
+        reco2: formattedRecommendedProfiles[1] || '',
+        reco3: formattedRecommendedProfiles[2] || '',
+        nbReco: formattedRecommendedProfiles.length,
+        addresseesFirstNames,
+      },
+    });
+  }
+
+  private async formatRecommendedProfilesFromPublicProfiles(
+    recommendedPublicProfiles: PublicProfileDto[]
+  ) {
+    const awsS3Url = process.env.AWSS3_URL || '';
+    const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
+    const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
+
+    return (recommendedPublicProfiles || []).map((publicProfile) => ({
+      imageUrl: publicProfile.hasPicture
+        ? `${imageBasePath}${publicProfile.id}.profile.jpg`
+        : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png',
+      firstName: publicProfile?.firstName || '',
+      zone: publicProfile?.zone || '',
+      workTitle:
+        publicProfile.role === UserRoles.CANDIDATE
+          ? publicProfile?.sectorOccupations?.[0]?.occupation?.name || ''
+          : publicProfile?.currentJob || '',
+      businessSector1:
+        publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
+      businessSector2:
+        publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
+      businessSector3:
+        publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
+      profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
+    }));
+  }
 }
 
-const getRoleString = (user: User): string => {
-  switch (user.role) {
+const getRoleStringFromRole = (role: UserRole): string => {
+  switch (role) {
     case UserRoles.CANDIDATE:
       return 'Candidat';
     case UserRoles.COACH:
@@ -536,4 +575,8 @@ const getRoleString = (user: User): string => {
     default:
       throw new Error('Unknown role');
   }
+};
+
+const getRoleString = (user: User): string => {
+  return getRoleStringFromRole(user.role);
 };
