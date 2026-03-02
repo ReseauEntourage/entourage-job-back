@@ -1,4 +1,4 @@
-import { IsString, IsBoolean } from 'class-validator';
+import { IsString, IsBoolean, IsNumber } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -39,6 +39,11 @@ export class ElearningAnswer extends Model {
   @IsString()
   @Column(DataType.TEXT)
   label: string;
+
+  @AllowNull(false)
+  @IsNumber()
+  @Column
+  order: number;
 
   @AllowNull(false)
   @IsBoolean()
