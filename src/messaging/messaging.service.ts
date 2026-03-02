@@ -554,27 +554,95 @@ export class MessagingService {
   }
 
   /**
-   * Compute the response rate for a user profile
-   * Based on all the conversations where the user profile is a participant and no answer is given (excluding the conversations created within the last day)
-   *
-   * @param userProfileId - The ID of the user profile to fetch the response rate for
-   * @return The response rate in percentage or null if no messages are found
+   * Compute the response rate for a user profile based on the ratio of conversation without response / conversation with response. A conversation with response is a conversation where the user has sent at least one message after a message from another participant.
+   * We only take into account account the conversations created in the last 90 days to compute this metric but we don't take into account the conversations that are less than 3 days old because they may not have had the time to receive a response yet.
+   * @param userId - The ID of the user profile to fetch the response rate for
+   * @returns The response rate in percentage or null if no conversations are found
    */
   async getResponseRate(userId: string): Promise<number | null> {
-    // Get all conversations for the user profile
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const sixMonthAgo = new Date();
+    sixMonthAgo.setMonth(sixMonthAgo.getMonth() - 6);
+
+    // Get all conversations for the user profile created in the last 90 days and that are at least 3 days old
     const conversations = await this.conversationParticipantModel.findAll({
-      where: { userId },
-      include: [this.conversationModel],
+      where: {
+        userId,
+        createdAt: {
+          [Op.between]: [sixMonthAgo, threeDaysAgo],
+        },
+      },
+      include: [
+        {
+          model: Conversation,
+          as: 'conversation',
+          include: [
+            {
+              model: Message,
+              as: 'messages',
+              order: [['createdAt', 'ASC']],
+            },
+            {
+              model: User,
+              as: 'participants',
+              attributes: ['id', 'firstName', 'lastName', 'role'],
+              paranoid: false,
+            },
+          ],
+        },
+      ],
     });
 
-    const totalMessages = conversations.length;
-    const answeredMessages = conversations.filter(
-      (c) => c.seenAt && c.seenAt > new Date(Date.now() - 24 * 60 * 60 * 1000)
-    ).length;
+    // If there is no conversation, we return null
+    if (conversations.length === 0) return null;
 
-    if (totalMessages === 0) return null;
+    let conversationsWithResponse = 0;
+    let conversationsToIgnore = 0;
 
-    return Math.round((answeredMessages / totalMessages) * 100);
+    for (const participant of conversations) {
+      const conversation = participant.conversation;
+      const messages = conversation.messages;
+      const participants = conversation.participants;
+
+      // Determine if there is at least one message from another participant and at least one message from the user after a message from another participant
+      const hasOneMessageFromOther = messages.some(
+        (m) => m.authorId !== userId
+      );
+
+      // Determine if there is at least one message from the user
+      const hasOneMessageFromUser = messages.some((m) => m.authorId === userId);
+
+      // We ignore the conversation beetween a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin
+      const hasAdmin = participants.some(
+        (p) => p.role === UserRoles.ADMIN && p.id !== userId
+      );
+      if (hasAdmin) {
+        conversationsToIgnore++;
+        continue; // If there is an Admin in the conversation, we don't consider that the conversation needs a response from the user
+      }
+
+      // If there is no message from another participant, we don't take into account the conversation in the response rate calculation because we consider that the user profile doesn't need to respond to a message if there is no message from another participant
+      if (!hasOneMessageFromOther) {
+        conversationsToIgnore++;
+        continue; // If there is no message from another participant, we don't consider that the conversation needs a response
+      }
+
+      // If there is at least one message from another participant and at least one message from the user profile, we consider that the conversation has received a response from the user
+      const hasResponse = hasOneMessageFromOther && hasOneMessageFromUser;
+      if (hasResponse) {
+        conversationsWithResponse++;
+      }
+    }
+
+    // We calculate the response rate by dividing the number of conversations with response by the number of conversations that need a response (conversations with at least one message from another participant) and we multiply by 100 to have the rate in percentage. We ignore the conversations that are between a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin.
+    const validConversationsCount =
+      conversations.length - conversationsToIgnore;
+    if (validConversationsCount === 0) return null;
+    return Math.round(
+      (conversationsWithResponse / validConversationsCount) * 100
+    );
   }
 
   /**
