@@ -20,6 +20,7 @@ import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { SkillsModule } from 'src/common/skills/skills.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { ContactsModule } from 'src/contacts/contacts.module';
+import { ElearningModule } from 'src/elearning/elearning.module';
 import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
@@ -37,6 +38,7 @@ import { CompaniesTestingModule } from './companies/companies-testing.module';
 import { ContactsTestingModule } from './contacts/contacts-testing.module';
 import { ContractsTestingModule } from './contracts/contracts-testing.module';
 import { DatabaseHelper } from './database.helper';
+import { ElearningTestingModule } from './elearning/elearning-testing.module';
 import { ExternalCvsTestingModule } from './external-cvs/external-cvs-testing.module';
 import { LanguagesTestingModule } from './languages/languages-testing.module';
 import { MessagingTestingModule } from './messaging/messaging-testing.module';
@@ -93,6 +95,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     UsersDeletionModule,
     CompaniesModule,
     ExternalCvsModule,
+    ElearningModule,
 
     // Modules de test spécifiques
     AuthTestingModule,
@@ -111,6 +114,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     MessagingTestingModule,
     QueuesTestingModule,
     CompaniesTestingModule,
+    ElearningTestingModule,
   ],
   providers: [
     // Configuration du garde d'authentification global

@@ -24,6 +24,6 @@ import { ElearningUnit } from './models/elearning-unit.model';
   ],
   controllers: [ElearningController],
   providers: [ElearningService],
-  exports: [ElearningService],
+  exports: [SequelizeModule, ElearningService],
 })
 export class ElearningModule {}

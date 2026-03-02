@@ -26,5 +26,12 @@ export class MailsServiceMock {
     // Mock implementation that doesn't actually send an email
     return Promise.resolve({ id: 'mock-mail-id' });
   }
+
+  async sendAllElearningUnitsCompletedMail(
+    user: Pick<User, 'id' | 'firstName' | 'role' | 'zone' | 'email'>
+  ) {
+    // Mock implementation that doesn't actually send an email
+    return Promise.resolve({ id: 'mock-mail-id' });
+  }
   /* eslint-enable @typescript-eslint/no-unused-vars */
 }

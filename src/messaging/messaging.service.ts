@@ -185,7 +185,10 @@ export class MessagingService {
   /**
    * User can participate to a conversation
    */
-  async canParticipate(userId: string, createMessageDto: CreateMessageDto) {
+  private async canParticipate(
+    userId: string,
+    createMessageDto: CreateMessageDto
+  ) {
     // Ignore if the conversationId is not provided but the participantIds are
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
       return true;

@@ -8,6 +8,7 @@ import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { UsersController } from 'src/users/users.controller';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
@@ -24,6 +25,8 @@ describe('Users', () => {
   let app: INestApplication;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let server: any;
+
+  let addToWorkQueueSpy: jest.SpyInstance;
 
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
@@ -57,6 +60,11 @@ describe('Users', () => {
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
+
+    addToWorkQueueSpy = jest.spyOn(
+      QueuesServiceMock.prototype,
+      'addToWorkQueue'
+    );
   });
 
   beforeAll(async () => {
@@ -99,6 +107,7 @@ describe('Users', () => {
   beforeEach(async () => {
     try {
       await databaseHelper.resetTestDB();
+      addToWorkQueueSpy?.mockClear();
     } catch (error) {
       console.error(
         'Erreur lors de la réinitialisation de la base de données:',
@@ -843,6 +852,77 @@ describe('Users', () => {
             OnboardingStatus.COMPLETED
           );
           expect(new Date(response.body.onboardingCompletedAt)).not.toBeNull();
+        });
+
+        it('Should handle onboarding transition end-to-end (status + completedAt + job)', async () => {
+          // Default values right after registration
+          const initialResponse: APIResponse<UsersController['findUser']> =
+            await request(server)
+              .get(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+          expect(initialResponse.status).toBe(200);
+          expect(initialResponse.body.onboardingStatus).toBe(
+            OnboardingStatus.NOT_STARTED
+          );
+          expect(initialResponse.body.onboardingCompletedAt).toBeNull();
+          expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+
+          // Move to IN_PROGRESS: should not set completedAt, should not enqueue onboarding-completed job
+          const inProgressResponse: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.IN_PROGRESS,
+              });
+          expect(inProgressResponse.status).toBe(200);
+          expect(inProgressResponse.body.onboardingStatus).toBe(
+            OnboardingStatus.IN_PROGRESS
+          );
+          expect(inProgressResponse.body.onboardingCompletedAt).toBeNull();
+          expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+
+          // Move to COMPLETED: should set completedAt and enqueue job exactly once
+          const completedResponse: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingStatus: OnboardingStatus.COMPLETED,
+              });
+          expect(completedResponse.status).toBe(200);
+          expect(completedResponse.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
+          expect(completedResponse.body.onboardingCompletedAt).toEqual(
+            expect.any(String)
+          );
+          const completedAt = completedResponse.body.onboardingCompletedAt;
+          expect(new Date(completedAt).toString()).not.toBe('Invalid Date');
+
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+          expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+            Jobs.ON_ONBOARDING_COMPLETED,
+            { userId: loggedInCandidate.user.id }
+          );
+
+          // Idempotence: setting COMPLETED again must not change completedAt and must not enqueue again
+          const completedAgainResponse: APIResponse<
+            UsersController['updateUser']
+          > = await request(server)
+            .put(`${route}/${loggedInCandidate.user.id}`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`)
+            .send({
+              onboardingStatus: OnboardingStatus.COMPLETED,
+            });
+          expect(completedAgainResponse.status).toBe(200);
+          expect(completedAgainResponse.body.onboardingStatus).toBe(
+            OnboardingStatus.COMPLETED
+          );
+          expect(completedAgainResponse.body.onboardingCompletedAt).toBe(
+            completedAt
+          );
+          expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
         });
       });
       describe('/changePwd - Update password', () => {
