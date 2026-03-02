@@ -554,8 +554,10 @@ export class MessagingService {
   }
 
   /**
-   * Compute the response rate for a user profile based on the ratio of conversation without response / conversation with response. A conversation with response is a conversation where the user has sent at least one message after a message from another participant.
-   * We only take into account account the conversations created in the last 90 days to compute this metric but we don't take into account the conversations that are less than 3 days old because they may not have had the time to receive a response yet.
+   * Compute the response rate for a user profile based on the ratio of conversation without response / conversation with response. A conversation with response is a conversation where a user has sent at least one message.
+   * We only take into account the conversations created in the last 6 months to compute this metric but we don't take into account the conversations that are less than 3 days old because they may not have had the time to receive a response yet.
+   * We also ignore the conversations that are between a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin.
+   * Finally, if there is no conversation that need a response (conversation with at least one message from another participant that is not an Admin), we return null because we consider that the user profile doesn't have to respond to messages if there is no message from another participant that is not an Admin. This way, a user profile that only has conversations with Admins or that only has conversations with messages from other participants but without responding messages from the user profile will have a response rate of null and not 0% which would be more penalizing.
    * @param userId - The ID of the user profile to fetch the response rate for
    * @returns The response rate in percentage or null if no conversations are found
    */
@@ -566,7 +568,7 @@ export class MessagingService {
     const sixMonthAgo = new Date();
     sixMonthAgo.setMonth(sixMonthAgo.getMonth() - 6);
 
-    // Get all conversations for the user profile created in the last 90 days and that are at least 3 days old
+    // Get all conversations for the user profile created in the last 6 months and that are at least 3 days old
     const conversations = await this.conversationParticipantModel.findAll({
       where: {
         userId,
@@ -582,7 +584,6 @@ export class MessagingService {
             {
               model: Message,
               as: 'messages',
-              order: [['createdAt', 'ASC']],
             },
             {
               model: User,
@@ -614,7 +615,7 @@ export class MessagingService {
       // Determine if there is at least one message from the user
       const hasOneMessageFromUser = messages.some((m) => m.authorId === userId);
 
-      // We ignore the conversation beetween a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin
+      // We ignore the conversation between a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin
       const hasAdmin = participants.some(
         (p) => p.role === UserRoles.ADMIN && p.id !== userId
       );
