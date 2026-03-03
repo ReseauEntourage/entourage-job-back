@@ -382,15 +382,35 @@ export class CronTasksProcessor {
       `Found ${conversationMutuallyReplied.length} conversations with mutual replies`
     );
 
+    // Ensure participants are fully loaded with required relations (e.g., company)
+    const participantIds = Array.from(
+      new Set(
+        conversationMutuallyReplied.flatMap((conversation) =>
+          conversation.participants.map((participant) => participant.id)
+        )
+      )
+    );
+
+    const participantsWithRelations =
+      participantIds.length > 0
+        ? await this.usersService.findByIdsWithRelations(participantIds)
+        : [];
+
+    const participantsById = new Map<string, User>(
+      participantsWithRelations.map((user) => [user.id, user])
+    );
+
     const results = await Promise.allSettled(
       conversationMutuallyReplied.map(async (conversation) => {
         await Promise.all(
           conversation.participants.map(async (participant) => {
+            const hydratedParticipant =
+              participantsById.get(participant.id) ?? participant;
             this.logger.log(
-              `Preparing follow-up mail for user ${participant.id} with ongoing conversation ${conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
+              `Preparing follow-up mail for user ${hydratedParticipant.id} with ongoing conversation ${conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
             );
             return await this.usersService.sendFollowUpMailForMutualyRepliedConversation(
-              participant,
+              hydratedParticipant,
               conversation
             );
           })
