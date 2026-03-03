@@ -938,7 +938,17 @@ export class MessagingService {
           [Op.in]: conversationIds,
         },
       },
-      include: [...messagingConversationIncludes()],
+      include: [
+        {
+          model: ConversationParticipant,
+          include: [
+            {
+              model: User,
+              attributes: userAttributes,
+            },
+          ],
+        },
+      ],
     });
   }
 }

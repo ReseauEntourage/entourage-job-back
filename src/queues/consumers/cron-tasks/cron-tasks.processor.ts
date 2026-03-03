@@ -369,9 +369,9 @@ export class CronTasksProcessor {
 
   @Process(Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS)
   async prepareUserConversationFollowUpMails() {
-    const DAYS_SINCE_MUTUAL_REPLY = 0;
+    const DAYS_SINCE_MUTUAL_REPLY = 15;
     this.logger.log(
-      `Preparing follow-up mails for users that have an ongoing conversation...`
+      `Preparing follow-up mails for users that have a conversation with mutual replies ongoing since ${DAYS_SINCE_MUTUAL_REPLY} days...`
     );
     const conversationMutuallyReplied =
       await this.messagingService.getAllMutuallyRepliedConversations(
@@ -409,7 +409,7 @@ export class CronTasksProcessor {
             this.logger.log(
               `Preparing follow-up mail for user ${hydratedParticipant.id} with ongoing conversation ${conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
             );
-            return await this.usersService.sendFollowUpMailForMutualyRepliedConversation(
+            return await this.usersService.sendFollowUpMailForMutuallyRepliedConversation(
               hydratedParticipant,
               conversation
             );
