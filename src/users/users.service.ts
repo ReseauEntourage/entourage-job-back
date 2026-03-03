@@ -888,11 +888,11 @@ export class UsersService {
     return this.mailsService.sendReminderToCompleteProfile(user);
   }
 
-  async sendFollowUpMailForMutualyRepliedConversation(
+  async sendFollowUpMailForMutuallyRepliedConversation(
     user: User,
     conversation: Conversation
   ) {
-    return this.mailsService.sendFollowUpMailForMutualyRepliedConversation(
+    return this.mailsService.sendFollowUpMailForMutuallyRepliedConversation(
       user,
       conversation
     );

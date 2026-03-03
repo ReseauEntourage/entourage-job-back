@@ -534,7 +534,7 @@ export class MailsService {
     });
   }
 
-  async sendFollowUpMailForMutualyRepliedConversation(
+  async sendFollowUpMailForMutuallyRepliedConversation(
     user: User,
     conversation: Conversation
   ) {
