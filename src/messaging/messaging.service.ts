@@ -875,7 +875,7 @@ export class MessagingService {
    * This is used to identify conversations that may need a feedback from users because they have had a real interaction between all participants.
    *
    * @param daysSinceMutualReply - The number of days since the conversation became "mutually replied" (exactly)
-   * @param excludeConversationsWithAdmin - Whether to exclude conversations with admins or not (default: false).
+   * @param excludeConversationsWithAdmin - Whether to exclude conversations with admins or not (default: true).
    */
   async getAllMutuallyRepliedConversations(
     daysSinceMutualReply: number,
