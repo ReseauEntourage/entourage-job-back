@@ -369,13 +369,13 @@ export class CronTasksProcessor {
 
   @Process(Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS)
   async prepareUserConversationFollowUpMails() {
-    const DAYS_SINCE_CONVERSATION_CREATION = 15;
+    const DAYS_SINCE_MUTUAL_REPLY = 0;
     this.logger.log(
       `Preparing follow-up mails for users that have an ongoing conversation...`
     );
     const conversationMutuallyReplied =
       await this.messagingService.getAllMutuallyRepliedConversations(
-        DAYS_SINCE_CONVERSATION_CREATION
+        DAYS_SINCE_MUTUAL_REPLY
       );
 
     this.logger.log(
@@ -387,7 +387,7 @@ export class CronTasksProcessor {
         await Promise.all(
           conversation.participants.map(async (participant) => {
             this.logger.log(
-              `Preparing follow-up mail for user ${participant.id} with ongoing conversation ${conversation.id} created since ${DAYS_SINCE_CONVERSATION_CREATION} days`
+              `Preparing follow-up mail for user ${participant.id} with ongoing conversation ${conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
             );
             return await this.usersService.sendFollowUpMailForMutualyRepliedConversation(
               participant,
@@ -403,7 +403,7 @@ export class CronTasksProcessor {
       results,
       (userId, reason) => {
         this.logger.error(
-          `Failed preparing follow-up mail for user ${userId} with ongoing conversation ${DAYS_SINCE_CONVERSATION_CREATION} days after the first message`,
+          `Failed preparing follow-up mail for user ${userId} with ongoing conversation ${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage`,
           reason
         );
       }
@@ -411,7 +411,7 @@ export class CronTasksProcessor {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📬 Conversation follow-up - J+${DAYS_SINCE_CONVERSATION_CREATION}`,
+      `📬 Conversation follow-up - J+${DAYS_SINCE_MUTUAL_REPLY}`,
       {
         total: conversationMutuallyReplied.length,
         success: successIds.length,
@@ -422,7 +422,7 @@ export class CronTasksProcessor {
 
     if (!succeeded) {
       this.logger.error(
-        `Failed preparing follow-up mail for ${failures.length}/${conversationMutuallyReplied.length} conversations with mutual replies ${DAYS_SINCE_CONVERSATION_CREATION} days after the first message`
+        `Failed preparing follow-up mail for ${failures.length}/${conversationMutuallyReplied.length} conversations with mutual replies ${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage`
       );
     }
 
