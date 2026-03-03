@@ -400,30 +400,39 @@ export class CronTasksProcessor {
       participantsWithRelations.map((user) => [user.id, user])
     );
 
+    const followUpMailJobs = conversationMutuallyReplied.flatMap(
+      (conversation) =>
+        conversation.participants.map((participant) => {
+          const hydratedParticipant =
+            participantsById.get(participant.id) ?? participant;
+
+          return {
+            id: `${conversation.id}:${hydratedParticipant.id}`,
+            user: hydratedParticipant,
+            conversation,
+          };
+        })
+    );
+
     const results = await Promise.allSettled(
-      conversationMutuallyReplied.map(async (conversation) => {
-        await Promise.all(
-          conversation.participants.map(async (participant) => {
-            const hydratedParticipant =
-              participantsById.get(participant.id) ?? participant;
-            this.logger.log(
-              `Preparing follow-up mail for user ${hydratedParticipant.id} with ongoing conversation ${conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
-            );
-            return await this.usersService.sendFollowUpMailForMutuallyRepliedConversation(
-              hydratedParticipant,
-              conversation
-            );
-          })
+      followUpMailJobs.map(async (job) => {
+        this.logger.log(
+          `Preparing follow-up mail for user ${job.user.id} with ongoing conversation ${job.conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
+        );
+        return await this.usersService.sendFollowUpMailForMutuallyRepliedConversation(
+          job.user,
+          job.conversation
         );
       })
     );
 
     const { succeeded, successIds, failures } = collectSettledResults(
-      conversationMutuallyReplied,
+      followUpMailJobs,
       results,
-      (userId, reason) => {
+      (jobId, reason) => {
+        const [conversationId, userId] = String(jobId).split(':');
         this.logger.error(
-          `Failed preparing follow-up mail for user ${userId} with ongoing conversation ${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage`,
+          `Failed preparing follow-up mail for user ${userId} with conversation ${conversationId} (${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage)`,
           reason
         );
       }
@@ -433,7 +442,7 @@ export class CronTasksProcessor {
       succeeded,
       `📬 Conversation follow-up - J+${DAYS_SINCE_MUTUAL_REPLY}`,
       {
-        total: conversationMutuallyReplied.length,
+        total: followUpMailJobs.length,
         success: successIds.length,
         failure: failures.length,
       },
@@ -442,10 +451,10 @@ export class CronTasksProcessor {
 
     if (!succeeded) {
       this.logger.error(
-        `Failed preparing follow-up mail for ${failures.length}/${conversationMutuallyReplied.length} conversations with mutual replies ${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage`
+        `Failed preparing follow-up mail for ${failures.length}/${followUpMailJobs.length} follow-up emails ${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage`
       );
     }
 
-    return `Preparation of follow-up mails for users that have an ongoing conversation started.`;
+    return `Preparation of follow-up mails for ${followUpMailJobs.length} users-conversations pairs started.`;
   }
 }

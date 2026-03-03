@@ -940,13 +940,9 @@ export class MessagingService {
       },
       include: [
         {
-          model: ConversationParticipant,
-          include: [
-            {
-              model: User,
-              attributes: userAttributes,
-            },
-          ],
+          model: User,
+          attributes: userAttributes,
+          as: 'participants',
         },
       ],
     });
