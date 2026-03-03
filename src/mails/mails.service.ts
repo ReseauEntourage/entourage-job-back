@@ -534,6 +534,31 @@ export class MailsService {
     });
   }
 
+  async sendFollowUpMailForMutualyRepliedConversation(
+    user: User,
+    conversation: Conversation
+  ) {
+    this.logger.log(
+      `Sending follow-up mail for mutually replied conversation to user with email ${user.email} for conversation with id ${conversation.id}`
+    );
+    return await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      templateId: MailjetTemplates.FOLLOW_UP_MUTUALLY_REPLIED_CONVERSATION,
+      variables: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        participantsFirstNames: conversation.participants
+          .filter((p) => p.id !== user.id)
+          .map((p) => p.firstName)
+          .join(', '),
+        role: getRoleStringFromRole(user.role),
+        zone: user.zone,
+        staffContact: user.staffContact,
+      },
+    });
+  }
+
   private async formatRecommendedProfilesFromPublicProfiles(
     recommendedPublicProfiles: PublicProfileDto[]
   ) {

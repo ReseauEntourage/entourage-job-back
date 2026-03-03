@@ -79,6 +79,7 @@ export const MailjetTemplates = {
   ELEARNING_ALL_UNITS_COMPLETED: 7720521,
   NOT_COMPLETED_PROFILE_REMINDER: 6559282,
   NO_RESPONSE_TO_FIRST_MESSAGE: 7749050,
+  FOLLOW_UP_MUTUALLY_REPLIED_CONVERSATION: 7758555,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

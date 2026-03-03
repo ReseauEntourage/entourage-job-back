@@ -1,6 +1,6 @@
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize, Transaction } from 'sequelize';
+import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -867,5 +867,55 @@ export class MessagingService {
         messages,
       }
     );
+  }
+
+  /**
+   * Get all conversations that have received messages from all the participants in the last X days.
+   * This is used to identify conversations that may need a feedback from users because they have had a real interaction between all participants.
+   *
+   * @param daysSinceCreation - The number of days since the creation of the conversation (exactly)
+   * @param excludeConversationsWithAdmin - Whether to exclude conversations with admins or not (default: false).
+   */
+  async getAllMutuallyRepliedConversations(
+    daysSinceCreation: number,
+    excludeConversationsWithAdmin = false
+  ) {
+    const conversations: { id: string }[] =
+      await this.conversationModel.sequelize.query(
+        `
+        SELECT c.id
+        FROM "Conversations" c
+        JOIN "ConversationParticipants" cp ON cp."conversationId" = c.id
+        JOIN "Messages" m ON m."conversationId" = c.id AND m."authorId" = cp."userId"
+        JOIN (
+          SELECT "conversationId", "userId"
+          FROM "ConversationParticipants"
+          WHERE "createdAt" <= NOW() - INTERVAL '${daysSinceCreation} days' AND "createdAt" >= NOW() - INTERVAL '${
+          daysSinceCreation + 1
+        } days'
+        ) cp2 ON cp2."conversationId" = c.id AND cp2."userId" = m."authorId"
+        ${
+          excludeConversationsWithAdmin
+            ? 'JOIN "Users" u ON u.id = cp."userId"'
+            : ''
+        }
+        WHERE 1 = 1
+        ${excludeConversationsWithAdmin ? "AND u.role != 'ADMIN'" : ''}
+        GROUP BY c.id
+        HAVING COUNT(DISTINCT m."authorId") = (SELECT COUNT(DISTINCT "userId") FROM "ConversationParticipants" WHERE "conversationId" = c.id)
+      `,
+        {
+          type: QueryTypes.SELECT,
+        }
+      );
+    const conversationIds = conversations.map((c) => c.id);
+    return this.conversationModel.findAll({
+      where: {
+        id: {
+          [Op.in]: conversationIds,
+        },
+      },
+      include: [...messagingConversationIncludes()],
+    });
   }
 }

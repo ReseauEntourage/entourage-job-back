@@ -9,6 +9,7 @@ import {
 } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
@@ -23,7 +24,8 @@ export class CronTasksProcessor {
   constructor(
     private usersService: UsersService,
     private usersDeletionService: UsersDeletionService,
-    private cronTasksSlackReporterService: CronTasksSlackReporterService
+    private cronTasksSlackReporterService: CronTasksSlackReporterService,
+    private messagingService: MessagingService
   ) {}
 
   @OnQueueActive()
@@ -363,5 +365,67 @@ export class CronTasksProcessor {
     }
 
     return `Preparation of mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message started.`;
+  }
+
+  @Process(Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS)
+  async prepareUserConversationFollowUpMails() {
+    const DAYS_SINCE_CONVERSATION_CREATION = 15;
+    this.logger.log(
+      `Preparing follow-up mails for users that have an ongoing conversation...`
+    );
+    const conversationMutuallyReplied =
+      await this.messagingService.getAllMutuallyRepliedConversations(
+        DAYS_SINCE_CONVERSATION_CREATION
+      );
+
+    this.logger.log(
+      `Found ${conversationMutuallyReplied.length} conversations with mutual replies`
+    );
+
+    const results = await Promise.allSettled(
+      conversationMutuallyReplied.map(async (conversation) => {
+        await Promise.all(
+          conversation.participants.map(async (participant) => {
+            this.logger.log(
+              `Preparing follow-up mail for user ${participant.id} with ongoing conversation ${conversation.id} created since ${DAYS_SINCE_CONVERSATION_CREATION} days`
+            );
+            return await this.usersService.sendFollowUpMailForMutualyRepliedConversation(
+              participant,
+              conversation
+            );
+          })
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      conversationMutuallyReplied,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed preparing follow-up mail for user ${userId} with ongoing conversation ${DAYS_SINCE_CONVERSATION_CREATION} days after the first message`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📬 Conversation follow-up - J+${DAYS_SINCE_CONVERSATION_CREATION}`,
+      {
+        total: conversationMutuallyReplied.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing follow-up mail for ${failures.length}/${conversationMutuallyReplied.length} conversations with mutual replies ${DAYS_SINCE_CONVERSATION_CREATION} days after the first message`
+      );
+    }
+
+    return `Preparation of follow-up mails for users that have an ongoing conversation started.`;
   }
 }
