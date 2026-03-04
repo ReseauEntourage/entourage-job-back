@@ -5,6 +5,7 @@ import { UsersHelper } from '../users/users.helper';
 import { LoggedUser } from 'src/auth/auth.types';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingController } from 'src/messaging/messaging.controller';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -34,6 +35,7 @@ describe('MESSAGING', () => {
   let loggedInCoach: LoggedUser;
   let loggedInReferer: LoggedUser;
   let loggedInOtherCandidate: LoggedUser;
+  let messagingService: MessagingService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -47,6 +49,8 @@ describe('MESSAGING', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
     server = app.getHttpServer();
+
+    messagingService = app.get(MessagingService);
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
@@ -761,6 +765,170 @@ describe('MESSAGING', () => {
           expect(response.status).toBe(401);
         });
       });
+    });
+  });
+
+  describe('getAllMutuallyRepliedConversations', () => {
+    const daysAgo = (days: number, hours = 0) =>
+      new Date(Date.now() - (days * 24 + hours) * 60 * 60 * 1000);
+
+    it('should return the conversation when every participant has sent at least one message and the mutual-reply date is in the window', async () => {
+      const conversation = await conversationFactory.create();
+
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id,
+        {
+          createdAt: daysAgo(20),
+          updatedAt: daysAgo(20),
+        }
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCoach.user.id,
+        {
+          createdAt: daysAgo(15, 12),
+          updatedAt: daysAgo(15, 12),
+        }
+      );
+
+      const results = await messagingService.getAllMutuallyRepliedConversations(
+        15
+      );
+      const resultIds = results.map((c) => c.id);
+
+      expect(resultIds).toContain(conversation.id);
+      const returnedConversation = results.find(
+        (c) => c.id === conversation.id
+      );
+      expect(returnedConversation?.participants?.length).toBe(2);
+    });
+
+    it('should not return the conversation when at least one participant has never sent a message', async () => {
+      const conversation = await conversationFactory.create();
+
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id,
+        {
+          createdAt: daysAgo(15, 12),
+          updatedAt: daysAgo(15, 12),
+        }
+      );
+
+      const results = await messagingService.getAllMutuallyRepliedConversations(
+        15
+      );
+      const resultIds = results.map((c) => c.id);
+
+      expect(resultIds).not.toContain(conversation.id);
+    });
+
+    it('should respect daysSinceMutualReply parameter (different windows return different conversations)', async () => {
+      const conversation10Days = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation10Days.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+      await messagingHelper.createMessage(
+        conversation10Days.id,
+        loggedInCandidate.user.id,
+        {
+          createdAt: daysAgo(30),
+          updatedAt: daysAgo(30),
+        }
+      );
+      await messagingHelper.createMessage(
+        conversation10Days.id,
+        loggedInCoach.user.id,
+        {
+          createdAt: daysAgo(10, 12),
+          updatedAt: daysAgo(10, 12),
+        }
+      );
+
+      const conversation15Days = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation15Days.id,
+        [loggedInCandidate.user.id, loggedInReferer.user.id]
+      );
+      await messagingHelper.createMessage(
+        conversation15Days.id,
+        loggedInCandidate.user.id,
+        {
+          createdAt: daysAgo(40),
+          updatedAt: daysAgo(40),
+        }
+      );
+      await messagingHelper.createMessage(
+        conversation15Days.id,
+        loggedInReferer.user.id,
+        {
+          createdAt: daysAgo(15, 12),
+          updatedAt: daysAgo(15, 12),
+        }
+      );
+
+      const results10 =
+        await messagingService.getAllMutuallyRepliedConversations(10);
+      expect(results10.map((c) => c.id)).toContain(conversation10Days.id);
+      expect(results10.map((c) => c.id)).not.toContain(conversation15Days.id);
+
+      const results15 =
+        await messagingService.getAllMutuallyRepliedConversations(15);
+      expect(results15.map((c) => c.id)).toContain(conversation15Days.id);
+      expect(results15.map((c) => c.id)).not.toContain(conversation10Days.id);
+    });
+
+    it('should exclude conversations with admins by default, but include them when excludeConversationsWithAdmin=false', async () => {
+      const loggedInAdmin = await usersHelper.createLoggedInUser({
+        role: UserRoles.ADMIN,
+      });
+
+      const conversationWithAdmin = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversationWithAdmin.id,
+        [loggedInCandidate.user.id, loggedInAdmin.user.id]
+      );
+
+      await messagingHelper.createMessage(
+        conversationWithAdmin.id,
+        loggedInCandidate.user.id,
+        {
+          createdAt: daysAgo(20),
+          updatedAt: daysAgo(20),
+        }
+      );
+      await messagingHelper.createMessage(
+        conversationWithAdmin.id,
+        loggedInAdmin.user.id,
+        {
+          createdAt: daysAgo(15, 12),
+          updatedAt: daysAgo(15, 12),
+        }
+      );
+
+      const resultsExcluded =
+        await messagingService.getAllMutuallyRepliedConversations(15);
+      expect(resultsExcluded.map((c) => c.id)).not.toContain(
+        conversationWithAdmin.id
+      );
+
+      const resultsIncluded =
+        await messagingService.getAllMutuallyRepliedConversations(15, false);
+      expect(resultsIncluded.map((c) => c.id)).toContain(
+        conversationWithAdmin.id
+      );
     });
   });
 

@@ -35,19 +35,34 @@ export class MessagingHelper {
   async addMessagesToConversation(
     count: number,
     conversationId: string,
-    authorId: string
+    authorId: string,
+    props: Partial<Message> = {}
   ) {
     const messages = Array.from({ length: count }, () => {
       const messageData = {
         content: faker.lorem.sentence(),
         conversationId,
         authorId,
+        ...props,
       };
 
       return messageData;
     });
 
     return this.messageModel.bulkCreate(messages);
+  }
+
+  async createMessage(
+    conversationId: string,
+    authorId: string,
+    props: Partial<Message> = {}
+  ) {
+    return this.messageModel.create({
+      content: faker.lorem.sentence(),
+      conversationId,
+      authorId,
+      ...props,
+    });
   }
 
   async countConversation() {
