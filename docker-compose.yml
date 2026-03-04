@@ -32,7 +32,9 @@ services:
       - linkedout-cache
 
   linkedout-db:
-    image: postgres:14.1-alpine
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
     container_name: linkedout-db-postgresql
     restart: always
     environment:
