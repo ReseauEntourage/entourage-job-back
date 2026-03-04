@@ -11,21 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: entourage-job-back-test
 
-    services:
-      postgres:
-        image: postgres
-        env:
-          POSTGRES_PASSWORD: linkedout
-          POSTGRES_USER: linkedout
-          POSTGRES_DB: linkedout
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     env:
       CI: true
       NODE_ENV: test
@@ -37,6 +22,46 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache pgvector installation
+        id: cache-pgvector
+        uses: actions/cache@v3
+        with:
+          path: /tmp/pgvector-install
+          key: pgvector-v0.5.1-${{ runner.os }}
+
+      - name: Install PostgreSQL and pgvector
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-14 postgresql-server-dev-14
+
+          # Installer pgvector seulement si pas en cache
+          if [ ! -d "/tmp/pgvector-install" ]; then
+            echo "Compilation de pgvector..."
+            cd /tmp
+            git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
+            cd pgvector
+            make
+            # Sauvegarder les binaires compilés
+            mkdir -p /tmp/pgvector-install
+            cp vector.so /tmp/pgvector-install/
+            cp sql/vector--*.sql /tmp/pgvector-install/
+            cp vector.control /tmp/pgvector-install/
+          else
+            echo "Utilisation de pgvector en cache"
+          fi
+
+          # Installer depuis le cache ou les nouveaux binaires
+          sudo cp /tmp/pgvector-install/vector.so $(pg_config --pkglibdir)/
+          sudo cp /tmp/pgvector-install/vector--*.sql $(pg_config --sharedir)/extension/
+          sudo cp /tmp/pgvector-install/vector.control $(pg_config --sharedir)/extension/
+
+      - name: Start PostgreSQL and create database
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -c "CREATE USER linkedout WITH PASSWORD 'linkedout' SUPERUSER;"
+          sudo -u postgres psql -c "CREATE DATABASE linkedout OWNER linkedout;"
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
