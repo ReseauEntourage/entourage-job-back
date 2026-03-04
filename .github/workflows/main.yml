@@ -11,6 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: entourage-job-back-test
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17-bookworm
+        env:
+          POSTGRES_USER: linkedout
+          POSTGRES_PASSWORD: linkedout
+          POSTGRES_DB: linkedout
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       CI: true
       NODE_ENV: test
@@ -22,24 +37,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install PostgreSQL and pgvector
-        run: |
-          # Ajouter le dépôt officiel PostgreSQL
-          sudo apt-get update
-          sudo apt-get install -y wget ca-certificates
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-
-          # Installer PostgreSQL 17 et pgvector
-          sudo apt-get update
-          sudo apt-get install -y postgresql-17 postgresql-17-pgvector
-
-      - name: Start PostgreSQL and create database
-        run: |
-          sudo systemctl start postgresql.service
-          sudo -u postgres psql -c "CREATE USER linkedout WITH PASSWORD 'linkedout' SUPERUSER;"
-          sudo -u postgres psql -c "CREATE DATABASE linkedout OWNER linkedout;"
 
       - uses: actions/setup-node@v4
         with:
