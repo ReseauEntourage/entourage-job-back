@@ -44,18 +44,28 @@ module.exports = {
     });
 
     // Add an index on userProfileId and type for faster querying
-    await queryInterface.addIndex('UserProfileEmbeddings', [
-      'userProfileId',
-      'type',
-    ]);
+    await queryInterface.addIndex(
+      'UserProfileEmbeddings',
+      ['userProfileId', 'type'],
+      {
+        name: 'user_profile_embeddings_user_profile_id_type',
+      }
+    );
 
     // Add a HNSW index on the embedding column for efficient similarity search
     await queryInterface.sequelize.query(
-      'CREATE INDEX user_profile_embeddings_embedding_hnsw_idx ON "UserProfileEmbeddings" USING hnsw (embedding);'
+      'CREATE INDEX IF NOT EXISTS user_profile_embeddings_embedding_hnsw_idx ON "UserProfileEmbeddings" USING hnsw (embedding vector_cosine_ops);'
     );
   },
 
   async down(queryInterface, Sequelize) {
+    await queryInterface.sequelize.query(
+      'DROP INDEX IF EXISTS user_profile_embeddings_embedding_hnsw_idx;'
+    );
+    await queryInterface.removeIndex(
+      'UserProfileEmbeddings',
+      'user_profile_embeddings_user_profile_id_type'
+    );
     await queryInterface.dropTable('UserProfileEmbeddings');
   },
 };
