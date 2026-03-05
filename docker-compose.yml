@@ -1,7 +1,7 @@
 services:
   ## ENTOURAGE PRO BACKEND API
-  entourage-pro-api:
-    container_name: entourage-pro-api
+  api:
+    container_name: api
     build:
       context: ./
       target: base
@@ -9,33 +9,33 @@ services:
         NODE_VERSION: 20.19.1
     volumes:
       - .:/home/node
-    image: entourage-pro-api:nestjs
+      - /home/node/node_modules
     ports:
       - '3002:3002'
     env_file:
       - .env
     environment:
       NODE_ENV: development
-      REDIS_HOST: entourage-pro-redis
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      DB_HOST: entourage-pro-db
+      DB_HOST: db
       DB_PORT: 5432
       DB_USER: entourage_pro
       DB_PASSWORD: entourage_pro
       DB_NAME: entourage_pro
     depends_on:
-      - entourage-pro-db
-      - entourage-pro-redis
+      - db
+      - redis
     links:
-      - entourage-pro-db
-      - entourage-pro-redis
+      - db
+      - redis
 
-  entourage-pro-db:
+  db:
+    container_name: db
     build:
       context: ./docker/postgres
       dockerfile: Dockerfile
-    container_name: entourage-pro-db-postgresql
     restart: always
     environment:
       - POSTGRES_USER=entourage_pro
@@ -43,7 +43,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - entourage-pro-db:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
     command:
       - 'postgres'
       - '-c'
@@ -51,17 +51,17 @@ services:
       - '-c'
       - 'shared_buffers=3GB'
   ## ENTOURAGE PRO BACKEND CACHE
-  entourage-pro-redis:
+  redis:
+    container_name: redis
     image: redis:6.2-alpine
-    container_name: entourage-pro-redis
     restart: always
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
-      - entourage-pro-redis:/data
+      - redis:/data
 volumes:
-  entourage-pro-db:
+  db:
     driver: local
-  entourage-pro-redis:
+  redis:
     driver: local

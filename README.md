@@ -59,7 +59,7 @@ Document mis à jour le 04/11/2025
 - `package.json`: configuration du projet et des dépendances
 - `Procfile` : configuration des process **_Heroku_** à lancer après déploiement
 - `tsconfig.json`: configuration pour _*typescript*_
-- `yarn.lock`: définitions des dépendances et sous dépendances et leur version
+- `pnpm-lock.yaml`: définitions des dépendances et sous dépendances et leur version
 
 ## Configuration
 
@@ -123,20 +123,20 @@ $> docker exec -it entourage-pro-api-worker bash
 Pour créer la DB:
 
 ```
-$> yarn db:create
+$> pnpm run db:create
 ```
 
 Pour lancer les migrations :
 
 ```
-$> yarn db:migrate
+$> pnpm run db:migrate
 ```
 
 Pour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
 utilisateurs :
 
 ```
-$> yarn db:seed
+$> pnpm run db:seed
 ```
 
 ### Une fois la DB initialisée
@@ -177,19 +177,19 @@ $> docker compose -f docker-compose.worker.yml run --rm entourage-pro-api-worker
 - Compiler l'application
 
 ```
-$> yarn build
+$> pnpm run build
 ```
 
 - Démarrer l'application précédemment compilé
 
 ```
-$> yarn start
+$> pnpm run start
 ```
 
 ### Prettier + Linter
 
 ```
-$> yarn test:eslint
+$> pnpm run test:eslint
 ```
 
 > Ces deux commandes sont lancées par les hooks de commit.
@@ -224,7 +224,7 @@ $> docker exec -it entourage-pro-api-test sh
 - Executez les tests e2e
 
 ```
-$> yarn run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
+$> pnpm run run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
 ```
 
 ### Avec docker

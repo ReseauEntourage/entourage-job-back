@@ -4,6 +4,7 @@ import { User } from 'src/users/models';
 import {
   SlackBlockConfig,
   slackChannels,
+  SlackMessageResponse,
   SlackMsgAction,
   SlackMsgContext,
   SlackMsgContextImage,
@@ -33,7 +34,7 @@ export class SlackService {
     channel: string,
     blocks: (Block | KnownBlock)[],
     message?: string
-  ) => {
+  ): Promise<SlackMessageResponse> => {
     return this.app.client.chat
       .postMessage({
         channel: channel,

@@ -38,9 +38,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-      - run: yarn install
-      - run: yarn db:migrate
-      - run: yarn test:e2e
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm db:migrate
+      - run: pnpm test:e2e

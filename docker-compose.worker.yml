@@ -1,7 +1,7 @@
 services:
   ## ENTOURAGE PRO BACKEND WORKER
-  entourage-pro-api-worker:
-    container_name: entourage-pro-api-worker
+  worker:
+    container_name: worker
     build:
       context: ./
       target: base
@@ -10,19 +10,19 @@ services:
     entrypoint: ['./docker-entrypoint.worker.sh']
     volumes:
       - .:/home/node
-    image: entourage-pro-api-worker:nestjs
+      - /home/node/node_modules
     env_file:
       - .env
     environment:
       NODE_ENV: development
-      REDIS_HOST: entourage-pro-redis
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      DB_HOST: entourage-pro-db
+      DB_HOST: db
       DB_PORT: 5432
       DB_USER: entourage_pro
       DB_PASSWORD: entourage_pro
       DB_NAME: entourage_pro
     depends_on:
-      - entourage-pro-db
-      - entourage-pro-redis
+      - db
+      - redis

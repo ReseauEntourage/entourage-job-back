@@ -6,7 +6,8 @@ WORKDIR /home/node
 
 # COPY FILES FIRST
 COPY package.json .
-COPY yarn.lock .
+COPY pnpm-lock.yaml .
+COPY pnpm-workspace.yaml .
 COPY docker-entrypoint.sh .
 
 # GRANT ENTRYPOINT EXEC
@@ -25,10 +26,16 @@ RUN apt-get update && apt-get install -y \
   python3 \
   && rm -rf /var/lib/apt/lists/*
 
-# THEN INSTALL NODE MODULES
-RUN yarn install
+# INSTALL PNPM
+RUN npm install -g pnpm@10.30.3
+
+# NOTE: node_modules installation is done in entrypoint scripts
+# because the volume mount overwrites the image's node_modules
 
 # EXPOSE PORTS
 EXPOSE 3002
 
+RUN pnpm install
+
+# Required to be able to override entrypoint in worker and test compose files
 ENTRYPOINT ["/bin/sh", "docker-entrypoint.sh"]

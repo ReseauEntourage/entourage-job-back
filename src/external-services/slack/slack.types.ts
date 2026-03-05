@@ -37,3 +37,9 @@ export interface SlackBlockConfig {
   msgParts: SlackMsgPart[];
   actions?: SlackMsgAction[];
 }
+
+export type SlackMessageResponse = {
+  ok: boolean;
+  ts?: string;
+  [key: string]: unknown;
+} | void;
