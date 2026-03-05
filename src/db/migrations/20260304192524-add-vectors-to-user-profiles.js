@@ -67,5 +67,8 @@ module.exports = {
       'user_profile_embeddings_user_profile_id_type'
     );
     await queryInterface.dropTable('UserProfileEmbeddings');
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_UserProfileEmbeddings_type";'
+    );
   },
 };

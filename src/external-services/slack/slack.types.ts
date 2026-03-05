@@ -42,4 +42,4 @@ export type SlackMessageResponse = {
   ok: boolean;
   ts?: string;
   [key: string]: unknown;
-} | void;
+};
