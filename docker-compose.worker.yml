@@ -41,6 +41,8 @@ services:
       - POSTGRES_PASSWORD=entourage_pro
     ports:
       - '5432:5432'
+    volumes:
+      - entourage-pro-db:/var/lib/postgresql/data
     command:
       - 'postgres'
       - '-c'
