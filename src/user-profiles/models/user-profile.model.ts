@@ -41,6 +41,7 @@ import { Skill } from 'src/common/skills/models';
 import { User } from 'src/users/models';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { UserProfileContract } from './user-profile-contract.model';
+import { UserProfileEmbedding } from './user-profile-embedding.model';
 import { UserProfileLanguage } from './user-profile-language.model';
 import { UserProfileNudge } from './user-profile-nudge.model';
 import { UserProfileSectorOccupation } from './user-profile-sector-occupation.model';
@@ -308,10 +309,16 @@ export class UserProfile extends Model {
   })
   customNudges: UserProfileNudge[];
 
+  // Embeddings
+  @ApiProperty()
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => UserProfileEmbedding, 'userProfileId')
+  embeddings: UserProfileEmbedding[];
+
   /**
    * Hooks
    */
-
   @AfterUpdate
   static async updateZone(
     updatedUserProfile: UserProfile,
