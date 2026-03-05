@@ -38,6 +38,6 @@ Pour ajouter une nouvelle extension PostgreSQL :
 
 3. **Reconstruire l'image** :
    ```bash
-   docker-compose build linkedout-db
-   docker-compose up -d linkedout-db
+   docker-compose build entourage-pro-db
+   docker-compose up -d entourage-pro-db
    ```

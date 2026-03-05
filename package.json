@@ -15,7 +15,7 @@
     "start:docker": "docker compose up",
     "start:debug": "nest start --debug --watch",
     "worker:start": "node dist/worker",
-    "worker:start:docker": "docker compose -f docker-compose.worker.yml run --rm linkedout-api-worker",
+    "worker:start:docker": "docker compose -f docker-compose.worker.yml run --rm entourage-pro-api-worker",
     "worker:start:dev": "nest start --config nest-cli.worker.json --watch",
     "worker:start:debug": "nest start --config nest-cli.worker.json --debug --watch",
     "test": "run-s test:*",

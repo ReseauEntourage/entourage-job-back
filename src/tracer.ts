@@ -9,7 +9,7 @@ if (ENV === 'production') {
 }
 
 tracer.use('pg', {
-  service: 'linkedout-backend-postgres',
+  service: 'entourage-pro-backend-postgres',
 });
 
 export { tracer };

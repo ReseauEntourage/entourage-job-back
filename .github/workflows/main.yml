@@ -15,9 +15,9 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg17-bookworm
         env:
-          POSTGRES_USER: linkedout
-          POSTGRES_PASSWORD: linkedout
-          POSTGRES_DB: linkedout
+          POSTGRES_USER: entourage_pro
+          POSTGRES_PASSWORD: entourage_pro
+          POSTGRES_DB: entourage_pro
         ports:
           - 5432:5432
         options: >-

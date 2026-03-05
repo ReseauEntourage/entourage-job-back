@@ -1,7 +1,7 @@
 services:
-  ## LINKEDOUT BACKEND API
-  linkedout-api:
-    container_name: linkedout-api
+  ## ENTOURAGE PRO BACKEND API
+  entourage-pro-api:
+    container_name: entourage-pro-api
     build:
       context: ./
       target: base
@@ -9,37 +9,37 @@ services:
         NODE_VERSION: 20.19.1
     volumes:
       - .:/home/node
-    image: linkedout-api:nestjs
+    image: entourage-pro-api:nestjs
     ports:
       - '3002:3002'
     env_file:
       - .env
     environment:
       NODE_ENV: development
-      REDIS_HOST: linkedout-cache
+      REDIS_HOST: entourage-pro-redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      DB_HOST: linkedout-db
+      DB_HOST: entourage-pro-db
       DB_PORT: 5432
-      DB_USER: linkedout
-      DB_PASSWORD: linkedout
-      DB_NAME: linkedout
+      DB_USER: entourage_pro
+      DB_PASSWORD: entourage_pro
+      DB_NAME: entourage_pro
     depends_on:
-      - linkedout-db
-      - linkedout-cache
+      - entourage-pro-db
+      - entourage-pro-redis
     links:
-      - linkedout-db
-      - linkedout-cache
+      - entourage-pro-db
+      - entourage-pro-redis
 
-  linkedout-db:
+  entourage-pro-db:
     build:
       context: ./docker/postgres
       dockerfile: Dockerfile
-    container_name: linkedout-db-postgresql
+    container_name: entourage-pro-db-postgresql
     restart: always
     environment:
-      - POSTGRES_USER=linkedout
-      - POSTGRES_PASSWORD=linkedout
+      - POSTGRES_USER=entourage_pro
+      - POSTGRES_PASSWORD=entourage_pro
     ports:
       - '5432:5432'
     command:
@@ -48,18 +48,18 @@ services:
       - 'log_temp_files=10240'
       - '-c'
       - 'shared_buffers=3GB'
-  ## LINKEDOUT BACKEND CACHE
-  linkedout-cache:
+  ## ENTOURAGE PRO BACKEND CACHE
+  entourage-pro-redis:
     image: redis:6.2-alpine
-    container_name: linkedout-cache-redis
+    container_name: entourage-pro-redis
     restart: always
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
-      - linkedout-cache:/data
+      - entourage-pro-redis:/data
 volumes:
-  linkedout-db:
+  entourage-pro-db:
     driver: local
-  linkedout-cache:
+  entourage-pro-redis:
     driver: local
