@@ -43,10 +43,16 @@ module.exports = {
       },
     });
 
+    // Add an index on userProfileId and type for faster querying
     await queryInterface.addIndex('UserProfileEmbeddings', [
       'userProfileId',
       'type',
     ]);
+
+    // Add a HNSW index on the embedding column for efficient similarity search
+    await queryInterface.sequelize.query(
+      'CREATE INDEX user_profile_embeddings_embedding_hnsw_idx ON "UserProfileEmbeddings" USING hnsw (embedding);'
+    );
   },
 
   async down(queryInterface, Sequelize) {
