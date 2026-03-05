@@ -21,6 +21,7 @@ services:
       - db-test
 
   db-test:
+    container_name: db-test
     build:
       context: ./docker/postgres
       dockerfile: Dockerfile
@@ -29,7 +30,7 @@ services:
       - POSTGRES_USER=entourage_pro
       - POSTGRES_PASSWORD=entourage_pro
     ports:
-      - '5432:5432'
+      - '5433:5432'
     command:
       - 'postgres'
       - '-c'

@@ -7,7 +7,7 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "transformIgnorePatterns": ["/node_modules/(?!(@slack|axios)/)"],
+  "transformIgnorePatterns": ["/node_modules/(?!.*(@slack|axios))"],
   "moduleDirectories": ["node_modules"],
   "moduleNameMapper": {
     "^src/(.*)": "<rootDir>/src/$1",
