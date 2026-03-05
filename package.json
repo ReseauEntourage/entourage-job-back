@@ -20,7 +20,7 @@
     "worker:dev:debug": "nest start --config nest-cli.worker.json --debug --watch",
     "all:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "all:dev:docker:build": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up --build",
-    "test:docker": "docker compose -f docker-compose.test.yml up",
+    "test:e2e:docker": "docker compose -f docker-compose.test.yml up",
     "test": "run-s test:*",
     "test:ts-check": "tsc -p tsconfig.json --noEmit",
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",

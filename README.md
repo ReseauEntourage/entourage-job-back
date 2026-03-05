@@ -99,14 +99,14 @@ Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, v
 containers:
 
 ```
-$> docker exec -it entourage-pro-api bash
+$> docker exec -it api bash
 $> rm -r node_modules/sharp/
 $> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
 ```
-$> docker exec -it entourage-pro-api-test bash
+$> docker exec -it api-test bash
 $> rm -r node_modules/sharp/
 $> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
@@ -117,7 +117,7 @@ exit
 Entrez dans votre container
 
 ```
-$> docker exec -it entourage-pro-api-worker bash
+$> docker exec -it entourage-pro-api bash
 ```
 
 Pour créer la DB:
@@ -132,8 +132,7 @@ Pour lancer les migrations :
 $> pnpm run db:migrate
 ```
 
-Pour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
-utilisateurs :
+Pour lancer les seeds :
 
 ```
 $> pnpm run db:seed
@@ -150,7 +149,7 @@ Les identifiants de l'administrateur crée sont :
 ### Remplir la DB avec un dump
 
 ```
-$> docker exec -it entourage-pro-db sh
+$> docker exec -it db sh
 psql -d entourage_pro -p 5432 -U entourage_pro -W
 ```
 
@@ -160,16 +159,22 @@ Entrez le mdp de la BD (dans le docker compose: "entourage_pro"), puis exécutez
 
 ### Lancer le projet en mode développement
 
-Lancement de l'application `app`
+Lancement du service `api`
 
 ```
-$> docker compose up
+$> pnpm run api:dev:docker
 ```
 
-Lancement de l'application `worker`
+Lancement du service `worker`
 
 ```
-$> docker compose -f docker-compose.worker.yml run --rm entourage-pro-api-worker
+$> pnpm run docker:dev:docker
+```
+
+Lancement de l'application complète
+
+```
+$> pnpm run all:dev:docker
 ```
 
 ### Lancer le projet en mode production
@@ -180,10 +185,10 @@ $> docker compose -f docker-compose.worker.yml run --rm entourage-pro-api-worker
 $> pnpm run build
 ```
 
-- Démarrer l'application précédemment compilé
+- Démarrer l'api compilée
 
 ```
-$> pnpm run start
+$> pnpm run api:start
 ```
 
 ### Prettier + Linter
@@ -215,16 +220,10 @@ _ex:_ `postgresql://entourage_pro:entourage_pro@localhost:54300/entourage_pro`) 
 
 ### En local, sur votre machine directement
 
-- Assurez vous d'avoir initialisé les migrations
-
-```
-$> docker exec -it entourage-pro-api-test sh
-```
-
 - Executez les tests e2e
 
 ```
-$> pnpm run run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
+$> pnpm run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
 ```
 
 ### Avec docker
@@ -234,7 +233,7 @@ $> pnpm run run test:e2e {optionnel: test file path} {optionnel: -t "Name of tes
   Le script docker-entrypoint.test.sh est executé, il commence par supprimer la base existante, la recréé, lance toutes les migrations de la branche courante et enfin execute les tests e2e.
 
 ```
-$> docker compose -f docker-compose.test.yml run --rm entourage-pro-api-test {optionnel: test file path} {optionnel: -t "Name of test"}
+$> pnpm run test:e2e:docker {optionnel: test file path} {optionnel: -t "Name of test"}
 ```
 
 # Déploiement
