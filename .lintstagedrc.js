@@ -1,3 +1,3 @@
 module.exports = {
-  '*.ts?(x)': [() => 'yarn test:ts-check', 'yarn test:eslint'],
+  '*.ts?(x)': [() => 'pnpm run test:ts-check', 'pnpm run test:eslint'],
 };
