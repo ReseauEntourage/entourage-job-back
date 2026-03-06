@@ -40,6 +40,8 @@ export const Jobs = {
   PREPARE_NOT_COMPLETED_PROFILE_MAILS: 'prepare_not_completed_profile_mails',
   PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS:
     'prepare_user_without_response_to_first_message_mails',
+  PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS:
+    'prepare_user_conversation_follow_up_mails',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -65,6 +67,7 @@ type JobsData = {
   [Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS]: PreparePostOnboardingCompletionMailsJob;
   [Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS]: PrepareNotCompletedProfileMailsJob;
   [Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS]: PrepareUserWithoutResponseToFirstMessageMailsJob;
+  [Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS]: PrepareUserConversationFollowUpMailsJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -143,6 +146,8 @@ export interface PreparePostOnboardingCompletionMailsJob {}
 export interface PrepareNotCompletedProfileMailsJob {}
 
 export interface PrepareUserWithoutResponseToFirstMessageMailsJob {}
+
+export interface PrepareUserConversationFollowUpMailsJob {}
 
 export const Queues = {
   WORK: 'work',

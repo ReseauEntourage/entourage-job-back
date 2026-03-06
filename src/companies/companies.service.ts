@@ -280,7 +280,7 @@ export class CompaniesService {
       context
     );
     const slackBlocks = this.slackService.generateSlackBlockMsg(slackMsgConfig);
-    return this.slackService.sendMessage(
+    await this.slackService.sendMessage(
       slackChannels.ENTOURAGE_PRO_MODERATION,
       slackBlocks,
       'Nouvelle entreprise créée : ' + company.name

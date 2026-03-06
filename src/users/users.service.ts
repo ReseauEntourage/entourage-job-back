@@ -8,6 +8,7 @@ import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { MailsService } from 'src/mails/mails.service';
 import { userProfileAttributes } from 'src/messaging/messaging.attributes';
+import { Conversation } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -885,6 +886,16 @@ export class UsersService {
 
   async sendReminderToCompleteProfile(user: User) {
     return this.mailsService.sendReminderToCompleteProfile(user);
+  }
+
+  async sendFollowUpMailForMutuallyRepliedConversation(
+    user: User,
+    conversation: Conversation
+  ) {
+    return this.mailsService.sendFollowUpMailForMutuallyRepliedConversation(
+      user,
+      conversation
+    );
   }
 
   async generatePostOnboardingWelcomeMessage(user: User) {

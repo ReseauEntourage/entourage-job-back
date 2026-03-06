@@ -1,8 +1,8 @@
-# LinkedOut Backend
+# Entourage-Pro Backend
 
 Document mis à jour le 04/11/2025
 
-[![LinkedOut Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
+[![Entourage-Pro Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
 
 ## Modules principaux & versions
 
@@ -59,7 +59,7 @@ Document mis à jour le 04/11/2025
 - `package.json`: configuration du projet et des dépendances
 - `Procfile` : configuration des process **_Heroku_** à lancer après déploiement
 - `tsconfig.json`: configuration pour _*typescript*_
-- `yarn.lock`: définitions des dépendances et sous dépendances et leur version
+- `pnpm-lock.yaml`: définitions des dépendances et sous dépendances et leur version
 
 ## Configuration
 
@@ -99,14 +99,14 @@ Dans le cas où vous travaillez sur mac, le module Sharp peut poser problème, v
 containers:
 
 ```
-$> docker exec -it linkedout-api bash
+$> docker exec -it api bash
 $> rm -r node_modules/sharp/
 $> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
 ```
 
 ```
-$> docker exec -it linkedout-api-test bash
+$> docker exec -it api-test bash
 $> rm -r node_modules/sharp/
 $> npm install --platform=linux --arch=x64 sharp --legacy-peer-deps
 exit
@@ -117,59 +117,64 @@ exit
 Entrez dans votre container
 
 ```
-$> docker exec -it linkedout-api-worker bash
+$> docker exec -it entourage-pro-api bash
 ```
 
 Pour créer la DB:
 
 ```
-$> yarn db:create
+$> pnpm run db:create
 ```
 
 Pour lancer les migrations :
 
 ```
-$> yarn db:migrate
+$> pnpm run db:migrate
 ```
 
-Pour remplir la base de données avec un utilisateur administrateur permettant la création par la suite d'autres
-utilisateurs :
+Pour lancer les seeds :
 
 ```
-$> yarn db:seed
+$> pnpm run db:seed
 ```
 
 ### Une fois la DB initialisée
 
 Les identifiants de l'administrateur crée sont :
 
-> Adresse mail : **admin@linkedout.fr**
+> Adresse mail : **admin@entourage.social**
 >
 > Mot de passe : **Admin123!**
 
 ### Remplir la DB avec un dump
 
 ```
-$> docker exec -it linkedout-db sh
-psql -d linkedout -p 5432 -U linkedout -W
+$> docker exec -it db sh
+psql -d entourage_pro -p 5432 -U entourage_pro -W
 ```
 
-Entrez le mdp de la BD (dans le docker compose: "linkedout"), puis exécutez la commande SQL.
+Entrez le mdp de la BD (dans le docker compose: "entourage_pro"), puis exécutez la commande SQL.
 
 ## Lancement du projet
 
 ### Lancer le projet en mode développement
 
-Lancement de l'application `app`
+Lancement du service `api`
 
 ```
-$> docker compose up
+$> pnpm run api:dev:docker
 ```
 
-Lancement de l'application `worker`
+Lancement du service `worker`
 
 ```
-$> docker compose -f docker-compose.worker.yml run --rm linkedout-api-worker
+$> pnpm run docker:dev:docker
+```
+
+Lancement de l'application complète
+
+```
+$> pnpm run all:dev:docker
 ```
 
 ### Lancer le projet en mode production
@@ -177,19 +182,19 @@ $> docker compose -f docker-compose.worker.yml run --rm linkedout-api-worker
 - Compiler l'application
 
 ```
-$> yarn build
+$> pnpm run build
 ```
 
-- Démarrer l'application précédemment compilé
+- Démarrer l'api compilée
 
 ```
-$> yarn start
+$> pnpm run api:start
 ```
 
 ### Prettier + Linter
 
 ```
-$> yarn test:eslint
+$> pnpm run test:eslint
 ```
 
 > Ces deux commandes sont lancées par les hooks de commit.
@@ -209,22 +214,16 @@ Une interface de visualisation des queues et tâches programmées, actives, en a
 ## Initialisation de la BDD de test
 
 Vous avez besoin des données du fichier `.env.test` pour les tests en local, et de renseigner le champ _DATABASE_URL_ (
-_ex:_ `postgresql://linkedout:linkedout@localhost:54300/linkedout`) avec l'adresse de l'instance **_Docker_**
+_ex:_ `postgresql://entourage_pro:entourage_pro@localhost:54300/entourage_pro`) avec l'adresse de l'instance **_Docker_**
 
 ## Lancer les tests
 
 ### En local, sur votre machine directement
 
-- Assurez vous d'avoir initialisé les migrations
-
-```
-$> docker exec -it linkedout-api-test sh
-```
-
 - Executez les tests e2e
 
 ```
-$> yarn run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
+$> pnpm run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
 ```
 
 ### Avec docker
@@ -234,7 +233,7 @@ $> yarn run test:e2e {optionnel: test file path} {optionnel: -t "Name of test"}
   Le script docker-entrypoint.test.sh est executé, il commence par supprimer la base existante, la recréé, lance toutes les migrations de la branche courante et enfin execute les tests e2e.
 
 ```
-$> docker compose -f docker-compose.test.yml run --rm linkedout-api-test {optionnel: test file path} {optionnel: -t "Name of test"}
+$> pnpm run test:e2e:docker {optionnel: test file path} {optionnel: -t "Name of test"}
 ```
 
 # Déploiement
@@ -243,11 +242,11 @@ Le déploiement se fait automatiquement grâce à **_Github Actions_** et **_Her
 
 Si un commit est poussé sur `develop`, l'application sera déployé sur la pre-production : \* \*[https://entourage-job-preprod.herokuapp.com](https://entourage-job-preprod.herokuapp.com)\*\*
 
-Si un commit est poussé sur `master`, l'application sera déployé sur la production : \* \*[https://api.linkedout.fr](https://api.linkedout.fr)\*\*
+Si un commit est poussé sur `master`, l'application sera déployé sur la production : \* \*[https://api.entourage-pro.fr](https://api.entourage-pro.fr)\*\*
 
 Les tests sont effectués sur **_Github Actions_** avant de déployer le projet sur **_Heroku_**
 (Les variables nécessaires pour executer les tests sont définies dans main.yaml et set dans les paramètres de secrets du repository sur GitHub)
 
 ## Stack technique
 
-![Stack technique LinkedOut](./stack.svg)
+![Stack technique Entourage-Pro](./stack.svg)

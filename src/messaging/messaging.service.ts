@@ -1,6 +1,6 @@
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize, Transaction } from 'sequelize';
+import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -867,5 +867,84 @@ export class MessagingService {
         messages,
       }
     );
+  }
+
+  /**
+   * Get all conversations that reached the stage where every participant has sent at least one message
+   * exactly X days ago (window of 1 day, i.e. between J-(X+1) and J-X).
+   * This is used to identify conversations that may need a feedback from users because they have had a real interaction between all participants.
+   *
+   * @param daysSinceMutualReply - The number of days since the conversation became "mutually replied" (exactly)
+   * @param excludeConversationsWithAdmin - Whether to exclude conversations with admins or not (default: true).
+   */
+  async getAllMutuallyRepliedConversations(
+    daysSinceMutualReply: number,
+    excludeConversationsWithAdmin = true
+  ) {
+    const excludeAdminSql = excludeConversationsWithAdmin
+      ? `
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "ConversationParticipants" cp_admin
+          JOIN "Users" u_admin ON u_admin.id = cp_admin."userId"
+          WHERE cp_admin."conversationId" = f."conversationId"
+            AND u_admin.role = '${UserRoles.ADMIN}'
+        )
+      `
+      : '';
+
+    const conversations: { id: string }[] =
+      await this.conversationModel.sequelize.query(
+        `
+        WITH first_message_per_participant AS (
+          SELECT
+            cp."conversationId" AS "conversationId",
+            cp."userId" AS "userId",
+            MIN(m."createdAt") AS "firstMessageAt"
+          FROM "ConversationParticipants" cp
+          JOIN "Messages" m
+            ON m."conversationId" = cp."conversationId"
+           AND m."authorId" = cp."userId"
+          GROUP BY cp."conversationId", cp."userId"
+        )
+        SELECT f."conversationId" AS id
+        FROM first_message_per_participant f
+        GROUP BY f."conversationId"
+        HAVING
+          -- every participant has sent at least one message
+          COUNT(*) = (
+            SELECT COUNT(*)
+            FROM "ConversationParticipants" cp
+            WHERE cp."conversationId" = f."conversationId"
+          )
+          -- the moment the conversation became mutually replied is when the last participant sent their first message
+          AND MAX(f."firstMessageAt") BETWEEN
+            (NOW() - make_interval(days => :daysPlusOne))
+            AND (NOW() - make_interval(days => :days))
+          ${excludeAdminSql}
+      `,
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            days: daysSinceMutualReply,
+            daysPlusOne: daysSinceMutualReply + 1,
+          },
+        }
+      );
+    const conversationIds = conversations.map((c) => c.id);
+    return this.conversationModel.findAll({
+      where: {
+        id: {
+          [Op.in]: conversationIds,
+        },
+      },
+      include: [
+        {
+          model: User,
+          attributes: userAttributes,
+          as: 'participants',
+        },
+      ],
+    });
   }
 }

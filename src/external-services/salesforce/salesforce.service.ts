@@ -324,32 +324,12 @@ export class SalesforceService {
     return searchRecords[0]?.Id;
   }
 
-  async findBinomeByCandidateEmail(email: string) {
-    const candidateSf = await this.findContact(email);
-
-    if (!candidateSf) {
-      console.error('Error finding Salesforce candidate by mail : ' + email);
-      return null;
-    }
-
-    const binomeSfId = await this.findBinomeByCandidateSfId(candidateSf.Id);
-    if (!binomeSfId) {
-      console.error('Error finding Salesforce binome by mail : ' + email);
-      return null;
-    }
-
-    return binomeSfId;
-  }
-
   async findContact(
     email: string,
     recordType?: ContactRecordType
   ): Promise<{ Id: string; Casquettes_r_les__c: Casquette[] } | null> {
     await this.checkIfConnected();
-    const sfEmail = email
-      .replace(/\+/g, '.')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    const sfEmail = email.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const {
       records,
     }: { records: { Id: string; Casquettes_r_les__c: string }[] } =

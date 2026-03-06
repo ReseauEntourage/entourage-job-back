@@ -9,6 +9,7 @@ import {
 } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
@@ -23,7 +24,8 @@ export class CronTasksProcessor {
   constructor(
     private usersService: UsersService,
     private usersDeletionService: UsersDeletionService,
-    private cronTasksSlackReporterService: CronTasksSlackReporterService
+    private cronTasksSlackReporterService: CronTasksSlackReporterService,
+    private messagingService: MessagingService
   ) {}
 
   @OnQueueActive()
@@ -363,5 +365,96 @@ export class CronTasksProcessor {
     }
 
     return `Preparation of mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message started.`;
+  }
+
+  @Process(Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS)
+  async prepareUserConversationFollowUpMails() {
+    const DAYS_SINCE_MUTUAL_REPLY = 15;
+    this.logger.log(
+      `Preparing follow-up mails for users that have a conversation with mutual replies ongoing since ${DAYS_SINCE_MUTUAL_REPLY} days...`
+    );
+    const conversationMutuallyReplied =
+      await this.messagingService.getAllMutuallyRepliedConversations(
+        DAYS_SINCE_MUTUAL_REPLY
+      );
+
+    this.logger.log(
+      `Found ${conversationMutuallyReplied.length} conversations with mutual replies`
+    );
+
+    // Ensure participants are fully loaded with required relations (e.g., company)
+    const participantIds = Array.from(
+      new Set(
+        conversationMutuallyReplied.flatMap((conversation) =>
+          conversation.participants.map((participant) => participant.id)
+        )
+      )
+    );
+
+    const participantsWithRelations =
+      participantIds.length > 0
+        ? await this.usersService.findByIdsWithRelations(participantIds)
+        : [];
+
+    const participantsById = new Map<string, User>(
+      participantsWithRelations.map((user) => [user.id, user])
+    );
+
+    const followUpMailJobs = conversationMutuallyReplied.flatMap(
+      (conversation) =>
+        conversation.participants.map((participant) => {
+          const hydratedParticipant =
+            participantsById.get(participant.id) ?? participant;
+
+          return {
+            id: `${conversation.id}:${hydratedParticipant.id}`,
+            user: hydratedParticipant,
+            conversation,
+          };
+        })
+    );
+
+    const results = await Promise.allSettled(
+      followUpMailJobs.map(async (job) => {
+        this.logger.log(
+          `Preparing follow-up mail for user ${job.user.id} with ongoing conversation ${job.conversation.id} mutually replied since ${DAYS_SINCE_MUTUAL_REPLY} days`
+        );
+        return await this.usersService.sendFollowUpMailForMutuallyRepliedConversation(
+          job.user,
+          job.conversation
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      followUpMailJobs,
+      results,
+      (jobId, reason) => {
+        const [conversationId, userId] = String(jobId).split(':');
+        this.logger.error(
+          `Failed preparing follow-up mail for user ${userId} with conversation ${conversationId} (${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage)`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📬 Conversation follow-up - J+${DAYS_SINCE_MUTUAL_REPLY}`,
+      {
+        total: followUpMailJobs.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing follow-up mail for ${failures.length}/${followUpMailJobs.length} follow-up emails ${DAYS_SINCE_MUTUAL_REPLY} days after mutual reply stage`
+      );
+    }
+
+    return `Preparation of follow-up mails for ${followUpMailJobs.length} users-conversations pairs started.`;
   }
 }

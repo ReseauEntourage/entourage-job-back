@@ -1,6 +1,6 @@
 {
-  "name": "linkedout-backend",
-  "version": "2.29.3",
+  "name": "entourage-pro-backend",
+  "version": "2.29.4",
   "license": "ISC",
   "engines": {
     "node": "20.x"
@@ -9,15 +9,18 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "start": "node dist/main",
-    "start:dev": "nest start --watch",
-    "start:docker:build": "docker compose up --build",
-    "start:docker": "docker compose up",
-    "start:debug": "nest start --debug --watch",
+    "api:start": "node dist/main",
+    "api:start:debug": "nest start --debug --watch",
+    "api:dev": "nest start --watch",
+    "api:dev:docker": "docker compose up",
+    "api:dev:docker:build": "docker compose up --build",
     "worker:start": "node dist/worker",
-    "worker:start:docker": "docker compose -f docker-compose.worker.yml run --rm linkedout-api-worker",
-    "worker:start:dev": "nest start --config nest-cli.worker.json --watch",
-    "worker:start:debug": "nest start --config nest-cli.worker.json --debug --watch",
+    "worker:dev:docker": "docker compose -f docker-compose.worker.yml run --rm worker",
+    "worker:dev": "nest start --config nest-cli.worker.json --watch",
+    "worker:dev:debug": "nest start --config nest-cli.worker.json --debug --watch",
+    "all:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
+    "all:dev:docker:build": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up --build",
+    "test:e2e:docker": "docker compose -f docker-compose.test.yml up",
     "test": "run-s test:*",
     "test:ts-check": "tsc -p tsconfig.json --noEmit",
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",
@@ -122,9 +125,9 @@
     "@types/pdf2image": "^1.2.4",
     "@types/puppeteer": "^5.4.6",
     "@types/sequelize": "^4.28.11",
-    "@types/sharp": "^0.30.5",
     "@types/supertest": "^2.0.11",
     "@types/uuid": "^8.3.4",
+    "@types/validator": "^13.15.10",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.0.1",
@@ -146,5 +149,5 @@
     "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.5"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "pnpm@10.30.3"
 }

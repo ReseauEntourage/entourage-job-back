@@ -116,4 +116,23 @@ export class CronService {
       status: 'processing',
     };
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async prepareUserConversationFollowUpMails() {
+    this.logger.log('Cron job started: prepareUserConversationFollowUpMails');
+    // Create a job that will be processed by the CronTasksProcessor
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
 }

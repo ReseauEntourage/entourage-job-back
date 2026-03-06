@@ -1,3 +1,3 @@
-release: yarn db:migrate
-web: yarn start
-mainWorker: yarn worker:start
+release: pnpm db:migrate
+web: pnpm api:start
+mainWorker: pnpm worker:start

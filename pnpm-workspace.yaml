@@ -1,0 +1,13 @@
+onlyBuiltDependencies:
+  - sharp
+  - '@datadog/native-appsec'
+  - '@datadog/native-iast-taint-tracking'
+  - '@datadog/native-metrics'
+  - '@datadog/pprof'
+  - '@nestjs/core'
+  - dd-trace
+  - msgpackr-extract
+
+supportedArchitectures:
+  cpu: [x64, arm64]
+  os: [current, linux, darwin]
