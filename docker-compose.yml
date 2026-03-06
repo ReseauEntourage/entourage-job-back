@@ -1,7 +1,7 @@
 services:
-  ## LINKEDOUT BACKEND API
-  linkedout-api:
-    container_name: linkedout-api
+  ## ENTOURAGE PRO BACKEND API
+  api:
+    container_name: api
     build:
       context: ./
       target: base
@@ -9,55 +9,59 @@ services:
         NODE_VERSION: 20.19.1
     volumes:
       - .:/home/node
-    image: linkedout-api:nestjs
+      - /home/node/node_modules
     ports:
       - '3002:3002'
     env_file:
       - .env
     environment:
       NODE_ENV: development
-      REDIS_HOST: linkedout-cache
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      DB_HOST: linkedout-db
+      DB_HOST: db
       DB_PORT: 5432
-      DB_USER: linkedout
-      DB_PASSWORD: linkedout
-      DB_NAME: linkedout
+      DB_USER: entourage_pro
+      DB_PASSWORD: entourage_pro
+      DB_NAME: entourage_pro
     depends_on:
-      - linkedout-db
-      - linkedout-cache
+      - db
+      - redis
     links:
-      - linkedout-db
-      - linkedout-cache
+      - db
+      - redis
 
-  linkedout-db:
-    image: postgres:14.1-alpine
-    container_name: linkedout-db-postgresql
+  db:
+    container_name: db
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
     restart: always
     environment:
-      - POSTGRES_USER=linkedout
-      - POSTGRES_PASSWORD=linkedout
+      - POSTGRES_USER=entourage_pro
+      - POSTGRES_PASSWORD=entourage_pro
     ports:
       - '5432:5432'
+    volumes:
+      - db:/var/lib/postgresql/data
     command:
       - 'postgres'
       - '-c'
       - 'log_temp_files=10240'
       - '-c'
       - 'shared_buffers=3GB'
-  ## LINKEDOUT BACKEND CACHE
-  linkedout-cache:
+  ## ENTOURAGE PRO BACKEND CACHE
+  redis:
+    container_name: redis
     image: redis:6.2-alpine
-    container_name: linkedout-cache-redis
     restart: always
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
-      - linkedout-cache:/data
+      - redis:/data
 volumes:
-  linkedout-db:
+  db:
     driver: local
-  linkedout-cache:
+  redis:
     driver: local

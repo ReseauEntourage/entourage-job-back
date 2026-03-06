@@ -22,6 +22,7 @@ import { UsersModule } from 'src/users/users.module';
 import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { UserProfile, UserProfileSectorOccupation } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
+import { UserProfileEmbedding } from './models/user-profile-embedding.model';
 import { UserProfileFormation } from './models/user-profile-formation.model';
 import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
@@ -45,6 +46,7 @@ import { UserProfilesService } from './user-profiles.service';
       Skill,
       Experience,
       CompanyUser,
+      UserProfileEmbedding,
     ]),
     forwardRef(() => UsersModule),
     OccupationsModule,

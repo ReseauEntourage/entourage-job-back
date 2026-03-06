@@ -22,7 +22,8 @@
     "esModuleInterop": true,
     "moduleResolution": "Node",
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "preserveWatchOutput": true
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval"

@@ -1,4 +1,4 @@
-name: LinkedOut Backend Test
+name: Entourage Pro Backend Test
 
 on:
   push:
@@ -13,18 +13,18 @@ jobs:
 
     services:
       postgres:
-        image: postgres
+        image: pgvector/pgvector:pg17-bookworm
         env:
-          POSTGRES_PASSWORD: linkedout
-          POSTGRES_USER: linkedout
-          POSTGRES_DB: linkedout
+          POSTGRES_USER: entourage_pro
+          POSTGRES_PASSWORD: entourage_pro
+          POSTGRES_DB: entourage_pro
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5432:5432
 
     env:
       CI: true
@@ -37,9 +37,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-      - run: yarn install
-      - run: yarn db:migrate
-      - run: yarn test:e2e
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm db:migrate
+      - run: pnpm test:e2e

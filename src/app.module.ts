@@ -83,7 +83,6 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     password: password,
     database: pathname.replace('/', ''),
     autoLoadModels: true,
-    // synchronize: true,
     logging: false,
   };
 }

@@ -1,17 +1,17 @@
 #!/bin/sh
 
-npm install -g @nestjs/cli
-
-echo "================================="
-echo "= Linkedout Worker is Running ="
-echo "================================="
+echo "==================================="
+echo "= Entourage-Pro Worker is Running ="
+echo "==================================="
 echo "Docker container environment:"
 echo "- Node.js version: $(node -v)"
-echo "- NPM version: $(npm -v)"
+echo "- PNPM version: $(pnpm -v)"
 echo "- Operating system: $(uname -a)"
 echo "- Current working directory: $(pwd)"
 echo "- Environment: $NODE_ENV"
-echo "================================="
+echo "==================================="
+
+echo "==> Starting the worker..."
 
 # Start the worker
-yarn worker:start:dev
+pnpm worker:dev

@@ -4,6 +4,7 @@ import { User } from 'src/users/models';
 import {
   SlackBlockConfig,
   slackChannels,
+  SlackMessageResponse,
   SlackMsgAction,
   SlackMsgContext,
   SlackMsgContextImage,
@@ -33,20 +34,13 @@ export class SlackService {
     channel: string,
     blocks: (Block | KnownBlock)[],
     message?: string
-  ) => {
-    return this.app.client.chat
-      .postMessage({
-        channel: channel,
-        text: message,
-        token: process.env.SLACK_BOT_TOKEN,
-        blocks: blocks,
-      })
-      .then((res) => {
-        return res;
-      })
-      .catch((error) => {
-        this.logger.error('SlackService - sendMessage - error: ', error);
-      });
+  ): Promise<SlackMessageResponse> => {
+    return await this.app.client.chat.postMessage({
+      channel: channel,
+      text: message,
+      token: process.env.SLACK_BOT_TOKEN,
+      blocks: blocks,
+    });
   };
 
   sendReplyMessage = async (
