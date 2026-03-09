@@ -19,6 +19,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import {
   Self,
   SelfGuard,
@@ -49,7 +50,10 @@ import { ContactTypeEnum } from './user-profiles.types';
 @ApiBearerAuth()
 @Controller('user/profile')
 export class UserProfilesController {
-  constructor(private readonly userProfilesService: UserProfilesService) {}
+  constructor(
+    private readonly userProfilesService: UserProfilesService,
+    private readonly userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
+  ) {}
 
   @ApiBearerAuth()
   @Get('/completion')
@@ -154,7 +158,7 @@ export class UserProfilesController {
     }
 
     try {
-      return this.userProfilesService.findAll(userId, {
+      return this.userProfilesService.findAll({
         role,
         offset,
         limit,
@@ -226,7 +230,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+    return this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
       user,
       userProfile
     );
