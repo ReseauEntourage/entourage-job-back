@@ -4,6 +4,7 @@ import {
   getBullWorkQueueOptions,
   getBullProfileGenerationQueueOptions,
   getBullCronTasksQueueOptions,
+  getEmbeddingQueueOptions,
 } from '../queues.utils';
 import { QueuesService } from './queues.service';
 
@@ -12,6 +13,7 @@ import { QueuesService } from './queues.service';
     BullModule.registerQueue(getBullWorkQueueOptions()),
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
     BullModule.registerQueue(getBullCronTasksQueueOptions()),
+    BullModule.registerQueue(getEmbeddingQueueOptions()),
   ],
   providers: [QueuesService],
   exports: [QueuesService],

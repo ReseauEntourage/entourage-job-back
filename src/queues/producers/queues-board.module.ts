@@ -29,6 +29,10 @@ import { QueuesModule } from './queues.module';
       name: Queues.CRON_TASKS,
       adapter: BullAdapter,
     }),
+    BullBoardModule.forFeature({
+      name: Queues.EMBEDDING,
+      adapter: BullAdapter,
+    }),
   ],
   exports: [QueuesModule],
 })

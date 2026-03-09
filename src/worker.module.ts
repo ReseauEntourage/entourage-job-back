@@ -11,7 +11,6 @@ import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
 import { getSequelizeOptions } from './app.module';
 import { CronModule } from './cron/cron.module';
-import { Queues } from './queues/queues.types';
 import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
 
 @Module({
@@ -27,22 +26,6 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
       useFactory: (redisOptions) => ({
         redis: redisOptions,
       }),
-    }),
-    BullModule.registerQueue({
-      name: Queues.WORK,
-      defaultJobOptions: {
-        attempts: `${process.env.JOBS_NB_ATTEMPS}`
-          ? parseInt(process.env.JOBS_NB_ATTEMPS)
-          : 10,
-        backoff: {
-          type: 'exponential',
-          delay: `${process.env.JOBS_BACKOFF_DELAY}`
-            ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
-            : 60000,
-        },
-        removeOnFail: false,
-        removeOnComplete: true,
-      },
     }),
     CacheModule.registerAsync<RedisOptions>({
       isGlobal: true,

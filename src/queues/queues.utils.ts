@@ -1,6 +1,8 @@
 import { BullModuleOptions } from '@nestjs/bull';
 import { QueuePriority, Queues } from './queues.types';
 
+const FIVE_MINUTES = 5 * 60 * 1000;
+
 export function getBullWorkQueueOptions(): BullModuleOptions {
   return {
     name: Queues.WORK,
@@ -32,7 +34,7 @@ export function getBullProfileGenerationQueueOptions(): BullModuleOptions {
       },
       removeOnFail: false, // Garder les jobs échoués pour inspection
       removeOnComplete: true,
-      timeout: 300000, // 5 minutes de timeout pour le job
+      timeout: FIVE_MINUTES,
       priority: QueuePriority.HIGH, // Priorité élevée pour les tâches de génération de profil, les utilisateurs attendent un résultat rapide
     },
   };
@@ -45,8 +47,25 @@ export const getBullCronTasksQueueOptions = (): BullModuleOptions => {
       attempts: 1, // Pas de tentative de retry pour les tâches cron, elles seront réessayées à la prochaine exécution planifiée
       removeOnFail: false, // Garder les jobs échoués pour inspection
       removeOnComplete: true,
-      timeout: 300000, // 5 minutes de timeout pour le job
+      timeout: FIVE_MINUTES, // 5 minutes de timeout pour le job
       priority: QueuePriority.LOW, // Priorité basse pour les tâches cron, elles sont importantes mais peuvent être traitées après les autres tâches
+    },
+  };
+};
+
+export const getEmbeddingQueueOptions = (): BullModuleOptions => {
+  return {
+    name: Queues.EMBEDDING,
+    defaultJobOptions: {
+      attempts: 5,
+      backoff: {
+        type: 'exponential',
+        delay: 10000,
+      },
+      removeOnFail: false,
+      removeOnComplete: true,
+      timeout: FIVE_MINUTES,
+      priority: QueuePriority.NORMAL,
     },
   };
 };

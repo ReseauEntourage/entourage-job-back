@@ -13,7 +13,9 @@ export class QueuesService {
     @InjectQueue(Queues.PROFILE_GENERATION)
     private readonly profileGenerationQueue: Queue,
     @InjectQueue(Queues.CRON_TASKS)
-    private readonly cronTasksQueue: Queue
+    private readonly cronTasksQueue: Queue,
+    @InjectQueue(Queues.EMBEDDING)
+    private readonly embeddingQueue: Queue
   ) {}
 
   async addToWorkQueue<T extends Job>(
@@ -41,5 +43,14 @@ export class QueuesService {
   ) {
     this.logger.log(`Adding job to cron tasks queue: ${type}`);
     return this.cronTasksQueue.add(type, data, opts);
+  }
+
+  async addToEmbeddingQueue<T extends Job>(
+    type: T,
+    data: JobData<T>,
+    opts?: JobOptions
+  ) {
+    this.logger.log(`Adding job to embedding queue: ${type}`);
+    return this.embeddingQueue.add(type, data, opts);
   }
 }

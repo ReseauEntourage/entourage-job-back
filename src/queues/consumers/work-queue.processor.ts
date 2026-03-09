@@ -25,6 +25,7 @@ import {
   SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 
@@ -38,7 +39,8 @@ export class WorkQueueProcessor {
     private companiesService: CompaniesService,
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
-    private messagingService: MessagingService
+    private messagingService: MessagingService,
+    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
   ) {}
 
   @OnQueueActive()
@@ -274,7 +276,7 @@ export class WorkQueueProcessor {
 
     try {
       const recommendedProfiles =
-        await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+        await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
           user,
           userProfile
         );

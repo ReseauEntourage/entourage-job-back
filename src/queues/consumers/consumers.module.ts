@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { CompaniesModule } from 'src/companies/companies.module';
+import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
 import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
@@ -12,12 +13,14 @@ import {
   getBullWorkQueueOptions,
   getBullProfileGenerationQueueOptions,
   getBullCronTasksQueueOptions,
+  getEmbeddingQueueOptions,
 } from 'src/queues/queues.utils';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
 import { CronTasksSlackReporterService } from './cron-tasks/cron-tasks-slack-reporter.service';
 import { CronTasksProcessor } from './cron-tasks/cron-tasks.processor';
+import { EmbeddingQueueProcessor } from './embedding-queue.processor';
 import { ProfileGeneratorProcessor } from './profile-generator.processor';
 import { WorkQueueProcessor } from './work-queue.processor';
 
@@ -26,6 +29,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     BullModule.registerQueue(getBullWorkQueueOptions()),
     BullModule.registerQueue(getBullProfileGenerationQueueOptions()),
     BullModule.registerQueue(getBullCronTasksQueueOptions()),
+    BullModule.registerQueue(getEmbeddingQueueOptions()),
     MailjetModule,
     OpenAiModule,
     SalesforceModule,
@@ -37,6 +41,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     UsersModule,
     UserProfilesModule,
     MessagingModule,
+    EmbeddingsModule,
   ],
   providers: [
     WorkQueueProcessor,
@@ -44,7 +49,13 @@ import { WorkQueueProcessor } from './work-queue.processor';
     PusherService,
     CronTasksSlackReporterService,
     CronTasksProcessor,
+    EmbeddingQueueProcessor,
   ],
-  exports: [WorkQueueProcessor, ProfileGeneratorProcessor, CronTasksProcessor],
+  exports: [
+    WorkQueueProcessor,
+    ProfileGeneratorProcessor,
+    CronTasksProcessor,
+    EmbeddingQueueProcessor,
+  ],
 })
 export class ConsumersModule {}
