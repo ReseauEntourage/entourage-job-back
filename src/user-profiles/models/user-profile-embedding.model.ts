@@ -46,16 +46,28 @@ export class UserProfileEmbedding extends Model {
 
   @AllowNull(false)
   @Column({
-    type: 'vector(1536)',
+    type: 'vector(1024)',
     validate: {
-      isCorrectLength(value: number[]) {
-        if (value && value.length !== 1536) {
-          throw new Error('Embedding must have exactly 1536 dimensions');
+      isCorrectLength(value: string) {
+        // Value comes in pgvector format: [num1,num2,num3,...]
+        if (value) {
+          // Extract numbers from the string format
+          const matches = value.match(/^\[([^\]]+)\]$/);
+          if (matches) {
+            const numbers = matches[1].split(',');
+            if (numbers.length !== 1024) {
+              throw new Error('Embedding must have exactly 1024 dimensions');
+            }
+          } else {
+            throw new Error(
+              'Embedding must be in pgvector format: [num1,num2,...]'
+            );
+          }
         }
       },
     },
   })
-  embedding: number[];
+  embedding: string;
 
   @IsString()
   @AllowNull(false)
