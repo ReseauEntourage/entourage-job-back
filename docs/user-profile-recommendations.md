@@ -316,7 +316,13 @@ Un outil en ligne de commande est disponible pour identifier et régénérer aut
 
 #### Installation
 
-L'outil est intégré au projet backend et ne nécessite aucune installation supplémentaire.
+L'outil est intégré au projet backend et ne nécessite aucune installation supplémentaire. Il utilise **`nest-commander`** pour une intégration native avec NestJS.
+
+**Architecture :**
+
+- **Module CLI** : `/src/cli/cli.module.ts` - Module dédié pour les commandes
+- **Commande** : `/src/cli/commands/regenerate-embeddings.command.ts` - Commande avec décorateurs NestJS
+- **Service** : `/src/embeddings/embeddings-regeneration.service.ts` - Logique métier réutilisable
 
 #### Utilisation
 

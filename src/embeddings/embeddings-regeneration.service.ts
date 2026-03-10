@@ -52,12 +52,15 @@ export class EmbeddingsRegenerationService {
         LEFT JOIN "UserProfileEmbeddings" upe 
           ON upe."userProfileId" = up.id 
           AND upe.type = :type
+        LEFT JOIN "Users" u
+          ON u.id = up."userId"
         WHERE 
           -- Embeddings obsolètes (version différente)
           (upe."configVersion" IS NOT NULL AND upe."configVersion" != :targetVersion)
           OR
           -- Embeddings manquants
           (upe.id IS NULL)
+          AND u."deletedAt" IS NULL
       `;
 
       const results = await this.sequelize.query<{ userId: string }>(query, {
@@ -218,6 +221,9 @@ export class EmbeddingsRegenerationService {
       LEFT JOIN "UserProfileEmbeddings" upe 
         ON upe."userProfileId" = up.id 
         AND upe.type = :type
+      LEFT JOIN "Users" u
+        ON u.id = up."userId"
+      WHERE u."deletedAt" IS NULL
     `;
 
     const [result] = await this.sequelize.query<{

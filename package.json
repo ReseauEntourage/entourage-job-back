@@ -31,7 +31,8 @@
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "db:dump": "./dump-db-schema.sh",
-    "regenerate-embeddings": "ts-node -r tsconfig-paths/register src/cli/regenerate-embeddings.ts",
+    "cli": "ts-node -r tsconfig-paths/register src/cli/cli.ts",
+    "regenerate-embeddings": "npm run cli regenerate-embeddings",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -77,6 +78,7 @@
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
     "multer": "1.4.5-lts.2",
+    "nest-commander": "^3.20.1",
     "node-fetch": "^2.6.7",
     "node-mailjet": "^6.0.4",
     "openai": "^4.98.0",
