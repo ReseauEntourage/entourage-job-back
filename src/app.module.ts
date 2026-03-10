@@ -23,6 +23,7 @@ import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ElearningModule } from './elearning/elearning.module';
+import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { EventsModule } from './events/events.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
@@ -123,6 +124,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     AuthModule,
     ExternalCvsModule,
     BusinessSectorsModule,
+    EmbeddingsModule,
     LocationsModule,
     ContractsModule,
     LanguagesModule,

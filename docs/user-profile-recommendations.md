@@ -300,6 +300,145 @@ Tous les poids et paramètres de scoring sont centralisés dans ce fichier pour 
 
 **Service utilisé** : `UserProfileRecommendationsService`
 
+---
+
+## Régénération des Embeddings
+
+### Vue d'ensemble
+
+Lorsque la configuration des embeddings change (nouveaux champs, nouvelle version du modèle, etc.), il est nécessaire de régénérer les embeddings pour tous les utilisateurs afin qu'ils soient compatibles avec le nouveau système de recommandations.
+
+Le système vérifie automatiquement la `configVersion` des embeddings lors de la génération des recommandations. Si un embedding a une version différente de celle configurée dans `EMBEDDING_CONFIG`, il ne sera pas utilisé dans les recommandations.
+
+### Outil CLI de régénération
+
+Un outil en ligne de commande est disponible pour identifier et régénérer automatiquement tous les embeddings obsolètes.
+
+#### Installation
+
+L'outil est intégré au projet backend et ne nécessite aucune installation supplémentaire.
+
+#### Utilisation
+
+##### Afficher les statistiques
+
+Obtenir un aperçu de l'état actuel des embeddings sans effectuer de modifications :
+
+```bash
+pnpm run regenerate-embeddings -- --stats
+```
+
+**Résultat** :
+
+```
+📋 PROFILE EMBEDDINGS:
+   Total user profiles:     1250
+   ✅ Up-to-date:            1100 (88.0%)
+   ⚠️  Outdated:              80 (6.4%)
+   ❌ Missing:               70 (5.6%)
+
+📋 NEEDS EMBEDDINGS:
+   Total user profiles:     1250
+   ✅ Up-to-date:            1150 (92.0%)
+   ⚠️  Outdated:              50 (4.0%)
+   ❌ Missing:               50 (4.0%)
+```
+
+##### Mode dry-run (simulation)
+
+Voir quels utilisateurs seraient affectés sans effectuer réellement la régénération :
+
+```bash
+npm run regenerate-embeddings -- --dry-run
+```
+
+##### Régénérer tous les embeddings
+
+Regénérer automatiquement tous les embeddings obsolètes (profile + needs) :
+
+```bash
+npm run regenerate-embeddings
+```
+
+Ou explicitement :
+
+```bash
+npm run regenerate-embeddings -- --type=all
+```
+
+##### Régénérer uniquement les embeddings de profil
+
+```bash
+npm run regenerate-embeddings -- --type=profile
+```
+
+##### Régénérer uniquement les embeddings de besoins
+
+```bash
+npm run regenerate-embeddings -- --type=needs
+```
+
+##### Options avancées
+
+Personnaliser la taille des lots et le délai entre les lots :
+
+```bash
+npm run regenerate-embeddings -- --batch-size=100 --delay=200
+```
+
+**Options disponibles** :
+
+| Option         | Description                                               | Valeur par défaut |
+| -------------- | --------------------------------------------------------- | ----------------- |
+| `--type`       | Type d'embeddings à régénérer (`profile`, `needs`, `all`) | `all`             |
+| `--dry-run`    | Mode simulation (aucune modification)                     | `false`           |
+| `--stats`      | Afficher uniquement les statistiques                      | `false`           |
+| `--batch-size` | Nombre d'utilisateurs par lot                             | `50`              |
+| `--delay`      | Délai en ms entre les lots                                | `100`             |
+| `--help`, `-h` | Afficher l'aide                                           | -                 |
+
+#### Comment ça fonctionne ?
+
+1. **Identification** : L'outil interroge la base de données pour trouver tous les utilisateurs dont les embeddings :
+
+   - Ont une `configVersion` différente de celle définie dans `EMBEDDING_CONFIG`
+   - Sont totalement absents
+
+2. **Mise en queue** : Les utilisateurs identifiés sont ajoutés à la queue d'embeddings par lots (50 par défaut)
+
+3. **Traitement asynchrone** : Le worker queue traite les embeddings en arrière-plan via le job existant `UPDATE_USER_PROFILE_EMBEDDINGS`
+
+4. **Génération** : Pour chaque utilisateur, les embeddings sont régénérés via l'API VoyageAI et stockés avec la nouvelle `configVersion`
+
+#### Bonnes pratiques
+
+- ✅ **Toujours faire un dry-run d'abord** pour estimer le nombre d'utilisateurs concernés
+- ✅ **Vérifier les stats** avant et après la régénération
+- ✅ **Surveiller les logs** du worker pendant le traitement
+- ✅ **Exécuter pendant les heures creuses** pour éviter de surcharger l'API VoyageAI
+- ⚠️ **Attention aux quotas API** : chaque embedding génère un appel à VoyageAI
+
+#### Résolution de problèmes
+
+**Problème** : Certains utilisateurs restent avec des embeddings obsolètes
+
+**Solutions** :
+
+- Vérifier que le worker queue est actif
+- Consulter les logs d'erreur du worker
+- Vérifier les quotas de l'API VoyageAI
+- Réexécuter l'outil après avoir corrigé les erreurs
+
+**Problème** : Le script se termine immédiatement sans rien faire
+
+**Solutions** :
+
+- Vérifier que la base de données est accessible
+- Vérifier que les variables d'environnement sont correctement configurées
+- Exécuter avec `--stats` pour voir l'état actuel
+
+---
+
 ## FAQ
 
 ### Pourquoi deux versions (Legacy et AI) ?

@@ -31,6 +31,7 @@
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "db:dump": "./dump-db-schema.sh",
+    "regenerate-embeddings": "ts-node -r tsconfig-paths/register src/cli/regenerate-embeddings.ts",
     "prepare": "husky install"
   },
   "dependencies": {
