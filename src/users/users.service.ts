@@ -804,7 +804,8 @@ export class UsersService {
         const recommendedProfiles =
           await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
             author,
-            authorProfile
+            authorProfile,
+            3
           );
         return {
           id: authorId,

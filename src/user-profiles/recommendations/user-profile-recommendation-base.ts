@@ -16,6 +16,7 @@ import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.inc
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
+import { UserProfileMatchingResult } from './user-profile-recommendation.types';
 
 /**
  * This abstract class defines the structure for user profile recommendation services.
@@ -75,9 +76,31 @@ export abstract class UserProfileRecommendationBase {
     );
   }
 
+  async createRecommendationsFromUserProfileMatchingResult(
+    userId: string,
+    matchingResults: UserProfileMatchingResult[]
+  ) {
+    return this.userProfileRecommandationModel.bulkCreate(
+      matchingResults.map(
+        (matchingResult) => {
+          return {
+            UserId: userId,
+            recommendedUserId: matchingResult.userId,
+            reason: matchingResult.dominantReason,
+          };
+        },
+        {
+          hooks: true,
+          individualHooks: true,
+        }
+      )
+    );
+  }
+
   async retrieveOrComputeRecommendationsForUserId(
     user: User,
-    userProfile: UserProfile
+    userProfile: UserProfile,
+    poolSize = 3
   ): Promise<PublicProfileDto[]> {
     const oneWeekAgo = moment().subtract(1, 'week');
 
@@ -93,11 +116,11 @@ export abstract class UserProfileRecommendationBase {
     if (
       !userProfile.lastRecommendationsDate ||
       moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecommendedProfiles.length < 3 ||
+      currentRecommendedProfiles.length < poolSize ||
       oneOfCurrentRecommendedProfilesIsNotAvailable
     ) {
       await this.removeRecommendationsByUserId(user.id);
-      await this.updateRecommendationsByUserId(user.id);
+      await this.updateRecommendationsByUserId(user.id, poolSize);
       await this.userProfilesService.updateByUserId(user.id, {
         lastRecommendationsDate: moment().toDate(),
       });
@@ -117,6 +140,7 @@ export abstract class UserProfileRecommendationBase {
   }
 
   abstract updateRecommendationsByUserId(
-    userId: string
+    userId: string,
+    poolSize?: number
   ): Promise<UserProfileRecommendation[]>;
 }

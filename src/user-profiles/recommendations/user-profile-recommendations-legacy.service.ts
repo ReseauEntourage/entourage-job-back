@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import _ from 'lodash';
 import { QueryTypes } from 'sequelize';
 import { UserProfileSectorOccupation } from '../models';
+import { UserProfileRecommendation } from '../models/user-profile-recommendation.model';
 import { Department, Departments } from 'src/common/locations/locations.types';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { UserProfileRecommendationBase } from './user-profile-recommendation-base';
@@ -13,7 +14,10 @@ const UserProfileRecommendationsWeights = {
 
 @Injectable()
 export class UserProfileRecommendationsLegacyService extends UserProfileRecommendationBase {
-  async updateRecommendationsByUserId(userId: string) {
+  async updateRecommendationsByUserId(
+    userId: string,
+    poolSize = 3
+  ): Promise<UserProfileRecommendation[]> {
     const [user, userProfile] = await Promise.all([
       this.userProfilesService.findOneUser(userId),
       this.userProfilesService.findOneByUserId(userId),
@@ -160,7 +164,7 @@ export class UserProfileRecommendationsLegacyService extends UserProfileRecommen
 
     return this.createRecommendations(
       userId,
-      sortedProfiles.slice(0, 3).map((profile) => profile.id)
+      sortedProfiles.slice(0, poolSize).map((profile) => profile.id)
     );
   }
 }

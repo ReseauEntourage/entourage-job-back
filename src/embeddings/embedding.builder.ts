@@ -8,15 +8,11 @@ import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';
 import { UserRole, UserRoles } from 'src/users/users.types';
-import { EMBEDDING_CONFIG } from './embedding.config';
+import { EMBEDDING_CONFIG, EmbeddingType } from './embedding.config';
 
 @Injectable()
 export class EmbeddingBuilder {
-  build(
-    userRole: UserRole,
-    profile: UserProfile,
-    type: 'profile' | 'need'
-  ): string {
+  build(userRole: UserRole, profile: UserProfile, type: EmbeddingType): string {
     const config = EMBEDDING_CONFIG[type];
 
     const fields = config.fields.map((field) =>

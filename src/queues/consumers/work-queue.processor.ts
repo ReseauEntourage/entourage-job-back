@@ -278,7 +278,8 @@ export class WorkQueueProcessor {
       const recommendedProfiles =
         await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
           user,
-          userProfile
+          userProfile,
+          3
         );
       if (recommendedProfiles.length > 0) {
         await this.usersService.sendOnboardingCompletedMail(

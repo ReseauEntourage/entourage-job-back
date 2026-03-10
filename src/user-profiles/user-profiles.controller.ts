@@ -43,6 +43,7 @@ import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
+import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
 
@@ -52,7 +53,8 @@ import { ContactTypeEnum } from './user-profiles.types';
 export class UserProfilesController {
   constructor(
     private readonly userProfilesService: UserProfilesService,
-    private readonly userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
+    private readonly userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService,
+    private readonly userProfileRecommendationsService: UserProfileRecommendationsService
   ) {}
 
   @ApiBearerAuth()
@@ -232,7 +234,26 @@ export class UserProfilesController {
 
     return this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
       user,
-      userProfile
+      userProfile,
+      3
+    );
+  }
+
+  @Get('/recommendations-ai')
+  async findRecommendationsWithAIByUserId(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string
+  ) {
+    const user = await this.userProfilesService.findOneUser(userId);
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserId(
+      user,
+      userProfile,
+      3
     );
   }
 

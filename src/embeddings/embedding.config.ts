@@ -1,6 +1,6 @@
 import { UserProfile } from 'src/user-profiles/models';
 
-export type EmbeddingType = 'profile' | 'need';
+export type EmbeddingType = 'profile' | 'needs';
 
 export const EMBEDDING_DIMENSIONS = 1024;
 export type EmbeddingConfig = {
@@ -26,7 +26,7 @@ export const EMBEDDING_CONFIG: Record<EmbeddingType, EmbeddingConfig> = {
       'languages',
     ],
   },
-  need: {
+  needs: {
     version: 'v1.0',
     fields: ['nudges', 'customNudges'],
   },
