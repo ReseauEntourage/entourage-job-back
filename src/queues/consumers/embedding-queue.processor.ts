@@ -58,7 +58,7 @@ export class EmbeddingQueueProcessor {
 
   @OnQueueError()
   onError(error: Error) {
-    this.logger.error(`An error occurred on the work queue : "${error}"`);
+    this.logger.error(`An error occurred on the embedding queue : "${error}"`);
   }
 
   @Process()
@@ -90,18 +90,20 @@ export class EmbeddingQueueProcessor {
     }
 
     // Generate embeddings for each specified embedding type
-    embeddingTypes.forEach((embeddingType) => {
-      const embeddingData = this.embeddingBuilder.build(
-        user.role,
-        userProfile,
-        embeddingType
-      );
-      this.userProfilesService.updateEmbedding(
-        userProfile.id,
-        embeddingType,
-        embeddingData
-      );
-    });
+    await Promise.all(
+      embeddingTypes.map(async (embeddingType) => {
+        const embeddingData = this.embeddingBuilder.build(
+          user.role,
+          userProfile,
+          embeddingType
+        );
+        await this.userProfilesService.updateEmbedding(
+          userProfile.id,
+          embeddingType,
+          embeddingData
+        );
+      })
+    );
 
     return `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
       ', '

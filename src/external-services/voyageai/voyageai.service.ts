@@ -28,8 +28,6 @@ export class VoyageAiService {
           {
             statusCode: error.statusCode,
             message: error.message,
-            body: error.body,
-            rawResponse: error.rawResponse,
           }
         );
       }

@@ -23,5 +23,14 @@ export class QueuesServiceMock {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };
   }
+
+  async addToEmbeddingQueue<T extends Job>(
+    type: T,
+    data: JobData<T>,
+    opts?: JobOptions
+  ) {
+    // Mock implementation that doesn't actually perform any operation
+    return { id: 'mock-job-id' };
+  }
   /* eslint-enable @typescript-eslint/no-unused-vars */
 }

@@ -61,18 +61,16 @@ export abstract class UserProfileRecommendationBase {
 
   async createRecommendations(userId: string, usersToRecommendIds: string[]) {
     return this.userProfileRecommandationModel.bulkCreate(
-      usersToRecommendIds.map(
-        (userToRecommendId) => {
-          return {
-            UserId: userId,
-            recommendedUserId: userToRecommendId,
-          };
-        },
-        {
-          hooks: true,
-          individualHooks: true,
-        }
-      )
+      usersToRecommendIds.map((userToRecommendId) => {
+        return {
+          UserId: userId,
+          recommendedUserId: userToRecommendId,
+        };
+      }),
+      {
+        hooks: true,
+        individualHooks: true,
+      }
     );
   }
 
@@ -81,19 +79,17 @@ export abstract class UserProfileRecommendationBase {
     matchingResults: UserProfileMatchingResult[]
   ) {
     return this.userProfileRecommandationModel.bulkCreate(
-      matchingResults.map(
-        (matchingResult) => {
-          return {
-            UserId: userId,
-            recommendedUserId: matchingResult.userId,
-            reason: matchingResult.dominantReason,
-          };
-        },
-        {
-          hooks: true,
-          individualHooks: true,
-        }
-      )
+      matchingResults.map((matchingResult) => {
+        return {
+          UserId: userId,
+          recommendedUserId: matchingResult.userId,
+          reason: matchingResult.dominantReason,
+        };
+      }),
+      {
+        hooks: true,
+        individualHooks: true,
+      }
     );
   }
 

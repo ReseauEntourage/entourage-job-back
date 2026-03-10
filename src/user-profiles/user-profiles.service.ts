@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
@@ -64,8 +64,6 @@ import { userProfileSearchQuery } from './user-profiles.utils';
 
 @Injectable()
 export class UserProfilesService {
-  private readonly logger = new Logger(UserProfilesService.name);
-
   constructor(
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
@@ -1208,7 +1206,7 @@ export class UserProfilesService {
     }
 
     // Add a job to the queue to update the embeddings of the user profile, with the list of embedding types to update
-    this.queuesService.addToEmbeddingQueue(
+    await this.queuesService.addToEmbeddingQueue(
       Jobs.UPDATE_USER_PROFILE_EMBEDDINGS,
       {
         userId,

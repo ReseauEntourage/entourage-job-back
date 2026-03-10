@@ -54,12 +54,14 @@ export class EmbeddingsRegenerationService {
           AND upe.type = :type
         LEFT JOIN "Users" u
           ON u.id = up."userId"
-        WHERE 
-          -- Embeddings obsolètes (version différente)
-          (upe."configVersion" IS NOT NULL AND upe."configVersion" != :targetVersion)
-          OR
-          -- Embeddings manquants
-          (upe.id IS NULL)
+        WHERE
+          (
+            -- Embeddings obsolètes (version différente)
+            (upe."configVersion" IS NOT NULL AND upe."configVersion" != :targetVersion)
+            OR
+            -- Embeddings manquants
+            (upe.id IS NULL)
+          )
           AND u."deletedAt" IS NULL
       `;
 

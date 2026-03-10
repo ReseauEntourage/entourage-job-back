@@ -104,7 +104,7 @@ export class EmbeddingBuilder {
     const items = nudges.map((nudge) =>
       userRole === UserRoles.CANDIDATE ? nudge.nameRequest : nudge.nameOffer
     );
-    return `Coup de pouces séléctionnés : \n${items.join(', ')}`;
+    return `Coup de pouces sélectionnés : \n${items.join(', ')}`;
   }
 
   private buildCustomNudgesField(customNudges: UserProfileNudge[]) {
