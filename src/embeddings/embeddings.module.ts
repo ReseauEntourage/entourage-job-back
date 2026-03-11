@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { QueuesModule } from 'src/queues/producers';
 import { UserProfile } from 'src/user-profiles/models';
@@ -11,9 +11,9 @@ import { EmbeddingsRegenerationService } from './embeddings-regeneration.service
 @Module({
   imports: [
     SequelizeModule.forFeature([UserProfile, UserProfileEmbedding]),
-    forwardRef(() => UsersModule),
-    forwardRef(() => UserProfilesModule),
-    forwardRef(() => QueuesModule),
+    UsersModule,
+    UserProfilesModule,
+    QueuesModule,
   ],
   providers: [EmbeddingBuilder, EmbeddingsRegenerationService],
   exports: [SequelizeModule, EmbeddingBuilder, EmbeddingsRegenerationService],
