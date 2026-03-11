@@ -239,15 +239,25 @@ export class UserProfilesController {
     );
   }
 
-  @Get('/recommendations-ai')
+  // Only for admin users to get recommendations for any user, not only themselves
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get('/recommendations-ai/:userId')
   async findRecommendationsWithAIByUserId(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Query('forceRefresh') forceRefresh: string
   ) {
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
 
     if (!user || !userProfile) {
       throw new NotFoundException();
+    }
+
+    if (forceRefresh === 'true') {
+      await this.userProfileRecommendationsService.removeRecommendationsByUserId(
+        userId
+      );
     }
 
     return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserId(
