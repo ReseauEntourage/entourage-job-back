@@ -153,27 +153,63 @@ export class EmbeddingQueueProcessor extends WorkerHost {
             )
           );
 
-        // Store embeddings for each user profile
-        await Promise.all(
+        // Store embeddings for each user profile individually with error handling
+        const saveResults = await Promise.allSettled(
           embeddingDataArray.map(
             async (
-              { userProfileId }: { userProfileId: string },
+              {
+                userId,
+                userProfileId,
+              }: { userId: string; userProfileId: string },
               index: number
             ) => {
-              const embeddingArray = embeddingsArrays[index];
-              const embedding = `[${embeddingArray.join(',')}]`;
-              await this.userProfilesService.saveEmbedding(
-                userProfileId,
-                embeddingType,
-                embedding
-              );
+              try {
+                const embeddingArray = embeddingsArrays[index];
+                const embedding = `[${embeddingArray.join(',')}]`;
+                await this.userProfilesService.saveEmbedding(
+                  userProfileId,
+                  embeddingType,
+                  embedding
+                );
+                return { success: true, userId };
+              } catch (error) {
+                const errorMsg = `Failed to save ${embeddingType} embedding for user ${userId}: ${
+                  error instanceof Error ? error.message : String(error)
+                }`;
+                this.logger.error(errorMsg);
+                return { success: false, userId, error: errorMsg };
+              }
             }
           )
         );
 
-        successCount += validUsersData.length;
+        // Count successes and failures
+        const successfulSaves = saveResults.filter(
+          (result) => result.status === 'fulfilled' && result.value.success
+        ).length;
+        const failedSaves = saveResults.filter(
+          (result) =>
+            result.status === 'rejected' ||
+            (result.status === 'fulfilled' && !result.value.success)
+        );
+
+        if (failedSaves.length > 0) {
+          const failedUserIds = failedSaves
+            .map((result) => {
+              if (result.status === 'fulfilled') {
+                return result.value.userId;
+              }
+              return 'unknown';
+            })
+            .join(', ');
+          const errorMsg = `Failed to save ${embeddingType} embeddings for ${failedSaves.length} user(s): ${failedUserIds}`;
+          this.logger.error(errorMsg);
+          errors.push(errorMsg);
+        }
+
+        successCount += successfulSaves;
         this.logger.log(
-          `Successfully generated ${embeddingType} embeddings for ${validUsersData.length} users`
+          `Successfully generated ${embeddingType} embeddings for ${successfulSaves} users`
         );
       } catch (error) {
         const errorMsg = `Failed to generate ${embeddingType} embeddings: ${
@@ -189,6 +225,15 @@ export class EmbeddingQueueProcessor extends WorkerHost {
       this.logger.warn(`Skipped ${invalidCount} invalid users in batch`);
     }
 
-    return `Batch completed: ${successCount} embeddings updated for ${validUsersData.length} users. Invalid users: ${invalidCount}. Errors: ${errors.length}`;
+    // Throw an error if any embeddings failed to generate
+    if (errors.length > 0) {
+      const errorMessage = `Batch failed with ${
+        errors.length
+      } error(s): ${errors.join('; ')}`;
+      this.logger.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    return `Batch completed: ${successCount} embeddings updated for ${validUsersData.length} users. Invalid users: ${invalidCount}`;
   }
 }
