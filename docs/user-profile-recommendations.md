@@ -11,6 +11,10 @@ Le système de recommandation d'Entourage permet de suggérer des profils d'util
 - **Bi-directionnel** : Les Candidats reçoivent des recommandations de Coachs et vice-versa
 - **Configurable** : Les poids et paramètres de scoring sont configurables via des fichiers de configuration
 
+### État actuel du système
+
+> **📌 Note importante** : Actuellement, le système **Legacy** est celui utilisé en production pour tous les utilisateurs (`GET /user/profile/recommendations`). Le système **AI** basé sur les embeddings est disponible mais réservé aux administrateurs pour des tests et comparaisons (`GET /user/profile/recommendations-ai/:userId` avec permissions ADMIN uniquement).
+
 ---
 
 ## Architecture et Composants
@@ -290,15 +294,38 @@ Tous les poids et paramètres de scoring sont centralisés dans ce fichier pour 
 
 **Authentification** : Bearer Token
 
+**Permissions** : Utilisateur authentifié
+
 **Service utilisé** : `UserProfileRecommendationsLegacyService`
 
-#### 2. Récupérer les recommandations (AI)
+**Description** : Récupère les recommandations pour l'utilisateur connecté en utilisant l'ancien algorithme de scoring basé sur les correspondances exactes.
 
-**Endpoint** : `GET /user/profile/recommendations-ai`
+**Réponse** : Tableau de `PublicProfileDto[]` contenant les 3 profils recommandés.
+
+#### 2. Récupérer les recommandations (AI) - Admin uniquement
+
+**Endpoint** : `GET /user/profile/recommendations-ai/:userId`
 
 **Authentification** : Bearer Token
 
+**Permissions** : `ADMIN` uniquement
+
+**Paramètres** :
+
+- `userId` (path) : UUID de l'utilisateur pour lequel récupérer les recommandations
+- `forceRefresh` (query, optionnel) : `"true"` pour forcer le recalcul des recommandations
+
 **Service utilisé** : `UserProfileRecommendationsService`
+
+**Description** : Récupère les recommandations pour un utilisateur spécifique en utilisant l'algorithme AI basé sur les embeddings vectoriels et la similarité cosinus.
+
+**Exemple** :
+
+```bash
+GET /user/profile/recommendations-ai/550e8400-e29b-41d4-a716-446655440000?forceRefresh=true
+```
+
+**Réponse** : Tableau de `PublicProfileDto[]` contenant les 3 profils recommandés avec leurs scores et raisons.
 
 ---
 
