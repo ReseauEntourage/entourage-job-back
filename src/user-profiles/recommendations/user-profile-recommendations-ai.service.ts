@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
 import { UserProfileRecommendation } from '../models/user-profile-recommendation.model';
@@ -19,7 +19,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   constructor(
     @InjectModel(UserProfileRecommendation)
     userProfileRecommandationModel: typeof UserProfileRecommendation,
-    @Inject(UserProfilesService)
+    @Inject(forwardRef(() => UserProfilesService))
     userProfilesService: UserProfilesService
   ) {
     super(userProfileRecommandationModel, userProfilesService);

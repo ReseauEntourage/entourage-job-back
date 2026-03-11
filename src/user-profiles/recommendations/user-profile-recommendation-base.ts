@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { forwardRef, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment';
 import 'moment/locale/fr';
@@ -28,7 +28,7 @@ export abstract class UserProfileRecommendationBase {
   constructor(
     @InjectModel(UserProfileRecommendation)
     protected userProfileRecommandationModel: typeof UserProfileRecommendation,
-    @Inject(UserProfilesService)
+    @Inject(forwardRef(() => UserProfilesService))
     protected userProfilesService: UserProfilesService
   ) {}
 
