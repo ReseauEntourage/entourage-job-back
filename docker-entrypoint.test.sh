@@ -13,6 +13,9 @@ echo "- Current working directory: $(pwd)"
 echo "- Environment: $NODE_ENV"
 echo "=========================================="
 
+echo "==> Installing dependencies..."
+pnpm install --frozen-lockfile
+
 echo "==> Resetting test database..."
 pnpm db:drop || true
 pnpm db:create
