@@ -91,7 +91,7 @@ export class UsersService {
     });
   }
 
-  async findOneWithRelations(id: string) {
+  async findOneWithRelations(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
       include: UserIncludes(),
