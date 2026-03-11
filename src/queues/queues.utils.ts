@@ -1,9 +1,7 @@
-import { BullModuleOptions } from '@nestjs/bull';
+import { RegisterQueueOptions } from '@nestjs/bullmq';
 import { QueuePriority, Queues } from './queues.types';
 
-const FIVE_MINUTES = 5 * 60 * 1000;
-
-export function getBullWorkQueueOptions(): BullModuleOptions {
+export function getBullWorkQueueOptions(): RegisterQueueOptions {
   return {
     name: Queues.WORK,
     defaultJobOptions: {
@@ -23,7 +21,7 @@ export function getBullWorkQueueOptions(): BullModuleOptions {
   };
 }
 
-export function getBullProfileGenerationQueueOptions(): BullModuleOptions {
+export function getBullProfileGenerationQueueOptions(): RegisterQueueOptions {
   return {
     name: Queues.PROFILE_GENERATION,
     defaultJobOptions: {
@@ -34,26 +32,24 @@ export function getBullProfileGenerationQueueOptions(): BullModuleOptions {
       },
       removeOnFail: false, // Garder les jobs échoués pour inspection
       removeOnComplete: true,
-      timeout: FIVE_MINUTES,
       priority: QueuePriority.HIGH, // Priorité élevée pour les tâches de génération de profil, les utilisateurs attendent un résultat rapide
     },
   };
 }
 
-export const getBullCronTasksQueueOptions = (): BullModuleOptions => {
+export const getBullCronTasksQueueOptions = (): RegisterQueueOptions => {
   return {
     name: Queues.CRON_TASKS,
     defaultJobOptions: {
       attempts: 1, // Pas de tentative de retry pour les tâches cron, elles seront réessayées à la prochaine exécution planifiée
       removeOnFail: false, // Garder les jobs échoués pour inspection
       removeOnComplete: true,
-      timeout: FIVE_MINUTES, // 5 minutes de timeout pour le job
       priority: QueuePriority.LOW, // Priorité basse pour les tâches cron, elles sont importantes mais peuvent être traitées après les autres tâches
     },
   };
 };
 
-export const getEmbeddingQueueOptions = (): BullModuleOptions => {
+export const getEmbeddingQueueOptions = (): RegisterQueueOptions => {
   return {
     name: Queues.EMBEDDING,
     defaultJobOptions: {
@@ -64,7 +60,6 @@ export const getEmbeddingQueueOptions = (): BullModuleOptions => {
       },
       removeOnFail: false,
       removeOnComplete: true,
-      timeout: FIVE_MINUTES,
       priority: QueuePriority.NORMAL,
     },
   };

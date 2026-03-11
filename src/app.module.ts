@@ -1,4 +1,4 @@
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -38,7 +38,7 @@ import { ProfileGenerationModule } from './profile-generation/profile-generation
 import { PublicCVsModule } from './public-cv/public-cvs.module';
 import { QueuesBoardModule } from './queues/producers/queues-board.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
-import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
+import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
@@ -102,9 +102,9 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     }),
     BullModule.forRootAsync({
       imports: [RedisModule],
-      inject: [REDIS_OPTIONS],
-      useFactory: (redisOptions) => ({
-        redis: redisOptions,
+      inject: [REDIS_CLIENT],
+      useFactory: (redisClient) => ({
+        connection: redisClient,
       }),
     }),
     ...(process.env.QUEUES_ADMIN_PASSWORD ? [QueuesBoardModule] : []),

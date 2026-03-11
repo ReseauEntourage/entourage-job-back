@@ -1,14 +1,6 @@
-import {
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueError,
-  OnQueueFailed,
-  OnQueueWaiting,
-  Process,
-  Processor,
-} from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+import { Job } from 'bullmq';
 import { EmbeddingBuilder } from 'src/embeddings/embedding.builder';
 import {
   Jobs,
@@ -22,58 +14,37 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 
 @Processor(Queues.EMBEDDING)
-export class EmbeddingQueueProcessor {
+export class EmbeddingQueueProcessor extends WorkerHost {
   private readonly logger = new Logger(EmbeddingQueueProcessor.name);
 
   constructor(
     private readonly usersService: UsersService,
     private readonly userProfilesService: UserProfilesService,
     private readonly embeddingBuilder: EmbeddingBuilder
-  ) {}
-
-  @OnQueueActive()
-  onActive(job: Job) {
-    const timeInQueue = job.processedOn - job.timestamp;
-    this.logger.log(
-      `Job ${job.id} of type ${job.name} has started after waiting for ${timeInQueue} ms`
-    );
+  ) {
+    super();
   }
 
-  @OnQueueCompleted()
-  onCompleted(job: Job, result: string) {
-    this.logger.log(
-      `Job ${job.id} of type ${job.name} completed with result : "${result}"`
-    );
+  async process(job: Job): Promise<string> {
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+
+    switch (job.name) {
+      case Jobs.UPDATE_USER_PROFILE_EMBEDDINGS:
+        return this.generateUserProfileEmbeddings(
+          job as Job<UpdateUserProfileEmbeddingsJob>
+        );
+      case Jobs.UPDATE_USER_PROFILE_EMBEDDINGS_BATCH:
+        return this.generateUserProfileEmbeddingsBatch(
+          job as Job<UpdateUserProfileEmbeddingsBatchJob>
+        );
+      default:
+        this.logger.error(
+          `No process method for job ${job.id} with name ${job.name}`
+        );
+        throw new Error(`Unknown job type: ${job.name}`);
+    }
   }
 
-  @OnQueueFailed()
-  onFailed(job: Job, error: Error) {
-    this.logger.error(
-      `Job ${job.id} of type ${job.name} failed with error : "${error}"`,
-      job.data
-    );
-  }
-
-  @OnQueueWaiting()
-  onWaiting(jobId: number | string) {
-    this.logger.log(`Job ${jobId} is waiting to be processed`);
-  }
-
-  @OnQueueError()
-  onError(error: Error) {
-    this.logger.error(`An error occurred on the embedding queue : "${error}"`);
-  }
-
-  @Process()
-  async process(job: Job) {
-    this.logger.error(
-      `No process method for this job ${job.id} with data ${JSON.stringify(
-        job.data
-      )}`
-    );
-  }
-
-  @Process(Jobs.UPDATE_USER_PROFILE_EMBEDDINGS)
   async generateUserProfileEmbeddings(
     job: Job<UpdateUserProfileEmbeddingsJob>
   ) {
@@ -113,7 +84,6 @@ export class EmbeddingQueueProcessor {
     )}`;
   }
 
-  @Process(Jobs.UPDATE_USER_PROFILE_EMBEDDINGS_BATCH)
   async generateUserProfileEmbeddingsBatch(
     job: Job<UpdateUserProfileEmbeddingsBatchJob>
   ) {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JobOptions } from 'bull';
+import { JobsOptions } from 'bullmq';
 import { Job, JobData } from 'src/queues/queues.types';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class QueuesServiceMock {
   async addToWorkQueue<T extends Job>(
     type: T,
     data: JobData<T>,
-    opts?: JobOptions
+    opts?: JobsOptions
   ) {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };
@@ -18,7 +18,7 @@ export class QueuesServiceMock {
   async addToProfileGenerationQueue<T extends Job>(
     type: T,
     data: JobData<T>,
-    opts?: JobOptions
+    opts?: JobsOptions
   ) {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };
@@ -27,7 +27,7 @@ export class QueuesServiceMock {
   async addToEmbeddingQueue<T extends Job>(
     type: T,
     data: JobData<T>,
-    opts?: JobOptions
+    opts?: JobsOptions
   ) {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };

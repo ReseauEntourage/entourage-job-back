@@ -1,4 +1,4 @@
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';

@@ -1,4 +1,4 @@
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -11,7 +11,7 @@ import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
 import { getSequelizeOptions } from './app.module';
 import { CronModule } from './cron/cron.module';
-import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
+import { RedisModule, REDIS_OPTIONS, REDIS_CLIENT } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -22,9 +22,9 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
     SequelizeModule.forRoot(getSequelizeOptions()),
     BullModule.forRootAsync({
       imports: [RedisModule],
-      inject: [REDIS_OPTIONS],
-      useFactory: (redisOptions) => ({
-        redis: redisOptions,
+      inject: [REDIS_CLIENT],
+      useFactory: (redisClient) => ({
+        connection: redisClient,
       }),
     }),
     CacheModule.registerAsync<RedisOptions>({
