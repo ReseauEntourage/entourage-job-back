@@ -310,44 +310,34 @@ Lorsque la configuration des embeddings change (nouveaux champs, nouvelle versio
 
 Le système vérifie automatiquement la `configVersion` des embeddings lors de la génération des recommandations. Si un embedding a une version différente de celle configurée dans `EMBEDDING_CONFIG`, il ne sera pas utilisé dans les recommandations.
 
-### Outil CLI de régénération
+### Endpoint API de régénération
 
-Un outil en ligne de commande est disponible pour identifier et régénérer automatiquement tous les embeddings obsolètes.
+Un endpoint API admin est disponible pour identifier et régénérer automatiquement tous les embeddings obsolètes.
 
-#### Installation
+#### Endpoint
 
-L'outil est intégré au projet backend et ne nécessite aucune installation supplémentaire. Il utilise **`nest-commander`** pour une intégration native avec NestJS.
+```
+POST /embeddings/regenerate
+```
 
-**Architecture :**
+**Authentification** : Bearer token (Admin uniquement)
 
-- **Module CLI** : `/src/cli/cli.module.ts` - Module dédié pour les commandes
-- **Commande** : `/src/cli/commands/regenerate-embeddings.command.ts` - Commande avec décorateurs NestJS
-- **Service** : `/src/embeddings/embeddings-regeneration.service.ts` - Logique métier réutilisable
+**Paramètres de query** :
+
+| Paramètre   | Type   | Description                                               | Valeur par défaut |
+| ----------- | ------ | --------------------------------------------------------- | ----------------- |
+| `type`      | string | Type d'embeddings à régénérer (`profile`, `needs`, `all`) | `all`             |
+| `dryRun`    | string | Mode simulation (`true`/`false`)                          | `false`           |
+| `batchSize` | string | Nombre d'utilisateurs par lot                             | `50`              |
+| `delay`     | string | Délai en ms entre les lots                                | `100`             |
 
 #### Utilisation
 
-##### Afficher les statistiques
-
-Obtenir un aperçu de l'état actuel des embeddings sans effectuer de modifications :
+##### Régénérer tous les embeddings
 
 ```bash
-pnpm run regenerate-embeddings -- --stats
-```
-
-**Résultat** :
-
-```
-📋 PROFILE EMBEDDINGS:
-   Total user profiles:     1250
-   ✅ Up-to-date:            1100 (88.0%)
-   ⚠️  Outdated:              80 (6.4%)
-   ❌ Missing:               70 (5.6%)
-
-📋 NEEDS EMBEDDINGS:
-   Total user profiles:     1250
-   ✅ Up-to-date:            1150 (92.0%)
-   ⚠️  Outdated:              50 (4.0%)
-   ❌ Missing:               50 (4.0%)
+curl -X POST "https://api.example.com/embeddings/regenerate?type=all" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 ##### Mode dry-run (simulation)
@@ -355,33 +345,22 @@ pnpm run regenerate-embeddings -- --stats
 Voir quels utilisateurs seraient affectés sans effectuer réellement la régénération :
 
 ```bash
-npm run regenerate-embeddings -- --dry-run
-```
-
-##### Régénérer tous les embeddings
-
-Regénérer automatiquement tous les embeddings obsolètes (profile + needs) :
-
-```bash
-npm run regenerate-embeddings
-```
-
-Ou explicitement :
-
-```bash
-npm run regenerate-embeddings -- --type=all
+curl -X POST "https://api.example.com/embeddings/regenerate?dryRun=true" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 ##### Régénérer uniquement les embeddings de profil
 
 ```bash
-npm run regenerate-embeddings -- --type=profile
+curl -X POST "https://api.example.com/embeddings/regenerate?type=profile" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 ##### Régénérer uniquement les embeddings de besoins
 
 ```bash
-npm run regenerate-embeddings -- --type=needs
+curl -X POST "https://api.example.com/embeddings/regenerate?type=needs" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
 ##### Options avancées
@@ -389,23 +368,23 @@ npm run regenerate-embeddings -- --type=needs
 Personnaliser la taille des lots et le délai entre les lots :
 
 ```bash
-npm run regenerate-embeddings -- --batch-size=100 --delay=200
+curl -X POST "https://api.example.com/embeddings/regenerate?batchSize=100&delay=200" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
 ```
 
-**Options disponibles** :
+**Réponse** :
 
-| Option         | Description                                               | Valeur par défaut |
-| -------------- | --------------------------------------------------------- | ----------------- |
-| `--type`       | Type d'embeddings à régénérer (`profile`, `needs`, `all`) | `all`             |
-| `--dry-run`    | Mode simulation (aucune modification)                     | `false`           |
-| `--stats`      | Afficher uniquement les statistiques                      | `false`           |
-| `--batch-size` | Nombre d'utilisateurs par lot                             | `50`              |
-| `--delay`      | Délai en ms entre les lots                                | `100`             |
-| `--help`, `-h` | Afficher l'aide                                           | -                 |
+```json
+{
+  "totalUsers": 150,
+  "usersEnqueued": 150,
+  "errors": 0
+}
+```
 
 #### Comment ça fonctionne ?
 
-1. **Identification** : L'outil interroge la base de données pour trouver tous les utilisateurs dont les embeddings :
+1. **Identification** : L'endpoint interroge la base de données pour trouver tous les utilisateurs dont les embeddings :
 
    - Ont une `configVersion` différente de celle définie dans `EMBEDDING_CONFIG`
    - Sont totalement absents

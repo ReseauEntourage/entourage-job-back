@@ -7,6 +7,7 @@ import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { EmbeddingBuilder } from './embedding.builder';
 import { EmbeddingsRegenerationService } from './embeddings-regeneration.service';
+import { EmbeddingsController } from './embeddings.controller';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { EmbeddingsRegenerationService } from './embeddings-regeneration.service
     UserProfilesModule,
     QueuesModule,
   ],
+  controllers: [EmbeddingsController],
   providers: [EmbeddingBuilder, EmbeddingsRegenerationService],
   exports: [SequelizeModule, EmbeddingBuilder, EmbeddingsRegenerationService],
 })

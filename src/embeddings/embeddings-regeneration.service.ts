@@ -9,6 +9,7 @@ export interface RegenerationStats {
   totalUsers: number;
   usersEnqueued: number;
   errors: number;
+  dryRun: boolean;
 }
 
 export interface RegenerationOptions {
@@ -103,6 +104,7 @@ export class EmbeddingsRegenerationService {
         totalUsers: 0,
         usersEnqueued: 0,
         errors: 0,
+        dryRun,
       };
     }
 
@@ -122,6 +124,7 @@ export class EmbeddingsRegenerationService {
         totalUsers: userIds.length,
         usersEnqueued: 0,
         errors: 0,
+        dryRun,
       };
     }
 
@@ -130,6 +133,7 @@ export class EmbeddingsRegenerationService {
       totalUsers: userIds.length,
       usersEnqueued: 0,
       errors: 0,
+      dryRun,
     };
 
     const embeddingTypes: EmbeddingType[] =

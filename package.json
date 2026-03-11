@@ -31,8 +31,6 @@
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "db:dump": "./dump-db-schema.sh",
-    "cli:dev": "ts-node -r tsconfig-paths/register src/cli/cli.ts",
-    "cli:prod": "node dist/cli/cli.js",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -78,7 +76,6 @@
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
     "multer": "1.4.5-lts.2",
-    "nest-commander": "^3.20.1",
     "node-fetch": "^2.6.7",
     "node-mailjet": "^6.0.4",
     "openai": "^4.98.0",
