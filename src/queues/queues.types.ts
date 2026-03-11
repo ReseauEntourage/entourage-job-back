@@ -46,6 +46,7 @@ export const Jobs = {
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
+  UPDATE_USER_PROFILE_EMBEDDINGS_BATCH: 'update_user_profile_embeddings_batch',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -75,6 +76,7 @@ type JobsData = {
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
+  [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS_BATCH]: UpdateUserProfileEmbeddingsBatchJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -158,6 +160,11 @@ export interface PrepareUserConversationFollowUpMailsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;
+  embeddingTypes: EmbeddingType[];
+}
+
+export interface UpdateUserProfileEmbeddingsBatchJob {
+  userIds: string[];
   embeddingTypes: EmbeddingType[];
 }
 

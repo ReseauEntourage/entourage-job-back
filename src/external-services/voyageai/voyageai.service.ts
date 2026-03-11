@@ -34,4 +34,44 @@ export class VoyageAiService {
       throw new Error('Failed to generate embedding');
     }
   }
+
+  /**
+   * Generates embeddings for multiple texts in a single API call.
+   * Optimizes calls to VoyageAI by respecting rate limits.
+   * @param dataArray Array of texts to convert into embeddings
+   * @returns Array of embeddings in the same order as the inputs
+   */
+  async generateEmbeddingsBatch(dataArray: string[]): Promise<number[][]> {
+    if (dataArray.length === 0) {
+      return [];
+    }
+
+    try {
+      this.logger.log(
+        `Generating batch of ${dataArray.length} embeddings with VoyageAI`
+      );
+
+      const response = await this.voyageAi.embed({
+        input: dataArray,
+        model: EMBEDDING_MODEL,
+      });
+
+      // The API returns an array of embeddings corresponding to the input array
+      return response.data.map((item) => item.embedding);
+    } catch (error) {
+      if (error instanceof VoyageAIError) {
+        this.logger.error(
+          `VoyageAI API batch error: ${error.message} (status code: ${error.statusCode})`,
+          {
+            statusCode: error.statusCode,
+            message: error.message,
+            batchSize: dataArray.length,
+          }
+        );
+      }
+      throw new Error(
+        `Failed to generate batch embeddings for ${dataArray.length} items`
+      );
+    }
+  }
 }

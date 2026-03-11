@@ -71,3 +71,27 @@ Le service identifie automatiquement les utilisateurs avec :
 - Des embeddings manquants
 
 Les utilisateurs sont ensuite ajoutés à la queue `embedding` pour traitement asynchrone par le worker.
+
+#### Traitement batch optimisé
+
+Pour respecter les rate limits de VoyageAI, le système utilise un traitement batch :
+
+1. **Groupement des utilisateurs** : Les utilisateurs sont regroupés en lots (50 par défaut)
+2. **Job batch unique** : Un seul job `UPDATE_USER_PROFILE_EMBEDDINGS_BATCH` est créé par lot
+3. **Appels API optimisés** : Pour chaque lot et chaque type d'embedding :
+   - Tous les textes sont préparés en une fois
+   - Un seul appel à l'API VoyageAI est effectué pour tout le lot
+   - Les résultats sont distribués aux utilisateurs correspondants
+
+**Exemple d'optimisation** :
+
+- **Avant** : 100 utilisateurs × 2 types = **200 appels API**
+- **Après** : 2 lots × 2 types = **4 appels API** (réduction de 98%)
+
+Cette approche permet de :
+
+- Respecter les rate limits de VoyageAI
+- Accélérer significativement le traitement
+- Réduire les coûts d'API
+
+**Note** : La taille du batch peut être ajustée selon les besoins et les limites de l'API VoyageAI.

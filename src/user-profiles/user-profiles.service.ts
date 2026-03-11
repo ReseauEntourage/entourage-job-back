@@ -1161,6 +1161,28 @@ export class UserProfilesService {
     // Convert number array to pgvector format: [num1,num2,num3,...]
     const embedding = `[${embeddingArray.join(',')}]`;
 
+    await this.saveEmbedding(userProfileId, embeddingType, embedding);
+  }
+
+  /**
+   * Génère des embeddings pour plusieurs textes en un seul appel API batch
+   * Optimise les appels à VoyageAI en respectant les rate limits
+   * @param dataArray Tableau de textes à convertir en embeddings
+   * @returns Tableau d'embeddings (chaque embedding est un tableau de nombres)
+   */
+  async generateEmbeddingsBatch(dataArray: string[]): Promise<number[][]> {
+    return await this.voyageAiService.generateEmbeddingsBatch(dataArray);
+  }
+
+  /**
+   * Sauvegarde un embedding déjà calculé (sans appel à VoyageAI)
+   * Utilisé lors du traitement batch pour éviter les appels API redondants
+   */
+  async saveEmbedding(
+    userProfileId: string,
+    embeddingType: EmbeddingType,
+    embedding: string
+  ) {
     const existingEmbedding = await this.userProfileEmbeddingModel.findOne({
       where: {
         userProfileId,

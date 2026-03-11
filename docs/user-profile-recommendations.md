@@ -389,19 +389,28 @@ curl -X POST "https://api.example.com/embeddings/regenerate?batchSize=100&delay=
    - Ont une `configVersion` différente de celle définie dans `EMBEDDING_CONFIG`
    - Sont totalement absents
 
-2. **Mise en queue** : Les utilisateurs identifiés sont ajoutés à la queue d'embeddings par lots (50 par défaut)
+2. **Mise en queue batch** : Les utilisateurs identifiés sont groupés en lots (50 par défaut) et ajoutés à la queue d'embeddings
 
-3. **Traitement asynchrone** : Le worker queue traite les embeddings en arrière-plan via le job existant `UPDATE_USER_PROFILE_EMBEDDINGS`
+3. **Traitement asynchrone optimisé** : Le worker queue traite les embeddings en arrière-plan via le job `UPDATE_USER_PROFILE_EMBEDDINGS_BATCH`
 
-4. **Génération** : Pour chaque utilisateur, les embeddings sont régénérés via l'API VoyageAI et stockés avec la nouvelle `configVersion`
+4. **Génération batch** : Pour chaque lot et chaque type d'embedding :
+   - Les textes de tous les utilisateurs du lot sont préparés
+   - **Un seul appel** à l'API VoyageAI est effectué pour tout le lot
+   - Les embeddings sont distribués et stockés avec la nouvelle `configVersion`
+
+**Optimisation des appels API** :
+
+- 100 utilisateurs × 2 types d'embeddings = seulement **4 appels API** (au lieu de 200)
+- Cela permet de respecter les rate limits de VoyageAI et d'accélérer le traitement
 
 #### Bonnes pratiques
 
 - ✅ **Toujours faire un dry-run d'abord** pour estimer le nombre d'utilisateurs concernés
 - ✅ **Vérifier les stats** avant et après la régénération
 - ✅ **Surveiller les logs** du worker pendant le traitement
-- ✅ **Exécuter pendant les heures creuses** pour éviter de surcharger l'API VoyageAI
-- ⚠️ **Attention aux quotas API** : chaque embedding génère un appel à VoyageAI
+- ✅ **Ajuster le batchSize** selon les rate limits de VoyageAI
+- ✅ **Exécuter pendant les heures creuses** pour une disponibilité optimale
+- ℹ️ **Le traitement batch optimise automatiquement les appels API** pour respecter les quotas
 
 #### Résolution de problèmes
 

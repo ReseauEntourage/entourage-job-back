@@ -147,24 +147,24 @@ export class EmbeddingsRegenerationService {
         )} (${batch.length} users)...`
       );
 
-      for (const userId of batch) {
-        try {
-          await this.queuesService.addToEmbeddingQueue(
-            Jobs.UPDATE_USER_PROFILE_EMBEDDINGS,
-            {
-              userId,
-              embeddingTypes,
-            }
-          );
-          stats.usersEnqueued++;
-        } catch (error) {
-          this.logger.error(
-            `Failed to enqueue user ${userId}: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
-          stats.errors++;
-        }
+      try {
+        // Créer un seul job batch pour tout le lot d'utilisateurs
+        await this.queuesService.addToEmbeddingQueue(
+          Jobs.UPDATE_USER_PROFILE_EMBEDDINGS_BATCH,
+          {
+            userIds: batch,
+            embeddingTypes,
+          }
+        );
+        stats.usersEnqueued += batch.length;
+        this.logger.log(`Enqueued batch of ${batch.length} users`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to enqueue batch: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+        stats.errors += batch.length;
       }
 
       // Pause entre les lots pour éviter de surcharger la queue
