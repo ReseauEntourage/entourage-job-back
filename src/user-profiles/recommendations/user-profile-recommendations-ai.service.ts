@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
 import { UserProfileRecommendation } from '../models/user-profile-recommendation.model';
+import { UserProfilesService } from '../user-profiles.service';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import {
@@ -14,6 +16,14 @@ import { UserProfileMatchingResult } from './user-profile-recommendation.types';
 
 @Injectable()
 export class UserProfileRecommendationsService extends UserProfileRecommendationBase {
+  constructor(
+    @InjectModel(UserProfileRecommendation)
+    userProfileRecommandationModel: typeof UserProfileRecommendation,
+    userProfilesService: UserProfilesService
+  ) {
+    super(userProfileRecommandationModel, userProfilesService);
+  }
+
   async findBySimilarity(params: {
     userId: string;
     rolesToFind: UserRole[];
