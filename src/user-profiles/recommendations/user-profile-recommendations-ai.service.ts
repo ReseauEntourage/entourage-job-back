@@ -1,14 +1,18 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import moment from 'moment';
 import { QueryTypes } from 'sequelize';
+import { generatePublicProfileDto } from '../dto/public-profile.dto';
+import { UserProfile } from '../models';
 import { UserProfileRecommendation } from '../models/user-profile-recommendation.model';
 import { UserProfilesService } from '../user-profiles.service';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
+import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { RecommendationsDto } from './dto/recommendations.dto';
 import {
   ACTIVITY_SCORING_CONFIG,
   LOCATION_COMPATIBILITY_CONFIG,
-  QUALITY_SCORING_CONFIG,
   SCORING_WEIGHTS,
 } from './scoring.config';
 import { UserProfileRecommendationBase } from './user-profile-recommendation-base';
@@ -142,19 +146,13 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   /**
    * Formula for calculating profile similarity score
    */
-  /**
-   * Formula for calculating profile similarity score
-   * The profile score is weighted by the quality score to favor complete profiles
-   * while not completely excluding users with incomplete profiles
-   */
   private buildProfileScoreFormula(): string {
-    const qualityFormula = this.buildQualityScoreFormula();
     return `(
       MAX(CASE
         WHEN upe.type = 'profile' AND cue.type = 'profile'
         THEN 1 - (upe.embedding <=> cue.embedding)
         ELSE 0
-      END) * ${qualityFormula}
+      END) 
     ) AS profile_score`;
   }
 
@@ -227,31 +225,6 @@ ${lastConnectionCases}
 ${workloadCases}
       END * ${weights.workload}
     )) AS activity_score`;
-  }
-
-  /**
-   * Formula for calculating quality score
-   * This score is used to weight the profile score
-   */
-  private buildQualityScoreFormula(): string {
-    const criteria = QUALITY_SCORING_CONFIG.criteria;
-    const totalCriteria = criteria.length;
-
-    const criteriaChecks = criteria
-      .map((criterion) => {
-        // Handle NULL or boolean cases based on criterion type
-        if (criterion.startsWith('has')) {
-          return `CASE WHEN up."${criterion}" = true THEN 1 ELSE 0 END`;
-        } else {
-          return `CASE WHEN up."${criterion}" IS NOT NULL THEN 1 ELSE 0 END`;
-        }
-      })
-      .join(' +\n       ');
-
-    return `(
-      (${criteriaChecks})
-      ::float / ${totalCriteria}
-    )`;
   }
 
   /**
@@ -439,6 +412,63 @@ ${workloadCases}
     return this.createRecommendationsFromUserProfileMatchingResult(
       userId,
       matchingResults
+    );
+  }
+
+  async retrieveOrComputeRecommendationsForUserIdIA(
+    user: User,
+    userProfile: UserProfile,
+    poolSize = 3
+  ): Promise<RecommendationsDto> {
+    const oneWeekAgo = moment().subtract(1, 'week');
+
+    const currentRecommendedProfiles = await this.findRecommendationsByUserId(
+      user.id
+    );
+
+    const oneOfCurrentRecommendedProfilesIsNotAvailable =
+      currentRecommendedProfiles.some((recommendedProfile) => {
+        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
+      });
+
+    if (
+      !userProfile.lastRecommendationsDate ||
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
+      currentRecommendedProfiles.length < poolSize ||
+      oneOfCurrentRecommendedProfilesIsNotAvailable
+    ) {
+      await this.removeRecommendationsByUserId(user.id);
+      await this.updateRecommendationsByUserId(user.id, poolSize);
+      await this.userProfilesService.updateByUserId(user.id, {
+        lastRecommendationsDate: moment().toDate(),
+      });
+    }
+
+    const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
+
+    return Promise.all(
+      recommendedProfiles.map((recoProfile) => {
+        const publicProfile = generatePublicProfileDto(
+          recoProfile.recUser,
+          recoProfile.recUser.userProfile,
+          null
+        );
+        if (!publicProfile) {
+          throw new Error(
+            `Failed to generate public profile for user ${recoProfile.recUser.id}`
+          );
+        }
+        return {
+          id: recoProfile.id,
+          publicProfile,
+          reason: recoProfile.reason,
+          profileScore: recoProfile.profileScore,
+          needsScore: recoProfile.needsScore,
+          activityScore: recoProfile.activityScore,
+          locationCompatibilityScore: recoProfile.locationCompatibilityScore,
+          finalScore: recoProfile.finalScore,
+        };
+      })
     );
   }
 }
