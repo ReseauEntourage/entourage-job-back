@@ -86,6 +86,11 @@ export abstract class UserProfileRecommendationBase {
           UserId: userId,
           recommendedUserId: matchingResult.userId,
           reason: matchingResult.dominantReason,
+          profileScore: matchingResult.profileScore,
+          needsScore: matchingResult.needsScore,
+          activityScore: matchingResult.activityScore,
+          locationCompatibilityScore: matchingResult.locationCompatibilityScore,
+          finalScore: matchingResult.finalScore,
         };
       }),
       {

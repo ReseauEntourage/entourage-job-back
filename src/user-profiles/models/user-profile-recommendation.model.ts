@@ -50,6 +50,26 @@ export class UserProfileRecommendation extends Model {
   @Column
   reason: string | null;
 
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  profileScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  needsScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  activityScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  locationCompatibilityScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  finalScore: number | null;
+
   @BelongsTo(() => User, {
     foreignKey: 'recommendedUserId',
     as: 'recUser',

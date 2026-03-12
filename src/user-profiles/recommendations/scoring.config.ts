@@ -2,17 +2,17 @@
  * Weights for the different scoring criteria used in user profile recommendations.
  * These weights determine the importance of each criterion in the overall recommendation score.
  * The criteria include:
- * - profile: similarity of professional background, weighted by profile quality (30%)
- * - need: specialization in the user's main need (30%)
- * - activity: current responsiveness and availability (25%)
- * - locationCompatibility: event preferences and geographic proximity (15%)
+ * - profile: similarity of professional background, weighted by profile quality
+ * - needs: specialization in the user's main need
+ * - activity: current responsiveness and availability
+ * - locationCompatibility: event preferences and geographic proximity
  * Note: Profile quality is used as a multiplier for the profile score rather than a separate criterion.
  */
 export const SCORING_WEIGHTS = {
-  profile: 0.3,
-  needs: 0.3,
-  activity: 0.25,
-  locationCompatibility: 0.15,
+  profile: 25 / 100,
+  needs: 35 / 100,
+  activity: 30 / 100,
+  locationCompatibility: 10 / 100,
 } as const;
 
 /**
@@ -68,26 +68,6 @@ export const ACTIVITY_SCORING_CONFIG = {
 
   // Time window for activity statistics calculation (in days)
   timeWindowDays: 30,
-} as const;
-
-/**
- * Configuration for quality score calculation.
- * The quality score is used as a multiplier for the profile score.
- * This ensures users with incomplete profiles are not completely filtered out,
- * while still favoring those with complete profiles.
- * Note: currentJob is excluded as it is only filled by users with Coach role.
- */
-export const QUALITY_SCORING_CONFIG = {
-  // List of profile quality criteria
-  criteria: [
-    'hasPicture', // Profile picture
-    'hasExternalCv', // External CV
-    'linkedinUrl', // LinkedIn URL
-    'description', // Profile description
-    'introduction', // Personal introduction
-  ] as const,
-  // Quality score is calculated by: (number of filled criteria) / totalCriteria
-  // Then used to weight the profile similarity score
 } as const;
 
 /**

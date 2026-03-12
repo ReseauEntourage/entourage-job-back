@@ -106,6 +106,7 @@ export const getUserProfileRecommendationOrder = (): Order => {
 
   // Finally, add the 'recUser' model and 'createdAt' order
   return [
+    ['finalScore', 'DESC'],
     [{ model: User, as: 'recUser' }, 'createdAt', 'ASC'],
     ...prefixedRecommendedUserOrder,
   ];

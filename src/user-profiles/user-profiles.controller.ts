@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   InternalServerErrorException,
   NotFoundException,
@@ -245,7 +246,9 @@ export class UserProfilesController {
   @Get('/recommendations-ai/:userId')
   async findRecommendationsWithAIByUserId(
     @Param('userId', new ParseUUIDPipe()) userId: string,
-    @Query('forceRefresh') forceRefresh: string
+    @Query('forceRefresh') forceRefresh: string,
+    // Default pool size to 3 if not provided, and parse it to an integer
+    @Query('poolSize', new DefaultValuePipe(3), ParseIntPipe) poolSize: number
   ) {
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
@@ -260,10 +263,10 @@ export class UserProfilesController {
       );
     }
 
-    return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserId(
+    return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
       user,
       userProfile,
-      3
+      poolSize || 3
     );
   }
 
