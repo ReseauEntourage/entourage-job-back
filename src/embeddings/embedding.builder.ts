@@ -17,9 +17,9 @@ export class EmbeddingBuilder {
   build(userRole: UserRole, profile: UserProfile, type: EmbeddingType): string {
     const config = EMBEDDING_CONFIG[type];
 
-    const fields = config.fields.map((field) =>
-      this.buildField(profile, field, userRole)
-    );
+    const fields = config.fields
+      .map((field) => this.buildField(profile, field, userRole))
+      .filter(Boolean);
 
     return fields.join('\n\n');
   }
@@ -64,6 +64,7 @@ export class EmbeddingBuilder {
   private buildExperiencesField(experiences: Experience[]) {
     const items = experiences
       .map((experience) => this.buildExperienceField(experience))
+      .filter(Boolean)
       .join('\n\n');
     return `Experiences : \n${items}`;
   }
@@ -161,6 +162,7 @@ export class EmbeddingBuilder {
   private buildFormationsField(formations: Formation[]) {
     const items = formations
       .map((formation) => this.buildFormationField(formation))
+      .filter(Boolean)
       .join('\n\n');
     return items ? `Formations : \n${items}` : '';
   }
