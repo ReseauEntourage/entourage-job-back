@@ -74,7 +74,8 @@ export class EmbeddingBuilder {
     if (!start.isValid()) return undefined;
 
     const end = endDate ? moment(endDate) : undefined;
-    if (end && (!end.isValid() || start.isSame(end))) return undefined;
+    if (end && (!end.isValid() || start.isSame(end) || end.isBefore(start)))
+      return undefined;
 
     const reference = end ?? moment();
     const months = reference.diff(start, 'months');
