@@ -176,19 +176,13 @@ Le score final est composé de **4 critères principaux** :
 
 **Base** : Similarité cosinus entre les embeddings de profil (compétences, expériences, secteurs).
 
-**Pondération par qualité** : Le score est multiplié par un coefficient de qualité du profil calculé sur 5 critères :
-
-- Photo de profil (`hasPicture`)
-- CV externe (`hasExternalCv`)
-- URL LinkedIn (`linkedinUrl`)
-- Description (`description`)
-- Introduction (`introduction`)
-
 **Formule** :
 
 ```
-profileScore = cosineSimilarity(embedding_profile) × (criteresSatisfaits / 5)
+profileScore = cosineSimilarity(embedding_profile)
 ```
+
+**Plage de valeurs** : 0.0 à 1.0 (typiquement entre 0.5 et 0.85 pour de bons matchs)
 
 #### 2. Needs Score (30%)
 
@@ -228,37 +222,63 @@ activityScore = LEAST(1.0, GREATEST(0.0,
 
 **Note** : Les conversations avec les administrateurs sont exclues du calcul.
 
-#### 4. Location Compatibility Score (15%)
+#### 4. Location Compatibility Score (10%)
 
-**Objectif** : S'assurer que les utilisateurs peuvent se rencontrer selon leurs préférences.
+**Objectif** : Favoriser les utilisateurs de la même zone géographique parmi les candidats éligibles.
 
-**Composantes** :
+**Important** : Les incompatibilités géographiques sont déjà filtrées en amont via un WHERE strict (voir section "Filtre Géographique Strict"). Ce score sert uniquement à prioriser la proximité géographique parmi les candidats restants.
 
-| Sous-critère             | Poids | Description                                                      |
-| ------------------------ | ----- | ---------------------------------------------------------------- |
-| **Event Preferences**    | 60%   | Correspondance des types d'événements acceptés (physique/remote) |
-| **Geographic Proximity** | 40%   | Proximité géographique si événements physiques autorisés         |
-
-**Scoring des préférences d'événements** :
-
-- Les deux acceptent le physique **ET** le remote : **1.0**
-- Les deux acceptent le physique : **1.0**
-- Les deux acceptent le remote : **1.0**
-- Au moins une correspondance : **0.6**
-- Aucune correspondance : **0.0**
-
-**Scoring de la proximité géographique** (si physique autorisé) :
+**Scoring** :
 
 - Même zone géographique : **1.0**
-- Zones différentes : **0.3**
-- Non applicable (remote uniquement) : **0.5**
+- Zone différente : **0.5**
+
+**Formule** :
+
+```
+locationCompatibilityScore = (zone_utilisateur == zone_recommandé) ? 1.0 : 0.5
+```
+
+### Filtre Géographique Strict
+
+En amont du scoring, un **filtre WHERE strict** est appliqué pour garantir que les recommandations respectent les contraintes géographiques :
+
+**Règles de filtrage** :
+
+| Scénario                                              | Comportement                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------ |
+| **Les deux utilisateurs acceptent le remote**         | ✅ Tous les utilisateurs sont éligibles (pas de filtre zone) |
+| **Au moins un utilisateur n'accepte que le physique** | 🔒 Seuls les utilisateurs de la **même zone** sont éligibles |
+
+**Implémentation SQL** :
+
+```sql
+WHERE (
+  -- Les deux acceptent le remote : pas de contrainte géographique
+  (current_user.allowRemoteEvents = true AND candidate.allowRemoteEvents = true)
+  OR
+  -- Sinon : même zone obligatoire
+  candidate.zone = current_user.zone
+)
+```
+
+Ce filtre s'applique **avant** le calcul du `locationCompatibilityScore`, qui affine ensuite le scoring parmi les candidats éligibles.
+
+**Exemple concret** :
+
+Un utilisateur de Paris accepte remote + physique :
+
+- ✅ **Utilisateur de Paris** (remote + physique) → Passe le filtre + **bonus** locationScore (même zone)
+- ✅ **Utilisateur de Lyon** (remote uniquement) → Passe le filtre (les deux acceptent remote) mais score location plus faible
+- ❌ **Utilisateur de Lyon** (physique uniquement) → **Éliminé** par le filtre (zones différentes et pas de remote)
+
+**Avantage** : Quand les deux acceptent le remote, les utilisateurs de zones différentes sont éligibles, mais ceux de la même zone restent favorisés grâce au `locationCompatibilityScore` (10% du score final).
 
 ### Avantages
 
 - ✅ Correspondance sémantique (au-delà des mots-clés exacts)
 - ✅ Équilibrage automatique de la charge entre utilisateurs
 - ✅ Favorise les utilisateurs actifs et réactifs
-- ✅ Prise en compte de la qualité et complétude des profils
 - ✅ Calcul performant en SQL (pas de post-traitement en mémoire)
 - ✅ Raison dominante fournie pour chaque recommandation
 

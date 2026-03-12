@@ -2,13 +2,13 @@
  * Weights for the different scoring criteria used in user profile recommendations.
  * These weights determine the importance of each criterion in the overall recommendation score.
  * The criteria include:
- * - profile: similarity of professional background, weighted by profile quality
- * - needs: specialization in the user's main need
+ * - profile: similarity of professional background (cosine similarity of embeddings)
+ * - needs: specialization in the user's main need (cosine similarity of embeddings)
  * - activity: current responsiveness and availability
- * - locationCompatibility: event preferences and geographic proximity
- * Note: Profile quality is used as a multiplier for the profile score rather than a separate criterion.
+ * - locationCompatibility: geographic proximity (filtered by event preferences)
  */
 export const SCORING_WEIGHTS = {
+  // Weights for each scoring criterion (total should ideally sum to 1.0)
   profile: 25 / 100,
   needs: 35 / 100,
   activity: 30 / 100,
@@ -72,29 +72,10 @@ export const ACTIVITY_SCORING_CONFIG = {
 
 /**
  * Configuration for location compatibility score calculation.
- * This score measures the compatibility between users based on their event preferences
- * and geographic proximity when physical events are possible.
+ * This score simply rewards users in the same geographic zone.
+ * Note: Geographic incompatibilities are already handled by the WHERE filter.
  */
 export const LOCATION_COMPATIBILITY_CONFIG = {
-  // Weight of each component (total = 1.0)
-  weights: {
-    eventPreferences: 0.6, // Matching event type preferences (physical/remote)
-    geographicProximity: 0.4, // Geographic proximity when both allow physical events
-  },
-
-  // Event preferences scoring
-  eventPreferences: {
-    // Both users share at least one common event type preference
-    bothPhysical: 1.0, // Both allow physical events
-    bothRemote: 1.0, // Both allow remote events
-    oneMatch: 0.6, // At least one common preference
-    noMatch: 0.0, // No common preferences
-  },
-
-  // Geographic proximity scoring (when both users allow physical events)
-  geographicProximity: {
-    sameZone: 1.0, // Users are in the same geographic zone
-    differentZone: 0.3, // Users are in different zones
-    notApplicable: 0.5, // Geographic proximity doesn't apply (remote only)
-  },
+  sameZone: 1.0, // Users are in the same geographic zone
+  differentZone: 0.5, // Users are in different zones (but compatible via remote)
 } as const;

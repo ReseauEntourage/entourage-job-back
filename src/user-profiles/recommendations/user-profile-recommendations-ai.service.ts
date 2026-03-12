@@ -134,6 +134,11 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                      != :userId
         AND u.role                    IN (${rolesPlaceholder})
         AND upe."configVersion"       = :configVersion
+        -- Geographic filter: only allow different zones if both users accept remote events
+        AND (
+          (current_user_data.current_allow_remote = true AND up."allowRemoteEvents" = true)
+          OR u.zone = current_user_data.current_zone
+        )
       GROUP BY
         u.id, u.zone, u."lastConnection",
         up."hasPicture", up."hasExternalCv", up."linkedinUrl", up.description, up.introduction,
@@ -229,49 +234,16 @@ ${workloadCases}
 
   /**
    * Formula for calculating location compatibility score
-   * Based on matching event preferences (physical/remote) and geographic proximity
-   * Uses LOCATION_COMPATIBILITY_CONFIG configuration for all parameters
+   * Simply rewards users in the same geographic zone
+   * Note: Geographic incompatibilities are already filtered by the WHERE clause
    */
   private buildLocationCompatibilityScoreFormula(): string {
     const config = LOCATION_COMPATIBILITY_CONFIG;
-    const weights = config.weights;
 
-    // location preferences component: rewards users with matching event type preferences
-    // - Both accept physical events
-    // - Both accept remote events
-    // Geographic proximity component: rewards users in the same zone when both accept physical events
-    return `COALESCE((
-      -- Location preferences compatibility (${weights.eventPreferences * 100}%)
-      CASE
-        WHEN (up."allowPhysicalEvents" = current_user_data.current_allow_physical
-              AND up."allowPhysicalEvents" = true)
-         AND (up."allowRemoteEvents" = current_user_data.current_allow_remote
-              AND up."allowRemoteEvents" = true)
-        THEN ${config.eventPreferences.bothPhysical}
-        WHEN up."allowPhysicalEvents" = current_user_data.current_allow_physical
-             AND up."allowPhysicalEvents" = true
-        THEN ${config.eventPreferences.bothPhysical}
-        WHEN up."allowRemoteEvents" = current_user_data.current_allow_remote
-             AND up."allowRemoteEvents" = true
-        THEN ${config.eventPreferences.bothRemote}
-        WHEN (up."allowPhysicalEvents" = true AND current_user_data.current_allow_remote = true)
-          OR (up."allowRemoteEvents" = true AND current_user_data.current_allow_physical = true)
-        THEN ${config.eventPreferences.oneMatch}
-        ELSE ${config.eventPreferences.noMatch}
-      END * ${weights.eventPreferences}
-      +
-      CASE
-        WHEN up."allowPhysicalEvents" = true
-         AND current_user_data.current_allow_physical = true
-         AND u.zone = current_user_data.current_zone
-        THEN ${config.geographicProximity.sameZone}
-        WHEN up."allowPhysicalEvents" = true
-         AND current_user_data.current_allow_physical = true
-         AND u.zone != current_user_data.current_zone
-        THEN ${config.geographicProximity.differentZone}
-        ELSE ${config.geographicProximity.notApplicable}
-      END * ${weights.geographicProximity}
-    ), 0.0)::float AS location_compatibility_score`;
+    return `CASE
+      WHEN u.zone = current_user_data.current_zone THEN ${config.sameZone}
+      ELSE ${config.differentZone}
+    END::float AS location_compatibility_score`;
   }
 
   /**
