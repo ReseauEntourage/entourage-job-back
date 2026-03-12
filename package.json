@@ -15,12 +15,12 @@
     "api:dev:docker": "docker compose up",
     "api:dev:docker:build": "docker compose up --build",
     "worker:start": "node dist/worker",
-    "worker:dev:docker": "docker compose -f docker-compose.worker.yml run --rm worker",
+    "worker:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "worker:dev": "nest start --config nest-cli.worker.json --watch",
     "worker:dev:debug": "nest start --config nest-cli.worker.json --debug --watch",
     "all:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "all:dev:docker:build": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up --build",
-    "test:e2e:docker": "docker compose -f docker-compose.test.yml up",
+    "test:e2e:docker": "docker compose -f docker-compose.test.yml run --rm api-test",
     "test": "run-s test:*",
     "test:ts-check": "tsc -p tsconfig.json --noEmit",
     "test:eslint": "eslint \"{src,apps,libs,tests}/**/*.ts\" --fix --max-warnings=0",
@@ -42,7 +42,7 @@
     "@bull-board/express": "^6.13.1",
     "@bull-board/nestjs": "^6.13.1",
     "@mailchimp/mailchimp_marketing": "^3.0.78",
-    "@nestjs/bull": "^0.6.3",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^9.4.1",
     "@nestjs/config": "^2.3.2",
     "@nestjs/core": "^9.4.1",
@@ -59,7 +59,7 @@
     "@vonage/server-sdk": "^2.11.2",
     "axios": "^1.9.0",
     "bitly": "^7.1.2",
-    "bull": "^4.7.0",
+    "bullmq": "^5.70.4",
     "cache-manager": "^4.1.0",
     "cache-manager-ioredis": "^2.1.0",
     "check-password-strength": "^2.0.7",
@@ -99,7 +99,8 @@
     "sharp": "^0.32.6",
     "thenby": "^1.3.4",
     "uuid": "^8.3.2",
-    "validator": "^13.7.0"
+    "validator": "^13.7.0",
+    "voyageai": "^0.2.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^7.0.0",
@@ -149,5 +150,5 @@
     "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.5"
   },
-  "packageManager": "pnpm@10.30.3"
+  "packageManager": "pnpm@10.31.0+sha512.e3927388bfaa8078ceb79b748ffc1e8274e84d75163e67bc22e06c0d3aed43dd153151cbf11d7f8301ff4acb98c68bdc5cadf6989532801ffafe3b3e4a63c268"
 }

@@ -1,4 +1,4 @@
-import { Queue } from 'bull';
+import { Queue } from 'bullmq';
 import { Cache } from 'cache-manager';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';

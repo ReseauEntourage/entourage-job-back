@@ -1,12 +1,16 @@
 import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 
 @Injectable()
 export class UserProfilesHelper {
-  constructor(private userProfilesService: UserProfilesService) {}
+  constructor(
+    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService,
+    private userProfilesService: UserProfilesService
+  ) {}
 
   async findOneProfileByUserId(userId: string, complete = false) {
     return this.userProfilesService.findOneByUserId(userId, complete);
@@ -156,7 +160,7 @@ export class UserProfilesHelper {
     userId: string,
     usersToRecommendIds: string[]
   ) {
-    return this.userProfilesService.createRecommendations(
+    return this.userProfileRecommendationsLegacyService.createRecommendations(
       userId,
       usersToRecommendIds
     );

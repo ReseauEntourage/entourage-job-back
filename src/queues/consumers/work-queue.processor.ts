@@ -1,14 +1,6 @@
-import {
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueError,
-  OnQueueFailed,
-  OnQueueWaiting,
-  Process,
-  Processor,
-} from '@nestjs/bull';
+import { Processor, WorkerHost, InjectQueue } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job, Queue } from 'bull';
+import { Job, Queue } from 'bullmq';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -25,62 +17,67 @@ import {
   SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 
 @Processor(Queues.WORK)
-export class WorkQueueProcessor {
+export class WorkQueueProcessor extends WorkerHost {
   private readonly logger = new Logger(WorkQueueProcessor.name);
 
   constructor(
+    @InjectQueue(Queues.WORK) private workQueue: Queue,
     private mailjetService: MailjetService,
     private salesforceService: SalesforceService,
     private companiesService: CompaniesService,
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
-    private messagingService: MessagingService
-  ) {}
-
-  @OnQueueActive()
-  onActive(job: Job) {
-    const timeInQueue = job.processedOn - job.timestamp;
-    this.logger.log(
-      `Job ${job.id} of type ${job.name} has started after waiting for ${timeInQueue} ms`
-    );
+    private messagingService: MessagingService,
+    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
+  ) {
+    super();
   }
 
-  @OnQueueCompleted()
-  onCompleted(job: Job, result: string) {
-    this.logger.log(
-      `Job ${job.id} of type ${job.name} completed with result : "${result}"`
-    );
-  }
+  async process(job: Job): Promise<string> {
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
 
-  @OnQueueFailed()
-  onFailed(job: Job, error: Error) {
-    this.logger.error(
-      `Job ${job.id} of type ${job.name} failed with error : "${error}"`,
-      job.data
-    );
-  }
-
-  @OnQueueWaiting()
-  onWaiting(jobId: number | string) {
-    this.logger.log(`Job ${jobId} is waiting to be processed`);
-  }
-
-  @OnQueueError()
-  onError(error: Error) {
-    this.logger.error(`An error occurred on the work queue : "${error}"`);
-  }
-
-  @Process()
-  async process(job: Job) {
-    this.logger.error(
-      `No process method for this job ${job.id} with data ${JSON.stringify(
-        job.data
-      )}`
-    );
+    switch (job.name) {
+      case Jobs.SEND_MAIL:
+        return this.processSendMail(job as Job<SendMailJob | SendMailJob[]>);
+      case Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY:
+        return this.processCreateOrUpdateSalesforceCompany(
+          job as Job<CreateOrUpdateSalesforceCompanyJob>
+        );
+      case Jobs.CREATE_OR_UPDATE_SALESFORCE_USER:
+        return this.processCreateOrUpdateSalesforceUser(
+          job as Job<CreateOrUpdateSalesforceUserJob>
+        );
+      case Jobs.UPDATE_SALESFORCE_USER_COMPANY:
+        return this.processUpdateSalesforceUserCompany(
+          job as Job<UpdateSalesforceUserCompanyJob>
+        );
+      case Jobs.NEWSLETTER_SUBSCRIPTION:
+        return this.processNewsletterSubscription(
+          job as Job<NewsletterSubscriptionJob>
+        );
+      case Jobs.SEND_STAFF_MESSAGING_MESSAGE:
+        return this.processSendStaffMessagingMessage(
+          job as Job<SendStaffMessagingMessageJob>
+        );
+      case Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE:
+        return this.processBulkSendStaffMessagingMessage(
+          job as Job<BulkSendStaffMessagingMessageJob>
+        );
+      case Jobs.ON_ONBOARDING_COMPLETED:
+        return this.processOnOnboardingCompleted(
+          job as Job<OnOnboardingCompletedJob>
+        );
+      default:
+        this.logger.error(
+          `No process method for job ${job.id} with name ${job.name}`
+        );
+        throw new Error(`Unknown job type: ${job.name}`);
+    }
   }
 
   /**
@@ -88,7 +85,6 @@ export class WorkQueueProcessor {
    * @param job - Job containing mail data to be sent
    * @returns A message indicating the result of the operation
    */
-  @Process(Jobs.SEND_MAIL)
   async processSendMail(job: Job<SendMailJob | SendMailJob[]>) {
     const { data } = job;
 
@@ -116,7 +112,6 @@ export class WorkQueueProcessor {
    * @param job - Job containing contact data to subscribe to newsletter
    * @returns A message indicating the result of the operation
    */
-  @Process(Jobs.NEWSLETTER_SUBSCRIPTION)
   async processNewsletterSubscription(job: Job<NewsletterSubscriptionJob>) {
     const { data } = job;
 
@@ -131,7 +126,6 @@ export class WorkQueueProcessor {
    * @param job - Job containing user data to create or update in Salesforce
    * @returns A message indicating the result of the operation
    */
-  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_USER)
   async processCreateOrUpdateSalesforceUser(
     job: Job<CreateOrUpdateSalesforceUserJob>
   ) {
@@ -160,8 +154,7 @@ export class WorkQueueProcessor {
       if (data.companyId) {
         const company = await this.companiesService.findOne(data.companyId);
         if (!company) throw new Error('Company not found');
-        const queue = job.queue as Queue<CreateOrUpdateSalesforceCompanyJob>;
-        await queue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY, {
+        await this.workQueue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY, {
           name: company.name,
           userId: data.userId,
         });
@@ -178,7 +171,6 @@ export class WorkQueueProcessor {
    * @param job
    * @returns
    */
-  @Process(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY)
   async processCreateOrUpdateSalesforceCompany(
     job: Job<CreateOrUpdateSalesforceCompanyJob>
   ) {
@@ -192,9 +184,7 @@ export class WorkQueueProcessor {
       if (data.userId) {
         const company = await this.companiesService.findOneByName(data.name);
         if (!company) throw new Error('Company not found');
-        const queue =
-          job.queue as unknown as Queue<UpdateSalesforceUserCompanyJob>;
-        await queue.add(Jobs.UPDATE_SALESFORCE_USER_COMPANY, {
+        await this.workQueue.add(Jobs.UPDATE_SALESFORCE_USER_COMPANY, {
           userId: data.userId,
           companyId: company.id,
         });
@@ -210,7 +200,6 @@ export class WorkQueueProcessor {
    * @param job - Job containing userId and companyId to update the user's company in Salesforce
    * @returns A message indicating the result of the operation
    */
-  @Process(Jobs.UPDATE_SALESFORCE_USER_COMPANY)
   async processUpdateSalesforceUserCompany(
     job: Job<UpdateSalesforceUserCompanyJob>
   ) {
@@ -235,7 +224,6 @@ export class WorkQueueProcessor {
    * @param job
    * @returns
    */
-  @Process(Jobs.ON_ONBOARDING_COMPLETED)
   async processOnOnboardingCompleted(job: Job) {
     const { data } = job;
     const { userId } = data as OnOnboardingCompletedJob;
@@ -259,8 +247,7 @@ export class WorkQueueProcessor {
     const welcomeMessageToSend =
       await this.usersService.generatePostOnboardingWelcomeMessage(user);
     if (welcomeMessageToSend) {
-      const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
-      await queue.add(
+      await this.workQueue.add(
         Jobs.SEND_STAFF_MESSAGING_MESSAGE,
         {
           addresseeEmail: user.email,
@@ -274,9 +261,10 @@ export class WorkQueueProcessor {
 
     try {
       const recommendedProfiles =
-        await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+        await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
           user,
-          userProfile
+          userProfile,
+          3
         );
       if (recommendedProfiles.length > 0) {
         await this.usersService.sendOnboardingCompletedMail(
@@ -297,7 +285,6 @@ export class WorkQueueProcessor {
     return `Processed onboarding completion for user with id ${userId}`;
   }
 
-  @Process(Jobs.SEND_STAFF_MESSAGING_MESSAGE)
   async processSendStaffMessagingMessage(
     job: Job<SendStaffMessagingMessageJob>
   ) {
@@ -348,7 +335,6 @@ export class WorkQueueProcessor {
     return `Message sent from staff member with email ${staffContactEmail} to user with email ${addresseeEmail}`;
   }
 
-  @Process(Jobs.BULK_SEND_STAFF_MESSAGING_MESSAGE)
   async processBulkSendStaffMessagingMessage(
     job: Job<BulkSendStaffMessagingMessageJob>
   ) {
@@ -361,12 +347,11 @@ export class WorkQueueProcessor {
       );
       return `No messages provided for bulk sending staff messaging message`;
     }
-    const queue = job.queue as unknown as Queue<SendStaffMessagingMessageJob>;
 
     await Promise.all(
       messages.map(({ addresseeEmail, message }) =>
         // Add a job for each addressee to send the message individually, to avoid blocking the queue with a long job if there are many addressees
-        queue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
+        this.workQueue.add(Jobs.SEND_STAFF_MESSAGING_MESSAGE, {
           addresseeEmail,
           message,
         })

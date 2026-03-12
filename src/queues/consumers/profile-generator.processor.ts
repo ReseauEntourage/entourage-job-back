@@ -2,10 +2,10 @@ import { execFile } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { Process, Processor } from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { Job } from 'bull';
+import { Job } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
@@ -22,20 +22,30 @@ import { detectPdftocairoPath } from 'src/utils/misc/pdf-to-cairo';
 
 @Processor(Queues.PROFILE_GENERATION)
 @Injectable()
-export class ProfileGeneratorProcessor {
+export class ProfileGeneratorProcessor extends WorkerHost {
   constructor(
     private readonly openAiService: OpenAiService,
     private readonly pusherService: PusherService,
     private readonly profileGenerationService: ProfileGenerationService
-  ) {}
+  ) {
+    super();
+  }
 
-  @Process(Jobs.GENERATE_PROFILE_FROM_PDF)
+  async process(job: Job): Promise<void> {
+    if (job.name === Jobs.GENERATE_PROFILE_FROM_PDF) {
+      return this.handleProfileGeneration(
+        job as Job<GenerateProfileFromPDFJob>
+      );
+    }
+    throw new Error(`Unknown job type: ${job.name}`);
+  }
+
   async handleProfileGeneration(job: Job<GenerateProfileFromPDFJob>) {
     const { s3Key, userProfileId, userId, fileHash } = job.data;
     let tempPdfPath = '';
 
     try {
-      job.progress(10);
+      await job.updateProgress(10);
 
       // Construire l'URL S3
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}${s3Key}`;
@@ -71,14 +81,14 @@ export class ProfileGeneratorProcessor {
 
       const base64Images = await this.convertPDFToImages(tempPdfPath);
 
-      job.progress(30);
+      await job.updateProgress(30);
 
       // Traitement long avec OpenAI
       const extractedCVData = await this.openAiService.extractCVFromImages(
         base64Images
       );
 
-      job.progress(80);
+      await job.updateProgress(80);
 
       await this.profileGenerationService.saveExtractedCVData(
         userProfileId,
@@ -91,7 +101,7 @@ export class ProfileGeneratorProcessor {
         extractedCVData
       );
 
-      job.progress(90);
+      await job.updateProgress(90);
 
       // Notifier l'utilisateur que le traitement est terminé
       await this.pusherService.sendEvent(
@@ -105,7 +115,7 @@ export class ProfileGeneratorProcessor {
         }
       );
 
-      job.progress(100);
+      await job.updateProgress(100);
 
       return;
     } catch (error: unknown) {

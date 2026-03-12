@@ -10,6 +10,7 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
+import { EmbeddingType } from 'src/embeddings/embedding.config';
 import {
   CustomContactParams,
   CustomMailParams,
@@ -42,6 +43,10 @@ export const Jobs = {
     'prepare_user_without_response_to_first_message_mails',
   PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS:
     'prepare_user_conversation_follow_up_mails',
+
+  // Jobs related to embedding queue
+  UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
+  UPDATE_USER_PROFILE_EMBEDDINGS_BATCH: 'update_user_profile_embeddings_batch',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -68,6 +73,10 @@ type JobsData = {
   [Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS]: PrepareNotCompletedProfileMailsJob;
   [Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS]: PrepareUserWithoutResponseToFirstMessageMailsJob;
   [Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS]: PrepareUserConversationFollowUpMailsJob;
+
+  // Embedding queue jobs
+  [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
+  [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS_BATCH]: UpdateUserProfileEmbeddingsBatchJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -149,10 +158,21 @@ export interface PrepareUserWithoutResponseToFirstMessageMailsJob {}
 
 export interface PrepareUserConversationFollowUpMailsJob {}
 
+export interface UpdateUserProfileEmbeddingsJob {
+  userId: string;
+  embeddingTypes: EmbeddingType[];
+}
+
+export interface UpdateUserProfileEmbeddingsBatchJob {
+  userIds: string[];
+  embeddingTypes: EmbeddingType[];
+}
+
 export const Queues = {
   WORK: 'work',
   PROFILE_GENERATION: 'profile-generation',
   CRON_TASKS: 'cron-tasks',
+  EMBEDDING: 'embedding',
 } as const;
 
 export type Queue = (typeof Queues)[keyof typeof Queues];

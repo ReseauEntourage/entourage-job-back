@@ -1,14 +1,6 @@
-import {
-  OnQueueActive,
-  OnQueueCompleted,
-  OnQueueError,
-  OnQueueFailed,
-  OnQueueWaiting,
-  Process,
-  Processor,
-} from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { Job } from 'bull';
+import { Job } from 'bullmq';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
@@ -18,7 +10,7 @@ import { UsersService } from 'src/users/users.service';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 
 @Processor(Queues.CRON_TASKS)
-export class CronTasksProcessor {
+export class CronTasksProcessor extends WorkerHost {
   private readonly logger = new Logger(CronTasksProcessor.name);
 
   constructor(
@@ -26,51 +18,34 @@ export class CronTasksProcessor {
     private usersDeletionService: UsersDeletionService,
     private cronTasksSlackReporterService: CronTasksSlackReporterService,
     private messagingService: MessagingService
-  ) {}
-
-  @OnQueueActive()
-  onActive(job: Job) {
-    const timeInQueue = job.processedOn - job.timestamp;
-    this.logger.log(
-      `Job ${job.id} of type ${job.name} has started after waiting for ${timeInQueue} ms`
-    );
+  ) {
+    super();
   }
 
-  @OnQueueCompleted()
-  onCompleted(job: Job, result: string) {
-    this.logger.log(
-      `Job ${job.id} of type ${job.name} completed with result : "${result}"`
-    );
+  async process(job: Job): Promise<string> {
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+
+    switch (job.name) {
+      case Jobs.DELETE_INACTIVE_USERS:
+        return this.deleteInactiveUsers();
+      case Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING:
+        return this.remindUsersNotCompletedOnboarding();
+      case Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS:
+        return this.preparePostOnboardingCompletionMails();
+      case Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS:
+        return this.prepareNotCompletedProfileMails();
+      case Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS:
+        return this.prepareUserWithoutResponseToFirstMessageMails();
+      case Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS:
+        return this.prepareUserConversationFollowUpMails();
+      default:
+        this.logger.error(
+          `No process method for job ${job.id} with name ${job.name}`
+        );
+        throw new Error(`Unknown job type: ${job.name}`);
+    }
   }
 
-  @OnQueueFailed()
-  onFailed(job: Job, error: Error) {
-    this.logger.error(
-      `Job ${job.id} of type ${job.name} failed with error : "${error}"`,
-      job.data
-    );
-  }
-
-  @OnQueueWaiting()
-  onWaiting(jobId: number | string) {
-    this.logger.log(`Job ${jobId} is waiting to be processed`);
-  }
-
-  @OnQueueError()
-  onError(error: Error) {
-    this.logger.error(`An error occurred on the cron-tasks queue : "${error}"`);
-  }
-
-  @Process()
-  async process(job: Job) {
-    this.logger.error(
-      `No process method for this job ${job.id} with data ${JSON.stringify(
-        job.data
-      )}`
-    );
-  }
-
-  @Process(Jobs.DELETE_INACTIVE_USERS)
   async deleteInactiveUsers() {
     this.logger.log('Deleting inactive users...');
     const inactiveUsers = await this.usersService.getInactiveUsersForDeletion();
@@ -118,7 +93,6 @@ export class CronTasksProcessor {
    * @param job - Job containing mail data to be sent
    * @returns A message indicating the result of the operation
    */
-  @Process(Jobs.SEND_REMINDER_TO_USER_NOT_COMPLETED_ONBOARDING)
   async remindUsersNotCompletedOnboarding() {
     const DAY_DELAY_BEFORE_SENDING_REMINDER = 3;
 
@@ -175,7 +149,6 @@ export class CronTasksProcessor {
    * @param job - Job containing data to prepare mails
    * @returns A message indicating the result of the operation
    */
-  @Process(Jobs.PREPARE_POST_ONBOARDING_COMPLETION_MAILS)
   async preparePostOnboardingCompletionMails() {
     const postOnboardingCompletionConfig = [
       {
@@ -256,7 +229,6 @@ export class CronTasksProcessor {
     return `Preparation of onboarding completed relationship cycle mails started for all configured delays.`;
   }
 
-  @Process(Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS)
   async prepareNotCompletedProfileMails() {
     const DAYS_AFTER_ONBOARDING_COMPLETION = 5;
 
@@ -308,7 +280,6 @@ export class CronTasksProcessor {
     return `Preparation of ${userProfileNotCompleted.length} mails for users that have not completed their profile started.`;
   }
 
-  @Process(Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS)
   async prepareUserWithoutResponseToFirstMessageMails() {
     const DAYS_SINCE_FIRST_MESSAGE_SENT = 5;
 
@@ -367,7 +338,6 @@ export class CronTasksProcessor {
     return `Preparation of mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message started.`;
   }
 
-  @Process(Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS)
   async prepareUserConversationFollowUpMails() {
     const DAYS_SINCE_MUTUAL_REPLY = 15;
     this.logger.log(
