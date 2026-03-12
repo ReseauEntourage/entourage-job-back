@@ -274,11 +274,24 @@ Un utilisateur de Paris accepte remote + physique :
 
 **Avantage** : Quand les deux acceptent le remote, les utilisateurs de zones différentes sont éligibles, mais ceux de la même zone restent favorisés grâce au `locationCompatibilityScore` (10% du score final).
 
+### Exclusion des Utilisateurs Déjà Contactés
+
+Pour éviter les recommandations inutiles, **les utilisateurs avec qui l'utilisateur courant a déjà une conversation sont automatiquement exclus**.
+
+**Comportement** :
+
+- ✅ Utilisateurs jamais contactés : éligibles
+- ❌ Utilisateurs avec conversation existante : exclus
+- ❌ Utilisateurs ayant déjà contacté l'utilisateur courant : exclus
+
+Cela garantit que les recommandations sont toujours de nouvelles opportunités de connexion.
+
 ### Avantages
 
 - ✅ Correspondance sémantique (au-delà des mots-clés exacts)
 - ✅ Équilibrage automatique de la charge entre utilisateurs
 - ✅ Favorise les utilisateurs actifs et réactifs
+- ✅ Exclusion automatique des utilisateurs déjà contactés
 - ✅ Calcul performant en SQL (pas de post-traitement en mémoire)
 - ✅ Raison dominante fournie pour chaque recommandation
 

@@ -139,6 +139,15 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
           (current_user_data.current_allow_remote = true AND up."allowRemoteEvents" = true)
           OR u.zone = current_user_data.current_zone
         )
+        -- Exclude users that have already been contacted by current user
+        AND u.id NOT IN (
+          SELECT cp_other."userId"
+          FROM "Conversations" c
+          JOIN "ConversationParticipants" cp_current ON cp_current."conversationId" = c.id
+          JOIN "ConversationParticipants" cp_other ON cp_other."conversationId" = c.id
+          WHERE cp_current."userId" = :userId
+            AND cp_other."userId" != :userId
+        )
       GROUP BY
         u.id, u.zone, u."lastConnection",
         up."hasPicture", up."hasExternalCv", up."linkedinUrl", up.description, up.introduction,
