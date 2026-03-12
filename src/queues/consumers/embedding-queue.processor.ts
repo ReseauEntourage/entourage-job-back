@@ -71,6 +71,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
           userProfile,
           embeddingType
         );
+
         await this.userProfilesService.updateEmbedding(
           userProfile.id,
           embeddingType,
