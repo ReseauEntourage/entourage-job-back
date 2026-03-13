@@ -16,7 +16,11 @@ import {
   SCORING_WEIGHTS,
 } from './scoring.config';
 import { UserProfileRecommendationBase } from './user-profile-recommendation-base';
-import { UserProfileMatchingResult } from './user-profile-recommendation.types';
+import {
+  MatchingReason,
+  UserProfileMatchingResult,
+  UserProfileScoringResult,
+} from './user-profile-recommendation.types';
 
 @Injectable()
 export class UserProfileRecommendationsService extends UserProfileRecommendationBase {
@@ -39,7 +43,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     weightActivity: number;
     weightLocationCompatibility: number;
     poolSize: number;
-  }): Promise<UserProfileMatchingResult[]> {
+  }): Promise<UserProfileScoringResult[]> {
     const {
       userId,
       rolesToFind,
@@ -54,7 +58,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
 
     const sql = this.buildSimilarityQuery(rolesToFind);
 
-    return this.userProfileRecommandationModel.sequelize.query<UserProfileMatchingResult>(
+    return this.userProfileRecommandationModel.sequelize.query<UserProfileScoringResult>(
       sql,
       {
         type: QueryTypes.SELECT,
@@ -330,8 +334,7 @@ ${workloadCases}
       needs_score                AS "needsScore",
       activity_score            AS "activityScore",
       location_compatibility_score AS "locationCompatibilityScore",
-      ${this.buildFinalScoreFormula()},
-      ${this.buildDominantReasonFormula()}
+      ${this.buildFinalScoreFormula()}
     FROM user_scores
     WHERE profile_score > 0 OR needs_score > 0
     ORDER BY "finalScore" DESC
@@ -351,21 +354,73 @@ ${workloadCases}
   }
 
   /**
-   * Formula to determine the dominant reason for the score
+   * Computes the dominant reason for each recommendation based on relative comparison.
+   *
+   * With multiple results: uses min-max normalization across all recommendations
+   * to determine on which criterion each candidate stands out the most relative
+   * to the other recommendations. locationCompatibility is excluded as it is a
+   * binary value that does not meaningfully differentiate candidates.
+   *
+   * With a single result: falls back to the absolute system (highest weighted score).
    */
-  private buildDominantReasonFormula(): string {
-    return `CASE
-      WHEN profile_score  * :weightProfile  >= needs_score     * :weightNeeds
-       AND profile_score  * :weightProfile  >= activity_score * :weightActivity
-       AND profile_score  * :weightProfile  >= location_compatibility_score * :weightLocationCompatibility
-      THEN 'profile'
-      WHEN needs_score     * :weightNeeds     >= activity_score * :weightActivity
-       AND needs_score     * :weightNeeds     >= location_compatibility_score * :weightLocationCompatibility
-      THEN 'needs'
-      WHEN activity_score * :weightActivity >= location_compatibility_score * :weightLocationCompatibility
-      THEN 'activity'
-      ELSE 'locationCompatibility'
-    END AS "dominantReason"`;
+  private computeRelativeReasons(
+    scoringResults: UserProfileScoringResult[]
+  ): UserProfileMatchingResult[] {
+    if (scoringResults.length === 0) return [];
+
+    const criteria = [
+      {
+        key: 'profileScore' as const,
+        reason: MatchingReason.PROFILE,
+        weight: SCORING_WEIGHTS.profile,
+      },
+      {
+        key: 'needsScore' as const,
+        reason: MatchingReason.NEEDS,
+        weight: SCORING_WEIGHTS.needs,
+      },
+      {
+        key: 'activityScore' as const,
+        reason: MatchingReason.ACTIVITY,
+        weight: SCORING_WEIGHTS.activity,
+      },
+    ];
+
+    if (scoringResults.length === 1) {
+      const result = scoringResults[0];
+      const dominantReason = criteria.reduce(
+        (best, c) => {
+          const weightedScore = result[c.key] * c.weight;
+          return weightedScore > best.score
+            ? { reason: c.reason, score: weightedScore }
+            : best;
+        },
+        { reason: MatchingReason.PROFILE, score: -Infinity }
+      ).reason;
+      return [{ ...result, dominantReason }];
+    }
+
+    const ranges = criteria.map(({ key }) => {
+      const scores = scoringResults.map((r) => r[key]);
+      const min = Math.min(...scores);
+      const max = Math.max(...scores);
+      return { min, range: max - min };
+    });
+
+    return scoringResults.map((result) => {
+      const dominantReason = criteria.reduce(
+        (best, c, i) => {
+          const { min, range } = ranges[i];
+          const relativeScore =
+            range > 0 ? ((result[c.key] - min) / range) * c.weight : 0;
+          return relativeScore > best.score
+            ? { reason: c.reason, score: relativeScore }
+            : best;
+        },
+        { reason: MatchingReason.PROFILE, score: -Infinity }
+      ).reason;
+      return { ...result, dominantReason };
+    });
   }
 
   /**
@@ -388,7 +443,7 @@ ${workloadCases}
         : [UserRoles.CANDIDATE];
 
     // Compute similarity scores for potential matches
-    const matchingResults = await this.findBySimilarity({
+    const scoringResults = await this.findBySimilarity({
       userId,
       rolesToFind: rolesToFind,
       configVersionProfile: EMBEDDING_CONFIG.profile.version,
@@ -399,6 +454,9 @@ ${workloadCases}
       weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
       poolSize,
     });
+
+    // Assign reasons based on relative comparison between recommendations
+    const matchingResults = this.computeRelativeReasons(scoringResults);
 
     // Store top recommendations in the database
     return this.createRecommendationsFromUserProfileMatchingResult(
