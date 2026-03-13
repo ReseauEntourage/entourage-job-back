@@ -32,7 +32,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   async findBySimilarity(params: {
     userId: string;
     rolesToFind: UserRole[];
-    configVersion: string;
+    configVersionProfile: string;
+    configVersionNeeds: string;
     weightProfile: number;
     weightNeeds: number;
     weightActivity: number;
@@ -42,7 +43,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     const {
       userId,
       rolesToFind,
-      configVersion,
+      configVersionProfile,
+      configVersionNeeds,
       weightProfile,
       weightNeeds,
       weightActivity,
@@ -58,7 +60,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         type: QueryTypes.SELECT,
         replacements: {
           userId,
-          configVersion,
+          configVersionProfile,
+          configVersionNeeds,
           weightProfile,
           weightNeeds,
           weightActivity,
@@ -92,6 +95,10 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       WHERE "userProfileId" = (
         SELECT id FROM "UserProfiles" WHERE "userId" = :userId
       )
+        AND (
+          (type = 'profile' AND "configVersion" = :configVersionProfile)
+          OR (type = 'needs' AND "configVersion" = :configVersionNeeds)
+        )
     )`;
   }
 
@@ -133,7 +140,10 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u."deletedAt"             IS NULL
         AND u.id                      != :userId
         AND u.role                    IN (${rolesPlaceholder})
-        AND upe."configVersion"       = :configVersion
+        AND (
+          (upe.type = 'profile' AND upe."configVersion" = :configVersionProfile)
+          OR (upe.type = 'needs' AND upe."configVersion" = :configVersionNeeds)
+        )
         -- Geographic filter: only allow different zones if both users accept remote events
         AND (
           (current_user_data.current_allow_remote = true AND up."allowRemoteEvents" = true)
@@ -381,7 +391,8 @@ ${workloadCases}
     const matchingResults = await this.findBySimilarity({
       userId,
       rolesToFind: rolesToFind,
-      configVersion: EMBEDDING_CONFIG.profile.version,
+      configVersionProfile: EMBEDDING_CONFIG.profile.version,
+      configVersionNeeds: EMBEDDING_CONFIG.needs.version,
       weightProfile: SCORING_WEIGHTS.profile,
       weightNeeds: SCORING_WEIGHTS.needs,
       weightActivity: SCORING_WEIGHTS.activity,
