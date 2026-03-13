@@ -9,8 +9,8 @@
  */
 export const SCORING_WEIGHTS = {
   // Weights for each scoring criterion (total should ideally sum to 1.0)
-  profile: 25 / 100,
-  needs: 35 / 100,
+  profile: 40 / 100,
+  needs: 20 / 100,
   activity: 30 / 100,
   locationCompatibility: 10 / 100,
 } as const;
