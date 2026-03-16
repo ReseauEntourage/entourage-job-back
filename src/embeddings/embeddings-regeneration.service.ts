@@ -22,7 +22,7 @@ export interface RegenerationOptions {
 @Injectable()
 export class EmbeddingsRegenerationService {
   private readonly logger = new Logger(EmbeddingsRegenerationService.name);
-  private readonly DEFAULT_BATCH_SIZE = 50;
+  private readonly DEFAULT_BATCH_SIZE = 20;
   private readonly DEFAULT_DELAY_MS = 100;
 
   constructor(

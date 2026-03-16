@@ -54,6 +54,12 @@ export class EmbeddingsController {
       throw new BadRequestException('batchSize must be greater than 0');
     }
 
+    if (parsedBatchSize && parsedBatchSize > 50) {
+      throw new BadRequestException(
+        'batchSize must be less than or equal to 50'
+      );
+    }
+
     if (parsedDelay && parsedDelay < 0) {
       throw new BadRequestException('delay must be 0 or greater');
     }
