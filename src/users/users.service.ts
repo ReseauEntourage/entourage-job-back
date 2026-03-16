@@ -801,7 +801,7 @@ export class UsersService {
         if (!author || !authorProfile || addressees.length === 0) {
           return null;
         }
-        const recommendedProfiles =
+        const recommendations =
           await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
             author,
             authorProfile,
@@ -811,7 +811,7 @@ export class UsersService {
           id: authorId,
           user: author,
           addressees,
-          recommendedProfiles,
+          recommendedProfiles: recommendations.map((r) => r.publicProfile),
         };
       })
     );

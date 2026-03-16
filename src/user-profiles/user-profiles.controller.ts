@@ -35,15 +35,13 @@ import {
 } from 'src/users/users.types';
 import { isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
-import {
-  generatePublicProfileDto,
-  PublicProfileDto,
-} from './dto/public-profile.dto';
+import { generatePublicProfileDto } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe';
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
+import { RecommendationsDto } from './recommendations/dto/recommendations.dto';
 import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
@@ -225,7 +223,7 @@ export class UserProfilesController {
   @Get('/recommendations')
   async findRecommendationsByUserId(
     @UserPayload('id', new ParseUUIDPipe()) userId: string
-  ): Promise<PublicProfileDto[]> {
+  ): Promise<RecommendationsDto> {
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
 

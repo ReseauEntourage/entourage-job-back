@@ -3,10 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment';
 import 'moment/locale/fr';
 
-import {
-  generatePublicProfileDto,
-  PublicProfileDto,
-} from '../dto/public-profile.dto';
+import { generatePublicProfileDto } from '../dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import {
@@ -17,6 +14,7 @@ import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.inc
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
+import { RecommendationsDto } from './dto/recommendations.dto';
 import { UserProfileMatchingResult } from './user-profile-recommendation.types';
 
 /**
@@ -104,7 +102,7 @@ export abstract class UserProfileRecommendationBase {
     user: User,
     userProfile: UserProfile,
     poolSize = 3
-  ): Promise<PublicProfileDto[]> {
+  ): Promise<RecommendationsDto> {
     const oneWeekAgo = moment().subtract(1, 'week');
 
     const currentRecommendedProfiles = await this.findRecommendationsByUserId(
@@ -132,13 +130,23 @@ export abstract class UserProfileRecommendationBase {
     const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
 
     return Promise.all(
-      recommendedProfiles.map((recoProfile) =>
-        generatePublicProfileDto(
+      recommendedProfiles.map((recoProfile) => {
+        const publicProfile = generatePublicProfileDto(
           recoProfile.recUser,
           recoProfile.recUser.userProfile,
           null
-        )
-      )
+        );
+        return {
+          id: recoProfile.id,
+          publicProfile,
+          reason: recoProfile.reason,
+          profileScore: recoProfile.profileScore,
+          needsScore: recoProfile.needsScore,
+          activityScore: recoProfile.activityScore,
+          locationCompatibilityScore: recoProfile.locationCompatibilityScore,
+          finalScore: recoProfile.finalScore,
+        };
+      })
     );
   }
 
