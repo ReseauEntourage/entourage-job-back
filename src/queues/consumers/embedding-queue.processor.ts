@@ -13,7 +13,12 @@ import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 
-@Processor(Queues.EMBEDDING)
+@Processor(Queues.EMBEDDING, {
+  limiter: {
+    max: 1,
+    duration: 2 * 60 * 1000, // 2 minutes
+  },
+})
 export class EmbeddingQueueProcessor extends WorkerHost {
   private readonly logger = new Logger(EmbeddingQueueProcessor.name);
 
