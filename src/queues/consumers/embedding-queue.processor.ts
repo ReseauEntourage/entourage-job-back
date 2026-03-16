@@ -16,7 +16,7 @@ import { UsersService } from 'src/users/users.service';
 @Processor(Queues.EMBEDDING, {
   limiter: {
     max: 1,
-    duration: 60 * 1000, // 1 minute
+    duration: 2 * 60 * 1000, // 2 minutes
   },
 })
 export class EmbeddingQueueProcessor extends WorkerHost {
