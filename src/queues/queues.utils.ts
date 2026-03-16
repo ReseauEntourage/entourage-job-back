@@ -56,7 +56,7 @@ export const getEmbeddingQueueOptions = (): RegisterQueueOptions => {
       attempts: 5,
       backoff: {
         type: 'exponential',
-        delay: 10000,
+        delay: 60 * 1000, // 1 minute
       },
       removeOnFail: false,
       removeOnComplete: true,
