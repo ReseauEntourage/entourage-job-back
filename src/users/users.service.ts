@@ -1,7 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
-import { FindOptions } from 'sequelize/types/model';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
 import { CompanyUsersService } from 'src/companies/company-user.service';
@@ -16,6 +15,7 @@ import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -35,7 +35,6 @@ import {
 
 import {
   getCommonMembersFilterOptions,
-  userSearchQuery,
   userSearchQueryRaw,
 } from './users.utils';
 
@@ -61,7 +60,9 @@ export class UsersService {
     private businessSectorsService: BusinessSectorsService,
     private queuesService: QueuesService,
     @Inject(forwardRef(() => UserProfilesService))
-    private userProfilesService: UserProfilesService
+    private userProfilesService: UserProfilesService,
+    @Inject(forwardRef(() => UserProfileRecommendationsLegacyService))
+    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -81,17 +82,6 @@ export class UsersService {
     });
   }
 
-  async findByEmails(emails: string[]) {
-    return this.userModel.findAll({
-      where: {
-        email: {
-          [Op.in]: emails.map((email) => email.toLowerCase()),
-        },
-      },
-      attributes: [...UserAttributes],
-    });
-  }
-
   async findOneByMailWithRelations(email: string) {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
@@ -101,7 +91,7 @@ export class UsersService {
     });
   }
 
-  async findOneWithRelations(id: string) {
+  async findOneWithRelations(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
       attributes: [...UserAttributes],
       include: UserIncludes(),
@@ -132,17 +122,6 @@ export class UsersService {
       attributes: [...UserAttributes],
       include: UserIncludes(),
       order: getUserCandidatOrder(),
-    });
-  }
-
-  async findByIds(ids: string[]) {
-    return this.userModel.findAll({
-      where: {
-        id: {
-          [Op.in]: ids,
-        },
-      },
-      attributes: [...UserAttributes],
     });
   }
 
@@ -434,49 +413,6 @@ export class UsersService {
         },
       ],
     });
-  }
-
-  async findAllUsers(search: string, role: UserRole[], organizationId: string) {
-    const options: FindOptions<User> = {
-      attributes: [...UserAttributes],
-      where: {
-        [Op.or]: userSearchQuery(search, true),
-      },
-      include: [
-        {
-          model: Organization,
-          as: 'organization',
-          attributes: ['name', 'address', 'zone', 'id'],
-        },
-      ],
-    };
-    if (role) {
-      options.where = {
-        ...options.where,
-        role: role,
-      };
-    }
-    if (organizationId) {
-      options.where = {
-        ...options.where,
-        OrganizationId: organizationId,
-      };
-    }
-    return this.userModel.findAll(options);
-  }
-
-  async findAllCandidates(search: string) {
-    const options = {
-      attributes: [...PublicUserAttributes],
-      where: {
-        [Op.and]: [
-          {
-            [Op.or]: userSearchQuery(search),
-          },
-        ],
-      },
-    };
-    return this.userModel.findAll(options);
   }
 
   async countOrganizationAssociatedUsers(organizationId: string) {
@@ -866,9 +802,10 @@ export class UsersService {
           return null;
         }
         const recommendedProfiles =
-          await this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+          await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
             author,
-            authorProfile
+            authorProfile,
+            3
           );
         return {
           id: authorId,

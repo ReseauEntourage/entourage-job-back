@@ -1,4 +1,4 @@
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -11,8 +11,7 @@ import { ApiKeysModule } from 'src/api-keys/api-keys.module';
 import { ConsumersModule } from 'src/queues/consumers';
 import { getSequelizeOptions } from './app.module';
 import { CronModule } from './cron/cron.module';
-import { Queues } from './queues/queues.types';
-import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
+import { RedisModule, REDIS_OPTIONS, REDIS_CLIENT } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -23,26 +22,10 @@ import { RedisModule, REDIS_OPTIONS } from './redis/redis.module';
     SequelizeModule.forRoot(getSequelizeOptions()),
     BullModule.forRootAsync({
       imports: [RedisModule],
-      inject: [REDIS_OPTIONS],
-      useFactory: (redisOptions) => ({
-        redis: redisOptions,
+      inject: [REDIS_CLIENT],
+      useFactory: (redisClient) => ({
+        connection: redisClient,
       }),
-    }),
-    BullModule.registerQueue({
-      name: Queues.WORK,
-      defaultJobOptions: {
-        attempts: `${process.env.JOBS_NB_ATTEMPS}`
-          ? parseInt(process.env.JOBS_NB_ATTEMPS)
-          : 10,
-        backoff: {
-          type: 'exponential',
-          delay: `${process.env.JOBS_BACKOFF_DELAY}`
-            ? parseInt(process.env.JOBS_BACKOFF_DELAY, 10)
-            : 60000,
-        },
-        removeOnFail: false,
-        removeOnComplete: true,
-      },
     }),
     CacheModule.registerAsync<RedisOptions>({
       isGlobal: true,

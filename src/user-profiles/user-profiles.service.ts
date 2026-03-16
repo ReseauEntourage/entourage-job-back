@@ -1,8 +1,6 @@
 import fs from 'fs';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import _ from 'lodash';
-import moment from 'moment';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
 import { BusinessSector } from 'src/common/business-sectors/models';
@@ -16,7 +14,6 @@ import { Formation } from 'src/common/formations/models';
 import { InterestsService } from 'src/common/interests/interests.service';
 import { Interest } from 'src/common/interests/models';
 import { LanguagesService } from 'src/common/languages/languages.service';
-import { Department, Departments } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { NudgesService } from 'src/common/nudge/nudges.service';
 import { Occupation } from 'src/common/occupations/models';
@@ -24,11 +21,17 @@ import { RecruitementAlert } from 'src/common/recruitement-alerts/models';
 import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Skill } from 'src/common/skills/models';
 import { SkillsService } from 'src/common/skills/skills.service';
+import {
+  EMBEDDING_CONFIG,
+  EmbeddingType,
+} from 'src/embeddings/embedding.config';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
+import { VoyageAiService } from 'src/external-services/voyageai/voyageai.service';
 import { MailsService } from 'src/mails/mails.service';
+import { QueuesService } from 'src/queues/producers/queues.service';
+import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
-import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
@@ -44,9 +47,9 @@ import {
   UserProfileWithPartialAssociations,
 } from './models';
 import { UserProfileContract } from './models/user-profile-contract.model';
+import { UserProfileEmbedding } from './models/user-profile-embedding.model';
 import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
-import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfileSkill } from './models/user-profile-skill.model';
 import {
   UserProfilesAttributes,
@@ -59,11 +62,6 @@ import {
 import { ContactTypeEnum } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
-const UserProfileRecommendationsWeights = {
-  BUSINESS_SECTORS: 0.3,
-  NUDGES: 0.5,
-};
-
 @Injectable()
 export class UserProfilesService {
   constructor(
@@ -73,8 +71,6 @@ export class UserProfilesService {
     private occupationModel: typeof Occupation,
     @InjectModel(UserProfileSectorOccupation)
     private userProfileSectorOccupationModel: typeof UserProfileSectorOccupation,
-    @InjectModel(UserProfileRecommendation)
-    private userProfileRecommandationModel: typeof UserProfileRecommendation,
     @InjectModel(UserProfileNudge)
     private userProfileNudgeModel: typeof UserProfileNudge,
     @InjectModel(Interest)
@@ -87,6 +83,8 @@ export class UserProfilesService {
     private userProfileLanguageModel: typeof UserProfileLanguage,
     @InjectModel(UserProfileSkill)
     private userProfileSkillModel: typeof UserProfileSkill,
+    @InjectModel(UserProfileEmbedding)
+    private userProfileEmbeddingModel: typeof UserProfileEmbedding,
     private s3Service: S3Service,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
@@ -101,7 +99,9 @@ export class UserProfilesService {
     private languagesService: LanguagesService,
     private reviewsService: ReviewsService,
     private interestsService: InterestsService,
-    private departmentsService: DepartmentsService
+    private departmentsService: DepartmentsService,
+    private queuesService: QueuesService,
+    private voyageAiService: VoyageAiService
   ) {}
 
   async findOne(id: string) {
@@ -178,19 +178,16 @@ export class UserProfilesService {
     return this.usersService.findOneWithRelations(userId);
   }
 
-  async findAll(
-    userId: string,
-    query: {
-      role: UserRole[];
-      offset: number;
-      limit: number;
-      search: string;
-      nudgeIds: string[];
-      departments: string[];
-      businessSectorIds: string[];
-      contactTypes: ContactTypeEnum[];
-    }
-  ): Promise<PublicProfileDto[]> {
+  async findAll(query: {
+    role: UserRole[];
+    offset: number;
+    limit: number;
+    search: string;
+    nudgeIds: string[];
+    departments: string[];
+    businessSectorIds: string[];
+    contactTypes: ContactTypeEnum[];
+  }): Promise<PublicProfileDto[]> {
     const {
       role,
       offset,
@@ -553,28 +550,6 @@ export class UserProfilesService {
     );
   }
 
-  async findRecommendationsByUserId(
-    userId: string
-  ): Promise<UserProfileRecommendation[]> {
-    return this.userProfileRecommandationModel.findAll({
-      where: { UserId: userId },
-      order: getUserProfileRecommendationOrder(),
-      include: {
-        model: User,
-        as: 'recUser',
-        attributes: UserProfilesUserAttributes,
-        include: [
-          {
-            model: UserProfile,
-            as: 'userProfile',
-            attributes: UserProfilesAttributes,
-            include: getUserProfileInclude(),
-          },
-        ],
-      },
-    });
-  }
-
   async getAverageDelayResponse(userId: string): Promise<number | null> {
     return this.usersStatsService.getAverageDelayResponse(userId);
   }
@@ -680,6 +655,8 @@ export class UserProfilesService {
       }
     });
 
+    const updatedKeys = Object.keys(updateUserProfileDto);
+    await this.enqueueUserProfileEmbeddingsUpdate(userId, updatedKeys);
     return this.findOneByUserId(userId, true);
   }
 
@@ -1054,175 +1031,6 @@ export class UserProfilesService {
     });
   }
 
-  async createRecommendations(userId: string, usersToRecommendIds: string[]) {
-    return this.userProfileRecommandationModel.bulkCreate(
-      usersToRecommendIds.map(
-        (userToRecommendId) => {
-          return {
-            UserId: userId,
-            recommendedUserId: userToRecommendId,
-          };
-        },
-        {
-          hooks: true,
-          individualHooks: true,
-        }
-      )
-    );
-  }
-
-  // V3
-  async updateRecommendationsByUserId(userId: string) {
-    const [user, userProfile] = await Promise.all([
-      this.findOneUser(userId),
-      this.findOneByUserId(userId),
-    ]);
-
-    const rolesToFind =
-      user.role === UserRoles.CANDIDATE
-        ? [UserRoles.COACH]
-        : [UserRoles.CANDIDATE];
-
-    const isCompanyAdmin =
-      user.role === UserRoles.COACH &&
-      user.company &&
-      user.company.companyUser?.isAdmin;
-
-    let nudgeIds: string[] = [];
-    let businessSectorIds: string[] = [];
-    let sectorOccupations: UserProfileSectorOccupation[] = [];
-    let sameRegionDepartmentsOptions: Department[] = Departments.map(
-      ({ name }) => name
-    );
-
-    // If the user is a company admin, we use company data for recommendations
-    //  else we use user profile data
-    if (isCompanyAdmin) {
-      // Nudges and sectorOccupations are not used in company admin context
-
-      // We take all business sectors of the company
-      businessSectorIds = user.company.businessSectors.map(
-        (sector) => sector.id
-      );
-
-      // We take the department of the company
-      if (user.company.department) {
-        const constructedDepartment = `${user.company.department.name} (${user.company.department.value})`;
-        // Validate the constructed string against Department enum values
-        sameRegionDepartmentsOptions = [constructedDepartment as Department];
-      }
-    } else {
-      nudgeIds = userProfile.nudges.map((nudge) => nudge.id);
-      sectorOccupations = userProfile.sectorOccupations;
-      businessSectorIds = sectorOccupations
-        .map((sectorOccupation) => sectorOccupation.businessSector?.id)
-        .filter((id) => id !== undefined);
-      sameRegionDepartmentsOptions = userProfile.department
-        ? Departments.filter(
-            ({ region }) =>
-              region ===
-              Departments.find(({ name }) => userProfile.department === name)
-                .region
-          ).map(({ name }) => name)
-        : Departments.map(({ name }) => name);
-    }
-
-    interface UserRecommendationSQL {
-      id: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      department: Department;
-      currentJob: string;
-      role: UserRole;
-      lastConnection: Date;
-      createdAt: Date;
-      occupations: string;
-      businessSectorIds: string;
-      nudgeIds: string;
-    }
-
-    const sql = `
-    SELECT
-      u.id,
-      u."firstName",
-      u."lastName",
-      u.email,
-      up.department,
-      u.role,
-      u."lastConnection",
-      u."createdAt" as "createdAt",
-      string_agg(DISTINCT upso."businessSectorId"::text, ', ') as "businessSectorIds",
-      string_agg(DISTINCT upn."nudgeId"::text, ', ') as "nudgeIds"
-    
-    FROM "Users" u
-    LEFT JOIN "UserProfiles" up
-      ON u.id = up."userId"
-    
-    LEFT JOIN "UserProfileSectorOccupations" upso
-      ON up.id = upso."userProfileId"
-
-    LEFT JOIN "UserProfileNudges" upn
-      ON up.id = upn."userProfileId"
-    
-    WHERE u."deletedAt" IS NULL
-    AND up."isAvailable" IS TRUE
-    AND up.department IN (${sameRegionDepartmentsOptions.map(
-      // remplacer un appostrophe par deux appostrophes
-      (department) => `'${department.replace(/'/g, "''")}'`
-    )})
-    AND u.role IN (${rolesToFind.map((role) => `'${role}'`)})
-    AND u."lastConnection" IS NOT NULL
-        
-    GROUP BY u.id, u."firstName", u."lastName", u.email, u."zone", u.role, u."lastConnection", up.department
-    ;`;
-
-    const profiles: UserRecommendationSQL[] =
-      await this.userProfileModel.sequelize.query(sql, {
-        type: QueryTypes.SELECT,
-      });
-
-    const sortedProfiles = _.orderBy(
-      profiles,
-      [
-        (profile) => {
-          const profileBusinessSectors = profile.businessSectorIds
-            ? profile.businessSectorIds.split(', ')
-            : [];
-
-          const businessSectorsDifference = _.difference(
-            businessSectorIds,
-            profileBusinessSectors
-          );
-
-          const businessSectorsMatching =
-            (businessSectorIds.length - businessSectorsDifference.length) *
-            UserProfileRecommendationsWeights.BUSINESS_SECTORS;
-
-          const profileNudgeIds = profile.nudgeIds
-            ? profile.nudgeIds.split(', ')
-            : [];
-
-          const nudgesDifferences = _.difference(nudgeIds, profileNudgeIds);
-
-          const nudgesMatching =
-            (nudgeIds.length - nudgesDifferences.length) *
-            UserProfileRecommendationsWeights.NUDGES;
-
-          return businessSectorsMatching + nudgesMatching;
-        },
-        ({ department }) => department === userProfile.department,
-        ({ createdAt }) => createdAt,
-      ],
-      ['desc', 'asc', 'desc']
-    );
-
-    return this.createRecommendations(
-      userId,
-      sortedProfiles.slice(0, 3).map((profile) => profile.id)
-    );
-  }
-
   async updateHasPicture(userId: string, hasPicture: boolean) {
     await this.updateByUserId(userId, {
       hasPicture,
@@ -1256,13 +1064,6 @@ export class UserProfilesService {
   async removeByUserId(userId: string) {
     return this.userProfileModel.destroy({
       where: { userId },
-      individualHooks: true,
-    });
-  }
-
-  async removeRecommendationsByUserId(userId: string) {
-    return this.userProfileRecommandationModel.destroy({
-      where: { UserId: userId },
       individualHooks: true,
     });
   }
@@ -1349,44 +1150,90 @@ export class UserProfilesService {
     return percentage;
   }
 
-  async retrieveOrComputeRecommendationsForUserId(
-    user: User,
-    userProfile: UserProfile
-  ): Promise<PublicProfileDto[]> {
-    const oneWeekAgo = moment().subtract(1, 'week');
+  async updateEmbedding(
+    userProfileId: string,
+    embeddingType: EmbeddingType,
+    data: string
+  ) {
+    // Generate embedding from data
+    const embeddingArray = await this.voyageAiService.generateEmbedding(data);
 
-    const currentRecommendedProfiles = await this.findRecommendationsByUserId(
-      user.id
-    );
+    // Convert number array to pgvector format: [num1,num2,num3,...]
+    const embedding = `[${embeddingArray.join(',')}]`;
 
-    const oneOfCurrentRecommendedProfilesIsNotAvailable =
-      currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
+    await this.saveEmbedding(userProfileId, embeddingType, embedding);
+  }
+
+  /**
+   * Génère des embeddings pour plusieurs textes en un seul appel API batch
+   * Optimise les appels à VoyageAI en respectant les rate limits
+   * @param dataArray Tableau de textes à convertir en embeddings
+   * @returns Tableau d'embeddings (chaque embedding est un tableau de nombres)
+   */
+  async generateEmbeddingsBatch(dataArray: string[]): Promise<number[][]> {
+    return await this.voyageAiService.generateEmbeddingsBatch(dataArray);
+  }
+
+  /**
+   * Sauvegarde un embedding déjà calculé (sans appel à VoyageAI)
+   * Utilisé lors du traitement batch pour éviter les appels API redondants
+   */
+  async saveEmbedding(
+    userProfileId: string,
+    embeddingType: EmbeddingType,
+    embedding: string
+  ) {
+    const existingEmbedding = await this.userProfileEmbeddingModel.findOne({
+      where: {
+        userProfileId,
+        type: embeddingType,
+      },
+    });
+
+    if (existingEmbedding) {
+      await existingEmbedding.update({
+        embedding,
+        configVersion: EMBEDDING_CONFIG[embeddingType].version,
       });
-
-    if (
-      !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecommendedProfiles.length < 3 ||
-      oneOfCurrentRecommendedProfilesIsNotAvailable
-    ) {
-      await this.removeRecommendationsByUserId(user.id);
-      await this.updateRecommendationsByUserId(user.id);
-      await this.updateByUserId(user.id, {
-        lastRecommendationsDate: moment().toDate(),
+    } else {
+      await this.userProfileEmbeddingModel.create({
+        userProfileId,
+        type: embeddingType,
+        embedding,
+        configVersion: EMBEDDING_CONFIG[embeddingType].version,
       });
     }
+  }
 
-    const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
+  private async enqueueUserProfileEmbeddingsUpdate(
+    userId: string,
+    updatedKeys: string[]
+  ): Promise<void> {
+    // If no keys are updated, we don't need to update the embedding
+    if (updatedKeys.length === 0) {
+      return;
+    }
 
-    return Promise.all(
-      recommendedProfiles.map((recoProfile) =>
-        generatePublicProfileDto(
-          recoProfile.recUser,
-          recoProfile.recUser.userProfile,
-          null
-        )
+    // Determine which embedding types need to be updated based on the updated keys and the fields
+    // used in each embedding type(defined in EMBEDDING_CONFIG)
+    const embeddingTypesToUpdate = Object.entries(EMBEDDING_CONFIG)
+      .filter(([, config]) =>
+        config.fields.some((key) => updatedKeys.includes(key))
       )
+      .map(([type]) => type as EmbeddingType);
+
+    if (embeddingTypesToUpdate.length === 0) {
+      // No embedding needs to be updated based on the updated keys
+      return;
+    }
+
+    // Add a job to the queue to update the embeddings of the user profile, with the list of embedding types to update
+    await this.queuesService.addToEmbeddingQueue(
+      Jobs.UPDATE_USER_PROFILE_EMBEDDINGS,
+      {
+        userId,
+        embeddingTypes: embeddingTypesToUpdate,
+      }
     );
   }
 }

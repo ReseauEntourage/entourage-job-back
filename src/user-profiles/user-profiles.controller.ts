@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   InternalServerErrorException,
   NotFoundException,
@@ -19,6 +20,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import {
   Self,
   SelfGuard,
@@ -42,6 +44,7 @@ import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
+import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
 
@@ -49,7 +52,11 @@ import { ContactTypeEnum } from './user-profiles.types';
 @ApiBearerAuth()
 @Controller('user/profile')
 export class UserProfilesController {
-  constructor(private readonly userProfilesService: UserProfilesService) {}
+  constructor(
+    private readonly userProfilesService: UserProfilesService,
+    private readonly userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService,
+    private readonly userProfileRecommendationsService: UserProfileRecommendationsService
+  ) {}
 
   @ApiBearerAuth()
   @Get('/completion')
@@ -154,7 +161,7 @@ export class UserProfilesController {
     }
 
     try {
-      return this.userProfilesService.findAll(userId, {
+      return this.userProfilesService.findAll({
         role,
         offset,
         limit,
@@ -226,9 +233,40 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return this.userProfilesService.retrieveOrComputeRecommendationsForUserId(
+    return this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
       user,
-      userProfile
+      userProfile,
+      3
+    );
+  }
+
+  // Only for admin users to get recommendations for any user, not only themselves
+  @UserPermissions(Permissions.ADMIN)
+  @UseGuards(UserPermissionsGuard)
+  @Get('/recommendations-ai/:userId')
+  async findRecommendationsWithAIByUserId(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Query('forceRefresh') forceRefresh: string,
+    // Default pool size to 3 if not provided, and parse it to an integer
+    @Query('poolSize', new DefaultValuePipe(3), ParseIntPipe) poolSize: number
+  ) {
+    const user = await this.userProfilesService.findOneUser(userId);
+    const userProfile = await this.userProfilesService.findOneByUserId(userId);
+
+    if (!user || !userProfile) {
+      throw new NotFoundException();
+    }
+
+    if (forceRefresh === 'true') {
+      await this.userProfileRecommendationsService.removeRecommendationsByUserId(
+        userId
+      );
+    }
+
+    return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+      user,
+      userProfile,
+      poolSize || 3
     );
   }
 

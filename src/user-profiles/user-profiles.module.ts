@@ -17,7 +17,9 @@ import { SkillsModule } from 'src/common/skills/skills.module';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
+import { VoyageAiModule } from 'src/external-services/voyageai/voyageai.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { QueuesModule } from 'src/queues/producers';
 import { UsersModule } from 'src/users/users.module';
 import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { UserProfile, UserProfileSectorOccupation } from './models';
@@ -28,6 +30,8 @@ import { UserProfileLanguage } from './models/user-profile-language.model';
 import { UserProfileNudge } from './models/user-profile-nudge.model';
 import { UserProfileRecommendation } from './models/user-profile-recommendation.model';
 import { UserProfileSkill } from './models/user-profile-skill.model';
+import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
+import { UserProfileRecommendationsLegacyService } from './recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesController } from './user-profiles.controller';
 import { UserProfilesService } from './user-profiles.service';
 
@@ -64,9 +68,20 @@ import { UserProfilesService } from './user-profiles.service';
     InterestsModule,
     DepartmentsModule,
     UsersStatsModule,
+    QueuesModule,
+    VoyageAiModule,
   ],
   controllers: [UserProfilesController],
-  providers: [UserProfilesService],
-  exports: [SequelizeModule, UserProfilesService],
+  providers: [
+    UserProfilesService,
+    UserProfileRecommendationsService,
+    UserProfileRecommendationsLegacyService,
+  ],
+  exports: [
+    SequelizeModule,
+    UserProfilesService,
+    UserProfileRecommendationsService,
+    UserProfileRecommendationsLegacyService,
+  ],
 })
 export class UserProfilesModule {}

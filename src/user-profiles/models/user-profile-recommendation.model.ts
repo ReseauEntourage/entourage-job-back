@@ -1,3 +1,4 @@
+import { IsString } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -15,7 +16,7 @@ import {
 } from 'sequelize-typescript';
 import { User } from 'src/users/models';
 
-@Table({ tableName: 'User_Profile_Recommendations' })
+@Table({ tableName: 'UserProfileRecommendations' })
 export class UserProfileRecommendation extends Model {
   @IsUUID(4)
   @PrimaryKey
@@ -43,6 +44,31 @@ export class UserProfileRecommendation extends Model {
 
   @DeletedAt
   deletedAt: Date;
+
+  @IsString()
+  @AllowNull(true)
+  @Column
+  reason: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  profileScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  needsScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  activityScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  locationCompatibilityScore: number | null;
+
+  @AllowNull(true)
+  @Column(DataType.FLOAT)
+  finalScore: number | null;
 
   @BelongsTo(() => User, {
     foreignKey: 'recommendedUserId',

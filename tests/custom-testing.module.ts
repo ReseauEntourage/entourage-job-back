@@ -1,4 +1,3 @@
-import { BullModule } from '@nestjs/bull';
 import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -64,10 +63,8 @@ import { UsersTestingModule } from './users/users-testing.module';
       ttl: 60,
       limit: 100,
     }),
-    BullModule.forRoot({
-      // Configuration pour les tests
-      redis: {}, // Sera remplacé par notre mock
-    }),
+    // Note: BullModule n'est pas configuré pour les tests car QueuesTestingModule
+    // mocke directement le QueuesService, évitant ainsi le besoin d'une vraie connexion Redis
     CacheModule.register({
       isGlobal: true,
     }),

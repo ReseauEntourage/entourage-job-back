@@ -1,4 +1,4 @@
-import { BullAdapter } from '@bull-board/api/bullAdapter';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { Module } from '@nestjs/common';
@@ -19,15 +19,19 @@ import { QueuesModule } from './queues.module';
     }),
     BullBoardModule.forFeature({
       name: Queues.WORK,
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
       name: Queues.PROFILE_GENERATION,
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
       name: Queues.CRON_TASKS,
-      adapter: BullAdapter,
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: Queues.EMBEDDING,
+      adapter: BullMQAdapter,
     }),
   ],
   exports: [QueuesModule],
