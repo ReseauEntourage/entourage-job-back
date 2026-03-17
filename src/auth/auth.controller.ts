@@ -32,7 +32,6 @@ export class AuthController {
 
   @Public()
   @UseGuards(LocalAuthGuard)
-  // Add swagger documentation for the login rout
   @ApiBody({
     schema: {
       type: 'object',
