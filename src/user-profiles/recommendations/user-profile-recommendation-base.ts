@@ -129,25 +129,23 @@ export abstract class UserProfileRecommendationBase {
 
     const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
 
-    return Promise.all(
-      recommendedProfiles.map((recoProfile) => {
-        const publicProfile = generatePublicProfileDto(
-          recoProfile.recUser,
-          recoProfile.recUser.userProfile,
-          null
-        );
-        return {
-          id: recoProfile.id,
-          publicProfile,
-          reason: recoProfile.reason,
-          profileScore: recoProfile.profileScore,
-          needsScore: recoProfile.needsScore,
-          activityScore: recoProfile.activityScore,
-          locationCompatibilityScore: recoProfile.locationCompatibilityScore,
-          finalScore: recoProfile.finalScore,
-        };
-      })
-    );
+    return recommendedProfiles.map((recoProfile) => {
+      const publicProfile = generatePublicProfileDto(
+        recoProfile.recUser,
+        recoProfile.recUser.userProfile,
+        null
+      );
+      return {
+        id: recoProfile.id,
+        publicProfile,
+        reason: recoProfile.reason,
+        profileScore: recoProfile.profileScore,
+        needsScore: recoProfile.needsScore,
+        activityScore: recoProfile.activityScore,
+        locationCompatibilityScore: recoProfile.locationCompatibilityScore,
+        finalScore: recoProfile.finalScore,
+      };
+    });
   }
 
   abstract updateRecommendationsByUserId(
