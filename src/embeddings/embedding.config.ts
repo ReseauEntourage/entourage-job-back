@@ -16,12 +16,11 @@ export type EmbeddingConfig = {
  */
 export const EMBEDDING_CONFIG: Record<EmbeddingType, EmbeddingConfig> = {
   profile: {
-    version: 'v2.0',
+    version: 'v3.0',
     fields: [
       'currentJob',
       'description',
       'introduction',
-      'sectorOccupations',
       'skills',
       'experiences',
       'formations',
@@ -29,8 +28,8 @@ export const EMBEDDING_CONFIG: Record<EmbeddingType, EmbeddingConfig> = {
     ],
   },
   needs: {
-    version: 'v1.0',
-    fields: ['nudges', 'customNudges'],
+    version: 'v2.0',
+    fields: ['sectorOccupations', 'nudges', 'customNudges'],
   },
 };
 
