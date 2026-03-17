@@ -260,16 +260,16 @@ export class WorkQueueProcessor extends WorkerHost {
     }
 
     try {
-      const recommendedProfiles =
+      const recommendations =
         await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
           user,
           userProfile,
           3
         );
-      if (recommendedProfiles.length > 0) {
+      if (recommendations.length > 0) {
         await this.usersService.sendOnboardingCompletedMail(
           user,
-          recommendedProfiles
+          recommendations.map((r) => r.publicProfile)
         );
       } else {
         this.logger.log(
