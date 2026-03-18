@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -46,7 +46,7 @@ export class UserProfileRecommendation extends Model {
   @DeletedAt
   deletedAt: Date;
 
-  @IsString()
+  @IsEnum(MatchingReason)
   @AllowNull(true)
   @Column
   reason: MatchingReason | null;
