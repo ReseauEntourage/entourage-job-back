@@ -12,7 +12,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
@@ -32,6 +32,21 @@ export class AuthController {
 
   @Public()
   @UseGuards(LocalAuthGuard)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          example: 'user@example.com',
+        },
+        password: {
+          type: 'string',
+          example: 'password123',
+        },
+      },
+    },
+  })
   @Post('login')
   async login(@UserPayload('id') userId: string) {
     const currentUser = await this.authService.getCurrentUser(userId);

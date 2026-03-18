@@ -2291,9 +2291,11 @@ describe('UserProfiles', () => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
           usersToRecommend.map((user) =>
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(user)
-            )
+            expect.objectContaining({
+              publicProfile: expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              ),
+            })
           )
         );
       });
@@ -2402,9 +2404,11 @@ describe('UserProfiles', () => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
           usersToRecommend.map((user) =>
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(user)
-            )
+            expect.objectContaining({
+              publicProfile: expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              ),
+            })
           )
         );
       });
@@ -2829,9 +2833,11 @@ describe('UserProfiles', () => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
           newUsersToRecommend.map((user) =>
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(user)
-            )
+            expect.objectContaining({
+              publicProfile: expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              ),
+            })
           )
         );
       });
@@ -2893,9 +2899,11 @@ describe('UserProfiles', () => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
           usersToRecommend.map((user) =>
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(user)
-            )
+            expect.objectContaining({
+              publicProfile: expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              ),
+            })
           )
         );
       });
@@ -3006,9 +3014,11 @@ describe('UserProfiles', () => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual(
           usersToRecommend.map((user) =>
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(user)
-            )
+            expect.objectContaining({
+              publicProfile: expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              ),
+            })
           )
         );
       });
@@ -3443,9 +3453,11 @@ describe('UserProfiles', () => {
         expect(response.body.length).toBe(newUsersToRecommend.length);
         expect(response.body).toEqual(
           newUsersToRecommend.map((user) =>
-            expect.objectContaining(
-              userProfilesHelper.mapUserProfileFromUser(user)
-            )
+            expect.objectContaining({
+              publicProfile: expect.objectContaining(
+                userProfilesHelper.mapUserProfileFromUser(user)
+              ),
+            })
           )
         );
       });

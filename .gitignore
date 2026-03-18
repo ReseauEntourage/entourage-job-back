@@ -44,3 +44,6 @@ package-lock.json
 
 # Generated files
 create_database_structure?*.sql
+
+# Postman files
+postman/
