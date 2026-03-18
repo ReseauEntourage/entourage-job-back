@@ -607,26 +607,26 @@ export class MailsService {
     const formatReason = (user: User, reason: MatchingReason): string => {
       if (user.role === UserRoles.CANDIDATE) {
         switch (reason) {
-          case 'profile':
+          case MatchingReason.PROFILE:
             return 'Son profil correspond à ce que vous recherchez';
-          case 'needs':
+          case MatchingReason.NEEDS:
             return 'Ses besoins correspondent aux vôtres';
-          case 'activity':
+          case MatchingReason.ACTIVITY:
             return 'Très actif en ce moment';
-          case 'locationCompatibility':
+          case MatchingReason.LOCATION_COMPATIBILITY:
             return 'Dans votre zone géographique';
           default:
             return '';
         }
       } else {
         switch (reason) {
-          case 'profile':
+          case MatchingReason.PROFILE:
             return 'Son profil correspond à ce que vous proposez';
-          case 'needs':
+          case MatchingReason.NEEDS:
             return 'Ses besoins correspondent à ce que vous proposez';
-          case 'activity':
+          case MatchingReason.ACTIVITY:
             return 'Très actif en ce moment';
-          case 'locationCompatibility':
+          case MatchingReason.LOCATION_COMPATIBILITY:
             return 'Dans votre zone géographique';
           default:
             return '';
