@@ -848,12 +848,8 @@ export class UsersService {
 
     return this.userModel.sequelize.query(
       `
-      SELECT
-        u."id",
-        u."firstName",
-        u."email",
-        u."role",
-        u."zone"
+      SELECT DISTINCT
+        u."id"
       FROM "Users" u
       JOIN "UserProfiles" up ON u.id = up."userId"
       WHERE
@@ -863,7 +859,6 @@ export class UsersService {
         AND u."onboardingStatus" = :onboardingStatus
         AND u.role IN (:candidateRole, :coachRole)
         AND u."deletedAt" IS NULL
-      GROUP BY u.id
       `,
       {
         type: QueryTypes.SELECT,

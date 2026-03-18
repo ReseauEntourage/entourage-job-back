@@ -475,9 +475,11 @@ export class CronTasksProcessor extends WorkerHost {
             if (!userWithRelations || !userProfile) {
               totalNotEnoughReco++;
               this.logger.log(
-                `Skipping user ${user.id}: missing data (${!userWithRelations ? 'user with relations' : ''}${
-                  !userWithRelations && !userProfile ? ' & ' : ''
-                }${!userProfile ? 'user profile' : ''})`
+                `Skipping user ${user.id}: missing data (${
+                  !userWithRelations ? 'user with relations' : ''
+                }${!userWithRelations && !userProfile ? ' & ' : ''}${
+                  !userProfile ? 'user profile' : ''
+                })`
               );
               return;
             }
