@@ -43,6 +43,7 @@ export const Jobs = {
     'prepare_user_without_response_to_first_message_mails',
   PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS:
     'prepare_user_conversation_follow_up_mails',
+  PREPARE_RECOMMENDATION_MAILS: 'prepare_recommendation_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -73,6 +74,7 @@ type JobsData = {
   [Jobs.PREPARE_NOT_COMPLETED_PROFILE_MAILS]: PrepareNotCompletedProfileMailsJob;
   [Jobs.PREPARE_USER_WITHOUT_RESPONSE_TO_FIRST_MESSAGE_MAILS]: PrepareUserWithoutResponseToFirstMessageMailsJob;
   [Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS]: PrepareUserConversationFollowUpMailsJob;
+  [Jobs.PREPARE_RECOMMENDATION_MAILS]: PrepareRecommendationMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -157,6 +159,8 @@ export interface PrepareNotCompletedProfileMailsJob {}
 export interface PrepareUserWithoutResponseToFirstMessageMailsJob {}
 
 export interface PrepareUserConversationFollowUpMailsJob {}
+
+export interface PrepareRecommendationMailsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;

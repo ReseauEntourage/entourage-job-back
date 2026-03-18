@@ -5,6 +5,8 @@ import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
@@ -15,6 +17,8 @@ export class CronTasksProcessor extends WorkerHost {
 
   constructor(
     private usersService: UsersService,
+    private userProfilesService: UserProfilesService,
+    private userProfileRecommendationsService: UserProfileRecommendationsService,
     private usersDeletionService: UsersDeletionService,
     private cronTasksSlackReporterService: CronTasksSlackReporterService,
     private messagingService: MessagingService
@@ -38,6 +42,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareUserWithoutResponseToFirstMessageMails();
       case Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS:
         return this.prepareUserConversationFollowUpMails();
+      case Jobs.PREPARE_RECOMMENDATION_MAILS:
+        return this.prepareRecommendationMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -426,5 +432,106 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Preparation of follow-up mails for ${followUpMailJobs.length} users-conversations pairs started.`;
+  }
+
+  async prepareRecommendationMails() {
+    const DAYS_TO_CONTACT = [10, 20, 30];
+
+    this.logger.log(
+      `Preparing recommendation mails for users inactive since ${DAYS_TO_CONTACT.join(
+        ', '
+      )} days...`
+    );
+
+    let totalUsers = 0;
+    let totalSuccess = 0;
+    let totalNotEnoughReco = 0;
+    let totalFailures = 0;
+
+    await Promise.allSettled(
+      DAYS_TO_CONTACT.map(async (days) => {
+        this.logger.log(
+          `Fetching users inactive for ${days} days for recommendation mail...`
+        );
+
+        const users =
+          await this.usersService.getUsersInactiveForRecommendationMails(days);
+
+        this.logger.log(
+          `Found ${users.length} users inactive for ${days} days`
+        );
+
+        const results = await Promise.allSettled(
+          users.map(async (user) => {
+            totalUsers++;
+
+            const userWithRelations =
+              await this.usersService.findOneWithRelations(user.id);
+
+            const userProfile = await this.userProfilesService.findOneByUserId(
+              user.id
+            );
+
+            if (!userWithRelations || !userProfile) {
+              totalNotEnoughReco++;
+              this.logger.log(
+                `Skipping user ${user.id}: missing data (${
+                  !userWithRelations ? 'user with relations' : ''
+                }${!userWithRelations && !userProfile ? ' & ' : ''}${
+                  !userProfile ? 'user profile' : ''
+                })`
+              );
+              return;
+            }
+
+            const userRecommendations =
+              await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+                userWithRelations,
+                userProfile,
+                3
+              );
+
+            if (userRecommendations.length < 3) {
+              totalNotEnoughReco++;
+              this.logger.log(
+                `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
+              );
+              return;
+            }
+
+            await this.usersService.sendRecommendationsMail(
+              userWithRelations,
+              userRecommendations
+            );
+            totalSuccess++;
+          })
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            totalFailures++;
+            this.logger.error(
+              `Failed preparing recommendation mail for user ${users[index]?.id}`,
+              result.reason
+            );
+          }
+        });
+      })
+    );
+
+    const succeeded = totalFailures === 0;
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `👬 Users recommendation emails - J+${DAYS_TO_CONTACT.join('/')}`,
+      {
+        total: totalUsers,
+        success: totalSuccess,
+        failure: totalFailures + totalNotEnoughReco,
+      },
+      []
+    );
+
+    return `Recommendation mails sent: ${totalSuccess} success, ${totalNotEnoughReco} skipped (not enough recos), ${totalFailures} errors.`;
   }
 }
