@@ -269,7 +269,7 @@ export class WorkQueueProcessor extends WorkerHost {
       if (recommendations.length > 0) {
         await this.usersService.sendOnboardingCompletedMail(
           user,
-          recommendations.map((r) => r.publicProfile)
+          recommendations
         );
       } else {
         this.logger.log(

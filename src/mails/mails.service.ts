@@ -8,8 +8,9 @@ import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto
 import { Conversation, Message } from 'src/messaging/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
-import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
+import { RecommendationDto } from 'src/user-profiles/recommendations/dto/recommendations.dto';
+import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-recommendation.types';
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
@@ -462,14 +463,15 @@ export class MailsService {
 
   async sendOnboardingCompletedMail(
     user: User,
-    recommendedPublicProfiles: PublicProfileDto[]
+    recommendations: RecommendationDto[]
   ) {
     this.logger.log(
       `Sending onboarding completed mail to user with email ${user.email}`
     );
     const formattedRecommendedProfiles =
       await this.formatRecommendedProfilesFromPublicProfiles(
-        recommendedPublicProfiles
+        user,
+        recommendations
       );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
@@ -506,7 +508,7 @@ export class MailsService {
   async sendMailForNoResponseToFirstMessage(
     user: User,
     addresseesFirstNames: string,
-    recommendedPublicProfiles: PublicProfileDto[]
+    recommendations: RecommendationDto[]
   ) {
     this.logger.log(
       `Sending mail for no response to first message to user with email ${user.email}`
@@ -514,7 +516,8 @@ export class MailsService {
 
     const formattedRecommendedProfiles =
       await this.formatRecommendedProfilesFromPublicProfiles(
-        recommendedPublicProfiles
+        user,
+        recommendations
       );
 
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
@@ -530,6 +533,40 @@ export class MailsService {
         reco3: formattedRecommendedProfiles[2] || '',
         nbReco: formattedRecommendedProfiles.length,
         addresseesFirstNames,
+      },
+    });
+  }
+
+  async sendRecommendationsMail(
+    user: User,
+    recommendations: RecommendationDto[]
+  ) {
+    this.logger.log(
+      `Sending recommendations mail to user with email ${user.email}`
+    );
+
+    const formattedRecommendedProfiles =
+      await this.formatRecommendedProfilesFromPublicProfiles(
+        user,
+        recommendations
+      );
+
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      subject:
+        user.role === UserRoles.CANDIDATE
+          ? "Besoin d'un coup de pouce ? Voici 3 coachs prêts à vous aider"
+          : 'Ces candidats ont besoin de votre coup de pouce pour avancer',
+      templateId: MailjetTemplates.MAILER_USER_RECOMMENDATIONS,
+      variables: {
+        role: user.role,
+        zone: user.zone || ZoneName.HZ,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        reco1: formattedRecommendedProfiles[0] || '',
+        reco2: formattedRecommendedProfiles[1] || '',
+        reco3: formattedRecommendedProfiles[2] || '',
+        nbReco: formattedRecommendedProfiles.length,
       },
     });
   }
@@ -560,30 +597,67 @@ export class MailsService {
   }
 
   private async formatRecommendedProfilesFromPublicProfiles(
-    recommendedPublicProfiles: PublicProfileDto[]
+    user: User,
+    recommendationsDto: RecommendationDto[]
   ) {
     const awsS3Url = process.env.AWSS3_URL || '';
     const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
     const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
 
-    return (recommendedPublicProfiles || []).map((publicProfile) => ({
-      imageUrl: publicProfile.hasPicture
-        ? `${imageBasePath}${publicProfile.id}.profile.jpg`
-        : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png',
-      firstName: publicProfile?.firstName || '',
-      zone: publicProfile?.zone || '',
-      workTitle:
-        publicProfile.role === UserRoles.CANDIDATE
-          ? publicProfile?.sectorOccupations?.[0]?.occupation?.name || ''
-          : publicProfile?.currentJob || '',
-      businessSector1:
-        publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
-      businessSector2:
-        publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
-      businessSector3:
-        publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
-      profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
-    }));
+    const formatReason = (user: User, reason: MatchingReason): string => {
+      if (user.role === UserRoles.CANDIDATE) {
+        switch (reason) {
+          case 'profile':
+            return 'Son profil correspond à ce que vous recherchez';
+          case 'needs':
+            return 'Ses besoins correspondent aux vôtres';
+          case 'activity':
+            return 'Très actif en ce moment';
+          case 'locationCompatibility':
+            return 'Dans votre zone géographique';
+          default:
+            return '';
+        }
+      } else {
+        switch (reason) {
+          case 'profile':
+            return 'Son profil correspond à ce que vous proposez';
+          case 'needs':
+            return 'Ses besoins correspondent à ce que vous proposez';
+          case 'activity':
+            return 'Très actif en ce moment';
+          case 'locationCompatibility':
+            return 'Dans votre zone géographique';
+          default:
+            return '';
+        }
+      }
+    };
+
+    return (recommendationsDto || []).map((recommendation) => {
+      const publicProfile = recommendation.publicProfile;
+      return {
+        imageUrl: publicProfile.hasPicture
+          ? `${imageBasePath}${publicProfile.id}.profile.jpg`
+          : `${imageBasePath}profile-placeholder.png`,
+        firstName: publicProfile?.firstName || '',
+        zone: publicProfile?.zone || '',
+        department: publicProfile?.department || '',
+        workTitle:
+          publicProfile.role === UserRoles.CANDIDATE
+            ? publicProfile?.sectorOccupations?.[0]?.occupation?.name ||
+              'Je suis ouvert à toutes les opportunités'
+            : publicProfile?.currentJob || '',
+        businessSector1:
+          publicProfile?.sectorOccupations?.[0]?.businessSector?.name || '',
+        businessSector2:
+          publicProfile?.sectorOccupations?.[1]?.businessSector?.name || '',
+        businessSector3:
+          publicProfile?.sectorOccupations?.[2]?.businessSector?.name || '',
+        profileUrl: `${process.env.FRONT_URL}/backoffice/profile/${publicProfile.id}`,
+        reason: formatReason(user, recommendation.reason),
+      };
+    });
   }
 }
 

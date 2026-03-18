@@ -14,6 +14,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { MatchingReason } from '../recommendations/user-profile-recommendation.types';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'UserProfileRecommendations' })
@@ -48,7 +49,7 @@ export class UserProfileRecommendation extends Model {
   @IsString()
   @AllowNull(true)
   @Column
-  reason: string | null;
+  reason: MatchingReason | null;
 
   @AllowNull(true)
   @Column(DataType.FLOAT)
