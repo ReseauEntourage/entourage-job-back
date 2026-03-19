@@ -18,7 +18,7 @@ import {
   RecommendationDto,
   RecommendationsDto,
 } from 'src/user-profiles/recommendations/dto/recommendations.dto';
-import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -64,8 +64,8 @@ export class UsersService {
     private queuesService: QueuesService,
     @Inject(forwardRef(() => UserProfilesService))
     private userProfilesService: UserProfilesService,
-    @Inject(forwardRef(() => UserProfileRecommendationsLegacyService))
-    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
+    @Inject(forwardRef(() => UserProfileRecommendationsService))
+    private userProfileRecommendationsService: UserProfileRecommendationsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -802,7 +802,7 @@ export class UsersService {
           return null;
         }
         const recommendations =
-          await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
+          await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
             author,
             authorProfile,
             3
