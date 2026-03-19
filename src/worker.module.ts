@@ -19,7 +19,13 @@ import { RedisModule, REDIS_OPTIONS, REDIS_CLIENT } from './redis/redis.module';
       isGlobal: true,
     }),
     RedisModule, // Module Redis partagé
-    SequelizeModule.forRoot(getSequelizeOptions()),
+    SequelizeModule.forRoot(
+      getSequelizeOptions({
+        // Maximum number of connections
+        // We grow the default pool size for the worker to handle more concurrent jobs
+        max: 10,
+      })
+    ),
     BullModule.forRootAsync({
       imports: [RedisModule],
       inject: [REDIS_CLIENT],

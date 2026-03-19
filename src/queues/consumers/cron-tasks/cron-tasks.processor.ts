@@ -1,6 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import chunk from 'lodash/chunk';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
@@ -436,6 +437,7 @@ export class CronTasksProcessor extends WorkerHost {
 
   async prepareRecommendationMails() {
     const DAYS_TO_CONTACT = [10, 20, 30];
+    const BATCH_SIZE = 3; // Process in small batches to limit concurrent calls
 
     this.logger.log(
       `Preparing recommendation mails for users inactive since ${DAYS_TO_CONTACT.join(
@@ -461,53 +463,57 @@ export class CronTasksProcessor extends WorkerHost {
           `Found ${users.length} users inactive for ${days} days`
         );
 
-        const results = await Promise.allSettled(
-          users.map(async (user) => {
-            totalUsers++;
+        const allResults: PromiseSettledResult<void>[] = [];
 
-            const userWithRelations =
-              await this.usersService.findOneWithRelations(user.id);
+        for (const batch of chunk(users, BATCH_SIZE)) {
+          const batchResults = await Promise.allSettled(
+            batch.map(async (user) => {
+              totalUsers++;
 
-            const userProfile = await this.userProfilesService.findOneByUserId(
-              user.id
-            );
+              const userWithRelations =
+                await this.usersService.findOneWithRelations(user.id);
 
-            if (!userWithRelations || !userProfile) {
-              totalNotEnoughReco++;
-              this.logger.log(
-                `Skipping user ${user.id}: missing data (${
-                  !userWithRelations ? 'user with relations' : ''
-                }${!userWithRelations && !userProfile ? ' & ' : ''}${
-                  !userProfile ? 'user profile' : ''
-                })`
-              );
-              return;
-            }
+              const userProfile =
+                await this.userProfilesService.findOneByUserId(user.id);
 
-            const userRecommendations =
-              await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+              if (!userWithRelations || !userProfile) {
+                totalNotEnoughReco++;
+                this.logger.log(
+                  `Skipping user ${user.id}: missing data (${
+                    !userWithRelations ? 'user with relations' : ''
+                  }${!userWithRelations && !userProfile ? ' & ' : ''}${
+                    !userProfile ? 'user profile' : ''
+                  })`
+                );
+                return;
+              }
+
+              const userRecommendations =
+                await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+                  userWithRelations,
+                  userProfile,
+                  3
+                );
+
+              if (userRecommendations.length < 3) {
+                totalNotEnoughReco++;
+                this.logger.log(
+                  `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
+                );
+                return;
+              }
+
+              await this.usersService.sendRecommendationsMail(
                 userWithRelations,
-                userProfile,
-                3
+                userRecommendations
               );
+              totalSuccess++;
+            })
+          );
+          allResults.push(...batchResults);
+        }
 
-            if (userRecommendations.length < 3) {
-              totalNotEnoughReco++;
-              this.logger.log(
-                `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
-              );
-              return;
-            }
-
-            await this.usersService.sendRecommendationsMail(
-              userWithRelations,
-              userRecommendations
-            );
-            totalSuccess++;
-          })
-        );
-
-        results.forEach((result, index) => {
+        allResults.forEach((result, index) => {
           if (result.status === 'rejected') {
             totalFailures++;
             this.logger.error(
