@@ -1,14 +1,15 @@
 import path from 'path';
 import { Injectable } from '@nestjs/common';
 import { UserProfile } from 'src/user-profiles/models';
-import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
+import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-recommendation.types';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 
 @Injectable()
 export class UserProfilesHelper {
   constructor(
-    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService,
+    private userProfileRecommendationsService: UserProfileRecommendationsService,
     private userProfilesService: UserProfilesService
   ) {}
 
@@ -160,9 +161,17 @@ export class UserProfilesHelper {
     userId: string,
     usersToRecommendIds: string[]
   ) {
-    return this.userProfileRecommendationsLegacyService.createRecommendations(
+    return this.userProfileRecommendationsService.createRecommendationsFromUserProfileMatchingResult(
       userId,
-      usersToRecommendIds
+      usersToRecommendIds.map((recommendedUserId) => ({
+        userId: recommendedUserId,
+        profileScore: 0.8,
+        needsScore: 0.8,
+        activityScore: 0.8,
+        locationCompatibilityScore: 1.0,
+        finalScore: 0.8,
+        dominantReason: MatchingReason.PROFILE,
+      }))
     );
   }
 }

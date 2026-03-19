@@ -11,11 +11,14 @@ import { Conversation } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
-import { PublicProfileDto } from 'src/user-profiles/dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
-import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
+import {
+  RecommendationDto,
+  RecommendationsDto,
+} from 'src/user-profiles/recommendations/dto/recommendations.dto';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -43,7 +46,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 export type NoResponseToFirstMessageResultDto = {
   id: string;
   user: User;
-  recommendedProfiles: PublicProfileDto[];
+  recommendations: RecommendationDto[];
   addressees: User[];
 };
 
@@ -61,8 +64,8 @@ export class UsersService {
     private queuesService: QueuesService,
     @Inject(forwardRef(() => UserProfilesService))
     private userProfilesService: UserProfilesService,
-    @Inject(forwardRef(() => UserProfileRecommendationsLegacyService))
-    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
+    @Inject(forwardRef(() => UserProfileRecommendationsService))
+    private userProfileRecommendationsService: UserProfileRecommendationsService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -471,12 +474,9 @@ export class UsersService {
 
   async sendOnboardingCompletedMail(
     user: User,
-    recommendedProfiles: PublicProfileDto[]
+    recommendations: RecommendationDto[]
   ) {
-    return this.mailsService.sendOnboardingCompletedMail(
-      user,
-      recommendedProfiles
-    );
+    return this.mailsService.sendOnboardingCompletedMail(user, recommendations);
   }
 
   async sendMailForNoResponseToFirstMessage(
@@ -485,7 +485,7 @@ export class UsersService {
     return this.mailsService.sendMailForNoResponseToFirstMessage(
       dto.user,
       dto.addressees.map((addressee) => addressee.firstName).join(', '),
-      dto.recommendedProfiles
+      dto.recommendations
     );
   }
 
@@ -802,7 +802,7 @@ export class UsersService {
           return null;
         }
         const recommendations =
-          await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
+          await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
             author,
             authorProfile,
             3
@@ -811,7 +811,7 @@ export class UsersService {
           id: authorId,
           user: author,
           addressees,
-          recommendedProfiles: recommendations.map((r) => r.publicProfile),
+          recommendations: recommendations,
         };
       })
     );
@@ -833,6 +833,52 @@ export class UsersService {
       user,
       conversation
     );
+  }
+
+  async getUsersInactiveForRecommendationMails(
+    daysSinceLastConnection: number
+  ): Promise<Pick<User, 'id' | 'firstName' | 'email' | 'role' | 'zone'>[]> {
+    const startDate = new Date(
+      new Date().setHours(0, 0, 0, 0) - daysSinceLastConnection * DAY_IN_MS
+    );
+    const endDate = new Date(
+      new Date().setHours(0, 0, 0, 0) -
+        (daysSinceLastConnection - 1) * DAY_IN_MS
+    );
+
+    return this.userModel.sequelize.query(
+      `
+      SELECT DISTINCT
+        u."id"
+      FROM "Users" u
+      JOIN "UserProfiles" up ON u.id = up."userId"
+      WHERE
+        up."isAvailable" IS TRUE
+        AND u."lastConnection" >= :startDate
+        AND u."lastConnection" < :endDate
+        AND u."onboardingStatus" = :onboardingStatus
+        AND u.role IN (:candidateRole, :coachRole)
+        AND u."deletedAt" IS NULL
+      `,
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: {
+          startDate,
+          endDate,
+          onboardingStatus: OnboardingStatus.COMPLETED,
+          candidateRole: UserRoles.CANDIDATE,
+          coachRole: UserRoles.COACH,
+        },
+      }
+    );
+  }
+
+  async sendRecommendationsMail(
+    user: User,
+    recommendationsDto: RecommendationsDto
+  ) {
+    return this.mailsService.sendRecommendationsMail(user, recommendationsDto);
   }
 
   async generatePostOnboardingWelcomeMessage(user: User) {

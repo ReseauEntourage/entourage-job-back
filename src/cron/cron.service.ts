@@ -135,4 +135,23 @@ export class CronService {
       status: 'processing',
     };
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_NOON)
+  async prepareRecommendationMails() {
+    this.logger.log('Cron job started: prepareRecommendationMails');
+
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_RECOMMENDATION_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_RECOMMENDATION_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
 }

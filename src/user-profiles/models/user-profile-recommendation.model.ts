@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsEnum } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -14,6 +14,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
+import { MatchingReason } from '../recommendations/user-profile-recommendation.types';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'UserProfileRecommendations' })
@@ -45,10 +46,10 @@ export class UserProfileRecommendation extends Model {
   @DeletedAt
   deletedAt: Date;
 
-  @IsString()
+  @IsEnum(MatchingReason)
   @AllowNull(true)
   @Column
-  reason: string | null;
+  reason: MatchingReason | null;
 
   @AllowNull(true)
   @Column(DataType.FLOAT)

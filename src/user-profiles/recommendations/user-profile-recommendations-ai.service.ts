@@ -140,7 +140,6 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       ${this.buildCurrentUserProfileDataCTE()}
       ${this.buildActivitySubquery()}
       WHERE up."isAvailable"          = true
-        AND up."optInRecommendations" = true
         AND u."deletedAt"             IS NULL
         AND u.id                      != :userId
         AND u.role                    IN (${rolesPlaceholder})
@@ -481,11 +480,16 @@ ${workloadCases}
         return !recommendedProfile?.recUser?.userProfile?.isAvailable;
       });
 
+    const someRecommendationsAreFromLegacy = currentRecommendedProfiles.some(
+      (reco) => reco.finalScore === null
+    );
+
     if (
       !userProfile.lastRecommendationsDate ||
       moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
       currentRecommendedProfiles.length < poolSize ||
-      oneOfCurrentRecommendedProfilesIsNotAvailable
+      oneOfCurrentRecommendedProfilesIsNotAvailable ||
+      someRecommendationsAreFromLegacy
     ) {
       await this.removeRecommendationsByUserId(user.id);
       await this.updateRecommendationsByUserId(user.id, poolSize);

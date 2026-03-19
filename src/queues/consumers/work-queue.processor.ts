@@ -17,7 +17,7 @@ import {
   SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
 } from 'src/queues/queues.types';
-import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 
@@ -33,7 +33,7 @@ export class WorkQueueProcessor extends WorkerHost {
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private messagingService: MessagingService,
-    private userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService
+    private userProfileRecommendationsService: UserProfileRecommendationsService
   ) {
     super();
   }
@@ -261,7 +261,7 @@ export class WorkQueueProcessor extends WorkerHost {
 
     try {
       const recommendations =
-        await this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
+        await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
           user,
           userProfile,
           3
@@ -269,7 +269,7 @@ export class WorkQueueProcessor extends WorkerHost {
       if (recommendations.length > 0) {
         await this.usersService.sendOnboardingCompletedMail(
           user,
-          recommendations.map((r) => r.publicProfile)
+          recommendations
         );
       } else {
         this.logger.log(

@@ -20,7 +20,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
-import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import {
   Self,
   SelfGuard,
@@ -52,7 +51,6 @@ import { ContactTypeEnum } from './user-profiles.types';
 export class UserProfilesController {
   constructor(
     private readonly userProfilesService: UserProfilesService,
-    private readonly userProfileRecommendationsLegacyService: UserProfileRecommendationsLegacyService,
     private readonly userProfileRecommendationsService: UserProfileRecommendationsService
   ) {}
 
@@ -231,7 +229,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return this.userProfileRecommendationsLegacyService.retrieveOrComputeRecommendationsForUserId(
+    return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
       user,
       userProfile,
       3

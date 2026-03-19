@@ -17,6 +17,8 @@ import {
   UserProfile,
   UserProfileWithPartialAssociations,
 } from 'src/user-profiles/models';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -91,6 +93,21 @@ describe('UserProfiles', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
     server = app.getHttpServer();
+
+    const aiRecommendationsService = moduleFixture.get(
+      UserProfileRecommendationsService
+    );
+    const legacyRecommendationsService = moduleFixture.get(
+      UserProfileRecommendationsLegacyService
+    );
+    jest
+      .spyOn(aiRecommendationsService, 'updateRecommendationsByUserId')
+      .mockImplementation((userId, poolSize) =>
+        legacyRecommendationsService.updateRecommendationsByUserId(
+          userId,
+          poolSize
+        )
+      );
 
     databaseHelper = moduleFixture.get<DatabaseHelper>(DatabaseHelper);
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
