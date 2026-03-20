@@ -20,6 +20,7 @@ export const UserAttributes = [
   'whatsappZoneQR',
   'onboardingStatus',
   'onboardingCompletedAt',
+  'onboardingWebinarSkippedAt',
 ] as const;
 
 export type UserAttribute = (typeof UserAttributes)[number];
