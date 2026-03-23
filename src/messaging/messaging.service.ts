@@ -961,23 +961,25 @@ export class MessagingService {
   ): Promise<{ id: string }[]> {
     return this.conversationModel.sequelize.query(
       `
-      SELECT DISTINCT u."id"
+      SELECT u."id"
       FROM "Users" u
       JOIN "UserProfiles" up ON up."userId" = u.id
-      JOIN "ConversationParticipants" cp ON cp."userId" = u.id
-      JOIN "Messages" m ON m."conversationId" = cp."conversationId"
       WHERE
         up."isAvailable" IS TRUE
         AND u."deletedAt" IS NULL
-        AND u.role NOT IN ('${UserRoles.ADMIN}')
-        AND (
-          u."lastConnection" < NOW() - make_interval(days => :daysWithoutConnection)
-        )
-        AND m."authorId" != u.id
-        AND m."createdAt" < NOW() - make_interval(days => :daysWithUnreadMessage)
-        AND (
-          cp."seenAt" IS NULL
-          OR cp."seenAt" < m."createdAt"
+        AND u.role NOT IN (:adminRole)
+        AND u."lastConnection" < NOW() - make_interval(days => :daysWithoutConnection)
+        AND EXISTS (
+          SELECT 1
+          FROM "ConversationParticipants" cp
+          JOIN "Messages" m ON m."conversationId" = cp."conversationId"
+          WHERE cp."userId" = u.id
+            AND m."authorId" != u.id
+            AND m."createdAt" < NOW() - make_interval(days => :daysWithUnreadMessage)
+            AND (
+              cp."seenAt" IS NULL
+              OR cp."seenAt" < m."createdAt"
+            )
         )
       `,
       {
@@ -985,6 +987,7 @@ export class MessagingService {
         replacements: {
           daysWithoutConnection,
           daysWithUnreadMessage,
+          adminRole: [UserRoles.ADMIN],
         },
       }
     );
