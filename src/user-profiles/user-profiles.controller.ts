@@ -168,7 +168,12 @@ export class UserProfilesController {
         departments,
         businessSectorIds,
         contactTypes,
-        isAvailable: isAvailableQuery === 'true' ? true : undefined,
+        isAvailable:
+          isAvailableQuery === 'true'
+            ? true
+            : isAvailableQuery === 'false'
+            ? false
+            : undefined,
       });
     } catch (error) {
       console.error('Error in findAll:', error);
