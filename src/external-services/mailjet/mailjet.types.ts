@@ -81,6 +81,7 @@ export const MailjetTemplates = {
   NO_RESPONSE_TO_FIRST_MESSAGE: 7749050,
   FOLLOW_UP_MUTUALLY_REPLIED_CONVERSATION: 7758555,
   MAILER_USER_RECOMMENDATIONS: 6060421,
+  AUTO_SET_UNAVAILABLE: 7748944,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

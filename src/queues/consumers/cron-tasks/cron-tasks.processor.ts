@@ -45,6 +45,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareUserConversationFollowUpMails();
       case Jobs.PREPARE_RECOMMENDATION_MAILS:
         return this.prepareRecommendationMails();
+      case Jobs.PREPARE_AUTO_SET_UNAVAILABLE_USERS:
+        return this.prepareAutoSetUnavailableUsers();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -533,5 +535,77 @@ export class CronTasksProcessor extends WorkerHost {
     );
 
     return `Recommendation mails sent: ${totalSuccess} success, ${totalNotEnoughReco} skipped (not enough recos), ${totalFailures} errors.`;
+  }
+
+  async prepareAutoSetUnavailableUsers() {
+    const DAYS_WITHOUT_CONNECTION = 60;
+    const DAYS_WITH_UNREAD_MESSAGE = 30;
+
+    this.logger.log(
+      `Setting inactive users as unavailable (no connection since ${DAYS_WITHOUT_CONNECTION} days, unread message since ${DAYS_WITH_UNREAD_MESSAGE} days)...`
+    );
+
+    const inactiveUsersRows =
+      await this.messagingService.getInactiveUsersWithUnreadConversations(
+        DAYS_WITHOUT_CONNECTION,
+        DAYS_WITH_UNREAD_MESSAGE
+      );
+
+    this.logger.log(
+      `Found ${inactiveUsersRows.length} inactive users to set as unavailable`
+    );
+
+    const userIds = inactiveUsersRows.map((row) => row.id);
+    const users =
+      userIds.length > 0
+        ? await this.usersService.findByIdsWithRelations(userIds)
+        : [];
+
+    const BATCH_SIZE = 50;
+    const results: PromiseSettledResult<void>[] = [];
+
+    for (const userChunk of chunk(users, BATCH_SIZE)) {
+      const batchResults = await Promise.allSettled(
+        userChunk.map(async (user) => {
+          this.logger.log(
+            `Setting user ${user.id} as unavailable due to inactivity`
+          );
+          await this.userProfilesService.setUserAsUnavailableDueToInactivity(
+            user
+          );
+        })
+      );
+
+      results.push(...batchResults);
+    }
+    const { succeeded, successIds, failures } = collectSettledResults(
+      users,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed setting user ${userId} as unavailable due to inactivity`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '🔕 Auto set inactive users as unavailable',
+      {
+        total: users.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed setting ${failures.length}/${users.length} inactive users as unavailable`
+      );
+    }
+
+    return `Set ${successIds.length} inactive users as unavailable`;
   }
 }

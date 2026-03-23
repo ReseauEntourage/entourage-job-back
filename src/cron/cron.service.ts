@@ -136,6 +136,25 @@ export class CronService {
     };
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
+  async prepareAutoSetUnavailableUsers() {
+    this.logger.log('Cron job started: prepareAutoSetUnavailableUsers');
+
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_AUTO_SET_UNAVAILABLE_USERS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_AUTO_SET_UNAVAILABLE_USERS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_NOON)
   async prepareRecommendationMails() {
     this.logger.log('Cron job started: prepareRecommendationMails');

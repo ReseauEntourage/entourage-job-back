@@ -571,6 +571,23 @@ export class MailsService {
     });
   }
 
+  async sendAutoSetUnavailableMail(user: User) {
+    this.logger.log(
+      `Sending auto set unavailable mail to user with email ${user.email}`
+    );
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.AUTO_SET_UNAVAILABLE,
+      variables: {
+        firstName: user.firstName,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        role: getRoleString(user),
+        zone: user.zone,
+        staffContact: user.staffContact,
+      },
+    });
+  }
+
   async sendFollowUpMailForMutuallyRepliedConversation(
     user: User,
     conversation: Conversation
