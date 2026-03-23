@@ -8,7 +8,7 @@ import { UserProfileRecommendation } from '../models/user-profile-recommendation
 import { UserProfilesService } from '../user-profiles.service';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { User } from 'src/users/models';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { RecommendationsDto } from './dto/recommendations.dto';
 import {
   ACTIVITY_SCORING_CONFIG,
@@ -63,6 +63,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       {
         type: QueryTypes.SELECT,
         replacements: {
+          onboardingStatusCompleted: OnboardingStatus.COMPLETED,
           userId,
           configVersionProfile,
           configVersionNeeds,
@@ -143,7 +144,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u."deletedAt"             IS NULL
         AND u.id                      != :userId
         AND u.role                    IN (${rolesPlaceholder})
-        AND u."onboardingStatus"      = 'completed'
+        AND u."onboardingStatus"      = :onboardingStatusCompleted
         AND (
           (upe.type = 'profile' AND upe."configVersion" = :configVersionProfile)
           OR (upe.type = 'needs' AND upe."configVersion" = :configVersionNeeds)

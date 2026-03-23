@@ -33,7 +33,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import {
   generatePublicProfileDto,
@@ -265,7 +265,7 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
-            onboardingStatus: 'completed',
+            onboardingStatus: OnboardingStatus.COMPLETED,
           },
           required: true,
         },
