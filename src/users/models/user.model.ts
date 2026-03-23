@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsDateString,
   IsEmail as IsEmailClassValidator,
   IsEnum,
   IsNumber,
@@ -191,6 +192,12 @@ export class User extends HistorizedModel {
   @AllowNull(true)
   @Column
   onboardingCompletedAt: Date;
+
+  @IsOptional()
+  @IsDateString()
+  @AllowNull(true)
+  @Column
+  onboardingWebinarSkippedAt: Date;
 
   @CreatedAt
   createdAt: Date;
