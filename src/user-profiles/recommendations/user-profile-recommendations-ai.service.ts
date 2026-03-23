@@ -143,6 +143,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u."deletedAt"             IS NULL
         AND u.id                      != :userId
         AND u.role                    IN (${rolesPlaceholder})
+        AND u."onboardingStatus"      = 'completed'
         AND (
           (upe.type = 'profile' AND upe."configVersion" = :configVersionProfile)
           OR (upe.type = 'needs' AND upe."configVersion" = :configVersionNeeds)

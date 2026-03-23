@@ -265,6 +265,7 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
+            onboardingStatus: 'completed',
           },
           required: true,
         },
