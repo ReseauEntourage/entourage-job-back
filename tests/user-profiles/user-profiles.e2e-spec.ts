@@ -1376,6 +1376,100 @@ describe('UserProfiles', () => {
             );
           });
         });
+
+        describe('/profile?isAvailable= - Filter profiles by availability', () => {
+          let loggedInAdmin: LoggedUser;
+          beforeEach(async () => {
+            loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+          });
+
+          it('Should return 200 and only available candidates when isAvailable=true', async () => {
+            const availableCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              { role: UserRoles.CANDIDATE },
+              { userProfile: { isAvailable: true } }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              { role: UserRoles.CANDIDATE },
+              { userProfile: { isAvailable: false } }
+            );
+
+            const expectedIds = availableCandidates.map(({ id }) => id);
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&isAvailable=true`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200 and only unavailable candidates when isAvailable=false', async () => {
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              { role: UserRoles.CANDIDATE },
+              { userProfile: { isAvailable: true } }
+            );
+            const unavailableCandidates = await databaseHelper.createEntities(
+              userFactory,
+              2,
+              { role: UserRoles.CANDIDATE },
+              { userProfile: { isAvailable: false } }
+            );
+
+            const expectedIds = unavailableCandidates.map(({ id }) => id);
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&isAvailable=false`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(2);
+            expect(expectedIds).toEqual(
+              expect.arrayContaining(response.body.map(({ id }) => id))
+            );
+          });
+
+          it('Should return 200 and all profiles when isAvailable is not provided', async () => {
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              { role: UserRoles.CANDIDATE },
+              { userProfile: { isAvailable: true } }
+            );
+            await databaseHelper.createEntities(
+              userFactory,
+              2,
+              { role: UserRoles.CANDIDATE },
+              { userProfile: { isAvailable: false } }
+            );
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.length).toBe(4);
+          });
+        });
       });
 
       describe('GET /user/profile/:userId - Get user profile', () => {
