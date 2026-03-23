@@ -133,7 +133,9 @@ export class UserProfilesController {
     @Query('businessSectorIds')
     businessSectorIds: string[],
     @Query('contactTypes')
-    contactTypes: ContactTypeEnum[]
+    contactTypes: ContactTypeEnum[],
+    @Query('isAvailable')
+    isAvailableQuery?: string
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -166,6 +168,7 @@ export class UserProfilesController {
         departments,
         businessSectorIds,
         contactTypes,
+        isAvailable: isAvailableQuery === 'true' ? true : undefined,
       });
     } catch (error) {
       console.error('Error in findAll:', error);
