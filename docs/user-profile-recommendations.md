@@ -13,7 +13,7 @@ Le système de recommandation d'Entourage permet de suggérer des profils d'util
 
 ### État actuel du système
 
-> **📌 Note importante** : Actuellement, le système **Legacy** est celui utilisé en production pour tous les utilisateurs (`GET /user/profile/recommendations`). Le système **AI** basé sur les embeddings est disponible mais réservé aux administrateurs pour des tests et comparaisons (`GET /user/profile/recommendations-ai/:userId` avec permissions ADMIN uniquement).
+> **📌 Note importante** : Actuellement, le système **AI** est celui utilisé en production pour tous les utilisateurs (`GET /user/profile/recommendations`). Le système Legacy existe toujours dans le code mais n'est plus exposé par aucun endpoint. L'endpoint admin (`GET /user/profile/recommendations-ai/:userId`) utilise également le système AI, avec la possibilité de forcer le recalcul via `forceRefresh=true`.
 
 ---
 
@@ -167,12 +167,12 @@ Le score final est composé de **4 critères principaux** :
 
 | Critère                    | Poids | Description                                                             |
 | -------------------------- | ----- | ----------------------------------------------------------------------- |
-| **Profile Score**          | 30%   | Similarité du parcours professionnel (pondéré par la qualité du profil) |
-| **Needs Score**            | 30%   | Correspondance des besoins/spécialisations                              |
-| **Activity Score**         | 25%   | Réactivité et disponibilité actuelle                                    |
-| **Location Compatibility** | 15%   | Compatibilité géographique et préférences d'événements                  |
+| **Profile Score**          | 40%   | Similarité du parcours professionnel (pondéré par la qualité du profil) |
+| **Needs Score**            | 20%   | Correspondance des besoins/spécialisations                              |
+| **Activity Score**         | 30%   | Réactivité et disponibilité actuelle                                    |
+| **Location Compatibility** | 10%   | Compatibilité géographique et préférences d'événements                  |
 
-#### 1. Profile Score (30%)
+#### 1. Profile Score (40%)
 
 **Base** : Similarité cosinus entre les embeddings de profil (compétences, expériences, secteurs).
 
@@ -184,7 +184,7 @@ profileScore = cosineSimilarity(embedding_profile)
 
 **Plage de valeurs** : 0.0 à 1.0 (typiquement entre 0.5 et 0.85 pour de bons matchs)
 
-#### 2. Needs Score (30%)
+#### 2. Needs Score (20%)
 
 **Base** : Similarité cosinus entre les embeddings de besoins.
 
@@ -196,7 +196,7 @@ profileScore = cosineSimilarity(embedding_profile)
 needsScore = cosineSimilarity(embedding_needs)
 ```
 
-#### 3. Activity Score (25%)
+#### 3. Activity Score (30%)
 
 **Objectif** : Favoriser les utilisateurs actifs et réactifs tout en évitant de surcharger les plus sollicités.
 
@@ -329,9 +329,9 @@ Tous les poids et paramètres de scoring sont centralisés dans ce fichier pour 
 
 **Permissions** : Utilisateur authentifié
 
-**Service utilisé** : `UserProfileRecommendationsLegacyService`
+**Service utilisé** : `UserProfileRecommendationsService`
 
-**Description** : Récupère les recommandations pour l'utilisateur connecté en utilisant l'ancien algorithme de scoring basé sur les correspondances exactes.
+**Description** : Récupère les recommandations pour l'utilisateur connecté en utilisant l'algorithme AI basé sur les embeddings vectoriels et la similarité cosinus.
 
 **Réponse** : Tableau de `PublicProfileDto[]` contenant les 3 profils recommandés.
 
