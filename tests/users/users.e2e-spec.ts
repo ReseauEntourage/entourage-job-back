@@ -855,6 +855,11 @@ describe('Users', () => {
         });
 
         it('Should handle onboarding transition end-to-end (status + completedAt + job)', async () => {
+          loggedInCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            onboardingStatus: OnboardingStatus.NOT_STARTED,
+            onboardingCompletedAt: null,
+          });
           // Default values right after registration
           const initialResponse: APIResponse<UsersController['findUser']> =
             await request(server)
