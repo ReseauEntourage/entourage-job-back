@@ -450,80 +450,74 @@ export class CronTasksProcessor extends WorkerHost {
     let totalNotEnoughReco = 0;
     let totalFailures = 0;
 
-    await Promise.allSettled(
-      DAYS_TO_CONTACT.map(async (days) => {
-        this.logger.log(
-          `Fetching users inactive for ${days} days for recommendation mail...`
-        );
+    for (const days of DAYS_TO_CONTACT) {
+      this.logger.log(
+        `Fetching users inactive for ${days} days for recommendation mail...`
+      );
 
-        const users =
-          await this.usersService.getUsersInactiveForRecommendationMails(days);
+      const users =
+        await this.usersService.getUsersInactiveForRecommendationMails(days);
 
-        this.logger.log(
-          `Found ${users.length} users inactive for ${days} days`
-        );
+      this.logger.log(`Found ${users.length} users inactive for ${days} days`);
 
-        const allResults: PromiseSettledResult<void>[] = [];
+      for (const batch of chunk(users, BATCH_SIZE)) {
+        const batchResults = await Promise.allSettled(
+          batch.map(async (user) => {
+            totalUsers++;
 
-        for (const batch of chunk(users, BATCH_SIZE)) {
-          const batchResults = await Promise.allSettled(
-            batch.map(async (user) => {
-              totalUsers++;
+            const userWithRelations =
+              await this.usersService.findOneWithRelations(user.id);
 
-              const userWithRelations =
-                await this.usersService.findOneWithRelations(user.id);
+            const userProfile = await this.userProfilesService.findOneByUserId(
+              user.id
+            );
 
-              const userProfile =
-                await this.userProfilesService.findOneByUserId(user.id);
-
-              if (!userWithRelations || !userProfile) {
-                totalNotEnoughReco++;
-                this.logger.log(
-                  `Skipping user ${user.id}: missing data (${
-                    !userWithRelations ? 'user with relations' : ''
-                  }${!userWithRelations && !userProfile ? ' & ' : ''}${
-                    !userProfile ? 'user profile' : ''
-                  })`
-                );
-                return;
-              }
-
-              const userRecommendations =
-                await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
-                  userWithRelations,
-                  userProfile,
-                  3
-                );
-
-              if (userRecommendations.length < 3) {
-                totalNotEnoughReco++;
-                this.logger.log(
-                  `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
-                );
-                return;
-              }
-
-              await this.usersService.sendRecommendationsMail(
-                userWithRelations,
-                userRecommendations
+            if (!userWithRelations || !userProfile) {
+              totalNotEnoughReco++;
+              this.logger.log(
+                `Skipping user ${user.id}: missing data (${
+                  !userWithRelations ? 'user with relations' : ''
+                }${!userWithRelations && !userProfile ? ' & ' : ''}${
+                  !userProfile ? 'user profile' : ''
+                })`
               );
-              totalSuccess++;
-            })
-          );
-          allResults.push(...batchResults);
-        }
+              return;
+            }
 
-        allResults.forEach((result, index) => {
+            const userRecommendations =
+              await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+                userWithRelations,
+                userProfile,
+                3
+              );
+
+            if (userRecommendations.length < 3) {
+              totalNotEnoughReco++;
+              this.logger.log(
+                `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
+              );
+              return;
+            }
+
+            await this.usersService.sendRecommendationsMail(
+              userWithRelations,
+              userRecommendations
+            );
+            totalSuccess++;
+          })
+        );
+
+        batchResults.forEach((result, index) => {
           if (result.status === 'rejected') {
             totalFailures++;
             this.logger.error(
-              `Failed preparing recommendation mail for user ${users[index]?.id}`,
+              `Failed preparing recommendation mail for user ${batch[index]?.id}`,
               result.reason
             );
           }
         });
-      })
-    );
+      }
+    }
 
     const succeeded = totalFailures === 0;
 
