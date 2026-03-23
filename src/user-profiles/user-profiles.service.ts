@@ -1239,10 +1239,10 @@ export class UserProfilesService {
   }
 
   async setUserAsUnavailableDueToInactivity(user: User): Promise<void> {
+    await this.mailsService.sendAutoSetUnavailableMail(user);
     await this.updateByUserId(user.id, {
       isAvailable: false,
       unavailabilityReason: UnavailabilityReason.INACTIVITY,
     });
-    await this.mailsService.sendAutoSetUnavailableMail(user);
   }
 }
