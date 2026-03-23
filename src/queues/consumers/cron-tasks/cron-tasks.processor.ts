@@ -567,17 +567,23 @@ export class CronTasksProcessor extends WorkerHost {
         ? await this.usersService.findByIdsWithRelations(userIds)
         : [];
 
-    const results = await Promise.allSettled(
-      users.map(async (user) => {
-        this.logger.log(
-          `Setting user ${user.id} as unavailable due to inactivity`
-        );
-        await this.userProfilesService.setUserAsUnavailableDueToInactivity(
-          user
-        );
-      })
-    );
+    const BATCH_SIZE = 50;
+    const results: PromiseSettledResult<void>[] = [];
 
+    for (const userChunk of chunk(users, BATCH_SIZE)) {
+      const batchResults = await Promise.allSettled(
+        userChunk.map(async (user) => {
+          this.logger.log(
+            `Setting user ${user.id} as unavailable due to inactivity`
+          );
+          await this.userProfilesService.setUserAsUnavailableDueToInactivity(
+            user
+          );
+        })
+      );
+
+      results.push(...batchResults);
+    }
     const { succeeded, successIds, failures } = collectSettledResults(
       users,
       results,
