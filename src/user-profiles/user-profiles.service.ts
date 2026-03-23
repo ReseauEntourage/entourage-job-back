@@ -188,6 +188,7 @@ export class UserProfilesService {
     departments: string[];
     businessSectorIds: string[];
     contactTypes: ContactTypeEnum[];
+    isAvailable?: boolean;
   }): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -198,6 +199,7 @@ export class UserProfilesService {
       departments,
       businessSectorIds,
       contactTypes,
+      isAvailable,
     } = query;
 
     // The request permits to provide department IDs, but in the UserProfile we store department NAMES
@@ -273,6 +275,7 @@ export class UserProfilesService {
         ...searchOptions,
         ...(contactTypesWhereClause ?? {}),
         ...(departmentsOptions ?? {}),
+        ...(isAvailable !== undefined ? { isAvailable } : {}),
       },
       group: ['UserProfile.id', 'user.id', 'user.lastConnection'],
     });
