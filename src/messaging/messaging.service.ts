@@ -947,4 +947,46 @@ export class MessagingService {
       ],
     });
   }
+
+  /**
+   * Get IDs of users who are still available but haven't logged in for at least
+   * `daysWithoutConnection` days AND have at least one unread conversation message
+   * that is older than `daysWithUnreadMessage` days.
+   *
+   * These users are eligible for automatic unavailability.
+   */
+  async getInactiveUsersWithUnreadConversations(
+    daysWithoutConnection: number,
+    daysWithUnreadMessage: number
+  ): Promise<{ id: string }[]> {
+    return this.conversationModel.sequelize.query(
+      `
+      SELECT DISTINCT u."id"
+      FROM "Users" u
+      JOIN "UserProfiles" up ON up."userId" = u.id
+      JOIN "ConversationParticipants" cp ON cp."userId" = u.id
+      JOIN "Messages" m ON m."conversationId" = cp."conversationId"
+      WHERE
+        up."isAvailable" IS TRUE
+        AND u."deletedAt" IS NULL
+        AND u.role NOT IN ('${UserRoles.ADMIN}')
+        AND (
+          u."lastConnection" < NOW() - make_interval(days => :daysWithoutConnection)
+        )
+        AND m."authorId" != u.id
+        AND m."createdAt" < NOW() - make_interval(days => :daysWithUnreadMessage)
+        AND (
+          cp."seenAt" IS NULL
+          OR cp."seenAt" < m."createdAt"
+        )
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          daysWithoutConnection,
+          daysWithUnreadMessage,
+        },
+      }
+    );
+  }
 }

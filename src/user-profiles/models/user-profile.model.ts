@@ -55,6 +55,7 @@ export enum UnavailabilityReason {
   ALREADY_FULL = 'already_full',
   NO_MORE_HELP = 'no_more_help',
   OTHER_SUPPORT = 'other_support',
+  INACTIVITY = 'inactivity',
 }
 
 @Table({ tableName: 'UserProfiles' })

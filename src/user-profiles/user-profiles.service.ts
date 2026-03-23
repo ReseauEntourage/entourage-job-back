@@ -41,6 +41,7 @@ import {
 } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
+  UnavailabilityReason,
   UserProfile,
   UserProfileSectorOccupation,
   UserProfileSectorOccupationWithPartialAssociations,
@@ -1235,5 +1236,13 @@ export class UserProfilesService {
         embeddingTypes: embeddingTypesToUpdate,
       }
     );
+  }
+
+  async setUserAsUnavailableDueToInactivity(user: User): Promise<void> {
+    await this.updateByUserId(user.id, {
+      isAvailable: false,
+      unavailabilityReason: UnavailabilityReason.INACTIVITY,
+    });
+    await this.mailsService.sendAutoSetUnavailableMail(user);
   }
 }
