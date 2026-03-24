@@ -33,7 +33,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import {
   generatePublicProfileDto,
@@ -41,6 +41,7 @@ import {
 } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
 import {
+  UnavailabilityReason,
   UserProfile,
   UserProfileSectorOccupation,
   UserProfileSectorOccupationWithPartialAssociations,
@@ -187,6 +188,7 @@ export class UserProfilesService {
     departments: string[];
     businessSectorIds: string[];
     contactTypes: ContactTypeEnum[];
+    isAvailable?: boolean;
   }): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -197,6 +199,7 @@ export class UserProfilesService {
       departments,
       businessSectorIds,
       contactTypes,
+      isAvailable,
     } = query;
 
     // The request permits to provide department IDs, but in the UserProfile we store department NAMES
@@ -264,6 +267,7 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
+            onboardingStatus: OnboardingStatus.COMPLETED,
           },
           required: true,
         },
@@ -272,6 +276,7 @@ export class UserProfilesService {
         ...searchOptions,
         ...(contactTypesWhereClause ?? {}),
         ...(departmentsOptions ?? {}),
+        ...(isAvailable !== undefined ? { isAvailable } : {}),
       },
       group: ['UserProfile.id', 'user.id', 'user.lastConnection'],
     });
@@ -1235,5 +1240,13 @@ export class UserProfilesService {
         embeddingTypes: embeddingTypesToUpdate,
       }
     );
+  }
+
+  async setUserAsUnavailableDueToInactivity(user: User): Promise<void> {
+    await this.mailsService.sendAutoSetUnavailableMail(user);
+    await this.updateByUserId(user.id, {
+      isAvailable: false,
+      unavailabilityReason: UnavailabilityReason.INACTIVITY,
+    });
   }
 }

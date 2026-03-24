@@ -46,8 +46,8 @@ export class UserFactory implements Factory<User> {
       saltReset: faker.datatype.uuid(),
       createdAt: moment().toDate(),
       updatedAt: moment().toDate(),
-      onboardingStatus: props.onboardingStatus || OnboardingStatus.NOT_STARTED,
-      onboardingCompletedAt: props.onboardingCompletedAt || null,
+      onboardingStatus: props.onboardingStatus || OnboardingStatus.COMPLETED,
+      onboardingCompletedAt: props.onboardingCompletedAt || moment().toDate(),
     };
 
     return {

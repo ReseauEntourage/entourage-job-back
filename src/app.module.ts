@@ -6,6 +6,7 @@ import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
+import { PoolOptions } from 'sequelize';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
 import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
@@ -71,7 +72,9 @@ export function getRedisOptions(): Partial<RedisOptions> {
   };
 }
 
-export function getSequelizeOptions(): SequelizeModuleOptions {
+export function getSequelizeOptions(
+  pool?: PoolOptions
+): SequelizeModuleOptions {
   const dbUri = process.env.DATABASE_URL;
 
   const { hostname, port, username, password, pathname } = getParsedURI(dbUri);
@@ -85,6 +88,7 @@ export function getSequelizeOptions(): SequelizeModuleOptions {
     database: pathname.replace('/', ''),
     autoLoadModels: true,
     logging: false,
+    pool,
   };
 }
 
