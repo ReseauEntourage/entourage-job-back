@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { IsValidBirthDate } from 'src/common/decorators';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
@@ -41,7 +42,7 @@ export class CreateUserRegistrationDto extends PickType(User, [
   password: string;
 
   @ApiProperty()
-  @IsString()
+  @IsValidBirthDate()
   @IsOptional()
   birthDate: Date;
 

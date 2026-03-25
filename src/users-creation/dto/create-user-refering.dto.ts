@@ -1,5 +1,6 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsValidBirthDate } from 'src/common/decorators';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import {
@@ -23,7 +24,7 @@ export class CreateUserReferingDto extends PickType(User, [
   gender: Gender;
 
   @ApiProperty()
-  @IsString()
+  @IsValidBirthDate()
   birthDate: Date;
 
   @ApiProperty()
