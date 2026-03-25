@@ -1,5 +1,5 @@
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {
@@ -37,13 +37,13 @@ export const cvSchema = {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
             description:
-              'Date de début de l expérience au format ISO YYYY-MM-DD',
+              "Date de début de l'expérience au format ISO YYYY-MM-DD",
           },
           endDate: {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
             description:
-              'Date de fin de l expérience au format ISO YYYY-MM-DD (ne pas remplir si l expérience est en cours)',
+              "Date de fin de l'expérience au format ISO YYYY-MM-DD (ne pas remplir si l'expérience est en cours)",
           },
           order: { type: 'number' },
           skills: {
