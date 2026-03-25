@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
 } from 'class-validator';
 import { Op, Transaction } from 'sequelize';
 import {
@@ -75,12 +76,14 @@ export class UserProfile extends Model {
 
   @ApiProperty()
   @IsString()
+  @MaxLength(500)
   @AllowNull(true)
   @Column
   introduction: string;
 
   @ApiProperty()
   @IsString()
+  @MaxLength(500)
   @AllowNull(true)
   @Column
   description: string;
