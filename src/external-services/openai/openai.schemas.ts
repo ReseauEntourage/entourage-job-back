@@ -1,5 +1,5 @@
 // Increment schema version on changes to make sure we dont reuse old saved schemas
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 // Définition du schéma JSON pour la sortie structurée
 export const cvSchema = {
@@ -12,11 +12,12 @@ export const cvSchema = {
         'Résumé du CV à la première personne, mettant en avant les compétences clés, l expérience et la formation de la personne',
     },
     skills: {
+      description: 'Liste des compétences',
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          name: { type: 'string' },
+          name: { type: 'string', maxLength: 80 },
           order: { type: 'number' },
         },
         required: ['name'],
@@ -28,19 +29,21 @@ export const cvSchema = {
       items: {
         type: 'object',
         properties: {
-          title: { type: 'string', maxLength: 60 },
+          title: { type: 'string', maxLength: 80 },
           company: { type: 'string', maxLength: 60 },
           description: { type: 'string', maxLength: 300 },
           location: { type: 'string', maxLength: 60 },
           startDate: {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
-            description: 'Date au format ISO YYYY-MM-DD',
+            description:
+              "Date de début de l'expérience au format ISO YYYY-MM-DD",
           },
           endDate: {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
-            description: 'Date au format ISO YYYY-MM-DD',
+            description:
+              "Date de fin de l'expérience au format ISO YYYY-MM-DD (ne pas remplir si l'expérience est en cours)",
           },
           order: { type: 'number' },
           skills: {
@@ -48,11 +51,12 @@ export const cvSchema = {
             items: {
               type: 'object',
               properties: {
-                name: { type: 'string' },
+                name: { type: 'string', maxLength: 80 },
                 order: { type: 'number' },
               },
               required: ['name'],
             },
+            maxItems: 50,
           },
         },
         required: ['title'],
@@ -63,30 +67,33 @@ export const cvSchema = {
       items: {
         type: 'object',
         properties: {
-          title: { type: 'string' },
-          description: { type: 'string' },
-          institution: { type: 'string' },
-          location: { type: 'string' },
+          title: { type: 'string', maxLength: 80 },
+          description: { type: 'string', maxLength: 300 },
+          institution: { type: 'string', maxLength: 60 },
+          location: { type: 'string', maxLength: 60 },
           startDate: {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
-            description: 'Date au format ISO YYYY-MM-DD',
+            description:
+              'Date de début de la formation au format ISO YYYY-MM-DD',
           },
           endDate: {
             type: 'string',
             pattern: '^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$',
-            description: 'Date au format ISO YYYY-MM-DD',
+            description:
+              'Date de fin de la formation au format ISO YYYY-MM-DD (ne pas remplir si la formation est en cours)',
           },
           skills: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                name: { type: 'string' },
+                name: { type: 'string', maxLength: 80 },
                 order: { type: 'number' },
               },
               required: ['name'],
             },
+            maxItems: 50,
           },
         },
         required: ['title'],
@@ -100,6 +107,7 @@ export const cvSchema = {
           name: {
             type: 'string',
             description: 'Nom de la langue en français (ex: Anglais, Espagnol)',
+            maxLength: 50,
           },
           value: {
             type: 'string',
@@ -114,17 +122,20 @@ export const cvSchema = {
         },
         required: ['name', 'value'],
       },
+      maxItems: 10,
+      description: 'Liste des langues parlées avec leur niveau de maîtrise',
     },
     interests: {
+      description: "Liste des centres d'intérêt",
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          name: { type: 'string' },
+          name: { type: 'string', maxLength: 50 },
         },
         required: ['name'],
       },
-      description: "Liste des centres d'intérêt",
+      maxItems: 10,
     },
   },
 };
