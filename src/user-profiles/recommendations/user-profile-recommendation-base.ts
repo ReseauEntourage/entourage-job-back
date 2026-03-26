@@ -1,9 +1,7 @@
 import { forwardRef, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import moment from 'moment';
-import 'moment/locale/fr';
+import { Op } from 'sequelize';
 
-import { generatePublicProfileDto } from '../dto/public-profile.dto';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import {
@@ -13,15 +11,8 @@ import {
 import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
-import { getUserProfileRecommendationOrder } from 'src/users/models/user.include';
-import { RecommendationsDto } from './dto/recommendations.dto';
 import { UserProfileMatchingResult } from './user-profile-recommendation.types';
 
-/**
- * This abstract class defines the structure for user profile recommendation services.
- * It includes methods for removing, finding, and creating recommendations, as well as a method to retrieve or compute recommendations for a given user ID.
- * The actual logic for updating recommendations based on user ID is left abstract and should be implemented by any class that extends this abstract class.
- */
 export abstract class UserProfileRecommendationBase {
   constructor(
     @InjectModel(UserProfileRecommendation)
@@ -30,6 +21,11 @@ export abstract class UserProfileRecommendationBase {
     protected userProfilesService: UserProfilesService
   ) {}
 
+  /**
+   * Deletes all stored recommendations for a user.
+   * @param userId The ID of the user for whom to delete recommendations.
+   * @returns A promise that resolves when the operation is complete.
+   */
   async removeRecommendationsByUserId(userId: string) {
     return this.userProfileRecommandationModel.destroy({
       where: { UserId: userId },
@@ -37,12 +33,25 @@ export abstract class UserProfileRecommendationBase {
     });
   }
 
+  /**
+   * Finds stored recommendations for a user.
+   * Without options: returns all recommendations ordered by rank (backward compat).
+   * With cursor/limit: returns a page starting after `cursor` rank.
+   */
   async findRecommendationsByUserId(
-    userId: string
+    userId: string,
+    options?: { limit?: number; cursor?: number }
   ): Promise<UserProfileRecommendation[]> {
+    const where: Record<string, unknown> = { UserId: userId };
+
+    if (options?.cursor !== undefined) {
+      where.rank = { [Op.gt]: options.cursor };
+    }
+
     return this.userProfileRecommandationModel.findAll({
-      where: { UserId: userId },
-      order: getUserProfileRecommendationOrder(),
+      where,
+      order: [['rank', 'ASC']],
+      ...(options?.limit !== undefined ? { limit: options.limit } : {}),
       include: {
         model: User,
         as: 'recUser',
@@ -59,6 +68,37 @@ export abstract class UserProfileRecommendationBase {
     });
   }
 
+  /**
+   * Returns the total number of stored recommendations for a user.
+   * Used to decide when to trigger a background refill.
+   */
+  async countRecommendationsByUserId(userId: string): Promise<number> {
+    return this.userProfileRecommandationModel.count({
+      where: { UserId: userId },
+    });
+  }
+
+  /**
+   * Lightweight fetch of stored recommendation metadata (no profile joins).
+   * Used to build the excludeUserIds list for incremental appends.
+   */
+  async getStoredRecommendationsMeta(
+    userId: string
+  ): Promise<{ recommendedUserId: string; rank: number | null }[]> {
+    return this.userProfileRecommandationModel.findAll({
+      where: { UserId: userId },
+      attributes: ['recommendedUserId', 'rank'],
+      raw: true,
+    }) as unknown as { recommendedUserId: string; rank: number | null }[];
+  }
+
+  /**
+   * Persists a batch of recommendations given a list of user IDs to recommend.
+   *
+   * @param userId The ID of the user for whom to create recommendations.
+   * @param usersToRecommendIds The list of user IDs to recommend.
+   * @returns A promise that resolves when the operation is complete.
+   */
   async createRecommendations(userId: string, usersToRecommendIds: string[]) {
     return this.userProfileRecommandationModel.bulkCreate(
       usersToRecommendIds.map((userToRecommendId) => {
@@ -74,12 +114,18 @@ export abstract class UserProfileRecommendationBase {
     );
   }
 
+  /**
+   * Persists a batch of matching results as recommendations.
+   * `startRank` allows appending subsequent batches after an existing pool
+   * (e.g. startRank = 51 to append ranks 51–100 after an initial pool of 50).
+   */
   async createRecommendationsFromUserProfileMatchingResult(
     userId: string,
-    matchingResults: UserProfileMatchingResult[]
+    matchingResults: UserProfileMatchingResult[],
+    startRank = 1
   ) {
     return this.userProfileRecommandationModel.bulkCreate(
-      matchingResults.map((matchingResult) => {
+      matchingResults.map((matchingResult, index) => {
         return {
           UserId: userId,
           recommendedUserId: matchingResult.userId,
@@ -89,6 +135,7 @@ export abstract class UserProfileRecommendationBase {
           activityScore: matchingResult.activityScore,
           locationCompatibilityScore: matchingResult.locationCompatibilityScore,
           finalScore: matchingResult.finalScore,
+          rank: startRank + index,
         };
       }),
       {
@@ -96,56 +143,6 @@ export abstract class UserProfileRecommendationBase {
         individualHooks: true,
       }
     );
-  }
-
-  async retrieveOrComputeRecommendationsForUserId(
-    user: User,
-    userProfile: UserProfile,
-    poolSize = 3
-  ): Promise<RecommendationsDto> {
-    const oneWeekAgo = moment().subtract(1, 'week');
-
-    const currentRecommendedProfiles = await this.findRecommendationsByUserId(
-      user.id
-    );
-
-    const oneOfCurrentRecommendedProfilesIsNotAvailable =
-      currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
-      });
-
-    if (
-      !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecommendedProfiles.length < poolSize ||
-      oneOfCurrentRecommendedProfilesIsNotAvailable
-    ) {
-      await this.removeRecommendationsByUserId(user.id);
-      await this.updateRecommendationsByUserId(user.id, poolSize);
-      await this.userProfilesService.updateByUserId(user.id, {
-        lastRecommendationsDate: moment().toDate(),
-      });
-    }
-
-    const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
-
-    return recommendedProfiles.map((recoProfile) => {
-      const publicProfile = generatePublicProfileDto(
-        recoProfile.recUser,
-        recoProfile.recUser.userProfile,
-        null
-      );
-      return {
-        id: recoProfile.id,
-        publicProfile,
-        reason: recoProfile.reason,
-        profileScore: recoProfile.profileScore,
-        needsScore: recoProfile.needsScore,
-        activityScore: recoProfile.activityScore,
-        locationCompatibilityScore: recoProfile.locationCompatibilityScore,
-        finalScore: recoProfile.finalScore,
-      };
-    });
   }
 
   abstract updateRecommendationsByUserId(
