@@ -531,6 +531,13 @@ ${workloadCases}
 
     const currentRecos = await this.findRecommendationsByUserId(user.id);
 
+    const recIsUnavailable = currentRecos.some(
+      (r) => !r?.recUser?.userProfile?.isAvailable
+    );
+    const recIsLegacy = currentRecos.some(
+      (r) => r.finalScore === null || r.rank === null
+    );
+
     /**
      * Conditions for refreshing the pool:
      * - No previous recommendations date (first time)
@@ -544,9 +551,8 @@ ${workloadCases}
       !userProfile.lastRecommendationsDate ||
       moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
       currentRecos.length === 0 ||
-      currentRecos.some((r) => !r?.recUser?.userProfile?.isAvailable) ||
-      currentRecos.some((r) => r.deletedAt !== null) ||
-      currentRecos.some((r) => r.finalScore === null || r.rank === null);
+      recIsUnavailable ||
+      recIsLegacy;
 
     /**
      * If any of the above conditions are met, we refresh the pool by deleting existing recommendations and computing a new set. We also update the lastRecommendationsDate to now.
@@ -648,36 +654,12 @@ ${workloadCases}
     userProfile: UserProfile,
     poolSize = 3
   ): Promise<RecommendationsDto> {
-    const oneWeekAgo = moment().subtract(1, 'week');
+    await this.ensureFreshPool(user, userProfile);
 
-    const currentRecommendedProfiles = await this.findRecommendationsByUserId(
-      user.id
+    const recommendedProfiles = await this.findRecommendationsByUserId(
+      user.id,
+      { limit: poolSize }
     );
-
-    const oneOfCurrentRecommendedProfilesIsNotAvailable =
-      currentRecommendedProfiles.some((recommendedProfile) => {
-        return !recommendedProfile?.recUser?.userProfile?.isAvailable;
-      });
-
-    const someRecommendationsAreFromLegacy = currentRecommendedProfiles.some(
-      (reco) => reco.finalScore === null
-    );
-
-    if (
-      !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecommendedProfiles.length < poolSize ||
-      oneOfCurrentRecommendedProfilesIsNotAvailable ||
-      someRecommendationsAreFromLegacy
-    ) {
-      await this.removeRecommendationsByUserId(user.id);
-      await this.updateRecommendationsByUserId(user.id, poolSize);
-      await this.userProfilesService.updateByUserId(user.id, {
-        lastRecommendationsDate: moment().toDate(),
-      });
-    }
-
-    const recommendedProfiles = await this.findRecommendationsByUserId(user.id);
 
     return Promise.all(
       recommendedProfiles.map((recoProfile) => {
