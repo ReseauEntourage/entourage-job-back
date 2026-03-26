@@ -22,6 +22,16 @@ import {
   UserProfileScoringResult,
 } from './user-profile-recommendation.types';
 
+// Number of candidates pre-selected by ANN before applying full scoring.
+// Higher = more recall but slower; lower = faster but may miss good candidates.
+const ANN_POOL_SIZE = 200;
+
+// Size of the initial recommendation pool stored on first compute.
+export const INITIAL_POOL_SIZE = 50;
+
+// Size of each subsequent append batch when the pool nears exhaustion.
+export const APPEND_BATCH_SIZE = 50;
+
 @Injectable()
 export class UserProfileRecommendationsService extends UserProfileRecommendationBase {
   constructor(
@@ -43,6 +53,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     weightActivity: number;
     weightLocationCompatibility: number;
     poolSize: number;
+    excludeUserIds?: string[];
   }): Promise<UserProfileScoringResult[]> {
     const {
       userId,
@@ -54,9 +65,25 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       weightActivity,
       weightLocationCompatibility,
       poolSize,
+      excludeUserIds = [],
     } = params;
 
-    const sql = this.buildSimilarityQuery(rolesToFind);
+    // Fetch the current user's raw vectors first so the main query can use
+    // ORDER BY <=> with a literal vector and benefit from the HNSW index.
+    const { profileVector, needsVector } = await this.fetchCurrentUserVectors(
+      userId,
+      configVersionProfile,
+      configVersionNeeds
+    );
+
+    if (!profileVector && !needsVector) return [];
+
+    const sql = this.buildSimilarityQuery(
+      rolesToFind,
+      profileVector,
+      needsVector,
+      excludeUserIds
+    );
 
     return this.userProfileRecommandationModel.sequelize.query<UserProfileScoringResult>(
       sql,
@@ -72,51 +99,207 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
           weightActivity,
           weightLocationCompatibility,
           poolSize,
+          annPoolSize: ANN_POOL_SIZE,
         },
       }
     );
   }
 
   /**
-   * Builds the complete SQL query for similarity search
+   * Fetches the current user's profile and needs embedding vectors.
+   * Returns them as pgvector literal strings (e.g. "[0.1,0.2,...]") ready
+   * for direct interpolation into ORDER BY <=> expressions.
    */
-  private buildSimilarityQuery(rolesToFind: UserRole[]): string {
+  private async fetchCurrentUserVectors(
+    userId: string,
+    configVersionProfile: string,
+    configVersionNeeds: string
+  ): Promise<{ profileVector: string | null; needsVector: string | null }> {
+    const rows = await this.userProfileRecommandationModel.sequelize.query<{
+      type: string;
+      embedding: string;
+    }>(
+      `SELECT type, embedding::text AS embedding
+       FROM "UserProfileEmbeddings"
+       WHERE "userProfileId" = (SELECT id FROM "UserProfiles" WHERE "userId" = :userId)
+         AND (
+           (type = 'profile' AND "configVersion" = :configVersionProfile)
+           OR (type = 'needs'   AND "configVersion" = :configVersionNeeds)
+         )`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { userId, configVersionProfile, configVersionNeeds },
+      }
+    );
+
+    return {
+      profileVector: rows.find((r) => r.type === 'profile')?.embedding ?? null,
+      needsVector: rows.find((r) => r.type === 'needs')?.embedding ?? null,
+    };
+  }
+
+  /**
+   * Builds the complete SQL query for similarity search.
+   * Vectors are interpolated as literals so ORDER BY <=> can use the HNSW index.
+   */
+  private buildSimilarityQuery(
+    rolesToFind: UserRole[],
+    profileVector: string | null,
+    needsVector: string | null,
+    excludeUserIds: string[] = []
+  ): string {
     const rolesPlaceholder = rolesToFind.map((r) => `'${r}'`).join(', ');
+    // Safe to interpolate: values are UUIDs coming from our own DB
+    const excludeClause =
+      excludeUserIds.length > 0
+        ? `AND u.id NOT IN (${excludeUserIds
+            .map((id) => `'${id}'`)
+            .join(', ')})`
+        : '';
 
     return `
-      WITH ${this.buildCurrentUserEmbeddingsCTE()},
-      ${this.buildUserScoresCTE(rolesPlaceholder)}
+      WITH
+      ${this.buildTopByProfileCTE(
+        rolesPlaceholder,
+        profileVector,
+        excludeClause
+      )},
+      ${this.buildTopByNeedsCTE(rolesPlaceholder, needsVector, excludeClause)},
+      ${this.buildCandidatePoolCTE()},
+      ${this.buildUserScoresCTE()}
       ${this.buildFinalSelect()}
     `;
   }
 
   /**
-   * CTE to retrieve the current user's embeddings
+   * CTE: top ANN candidates by profile embedding similarity.
+   * Uses ORDER BY <=> LIMIT to trigger the HNSW index.
+   * Returns an empty set when the current user has no profile vector.
    */
-  private buildCurrentUserEmbeddingsCTE(): string {
-    return `current_user_embeddings AS (
-      SELECT embedding, type
-      FROM "UserProfileEmbeddings"
-      WHERE "userProfileId" = (
-        SELECT id FROM "UserProfiles" WHERE "userId" = :userId
-      )
-        AND (
-          (type = 'profile' AND "configVersion" = :configVersionProfile)
-          OR (type = 'needs' AND "configVersion" = :configVersionNeeds)
-        )
+  private buildTopByProfileCTE(
+    rolesPlaceholder: string,
+    profileVector: string | null,
+    excludeClause: string
+  ): string {
+    if (!profileVector) {
+      return `top_by_profile AS (
+        SELECT NULL::uuid AS "userId", 0::float AS profile_score WHERE false
+      )`;
+    }
+
+    const vec = `'${profileVector}'::vector`;
+
+    return `top_by_profile AS (
+      SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS profile_score
+      FROM "UserProfileEmbeddings" upe
+      JOIN "UserProfiles" up ON up.id = upe."userProfileId"
+      JOIN "Users" u          ON u.id  = up."userId"
+      WHERE upe.type = 'profile'
+        AND upe."configVersion"   = :configVersionProfile
+        AND up."isAvailable"      = true
+        AND u."deletedAt"         IS NULL
+        AND u.id                  != :userId
+        AND u.role                IN (${rolesPlaceholder})
+        AND u."onboardingStatus"  = :onboardingStatusCompleted
+        ${excludeClause}
+      ORDER BY upe.embedding <=> ${vec}
+      LIMIT :annPoolSize
     )`;
   }
 
   /**
-   * CTE to retrieve the current user's profile data
-   * (event preferences and geographic zone)
+   * CTE: top ANN candidates by needs embedding similarity.
+   * Uses ORDER BY <=> LIMIT to trigger the HNSW index.
+   * Returns an empty set when the current user has no needs vector.
+   */
+  private buildTopByNeedsCTE(
+    rolesPlaceholder: string,
+    needsVector: string | null,
+    excludeClause: string
+  ): string {
+    if (!needsVector) {
+      return `top_by_needs AS (
+        SELECT NULL::uuid AS "userId", 0::float AS needs_score WHERE false
+      )`;
+    }
+
+    const vec = `'${needsVector}'::vector`;
+
+    return `top_by_needs AS (
+      SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS needs_score
+      FROM "UserProfileEmbeddings" upe
+      JOIN "UserProfiles" up ON up.id = upe."userProfileId"
+      JOIN "Users" u          ON u.id  = up."userId"
+      WHERE upe.type = 'needs'
+        AND upe."configVersion"   = :configVersionNeeds
+        AND up."isAvailable"      = true
+        AND u."deletedAt"         IS NULL
+        AND u.id                  != :userId
+        AND u.role                IN (${rolesPlaceholder})
+        AND u."onboardingStatus"  = :onboardingStatusCompleted
+        ${excludeClause}
+      ORDER BY upe.embedding <=> ${vec}
+      LIMIT :annPoolSize
+    )`;
+  }
+
+  /**
+   * CTE: merges both ANN pools into a single candidate pool (~200 entries).
+   * A FULL OUTER JOIN ensures candidates that appear in only one pool are kept.
+   */
+  private buildCandidatePoolCTE(): string {
+    return `candidate_pool AS (
+      SELECT
+        COALESCE(p."userId", n."userId") AS "userId",
+        COALESCE(p.profile_score, 0)     AS profile_score,
+        COALESCE(n.needs_score, 0)       AS needs_score
+      FROM top_by_profile p
+      FULL OUTER JOIN top_by_needs n ON n."userId" = p."userId"
+    )`;
+  }
+
+  /**
+   * CTE: computes all scores for the candidates in candidate_pool.
+   * The activity subquery is restricted to this pool to avoid scanning
+   * conversation data for the entire user base.
+   */
+  private buildUserScoresCTE(): string {
+    return `user_scores AS (
+      SELECT
+        cand."userId",
+        cand.profile_score,
+        cand.needs_score,
+        ${this.buildActivityScoreFormula()},
+        ${this.buildLocationCompatibilityScoreFormula()}
+      FROM candidate_pool cand
+      JOIN "UserProfiles" up ON up."userId" = cand."userId"
+      JOIN "Users" u         ON u.id        = cand."userId"
+      ${this.buildCurrentUserProfileDataCTE()}
+      ${this.buildActivitySubquery()}
+      WHERE (
+        (current_user_data.current_allow_remote = true AND up."allowRemoteEvents" = true)
+        OR u.zone = current_user_data.current_zone
+      )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "ConversationParticipants" cp_cur
+        JOIN "ConversationParticipants" cp_oth
+          ON cp_oth."conversationId" = cp_cur."conversationId"
+         AND cp_oth."userId"         = cand."userId"
+        WHERE cp_cur."userId" = :userId
+      )
+    )`;
+  }
+
+  /**
+   * Inlined subquery that provides the current user's event preferences and zone.
    */
   private buildCurrentUserProfileDataCTE(): string {
     return `CROSS JOIN (
       SELECT
         up_current."allowPhysicalEvents" AS current_allow_physical,
-        up_current."allowRemoteEvents" AS current_allow_remote,
-        u_current.zone AS current_zone
+        up_current."allowRemoteEvents"   AS current_allow_remote,
+        u_current.zone                   AS current_zone
       FROM "UserProfiles" up_current
       JOIN "Users" u_current ON up_current."userId" = u_current.id
       WHERE up_current."userId" = :userId
@@ -124,88 +307,13 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   }
 
   /**
-   * CTE to calculate all candidate user scores
-   */
-  private buildUserScoresCTE(rolesPlaceholder: string): string {
-    return `user_scores AS (
-      SELECT
-        u.id AS "userId",
-        ${this.buildProfileScoreFormula()},
-        ${this.buildNeedsScoreFormula()},
-        ${this.buildActivityScoreFormula()},
-        ${this.buildLocationCompatibilityScoreFormula()}
-      FROM "UserProfileEmbeddings" upe
-      JOIN "UserProfiles" up ON upe."userProfileId" = up.id
-      JOIN "Users" u         ON up."userId" = u.id
-      CROSS JOIN current_user_embeddings cue
-      ${this.buildCurrentUserProfileDataCTE()}
-      ${this.buildActivitySubquery()}
-      WHERE up."isAvailable"          = true
-        AND u."deletedAt"             IS NULL
-        AND u.id                      != :userId
-        AND u.role                    IN (${rolesPlaceholder})
-        AND u."onboardingStatus"      = :onboardingStatusCompleted
-        AND (
-          (upe.type = 'profile' AND upe."configVersion" = :configVersionProfile)
-          OR (upe.type = 'needs' AND upe."configVersion" = :configVersionNeeds)
-        )
-        -- Geographic filter: only allow different zones if both users accept remote events
-        AND (
-          (current_user_data.current_allow_remote = true AND up."allowRemoteEvents" = true)
-          OR u.zone = current_user_data.current_zone
-        )
-        -- Exclude users that have already been contacted by current user
-        AND u.id NOT IN (
-          SELECT cp_other."userId"
-          FROM "Conversations" c
-          JOIN "ConversationParticipants" cp_current ON cp_current."conversationId" = c.id
-          JOIN "ConversationParticipants" cp_other ON cp_other."conversationId" = c.id
-          WHERE cp_current."userId" = :userId
-            AND cp_other."userId" != :userId
-        )
-      GROUP BY
-        u.id, u.zone, u."lastConnection",
-        up."hasPicture", up."hasExternalCv", up."linkedinUrl", up.description, up.introduction,
-        up."allowPhysicalEvents", up."allowRemoteEvents",
-        current_user_data.current_allow_physical, current_user_data.current_allow_remote, current_user_data.current_zone,
-        activity.response_rate, activity.avg_response_hours, activity.active_conversations_count
-    )`;
-  }
-
-  /**
-   * Formula for calculating profile similarity score
-   */
-  private buildProfileScoreFormula(): string {
-    return `(
-      MAX(CASE
-        WHEN upe.type = 'profile' AND cue.type = 'profile'
-        THEN 1 - (upe.embedding <=> cue.embedding)
-        ELSE 0
-      END) 
-    ) AS profile_score`;
-  }
-
-  /**
-   * Formula for calculating needs similarity score
-   */
-  private buildNeedsScoreFormula(): string {
-    return `MAX(CASE
-      WHEN upe.type = 'needs' AND cue.type = 'needs'
-      THEN 1 - (upe.embedding <=> cue.embedding)
-      ELSE 0
-    END) AS needs_score`;
-  }
-
-  /**
-   * Formula for calculating activity score
-   * Based on: response rate, response time, last connection, workload
-   * Uses ACTIVITY_SCORING_CONFIG configuration for all parameters
+   * Formula for calculating activity score.
+   * Based on: response rate, response time, last connection, workload.
    */
   private buildActivityScoreFormula(): string {
     const config = ACTIVITY_SCORING_CONFIG;
     const weights = config.weights;
 
-    // Generate CASE WHEN conditions for response time
     const responseTimeCases = config.responseTime.breakpoints
       .map((bp, idx, arr) => {
         if (idx === arr.length - 1) {
@@ -215,7 +323,6 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       })
       .join('\n');
 
-    // Generate CASE WHEN conditions for last connection
     const lastConnectionCases = config.lastConnection.breakpoints
       .map((bp, idx, arr) => {
         if (idx === arr.length - 1) {
@@ -225,7 +332,6 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       })
       .join('\n');
 
-    // Generate CASE WHEN conditions for workload
     const workloadCases = config.workload.breakpoints
       .map((bp, idx, arr) => {
         if (idx === arr.length - 1) {
@@ -235,11 +341,6 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       })
       .join('\n');
 
-    // Final weighted formula:
-    // - Response rate (weights.responseRate): favors users who respond frequently
-    // - Response time (weights.responseTime): favors quick responses
-    // - Last connection (weights.lastConnection): favors recently active users
-    // - Workload factor (weights.workload): penalizes already heavily solicited users
     return `LEAST(1.0, GREATEST(0.0,
       COALESCE(activity.response_rate, ${config.responseRate.defaultValue}) * ${weights.responseRate} +
       CASE
@@ -257,9 +358,7 @@ ${workloadCases}
   }
 
   /**
-   * Formula for calculating location compatibility score
-   * Simply rewards users in the same geographic zone
-   * Note: Geographic incompatibilities are already filtered by the WHERE clause
+   * Formula for calculating location compatibility score.
    */
   private buildLocationCompatibilityScoreFormula(): string {
     const config = LOCATION_COMPATIBILITY_CONFIG;
@@ -271,68 +370,66 @@ ${workloadCases}
   }
 
   /**
-   * Subquery to calculate user activity statistics
-   * (response rate, average response time, last connection, active conversations count)
-   * Goal is to balance workload to avoid overloading the most responsive users
-   * Uses ACTIVITY_SCORING_CONFIG.timeWindowDays for the time window
-   * Excludes conversations with Admin users (welcome messages, etc.)
+   * Subquery to calculate user activity statistics restricted to candidate_pool,
+   * avoiding a full scan of all conversations.
+   *
+   * active_conversations_count uses COUNT(DISTINCT c.id) directly: since the
+   * outer WHERE already filters conversations created within the time window,
+   * any such conversation necessarily has messages within that same window.
    */
   private buildActivitySubquery(): string {
     const timeWindowDays = ACTIVITY_SCORING_CONFIG.timeWindowDays;
 
     return `LEFT JOIN (
       SELECT
-        cp_receiver.\"userId\" AS user_id,
+        cp_receiver."userId" AS user_id,
         COUNT(CASE WHEN response.id IS NOT NULL THEN 1 END)::float
           / NULLIF(COUNT(DISTINCT c.id), 0) AS response_rate,
         AVG(
-          EXTRACT(EPOCH FROM (response.\"createdAt\" - first_msg.\"createdAt\")) / 3600
+          EXTRACT(EPOCH FROM (response."createdAt" - first_msg."createdAt")) / 3600
         ) AS avg_response_hours,
-        COUNT(DISTINCT CASE 
-          WHEN EXISTS (
-            SELECT 1 FROM \"Messages\" m_recent
-            WHERE m_recent.\"conversationId\" = c.id
-              AND m_recent.\"createdAt\" >= NOW() - INTERVAL '${timeWindowDays} days'
-          ) THEN c.id 
-          ELSE NULL 
-        END) AS active_conversations_count
-      FROM \"Conversations\" c
-      JOIN \"ConversationParticipants\" cp_receiver ON cp_receiver.\"conversationId\" = c.id
-      JOIN \"ConversationParticipants\" cp_other ON cp_other.\"conversationId\" = c.id
-        AND cp_other.\"userId\" != cp_receiver.\"userId\"
-      JOIN \"Users\" u_other ON u_other.id = cp_other.\"userId\"
+        COUNT(DISTINCT c.id) AS active_conversations_count
+      FROM "Conversations" c
+      JOIN "ConversationParticipants" cp_receiver
+        ON cp_receiver."conversationId" = c.id
+        AND cp_receiver."userId" IN (SELECT "userId" FROM candidate_pool)
+      JOIN "ConversationParticipants" cp_other
+        ON cp_other."conversationId" = c.id
+       AND cp_other."userId" != cp_receiver."userId"
+      JOIN "Users" u_other ON u_other.id = cp_other."userId"
       JOIN LATERAL (
-        SELECT m.\"createdAt\", m.id
-        FROM \"Messages\" m
-        JOIN \"ConversationParticipants\" cp ON cp.\"conversationId\" = c.id
-        WHERE m.\"conversationId\" = c.id
-          AND cp.\"userId\" != cp_receiver.\"userId\"
-        ORDER BY m.\"createdAt\" ASC
+        SELECT m."createdAt", m.id
+        FROM "Messages" m
+        JOIN "ConversationParticipants" cp
+          ON cp."conversationId" = c.id
+         AND cp."userId" != cp_receiver."userId"
+        WHERE m."conversationId" = c.id
+        ORDER BY m."createdAt" ASC
         LIMIT 1
       ) first_msg ON true
       LEFT JOIN LATERAL (
-        SELECT m.\"createdAt\", m.id
-        FROM \"Messages\" m
-        WHERE m.\"conversationId\" = c.id
-          AND m.\"authorId\" = cp_receiver.\"userId\"
-          AND m.\"createdAt\" > first_msg.\"createdAt\"
-        ORDER BY m.\"createdAt\" ASC
+        SELECT m."createdAt", m.id
+        FROM "Messages" m
+        WHERE m."conversationId" = c.id
+          AND m."authorId"       = cp_receiver."userId"
+          AND m."createdAt"      > first_msg."createdAt"
+        ORDER BY m."createdAt" ASC
         LIMIT 1
       ) response ON true
-      WHERE c.\"createdAt\" >= NOW() - INTERVAL '${timeWindowDays} days'
+      WHERE c."createdAt" >= NOW() - INTERVAL '${timeWindowDays} days'
         AND u_other.role != 'Admin'
-      GROUP BY cp_receiver.\"userId\"
-    ) activity ON activity.user_id = u.id`;
+      GROUP BY cp_receiver."userId"
+    ) activity ON activity.user_id = cand."userId"`;
   }
 
   /**
-   * Final query that selects and combines all scores
+   * Final select that combines all scores into a weighted final score.
    */
   private buildFinalSelect(): string {
     return `SELECT
       "userId",
       profile_score             AS "profileScore",
-      needs_score                AS "needsScore",
+      needs_score               AS "needsScore",
       activity_score            AS "activityScore",
       location_compatibility_score AS "locationCompatibilityScore",
       ${this.buildFinalScoreFormula()}
@@ -343,13 +440,13 @@ ${workloadCases}
   }
 
   /**
-   * Formula for calculating the final weighted score
+   * Formula for calculating the final weighted score.
    */
   private buildFinalScoreFormula(): string {
     return `(
-      profile_score             * :weightProfile             +
-      needs_score                * :weightNeeds                +
-      activity_score            * :weightActivity            +
+      profile_score                * :weightProfile             +
+      needs_score                  * :weightNeeds               +
+      activity_score               * :weightActivity            +
       location_compatibility_score * :weightLocationCompatibility
     ) AS "finalScore"`;
   }
@@ -364,7 +461,7 @@ ${workloadCases}
    *
    * With a single result: falls back to the absolute system (highest weighted score).
    */
-  private computeRelativeReasons(
+  protected computeRelativeReasons(
     scoringResults: UserProfileScoringResult[]
   ): UserProfileMatchingResult[] {
     if (scoringResults.length === 0) return [];
@@ -425,8 +522,93 @@ ${workloadCases}
   }
 
   /**
-   * Generates recommendations for a user using vector embeddings
-   * This method uses cosine similarity to find the most similar profiles
+   * Ensures a fresh recommendation pool exists for the user.
+   * Triggers a full recompute when the pool is stale, empty, or contains
+   * legacy records (no rank / no finalScore).
+   */
+  async ensureFreshPool(user: User, userProfile: UserProfile): Promise<void> {
+    const oneWeekAgo = moment().subtract(1, 'week');
+
+    const currentRecos = await this.findRecommendationsByUserId(user.id);
+
+    /**
+     * Conditions for refreshing the pool:
+     * - No previous recommendations date (first time)
+     * - Last recommendations are older than 1 week
+     * - No recommendations currently stored
+     * - At least one recommended profile is no longer available
+     * - At least one recommended profile is now deleted
+     * - At least one recommendation is from the legacy system (finalScore is null or rank is null)
+     */
+    const needsRefresh =
+      !userProfile.lastRecommendationsDate ||
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
+      currentRecos.length === 0 ||
+      currentRecos.some((r) => !r?.recUser?.userProfile?.isAvailable) ||
+      currentRecos.some((r) => r.deletedAt !== null) ||
+      currentRecos.some((r) => r.finalScore === null || r.rank === null);
+
+    /**
+     * If any of the above conditions are met, we refresh the pool by deleting existing recommendations and computing a new set. We also update the lastRecommendationsDate to now.
+     * This ensures that users always see up-to-date and relevant recommendations when they access their pool.
+     * The check for availability and legacy records ensures that we don't show users recommendations that are no longer valid or from an outdated system, which could lead to a poor user experience.
+     */
+    if (needsRefresh) {
+      await this.removeRecommendationsByUserId(user.id);
+      await this.updateRecommendationsByUserId(user.id, INITIAL_POOL_SIZE);
+      await this.userProfilesService.updateByUserId(user.id, {
+        lastRecommendationsDate: moment().toDate(),
+      });
+    }
+  }
+
+  /**
+   * Appends the next batch of recommendations for a user, excluding those
+   * already stored. Meant to be called in the background when the user
+   * nears the end of their current pool (infinite scroll refill).
+   */
+  async appendRecommendationsForUserId(
+    userId: string,
+    batchSize: number
+  ): Promise<void> {
+    const stored = await this.getStoredRecommendationsMeta(userId);
+    if (stored.length === 0) return;
+
+    const excludeUserIds = stored.map((r) => r.recommendedUserId);
+    const maxRank = Math.max(...stored.map((r) => r.rank ?? 0));
+
+    const user = await this.userProfilesService.findOneUser(userId);
+    const rolesToFind: UserRole[] =
+      user.role === UserRoles.CANDIDATE
+        ? [UserRoles.COACH]
+        : [UserRoles.CANDIDATE];
+
+    const scoringResults = await this.findBySimilarity({
+      userId,
+      rolesToFind,
+      configVersionProfile: EMBEDDING_CONFIG.profile.version,
+      configVersionNeeds: EMBEDDING_CONFIG.needs.version,
+      weightProfile: SCORING_WEIGHTS.profile,
+      weightNeeds: SCORING_WEIGHTS.needs,
+      weightActivity: SCORING_WEIGHTS.activity,
+      weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
+      poolSize: batchSize,
+      excludeUserIds,
+    });
+
+    if (scoringResults.length === 0) return;
+
+    const matchingResults = this.computeRelativeReasons(scoringResults);
+    await this.createRecommendationsFromUserProfileMatchingResult(
+      userId,
+      matchingResults,
+      maxRank + 1
+    );
+  }
+
+  /**
+   * Generates recommendations for a user using vector embeddings.
+   * This method uses cosine similarity to find the most similar profiles.
    * @param userId The user ID for which to generate recommendations
    * @returns The recommendations created for the user
    */
@@ -434,16 +616,13 @@ ${workloadCases}
     userId: string,
     poolSize = 3
   ): Promise<UserProfileRecommendation[]> {
-    // Retrieve user and profile data
     const user = await this.userProfilesService.findOneUser(userId);
 
-    // Compute mirror roles to find (coaches for candidates, candidates for coaches)
     const rolesToFind: UserRole[] =
       user.role === UserRoles.CANDIDATE
         ? [UserRoles.COACH]
         : [UserRoles.CANDIDATE];
 
-    // Compute similarity scores for potential matches
     const scoringResults = await this.findBySimilarity({
       userId,
       rolesToFind: rolesToFind,
@@ -456,10 +635,8 @@ ${workloadCases}
       poolSize,
     });
 
-    // Assign reasons based on relative comparison between recommendations
     const matchingResults = this.computeRelativeReasons(scoringResults);
 
-    // Store top recommendations in the database
     return this.createRecommendationsFromUserProfileMatchingResult(
       userId,
       matchingResults

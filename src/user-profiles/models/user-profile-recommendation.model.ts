@@ -71,6 +71,10 @@ export class UserProfileRecommendation extends Model {
   @Column(DataType.FLOAT)
   finalScore: number | null;
 
+  @AllowNull(true)
+  @Column(DataType.INTEGER)
+  rank: number | null;
+
   @BelongsTo(() => User, {
     foreignKey: 'recommendedUserId',
     as: 'recUser',

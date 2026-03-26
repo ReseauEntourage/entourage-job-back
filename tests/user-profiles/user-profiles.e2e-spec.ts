@@ -2400,7 +2400,7 @@ describe('UserProfiles', () => {
           .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(
+        expect(response.body.recommendations).toEqual(
           usersToRecommend.map((user) =>
             expect.objectContaining({
               publicProfile: expect.objectContaining(
@@ -2513,7 +2513,7 @@ describe('UserProfiles', () => {
           .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(
+        expect(response.body.recommendations).toEqual(
           usersToRecommend.map((user) =>
             expect.objectContaining({
               publicProfile: expect.objectContaining(
@@ -2942,7 +2942,7 @@ describe('UserProfiles', () => {
           .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCoach.token}`);
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(
+        expect(response.body.recommendations).toEqual(
           newUsersToRecommend.map((user) =>
             expect.objectContaining({
               publicProfile: expect.objectContaining(
@@ -3008,7 +3008,7 @@ describe('UserProfiles', () => {
           .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(
+        expect(response.body.recommendations).toEqual(
           usersToRecommend.map((user) =>
             expect.objectContaining({
               publicProfile: expect.objectContaining(
@@ -3123,7 +3123,7 @@ describe('UserProfiles', () => {
           .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
-        expect(response.body).toEqual(
+        expect(response.body.recommendations).toEqual(
           usersToRecommend.map((user) =>
             expect.objectContaining({
               publicProfile: expect.objectContaining(
@@ -3561,8 +3561,10 @@ describe('UserProfiles', () => {
           .get(`${route}/profile/recommendations`)
           .set('authorization', `Bearer ${loggedInCandidate.token}`);
         expect(response.status).toBe(200);
-        expect(response.body.length).toBe(newUsersToRecommend.length);
-        expect(response.body).toEqual(
+        expect(response.body.recommendations.length).toBe(
+          newUsersToRecommend.length
+        );
+        expect(response.body.recommendations).toEqual(
           newUsersToRecommend.map((user) =>
             expect.objectContaining({
               publicProfile: expect.objectContaining(

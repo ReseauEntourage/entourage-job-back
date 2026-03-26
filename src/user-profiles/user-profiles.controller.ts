@@ -5,6 +5,7 @@ import {
   DefaultValuePipe,
   Get,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -40,8 +41,11 @@ import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
-import { RecommendationsDto } from './recommendations/dto/recommendations.dto';
-import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
+import { RecommendationsPageDto } from './recommendations/dto/recommendations.dto';
+import {
+  APPEND_BATCH_SIZE,
+  UserProfileRecommendationsService,
+} from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
 
@@ -49,6 +53,11 @@ import { ContactTypeEnum } from './user-profiles.types';
 @ApiBearerAuth()
 @Controller('user/profile')
 export class UserProfilesController {
+  private readonly logger = new Logger(UserProfilesController.name);
+
+  // Trigger background refill when the user has consumed this fraction of stored results.
+  private readonly RECOMMENDATION_REFILL_THRESHOLD = 0.8;
+
   constructor(
     private readonly userProfilesService: UserProfilesService,
     private readonly userProfileRecommendationsService: UserProfileRecommendationsService
@@ -75,6 +84,7 @@ export class UserProfilesController {
     const user = this.userProfilesService.findOneUser(userId);
 
     if (!user) {
+      this.logger.warn(`User not found: ${userId}`);
       throw new NotFoundException();
     }
 
@@ -105,6 +115,9 @@ export class UserProfilesController {
 
     // Check users exists
     if (!userReported || !userReporter) {
+      this.logger.warn(
+        `User not found: reported=${userId}, reporter=${currentUserId}`
+      );
       throw new NotFoundException();
     }
 
@@ -228,8 +241,10 @@ export class UserProfilesController {
 
   @Get('/recommendations')
   async findRecommendationsByUserId(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
-  ): Promise<RecommendationsDto> {
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('cursor', new DefaultValuePipe(0), ParseIntPipe) cursor: number
+  ): Promise<RecommendationsPageDto> {
     const user = await this.userProfilesService.findOneUser(userId);
     const userProfile = await this.userProfilesService.findOneByUserId(userId);
 
@@ -237,11 +252,61 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    return this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+    // Ensure a fresh pool exists (recomputes if stale/empty/legacy).
+    await this.userProfileRecommendationsService.ensureFreshPool(
       user,
-      userProfile,
-      3
+      userProfile
     );
+
+    // Fetch one extra item to detect if there are more results beyond this page.
+    const rows =
+      await this.userProfileRecommendationsService.findRecommendationsByUserId(
+        userId,
+        { limit: limit + 1, cursor }
+      );
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const lastRank = page.length > 0 ? page[page.length - 1].rank : null;
+    const nextCursor = hasMore ? lastRank : null;
+
+    // Trigger background refill when the user is nearing the end of the stored pool.
+    const storedCount =
+      await this.userProfileRecommendationsService.countRecommendationsByUserId(
+        userId
+      );
+    if (cursor + limit >= storedCount * this.RECOMMENDATION_REFILL_THRESHOLD) {
+      this.userProfileRecommendationsService
+        .appendRecommendationsForUserId(userId, APPEND_BATCH_SIZE)
+        .catch((err) =>
+          this.logger.error(`Recommendation refill failed for ${userId}:`, err)
+        );
+    }
+
+    const recommendations = page.map((recoProfile) => {
+      const publicProfile = generatePublicProfileDto(
+        recoProfile.recUser,
+        recoProfile.recUser.userProfile,
+        null
+      );
+      if (!publicProfile) {
+        throw new InternalServerErrorException(
+          `Failed to generate public profile for user ${recoProfile.recUser.id}`
+        );
+      }
+      return {
+        id: recoProfile.id,
+        publicProfile,
+        reason: recoProfile.reason,
+        profileScore: recoProfile.profileScore,
+        needsScore: recoProfile.needsScore,
+        activityScore: recoProfile.activityScore,
+        locationCompatibilityScore: recoProfile.locationCompatibilityScore,
+        finalScore: recoProfile.finalScore,
+      };
+    });
+
+    return { recommendations, nextCursor };
   }
 
   // Only for admin users to get recommendations for any user, not only themselves
