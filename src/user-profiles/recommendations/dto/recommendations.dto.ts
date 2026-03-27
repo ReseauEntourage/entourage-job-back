@@ -15,3 +15,13 @@ export type RecommendationDto = Pick<
 };
 
 export type RecommendationsDto = RecommendationDto[];
+
+/**
+ * Paginated response for infinite scroll.
+ * `nextCursor` is the rank value to pass as `cursor` in the next request.
+ * `null` means there are no more results currently stored.
+ */
+export type RecommendationsPageDto = {
+  recommendations: RecommendationDto[];
+  nextCursor: number | null;
+};
