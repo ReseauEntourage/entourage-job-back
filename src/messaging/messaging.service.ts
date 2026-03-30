@@ -17,7 +17,10 @@ import { UserRoles } from 'src/users/users.types';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
-import { userAttributes } from './messaging.attributes';
+import {
+  userAttributes,
+  userAttributesWithDeletedAt,
+} from './messaging.attributes';
 import {
   ErrorMessagingCantParticipate,
   ErrorMessagingInvalidMessage,
@@ -339,25 +342,45 @@ export class MessagingService {
                 as: 'messages',
                 attributes: ['createdAt'],
               },
+              {
+                model: User,
+                as: 'participants',
+                attributes: userAttributesWithDeletedAt,
+                paranoid: false,
+                through: { attributes: [] },
+              },
             ],
           },
         ],
       }
     );
-    const useenConversationIds = unseenConversations.map(
-      (c) => c.conversationId
-    );
+
+    const unseenConversationIds = unseenConversations
+      .filter((cp) => {
+        const otherParticipants = cp.conversation.participants.filter(
+          (p) => p.id !== userId
+        );
+        return otherParticipants.some((p) => p.deletedAt === null);
+      })
+      .map((c) => c.conversationId);
 
     const userConversations = await this.getConversationsForUser(userId);
 
     // extract conversation ids where conversation.shouldGiveFeedback is true
+    // and at least one other participant is not deleted
     const conversationsWithFeedbackRequired = userConversations
-      .filter((conv) => conv.shouldGiveFeedback)
+      .filter((conv) => {
+        if (!conv.shouldGiveFeedback) return false;
+        const otherParticipants = (
+          conv.participants as Array<{ id: string; deletedAt: string | null }>
+        ).filter((p) => p.id !== userId);
+        return otherParticipants.some((p) => p.deletedAt === null);
+      })
       .map((conv) => conv.id);
 
-    // count unique conversations ids in unseenConversationIds ad conversationsWithFeedbackRequired
+    // count unique conversations ids in unseenConversationIds and conversationsWithFeedbackRequired
     return new Set([
-      ...useenConversationIds,
+      ...unseenConversationIds,
       ...conversationsWithFeedbackRequired,
     ]).size;
   }

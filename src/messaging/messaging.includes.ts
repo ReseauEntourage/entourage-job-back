@@ -7,6 +7,7 @@ import {
   messageAttributes,
   conversationParticipantAttributes,
   userAttributes,
+  userAttributesWithDeletedAt,
   userProfileAttributes,
 } from './messaging.attributes';
 import { Conversation, Message } from './models';
@@ -45,7 +46,7 @@ export const messagingConversationIncludes = (
     {
       model: User,
       as: 'participants',
-      attributes: userAttributes,
+      attributes: userAttributesWithDeletedAt,
       paranoid: false,
       through: {
         attributes: conversationParticipantAttributes,
