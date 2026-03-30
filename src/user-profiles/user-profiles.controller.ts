@@ -148,7 +148,9 @@ export class UserProfilesController {
     @Query('contactTypes')
     contactTypes: ContactTypeEnum[],
     @Query('isAvailable')
-    isAvailableQuery?: string
+    isAvailableQuery?: string,
+    @Query('sort')
+    sort?: string
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -171,23 +173,30 @@ export class UserProfilesController {
       throw new BadRequestException();
     }
 
+    const isAvailable =
+      isAvailableQuery === 'true'
+        ? true
+        : isAvailableQuery === 'false'
+        ? false
+        : undefined;
+
+    const filters = {
+      role,
+      offset,
+      limit,
+      search,
+      nudgeIds,
+      departments,
+      businessSectorIds,
+      contactTypes,
+      isAvailable,
+    };
+
     try {
-      return this.userProfilesService.findAll({
-        role,
-        offset,
-        limit,
-        search,
-        nudgeIds,
-        departments,
-        businessSectorIds,
-        contactTypes,
-        isAvailable:
-          isAvailableQuery === 'true'
-            ? true
-            : isAvailableQuery === 'false'
-            ? false
-            : undefined,
-      });
+      if (sort === 'relevance') {
+        return this.userProfilesService.findAllByRelevance(filters, userId);
+      }
+      return this.userProfilesService.findAll(filters);
     } catch (error) {
       console.error('Error in findAll:', error);
       throw new InternalServerErrorException();

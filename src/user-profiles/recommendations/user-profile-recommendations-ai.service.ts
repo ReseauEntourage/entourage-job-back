@@ -54,6 +54,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     weightLocationCompatibility: number;
     poolSize: number;
     excludeUserIds?: string[];
+    filterByAvailability?: boolean;
+    annPoolSize?: number;
   }): Promise<UserProfileScoringResult[]> {
     const {
       userId,
@@ -66,6 +68,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       weightLocationCompatibility,
       poolSize,
       excludeUserIds = [],
+      filterByAvailability = false,
+      annPoolSize = ANN_POOL_SIZE,
     } = params;
 
     // Fetch the current user's raw vectors first so the main query can use
@@ -82,7 +86,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       rolesToFind,
       profileVector,
       needsVector,
-      excludeUserIds
+      excludeUserIds,
+      filterByAvailability
     );
 
     return this.userProfileRecommandationModel.sequelize.query<UserProfileScoringResult>(
@@ -99,7 +104,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
           weightActivity,
           weightLocationCompatibility,
           poolSize,
-          annPoolSize: ANN_POOL_SIZE,
+          annPoolSize,
         },
       }
     );
@@ -146,7 +151,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesToFind: UserRole[],
     profileVector: string | null,
     needsVector: string | null,
-    excludeUserIds: string[] = []
+    excludeUserIds: string[] = [],
+    filterByAvailability = false
   ): string {
     const rolesPlaceholder = rolesToFind.map((r) => `'${r}'`).join(', ');
     // Safe to interpolate: values are UUIDs coming from our own DB
@@ -162,9 +168,15 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       ${this.buildTopByProfileCTE(
         rolesPlaceholder,
         profileVector,
-        excludeClause
+        excludeClause,
+        filterByAvailability
       )},
-      ${this.buildTopByNeedsCTE(rolesPlaceholder, needsVector, excludeClause)},
+      ${this.buildTopByNeedsCTE(
+        rolesPlaceholder,
+        needsVector,
+        excludeClause,
+        filterByAvailability
+      )},
       ${this.buildCandidatePoolCTE()},
       ${this.buildUserScoresCTE()}
       ${this.buildFinalSelect()}
@@ -179,7 +191,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   private buildTopByProfileCTE(
     rolesPlaceholder: string,
     profileVector: string | null,
-    excludeClause: string
+    excludeClause: string,
+    filterByAvailability = false
   ): string {
     if (!profileVector) {
       return `top_by_profile AS (
@@ -188,6 +201,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     }
 
     const vec = `'${profileVector}'::vector`;
+    const availabilityClause = filterByAvailability
+      ? `AND up."isAvailable" = true`
+      : '';
 
     return `top_by_profile AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS profile_score
@@ -196,7 +212,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       JOIN "Users" u          ON u.id  = up."userId"
       WHERE upe.type = 'profile'
         AND upe."configVersion"   = :configVersionProfile
-        AND up."isAvailable"      = true
+        ${availabilityClause}
         AND u."deletedAt"         IS NULL
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
@@ -215,7 +231,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   private buildTopByNeedsCTE(
     rolesPlaceholder: string,
     needsVector: string | null,
-    excludeClause: string
+    excludeClause: string,
+    filterByAvailability = false
   ): string {
     if (!needsVector) {
       return `top_by_needs AS (
@@ -224,6 +241,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     }
 
     const vec = `'${needsVector}'::vector`;
+    const availabilityClause = filterByAvailability
+      ? `AND up."isAvailable" = true`
+      : '';
 
     return `top_by_needs AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS needs_score
@@ -232,7 +252,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       JOIN "Users" u          ON u.id  = up."userId"
       WHERE upe.type = 'needs'
         AND upe."configVersion"   = :configVersionNeeds
-        AND up."isAvailable"      = true
+        ${availabilityClause}
         AND u."deletedAt"         IS NULL
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
@@ -600,6 +620,7 @@ ${workloadCases}
       weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
       poolSize: batchSize,
       excludeUserIds,
+      filterByAvailability: true,
     });
 
     if (scoringResults.length === 0) return;
@@ -639,6 +660,7 @@ ${workloadCases}
       weightActivity: SCORING_WEIGHTS.activity,
       weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
       poolSize,
+      filterByAvailability: true,
     });
 
     const matchingResults = this.computeRelativeReasons(scoringResults);
