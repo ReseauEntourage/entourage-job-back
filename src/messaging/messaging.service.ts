@@ -444,12 +444,30 @@ export class MessagingService {
     const reporterUser = await this.usersService.findOneWithRelations(
       reporterUserId
     );
+    const reportedParticipantIds = conversation.participants
+      .filter((participant) => participant.id !== reporterUserId)
+      .map((participant) => participant.id);
+    const reportedUsers = await Promise.all(
+      reportedParticipantIds.map((id) =>
+        this.usersService.findOneWithRelations(id)
+      )
+    );
+    const referentSlackUserIds = (
+      await Promise.all(
+        reportedUsers
+          .map((user) => user?.staffContact?.slackEmail)
+          .filter(Boolean)
+          .filter((email, index, self) => self.indexOf(email) === index)
+          .map((email) => this.slackService.getUserIdByEmail(email))
+      )
+    ).filter(Boolean);
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
         reportConversationDto.reason,
         reportConversationDto.comment,
-        reporterUser
+        reporterUser,
+        referentSlackUserIds
       );
     const slackMessage =
       this.slackService.generateSlackBlockMsg(slackMsgConfig);
