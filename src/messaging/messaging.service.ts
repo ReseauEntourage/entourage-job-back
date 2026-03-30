@@ -18,6 +18,7 @@ import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import {
+  messageAttributes,
   userAttributes,
   userAttributesWithDeletedAt,
 } from './messaging.attributes';
@@ -357,28 +358,62 @@ export class MessagingService {
 
     const unseenConversationIds = unseenConversations
       .filter((cp) => {
-        const otherParticipants = cp.conversation.participants.filter(
-          (p) => p.id !== userId
-        );
+        const participants = cp.conversation?.participants;
+        if (!participants) return false;
+        const otherParticipants = participants.filter((p) => p.id !== userId);
         return otherParticipants.some((p) => p.deletedAt === null);
       })
       .map((c) => c.conversationId);
 
-    const userConversations = await this.getConversationsForUser(userId);
+    // Dedicated internal query for feedback check — keeps deletedAt off public API
+    const feedbackParticipants =
+      await this.conversationParticipantModel.findAll({
+        where: { userId },
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [
+              {
+                model: Message,
+                as: 'messages',
+                attributes: messageAttributes,
+                separate: true,
+                order: [['createdAt', 'DESC']],
+              },
+              {
+                model: User,
+                as: 'participants',
+                attributes: userAttributesWithDeletedAt,
+                paranoid: false,
+                through: { attributes: [] },
+              },
+            ],
+          },
+        ],
+      });
 
     // extract conversation ids where conversation.shouldGiveFeedback is true
     // and at least one other participant is not deleted
-    const conversationsWithFeedbackRequired = userConversations
-      .filter((conv) => {
-        if (!conv.shouldGiveFeedback) return false;
+    const conversationsWithFeedbackRequired = feedbackParticipants
+      .filter((cp) => {
+        if (!cp.conversation) return false;
+        if (
+          !determineIfShoudGiveFeedback(
+            cp.conversation,
+            cp.feedbackRating,
+            cp.feedbackDate
+          )
+        )
+          return false;
         const otherParticipants = (
-          conv.participants as Array<{ id: string; deletedAt: string | null }>
+          cp.conversation.participants as Array<Pick<User, 'id' | 'deletedAt'>>
         ).filter((p) => p.id !== userId);
         return otherParticipants.some((p) => p.deletedAt === null);
       })
-      .map((conv) => conv.id);
+      .map((cp) => cp.conversationId);
 
-    // count unique conversations ids in unseenConversationIds and conversationsWithFeedbackRequired
+    // count unique conversation ids across unseen and feedback-required sets
     return new Set([
       ...unseenConversationIds,
       ...conversationsWithFeedbackRequired,
