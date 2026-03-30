@@ -380,7 +380,9 @@ export class UserProfilesService {
 
     if (scoringResults.length === 0) return [];
 
-    // Step 2 — Filter-eligible user IDs (all pages, no offset/limit)
+    // Step 2 — Filter-eligible user IDs, scoped to similarity candidates only
+    const candidateUserIds = scoringResults.map((r) => r.userId);
+
     const departmentsNames =
       departments && departments.length > 0
         ? await this.departmentsService.mapDepartmentsIdsToFormattedNames(
@@ -428,6 +430,7 @@ export class UserProfilesService {
           as: 'user',
           attributes: ['id'],
           where: {
+            id: { [Op.in]: candidateUserIds },
             role: normalizedRole,
             lastConnection: { [Op.ne]: null },
             onboardingStatus: OnboardingStatus.COMPLETED,
