@@ -60,6 +60,8 @@ import {
   getUserProfileInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
+import { SCORING_WEIGHTS } from './recommendations/scoring.config';
+import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { ContactTypeEnum } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
 
@@ -102,7 +104,9 @@ export class UserProfilesService {
     private interestsService: InterestsService,
     private departmentsService: DepartmentsService,
     private queuesService: QueuesService,
-    private voyageAiService: VoyageAiService
+    private voyageAiService: VoyageAiService,
+    @Inject(forwardRef(() => UserProfileRecommendationsService))
+    private userProfileRecommendationsService: UserProfileRecommendationsService
   ) {}
 
   async findOne(id: string) {
@@ -304,6 +308,193 @@ export class UserProfilesService {
           profile.user.id
         );
 
+        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          id: profile.user.id,
+          averageDelayResponse,
+        };
+      })
+    );
+  }
+
+  /**
+   * Fetches profiles matching the given filters, ordered by semantic similarity
+   * to the requesting user (via vector embeddings + multi-criteria scoring).
+   *
+   * Orchestration:
+   * 1. Call findBySimilarity to get candidates ordered by finalScore DESC.
+   *    Returns [] when the requesting user has no embeddings — method returns [] directly.
+   * 2. Run the standard stage-1 filter query (no offset/limit) to get all eligible userIds.
+   * 3. Intersect similarity results with eligible userIds, preserving finalScore order.
+   * 4. Apply offset/limit pagination on the intersection.
+   * 5. Fetch full profiles for the page, ordered by their position in the similarity results.
+   */
+  async findAllByRelevance(
+    query: {
+      role: UserRole[];
+      offset: number;
+      limit: number;
+      search: string;
+      nudgeIds: string[];
+      departments: string[];
+      businessSectorIds: string[];
+      contactTypes: ContactTypeEnum[];
+      isAvailable?: boolean;
+    },
+    requestingUserId: string
+  ): Promise<PublicProfileDto[]> {
+    const {
+      role,
+      offset,
+      limit,
+      search,
+      nudgeIds,
+      departments,
+      businessSectorIds,
+      contactTypes,
+      isAvailable,
+    } = query;
+
+    // NestJS may return a single string instead of an array when only one value
+    // is passed as a query param — normalize to array before calling .map()
+    const normalizedRole: UserRole[] = Array.isArray(role) ? role : [role];
+
+    // Step 1 — Similarity search
+    const scoringResults =
+      await this.userProfileRecommendationsService.findBySimilarity({
+        userId: requestingUserId,
+        rolesToFind: normalizedRole,
+        configVersionProfile: EMBEDDING_CONFIG.profile.version,
+        configVersionNeeds: EMBEDDING_CONFIG.needs.version,
+        weightProfile: SCORING_WEIGHTS.profile,
+        weightNeeds: SCORING_WEIGHTS.needs,
+        weightActivity: SCORING_WEIGHTS.activity,
+        weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
+        poolSize: 500,
+        annPoolSize: 500,
+        excludeUserIds: [requestingUserId],
+        filterByAvailability: isAvailable,
+      });
+
+    if (scoringResults.length === 0) return [];
+
+    // Step 2 — Filter-eligible user IDs, scoped to similarity candidates only
+    const candidateUserIds = scoringResults.map((r) => r.userId);
+
+    const departmentsNames =
+      departments && departments.length > 0
+        ? await this.departmentsService.mapDepartmentsIdsToFormattedNames(
+            departments
+          )
+        : [];
+
+    const departmentsOptions: WhereOptions<UserProfile> =
+      departmentsNames?.length > 0
+        ? { department: { [Op.or]: departmentsNames } }
+        : {};
+
+    const businessSectorsOptions: WhereOptions<BusinessSector> =
+      businessSectorIds?.length > 0
+        ? { id: { [Op.in]: businessSectorIds } }
+        : {};
+
+    const nudgesOptions: WhereOptions<Nudge> =
+      nudgeIds?.length > 0 ? { id: { [Op.or]: nudgeIds } } : {};
+
+    const contactTypesWhereClause: WhereOptions<UserProfile> | undefined =
+      contactTypes?.includes(ContactTypeEnum.PHYSICAL) ||
+      contactTypes?.includes(ContactTypeEnum.REMOTE)
+        ? {
+            ...(contactTypes.includes(ContactTypeEnum.PHYSICAL) && {
+              allowPhysicalEvents: true,
+            }),
+            ...(contactTypes.includes(ContactTypeEnum.REMOTE) && {
+              allowRemoteEvents: true,
+            }),
+          }
+        : undefined;
+
+    const searchOptions = search
+      ? { [Op.or]: [...userProfileSearchQuery(search)] }
+      : {};
+
+    const filteredProfiles = await this.userProfileModel.findAll({
+      subQuery: false,
+      attributes: ['id'],
+      include: [
+        ...getUserProfileInclude(businessSectorsOptions, nudgesOptions, false),
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id'],
+          where: {
+            id: { [Op.in]: candidateUserIds },
+            role: normalizedRole,
+            lastConnection: { [Op.ne]: null },
+            onboardingStatus: OnboardingStatus.COMPLETED,
+          },
+          required: true,
+        },
+      ],
+      where: {
+        ...searchOptions,
+        ...(contactTypesWhereClause ?? {}),
+        ...(departmentsOptions ?? {}),
+        ...(isAvailable !== undefined ? { isAvailable } : {}),
+      },
+      group: ['UserProfile.id', 'user.id'],
+    });
+
+    const eligibleUserIds = new Set(filteredProfiles.map((p) => p.user.id));
+
+    // Step 3 — Intersect (preserves finalScore order) + Step 4 — Paginate
+    const intersected = scoringResults.filter((r) =>
+      eligibleUserIds.has(r.userId)
+    );
+    const pageResults = intersected.slice(offset, offset + limit);
+
+    if (pageResults.length === 0) return [];
+
+    const pageUserIds = pageResults.map((r) => r.userId);
+
+    // Build a map to retrieve profileId from userId
+    const userIdToProfileId = new Map(
+      filteredProfiles.map((p) => [p.user.id, p.id])
+    );
+    const pageProfileIds = pageUserIds
+      .map((userId) => userIdToProfileId.get(userId))
+      .filter(Boolean) as string[];
+
+    // Step 5 — Fetch full profiles ordered by similarity rank
+    const profiles = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      order: [
+        sequelize.literal(
+          `ARRAY_POSITION(ARRAY[${pageUserIds
+            .map((id) => `'${id}'`)
+            .join(',')}]::uuid[], "user"."id")`
+        ),
+      ],
+      where: {
+        id: { [Op.in]: pageProfileIds },
+      },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+        },
+      ],
+    });
+
+    return Promise.all(
+      profiles.map(async (profile): Promise<PublicProfileDto> => {
+        const averageDelayResponse = await this.getAverageDelayResponse(
+          profile.user.id
+        );
         const { user, ...restProfile }: UserProfile = profile.toJSON();
         return {
           ...user,
