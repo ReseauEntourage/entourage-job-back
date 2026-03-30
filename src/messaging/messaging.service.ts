@@ -444,26 +444,30 @@ export class MessagingService {
     const reporterUser = await this.usersService.findOneWithRelations(
       reporterUserId
     );
-    const reportedParticipantId = conversation.participants.find(
-      (participant) => participant.id !== reporterUserId
-    )?.id;
-    const reportedUser = reportedParticipantId
-      ? await this.usersService.findOneWithRelations(reportedParticipantId)
-      : null;
-    const reportedUserStaffContactSlackEmail =
-      reportedUser?.staffContact?.slackEmail;
-    const referentSlackUserId = reportedUserStaffContactSlackEmail
-      ? await this.slackService.getUserIdByEmail(
-          reportedUserStaffContactSlackEmail
-        )
-      : null;
+    const reportedParticipantIds = conversation.participants
+      .filter((participant) => participant.id !== reporterUserId)
+      .map((participant) => participant.id);
+    const reportedUsers = await Promise.all(
+      reportedParticipantIds.map((id) =>
+        this.usersService.findOneWithRelations(id)
+      )
+    );
+    const referentSlackUserIds = (
+      await Promise.all(
+        reportedUsers
+          .map((user) => user?.staffContact?.slackEmail)
+          .filter(Boolean)
+          .filter((email, index, self) => self.indexOf(email) === index)
+          .map((email) => this.slackService.getUserIdByEmail(email))
+      )
+    ).filter(Boolean);
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
         reportConversationDto.reason,
         reportConversationDto.comment,
         reporterUser,
-        referentSlackUserId
+        referentSlackUserIds
       );
     const slackMessage =
       this.slackService.generateSlackBlockMsg(slackMsgConfig);
