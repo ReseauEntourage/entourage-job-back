@@ -375,7 +375,7 @@ export class UserProfilesService {
         poolSize: 500,
         annPoolSize: 500,
         excludeUserIds: [requestingUserId],
-        filterByAvailability: isAvailable === true,
+        filterByAvailability: isAvailable,
       });
 
     if (scoringResults.length === 0) return [];

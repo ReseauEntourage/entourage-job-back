@@ -68,7 +68,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       weightLocationCompatibility,
       poolSize,
       excludeUserIds = [],
-      filterByAvailability = false,
+      filterByAvailability = undefined,
       annPoolSize = ANN_POOL_SIZE,
     } = params;
 
@@ -152,7 +152,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     profileVector: string | null,
     needsVector: string | null,
     excludeUserIds: string[] = [],
-    filterByAvailability = false
+    filterByAvailability?: boolean
   ): string {
     const rolesPlaceholder = rolesToFind.map((r) => `'${r}'`).join(', ');
     // Safe to interpolate: values are UUIDs coming from our own DB
@@ -192,7 +192,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesPlaceholder: string,
     profileVector: string | null,
     excludeClause: string,
-    filterByAvailability = false
+    filterByAvailability?: boolean
   ): string {
     if (!profileVector) {
       return `top_by_profile AS (
@@ -201,9 +201,12 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     }
 
     const vec = `'${profileVector}'::vector`;
-    const availabilityClause = filterByAvailability
-      ? `AND up."isAvailable" = true`
-      : '';
+    const availabilityClause =
+      filterByAvailability === true
+        ? `AND up."isAvailable" = true`
+        : filterByAvailability === false
+        ? `AND up."isAvailable" = false`
+        : '';
 
     return `top_by_profile AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS profile_score
@@ -232,7 +235,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesPlaceholder: string,
     needsVector: string | null,
     excludeClause: string,
-    filterByAvailability = false
+    filterByAvailability?: boolean
   ): string {
     if (!needsVector) {
       return `top_by_needs AS (
@@ -241,9 +244,12 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     }
 
     const vec = `'${needsVector}'::vector`;
-    const availabilityClause = filterByAvailability
-      ? `AND up."isAvailable" = true`
-      : '';
+    const availabilityClause =
+      filterByAvailability === true
+        ? `AND up."isAvailable" = true`
+        : filterByAvailability === false
+        ? `AND up."isAvailable" = false`
+        : '';
 
     return `top_by_needs AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS needs_score
