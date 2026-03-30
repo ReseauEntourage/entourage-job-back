@@ -7,7 +7,8 @@ export const generateSlackMsgConfigConversationReported = (
   conversation: Conversation,
   reason: string,
   comment: string,
-  reporterUser: User
+  reporterUser: User,
+  referentSlackUserId: string | null
 ): SlackBlockConfig => {
   return {
     title: '🚨 Une conversation a été signalée',
@@ -16,6 +17,14 @@ export const generateSlackMsgConfigConversationReported = (
         title: 'Utilisateur ayant signalé la conversation',
         content: `${reporterUser.firstName} ${reporterUser.lastName} <${reporterUser.email}>`,
       },
+      ...(referentSlackUserId
+        ? [
+            {
+              title: '👮 Référent',
+              content: `<@${referentSlackUserId}>`,
+            },
+          ]
+        : []),
     ],
     msgParts: [
       {
