@@ -165,8 +165,8 @@ export const additionalEventAttributesByEventType: {
 
   // Atelier Entourage Pro
   [EventType.WORKSHOP]: {
-    format: 'Webinaire - En ligne',
-    goal: 'Un atelier animé par un coach de la communauté Entourage Pro pour travailler sur un thème de l’insertion professionnelle.',
+    format: 'En ligne',
+    goal: 'Un atelier animé par un coach de la communauté ou une association partenaire pour travailler sur un thème de l’insertion professionnelle.',
     audience: 'Candidats et coachs de la communauté',
     sequences: [],
   },
@@ -251,5 +251,11 @@ export const convertSalesforceCampaignToEvent = (
     duration: computeEventDurationFromSalesforceCampaign(campaign),
     isParticipating,
     ...additionalEventAttributesByEventType[eventType],
+    ...(eventType === EventType.WORKSHOP && {
+      format:
+        computeModeFromSalesforceCampaign(campaign) === EventMode.ONLINE
+          ? 'En ligne'
+          : 'En présentiel',
+    }),
   };
 };
