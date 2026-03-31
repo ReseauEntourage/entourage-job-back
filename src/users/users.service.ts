@@ -835,6 +835,29 @@ export class UsersService {
     );
   }
 
+  /**
+   * Returns all non-deleted users who have connected to the platform
+   * within the last `months` months, excluding Admins.
+   *
+   * Used for backfilling achievement eligibility on deployment.
+   *
+   * @param months - Lookback window in months
+   */
+  async findCoachsActiveInLastMonths(
+    months: number
+  ): Promise<Pick<User, 'id'>[]> {
+    const since = new Date();
+    since.setMonth(since.getMonth() - months);
+
+    return this.userModel.findAll({
+      attributes: ['id'],
+      where: {
+        role: { [Op.in]: [UserRoles.COACH] },
+        lastConnection: { [Op.gte]: since },
+      },
+    });
+  }
+
   async getUsersInactiveForRecommendationMails(
     daysSinceLastConnection: number
   ): Promise<Pick<User, 'id' | 'firstName' | 'email' | 'role' | 'zone'>[]> {

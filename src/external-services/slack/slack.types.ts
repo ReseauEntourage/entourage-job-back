@@ -7,6 +7,10 @@ export const slackChannels = {
     process.env.NODE_ENV === 'production'
       ? 'tech-pro-monitoring'
       : 'tech-pro-monitoring-dev',
+  PRO_FOLLOW_ACHIEVEMENTS:
+    process.env.NODE_ENV === 'production'
+      ? 'entourage-pro-suivi-badges'
+      : 'dev-entourage-pro-suivi-badges',
 };
 
 export interface SlackMsgContextMrkdwn {

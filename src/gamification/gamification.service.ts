@@ -1,12 +1,16 @@
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import chunk from 'lodash/chunk';
 import { Op } from 'sequelize';
+import { SlackService } from 'src/external-services/slack/slack.service';
+import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UsersService } from 'src/users/users.service';
 import {
   ACHIEVEMENTS_CONFIG,
   AchievementType,
 } from './config/achievements.config';
+import { generateAchievementSlackConfig } from './gamification.utils';
 import { UserAchievement } from './models/user-achievement.model';
 
 /**
@@ -30,6 +34,7 @@ export class GamificationService {
   constructor(
     @InjectModel(UserAchievement)
     private userAchievementModel: typeof UserAchievement,
+    private slackService: SlackService,
     @Inject(forwardRef(() => MessagingService))
     private messagingService: MessagingService,
     @Inject(forwardRef(() => UsersService))
@@ -107,7 +112,10 @@ export class GamificationService {
    *
    * @param userId - The user's identifier to evaluate
    */
-  async checkAndGrantAchievements(userId: string): Promise<void> {
+  async checkAndGrantAchievements(userId: string): Promise<{
+    user: { firstName: string; lastName: string; email: string };
+    grantedTypes: AchievementType[];
+  }> {
     this.logger.log(`[check] Starting achievement check for user ${userId}`);
 
     const user = await this.usersService.findOne(userId);
@@ -117,26 +125,28 @@ export class GamificationService {
       messagingService: this.messagingService,
     };
 
-    await Promise.all(
-      ACHIEVEMENTS_CONFIG.map(async (achievement) => {
-        const alreadyActive = await this.hasActiveAchievement(
-          userId,
-          achievement.type
-        );
-        if (alreadyActive) {
-          this.logger.debug(
-            `[check] ${achievement.type} — skipped (already active) for user ${userId}`
+    const grantedTypes = (
+      await Promise.all(
+        ACHIEVEMENTS_CONFIG.map(async (achievement) => {
+          const alreadyActive = await this.hasActiveAchievement(
+            userId,
+            achievement.type
           );
-          return;
-        }
+          if (alreadyActive) {
+            this.logger.debug(
+              `[check] ${achievement.type} — skipped (already active) for user ${userId}`
+            );
+            return null;
+          }
 
-        const eligible = await achievement.checkEligibility(context);
-        this.logger.log(
-          `[check] ${achievement.type} — eligible=${eligible} for user ${userId}`
-        );
+          const eligible = await achievement.checkEligibility(context);
+          this.logger.log(
+            `[check] ${achievement.type} — eligible=${eligible} for user ${userId}`
+          );
 
-        if (eligible) {
-          await this.grantAchievement(
+          if (!eligible) return null;
+
+          const userAchievement = await this.grantAchievement(
             userId,
             achievement.type,
             achievement.durationMonths
@@ -144,9 +154,32 @@ export class GamificationService {
           this.logger.log(
             `[check] ${achievement.type} — granted to user ${userId}`
           );
-        }
-      })
-    );
+
+          const slackConfig = generateAchievementSlackConfig(
+            user,
+            achievement,
+            userAchievement.expireAt,
+            'granted'
+          );
+          await this.slackService.sendMessage(
+            slackChannels.PRO_FOLLOW_ACHIEVEMENTS,
+            this.slackService.generateSlackBlockMsg(slackConfig),
+            `🏅 Nouveau badge décerné : ${achievement.label}`
+          );
+
+          return achievement.type;
+        })
+      )
+    ).filter((type): type is AchievementType => type !== null);
+
+    return {
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+      grantedTypes,
+    };
   }
 
   /**
@@ -201,6 +234,19 @@ export class GamificationService {
           if (config.onRenewed) {
             await config.onRenewed(callbackContext);
           }
+
+          const slackConfig = generateAchievementSlackConfig(
+            user,
+            config,
+            newExpireAt,
+            'renewed'
+          );
+          await this.slackService.sendMessage(
+            slackChannels.PRO_FOLLOW_ACHIEVEMENTS,
+            this.slackService.generateSlackBlockMsg(slackConfig),
+            `🔄 Badge renouvelé : ${config.label}`
+          );
+
           return 'renewed' as const;
         } else {
           await achievement.update({ active: false });
@@ -231,5 +277,94 @@ export class GamificationService {
     });
 
     return { total: expiredAchievements.length, renewed, expired, failures };
+  }
+
+  /**
+   * One-time backfill: re-evaluates achievement eligibility for all non-deleted
+   * coaches who have connected in the last `months` months.
+   *
+   * Intended to be triggered once via the admin endpoint after deploying a new
+   * achievement. Results are reported to Slack on TECH_PRO_MONITORING.
+   *
+   * @param months - Lookback window for active users (default: 6)
+   */
+  async backfillAchievements(months = 6): Promise<void> {
+    const BATCH_SIZE = 10;
+    this.logger.log(
+      `[backfill] Starting achievement backfill (last ${months} months)...`
+    );
+
+    const users = await this.usersService.findCoachsActiveInLastMonths(months);
+    this.logger.log(`[backfill] Found ${users.length} eligible users`);
+
+    const results: PromiseSettledResult<
+      Awaited<ReturnType<typeof this.checkAndGrantAchievements>>
+    >[] = [];
+
+    for (const batch of chunk(users, BATCH_SIZE)) {
+      const batchResults = await Promise.allSettled(
+        batch.map(({ id }) => this.checkAndGrantAchievements(id))
+      );
+      results.push(...batchResults);
+    }
+
+    type BackfillSuccess = {
+      user: { firstName: string; lastName: string; email: string };
+      grantedTypes: AchievementType[];
+    };
+
+    const grantedUsers: BackfillSuccess[] = [];
+    const notGrantedUsers: BackfillSuccess[] = [];
+    const failedUserIds: string[] = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        failedUserIds.push(users[index].id);
+      } else if (result.value.grantedTypes.length > 0) {
+        grantedUsers.push(result.value);
+      } else {
+        notGrantedUsers.push(result.value);
+      }
+    });
+
+    const succeeded = failedUserIds.length === 0;
+
+    this.logger.log(
+      `[backfill] Done — ${grantedUsers.length} granted, ${notGrantedUsers.length} not eligible, ${failedUserIds.length} errors`
+    );
+
+    const formatUser = (u: BackfillSuccess['user']) =>
+      `${u.firstName} ${u.lastName} (${u.email})`;
+
+    const detailLines: string[] = [
+      `*Utilisateurs ayant reçu un badge (${grantedUsers.length}) :*`,
+      ...(grantedUsers.length > 0
+        ? grantedUsers.map(
+            (u) => `- ${formatUser(u.user)} — ${u.grantedTypes.join(', ')}`
+          )
+        : ['_Aucun_']),
+      '',
+      `*Utilisateurs non éligibles (${notGrantedUsers.length}) :*`,
+    ];
+
+    if (failedUserIds.length > 0) {
+      detailLines.push(
+        '',
+        `*Erreurs (${failedUserIds.length}) :*`,
+        ...failedUserIds.slice(0, 10).map((id) => `- ${id}`)
+      );
+    }
+
+    await this.slackService.sendTechnicalMonitoringMessage(
+      succeeded,
+      '🏅 Backfill des badges — résultats',
+      [
+        { title: 'Utilisateurs actifs (6 mois)', content: `${users.length}` },
+        { title: 'Badges attribués', content: `${grantedUsers.length}` },
+        { title: 'Non éligibles', content: `${notGrantedUsers.length}` },
+      ],
+      detailLines.join('\n'),
+      slackChannels.TECH_PRO_MONITORING
+    );
   }
 }
