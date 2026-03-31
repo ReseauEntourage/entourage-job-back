@@ -897,15 +897,25 @@ export class MessagingService {
     if (transaction) {
       transaction.afterCommit(() => {
         notifyOtherParticipants();
-        this.gamificationService.checkAndGrantAchievements(
-          createMessageDto.authorId
-        );
+        void this.gamificationService
+          .checkAndGrantAchievements(createMessageDto.authorId)
+          .catch((err) =>
+            this.logger.error(
+              `[gamification] checkAndGrantAchievements failed for user ${createMessageDto.authorId}`,
+              err
+            )
+          );
       });
     } else {
       notifyOtherParticipants();
-      this.gamificationService.checkAndGrantAchievements(
-        createMessageDto.authorId
-      );
+      void this.gamificationService
+        .checkAndGrantAchievements(createMessageDto.authorId)
+        .catch((err) =>
+          this.logger.error(
+            `[gamification] checkAndGrantAchievements failed for user ${createMessageDto.authorId}`,
+            err
+          )
+        );
     }
 
     return message;

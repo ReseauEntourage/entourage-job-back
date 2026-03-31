@@ -116,7 +116,7 @@ export class GamificationService {
     user: { firstName: string; lastName: string; email: string };
     grantedTypes: AchievementType[];
   }> {
-    this.logger.log(`[check] Starting achievement check for user ${userId}`);
+    this.logger.debug(`[check] Starting achievement check for user ${userId}`);
 
     const user = await this.usersService.findOne(userId);
     const context = {
@@ -140,7 +140,7 @@ export class GamificationService {
           }
 
           const eligible = await achievement.checkEligibility(context);
-          this.logger.log(
+          this.logger.debug(
             `[check] ${achievement.type} — eligible=${eligible} for user ${userId}`
           );
 
@@ -151,7 +151,7 @@ export class GamificationService {
             achievement.type,
             achievement.durationMonths
           );
-          this.logger.log(
+          this.logger.debug(
             `[check] ${achievement.type} — granted to user ${userId}`
           );
 
@@ -213,7 +213,13 @@ export class GamificationService {
         const config = ACHIEVEMENTS_CONFIG.find(
           (c) => c.type === achievement.achievementType
         );
-        if (!config) return 'skipped' as const;
+        if (!config) {
+          this.logger.error(
+            `[processExpired] Achievement type "${achievement.achievementType}" not found in ACHIEVEMENTS_CONFIG — marking inactive to prevent infinite retries`
+          );
+          await achievement.update({ active: false });
+          return 'skipped' as const;
+        }
 
         const user = await this.usersService.findOne(achievement.userId);
         const callbackContext = {
@@ -294,7 +300,7 @@ export class GamificationService {
       `[backfill] Starting achievement backfill (last ${months} months)...`
     );
 
-    const users = await this.usersService.findCoachsActiveInLastMonths(months);
+    const users = await this.usersService.findActiveCoachesInLastMonths(months);
     this.logger.log(`[backfill] Found ${users.length} eligible users`);
 
     const results: PromiseSettledResult<
@@ -359,7 +365,10 @@ export class GamificationService {
       succeeded,
       '🏅 Backfill des badges — résultats',
       [
-        { title: 'Utilisateurs actifs (6 mois)', content: `${users.length}` },
+        {
+          title: `Utilisateurs actifs (${months} mois)`,
+          content: `${users.length}`,
+        },
         { title: 'Badges attribués', content: `${grantedUsers.length}` },
         { title: 'Non éligibles', content: `${notGrantedUsers.length}` },
       ],

@@ -843,7 +843,7 @@ export class UsersService {
    *
    * @param months - Lookback window in months
    */
-  async findCoachsActiveInLastMonths(
+  async findActiveCoachesInLastMonths(
     months: number
   ): Promise<Pick<User, 'id'>[]> {
     const since = new Date();
