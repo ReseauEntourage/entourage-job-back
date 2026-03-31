@@ -21,9 +21,7 @@ export const generateSlackMsgConfigConversationReported = (
         ? [
             {
               title: '👮 Référent(s)',
-              content: referentSlackUserIds
-                .map((id) => `<@${id}>`)
-                .join(', '),
+              content: referentSlackUserIds.map((id) => `<@${id}>`).join(', '),
             },
           ]
         : []),
