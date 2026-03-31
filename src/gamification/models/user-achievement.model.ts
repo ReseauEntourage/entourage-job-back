@@ -23,7 +23,7 @@ export class UserAchievement extends Model {
   @IsUUID(4)
   @PrimaryKey
   @Default(DataType.UUIDV4)
-  @Column
+  @Column(DataType.UUID)
   id: string;
 
   @CreatedAt
@@ -35,7 +35,7 @@ export class UserAchievement extends Model {
   @IsUUID(4)
   @ForeignKey(() => User)
   @AllowNull(false)
-  @Column
+  @Column(DataType.UUID)
   userId: string;
 
   @AllowNull(false)

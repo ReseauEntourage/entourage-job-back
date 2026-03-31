@@ -6,6 +6,7 @@ import {
   SlackBlockConfig,
   slackChannels,
 } from 'src/external-services/slack/slack.types';
+import { GamificationService } from 'src/gamification/gamification.service';
 import { MailsService } from 'src/mails/mails.service';
 import { MediasService } from 'src/medias/medias.service';
 import { Media } from 'src/medias/models';
@@ -59,6 +60,8 @@ export class MessagingService {
     private slackService: SlackService,
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
+    @Inject(forwardRef(() => GamificationService))
+    private gamificationService: GamificationService,
     private mailsService: MailsService,
     private mediaService: MediasService,
     private queuesService: QueuesService
@@ -633,26 +636,32 @@ export class MessagingService {
   }
 
   /**
-   * Compute the response rate for a user profile based on the ratio of conversation without response / conversation with response. A conversation with response is a conversation where a user has sent at least one message.
-   * We only take into account the conversations created in the last 6 months to compute this metric but we don't take into account the conversations that are less than 3 days old because they may not have had the time to receive a response yet.
-   * We also ignore the conversations that are between a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin.
-   * Finally, if there is no conversation that need a response (conversation with at least one message from another participant that is not an Admin), we return null because we consider that the user profile doesn't have to respond to messages if there is no message from another participant that is not an Admin. This way, a user profile that only has conversations with Admins or that only has conversations with messages from other participants but without responding messages from the user profile will have a response rate of null and not 0% which would be more penalizing.
-   * @param userId - The ID of the user profile to fetch the response rate for
-   * @returns The response rate in percentage or null if no conversations are found
+   * Compute the response rate for a user profile based on the ratio of conversations with a response
+   * over conversations that require one. A conversation has a response when the user has sent at least
+   * one message after receiving a message from another participant.
+   *
+   * Ignored conversations (excluded from both numerator and denominator):
+   * - Conversations older than 6 months
+   * - Conversations where another participant is an Admin (the user is not expected to reply)
+   * - Conversations where all other participants have been deleted (soft-deleted via deletedAt)
+   * - Conversations with no message from another participant (no reply is expected)
+   *
+   * Returns null rather than 0% when there are no valid conversations to evaluate, to avoid
+   * unfairly penalising users who have only been contacted by Admins or deleted accounts.
+   *
+   * @param userId - The ID of the user profile to compute the response rate for
+   * @returns The response rate as a percentage (0–100), or null if there are no eligible conversations
    */
   async getResponseRate(userId: string): Promise<number | null> {
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
     const sixMonthAgo = new Date();
     sixMonthAgo.setMonth(sixMonthAgo.getMonth() - 6);
 
-    // Get all conversations for the user profile created in the last 6 months and that are at least 3 days old
+    // Get all conversations for the user profile created in the last 6 months
     const conversations = await this.conversationParticipantModel.findAll({
       where: {
         userId,
         createdAt: {
-          [Op.between]: [sixMonthAgo, threeDaysAgo],
+          [Op.gte]: sixMonthAgo,
         },
       },
       include: [
@@ -667,7 +676,7 @@ export class MessagingService {
             {
               model: User,
               as: 'participants',
-              attributes: ['id', 'firstName', 'lastName', 'role'],
+              attributes: ['id', 'firstName', 'lastName', 'role', 'deletedAt'],
               paranoid: false,
             },
           ],
@@ -693,6 +702,16 @@ export class MessagingService {
 
       // Determine if there is at least one message from the user
       const hasOneMessageFromUser = messages.some((m) => m.authorId === userId);
+
+      // Ignore conversations where all other participants have been deleted
+      const otherParticipants = participants.filter((p) => p.id !== userId);
+      const allOthersDeleted =
+        otherParticipants.length > 0 &&
+        otherParticipants.every((p) => p.deletedAt !== null);
+      if (allOthersDeleted) {
+        conversationsToIgnore++;
+        continue;
+      }
 
       // We ignore the conversation between a user and an Admin because we consider that the user doesn't need to respond to a message from an Admin
       const hasAdmin = participants.some(
@@ -878,9 +897,15 @@ export class MessagingService {
     if (transaction) {
       transaction.afterCommit(() => {
         notifyOtherParticipants();
+        this.gamificationService.checkAndGrantAchievements(
+          createMessageDto.authorId
+        );
       });
     } else {
       notifyOtherParticipants();
+      this.gamificationService.checkAndGrantAchievements(
+        createMessageDto.authorId
+      );
     }
 
     return message;

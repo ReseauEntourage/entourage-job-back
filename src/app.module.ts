@@ -88,6 +88,7 @@ export function getSequelizeOptions(
     password: password,
     database: pathname.replace('/', ''),
     autoLoadModels: true,
+    synchronize: false,
     logging: false,
     pool,
   };

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { MessagingService } from 'src/messaging/messaging.service';
@@ -25,10 +25,14 @@ import { UserAchievement } from './models/user-achievement.model';
  */
 @Injectable()
 export class GamificationService {
+  private readonly logger = new Logger(GamificationService.name);
+
   constructor(
     @InjectModel(UserAchievement)
     private userAchievementModel: typeof UserAchievement,
+    @Inject(forwardRef(() => MessagingService))
     private messagingService: MessagingService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService
   ) {}
 
@@ -104,6 +108,8 @@ export class GamificationService {
    * @param userId - The user's identifier to evaluate
    */
   async checkAndGrantAchievements(userId: string): Promise<void> {
+    this.logger.log(`[check] Starting achievement check for user ${userId}`);
+
     const user = await this.usersService.findOne(userId);
     const context = {
       userId,
@@ -117,14 +123,26 @@ export class GamificationService {
           userId,
           achievement.type
         );
-        if (alreadyActive) return;
+        if (alreadyActive) {
+          this.logger.debug(
+            `[check] ${achievement.type} — skipped (already active) for user ${userId}`
+          );
+          return;
+        }
 
         const eligible = await achievement.checkEligibility(context);
+        this.logger.log(
+          `[check] ${achievement.type} — eligible=${eligible} for user ${userId}`
+        );
+
         if (eligible) {
           await this.grantAchievement(
             userId,
             achievement.type,
             achievement.durationMonths
+          );
+          this.logger.log(
+            `[check] ${achievement.type} — granted to user ${userId}`
           );
         }
       })
@@ -147,17 +165,22 @@ export class GamificationService {
    *
    * Intended to be called daily via a cron job.
    */
-  async processExpiredAchievements(): Promise<void> {
+  async processExpiredAchievements(): Promise<{
+    total: number;
+    renewed: number;
+    expired: number;
+    failures: Array<{ itemId: string; reason: unknown }>;
+  }> {
     const expiredAchievements = await this.userAchievementModel.findAll({
       where: { active: true, expireAt: { [Op.lt]: new Date() } },
     });
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       expiredAchievements.map(async (achievement) => {
         const config = ACHIEVEMENTS_CONFIG.find(
           (c) => c.type === achievement.achievementType
         );
-        if (!config) return;
+        if (!config) return 'skipped' as const;
 
         const user = await this.usersService.findOne(achievement.userId);
         const callbackContext = {
@@ -178,14 +201,35 @@ export class GamificationService {
           if (config.onRenewed) {
             await config.onRenewed(callbackContext);
           }
+          return 'renewed' as const;
         } else {
           await achievement.update({ active: false });
 
           if (config.onExpired) {
             await config.onExpired(callbackContext);
           }
+          return 'expired' as const;
         }
       })
     );
+
+    let renewed = 0;
+    let expired = 0;
+    const failures: Array<{ itemId: string; reason: unknown }> = [];
+
+    results.forEach((result, index) => {
+      const achievement = expiredAchievements[index];
+      const itemId = `${achievement.achievementType}:${achievement.userId}`;
+
+      if (result.status === 'rejected') {
+        failures.push({ itemId, reason: result.reason });
+      } else if (result.value === 'renewed') {
+        renewed++;
+      } else if (result.value === 'expired') {
+        expired++;
+      }
+    });
+
+    return { total: expiredAchievements.length, renewed, expired, failures };
   }
 }

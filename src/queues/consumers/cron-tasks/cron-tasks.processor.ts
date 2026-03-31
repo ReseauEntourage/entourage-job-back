@@ -619,8 +619,29 @@ export class CronTasksProcessor extends WorkerHost {
    */
   async processExpiredAchievements() {
     this.logger.log('Processing expired achievements...');
-    await this.gamificationService.processExpiredAchievements();
+    const { total, renewed, expired, failures } =
+      await this.gamificationService.processExpiredAchievements();
     this.logger.log('Expired achievements processed');
-    return 'Expired achievements processed';
+
+    const succeeded = failures.length === 0;
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '🏆 Process expired achievements',
+      {
+        total,
+        success: renewed + expired,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed processing ${failures.length}/${total} expired achievements`
+      );
+    }
+
+    return `Processed ${total} expired achievements: ${renewed} renewed, ${expired} expired`;
   }
 }
