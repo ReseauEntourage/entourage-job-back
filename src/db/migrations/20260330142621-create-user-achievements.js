@@ -1,7 +1,5 @@
 'use strict';
 
-const { v4: uuidv4 } = require('uuid');
-
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -10,7 +8,7 @@ module.exports = {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
-        defaultValue: uuidv4,
+        defaultValue: Sequelize.UUIDV4,
       },
       createdAt: {
         allowNull: false,
@@ -50,11 +48,20 @@ module.exports = {
     await queryInterface.addIndex(
       'UserAchievements',
       ['userId', 'achievementType', 'active'],
-      { name: 'user_achievements_userId_type_active' }
+      {
+        name: 'user_achievements_userId_type_active',
+        unique: true,
+        where: { active: true },
+      }
     );
   },
 
   async down(queryInterface, Sequelize) {
+    await queryInterface.removeIndex('UserAchievements', ['userId']);
+    await queryInterface.removeIndex(
+      'UserAchievements',
+      'user_achievements_userId_type_active'
+    );
     await queryInterface.dropTable('UserAchievements');
     await queryInterface.sequelize.query(
       'DROP TYPE IF EXISTS "enum_UserAchievements_achievementType";'
