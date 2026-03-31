@@ -638,7 +638,8 @@ export class MessagingService {
   /**
    * Compute the response rate for a user profile based on the ratio of conversations with a response
    * over conversations that require one. A conversation has a response when the user has sent at least
-   * one message after receiving a message from another participant.
+   * one message in a conversation that also contains at least one message from another participant,
+   * regardless of the order in which those messages were sent.
    *
    * Ignored conversations (excluded from both numerator and denominator):
    * - Conversations older than 6 months
