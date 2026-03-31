@@ -748,7 +748,8 @@ export class MessagingService {
   /**
    * Returns the number of conversations within a given time window where:
    * - All participants have sent at least one message (mutual exchange)
-   * - The conversation has mirror roles: one CANDIDATE and one COACH/REFERER
+   * - The conversation has mirror roles: at least one CANDIDATE and at least one COACH/REFERER
+   *   (group conversations with multiple candidates or coaches/referers are included)
    * - No ADMIN participant is involved
    *
    * @param userId - The ID of the user to count conversations for
