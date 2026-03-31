@@ -44,6 +44,7 @@ import { capitalizeNameAndTrim, isRoleIncluded } from '../users.utils';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
+import { UserAchievement } from 'src/gamification/models';
 import { Conversation, ConversationParticipant } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
@@ -285,6 +286,9 @@ export class User extends HistorizedModel {
 
   @HasMany(() => ReadDocument, 'UserId')
   readDocuments: ReadDocument[];
+
+  @HasMany(() => UserAchievement, 'userId')
+  achievements: UserAchievement[];
 
   @BelongsToMany(() => Conversation, {
     through: () => ConversationParticipant,
