@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
+import { GamificationService } from 'src/gamification/gamification.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
@@ -22,7 +23,8 @@ export class CronTasksProcessor extends WorkerHost {
     private userProfileRecommendationsService: UserProfileRecommendationsService,
     private usersDeletionService: UsersDeletionService,
     private cronTasksSlackReporterService: CronTasksSlackReporterService,
-    private messagingService: MessagingService
+    private messagingService: MessagingService,
+    private gamificationService: GamificationService
   ) {
     super();
   }
@@ -47,6 +49,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareRecommendationMails();
       case Jobs.PREPARE_AUTO_SET_UNAVAILABLE_USERS:
         return this.prepareAutoSetUnavailableUsers();
+      case Jobs.PROCESS_EXPIRED_ACHIEVEMENTS:
+        return this.processExpiredAchievements();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -607,5 +611,16 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Set ${successIds.length} inactive users as unavailable`;
+  }
+
+  /**
+   * Processes all expired badges in a single pass: renews those whose users are
+   * still eligible, expires the rest. Called daily at 3 AM via the cron job.
+   */
+  async processExpiredAchievements() {
+    this.logger.log('Processing expired achievements...');
+    await this.gamificationService.processExpiredAchievements();
+    this.logger.log('Expired achievements processed');
+    return 'Expired achievements processed';
   }
 }

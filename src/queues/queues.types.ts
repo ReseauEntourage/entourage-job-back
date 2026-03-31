@@ -45,6 +45,7 @@ export const Jobs = {
     'prepare_user_conversation_follow_up_mails',
   PREPARE_RECOMMENDATION_MAILS: 'prepare_recommendation_mails',
   PREPARE_AUTO_SET_UNAVAILABLE_USERS: 'prepare_auto_set_unavailable_users',
+  PROCESS_EXPIRED_ACHIEVEMENTS: 'process_expired_achievements',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -77,6 +78,7 @@ type JobsData = {
   [Jobs.PREPARE_USER_CONVERSATION_FOLLOW_UP_MAILS]: PrepareUserConversationFollowUpMailsJob;
   [Jobs.PREPARE_RECOMMENDATION_MAILS]: PrepareRecommendationMailsJob;
   [Jobs.PREPARE_AUTO_SET_UNAVAILABLE_USERS]: PrepareAutoSetUnavailableUsersJob;
+  [Jobs.PROCESS_EXPIRED_ACHIEVEMENTS]: ProcessExpiredAchievementsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -165,6 +167,8 @@ export interface PrepareUserConversationFollowUpMailsJob {}
 export interface PrepareRecommendationMailsJob {}
 
 export interface PrepareAutoSetUnavailableUsersJob {}
+
+export interface ProcessExpiredAchievementsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;

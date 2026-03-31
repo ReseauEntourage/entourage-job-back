@@ -155,6 +155,29 @@ export class CronService {
     };
   }
 
+  /**
+   * Processes all expired badges in a single pass: renews those whose users
+   * are still eligible, expires the rest. Runs daily at 3 AM.
+   */
+  @Cron('0 3 * * *')
+  async processExpiredAchievements() {
+    this.logger.log('Cron job started: processExpiredAchievements');
+
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PROCESS_EXPIRED_ACHIEVEMENTS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PROCESS_EXPIRED_ACHIEVEMENTS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_NOON)
   async prepareRecommendationMails() {
     this.logger.log('Cron job started: prepareRecommendationMails');

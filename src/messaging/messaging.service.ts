@@ -726,6 +726,79 @@ export class MessagingService {
   }
 
   /**
+   * Returns the number of conversations within a given time window where:
+   * - All participants have sent at least one message (mutual exchange)
+   * - The conversation has mirror roles: one CANDIDATE and one COACH/REFERER
+   * - No ADMIN participant is involved
+   *
+   * @param userId - The ID of the user to count conversations for
+   * @param delayMonths - How far back to look, in months (defaults to 6)
+   */
+  async getMirrorRoleConversationCount(
+    userId: string,
+    delayMonths = 6
+  ): Promise<number> {
+    const since = new Date();
+    since.setMonth(since.getMonth() - delayMonths);
+
+    const participations = await this.conversationParticipantModel.findAll({
+      where: {
+        userId,
+        createdAt: { [Op.gte]: since },
+      },
+      include: [
+        {
+          model: Conversation,
+          as: 'conversation',
+          include: [
+            {
+              model: Message,
+              as: 'messages',
+              attributes: ['authorId'],
+            },
+            {
+              model: User,
+              as: 'participants',
+              attributes: ['id', 'role'],
+              paranoid: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    let count = 0;
+
+    for (const participation of participations) {
+      const { messages, participants } = participation.conversation;
+
+      // Exclude conversations involving an Admin
+      const hasAdmin = participants.some((p) => p.role === UserRoles.ADMIN);
+      if (hasAdmin) continue;
+
+      // The conversation must have mirror roles: at least one CANDIDATE and at least one COACH or REFERER
+      const hasCandidateParticipant = participants.some(
+        (p) => p.role === UserRoles.CANDIDATE
+      );
+      const hasCoachOrRefererParticipant = participants.some(
+        (p) => p.role === UserRoles.COACH || p.role === UserRoles.REFERER
+      );
+      if (!hasCandidateParticipant || !hasCoachOrRefererParticipant) continue;
+
+      // All participants must have sent at least one message (mutual exchange)
+      const participantIds = participants.map((p) => p.id);
+      const allParticipantsReplied = participantIds.every((participantId) =>
+        messages.some((m) => m.authorId === participantId)
+      );
+      if (!allParticipantsReplied) continue;
+
+      count++;
+    }
+
+    return count;
+  }
+
+  /**
    * === PRIVATE METHODS ===
    */
 
