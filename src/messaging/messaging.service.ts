@@ -17,7 +17,11 @@ import { UserRoles } from 'src/users/users.types';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
-import { userAttributes } from './messaging.attributes';
+import {
+  messageAttributes,
+  userAttributes,
+  userAttributesWithDeletedAt,
+} from './messaging.attributes';
 import {
   ErrorMessagingCantParticipate,
   ErrorMessagingInvalidMessage,
@@ -339,25 +343,79 @@ export class MessagingService {
                 as: 'messages',
                 attributes: ['createdAt'],
               },
+              {
+                model: User,
+                as: 'participants',
+                attributes: userAttributesWithDeletedAt,
+                paranoid: false,
+                through: { attributes: [] },
+              },
             ],
           },
         ],
       }
     );
-    const useenConversationIds = unseenConversations.map(
-      (c) => c.conversationId
-    );
 
-    const userConversations = await this.getConversationsForUser(userId);
+    const unseenConversationIds = unseenConversations
+      .filter((cp) => {
+        const participants = cp.conversation?.participants;
+        if (!participants) return false;
+        const otherParticipants = participants.filter((p) => p.id !== userId);
+        return otherParticipants.some((p) => p.deletedAt === null);
+      })
+      .map((c) => c.conversationId);
+
+    // Dedicated internal query for feedback check — keeps deletedAt off public API
+    const feedbackParticipants =
+      await this.conversationParticipantModel.findAll({
+        where: { userId },
+        include: [
+          {
+            model: Conversation,
+            as: 'conversation',
+            include: [
+              {
+                model: Message,
+                as: 'messages',
+                attributes: messageAttributes,
+                separate: true,
+                order: [['createdAt', 'DESC']],
+              },
+              {
+                model: User,
+                as: 'participants',
+                attributes: userAttributesWithDeletedAt,
+                paranoid: false,
+                through: { attributes: [] },
+              },
+            ],
+          },
+        ],
+      });
 
     // extract conversation ids where conversation.shouldGiveFeedback is true
-    const conversationsWithFeedbackRequired = userConversations
-      .filter((conv) => conv.shouldGiveFeedback)
-      .map((conv) => conv.id);
+    // and at least one other participant is not deleted
+    const conversationsWithFeedbackRequired = feedbackParticipants
+      .filter((cp) => {
+        if (!cp.conversation) return false;
+        if (
+          !determineIfShoudGiveFeedback(
+            cp.conversation,
+            cp.feedbackRating,
+            cp.feedbackDate
+          )
+        )
+          return false;
+        const otherParticipants = (
+          cp.conversation.participants as Array<Pick<User, 'id' | 'deletedAt'>>
+        ).filter((p) => p.id !== userId);
+        return otherParticipants.some((p) => p.deletedAt === null);
+      })
+      .map((cp) => cp.conversationId);
 
-    // count unique conversations ids in unseenConversationIds ad conversationsWithFeedbackRequired
+    // count unique conversation ids across unseen and feedback-required sets
     return new Set([
-      ...useenConversationIds,
+      ...unseenConversationIds,
       ...conversationsWithFeedbackRequired,
     ]).size;
   }
@@ -444,12 +502,30 @@ export class MessagingService {
     const reporterUser = await this.usersService.findOneWithRelations(
       reporterUserId
     );
+    const reportedParticipantIds = conversation.participants
+      .filter((participant) => participant.id !== reporterUserId)
+      .map((participant) => participant.id);
+    const reportedUsers = await Promise.all(
+      reportedParticipantIds.map((id) =>
+        this.usersService.findOneWithRelations(id)
+      )
+    );
+    const referentSlackUserIds = (
+      await Promise.all(
+        reportedUsers
+          .map((user) => user?.staffContact?.slackEmail)
+          .filter(Boolean)
+          .filter((email, index, self) => self.indexOf(email) === index)
+          .map((email) => this.slackService.getUserIdByEmail(email))
+      )
+    ).filter(Boolean);
     const slackMsgConfig: SlackBlockConfig =
       generateSlackMsgConfigConversationReported(
         conversation,
         reportConversationDto.reason,
         reportConversationDto.comment,
-        reporterUser
+        reporterUser,
+        referentSlackUserIds
       );
     const slackMessage =
       this.slackService.generateSlackBlockMsg(slackMsgConfig);

@@ -59,7 +59,7 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
  * Additional attributes for specific Event Types
  */
 export const additionalEventAttributesByEventType: {
-  [key: string]: Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>;
+  [key: string]: Omit<Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>, 'format'> & { format?: string };
 } = {
   // Webinaire tout savoir sur Entourage Pro
   [EventType.WELCOME_SESSION]: {
@@ -165,8 +165,7 @@ export const additionalEventAttributesByEventType: {
 
   // Atelier Entourage Pro
   [EventType.WORKSHOP]: {
-    format: 'Webinaire - En ligne',
-    goal: 'Un atelier animé par un coach de la communauté Entourage Pro pour travailler sur un thème de l’insertion professionnelle.',
+    goal: 'Un atelier animé par un coach de la communauté ou une association partenaire pour travailler sur un thème de l’insertion professionnelle.',
     audience: 'Candidats et coachs de la communauté',
     sequences: [],
   },
@@ -230,6 +229,7 @@ export const convertSalesforceCampaignToEvent = (
     return null;
   }
   const isParticipating = Boolean(campaign?.CampaignMembers?.records.length);
+  const mode = computeModeFromSalesforceCampaign(campaign);
   return {
     salesForceId: campaign.Id,
     name: campaign.Name,
@@ -247,9 +247,15 @@ export const convertSalesforceCampaignToEvent = (
     registrationCount: campaign.Nombre_d_inscrits__c || 0,
     meetingLink: campaign.MeetingLink__c || null,
     fullAddress: campaign.Adresse_de_l_v_nement__c || null,
-    mode: computeModeFromSalesforceCampaign(campaign),
+    mode,
     duration: computeEventDurationFromSalesforceCampaign(campaign),
     isParticipating,
     ...additionalEventAttributesByEventType[eventType],
+    ...(eventType === EventType.WORKSHOP && {
+      format:
+        mode === EventMode.ONLINE
+          ? 'En ligne'
+          : 'En présentiel',
+    }),
   };
 };

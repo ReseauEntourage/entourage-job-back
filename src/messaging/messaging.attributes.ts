@@ -8,6 +8,8 @@ export const userAttributes = [
   'zone',
 ];
 
+export const userAttributesWithDeletedAt = [...userAttributes, 'deletedAt'];
+
 export const conversationParticipantAttributes = [
   'id',
   'seenAt',
