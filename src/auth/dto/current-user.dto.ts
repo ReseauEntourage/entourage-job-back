@@ -12,10 +12,13 @@ export interface CurrentUserDto
   > {
   createdAt: string;
   userProfile: UserProfileDto;
-  averageDelayResponse: number | null;
-  responseRate: number | null;
   hasExtractedCvData: boolean;
   company?: Partial<Company>;
+
+  // Stats
+  averageDelayResponse: number | null;
+  responseRate: number | null;
+  totalConversationWithMirrorRoleCount: number | null;
 }
 
 export const generateCurrentUserDto = (
@@ -24,6 +27,7 @@ export const generateCurrentUserDto = (
   usersStats?: {
     averageDelayResponse: number | null;
     responseRate: number | null;
+    totalConversationWithMirrorRoleCount: number | null;
   },
   hasExtractedCvData?: boolean,
   complete = false
@@ -79,6 +83,8 @@ export const generateCurrentUserDto = (
   if (usersStats !== undefined) {
     dto.averageDelayResponse = usersStats.averageDelayResponse;
     dto.responseRate = usersStats.responseRate;
+    dto.totalConversationWithMirrorRoleCount =
+      usersStats.totalConversationWithMirrorRoleCount;
   }
   return dto as CurrentUserDto;
 };

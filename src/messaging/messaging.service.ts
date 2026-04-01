@@ -14,7 +14,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/users/users.types';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
@@ -753,19 +753,28 @@ export class MessagingService {
    * - No ADMIN participant is involved
    *
    * @param userId - The ID of the user to count conversations for
-   * @param delayMonths - How far back to look, in months (defaults to 6)
+   * @param delayMonths - How far back to look, in months (ignored if not provided, meaning all conversations are considered)
+   * @returns The count of mirror role conversations with mutual exchange for the user within the specified time window
    */
   async getMirrorRoleConversationCount(
     userId: string,
-    delayMonths = 6
+    userRole: UserRole,
+    delayMonths?: number
   ): Promise<number> {
-    const since = new Date();
-    since.setMonth(since.getMonth() - delayMonths);
+    const mirrorRole = await this.usersService.getUserMirrorRole(userRole);
+    const createdAtFilter =
+      delayMonths !== undefined
+        ? (() => {
+            const since = new Date();
+            since.setMonth(since.getMonth() - delayMonths);
+            return { [Op.gte]: since };
+          })()
+        : undefined;
 
     const participations = await this.conversationParticipantModel.findAll({
       where: {
         userId,
-        createdAt: { [Op.gte]: since },
+        ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
       },
       include: [
         {
@@ -798,13 +807,10 @@ export class MessagingService {
       if (hasAdmin) continue;
 
       // The conversation must have mirror roles: at least one CANDIDATE and at least one COACH or REFERER
-      const hasCandidateParticipant = participants.some(
-        (p) => p.role === UserRoles.CANDIDATE
+      const hasMirrorParticipant = participants.some(
+        (p) => p.role === mirrorRole
       );
-      const hasCoachOrRefererParticipant = participants.some(
-        (p) => p.role === UserRoles.COACH || p.role === UserRoles.REFERER
-      );
-      if (!hasCandidateParticipant || !hasCoachOrRefererParticipant) continue;
+      if (!hasMirrorParticipant) continue;
 
       // All participants must have sent at least one message (mutual exchange)
       const participantIds = participants.map((p) => p.id);
@@ -815,7 +821,6 @@ export class MessagingService {
 
       count++;
     }
-
     return count;
   }
 

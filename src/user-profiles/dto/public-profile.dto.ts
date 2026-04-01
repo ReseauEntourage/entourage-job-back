@@ -37,19 +37,25 @@ export type PublicProfileDto = {
   cvUrl?: string;
   linkedinUrl?: string;
   hasExternalCv: boolean;
-  averageDelayResponse: number | null;
+  averageDelayResponse?: number | null;
   hasPicture: boolean;
   company: Partial<Company> | null;
   zone: ZoneName;
+  totalConversationWithMirrorRoleCount?: number | null;
 };
 
 export const generatePublicProfileDto = (
   user: User,
   userProfile: UserProfile,
-  averageDelayResponse: number | null
+  usersStats?: {
+    averageDelayResponse: number | null;
+    responseRate: number | null;
+    totalConversationWithMirrorRoleCount: number | null;
+  }
 ): PublicProfileDto => {
   const dto = {
     id: user.id,
+    createdAt: user.createdAt,
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
@@ -70,7 +76,6 @@ export const generatePublicProfileDto = (
     interests: userProfile.interests,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
-    averageDelayResponse,
     hasPicture: userProfile.hasPicture,
     company: null,
     zone: user.zone,
@@ -80,6 +85,11 @@ export const generatePublicProfileDto = (
       ...user.company.toJSON(),
       admin: user.company.admin || null,
     };
+  }
+  if (usersStats) {
+    dto.averageDelayResponse = usersStats.averageDelayResponse;
+    dto.totalConversationWithMirrorRoleCount =
+      usersStats.totalConversationWithMirrorRoleCount;
   }
   return dto;
 };

@@ -109,6 +109,8 @@ export class UserProfilesService {
     private userProfileRecommendationsService: UserProfileRecommendationsService
   ) {}
 
+  // ─── Queries ─────────────────────────────────────────────────────────────────
+
   async findOne(id: string) {
     return this.userProfileModel.findByPk(id, {
       include: [
@@ -507,9 +509,9 @@ export class UserProfilesService {
   }
 
   /**
-   * Méthode spécifique pour rechercher les profils correspondant à une alerte de recrutement
-   * @param recruitementAlert Alerte de recrutement à utiliser pour la recherche
-   * @returns Liste des profils correspondant aux critères de l'alerte
+   * Finds profiles matching the criteria of a recruitment alert
+   * @param recruitementAlert Recruitment alert to use for the search
+   * @returns List of profiles matching the alert criteria
    */
   async findMatchingProfilesForRecruitementAlert(
     recruitementAlert: RecruitementAlert
@@ -521,8 +523,8 @@ export class UserProfilesService {
     const sanitizedJobName = recruitementAlert.jobName
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
-      .replace(/[^a-z0-9\s]/g, ''); // Supprime les caractères spéciaux sauf espaces
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9\s]/g, ''); // Remove special characters except spaces
     // Not used for now, we may use it later for additional filtering or ordering
     // const skillIds = recruitementAlert.skills?.map((skill) => skill.id) || [];
 
@@ -700,7 +702,7 @@ export class UserProfilesService {
 
     // Transform into PublicProfile
     return profiles.map((profile): PublicProfileDto => {
-      return generatePublicProfileDto(profile.user, profile, null);
+      return generatePublicProfileDto(profile.user, profile);
     });
   }
 
@@ -733,22 +735,12 @@ export class UserProfilesService {
 
     return Promise.all(
       profiles.map(async (profile): Promise<PublicProfileDto> => {
-        const averageDelayResponse = await this.getAverageDelayResponse(
-          profile.user.id
-        );
-
-        return generatePublicProfileDto(
-          profile.user,
-          profile,
-          averageDelayResponse
-        );
+        return generatePublicProfileDto(profile.user, profile);
       })
     );
   }
 
-  async getAverageDelayResponse(userId: string): Promise<number | null> {
-    return this.usersStatsService.getAverageDelayResponse(userId);
-  }
+  // ─── Write ───────────────────────────────────────────────────────────────────
 
   async updateByUserId(
     userId: string,
@@ -1264,33 +1256,10 @@ export class UserProfilesService {
     });
   }
 
-  async reportAbuse(
-    report: ReportAbuseUserProfileDto,
-    userReporter: User,
-    userReported: User
-  ) {
-    await Promise.all([
-      this.slackService.sendMessageUserReported(
-        userReporter,
-        userReported,
-        report.reason,
-        report.comment
-      ),
-      this.mailsService.sendUserReportedMail(
-        report,
-        userReported,
-        userReporter
-      ),
-    ]);
-  }
+  // ─── Analytics ───────────────────────────────────────────────────────────────
 
-  /**
-   * Calcule le taux de complétion du profil utilisateur
-   * @param userId L'identifiant de l'utilisateur
-   * @returns pourcentage entre 0 et 100 représentant le taux de complétion du profil
-   */
   async calculateProfileCompletion(userId: string): Promise<number> {
-    // Utilisation d'une requête SQL plutot que les modeles pour optimiser les performances
+    // Using a SQL query rather than models to optimize performance
     const sql = `
       SELECT
         up."hasPicture",
@@ -1322,29 +1291,58 @@ export class UserProfilesService {
       return 0;
     }
 
-    // Calculer le pourcentage de complétion en fonction des champs retournés
+    // Calculate the completion percentage based on the returned fields
     const fields = Object.entries(result);
     if (fields.length === 0) return 0;
 
-    // Compte les champs qui sont remplis (non null, non undefined et non false)
+    // Count fields that are filled (not null, not undefined and not false)
     const filledFields = fields.filter(([fieldName, value]) => {
-      // Si c'est un champ booléen (commençant par "has")
+      // Boolean fields (starting with "has")
       if (fieldName.startsWith('has')) {
         return value === true || value === 't';
       }
-      // Pour les chaînes de caractères (firstName, lastName, etc.)
+      // String fields (firstName, lastName, etc.)
       if (typeof value === 'string') {
         return value?.trim().length > 0;
       }
-      // Pour les autres types (null, undefined, nombre, etc.)
+      // Other types (null, undefined, number, etc.)
       return !!value;
     });
 
-    // Calcul du pourcentage arrondi à l'entier le plus proche
+    // Round percentage to the nearest integer
     const percentage = Math.round((filledFields.length / fields.length) * 100);
 
     return percentage;
   }
+
+  async getAverageDelayResponse(userId: string): Promise<number> {
+    return this.usersStatsService.getAverageDelayResponse(userId);
+  }
+
+  async getResponseRate(userId: string): Promise<number> {
+    return this.usersStatsService.getResponseRate(userId);
+  }
+
+  async getTotalConversationWithMirrorRoleCount(
+    userId: string,
+    userRole: UserRole
+  ): Promise<number> {
+    return this.usersStatsService.getTotalConversationWithMirrorRoleCount(
+      userId,
+      userRole
+    );
+  }
+
+  async getUsersStats(userId: string, userRole: UserRole) {
+    return {
+      averageDelayResponse: await this.getAverageDelayResponse(userId),
+      responseRate: await this.getResponseRate(userId),
+      totalConversationWithMirrorRoleCount:
+        await this.getTotalConversationWithMirrorRoleCount(userId, userRole),
+    };
+  }
+
+  // ─── Embeddings & AI ─────────────────────────────────────────────────────────
 
   async updateEmbedding(
     userProfileId: string,
@@ -1361,18 +1359,18 @@ export class UserProfilesService {
   }
 
   /**
-   * Génère des embeddings pour plusieurs textes en un seul appel API batch
-   * Optimise les appels à VoyageAI en respectant les rate limits
-   * @param dataArray Tableau de textes à convertir en embeddings
-   * @returns Tableau d'embeddings (chaque embedding est un tableau de nombres)
+   * Generates embeddings for multiple texts in a single batch API call
+   * Optimizes VoyageAI calls by respecting rate limits
+   * @param dataArray Array of texts to convert to embeddings
+   * @returns Array of embeddings (each embedding is an array of numbers)
    */
   async generateEmbeddingsBatch(dataArray: string[]): Promise<number[][]> {
     return await this.voyageAiService.generateEmbeddingsBatch(dataArray);
   }
 
   /**
-   * Sauvegarde un embedding déjà calculé (sans appel à VoyageAI)
-   * Utilisé lors du traitement batch pour éviter les appels API redondants
+   * Saves an already computed embedding (without calling VoyageAI)
+   * Used during batch processing to avoid redundant API calls
    */
   async saveEmbedding(
     userProfileId: string,
@@ -1400,6 +1398,38 @@ export class UserProfilesService {
       });
     }
   }
+
+  // ─── Moderation ──────────────────────────────────────────────────────────────
+
+  async reportAbuse(
+    report: ReportAbuseUserProfileDto,
+    userReporter: User,
+    userReported: User
+  ) {
+    await Promise.all([
+      this.slackService.sendMessageUserReported(
+        userReporter,
+        userReported,
+        report.reason,
+        report.comment
+      ),
+      this.mailsService.sendUserReportedMail(
+        report,
+        userReported,
+        userReporter
+      ),
+    ]);
+  }
+
+  async setUserAsUnavailableDueToInactivity(user: User): Promise<void> {
+    await this.mailsService.sendAutoSetUnavailableMail(user);
+    await this.updateByUserId(user.id, {
+      isAvailable: false,
+      unavailabilityReason: UnavailabilityReason.INACTIVITY,
+    });
+  }
+
+  // ─── Private helpers ─────────────────────────────────────────────────────────
 
   private async enqueueUserProfileEmbeddingsUpdate(
     userId: string,
@@ -1431,13 +1461,5 @@ export class UserProfilesService {
         embeddingTypes: embeddingTypesToUpdate,
       }
     );
-  }
-
-  async setUserAsUnavailableDueToInactivity(user: User): Promise<void> {
-    await this.mailsService.sendAutoSetUnavailableMail(user);
-    await this.updateByUserId(user.id, {
-      isAvailable: false,
-      unavailabilityReason: UnavailabilityReason.INACTIVITY,
-    });
   }
 }
