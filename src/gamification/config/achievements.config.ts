@@ -86,7 +86,7 @@ export interface AchievementDefinition {
 export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
   {
     type: AchievementTypes.SUPER_ENGAGED_COACH,
-    label: 'Super coach',
+    label: 'Super Engagé',
     durationMonths: 6,
     checkEligibility: async ({ userId, userRole, messagingService }) => {
       if (userRole !== UserRoles.COACH) return false;
