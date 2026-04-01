@@ -16,6 +16,7 @@ import { ZoneName } from 'src/utils/types/zones.types';
 
 export type PublicProfileDto = {
   id: string;
+  createdAt: Date;
   firstName: string;
   lastName: string;
   role: UserRole;
@@ -37,10 +38,10 @@ export type PublicProfileDto = {
   cvUrl?: string;
   linkedinUrl?: string;
   hasExternalCv: boolean;
-  averageDelayResponse?: number | null;
   hasPicture: boolean;
   company: Partial<Company> | null;
   zone: ZoneName;
+  averageDelayResponse?: number | null;
   totalConversationWithMirrorRoleCount?: number | null;
 };
 

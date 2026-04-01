@@ -16,9 +16,9 @@ export interface CurrentUserDto
   company?: Partial<Company>;
 
   // Stats
-  averageDelayResponse: number | null;
-  responseRate: number | null;
-  totalConversationWithMirrorRoleCount: number | null;
+  averageDelayResponse?: number | null;
+  responseRate?: number | null;
+  totalConversationWithMirrorRoleCount?: number | null;
 }
 
 export const generateCurrentUserDto = (

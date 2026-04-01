@@ -807,10 +807,12 @@ export class MessagingService {
       if (hasAdmin) continue;
 
       // The conversation must have mirror roles: at least one CANDIDATE and at least one COACH or REFERER
-      const hasMirrorParticipant = participants.some(
-        (p) => p.role === mirrorRole
-      );
-      if (!hasMirrorParticipant) continue;
+      if (mirrorRole) {
+        const hasMirrorParticipant = participants.some(
+          (p) => p.role === mirrorRole
+        );
+        if (!hasMirrorParticipant) continue;
+      }
 
       // All participants must have sent at least one message (mutual exchange)
       const participantIds = participants.map((p) => p.id);

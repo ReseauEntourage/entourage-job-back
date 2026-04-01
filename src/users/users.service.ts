@@ -943,7 +943,7 @@ export class UsersService {
     return null;
   }
 
-  getUserMirrorRole = (role: UserRole): UserRole => {
+  getUserMirrorRole = (role: UserRole): UserRole | null => {
     switch (role) {
       case UserRoles.CANDIDATE:
         return UserRoles.COACH;
