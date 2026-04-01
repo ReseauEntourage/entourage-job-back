@@ -93,7 +93,7 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
 
       const [responseRate, conversationCount] = await Promise.all([
         messagingService.getResponseRate(userId),
-        messagingService.getMirrorRoleConversationCount(userId),
+        messagingService.getMirrorRoleConversationCount(userId, userRole, 6),
       ]);
       return (
         responseRate !== null && responseRate >= 75 && conversationCount >= 3

@@ -693,8 +693,7 @@ ${workloadCases}
       recommendedProfiles.map((recoProfile) => {
         const publicProfile = generatePublicProfileDto(
           recoProfile.recUser,
-          recoProfile.recUser.userProfile,
-          null
+          recoProfile.recUser.userProfile
         );
         if (!publicProfile) {
           throw new Error(

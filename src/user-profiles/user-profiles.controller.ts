@@ -362,9 +362,11 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    const averageDelayResponse =
-      await this.userProfilesService.getAverageDelayResponse(userIdToGet);
+    const usersStats = await this.userProfilesService.getUsersStats(
+      user.id,
+      user.role
+    );
 
-    return generatePublicProfileDto(user, userProfile, averageDelayResponse);
+    return generatePublicProfileDto(user, userProfile, usersStats);
   }
 }

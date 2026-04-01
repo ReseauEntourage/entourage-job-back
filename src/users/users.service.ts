@@ -942,4 +942,16 @@ export class UsersService {
     }
     return null;
   }
+
+  getUserMirrorRole = (role: UserRole): UserRole | null => {
+    switch (role) {
+      case UserRoles.CANDIDATE:
+        return UserRoles.COACH;
+      case UserRoles.COACH:
+      case UserRoles.REFERER:
+        return UserRoles.CANDIDATE;
+      default:
+        return null;
+    }
+  };
 }

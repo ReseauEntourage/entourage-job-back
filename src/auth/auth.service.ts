@@ -14,6 +14,7 @@ import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRole } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
 import { encryptPassword, validatePassword } from './auth.utils';
@@ -74,8 +75,6 @@ export class AuthService {
     userId: string,
     complete = false
   ): Promise<CurrentUserDto> {
-    const usersStats = complete ? await this.getUsersStats(userId) : undefined;
-
     const currentUser = await this.findOneUserById(userId);
     const currentUserProfile = await this.findOneUserProfileById(
       userId,
@@ -88,6 +87,10 @@ export class AuthService {
       : undefined;
 
     await this.sessionService.createOrUpdateSession(currentUser.id);
+
+    const usersStats = complete
+      ? await this.getUsersStats(userId, currentUser.role)
+      : undefined;
 
     return generateCurrentUserDto(
       currentUser,
@@ -220,11 +223,16 @@ export class AuthService {
     return this.mailsService.sendWelcomeMail(user);
   }
 
-  async getUsersStats(userId: string) {
+  async getUsersStats(userId: string, userRole: UserRole) {
     return {
       averageDelayResponse:
         await this.usersStatsService.getAverageDelayResponse(userId),
       responseRate: await this.usersStatsService.getResponseRate(userId),
+      totalConversationWithMirrorRoleCount:
+        await this.usersStatsService.getTotalConversationWithMirrorRoleCount(
+          userId,
+          userRole
+        ),
     };
   }
 }
