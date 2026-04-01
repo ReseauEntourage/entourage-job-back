@@ -1334,11 +1334,20 @@ export class UserProfilesService {
   }
 
   async getUsersStats(userId: string, userRole: UserRole) {
+    const [
+      averageDelayResponse,
+      responseRate,
+      totalConversationWithMirrorRoleCount,
+    ] = await Promise.all([
+      this.getAverageDelayResponse(userId),
+      this.getResponseRate(userId),
+      this.getTotalConversationWithMirrorRoleCount(userId, userRole),
+    ]);
+
     return {
-      averageDelayResponse: await this.getAverageDelayResponse(userId),
-      responseRate: await this.getResponseRate(userId),
-      totalConversationWithMirrorRoleCount:
-        await this.getTotalConversationWithMirrorRoleCount(userId, userRole),
+      averageDelayResponse,
+      responseRate,
+      totalConversationWithMirrorRoleCount,
     };
   }
 
