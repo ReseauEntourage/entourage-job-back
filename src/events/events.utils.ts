@@ -59,7 +59,10 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
  * Additional attributes for specific Event Types
  */
 export const additionalEventAttributesByEventType: {
-  [key: string]: Omit<Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>, 'format'> & { format?: string };
+  [key: string]: Omit<
+    Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>,
+    'format'
+  > & { format?: string };
 } = {
   // Webinaire tout savoir sur Entourage Pro
   [EventType.WELCOME_SESSION]: {
@@ -252,10 +255,7 @@ export const convertSalesforceCampaignToEvent = (
     isParticipating,
     ...additionalEventAttributesByEventType[eventType],
     ...(eventType === EventType.WORKSHOP && {
-      format:
-        mode === EventMode.ONLINE
-          ? 'En ligne'
-          : 'En présentiel',
+      format: mode === EventMode.ONLINE ? 'En ligne' : 'En présentiel',
     }),
   };
 };

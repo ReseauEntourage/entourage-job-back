@@ -7,6 +7,7 @@ import { OpenAiModule } from 'src/external-services/openai/openai.module';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
+import { GamificationModule } from 'src/gamification/gamification.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import {
@@ -42,6 +43,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     UserProfilesModule,
     MessagingModule,
     EmbeddingsModule,
+    GamificationModule,
   ],
   providers: [
     WorkQueueProcessor,
