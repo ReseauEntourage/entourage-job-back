@@ -2,8 +2,7 @@ import { forwardRef, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 
-import { UserAchievement } from 'src/gamification/models';
-import { userAchievementAttributes } from 'src/gamification/models/user-achievement/user-achievement.helper';
+import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import {
@@ -65,13 +64,7 @@ export abstract class UserProfileRecommendationBase {
             attributes: UserProfilesAttributes,
             include: getUserProfileInclude(),
           },
-          {
-            model: UserAchievement,
-            as: 'achievements',
-            attributes: userAchievementAttributes,
-            where: { active: true },
-            required: false,
-          },
+          userAchievementInclude(),
         ],
       },
     });

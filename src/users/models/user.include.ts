@@ -3,8 +3,7 @@ import { UserSocialSituation } from '../../user-social-situations/models/user-so
 import { companiesAttributes } from 'src/companies/companies.attributes';
 import { companiesWithUsers } from 'src/companies/companies.includes';
 import { Company } from 'src/companies/models/company.model';
-import { UserAchievement } from 'src/gamification/models';
-import { userAchievementAttributes } from 'src/gamification/models/user-achievement/user-achievement.helper';
+import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { Organization } from 'src/organizations/models';
 import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
@@ -69,13 +68,7 @@ export const UserIncludes = (): Includeable[] => {
       },
       include: companiesWithUsers({}),
     },
-    {
-      model: UserAchievement,
-      as: 'achievements',
-      attributes: userAchievementAttributes,
-      where: { active: true },
-      required: false,
-    },
+    userAchievementInclude(),
   ];
 };
 
