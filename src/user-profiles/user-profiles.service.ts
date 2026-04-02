@@ -28,6 +28,8 @@ import {
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { VoyageAiService } from 'src/external-services/voyageai/voyageai.service';
+import { UserAchievement } from 'src/gamification/models';
+import { userAchievementAttributes } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -300,6 +302,15 @@ export class UserProfilesService {
           model: User,
           as: 'user',
           attributes: UserProfilesUserAttributes,
+          include: [
+            {
+              model: UserAchievement,
+              as: 'achievements',
+              attributes: userAchievementAttributes,
+              where: { active: true },
+              required: false,
+            },
+          ],
         },
       ],
     });
@@ -488,6 +499,15 @@ export class UserProfilesService {
           model: User,
           as: 'user',
           attributes: UserProfilesUserAttributes,
+          include: [
+            {
+              model: UserAchievement,
+              as: 'achievements',
+              attributes: userAchievementAttributes,
+              where: { active: true },
+              required: false,
+            },
+          ],
         },
       ],
     });

@@ -1,1 +1,1 @@
-export { UserAchievement } from './user-achievement.model';
+export { UserAchievement } from './user-achievement/user-achievement.model';
