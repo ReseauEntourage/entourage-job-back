@@ -88,28 +88,40 @@ export class SalesforceService {
   }
 
   async loginToSalesforce() {
+    const tokenUrl = `${process.env.SALESFORCE_LOGIN_URL}/services/oauth2/token`;
+    const body = new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: process.env.SALESFORCE_CLIENT_ID,
+      client_secret: process.env.SALESFORCE_CLIENT_SECRET,
+    });
+
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Salesforce authentication failed: ${error}`);
+    }
+
+    const { access_token, instance_url } = (await response.json()) as {
+      access_token: string;
+      instance_url: string;
+    };
+
     this.salesforce = new jsforce.Connection({
-      instanceUrl: process.env.SALESFORCE_LOGIN_URL,
-      oauth2: {
-        loginUrl: process.env.SALESFORCE_LOGIN_URL,
-        clientId: process.env.SALESFORCE_CLIENT_ID,
-        clientSecret: process.env.SALESFORCE_CLIENT_SECRET,
-        redirectUri: process.env.SALESFORCE_REDIRECT_URI,
-      },
+      instanceUrl: instance_url,
+      accessToken: access_token,
       maxRequest: 10000,
       version: '43.0',
     });
-    return this.salesforce.login(
-      process.env.SALESFORCE_USERNAME,
-      process.env.SALESFORCE_PASSWORD + process.env.SALESFORCE_SECURITY_TOKEN
-    );
   }
 
   async checkIfConnected() {
     try {
-      await this.salesforce
-        .sobject(ObjectNames.USER)
-        .find({ Email: process.env.SALESFORCE_USERNAME });
+      await this.salesforce.query('SELECT Id FROM User LIMIT 1');
     } catch (error) {
       await this.refreshSalesforceInstance();
     }
