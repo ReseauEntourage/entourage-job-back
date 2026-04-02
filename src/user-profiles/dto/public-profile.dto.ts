@@ -84,7 +84,7 @@ export const generatePublicProfileDto = (
     hasPicture: userProfile.hasPicture,
     company: null,
     zone: user.zone,
-    achievements: user.achievements,
+    achievements: user.achievements ?? [],
   } as PublicProfileDto;
   if (user.company) {
     dto.company = {
