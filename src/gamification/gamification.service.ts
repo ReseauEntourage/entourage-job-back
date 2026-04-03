@@ -11,7 +11,7 @@ import {
   AchievementType,
 } from './config/achievements.config';
 import { generateAchievementSlackConfig } from './gamification.utils';
-import { UserAchievement } from './models/user-achievement.model';
+import { UserAchievement } from './models/user-achievement/user-achievement.model';
 
 /**
  * Handles the full lifecycle of user achievements.

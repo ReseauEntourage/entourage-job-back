@@ -13,9 +13,10 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import {
+  ACHIEVEMENTS_CONFIG,
   AchievementType,
   AchievementTypes,
-} from '../config/achievements.config';
+} from 'src/gamification/config/achievements.config';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'UserAchievements' })
@@ -50,6 +51,14 @@ export class UserAchievement extends Model {
   @Default(true)
   @Column
   active: boolean;
+
+  @Column(DataType.VIRTUAL)
+  get title(): string | null {
+    const config = ACHIEVEMENTS_CONFIG.find(
+      (a) => a.type === this.getDataValue('achievementType')
+    );
+    return config?.label ?? null;
+  }
 
   @BelongsTo(() => User, 'userId')
   user: User;
