@@ -302,6 +302,47 @@ describe('Auth', () => {
       });
     });
   });
+  describe('/current/stats - CurrentStats', () => {
+    it('Should return 200 with stats for a candidate with no conversations', async () => {
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+        password: 'loggedInCandidat',
+      });
+      const response: APIResponse<AuthController['getCurrentUserStats']> =
+        await request(server)
+          .get(`${route}/current/stats`)
+          .set('authorization', `Bearer ${loggedInCandidat.token}`);
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        averageDelayResponse: null,
+        responseRate: null,
+        totalConversationWithMirrorRoleCount: 0,
+      });
+    });
+    it('Should return 200 with stats for a coach with no conversations', async () => {
+      const loggedInCoach = await usersHelper.createLoggedInUser({
+        role: UserRoles.COACH,
+        password: 'loggedInCoach',
+      });
+      const response: APIResponse<AuthController['getCurrentUserStats']> =
+        await request(server)
+          .get(`${route}/current/stats`)
+          .set('authorization', `Bearer ${loggedInCoach.token}`);
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        averageDelayResponse: null,
+        responseRate: null,
+        totalConversationWithMirrorRoleCount: 0,
+      });
+    });
+    it('Should return 401, if invalid token', async () => {
+      const response: APIResponse<AuthController['getCurrentUserStats']> =
+        await request(server)
+          .get(`${route}/current/stats`)
+          .set('authorization', `Bearer ${invalidToken}`);
+      expect(response.status).toBe(401);
+    });
+  });
   describe('/current - Current', () => {
     it('Should return a user with token if valid token provided', async () => {
       const loggedInCandidat = await usersHelper.createLoggedInUser({
