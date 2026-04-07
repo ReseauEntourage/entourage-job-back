@@ -896,6 +896,10 @@ export class MessagingService {
     );
     const message = await this.findOneMessage(createdMessage.id, transaction);
 
+    const allParticipantIds = message.conversation.participants.map(
+      (p) => p.id
+    );
+
     const notifyOtherParticipants = () => {
       const otherParticipants = message.conversation.participants.filter(
         (participant) => participant.id !== createMessageDto.authorId
@@ -903,28 +907,27 @@ export class MessagingService {
       this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
     };
 
-    if (transaction) {
-      transaction.afterCommit(() => {
-        notifyOtherParticipants();
+    const triggerAchievementChecks = () => {
+      for (const participantId of allParticipantIds) {
         void this.gamificationService
-          .checkAndGrantAchievements(createMessageDto.authorId)
+          .checkAndGrantAchievements(participantId)
           .catch((err) =>
             this.logger.error(
-              `[gamification] checkAndGrantAchievements failed for user ${createMessageDto.authorId}`,
+              `[gamification] checkAndGrantAchievements failed for user ${participantId}`,
               err
             )
           );
+      }
+    };
+
+    if (transaction) {
+      transaction.afterCommit(() => {
+        notifyOtherParticipants();
+        triggerAchievementChecks();
       });
     } else {
       notifyOtherParticipants();
-      void this.gamificationService
-        .checkAndGrantAchievements(createMessageDto.authorId)
-        .catch((err) =>
-          this.logger.error(
-            `[gamification] checkAndGrantAchievements failed for user ${createMessageDto.authorId}`,
-            err
-          )
-        );
+      triggerAchievementChecks();
     }
 
     return message;
