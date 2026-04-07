@@ -9,6 +9,7 @@ import { UsersService } from 'src/users/users.service';
 import {
   ACHIEVEMENTS_CONFIG,
   AchievementType,
+  CriterionStat,
 } from './config/achievements.config';
 import { generateAchievementSlackConfig } from './gamification.utils';
 import { UserAchievement } from './models/user-achievement/user-achievement.model';
@@ -96,6 +97,72 @@ export class GamificationService {
       expireAt,
       active: true,
     });
+  }
+
+  /**
+   * Returns progression stats for every achievement that exposes
+   * `getProgressionStats` and for which the user's role is eligible.
+   *
+   * Intended to be called after an action that may advance a user's progress
+   * (e.g. sending a message). The frontend uses the result to render a
+   * progression modal when at least one criterion has moved forward.
+   *
+   * @param userId - The user's identifier
+   */
+  async getAllAchievementProgressions(userId: string): Promise<
+    Array<{
+      type: AchievementType;
+      label: string;
+      hasAchievement: boolean;
+      achievedAt: string | null;
+      expireAt: string | null;
+      statsWindowMonths: number;
+      criteria: CriterionStat[];
+    }>
+  > {
+    const user = await this.usersService.findOne(userId);
+    const context = {
+      userId,
+      userRole: user.role,
+      messagingService: this.messagingService,
+    };
+
+    const results = await Promise.all(
+      ACHIEVEMENTS_CONFIG.filter((a) => a.getProgressionStats).map(
+        async (achievement) => {
+          const criteria = await achievement.getProgressionStats?.(context);
+          if (criteria == null) return null;
+
+          const activeRecord = await this.userAchievementModel.findOne({
+            where: { userId, achievementType: achievement.type, active: true },
+          });
+
+          return {
+            type: achievement.type,
+            label: achievement.label,
+            hasAchievement: activeRecord !== null,
+            achievedAt: activeRecord?.createdAt?.toISOString() ?? null,
+            expireAt: activeRecord?.expireAt?.toISOString() ?? null,
+            statsWindowMonths: achievement.durationMonths,
+            criteria,
+          };
+        }
+      )
+    );
+
+    return results.filter(
+      (
+        r
+      ): r is {
+        type: AchievementType;
+        label: string;
+        hasAchievement: boolean;
+        achievedAt: string | null;
+        expireAt: string | null;
+        statsWindowMonths: number;
+        criteria: CriterionStat[];
+      } => r !== null
+    );
   }
 
   /**

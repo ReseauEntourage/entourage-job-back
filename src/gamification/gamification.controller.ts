@@ -1,12 +1,15 @@
 import {
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Logger,
+  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
 import { GamificationService } from './gamification.service';
@@ -18,6 +21,21 @@ export class GamificationController {
   private readonly logger = new Logger(GamificationController.name);
 
   constructor(private readonly gamificationService: GamificationService) {}
+
+  @Get('achievement-progression')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get achievement progression stats for the authenticated user',
+    description:
+      'Returns progression criteria for every achievement the user is eligible for. ' +
+      'Used by the frontend to display a progression modal ' +
+      'after a triggering action such as sending a message.',
+  })
+  async getAchievementProgression(
+    @UserPayload('id', new ParseUUIDPipe()) id: string
+  ) {
+    return this.gamificationService.getAllAchievementProgressions(id);
+  }
 
   @Post('backfill-achievements')
   @HttpCode(HttpStatus.ACCEPTED)
