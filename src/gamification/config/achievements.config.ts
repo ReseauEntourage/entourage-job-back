@@ -18,6 +18,24 @@ export type AchievementType =
   (typeof AchievementTypes)[keyof typeof AchievementTypes];
 
 /**
+ * Represents a single measurable criterion for an achievement.
+ *
+ * Used to power the progression modal on the frontend: each criterion
+ * exposes its current value and the threshold to reach, so the UI can
+ * render progress bars and descriptive text without hardcoding any thresholds.
+ */
+export interface CriterionStat {
+  /** Machine identifier, e.g. "responseRate" or "conversationCount". */
+  key: string;
+  /** Human-readable label displayed in the UI. */
+  label: string;
+  /** The user's current value for this criterion. */
+  currentValue: number;
+  /** The minimum value required to satisfy this criterion. */
+  threshold: number;
+}
+
+/**
  * Runtime context injected into `checkEligibility`.
  *
  * Extend this interface when a new achievement requires additional services
@@ -61,6 +79,22 @@ export interface AchievementDefinition {
    */
   checkEligibility: (ctx: AchievementContext) => Promise<boolean>;
   /**
+   * Optional. Returns the current progression stats for this achievement.
+   *
+   * Called by `GamificationService.getAllAchievementProgressions` to power
+   * the in-app progression modal shown after a triggering action (e.g. sending
+   * a message).
+   *
+   * Return `null` if the user's role is not eligible for this achievement —
+   * the service will exclude this achievement from the response entirely.
+   *
+   * Adding a new achievement with a progression UI only requires implementing
+   * this method here; no changes to the service or controller are needed.
+   */
+  getProgressionStats?: (
+    ctx: AchievementContext
+  ) => Promise<CriterionStat[] | null>;
+  /**
    * Optional. Called when an active badge is successfully renewed.
    * Typical use: send a congratulations notification or email.
    */
@@ -98,6 +132,29 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
       return (
         responseRate !== null && responseRate >= 75 && conversationCount >= 3
       );
+    },
+    getProgressionStats: async ({ userId, userRole, messagingService }) => {
+      if (userRole !== UserRoles.COACH) return null;
+
+      const [responseRate, conversationCount] = await Promise.all([
+        messagingService.getResponseRate(userId),
+        messagingService.getMirrorRoleConversationCount(userId, userRole, 6),
+      ]);
+
+      return [
+        {
+          key: 'responseRate',
+          label: 'Taux de réponse',
+          currentValue: responseRate ?? 0,
+          threshold: 75,
+        },
+        {
+          key: 'conversationCount',
+          label: 'Candidats aidés',
+          currentValue: conversationCount,
+          threshold: 3,
+        },
+      ];
     },
     // onRenewed: async ({ userId }) => { /* e.g. send a congratulations email */ },
     // onExpired: async ({ userId }) => { /* e.g. send a "your badge has expired" email */ },
