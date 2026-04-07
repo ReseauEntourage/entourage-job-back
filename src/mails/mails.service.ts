@@ -676,6 +676,28 @@ export class MailsService {
       };
     });
   }
+
+  async sendSuperEngagedAchievementMail(
+    user: { email: string; firstName: string; zone: ZoneName | null },
+    stats: { conversationCount: number; responseRate: number },
+    nextEvaluationDate: Date
+  ) {
+    this.logger.log(
+      `Sending super engaged achievement mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT,
+      variables: {
+        FirstName: user.firstName,
+        zone: user.zone || ZoneName.HZ,
+        siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        nextEvaluationDate: nextEvaluationDate.toLocaleDateString('fr-FR'),
+        conversationCount: stats.conversationCount,
+        responseRate: stats.responseRate,
+      },
+    });
+  }
 }
 
 const getRoleStringFromRole = (role: UserRole): string => {

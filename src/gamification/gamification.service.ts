@@ -4,6 +4,7 @@ import chunk from 'lodash/chunk';
 import { Op } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
+import { MailsService } from 'src/mails/mails.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRole } from 'src/users/users.types';
@@ -37,6 +38,7 @@ export class GamificationService {
     @InjectModel(UserAchievement)
     private userAchievementModel: typeof UserAchievement,
     private slackService: SlackService,
+    private mailsService: MailsService,
     @Inject(forwardRef(() => MessagingService))
     private messagingService: MessagingService,
     @Inject(forwardRef(() => UsersService))
@@ -226,6 +228,21 @@ export class GamificationService {
             `[check] ${achievement.type} — granted to user ${userId}`
           );
 
+          if (achievement.onGranted) {
+            await achievement.onGranted({
+              userId,
+              userRole: user.role,
+              expireAt: userAchievement.expireAt,
+              user: {
+                firstName: user.firstName,
+                email: user.email,
+                zone: user.zone,
+              },
+              mailsService: this.mailsService,
+              messagingService: this.messagingService,
+            });
+          }
+
           const slackConfig = generateAchievementSlackConfig(
             user,
             achievement,
@@ -293,13 +310,21 @@ export class GamificationService {
         }
 
         const user = await this.usersService.findOne(achievement.userId);
-        const callbackContext = {
+        const baseContext = {
           userId: achievement.userId,
           userRole: user.role,
+          user: {
+            firstName: user.firstName,
+            email: user.email,
+            zone: user.zone,
+          },
+          mailsService: this.mailsService,
+          messagingService: this.messagingService,
         };
 
         const eligible = await config.checkEligibility({
-          ...callbackContext,
+          userId: achievement.userId,
+          userRole: user.role,
           messagingService: this.messagingService,
         });
 
@@ -309,7 +334,7 @@ export class GamificationService {
           await achievement.update({ expireAt: newExpireAt });
 
           if (config.onRenewed) {
-            await config.onRenewed(callbackContext);
+            await config.onRenewed({ ...baseContext, expireAt: newExpireAt });
           }
 
           const slackConfig = generateAchievementSlackConfig(
@@ -329,7 +354,10 @@ export class GamificationService {
           await achievement.update({ active: false });
 
           if (config.onExpired) {
-            await config.onExpired(callbackContext);
+            await config.onExpired({
+              ...baseContext,
+              expireAt: achievement.expireAt,
+            });
           }
           return 'expired' as const;
         }

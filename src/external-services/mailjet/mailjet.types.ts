@@ -82,6 +82,7 @@ export const MailjetTemplates = {
   FOLLOW_UP_MUTUALLY_REPLIED_CONVERSATION: 7758555,
   MAILER_USER_RECOMMENDATIONS: 6060421,
   AUTO_SET_UNAVAILABLE: 7748944,
+  SUPER_ENGAGED_ACHIEVEMENT: 7897486,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

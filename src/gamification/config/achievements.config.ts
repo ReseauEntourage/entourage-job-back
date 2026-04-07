@@ -1,5 +1,7 @@
+import { MailsService } from 'src/mails/mails.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { ZoneName } from 'src/utils/types/zones.types';
 
 /**
  * Exhaustive registry of all achievement types available on the platform.
@@ -48,7 +50,17 @@ export interface AchievementContext {
 }
 
 /**
- * Runtime context injected into `onRenewed` and `onExpired` callbacks.
+ * Minimal user data available in lifecycle callbacks.
+ * Pre-fetched by `GamificationService` to avoid redundant DB queries.
+ */
+export interface AchievementCallbackUser {
+  firstName: string;
+  email: string;
+  zone: ZoneName | null;
+}
+
+/**
+ * Runtime context injected into `onGranted`, `onRenewed`, and `onExpired` callbacks.
  *
  * Intentionally separate from `AchievementContext` so that callback-specific
  * services (e.g. `MailsService`) can be added here without polluting the
@@ -57,6 +69,12 @@ export interface AchievementContext {
 export interface AchievementCallbackContext {
   userId: string;
   userRole: UserRole;
+  /** The badge's expiration date — use as nextEvaluationDate in notifications. */
+  expireAt: Date;
+  /** Pre-fetched user data available at callback time. */
+  user: AchievementCallbackUser;
+  mailsService: MailsService;
+  messagingService: MessagingService;
 }
 
 /**
@@ -94,6 +112,11 @@ export interface AchievementDefinition {
   getProgressionStats?: (
     ctx: AchievementContext
   ) => Promise<CriterionStat[] | null>;
+  /**
+   * Optional. Called immediately after the badge is first granted.
+   * Typical use: send a congratulations notification or email.
+   */
+  onGranted?: (ctx: AchievementCallbackContext) => Promise<void>;
   /**
    * Optional. Called when an active badge is successfully renewed.
    * Typical use: send a congratulations notification or email.
@@ -156,7 +179,42 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
         },
       ];
     },
-    // onRenewed: async ({ userId }) => { /* e.g. send a congratulations email */ },
+    onGranted: async ({
+      user,
+      userId,
+      userRole,
+      expireAt,
+      mailsService,
+      messagingService,
+    }) => {
+      const [responseRate, conversationCount] = await Promise.all([
+        messagingService.getResponseRate(userId),
+        messagingService.getMirrorRoleConversationCount(userId, userRole, 6),
+      ]);
+      await mailsService.sendSuperEngagedAchievementMail(
+        user,
+        { conversationCount, responseRate: responseRate ?? 0 },
+        expireAt
+      );
+    },
+    onRenewed: async ({
+      user,
+      userId,
+      userRole,
+      expireAt,
+      mailsService,
+      messagingService,
+    }) => {
+      const [responseRate, conversationCount] = await Promise.all([
+        messagingService.getResponseRate(userId),
+        messagingService.getMirrorRoleConversationCount(userId, userRole, 6),
+      ]);
+      await mailsService.sendSuperEngagedAchievementMail(
+        user,
+        { conversationCount, responseRate: responseRate ?? 0 },
+        expireAt
+      );
+    },
     // onExpired: async ({ userId }) => { /* e.g. send a "your badge has expired" email */ },
   },
 ];
