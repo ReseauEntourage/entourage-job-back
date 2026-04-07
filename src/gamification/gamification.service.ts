@@ -6,6 +6,7 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UsersService } from 'src/users/users.service';
+import { UserRole } from 'src/users/users.types';
 import {
   ACHIEVEMENTS_CONFIG,
   AchievementType,
@@ -109,7 +110,10 @@ export class GamificationService {
    *
    * @param userId - The user's identifier
    */
-  async getAllAchievementProgressions(userId: string): Promise<
+  async getAllAchievementProgressions(
+    userId: string,
+    userRole: UserRole
+  ): Promise<
     Array<{
       type: AchievementType;
       label: string;
@@ -120,10 +124,9 @@ export class GamificationService {
       criteria: CriterionStat[];
     }>
   > {
-    const user = await this.usersService.findOne(userId);
     const context = {
       userId,
-      userRole: user.role,
+      userRole,
       messagingService: this.messagingService,
     };
 
