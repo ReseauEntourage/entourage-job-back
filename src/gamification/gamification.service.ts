@@ -109,6 +109,7 @@ export class GamificationService {
    * progression modal when at least one criterion has moved forward.
    *
    * @param userId - The user's identifier
+   * @param userRole - The user's role, used to filter eligible achievements
    */
   async getAllAchievementProgressions(
     userId: string,

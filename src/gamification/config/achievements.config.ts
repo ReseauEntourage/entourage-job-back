@@ -143,16 +143,16 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
 
       return [
         {
-          key: 'responseRate',
-          label: 'Taux de réponse',
-          currentValue: responseRate ?? 0,
-          threshold: 75,
-        },
-        {
           key: 'conversationCount',
           label: 'Candidats aidés',
           currentValue: conversationCount,
           threshold: 3,
+        },
+        {
+          key: 'responseRate',
+          label: 'Taux de réponse',
+          currentValue: responseRate ?? 0,
+          threshold: 75,
         },
       ];
     },
