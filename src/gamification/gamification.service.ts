@@ -114,6 +114,9 @@ export class GamificationService {
       type: AchievementType;
       label: string;
       hasAchievement: boolean;
+      achievedAt: string | null;
+      expireAt: string | null;
+      statsWindowMonths: number;
       criteria: CriterionStat[];
     }>
   > {
@@ -130,14 +133,17 @@ export class GamificationService {
           const criteria = await achievement.getProgressionStats?.(context);
           if (criteria == null) return null;
 
-          const hasAchievement = await this.hasActiveAchievement(
-            userId,
-            achievement.type
-          );
+          const activeRecord = await this.userAchievementModel.findOne({
+            where: { userId, achievementType: achievement.type, active: true },
+          });
+
           return {
             type: achievement.type,
             label: achievement.label,
-            hasAchievement,
+            hasAchievement: activeRecord !== null,
+            achievedAt: activeRecord?.createdAt?.toISOString() ?? null,
+            expireAt: activeRecord?.expireAt?.toISOString() ?? null,
+            statsWindowMonths: achievement.durationMonths,
             criteria,
           };
         }
@@ -151,6 +157,9 @@ export class GamificationService {
         type: AchievementType;
         label: string;
         hasAchievement: boolean;
+        achievedAt: string | null;
+        expireAt: string | null;
+        statsWindowMonths: number;
         criteria: CriterionStat[];
       } => r !== null
     );
