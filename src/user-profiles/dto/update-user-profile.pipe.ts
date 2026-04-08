@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   PipeTransform,
   Scope,
 } from '@nestjs/common';
@@ -24,6 +25,8 @@ export class UpdateUserProfilePipe
       Promise<UpdateCandidateUserProfileDto | UpdateCoachUserProfileDto>
     >
 {
+  private readonly logger = new Logger(UpdateUserProfilePipe.name);
+
   constructor(@Inject(REQUEST) private request: RequestWithUser) {}
 
   private static toValidate(metatype: Function): boolean {
@@ -54,6 +57,16 @@ export class UpdateUserProfilePipe
       });
 
       if (errors.length > 0) {
+        this.logger.warn(
+          `Validation failed for CANDIDATE profile update (userId: ${
+            this.request.user.id
+          }): ${JSON.stringify(
+            errors.map((e) => ({
+              property: e.property,
+              constraints: e.constraints,
+            }))
+          )}`
+        );
         throw new BadRequestException();
       }
     }
@@ -67,6 +80,16 @@ export class UpdateUserProfilePipe
       });
 
       if (errors.length > 0) {
+        this.logger.warn(
+          `Validation failed for COACH profile update (userId: ${
+            this.request.user.id
+          }): ${JSON.stringify(
+            errors.map((e) => ({
+              property: e.property,
+              constraints: e.constraints,
+            }))
+          )}`
+        );
         throw new BadRequestException();
       }
     }

@@ -83,7 +83,7 @@ export class UserProfile extends Model {
 
   @ApiProperty()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(1000)
   @AllowNull(true)
   @Column
   description: string;
