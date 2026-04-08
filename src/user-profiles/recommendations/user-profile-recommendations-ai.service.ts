@@ -379,7 +379,13 @@ ${lastConnectionCases}
       END * ${weights.lastConnection} +
       CASE
 ${workloadCases}
-      END * ${weights.workload}
+      END * ${weights.workload} +
+      CASE WHEN EXISTS (
+        SELECT 1 FROM "UserAchievements"
+        WHERE "userId"          = cand."userId"
+          AND "achievementType" = '${config.superEngagedCoach.achievementType}'
+          AND active            = true
+      ) THEN ${config.superEngagedCoach.score} ELSE ${config.superEngagedCoach.defaultScore} END * ${weights.superEngagedCoach}
     )) AS activity_score`;
   }
 

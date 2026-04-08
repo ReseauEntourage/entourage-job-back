@@ -17,15 +17,16 @@ export const SCORING_WEIGHTS = {
 
 /**
  * Configuration for activity score calculation.
- * The activity score is composed of 4 sub-scores with their respective weights.
+ * The activity score is composed of 5 sub-scores with their respective weights.
  */
 export const ACTIVITY_SCORING_CONFIG = {
   // Weight of each activity score component (total = 1.0)
   weights: {
-    responseRate: 0.5, // Message response rate
+    responseRate: 0.45, // Message response rate
     responseTime: 0.2, // Response speed
     lastConnection: 0.1, // Freshness of last connection
-    workload: 0.2, // Current workload (number of conversations)
+    workload: 0.15, // Current workload (number of conversations)
+    superEngagedCoach: 0.1, // Badge super_engaged_coach validated (coaches only)
   },
 
   // Response rate configuration
@@ -64,6 +65,13 @@ export const ACTIVITY_SCORING_CONFIG = {
       { maxConversations: 8, score: 0.4 }, // 6-8 conversations
       { maxConversations: Infinity, score: 0.2 }, // 9+ conversations
     ],
+  },
+
+  // Super-engaged coach achievement configuration
+  superEngagedCoach: {
+    achievementType: 'super_engaged_coach',
+    score: 1.0, // Full bonus if the badge is active
+    defaultScore: 0.0, // Default score if no data or not a coach
   },
 
   // Time window for activity statistics calculation (in days)
