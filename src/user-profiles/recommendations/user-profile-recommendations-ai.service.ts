@@ -334,7 +334,10 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
 
   /**
    * Formula for calculating activity score.
-   * Based on: response rate, response time, last connection, workload.
+   * Based on: response rate, response time, last connection, workload and super_engaged_coach badge.
+   * Each component is calculated using CASE statements with breakpoints defined in the config, allowing for a non-linear scoring.
+   * The final activity score is a weighted sum of these components, normalized to be between 0 and 1.
+   * This approach allows us to capture different dimensions of user activity and responsiveness in a nuanced way, which can help surface more relevant recommendations.
    */
   private buildActivityScoreFormula(): string {
     const config = ACTIVITY_SCORING_CONFIG;
@@ -379,7 +382,13 @@ ${lastConnectionCases}
       END * ${weights.lastConnection} +
       CASE
 ${workloadCases}
-      END * ${weights.workload}
+      END * ${weights.workload} +
+      CASE WHEN EXISTS (
+        SELECT 1 FROM "UserAchievements"
+        WHERE "userId"          = cand."userId"
+          AND "achievementType" = '${config.superEngagedCoach.achievementType}'
+          AND active            = true
+      ) THEN ${config.superEngagedCoach.score} ELSE ${config.superEngagedCoach.defaultScore} END * ${weights.superEngagedCoach}
     )) AS activity_score`;
   }
 
