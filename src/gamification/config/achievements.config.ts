@@ -35,6 +35,8 @@ export interface CriterionStat {
   currentValue: number;
   /** The minimum value required to satisfy this criterion. */
   threshold: number;
+  /** When true, values are displayed as percentages in the UI (e.g. "75%" instead of "75 / 100"). */
+  isPercentage?: boolean;
 }
 
 /**
@@ -176,6 +178,7 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
           label: 'Taux de réponse',
           currentValue: responseRate ?? 0,
           threshold: 75,
+          isPercentage: true,
         },
       ];
     },
