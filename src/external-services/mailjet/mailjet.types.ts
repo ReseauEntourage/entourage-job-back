@@ -83,6 +83,7 @@ export const MailjetTemplates = {
   MAILER_USER_RECOMMENDATIONS: 6060421,
   AUTO_SET_UNAVAILABLE: 7748944,
   SUPER_ENGAGED_ACHIEVEMENT: 7897486,
+  SUPER_ENGAGED_ACHIEVEMENT_EXPIRED: 7906853,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

@@ -215,6 +215,21 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
         expireAt
       );
     },
-    // onExpired: async ({ userId }) => { /* e.g. send a "your badge has expired" email */ },
+    onExpired: async ({
+      user,
+      userId,
+      userRole,
+      mailsService,
+      messagingService,
+    }) => {
+      const [responseRate, conversationCount] = await Promise.all([
+        messagingService.getResponseRate(userId),
+        messagingService.getMirrorRoleConversationCount(userId, userRole, 6),
+      ]);
+      await mailsService.sendSuperEngagedAchievementExpiredMail(user, {
+        conversationCount,
+        responseRate: responseRate ?? 0,
+      });
+    },
   },
 ];
