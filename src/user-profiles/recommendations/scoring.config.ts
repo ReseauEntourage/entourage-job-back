@@ -22,11 +22,11 @@ export const SCORING_WEIGHTS = {
 export const ACTIVITY_SCORING_CONFIG = {
   // Weight of each activity score component (total = 1.0)
   weights: {
-    responseRate: 0.45, // Message response rate
-    responseTime: 0.2, // Response speed
-    lastConnection: 0.1, // Freshness of last connection
-    workload: 0.15, // Current workload (number of conversations)
-    superEngagedCoach: 0.1, // Badge super_engaged_coach validated (coaches only)
+    responseRate: 35 / 100, // Message response rate
+    responseTime: 15 / 100, // Response speed
+    lastConnection: 5 / 100, // Freshness of last connection
+    workload: 15 / 100, // Current workload (number of conversations)
+    superEngagedCoach: 30 / 100, // Badge super_engaged_coach validated (coaches only)
   },
 
   // Response rate configuration
