@@ -150,7 +150,9 @@ export class UserProfilesController {
     @Query('isAvailable')
     isAvailableQuery?: string,
     @Query('sort')
-    sort?: string
+    sort?: string,
+    @Query('hasSuperCoachBadge')
+    hasSuperCoachBadgeQuery?: string
   ) {
     if (!role || role.length === 0) {
       throw new BadRequestException();
@@ -180,6 +182,9 @@ export class UserProfilesController {
         ? false
         : undefined;
 
+    const hasSuperCoachBadge =
+      hasSuperCoachBadgeQuery === 'true' ? true : undefined;
+
     const filters = {
       role,
       offset,
@@ -190,6 +195,7 @@ export class UserProfilesController {
       businessSectorIds,
       contactTypes,
       isAvailable,
+      hasSuperCoachBadge,
     };
 
     try {
