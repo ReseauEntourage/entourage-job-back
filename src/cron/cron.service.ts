@@ -156,6 +156,31 @@ export class CronService {
   }
 
   /**
+   * Sends a reminder email to all coaches whose "Super Engagé" badge expires in
+   * exactly 30 days. Runs daily at 10 AM.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async prepareSuperEngagedAchievementReminderMails() {
+    this.logger.log(
+      'Cron job started: prepareSuperEngagedAchievementReminderMails'
+    );
+
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_SUPER_ENGAGED_ACHIEVEMENT_REMINDER_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_SUPER_ENGAGED_ACHIEVEMENT_REMINDER_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
+  /**
    * Processes all expired badges in a single pass: renews those whose users
    * are still eligible, expires the rest. Runs daily at 3 AM.
    */
