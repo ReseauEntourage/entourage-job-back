@@ -10,8 +10,9 @@ import { Nudge } from 'src/common/nudge/models';
 import { Review } from 'src/common/reviews/models';
 import { Skill } from 'src/common/skills/models';
 import { Company } from 'src/companies/models/company.model';
+import { UserAchievement } from 'src/gamification/models';
 import { User } from 'src/users/models';
-import { UserRole } from 'src/users/users.types';
+import { Gender, UserRole } from 'src/users/users.types';
 import { ZoneName } from 'src/utils/types/zones.types';
 
 export type PublicProfileDto = {
@@ -20,6 +21,7 @@ export type PublicProfileDto = {
   firstName: string;
   lastName: string;
   role: UserRole;
+  gender: Gender;
   department: Department;
   currentJob: string;
   isAvailable: boolean;
@@ -43,6 +45,7 @@ export type PublicProfileDto = {
   zone: ZoneName;
   averageDelayResponse?: number | null;
   totalConversationWithMirrorRoleCount?: number | null;
+  achievements: UserAchievement[];
 };
 
 export const generatePublicProfileDto = (
@@ -60,6 +63,7 @@ export const generatePublicProfileDto = (
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
+    gender: user.gender,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     isAvailable: userProfile.isAvailable,
@@ -80,6 +84,7 @@ export const generatePublicProfileDto = (
     hasPicture: userProfile.hasPicture,
     company: null,
     zone: user.zone,
+    achievements: user.achievements ?? [],
   } as PublicProfileDto;
   if (user.company) {
     dto.company = {

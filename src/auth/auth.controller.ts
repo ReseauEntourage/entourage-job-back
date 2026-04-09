@@ -180,6 +180,16 @@ export class AuthController {
 
   @Throttle(60, 60)
   @ApiBearerAuth()
+  @Get('current/stats')
+  async getCurrentUserStats(
+    @UserPayload('id', new ParseUUIDPipe()) id: string,
+    @UserPayload('role') role: string
+  ) {
+    return await this.authService.getUsersStats(id, role as User['role']);
+  }
+
+  @Throttle(60, 60)
+  @ApiBearerAuth()
   @Get('current/staff-contact')
   async getCurrentUserStaffContact(
     @UserPayload('id', new ParseUUIDPipe()) userId: string

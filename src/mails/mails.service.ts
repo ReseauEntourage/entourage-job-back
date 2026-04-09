@@ -676,6 +676,75 @@ export class MailsService {
       };
     });
   }
+
+  async sendSuperEngagedAchievementMail(
+    user: { email: string; firstName: string; zone: ZoneName | null },
+    stats: { conversationCount: number; responseRate: number },
+    nextEvaluationDate: Date
+  ) {
+    this.logger.log(
+      `Sending super engaged achievement mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT,
+      variables: {
+        FirstName: user.firstName,
+        zone: user.zone || ZoneName.HZ,
+        siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        nextEvaluationDate: nextEvaluationDate.toLocaleDateString('fr-FR'),
+        conversationCount: stats.conversationCount,
+        responseRate: stats.responseRate,
+      },
+    });
+  }
+
+  async sendSuperEngagedAchievementReminderMail(
+    user: { email: string; firstName: string; zone: ZoneName | null },
+    stats: {
+      conversationCount: number;
+      responseRate: number;
+      goalAchieved: boolean;
+    },
+    expireAt: Date
+  ) {
+    this.logger.log(
+      `Sending super engaged achievement reminder mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT_REMINDER,
+      variables: {
+        FirstName: user.firstName,
+        zone: user.zone || ZoneName.HZ,
+        siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        expireAt: expireAt.toLocaleDateString('fr-FR'),
+        conversationCount: stats.conversationCount,
+        responseRate: stats.responseRate,
+        goalAchieved: stats.goalAchieved ? 'true' : 'false',
+      },
+    });
+  }
+
+  async sendSuperEngagedAchievementExpiredMail(
+    user: { email: string; firstName: string; zone: ZoneName | null },
+    stats: { conversationCount: number; responseRate: number }
+  ) {
+    this.logger.log(
+      `Sending super engaged achievement expired mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT_EXPIRED,
+      variables: {
+        FirstName: user.firstName,
+        zone: user.zone || ZoneName.HZ,
+        siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        conversationCount: stats.conversationCount,
+        responseRate: stats.responseRate,
+      },
+    });
+  }
 }
 
 const getRoleStringFromRole = (role: UserRole): string => {

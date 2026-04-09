@@ -30,6 +30,7 @@ export const PublicUserAttributes = [
   'firstName',
   'lastName',
   'role',
+  'gender',
   'createdAt',
   'zone',
 ];

@@ -28,6 +28,9 @@ import {
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { VoyageAiService } from 'src/external-services/voyageai/voyageai.service';
+import { AchievementTypes } from 'src/gamification/config/achievements.config';
+import { UserAchievement } from 'src/gamification/models';
+import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -195,6 +198,7 @@ export class UserProfilesService {
     businessSectorIds: string[];
     contactTypes: ContactTypeEnum[];
     isAvailable?: boolean;
+    hasSuperCoachBadge?: boolean;
   }): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -206,6 +210,7 @@ export class UserProfilesService {
       businessSectorIds,
       contactTypes,
       isAvailable,
+      hasSuperCoachBadge,
     } = query;
 
     // The request permits to provide department IDs, but in the UserProfile we store department NAMES
@@ -276,6 +281,22 @@ export class UserProfilesService {
             onboardingStatus: OnboardingStatus.COMPLETED,
           },
           required: true,
+          ...(hasSuperCoachBadge
+            ? {
+                include: [
+                  {
+                    model: UserAchievement,
+                    as: 'achievements',
+                    attributes: [],
+                    where: {
+                      achievementType: AchievementTypes.SUPER_ENGAGED_COACH,
+                      active: true,
+                    },
+                    required: true,
+                  },
+                ],
+              }
+            : {}),
         },
       ],
       where: {
@@ -300,6 +321,7 @@ export class UserProfilesService {
           model: User,
           as: 'user',
           attributes: UserProfilesUserAttributes,
+          include: [userAchievementInclude()],
         },
       ],
     });
@@ -344,6 +366,7 @@ export class UserProfilesService {
       businessSectorIds: string[];
       contactTypes: ContactTypeEnum[];
       isAvailable?: boolean;
+      hasSuperCoachBadge?: boolean;
     },
     requestingUserId: string
   ): Promise<PublicProfileDto[]> {
@@ -357,6 +380,7 @@ export class UserProfilesService {
       businessSectorIds,
       contactTypes,
       isAvailable,
+      hasSuperCoachBadge,
     } = query;
 
     // NestJS may return a single string instead of an array when only one value
@@ -438,6 +462,22 @@ export class UserProfilesService {
             onboardingStatus: OnboardingStatus.COMPLETED,
           },
           required: true,
+          ...(hasSuperCoachBadge
+            ? {
+                include: [
+                  {
+                    model: UserAchievement,
+                    as: 'achievements',
+                    attributes: [],
+                    where: {
+                      achievementType: AchievementTypes.SUPER_ENGAGED_COACH,
+                      active: true,
+                    },
+                    required: true,
+                  },
+                ],
+              }
+            : {}),
         },
       ],
       where: {
@@ -488,6 +528,7 @@ export class UserProfilesService {
           model: User,
           as: 'user',
           attributes: UserProfilesUserAttributes,
+          include: [userAchievementInclude()],
         },
       ],
     });

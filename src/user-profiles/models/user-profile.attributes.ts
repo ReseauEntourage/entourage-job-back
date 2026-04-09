@@ -19,6 +19,7 @@ export const UserProfilesUserAttributes = [
   'firstName',
   'lastName',
   'role',
+  'gender',
   'lastConnection',
   'createdAt',
   'zone',

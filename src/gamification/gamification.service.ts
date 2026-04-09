@@ -4,14 +4,18 @@ import chunk from 'lodash/chunk';
 import { Op } from 'sequelize';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
+import { MailsService } from 'src/mails/mails.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UsersService } from 'src/users/users.service';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import {
   ACHIEVEMENTS_CONFIG,
   AchievementType,
+  AchievementTypes,
+  CriterionStat,
 } from './config/achievements.config';
 import { generateAchievementSlackConfig } from './gamification.utils';
-import { UserAchievement } from './models/user-achievement.model';
+import { UserAchievement } from './models/user-achievement/user-achievement.model';
 
 /**
  * Handles the full lifecycle of user achievements.
@@ -35,6 +39,7 @@ export class GamificationService {
     @InjectModel(UserAchievement)
     private userAchievementModel: typeof UserAchievement,
     private slackService: SlackService,
+    private mailsService: MailsService,
     @Inject(forwardRef(() => MessagingService))
     private messagingService: MessagingService,
     @Inject(forwardRef(() => UsersService))
@@ -99,6 +104,75 @@ export class GamificationService {
   }
 
   /**
+   * Returns progression stats for every achievement that exposes
+   * `getProgressionStats` and for which the user's role is eligible.
+   *
+   * Intended to be called after an action that may advance a user's progress
+   * (e.g. sending a message). The frontend uses the result to render a
+   * progression modal when at least one criterion has moved forward.
+   *
+   * @param userId - The user's identifier
+   * @param userRole - The user's role, used to filter eligible achievements
+   */
+  async getAllAchievementProgressions(
+    userId: string,
+    userRole: UserRole
+  ): Promise<
+    Array<{
+      type: AchievementType;
+      label: string;
+      hasAchievement: boolean;
+      achievedAt: string | null;
+      expireAt: string | null;
+      statsWindowMonths: number;
+      criteria: CriterionStat[];
+    }>
+  > {
+    const context = {
+      userId,
+      userRole,
+      messagingService: this.messagingService,
+    };
+
+    const results = await Promise.all(
+      ACHIEVEMENTS_CONFIG.filter((a) => a.getProgressionStats).map(
+        async (achievement) => {
+          const criteria = await achievement.getProgressionStats?.(context);
+          if (criteria == null) return null;
+
+          const activeRecord = await this.userAchievementModel.findOne({
+            where: { userId, achievementType: achievement.type, active: true },
+          });
+
+          return {
+            type: achievement.type,
+            label: achievement.label,
+            hasAchievement: activeRecord !== null,
+            achievedAt: activeRecord?.createdAt?.toISOString() ?? null,
+            expireAt: activeRecord?.expireAt?.toISOString() ?? null,
+            statsWindowMonths: achievement.durationMonths,
+            criteria,
+          };
+        }
+      )
+    );
+
+    return results.filter(
+      (
+        r
+      ): r is {
+        type: AchievementType;
+        label: string;
+        hasAchievement: boolean;
+        achievedAt: string | null;
+        expireAt: string | null;
+        statsWindowMonths: number;
+        criteria: CriterionStat[];
+      } => r !== null
+    );
+  }
+
+  /**
    * Iterates over all configured achievements and grants any for which the
    * user is eligible.
    *
@@ -154,6 +228,21 @@ export class GamificationService {
           this.logger.debug(
             `[check] ${achievement.type} — granted to user ${userId}`
           );
+
+          if (achievement.onGranted) {
+            await achievement.onGranted({
+              userId,
+              userRole: user.role,
+              expireAt: userAchievement.expireAt,
+              user: {
+                firstName: user.firstName,
+                email: user.email,
+                zone: user.zone,
+              },
+              mailsService: this.mailsService,
+              messagingService: this.messagingService,
+            });
+          }
 
           const slackConfig = generateAchievementSlackConfig(
             user,
@@ -222,13 +311,21 @@ export class GamificationService {
         }
 
         const user = await this.usersService.findOne(achievement.userId);
-        const callbackContext = {
+        const baseContext = {
           userId: achievement.userId,
           userRole: user.role,
+          user: {
+            firstName: user.firstName,
+            email: user.email,
+            zone: user.zone,
+          },
+          mailsService: this.mailsService,
+          messagingService: this.messagingService,
         };
 
         const eligible = await config.checkEligibility({
-          ...callbackContext,
+          userId: achievement.userId,
+          userRole: user.role,
           messagingService: this.messagingService,
         });
 
@@ -238,7 +335,7 @@ export class GamificationService {
           await achievement.update({ expireAt: newExpireAt });
 
           if (config.onRenewed) {
-            await config.onRenewed(callbackContext);
+            await config.onRenewed({ ...baseContext, expireAt: newExpireAt });
           }
 
           const slackConfig = generateAchievementSlackConfig(
@@ -258,7 +355,10 @@ export class GamificationService {
           await achievement.update({ active: false });
 
           if (config.onExpired) {
-            await config.onExpired(callbackContext);
+            await config.onExpired({
+              ...baseContext,
+              expireAt: achievement.expireAt,
+            });
           }
           return 'expired' as const;
         }
@@ -283,6 +383,89 @@ export class GamificationService {
     });
 
     return { total: expiredAchievements.length, renewed, expired, failures };
+  }
+
+  /**
+   * Sends a reminder email to all coaches whose "Super Engagé" badge expires in
+   * exactly 30 days, including their current stats and whether they are already
+   * eligible for renewal.
+   *
+   * Intended to be called daily via a cron job at 10 AM.
+   */
+  async prepareExpirationReminderMails(): Promise<{
+    total: number;
+    sent: number;
+    failures: Array<{ itemId: string; reason: unknown }>;
+  }> {
+    const today = new Date();
+    const reminderDate = new Date(today);
+    reminderDate.setDate(today.getDate() + 30);
+
+    const startOfReminderDay = new Date(reminderDate);
+    startOfReminderDay.setHours(0, 0, 0, 0);
+    const endOfReminderDay = new Date(reminderDate);
+    endOfReminderDay.setHours(23, 59, 59, 999);
+
+    const achievements = await this.userAchievementModel.findAll({
+      where: {
+        active: true,
+        achievementType: AchievementTypes.SUPER_ENGAGED_COACH,
+        expireAt: { [Op.between]: [startOfReminderDay, endOfReminderDay] },
+      },
+    });
+
+    const config = ACHIEVEMENTS_CONFIG.find(
+      (a) => a.type === AchievementTypes.SUPER_ENGAGED_COACH
+    );
+
+    if (!config || !config.getProgressionStats) {
+      throw new Error(
+        'Missing or invalid SUPER_ENGAGED_COACH achievement configuration: getProgressionStats is required.'
+      );
+    }
+
+    const results = await Promise.allSettled(
+      achievements.map(async (achievement) => {
+        const user = await this.usersService.findOne(achievement.userId);
+
+        const progressionStats = await config.getProgressionStats({
+          userId: achievement.userId,
+          userRole: UserRoles.COACH,
+          messagingService: this.messagingService,
+        });
+
+        const conversationCount =
+          progressionStats?.find((s) => s.key === 'conversationCount')
+            ?.currentValue ?? 0;
+        const responseRate =
+          progressionStats?.find((s) => s.key === 'responseRate')
+            ?.currentValue ?? 0;
+        const goalAchieved =
+          progressionStats?.every((s) => s.currentValue >= s.threshold) ??
+          false;
+
+        await this.mailsService.sendSuperEngagedAchievementReminderMail(
+          { email: user.email, firstName: user.firstName, zone: user.zone },
+          { conversationCount, responseRate, goalAchieved },
+          achievement.expireAt
+        );
+      })
+    );
+
+    let sent = 0;
+    const failures: Array<{ itemId: string; reason: unknown }> = [];
+
+    results.forEach((result, index) => {
+      const achievement = achievements[index];
+      const itemId = `${achievement.achievementType}:${achievement.userId}`;
+      if (result.status === 'rejected') {
+        failures.push({ itemId, reason: result.reason });
+      } else {
+        sent++;
+      }
+    });
+
+    return { total: achievements.length, sent, failures };
   }
 
   /**
