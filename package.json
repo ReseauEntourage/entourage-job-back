@@ -1,6 +1,6 @@
 {
   "name": "entourage-pro-backend",
-  "version": "2.29.14",
+  "version": "2.29.15",
   "license": "ISC",
   "engines": {
     "node": "20.x"
