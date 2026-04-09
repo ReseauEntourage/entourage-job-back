@@ -7,10 +7,11 @@ import { slackChannels } from 'src/external-services/slack/slack.types';
 import { MailsService } from 'src/mails/mails.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UsersService } from 'src/users/users.service';
-import { UserRole } from 'src/users/users.types';
+import { UserRole, UserRoles } from 'src/users/users.types';
 import {
   ACHIEVEMENTS_CONFIG,
   AchievementType,
+  AchievementTypes,
   CriterionStat,
 } from './config/achievements.config';
 import { generateAchievementSlackConfig } from './gamification.utils';
@@ -382,6 +383,83 @@ export class GamificationService {
     });
 
     return { total: expiredAchievements.length, renewed, expired, failures };
+  }
+
+  /**
+   * Sends a reminder email to all coaches whose "Super Engagé" badge expires in
+   * exactly 30 days, including their current stats and whether they are already
+   * eligible for renewal.
+   *
+   * Intended to be called daily via a cron job at 10 AM.
+   */
+  async prepareExpirationReminderMails(): Promise<{
+    total: number;
+    sent: number;
+    failures: Array<{ itemId: string; reason: unknown }>;
+  }> {
+    const today = new Date();
+    const reminderDate = new Date(today);
+    reminderDate.setDate(today.getDate() + 30);
+
+    const startOfReminderDay = new Date(reminderDate);
+    startOfReminderDay.setHours(0, 0, 0, 0);
+    const endOfReminderDay = new Date(reminderDate);
+    endOfReminderDay.setHours(23, 59, 59, 999);
+
+    const achievements = await this.userAchievementModel.findAll({
+      where: {
+        active: true,
+        achievementType: AchievementTypes.SUPER_ENGAGED_COACH,
+        expireAt: { [Op.between]: [startOfReminderDay, endOfReminderDay] },
+      },
+    });
+
+    const config = ACHIEVEMENTS_CONFIG.find(
+      (a) => a.type === AchievementTypes.SUPER_ENGAGED_COACH
+    );
+
+    const results = await Promise.allSettled(
+      achievements.map(async (achievement) => {
+        const user = await this.usersService.findOne(achievement.userId);
+
+        const progressionStats = await config?.getProgressionStats?.({
+          userId: achievement.userId,
+          userRole: UserRoles.COACH,
+          messagingService: this.messagingService,
+        });
+
+        const conversationCount =
+          progressionStats?.find((s) => s.key === 'conversationCount')
+            ?.currentValue ?? 0;
+        const responseRate =
+          progressionStats?.find((s) => s.key === 'responseRate')
+            ?.currentValue ?? 0;
+        const goalAchieved =
+          progressionStats?.every((s) => s.currentValue >= s.threshold) ??
+          false;
+
+        await this.mailsService.sendSuperEngagedAchievementReminderMail(
+          { email: user.email, firstName: user.firstName, zone: user.zone },
+          { conversationCount, responseRate, goalAchieved },
+          achievement.expireAt
+        );
+      })
+    );
+
+    let sent = 0;
+    const failures: Array<{ itemId: string; reason: unknown }> = [];
+
+    results.forEach((result, index) => {
+      const achievement = achievements[index];
+      const itemId = `${achievement.achievementType}:${achievement.userId}`;
+      if (result.status === 'rejected') {
+        failures.push({ itemId, reason: result.reason });
+      } else {
+        sent++;
+      }
+    });
+
+    return { total: achievements.length, sent, failures };
   }
 
   /**

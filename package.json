@@ -31,7 +31,8 @@
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "db:dump": "./dump-db-schema.sh",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "cron:trigger": "node scripts/trigger-cron.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.142.0",

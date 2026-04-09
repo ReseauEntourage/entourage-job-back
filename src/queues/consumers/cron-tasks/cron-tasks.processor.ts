@@ -51,6 +51,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareAutoSetUnavailableUsers();
       case Jobs.PROCESS_EXPIRED_ACHIEVEMENTS:
         return this.processExpiredAchievements();
+      case Jobs.PREPARE_SUPER_ENGAGED_ACHIEVEMENT_REMINDER_MAILS:
+        return this.prepareSuperEngagedAchievementReminderMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -611,6 +613,38 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Set ${successIds.length} inactive users as unavailable`;
+  }
+
+  /**
+   * Sends a reminder email to all coaches whose "Super Engagé" badge expires in
+   * exactly 30 days. Called daily at 10 AM via the cron job.
+   */
+  async prepareSuperEngagedAchievementReminderMails() {
+    this.logger.log('Preparing Super Engaged achievement reminder mails...');
+    const { total, sent, failures } =
+      await this.gamificationService.prepareExpirationReminderMails();
+    this.logger.log('Super Engaged achievement reminder mails prepared');
+
+    const succeeded = failures.length === 0;
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '🔔 Super Engaged — reminder mails (30j avant expiration)',
+      {
+        total,
+        success: sent,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${total} Super Engaged reminder mails`
+      );
+    }
+
+    return `Sent ${sent}/${total} Super Engaged achievement reminder mails`;
   }
 
   /**
