@@ -418,11 +418,17 @@ export class GamificationService {
       (a) => a.type === AchievementTypes.SUPER_ENGAGED_COACH
     );
 
+    if (!config || !config.getProgressionStats) {
+      throw new Error(
+        'Missing or invalid SUPER_ENGAGED_COACH achievement configuration: getProgressionStats is required.'
+      );
+    }
+
     const results = await Promise.allSettled(
       achievements.map(async (achievement) => {
         const user = await this.usersService.findOne(achievement.userId);
 
-        const progressionStats = await config?.getProgressionStats?.({
+        const progressionStats = await config.getProgressionStats({
           userId: achievement.userId,
           userRole: UserRoles.COACH,
           messagingService: this.messagingService,
