@@ -1,8 +1,6 @@
-const dev = process.env.NODE_ENV !== 'production';
-
 const path = require('path');
 
-const backendPath = __dirname + (dev ? '/src/db' : '/dist/db')
+const backendPath = __dirname + '/src/db';
 
 module.exports = {
   'config': path.resolve(backendPath + '/config', 'config.js'),
