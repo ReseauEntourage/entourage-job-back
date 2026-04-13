@@ -1,5 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
+import { RecruitementAlertsModule } from 'src/common/recruitement-alerts/recruitement-alerts.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
@@ -44,6 +45,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     MessagingModule,
     EmbeddingsModule,
     GamificationModule,
+    RecruitementAlertsModule,
   ],
   providers: [
     WorkQueueProcessor,

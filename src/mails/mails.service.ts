@@ -14,7 +14,7 @@ import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-r
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { ZoneName } from 'src/utils/types/zones.types';
+import { InternalStaffContact, ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class MailsService {
@@ -678,7 +678,12 @@ export class MailsService {
   }
 
   async sendSuperEngagedAchievementMail(
-    user: { email: string; firstName: string; zone: ZoneName | null },
+    user: {
+      email: string;
+      firstName: string;
+      zone: ZoneName | null;
+      staffContact: InternalStaffContact;
+    },
     stats: { conversationCount: number; responseRate: number },
     nextEvaluationDate: Date
   ) {
@@ -695,12 +700,18 @@ export class MailsService {
         nextEvaluationDate: nextEvaluationDate.toLocaleDateString('fr-FR'),
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
+        staffContact: user.staffContact,
       },
     });
   }
 
   async sendSuperEngagedAchievementReminderMail(
-    user: { email: string; firstName: string; zone: ZoneName | null },
+    user: {
+      email: string;
+      firstName: string;
+      zone: ZoneName | null;
+      staffContact: InternalStaffContact;
+    },
     stats: {
       conversationCount: number;
       responseRate: number;
@@ -727,7 +738,12 @@ export class MailsService {
   }
 
   async sendSuperEngagedAchievementExpiredMail(
-    user: { email: string; firstName: string; zone: ZoneName | null },
+    user: {
+      email: string;
+      firstName: string;
+      zone: ZoneName | null;
+      staffContact: InternalStaffContact;
+    },
     stats: { conversationCount: number; responseRate: number }
   ) {
     this.logger.log(
@@ -745,7 +761,328 @@ export class MailsService {
       },
     });
   }
+
+  async sendChurnUsersFeedbackMail(user: User) {
+    this.logger.log(
+      `Sending churn users feedback mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      templateId: MailjetTemplates.MAILER_CHURN_USERS_FEEDBACK,
+      variables: {
+        firstName: user.firstName || '',
+        zone: user.zone || ZoneName.HZ,
+        role: getRoleString(user),
+        staffContact: user.staffContact,
+        siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+      },
+    });
+  }
+
+  async sendWarnAccountDeletionMail(user: User) {
+    this.logger.log(
+      `Sending warn account deletion mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      templateId: MailjetTemplates.MAILER_WARN_ACCOUNT_DELETION,
+      variables: {
+        role: getRoleString(user),
+        staffContact: user.staffContact,
+      },
+    });
+  }
+
+  async sendInactiveRefererMail(user: User) {
+    this.logger.log(
+      `Sending inactive referer mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      templateId: MailjetTemplates.MAILER_INACTIVE_REFERERS,
+      variables: {
+        firstName: user.firstName || '',
+        zone: user.zone || ZoneName.HZ,
+        staffContact: user.staffContact,
+        siteLink: process.env.FRONT_URL,
+      },
+    });
+  }
+
+  async sendReferedNotActivatedMail(
+    refererUser: User,
+    candidate: {
+      candidateEmail: string;
+      candidateFirstName: string;
+      candidateLastName: string;
+    }
+  ) {
+    this.logger.log(
+      `Sending refered not activated mail to referer with email ${refererUser.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: refererUser.email,
+      replyTo: refererUser.staffContact.email,
+      templateId: MailjetTemplates.MAILER_INACTIVE_REFERED_CANDIDATE,
+      variables: {
+        firstName: candidate.candidateFirstName,
+        lastName: candidate.candidateLastName,
+        email: candidate.candidateEmail,
+        refererFirstName: refererUser.firstName,
+        refererLastName: refererUser.lastName,
+        refererEmail: refererUser.email,
+        role: 'Prescripteur',
+        zone: refererUser.zone || ZoneName.HZ,
+        staffContact: refererUser.staffContact,
+        siteLink: process.env.FRONT_URL,
+      },
+    });
+  }
+
+  async sendCommittedUsersFeedbackMail(user: User) {
+    this.logger.log(
+      `Sending committed users feedback mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      templateId: MailjetTemplates.MAILER_COMMITTED_USERS_FEEDBACK,
+      variables: {
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName || '',
+        zone: user.zone || ZoneName.HZ,
+        role: getRoleString(user),
+        staffContact: user.staffContact,
+        siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+      },
+    });
+  }
+
+  async sendUnreadConversationsMail(
+    user: User,
+    unreadConversationsCount: number,
+    days: number
+  ) {
+    this.logger.log(
+      `Sending unread conversations mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      subject: getUnreadConversationsSubject(
+        days,
+        user.role,
+        unreadConversationsCount
+      ),
+      templateId: MailjetTemplates.MAILER_UNREAD_CONVERSATIONS,
+      variables: {
+        firstName: user.firstName || '',
+        role: getRoleString(user),
+        zone: user.zone || ZoneName.HZ,
+        days,
+        roleDay: getRoleString(user) + days.toString(),
+        count: unreadConversationsCount,
+        answerUrl: `${process.env.FRONT_URL}/backoffice/messaging`,
+        staffContact: user.staffContact,
+      },
+    });
+  }
+
+  async sendUnavailableUserMail(user: User, unreadConversationsCount: number) {
+    this.logger.log(
+      `Sending unavailable user mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      subject: 'Une petite pause ?',
+      templateId: MailjetTemplates.MAILER_UNAVAILABLE_USER,
+      variables: {
+        firstName: user.firstName || '',
+        role: getRoleString(user),
+        zone: user.zone || ZoneName.HZ,
+        profileUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        count: unreadConversationsCount,
+        staffContact: user.staffContact,
+      },
+    });
+  }
+
+  async sendMessagingFeedbackMail(
+    user: User,
+    interlocutorFirstName: string,
+    interlocutorId: string
+  ) {
+    this.logger.log(
+      `Sending messaging feedback mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      replyTo: user.staffContact.email,
+      templateId: MailjetTemplates.MAILER_MESSAGING_FEEDBACK,
+      variables: {
+        firstName: user.firstName || '',
+        interlocutorFirstName,
+        zone: user.zone || ZoneName.HZ,
+        staffContact: user.staffContact,
+        siteLink: process.env.FRONT_URL,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/messaging?userId=${interlocutorId}`,
+      },
+    });
+  }
+
+  async sendCompanyNoAlertsReminderMail(adminUser: User) {
+    this.logger.log(
+      `Sending company no alerts reminder mail to user with email ${adminUser.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: adminUser.email,
+      replyTo: adminUser.staffContact.email,
+      templateId: MailjetTemplates.MAILER_COMPANY_NO_ALERTS_REMINDER,
+      variables: {
+        firstName: adminUser.firstName || '',
+        dashboardLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        zone: adminUser.zone || ZoneName.HZ,
+        staffContact: adminUser.staffContact,
+        siteLink: process.env.FRONT_URL,
+      },
+    });
+  }
+
+  async sendRemindCompanyInvitationMail(adminUser: User) {
+    this.logger.log(
+      `Sending remind company invitation mail to user with email ${adminUser.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: adminUser.email,
+      replyTo: adminUser.staffContact.email,
+      templateId: MailjetTemplates.MAILER_REMIND_COMPANY_INVITATION,
+      variables: {
+        firstName: adminUser.firstName || '',
+        zone: adminUser.zone || ZoneName.HZ,
+        staffContact: adminUser.staffContact,
+        linkUrl: `${process.env.FRONT_URL}/backoffice/companies/parametres`,
+      },
+    });
+  }
+
+  async sendCompanyInvitationPendingMail(
+    adminUser: User,
+    invitationEmail: string,
+    companyId: string
+  ) {
+    this.logger.log(
+      `Sending company invitation pending mail to user with email ${adminUser.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: adminUser.email,
+      replyTo: adminUser.staffContact.email,
+      templateId: MailjetTemplates.MAILER_INACTIVE_COLLABORATORS,
+      variables: {
+        invitationEmail,
+        companyAdminFirstName: adminUser.firstName || '',
+        companyId,
+        zone: adminUser.zone || ZoneName.HZ,
+        staffContact: adminUser.staffContact,
+        siteLink: process.env.FRONT_URL,
+      },
+    });
+  }
+
+  async sendNotCompletedCompanyMail(adminUser: User, companyName: string) {
+    this.logger.log(
+      `Sending not completed company mail to user with email ${adminUser.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: adminUser.email,
+      replyTo: adminUser.staffContact.email,
+      templateId: MailjetTemplates.MAILER_NOT_COMPLETED_COMPANY,
+      variables: {
+        companyName: companyName || '',
+        adminFirstName: adminUser.firstName || '',
+        zone: adminUser.zone || ZoneName.HZ,
+        staffContact: adminUser.staffContact,
+        siteLink: `${process.env.FRONT_URL}/backoffice/companies/settings`,
+      },
+    });
+  }
+
+  async sendCompanyCollabFollowMail(
+    adminUser: User,
+    companyId: string,
+    companyName: string
+  ) {
+    this.logger.log(
+      `Sending company collab follow mail to user with email ${adminUser.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: adminUser.email,
+      replyTo: adminUser.staffContact.email,
+      templateId: MailjetTemplates.MAILER_FOLLOW_COLLAB_COMPANY,
+      variables: {
+        email: adminUser.email,
+        firstName: adminUser.firstName || '',
+        zone: adminUser.zone || ZoneName.HZ,
+        staffContact: adminUser.staffContact,
+        siteLink: process.env.FRONT_URL,
+        companyId,
+        companyName: companyName || '',
+      },
+    });
+  }
+
+  async sendRecruitmentAlertMail(alert: {
+    companyAdminEmail: string;
+    firstName: string;
+    newCandidatesCount: number;
+    alertName: string;
+    alertId: string;
+    zone: string;
+    staffContact: User['staffContact'];
+  }) {
+    this.logger.log(
+      `Sending recruitment alert mail to user with email ${alert.companyAdminEmail}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: alert.companyAdminEmail,
+      replyTo: alert.staffContact?.email,
+      templateId: MailjetTemplates.MAILER_RECRUITMENT_ALERT,
+      variables: {
+        firstName: alert.firstName || '',
+        newCandidatesCount: alert.newCandidatesCount,
+        alertName: alert.alertName,
+        alertLink: `${process.env.FRONT_URL}/backoffice/alerte-candidats/${alert.alertId}`,
+        zone: alert.zone,
+        staffContact: alert.staffContact,
+        siteLink: process.env.FRONT_URL,
+      },
+    });
+  }
 }
+
+const getUnreadConversationsSubject = (
+  days: number,
+  role: UserRole,
+  count: number
+): string => {
+  if (role === UserRoles.CANDIDATE) {
+    if (days === 4) {
+      return `${count} conversation(s) attend(ent) votre réponse 💬`;
+    }
+    return `Toujours ${count} conversation(s) en attente… On vous encourage à y répondre ! 🎯`;
+  }
+  if (role === UserRoles.COACH) {
+    if (days === 4) {
+      return `Vous avez ${count} conversation(s) en attente 🕘`;
+    }
+    return `Toujours ${count} conversation(s) en attente… Et si vous y répondiez aujourd'hui ? 💡`;
+  }
+  return `Vous avez ${count} conversation(s) en attente 🕘`;
+};
 
 const getRoleStringFromRole = (role: UserRole): string => {
   switch (role) {
