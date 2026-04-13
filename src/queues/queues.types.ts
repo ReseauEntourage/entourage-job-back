@@ -48,6 +48,24 @@ export const Jobs = {
   PROCESS_EXPIRED_ACHIEVEMENTS: 'process_expired_achievements',
   PREPARE_SUPER_ENGAGED_ACHIEVEMENT_REMINDER_MAILS:
     'prepare_super_engaged_achievement_reminder_mails',
+  PREPARE_RECRUITMENT_ALERTS_MAILS: 'prepare_recruitment_alerts_mails',
+  PREPARE_COMPANY_NO_ALERTS_REMINDER_MAILS:
+    'prepare_company_no_alerts_reminder_mails',
+  PREPARE_REFERED_NOT_ACTIVATED_MAILS: 'prepare_refered_not_activated_mails',
+  PREPARE_REMIND_COMPANY_INVITATION_MAILS:
+    'prepare_remind_company_invitation_mails',
+  PREPARE_COMPANY_INVITATIONS_PENDING_MAILS:
+    'prepare_company_invitations_pending_mails',
+  PREPARE_NOT_COMPLETED_COMPANY_MAILS: 'prepare_not_completed_company_mails',
+  PREPARE_COMPANY_COLLAB_FOLLOW_MAILS: 'prepare_company_collab_follow_mails',
+  PREPARE_COMMITTED_USERS_FEEDBACK_MAILS:
+    'prepare_committed_users_feedback_mails',
+  PREPARE_UNREAD_CONVERSATIONS_MAILS: 'prepare_unread_conversations_mails',
+  PREPARE_UNAVAILABLE_USERS_MAILS: 'prepare_unavailable_users_mails',
+  PREPARE_CHURN_USERS_FEEDBACK_MAILS: 'prepare_churn_users_feedback_mails',
+  PREPARE_INACTIVE_REFERERS_MAILS: 'prepare_inactive_referers_mails',
+  PREPARE_MESSAGING_FEEDBACK_MAILS: 'prepare_messaging_feedback_mails',
+  PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -82,6 +100,20 @@ type JobsData = {
   [Jobs.PREPARE_AUTO_SET_UNAVAILABLE_USERS]: PrepareAutoSetUnavailableUsersJob;
   [Jobs.PROCESS_EXPIRED_ACHIEVEMENTS]: ProcessExpiredAchievementsJob;
   [Jobs.PREPARE_SUPER_ENGAGED_ACHIEVEMENT_REMINDER_MAILS]: PrepareSuperEngagedAchievementReminderMailsJob;
+  [Jobs.PREPARE_RECRUITMENT_ALERTS_MAILS]: PrepareRecruitmentAlertsMailsJob;
+  [Jobs.PREPARE_COMPANY_NO_ALERTS_REMINDER_MAILS]: PrepareCompanyNoAlertsReminderMailsJob;
+  [Jobs.PREPARE_REFERED_NOT_ACTIVATED_MAILS]: PrepareReferedNotActivatedMailsJob;
+  [Jobs.PREPARE_REMIND_COMPANY_INVITATION_MAILS]: PrepareRemindCompanyInvitationMailsJob;
+  [Jobs.PREPARE_COMPANY_INVITATIONS_PENDING_MAILS]: PrepareCompanyInvitationsPendingMailsJob;
+  [Jobs.PREPARE_NOT_COMPLETED_COMPANY_MAILS]: PrepareNotCompletedCompanyMailsJob;
+  [Jobs.PREPARE_COMPANY_COLLAB_FOLLOW_MAILS]: PrepareCompanyCollabFollowMailsJob;
+  [Jobs.PREPARE_COMMITTED_USERS_FEEDBACK_MAILS]: PrepareCommittedUsersFeedbackMailsJob;
+  [Jobs.PREPARE_UNREAD_CONVERSATIONS_MAILS]: PrepareUnreadConversationsMailsJob;
+  [Jobs.PREPARE_UNAVAILABLE_USERS_MAILS]: PrepareUnavailableUsersMailsJob;
+  [Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS]: PrepareChurnUsersFeedbackMailsJob;
+  [Jobs.PREPARE_INACTIVE_REFERERS_MAILS]: PrepareInactiveReferersMailsJob;
+  [Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS]: PrepareMessagingFeedbackMailsJob;
+  [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -174,6 +206,34 @@ export interface PrepareAutoSetUnavailableUsersJob {}
 export interface ProcessExpiredAchievementsJob {}
 
 export interface PrepareSuperEngagedAchievementReminderMailsJob {}
+
+export interface PrepareRecruitmentAlertsMailsJob {}
+
+export interface PrepareCompanyNoAlertsReminderMailsJob {}
+
+export interface PrepareReferedNotActivatedMailsJob {}
+
+export interface PrepareRemindCompanyInvitationMailsJob {}
+
+export interface PrepareCompanyInvitationsPendingMailsJob {}
+
+export interface PrepareNotCompletedCompanyMailsJob {}
+
+export interface PrepareCompanyCollabFollowMailsJob {}
+
+export interface PrepareCommittedUsersFeedbackMailsJob {}
+
+export interface PrepareUnreadConversationsMailsJob {}
+
+export interface PrepareUnavailableUsersMailsJob {}
+
+export interface PrepareChurnUsersFeedbackMailsJob {}
+
+export interface PrepareInactiveReferersMailsJob {}
+
+export interface PrepareMessagingFeedbackMailsJob {}
+
+export interface PrepareWarnAccountDeletionMailsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;

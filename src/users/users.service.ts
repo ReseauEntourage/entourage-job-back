@@ -954,4 +954,494 @@ export class UsersService {
         return null;
     }
   };
+
+  async getUserIdsForChurnFeedback(
+    daysSinceLastConnection: number
+  ): Promise<Pick<User, 'id'>[]> {
+    const startDate = new Date(
+      new Date().setHours(0, 0, 0, 0) - daysSinceLastConnection * DAY_IN_MS
+    );
+    const endDate = new Date(
+      new Date().setHours(0, 0, 0, 0) -
+        (daysSinceLastConnection - 1) * DAY_IN_MS
+    );
+    return this.userModel.findAll({
+      attributes: ['id'],
+      where: {
+        role: { [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH] },
+        lastConnection: { [Op.gte]: startDate, [Op.lt]: endDate },
+        deletedAt: null,
+      },
+    });
+  }
+
+  async getUserIdsForWarnAccountDeletion(
+    monthsSinceLastConnection: number
+  ): Promise<{ id: string }[]> {
+    return this.userModel.sequelize.query(
+      `
+      SELECT "Users"."id"
+      FROM "Users"
+      WHERE (
+        (
+          "Users"."lastConnection" IS NOT NULL
+          AND "Users"."lastConnection" >= CURRENT_TIMESTAMP - INTERVAL '${
+            monthsSinceLastConnection + 1
+          } months'
+          AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '${monthsSinceLastConnection} months'
+        )
+        OR (
+          "Users"."lastConnection" IS NULL
+          AND "Users"."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
+            monthsSinceLastConnection + 1
+          } months'
+          AND "Users"."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${monthsSinceLastConnection} months'
+        )
+      )
+      AND "Users"."deletedAt" IS NULL
+      AND "Users".role NOT IN ('Admin')
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getUserIdsForInactiveReferers(
+    daysSinceCreation: number
+  ): Promise<{ id: string }[]> {
+    return this.userModel.sequelize.query(
+      `
+      SELECT u.id
+      FROM "Users" u
+      LEFT JOIN "Users" r ON r."refererId" = u.id
+      LEFT JOIN "UserProfiles" up ON u."id" = up."userId"
+      WHERE u.role = 'Prescripteur'
+        AND up."isAvailable" = TRUE
+        AND u."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceCreation + 1
+        } days'
+        AND u."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceCreation} days'
+        AND u."deletedAt" IS NULL
+      GROUP BY u.id
+      HAVING COUNT(r.id) = 0
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getReferedNotActivatedData(daysSinceCreation: number): Promise<
+    {
+      refererId: string;
+      candidateEmail: string;
+      candidateFirstName: string;
+      candidateLastName: string;
+      candidateZone: string;
+    }[]
+  > {
+    return this.userModel.sequelize.query(
+      `
+      SELECT
+        r.id AS "refererId",
+        c."email" AS "candidateEmail",
+        c."firstName" AS "candidateFirstName",
+        c."lastName" AS "candidateLastName",
+        r."zone" AS "candidateZone"
+      FROM "Users" c
+      INNER JOIN "Users" r ON c."refererId" = r.id
+      WHERE c.role = 'Candidat'
+        AND c."lastConnection" IS NULL
+        AND c."refererId" IS NOT NULL
+        AND c."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceCreation + 1
+        } days'
+        AND c."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceCreation} days'
+        AND c."deletedAt" IS NULL
+        AND r."deletedAt" IS NULL
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getUserIdsForCommittedFeedback(
+    daysSinceFirstMessage: number
+  ): Promise<{ id: string }[]> {
+    return this.userModel.sequelize.query(
+      `
+      WITH FirstMessages AS (
+        SELECT m."authorId", MIN(m."createdAt") AS "firstMessageDate"
+        FROM "Messages" m
+        GROUP BY m."authorId"
+      )
+      SELECT u.id
+      FROM "Users" u
+      JOIN FirstMessages fm ON u.id = fm."authorId"
+      WHERE fm."firstMessageDate" >= CURRENT_TIMESTAMP - INTERVAL '${
+        daysSinceFirstMessage + 1
+      } days'
+        AND fm."firstMessageDate" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceFirstMessage} days'
+        AND u."deletedAt" IS NULL
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getUserRowsForUnreadConversations(
+    daysSinceLastConnection: number
+  ): Promise<{ id: string; unreadConversationsCount: number }[]> {
+    return this.userModel.sequelize.query(
+      `
+      SELECT
+        u."id" as "id",
+        count(cp.id) as "unreadConversationsCount"
+      FROM "Users" u
+      JOIN "ConversationParticipants" cp ON cp."userId" = u.id
+      JOIN "UserProfiles" up ON u."id" = up."userId"
+      JOIN "Conversations" c ON c.id = cp."conversationId"
+      JOIN (
+        SELECT "conversationId", MAX("createdAt") AS "lastMessageTime"
+        FROM "Messages"
+        GROUP BY "conversationId"
+      ) lm ON lm."conversationId" = c.id
+      WHERE (cp."seenAt" IS NULL OR lm."lastMessageTime" >= cp."seenAt")
+        AND up."isAvailable" IS TRUE
+        AND u."lastConnection" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceLastConnection + 1
+        } days'
+        AND u."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceLastConnection} days'
+        AND u.role != 'Admin'
+        AND u."deletedAt" IS NULL
+      GROUP BY u.id
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getUserRowsForUnavailableUsers(
+    daysSinceLastConversation: number
+  ): Promise<{ id: string; unreadConversationsCount: number }[]> {
+    return this.userModel.sequelize.query(
+      `
+      SELECT
+        u."id" as "id",
+        count(cp.id) as "unreadConversationsCount"
+      FROM "Users" u
+      JOIN "ConversationParticipants" cp ON cp."userId" = u.id
+      JOIN "UserProfiles" up ON u."id" = up."userId"
+      JOIN "Conversations" c ON c.id = cp."conversationId"
+      JOIN (
+        SELECT "conversationId", MAX("createdAt") AS "lastMessageTime"
+        FROM "Messages"
+        GROUP BY "conversationId"
+      ) lm ON lm."conversationId" = c.id
+      WHERE (cp."seenAt" IS NULL OR lm."lastMessageTime" >= cp."seenAt")
+        AND up."isAvailable" IS TRUE
+        AND lm."lastMessageTime" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceLastConversation + 1
+        } days'
+        AND lm."lastMessageTime" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceLastConversation} days'
+        AND u.role != 'Admin'
+        AND u."deletedAt" IS NULL
+      GROUP BY u.id
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getUserTriplesForMessagingFeedback(days: number): Promise<
+    {
+      userId: string;
+      interlocutorFirstName: string;
+      interlocutorId: string;
+    }[]
+  > {
+    return this.userModel.sequelize.query(
+      `
+      SELECT
+        u."id" as "userId",
+        u_other."firstName" as "interlocutorFirstName",
+        u_other."id" as "interlocutorId"
+      FROM "ConversationParticipants" cp
+      JOIN "Conversations" c ON cp."conversationId" = c."id"
+      JOIN "Messages" m ON c."id" = m."conversationId"
+      JOIN "Users" u ON cp."userId" = u."id"
+      JOIN "ConversationParticipants" cp_other
+        ON cp."conversationId" = cp_other."conversationId"
+        AND cp."userId" != cp_other."userId"
+      JOIN "Users" u_other ON cp_other."userId" = u_other."id"
+      WHERE cp."feedbackDate" IS NULL
+        AND cp."feedbackRating" IS NULL
+        AND m."createdAt" = (
+          SELECT MAX(m2."createdAt")
+          FROM "Messages" m2
+          WHERE m2."conversationId" = c."id"
+        )
+        AND m."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${days + 1} days'
+        AND m."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${days} days'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "ConversationParticipants" cp2
+          LEFT JOIN "Messages" m3
+            ON cp2."userId" = m3."authorId"
+            AND cp2."conversationId" = m3."conversationId"
+          WHERE cp2."conversationId" = c."id"
+          GROUP BY cp2."userId"
+          HAVING COUNT(m3."id") = 0
+        )
+      GROUP BY u."id", u_other."firstName", u_other."id"
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getCompanyAdminIdsForNoAlertsReminder(): Promise<
+    { adminId: string }[]
+  > {
+    return this.userModel.sequelize.query(
+      `
+      SELECT u.id AS "adminId"
+      FROM "Companies" c
+      JOIN "CompanyUsers" cu ON c.id = cu."companyId"
+      JOIN "Users" u ON cu."userId" = u.id
+      LEFT JOIN "RecruitementAlerts" ra ON ra."companyId" = c.id
+      WHERE cu."isAdmin" IS TRUE
+        AND (c.goal = 'recruit' OR c.goal = 'both')
+        AND ra.id IS NULL
+        AND c."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '3 days'
+        AND c."createdAt" < CURRENT_TIMESTAMP - INTERVAL '2 days'
+        AND u."deletedAt" IS NULL
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getCompanyAdminIdsForRemindInvitation(
+    daysSinceRegistration: number
+  ): Promise<{ adminId: string }[]> {
+    return this.userModel.sequelize.query(
+      `
+      SELECT u.id AS "adminId"
+      FROM "Users" u
+      INNER JOIN "CompanyUsers" cu ON u."id" = cu."userId"
+      INNER JOIN "Companies" c ON c."id" = cu."companyId"
+      LEFT JOIN "CompanyInvitations" companyInv ON companyInv."companyId" = cu."companyId"
+      WHERE c.goal IN ('both', 'sensibilize')
+        AND cu."isAdmin" = TRUE
+        AND u."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceRegistration + 1
+        } days'
+        AND u."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceRegistration} days'
+        AND u."deletedAt" IS NULL
+      GROUP BY u.id
+      HAVING COUNT(companyInv.id) <= 0
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getCompanyInvitationPendingData(
+    daysSinceInvitation: number
+  ): Promise<
+    { adminId: string; invitationEmail: string; companyId: string }[]
+  > {
+    return this.userModel.sequelize.query(
+      `
+      SELECT
+        companyAdmin.id AS "adminId",
+        invit.email AS "invitationEmail",
+        invit."companyId" AS "companyId"
+      FROM "CompanyInvitations" invit
+      LEFT JOIN "Users" companyAdmin ON invit."authorId" = companyAdmin.id
+      WHERE invit."userId" IS NULL
+        AND invit."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceInvitation + 1
+        } days'
+        AND invit."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceInvitation} days'
+        AND companyAdmin."deletedAt" IS NULL
+      GROUP BY invit.id, companyAdmin.id, invit."companyId"
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getCompanyAdminDataForNotCompletedCompany(
+    daysSinceCreation: number
+  ): Promise<{ adminId: string; companyName: string }[]> {
+    return this.userModel.sequelize.query(
+      `
+      SELECT u.id AS "adminId", c.name AS "companyName"
+      FROM "Users" u
+      INNER JOIN "CompanyUsers" cu ON cu."userId" = u.id
+      INNER JOIN "Companies" c ON c.id = cu."companyId"
+      WHERE u."deletedAt" IS NULL
+        AND cu."isAdmin" = TRUE
+        AND u."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
+          daysSinceCreation + 1
+        } days'
+        AND u."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceCreation} days'
+        AND (
+          c."name" IS NULL
+          OR c."description" IS NULL
+          OR c."city" IS NULL
+          OR c."url" IS NULL
+          OR c."linkedInUrl" IS NULL
+          OR c."logoUrl" IS NULL
+        )
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getCompanyAdminDataForCollabFollow(): Promise<
+    { adminId: string; companyId: string; companyName: string }[]
+  > {
+    return this.userModel.sequelize.query(
+      `
+      WITH first_collab_messages AS (
+        SELECT m."authorId" AS "collaboratorId", MIN(m."createdAt") AS "firstMessageDate"
+        FROM "Messages" m
+        INNER JOIN "CompanyUsers" cu ON cu."userId" = m."authorId" AND cu."isAdmin" = FALSE
+        GROUP BY m."authorId"
+      ),
+      first_collab_per_company AS (
+        SELECT cu."companyId", MIN(fcm."firstMessageDate") AS "companyFirstCollabMessageDate"
+        FROM first_collab_messages fcm
+        INNER JOIN "CompanyUsers" cu ON cu."userId" = fcm."collaboratorId"
+        GROUP BY cu."companyId"
+      ),
+      companies_with_first_today AS (
+        SELECT "companyId"
+        FROM first_collab_per_company
+        WHERE DATE("companyFirstCollabMessageDate") = CURRENT_DATE
+      )
+      SELECT DISTINCT
+        admin_u.id AS "adminId",
+        c."id" AS "companyId",
+        c."name" AS "companyName"
+      FROM "Users" admin_u
+      INNER JOIN "CompanyUsers" admin_cu ON admin_cu."userId" = admin_u."id" AND admin_cu."isAdmin" = TRUE
+      INNER JOIN "Companies" c ON c."id" = admin_cu."companyId"
+      INNER JOIN companies_with_first_today cft ON cft."companyId" = admin_cu."companyId"
+      INNER JOIN "CompanyUsers" collab_cu ON collab_cu."companyId" = admin_cu."companyId" AND collab_cu."isAdmin" = FALSE
+      INNER JOIN "ConversationParticipants" cp_collab ON cp_collab."userId" = collab_cu."userId"
+      INNER JOIN "ConversationParticipants" cp_candidat
+        ON cp_candidat."conversationId" = cp_collab."conversationId"
+        AND cp_candidat."userId" <> collab_cu."userId"
+      INNER JOIN "Users" candidat_u ON candidat_u."id" = cp_candidat."userId"
+      WHERE candidat_u."role" = 'Candidat'
+        AND admin_u."deletedAt" IS NULL
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async sendChurnUsersFeedbackMail(user: User) {
+    return this.mailsService.sendChurnUsersFeedbackMail(user);
+  }
+
+  async sendWarnAccountDeletionMail(user: User) {
+    return this.mailsService.sendWarnAccountDeletionMail(user);
+  }
+
+  async sendInactiveRefererMail(user: User) {
+    return this.mailsService.sendInactiveRefererMail(user);
+  }
+
+  async sendReferedNotActivatedMail(
+    refererUser: User,
+    candidate: {
+      candidateEmail: string;
+      candidateFirstName: string;
+      candidateLastName: string;
+    }
+  ) {
+    return this.mailsService.sendReferedNotActivatedMail(
+      refererUser,
+      candidate
+    );
+  }
+
+  async sendCommittedUsersFeedbackMail(user: User) {
+    return this.mailsService.sendCommittedUsersFeedbackMail(user);
+  }
+
+  async sendUnreadConversationsMail(
+    user: User,
+    unreadConversationsCount: number,
+    days: number
+  ) {
+    return this.mailsService.sendUnreadConversationsMail(
+      user,
+      unreadConversationsCount,
+      days
+    );
+  }
+
+  async sendUnavailableUserMail(user: User, unreadConversationsCount: number) {
+    return this.mailsService.sendUnavailableUserMail(
+      user,
+      unreadConversationsCount
+    );
+  }
+
+  async sendMessagingFeedbackMail(
+    user: User,
+    interlocutorFirstName: string,
+    interlocutorId: string
+  ) {
+    return this.mailsService.sendMessagingFeedbackMail(
+      user,
+      interlocutorFirstName,
+      interlocutorId
+    );
+  }
+
+  async sendCompanyNoAlertsReminderMail(adminUser: User) {
+    return this.mailsService.sendCompanyNoAlertsReminderMail(adminUser);
+  }
+
+  async sendRemindCompanyInvitationMail(adminUser: User) {
+    return this.mailsService.sendRemindCompanyInvitationMail(adminUser);
+  }
+
+  async sendCompanyInvitationPendingMail(
+    adminUser: User,
+    invitationEmail: string,
+    companyId: string
+  ) {
+    return this.mailsService.sendCompanyInvitationPendingMail(
+      adminUser,
+      invitationEmail,
+      companyId
+    );
+  }
+
+  async sendNotCompletedCompanyMail(adminUser: User, companyName: string) {
+    return this.mailsService.sendNotCompletedCompanyMail(
+      adminUser,
+      companyName
+    );
+  }
+
+  async sendCompanyCollabFollowMail(
+    adminUser: User,
+    companyId: string,
+    companyName: string
+  ) {
+    return this.mailsService.sendCompanyCollabFollowMail(
+      adminUser,
+      companyId,
+      companyName
+    );
+  }
+
+  async sendRecruitmentAlertMail(alert: {
+    companyAdminEmail: string;
+    firstName: string;
+    newCandidatesCount: number;
+    alertName: string;
+    alertId: string;
+    zone: string;
+    staffContact: User['staffContact'];
+  }) {
+    return this.mailsService.sendRecruitmentAlertMail(alert);
+  }
 }

@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
+import { RecruitementAlertsService } from 'src/common/recruitement-alerts/recruitement-alerts.service';
 import { GamificationService } from 'src/gamification/gamification.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
@@ -12,6 +13,7 @@ import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
+import { getZoneNameFromDepartment } from 'src/utils/misc';
 
 @Processor(Queues.CRON_TASKS)
 export class CronTasksProcessor extends WorkerHost {
@@ -24,7 +26,8 @@ export class CronTasksProcessor extends WorkerHost {
     private usersDeletionService: UsersDeletionService,
     private cronTasksSlackReporterService: CronTasksSlackReporterService,
     private messagingService: MessagingService,
-    private gamificationService: GamificationService
+    private gamificationService: GamificationService,
+    private recruitementAlertsService: RecruitementAlertsService
   ) {
     super();
   }
@@ -53,6 +56,34 @@ export class CronTasksProcessor extends WorkerHost {
         return this.processExpiredAchievements();
       case Jobs.PREPARE_SUPER_ENGAGED_ACHIEVEMENT_REMINDER_MAILS:
         return this.prepareSuperEngagedAchievementReminderMails();
+      case Jobs.PREPARE_RECRUITMENT_ALERTS_MAILS:
+        return this.prepareRecruitmentAlertsMails();
+      case Jobs.PREPARE_COMPANY_NO_ALERTS_REMINDER_MAILS:
+        return this.prepareCompanyNoAlertsReminderMails();
+      case Jobs.PREPARE_REFERED_NOT_ACTIVATED_MAILS:
+        return this.prepareReferedNotActivatedMails();
+      case Jobs.PREPARE_REMIND_COMPANY_INVITATION_MAILS:
+        return this.prepareRemindCompanyInvitationMails();
+      case Jobs.PREPARE_COMPANY_INVITATIONS_PENDING_MAILS:
+        return this.prepareCompanyInvitationsPendingMails();
+      case Jobs.PREPARE_NOT_COMPLETED_COMPANY_MAILS:
+        return this.prepareNotCompletedCompanyMails();
+      case Jobs.PREPARE_COMPANY_COLLAB_FOLLOW_MAILS:
+        return this.prepareCompanyCollabFollowMails();
+      case Jobs.PREPARE_COMMITTED_USERS_FEEDBACK_MAILS:
+        return this.prepareCommittedUsersFeedbackMails();
+      case Jobs.PREPARE_UNREAD_CONVERSATIONS_MAILS:
+        return this.prepareUnreadConversationsMails();
+      case Jobs.PREPARE_UNAVAILABLE_USERS_MAILS:
+        return this.prepareUnavailableUsersMails();
+      case Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS:
+        return this.prepareChurnUsersFeedbackMails();
+      case Jobs.PREPARE_INACTIVE_REFERERS_MAILS:
+        return this.prepareInactiveReferersMails();
+      case Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS:
+        return this.prepareMessagingFeedbackMails();
+      case Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS:
+        return this.prepareWarnAccountDeletionMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -677,5 +708,787 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Processed ${total} expired achievements: ${renewed} renewed, ${expired} expired`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mailer-service migration — handler methods
+  // ---------------------------------------------------------------------------
+
+  async prepareRecruitmentAlertsMails() {
+    this.logger.log('Preparing recruitment alerts mails...');
+    const recruitementAlerts = await this.recruitementAlertsService.findAll();
+    const alertsToSend: {
+      companyAdminEmail: string;
+      firstName: string;
+      newCandidatesCount: number;
+      alertName: string;
+      alertId: string;
+      zone: string;
+      staffContact: User['staffContact'];
+    }[] = [];
+
+    for (const alert of recruitementAlerts) {
+      const matchingUsers =
+        await this.recruitementAlertsService.getRecruitementAlertMatching(
+          alert.id
+        );
+      if (matchingUsers.length === 0) continue;
+
+      const alreadyNotifiedUserIds = await this.recruitementAlertsService
+        .findRecruitementAlertNotifiedCandidate(alert.id)
+        .then((notified) => notified.map((c) => c.userId));
+
+      const newMatchingUsers = matchingUsers.filter(
+        (user) => !alreadyNotifiedUserIds.includes(user.id)
+      );
+      if (newMatchingUsers.length === 0) continue;
+
+      const companyAdmin = alert.company.companyUsers.find((cu) => cu.isAdmin);
+      if (!companyAdmin) continue;
+
+      const adminUser = await this.usersService.findOneWithRelations(
+        companyAdmin.userId
+      );
+      if (!adminUser) continue;
+
+      alertsToSend.push({
+        alertId: alert.id,
+        alertName: alert.name,
+        newCandidatesCount: newMatchingUsers.length,
+        companyAdminEmail: adminUser.email,
+        firstName: adminUser.firstName,
+        zone: getZoneNameFromDepartment(adminUser.userProfile?.department),
+        staffContact: adminUser.staffContact,
+      });
+
+      await this.recruitementAlertsService.markUsersAsNotified(
+        alert.id,
+        newMatchingUsers.map((user) => user.id)
+      );
+    }
+
+    this.logger.log(`Found ${alertsToSend.length} recruitment alerts to send`);
+    const results = await Promise.allSettled(
+      alertsToSend.map(async (alert) => {
+        this.logger.log(
+          `Sending recruitment alert mail to ${alert.companyAdminEmail}`
+        );
+        await this.usersService.sendRecruitmentAlertMail(alert);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      alertsToSend.map((a) => ({ id: a.alertId })),
+      results,
+      (alertId, reason) => {
+        this.logger.error(
+          `Failed sending recruitment alert mail for alert ${alertId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '🤝 Recruitment alerts',
+      {
+        total: alertsToSend.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${alertsToSend.length} recruitment alert mails`
+      );
+    }
+
+    return `Sent ${successIds.length} recruitment alert mails`;
+  }
+
+  async prepareCompanyNoAlertsReminderMails() {
+    this.logger.log('Preparing company no alerts reminder mails...');
+    const rows =
+      await this.usersService.getCompanyAdminIdsForNoAlertsReminder();
+    this.logger.log(`Found ${rows.length} company admins without alerts`);
+
+    const results = await Promise.allSettled(
+      rows.map(async ({ adminId }) => {
+        const admin = await this.usersService.findOneWithRelations(adminId);
+        if (!admin) return;
+        this.logger.log(
+          `Sending company no alerts reminder mail to ${admin.email}`
+        );
+        await this.usersService.sendCompanyNoAlertsReminderMail(admin);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.adminId })),
+      results,
+      (adminId, reason) => {
+        this.logger.error(
+          `Failed sending company no alerts reminder mail to admin ${adminId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '🏢 Company no alerts reminder',
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} company no alerts reminder mails`
+      );
+    }
+
+    return `Sent ${successIds.length} company no alerts reminder mails`;
+  }
+
+  async prepareReferedNotActivatedMails() {
+    const DAYS_SINCE_CREATION = 15;
+    this.logger.log('Preparing refered not activated mails...');
+    const rows = await this.usersService.getReferedNotActivatedData(
+      DAYS_SINCE_CREATION
+    );
+    this.logger.log(`Found ${rows.length} inactive refered candidates`);
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        const refererUser = await this.usersService.findOneWithRelations(
+          row.refererId
+        );
+        if (!refererUser) return;
+        this.logger.log(
+          `Sending refered not activated mail to referer ${refererUser.email}`
+        );
+        await this.usersService.sendReferedNotActivatedMail(refererUser, {
+          candidateEmail: row.candidateEmail,
+          candidateFirstName: row.candidateFirstName,
+          candidateLastName: row.candidateLastName,
+        });
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.refererId })),
+      results,
+      (refererId, reason) => {
+        this.logger.error(
+          `Failed sending refered not activated mail for referer ${refererId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `🤷 Refered not activated - J+${DAYS_SINCE_CREATION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} refered not activated mails`
+      );
+    }
+
+    return `Sent ${successIds.length} refered not activated mails`;
+  }
+
+  async prepareRemindCompanyInvitationMails() {
+    const DAYS_SINCE_REGISTRATION = 3;
+    this.logger.log('Preparing remind company invitation mails...');
+    const rows = await this.usersService.getCompanyAdminIdsForRemindInvitation(
+      DAYS_SINCE_REGISTRATION
+    );
+    this.logger.log(
+      `Found ${rows.length} company admins without invitations sent`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async ({ adminId }) => {
+        const admin = await this.usersService.findOneWithRelations(adminId);
+        if (!admin) return;
+        this.logger.log(
+          `Sending remind company invitation mail to ${admin.email}`
+        );
+        await this.usersService.sendRemindCompanyInvitationMail(admin);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.adminId })),
+      results,
+      (adminId, reason) => {
+        this.logger.error(
+          `Failed sending remind company invitation mail to admin ${adminId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📨 Remind company invitation - J+${DAYS_SINCE_REGISTRATION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} remind company invitation mails`
+      );
+    }
+
+    return `Sent ${successIds.length} remind company invitation mails`;
+  }
+
+  async prepareCompanyInvitationsPendingMails() {
+    const DAYS_SINCE_INVITATION = 7;
+    this.logger.log('Preparing company invitations pending mails...');
+    const rows = await this.usersService.getCompanyInvitationPendingData(
+      DAYS_SINCE_INVITATION
+    );
+    this.logger.log(`Found ${rows.length} pending company invitations`);
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        const admin = await this.usersService.findOneWithRelations(row.adminId);
+        if (!admin) return;
+        this.logger.log(
+          `Sending company invitations pending mail to ${admin.email}`
+        );
+        await this.usersService.sendCompanyInvitationPendingMail(
+          admin,
+          row.invitationEmail,
+          row.companyId
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.adminId })),
+      results,
+      (adminId, reason) => {
+        this.logger.error(
+          `Failed sending company invitations pending mail to admin ${adminId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `⏳ Company invitations pending - J+${DAYS_SINCE_INVITATION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} company invitations pending mails`
+      );
+    }
+
+    return `Sent ${successIds.length} company invitations pending mails`;
+  }
+
+  async prepareNotCompletedCompanyMails() {
+    const DAYS_SINCE_CREATION = 4;
+    this.logger.log('Preparing not completed company mails...');
+    const rows =
+      await this.usersService.getCompanyAdminDataForNotCompletedCompany(
+        DAYS_SINCE_CREATION
+      );
+    this.logger.log(
+      `Found ${rows.length} company admins with incomplete company profiles`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        const admin = await this.usersService.findOneWithRelations(row.adminId);
+        if (!admin) return;
+        this.logger.log(`Sending not completed company mail to ${admin.email}`);
+        await this.usersService.sendNotCompletedCompanyMail(
+          admin,
+          row.companyName
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.adminId })),
+      results,
+      (adminId, reason) => {
+        this.logger.error(
+          `Failed sending not completed company mail to admin ${adminId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `🏗️ Not completed company - J+${DAYS_SINCE_CREATION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} not completed company mails`
+      );
+    }
+
+    return `Sent ${successIds.length} not completed company mails`;
+  }
+
+  async prepareCompanyCollabFollowMails() {
+    this.logger.log('Preparing company collab follow mails...');
+    const rows = await this.usersService.getCompanyAdminDataForCollabFollow();
+    this.logger.log(
+      `Found ${rows.length} company admins whose first collaborator sent a message today`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        const admin = await this.usersService.findOneWithRelations(row.adminId);
+        if (!admin) return;
+        this.logger.log(`Sending company collab follow mail to ${admin.email}`);
+        await this.usersService.sendCompanyCollabFollowMail(
+          admin,
+          row.companyId,
+          row.companyName
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.adminId })),
+      results,
+      (adminId, reason) => {
+        this.logger.error(
+          `Failed sending company collab follow mail to admin ${adminId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '🤝 Company collab follow',
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} company collab follow mails`
+      );
+    }
+
+    return `Sent ${successIds.length} company collab follow mails`;
+  }
+
+  async prepareCommittedUsersFeedbackMails() {
+    const DAYS_SINCE_FIRST_MESSAGE = 40;
+    this.logger.log('Preparing committed users feedback mails...');
+    const rows = await this.usersService.getUserIdsForCommittedFeedback(
+      DAYS_SINCE_FIRST_MESSAGE
+    );
+    this.logger.log(`Found ${rows.length} users for committed feedback email`);
+
+    const results = await Promise.allSettled(
+      rows.map(async ({ id }) => {
+        const user = await this.usersService.findOneWithRelations(id);
+        if (!user) return;
+        this.logger.log(
+          `Sending committed users feedback mail to ${user.email}`
+        );
+        await this.usersService.sendCommittedUsersFeedbackMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending committed users feedback mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `💬 Committed users feedback - J+${DAYS_SINCE_FIRST_MESSAGE}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} committed users feedback mails`
+      );
+    }
+
+    return `Sent ${successIds.length} committed users feedback mails`;
+  }
+
+  async prepareUnreadConversationsMails() {
+    const DAYS_TO_CONTACT = [4, 20];
+    this.logger.log(
+      `Preparing unread conversations mails for days ${DAYS_TO_CONTACT.join(
+        ', '
+      )}...`
+    );
+
+    let total = 0;
+    let totalSuccess = 0;
+    let totalFailures = 0;
+
+    for (const days of DAYS_TO_CONTACT) {
+      const rows = await this.usersService.getUserRowsForUnreadConversations(
+        days
+      );
+      this.logger.log(
+        `Found ${rows.length} users with unread conversations since ${days} days`
+      );
+      total += rows.length;
+
+      const results = await Promise.allSettled(
+        rows.map(async (row) => {
+          const user = await this.usersService.findOneWithRelations(row.id);
+          if (!user) return;
+          await this.usersService.sendUnreadConversationsMail(
+            user,
+            Number(row.unreadConversationsCount),
+            days
+          );
+        })
+      );
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          totalSuccess++;
+        } else {
+          totalFailures++;
+          this.logger.error(
+            `Failed sending unread conversations mail to user ${rows[index]?.id}`,
+            result.reason
+          );
+        }
+      });
+    }
+
+    const succeeded = totalFailures === 0;
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📫 Unread conversations - J+${DAYS_TO_CONTACT.join('/')}`,
+      { total, success: totalSuccess, failure: totalFailures },
+      []
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${totalFailures}/${total} unread conversations mails`
+      );
+    }
+
+    return `Sent ${totalSuccess} unread conversations mails`;
+  }
+
+  async prepareUnavailableUsersMails() {
+    const DAYS_SINCE_LAST_CONVERSATION = 30;
+    this.logger.log('Preparing unavailable users mails...');
+    const rows = await this.usersService.getUserRowsForUnavailableUsers(
+      DAYS_SINCE_LAST_CONVERSATION
+    );
+    this.logger.log(
+      `Found ${rows.length} users eligible for unavailable reminder`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        const user = await this.usersService.findOneWithRelations(row.id);
+        if (!user) return;
+        this.logger.log(`Sending unavailable user mail to ${user.email}`);
+        await this.usersService.sendUnavailableUserMail(
+          user,
+          Number(row.unreadConversationsCount)
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending unavailable user mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📵 Unavailable users - J+${DAYS_SINCE_LAST_CONVERSATION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} unavailable user mails`
+      );
+    }
+
+    return `Sent ${successIds.length} unavailable user mails`;
+  }
+
+  async prepareChurnUsersFeedbackMails() {
+    const DAYS_SINCE_LAST_CONNECTION = 60;
+    this.logger.log('Preparing churn users feedback mails...');
+    const rows = await this.usersService.getUserIdsForChurnFeedback(
+      DAYS_SINCE_LAST_CONNECTION
+    );
+    this.logger.log(
+      `Found ${rows.length} inactive users for churn feedback email`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async ({ id }) => {
+        const user = await this.usersService.findOneWithRelations(id);
+        if (!user) return;
+        this.logger.log(`Sending churn users feedback mail to ${user.email}`);
+        await this.usersService.sendChurnUsersFeedbackMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending churn users feedback mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `😴 Churn users feedback - J+${DAYS_SINCE_LAST_CONNECTION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} churn users feedback mails`
+      );
+    }
+
+    return `Sent ${successIds.length} churn users feedback mails`;
+  }
+
+  async prepareInactiveReferersMails() {
+    const DAYS_SINCE_CREATION = 15;
+    this.logger.log('Preparing inactive referers mails...');
+    const rows = await this.usersService.getUserIdsForInactiveReferers(
+      DAYS_SINCE_CREATION
+    );
+    this.logger.log(`Found ${rows.length} inactive referers`);
+
+    const results = await Promise.allSettled(
+      rows.map(async ({ id }) => {
+        const user = await this.usersService.findOneWithRelations(id);
+        if (!user) return;
+        this.logger.log(`Sending inactive referer mail to ${user.email}`);
+        await this.usersService.sendInactiveRefererMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending inactive referer mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `🔇 Inactive referers - J+${DAYS_SINCE_CREATION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} inactive referer mails`
+      );
+    }
+
+    return `Sent ${successIds.length} inactive referer mails`;
+  }
+
+  async prepareMessagingFeedbackMails() {
+    const MESSAGING_DAYS = 30;
+    this.logger.log('Preparing messaging feedback mails...');
+    const rows = await this.usersService.getUserTriplesForMessagingFeedback(
+      MESSAGING_DAYS
+    );
+    this.logger.log(
+      `Found ${rows.length} user-conversation pairs for messaging feedback`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        const user = await this.usersService.findOneWithRelations(row.userId);
+        if (!user) return;
+        this.logger.log(`Sending messaging feedback mail to ${user.email}`);
+        await this.usersService.sendMessagingFeedbackMail(
+          user,
+          row.interlocutorFirstName,
+          row.interlocutorId
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((r) => ({ id: r.userId })),
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending messaging feedback mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `🚦 Messaging feedback - J+${MESSAGING_DAYS}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} messaging feedback mails`
+      );
+    }
+
+    return `Sent ${successIds.length} messaging feedback mails`;
+  }
+
+  async prepareWarnAccountDeletionMails() {
+    const MONTHS_SINCE_LAST_CONNECTION = 23;
+    this.logger.log('Preparing warn account deletion mails...');
+    const rows = await this.usersService.getUserIdsForWarnAccountDeletion(
+      MONTHS_SINCE_LAST_CONNECTION
+    );
+    this.logger.log(
+      `Found ${rows.length} users to warn about account deletion`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async ({ id }) => {
+        const user = await this.usersService.findOneWithRelations(id);
+        if (!user) return;
+        this.logger.log(`Sending warn account deletion mail to ${user.email}`);
+        await this.usersService.sendWarnAccountDeletionMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending warn account deletion mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `⚠️ Warn account deletion - M+${MONTHS_SINCE_LAST_CONNECTION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} warn account deletion mails`
+      );
+    }
+
+    return `Sent ${successIds.length} warn account deletion mails`;
   }
 }
