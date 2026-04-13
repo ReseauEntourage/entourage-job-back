@@ -713,10 +713,6 @@ export class CronTasksProcessor extends WorkerHost {
     return `Processed ${total} expired achievements: ${renewed} renewed, ${expired} expired`;
   }
 
-  // ---------------------------------------------------------------------------
-  // Mailer-service migration — handler methods
-  // ---------------------------------------------------------------------------
-
   async prepareRecruitmentAlertsMails() {
     this.logger.log('Preparing recruitment alerts mails...');
     const recruitementAlerts = await this.recruitementAlertsService.findAll();
