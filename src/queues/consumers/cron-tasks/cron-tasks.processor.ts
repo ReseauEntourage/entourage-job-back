@@ -6,7 +6,10 @@ import { RecruitementAlertsService } from 'src/common/recruitement-alerts/recrui
 import { GamificationService } from 'src/gamification/gamification.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
-import { collectSettledResults } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
+import {
+  collectSettledResults,
+  SettledFailure,
+} from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -1183,7 +1186,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     let total = 0;
     let totalSuccess = 0;
-    let totalFailures = 0;
+    const allFailures: SettledFailure[] = [];
 
     for (const days of DAYS_TO_CONTACT) {
       const rows = await this.usersService.getUserRowsForUnreadConversations(
@@ -1206,31 +1209,32 @@ export class CronTasksProcessor extends WorkerHost {
         })
       );
 
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          totalSuccess++;
-        } else {
-          totalFailures++;
+      const { successIds, failures } = collectSettledResults(
+        rows,
+        results,
+        (userId, reason) => {
           this.logger.error(
-            `Failed sending unread conversations mail to user ${rows[index]?.id}`,
-            result.reason
+            `Failed sending unread conversations mail to user ${userId}`,
+            reason
           );
         }
-      });
+      );
+      totalSuccess += successIds.length;
+      allFailures.push(...failures);
     }
 
-    const succeeded = totalFailures === 0;
+    const succeeded = allFailures.length === 0;
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
       `📫 Unread conversations - J+${DAYS_TO_CONTACT.join('/')}`,
-      { total, success: totalSuccess, failure: totalFailures },
-      []
+      { total, success: totalSuccess, failure: allFailures.length },
+      allFailures
     );
 
     if (!succeeded) {
       throw new Error(
-        `Failed sending ${totalFailures}/${total} unread conversations mails`
+        `Failed sending ${allFailures.length}/${total} unread conversations mails`
       );
     }
 

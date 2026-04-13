@@ -978,6 +978,12 @@ export class UsersService {
   async getUserIdsForWarnAccountDeletion(
     monthsSinceLastConnection: number
   ): Promise<{ id: string }[]> {
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setMonth(startDate.getMonth() - (monthsSinceLastConnection + 1));
+    const endDate = new Date(now);
+    endDate.setMonth(endDate.getMonth() - monthsSinceLastConnection);
+
     return this.userModel.sequelize.query(
       `
       SELECT "Users"."id"
@@ -985,29 +991,34 @@ export class UsersService {
       WHERE (
         (
           "Users"."lastConnection" IS NOT NULL
-          AND "Users"."lastConnection" >= CURRENT_TIMESTAMP - INTERVAL '${
-            monthsSinceLastConnection + 1
-          } months'
-          AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '${monthsSinceLastConnection} months'
+          AND "Users"."lastConnection" >= :startDate
+          AND "Users"."lastConnection" < :endDate
         )
         OR (
           "Users"."lastConnection" IS NULL
-          AND "Users"."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
-            monthsSinceLastConnection + 1
-          } months'
-          AND "Users"."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${monthsSinceLastConnection} months'
+          AND "Users"."createdAt" >= :startDate
+          AND "Users"."createdAt" < :endDate
         )
       )
       AND "Users"."deletedAt" IS NULL
       AND "Users".role NOT IN ('Admin')
       `,
-      { type: QueryTypes.SELECT, raw: true }
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: { startDate, endDate },
+      }
     );
   }
 
   async getUserIdsForInactiveReferers(
     daysSinceCreation: number
   ): Promise<{ id: string }[]> {
+    const startDate = new Date(
+      Date.now() - (daysSinceCreation + 1) * DAY_IN_MS
+    );
+    const endDate = new Date(Date.now() - daysSinceCreation * DAY_IN_MS);
+
     return this.userModel.sequelize.query(
       `
       SELECT u.id
@@ -1016,15 +1027,17 @@ export class UsersService {
       LEFT JOIN "UserProfiles" up ON u."id" = up."userId"
       WHERE u.role = 'Prescripteur'
         AND up."isAvailable" = TRUE
-        AND u."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceCreation + 1
-        } days'
-        AND u."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceCreation} days'
+        AND u."createdAt" >= :startDate
+        AND u."createdAt" < :endDate
         AND u."deletedAt" IS NULL
       GROUP BY u.id
       HAVING COUNT(r.id) = 0
       `,
-      { type: QueryTypes.SELECT, raw: true }
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: { startDate, endDate },
+      }
     );
   }
 
@@ -1037,6 +1050,11 @@ export class UsersService {
       candidateZone: string;
     }[]
   > {
+    const startDate = new Date(
+      Date.now() - (daysSinceCreation + 1) * DAY_IN_MS
+    );
+    const endDate = new Date(Date.now() - daysSinceCreation * DAY_IN_MS);
+
     return this.userModel.sequelize.query(
       `
       SELECT
@@ -1044,20 +1062,22 @@ export class UsersService {
         c."email" AS "candidateEmail",
         c."firstName" AS "candidateFirstName",
         c."lastName" AS "candidateLastName",
-        r."zone" AS "candidateZone"
+        c."zone" AS "candidateZone"
       FROM "Users" c
       INNER JOIN "Users" r ON c."refererId" = r.id
       WHERE c.role = 'Candidat'
         AND c."lastConnection" IS NULL
         AND c."refererId" IS NOT NULL
-        AND c."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceCreation + 1
-        } days'
-        AND c."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceCreation} days'
+        AND c."createdAt" >= :startDate
+        AND c."createdAt" < :endDate
         AND c."deletedAt" IS NULL
         AND r."deletedAt" IS NULL
       `,
-      { type: QueryTypes.SELECT, raw: true }
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: { startDate, endDate },
+      }
     );
   }
 
