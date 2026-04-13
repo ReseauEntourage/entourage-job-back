@@ -14,7 +14,7 @@ import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-r
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
-import { ZoneName } from 'src/utils/types/zones.types';
+import { InternalStaffContact, ZoneName } from 'src/utils/types/zones.types';
 
 @Injectable()
 export class MailsService {
@@ -678,7 +678,12 @@ export class MailsService {
   }
 
   async sendSuperEngagedAchievementMail(
-    user: { email: string; firstName: string; zone: ZoneName | null },
+    user: {
+      email: string;
+      firstName: string;
+      zone: ZoneName | null;
+      staffContact: InternalStaffContact;
+    },
     stats: { conversationCount: number; responseRate: number },
     nextEvaluationDate: Date
   ) {
@@ -695,12 +700,18 @@ export class MailsService {
         nextEvaluationDate: nextEvaluationDate.toLocaleDateString('fr-FR'),
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
+        staffContact: user.staffContact,
       },
     });
   }
 
   async sendSuperEngagedAchievementReminderMail(
-    user: { email: string; firstName: string; zone: ZoneName | null },
+    user: {
+      email: string;
+      firstName: string;
+      zone: ZoneName | null;
+      staffContact: InternalStaffContact;
+    },
     stats: {
       conversationCount: number;
       responseRate: number;
@@ -727,7 +738,12 @@ export class MailsService {
   }
 
   async sendSuperEngagedAchievementExpiredMail(
-    user: { email: string; firstName: string; zone: ZoneName | null },
+    user: {
+      email: string;
+      firstName: string;
+      zone: ZoneName | null;
+      staffContact: InternalStaffContact;
+    },
     stats: { conversationCount: number; responseRate: number }
   ) {
     this.logger.log(

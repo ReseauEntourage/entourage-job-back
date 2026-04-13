@@ -1,7 +1,7 @@
 import { MailsService } from 'src/mails/mails.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
-import { ZoneName } from 'src/utils/types/zones.types';
+import { InternalStaffContact, ZoneName } from 'src/utils/types/zones.types';
 
 /**
  * Exhaustive registry of all achievement types available on the platform.
@@ -59,6 +59,7 @@ export interface AchievementCallbackUser {
   firstName: string;
   email: string;
   zone: ZoneName | null;
+  staffContact: InternalStaffContact;
 }
 
 /**
