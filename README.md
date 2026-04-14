@@ -75,18 +75,6 @@ Vous devez définir deux nouveaux fichiers de variables d'environnement :
 - un fichier `.env` pour les variables d'environnement de l'application `app` et `worker`
 - un fichier `.env.test` pour les variables d'environnement de l'application en mode `test`
 
-### Configuration de l'authentification par clé API
-
-Pour utiliser l'authentification par clé API :
-
-1. Ajoutez une clé API à votre fichier `.env` :
-
-```
-MAILER_API_KEY=your_secure_api_key_here
-```
-
-2. Pour les requêtes authentifiées, incluez l'en-tête HTTP `X-API-Key` avec la valeur de votre clé API.
-
 ### Initialisation des containers
 
 Création des containers de l'application

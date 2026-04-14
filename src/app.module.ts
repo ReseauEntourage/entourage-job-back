@@ -48,7 +48,6 @@ import { UsersModule } from './users/users.module';
 import { UsersCreationModule } from './users-creation/users-creation.module';
 import { UsersDeletionModule } from './users-deletion/users-deletion.module';
 import { UsersStatsModule } from './users-stats/users-stats.module';
-import { WorkerControllerModule } from './worker/worker-controller.module';
 
 const ENV = `${process.env.NODE_ENV}`;
 
@@ -153,7 +152,6 @@ export function getSequelizeOptions(
     PublicCVsModule,
     CompaniesModule,
     ProfileGenerationModule,
-    WorkerControllerModule,
     PingModule,
     EventsModule,
     ElearningModule,

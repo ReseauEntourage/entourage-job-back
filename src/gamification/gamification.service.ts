@@ -238,6 +238,7 @@ export class GamificationService {
                 firstName: user.firstName,
                 email: user.email,
                 zone: user.zone,
+                staffContact: user.staffContact,
               },
               mailsService: this.mailsService,
               messagingService: this.messagingService,
@@ -318,6 +319,7 @@ export class GamificationService {
             firstName: user.firstName,
             email: user.email,
             zone: user.zone,
+            staffContact: user.staffContact,
           },
           mailsService: this.mailsService,
           messagingService: this.messagingService,
@@ -445,7 +447,12 @@ export class GamificationService {
           false;
 
         await this.mailsService.sendSuperEngagedAchievementReminderMail(
-          { email: user.email, firstName: user.firstName, zone: user.zone },
+          {
+            email: user.email,
+            firstName: user.firstName,
+            zone: user.zone,
+            staffContact: user.staffContact,
+          },
           { conversationCount, responseRate, goalAchieved },
           achievement.expireAt
         );
