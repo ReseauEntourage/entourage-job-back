@@ -62,7 +62,6 @@ describe('UserProfiles', () => {
   let nudgeTips: Nudge;
   let nudgeNetwork: Nudge;
   let nudgeInterview: Nudge;
-  let nudgeEvent: Nudge;
 
   let contractCdi: Contract;
   let contractCdd: Contract;
@@ -140,7 +139,6 @@ describe('UserProfiles', () => {
     nudgeTips = await nudgesHelper.findOne({ value: 'tips' });
     nudgeNetwork = await nudgesHelper.findOne({ value: 'network' });
     nudgeInterview = await nudgesHelper.findOne({ value: 'interview' });
-    nudgeEvent = await nudgesHelper.findOne({ value: 'event' });
 
     // Initialize the contracts
     await contractHelper.deleteAllContracts();
@@ -1082,7 +1080,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1121,7 +1119,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1178,7 +1176,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1217,7 +1215,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );

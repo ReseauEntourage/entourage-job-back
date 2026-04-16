@@ -5,7 +5,7 @@ export enum ContactTypeEnum {
   PHYSICAL = 'physical',
 }
 
-export type HelpValue = 'tips' | 'interview' | 'cv' | 'network' | 'event';
+export type HelpValue = 'tips' | 'interview' | 'cv' | 'network';
 
 export const HelpFilters: FilterConstant<HelpValue>[] = [
   {
@@ -19,10 +19,6 @@ export const HelpFilters: FilterConstant<HelpValue>[] = [
   {
     value: 'cv',
     label: 'CV',
-  },
-  {
-    value: 'event',
-    label: 'Événement',
   },
   {
     value: 'network',
