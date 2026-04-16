@@ -47,10 +47,6 @@ export class NudgesHelper {
         value: 'network',
         order: 3,
       },
-      {
-        value: 'event',
-        order: 4,
-      },
     ];
 
     try {
