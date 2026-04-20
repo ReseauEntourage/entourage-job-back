@@ -72,13 +72,6 @@ export const AllUserRoles = [
   UserRoles.REFERER,
 ];
 
-export const AdminRoles = {
-  CANDIDATES: 'Candidats',
-  ENTREPRISES: 'Entreprises',
-} as const;
-
-export type AdminRole = (typeof AdminRoles)[keyof typeof AdminRoles];
-
 export const UserRolesFilters = [
   { value: UserRoles.CANDIDATE, label: `${UserRoles.CANDIDATE} LKO` },
   { value: UserRoles.COACH, label: `${UserRoles.COACH} LKO` },

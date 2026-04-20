@@ -32,7 +32,6 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import {
-  AdminRole,
   Gender,
   Genders,
   OnboardingStatus,
@@ -119,13 +118,6 @@ export class User extends HistorizedModel {
   @Default(UserRoles.CANDIDATE)
   @Column
   role: UserRole;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  @AllowNull(true)
-  @Column
-  adminRole: AdminRole;
 
   @ApiProperty()
   @AllowNull(false)

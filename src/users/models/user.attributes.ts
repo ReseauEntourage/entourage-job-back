@@ -7,7 +7,6 @@ export const UserAttributes = [
   'phone',
   'address',
   'role',
-  'adminRole',
   'zone',
   'gender',
   'lastConnection',
