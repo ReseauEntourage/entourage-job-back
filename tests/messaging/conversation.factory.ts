@@ -3,7 +3,7 @@ import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { MessagingService } from 'src/messaging/messaging.service';
-import { Conversation, ConversationParticipant } from 'src/messaging/models';
+import { Conversation } from 'src/messaging/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()
@@ -11,8 +11,6 @@ export class ConversationFactory implements Factory<Conversation> {
   constructor(
     @InjectModel(Conversation)
     private conversationModel: typeof Conversation,
-    @InjectModel(ConversationParticipant)
-    private conversationParticipantModel: typeof ConversationParticipant,
     private messagingService: MessagingService
   ) {}
 

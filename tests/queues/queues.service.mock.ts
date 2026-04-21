@@ -7,27 +7,27 @@ export class QueuesServiceMock {
   /* eslint-disable @typescript-eslint/no-unused-vars */
 
   async addToWorkQueue<T extends Job>(
-    type: T,
-    data: JobData<T>,
-    opts?: JobsOptions
+    _type: T,
+    _data: JobData<T>,
+    _opts?: JobsOptions
   ) {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };
   }
 
   async addToProfileGenerationQueue<T extends Job>(
-    type: T,
-    data: JobData<T>,
-    opts?: JobsOptions
+    _type: T,
+    _data: JobData<T>,
+    _opts?: JobsOptions
   ) {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };
   }
 
   async addToEmbeddingQueue<T extends Job>(
-    type: T,
-    data: JobData<T>,
-    opts?: JobsOptions
+    _type: T,
+    _data: JobData<T>,
+    _opts?: JobsOptions
   ) {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };

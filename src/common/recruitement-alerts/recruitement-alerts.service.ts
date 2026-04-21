@@ -27,8 +27,6 @@ export class RecruitementAlertsService {
     private recruitementAlertSkillModel: typeof RecruitementAlertSkill,
     @InjectModel(CompanyUser)
     private companyUserModel: typeof CompanyUser,
-    @InjectModel(Skill)
-    private skillModel: typeof Skill,
     @InjectModel(RecruitementAlertNotifiedCandidate)
     private recruitementAlertNotifiedCandidateModel: typeof RecruitementAlertNotifiedCandidate,
     private sequelize: Sequelize,
