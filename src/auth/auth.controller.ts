@@ -157,9 +157,6 @@ export class AuthController {
     return updatedUser;
   }
 
-  /*
-    This route is used to get logged user data + verify if the user is still logged in
-  */
   @Throttle(60, 60)
   @ApiBearerAuth()
   @Get('current')
@@ -186,6 +183,22 @@ export class AuthController {
     @UserPayload('role') role: string
   ) {
     return await this.authService.getUsersStats(id, role as User['role']);
+  }
+
+  @ApiBearerAuth()
+  @Get('current/whatsapp-zone')
+  async getCurrentUserWhatsappZone(
+    @UserPayload('id', new ParseUUIDPipe()) id: string
+  ) {
+    const user = await this.authService.findOneUserById(id);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    return {
+      name: user.whatsappZoneName,
+      url: user.whatsappZoneUrl,
+      qr: user.whatsappZoneQR,
+    };
   }
 
   @Throttle(60, 60)

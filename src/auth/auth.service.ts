@@ -88,14 +88,9 @@ export class AuthService {
 
     await this.sessionService.createOrUpdateSession(currentUser.id);
 
-    const usersStats = complete
-      ? await this.getUsersStats(userId, currentUser.role)
-      : undefined;
-
     return generateCurrentUserDto(
       currentUser,
       currentUserProfile,
-      usersStats,
       hasExtractedCvData,
       complete
     );
@@ -224,7 +219,9 @@ export class AuthService {
   }
 
   async getUsersStats(userId: string, userRole: UserRole) {
+    const user = await this.usersService.findOne(userId);
     return {
+      createdAt: user.createdAt,
       averageDelayResponse:
         await this.usersStatsService.getAverageDelayResponse(userId),
       responseRate: await this.usersStatsService.getResponseRate(userId),
