@@ -5,7 +5,6 @@ export const UserAttributes = [
   'lastName',
   'email',
   'phone',
-  'address',
   'role',
   'zone',
   'gender',
