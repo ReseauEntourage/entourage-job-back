@@ -47,7 +47,6 @@ export const generateCurrentUserDto = (
     lastName: user.lastName,
     email: user.email,
     phone: user.phone,
-    address: user.address,
     role: user.role,
     zone: user.zone,
     gender: user.gender,
