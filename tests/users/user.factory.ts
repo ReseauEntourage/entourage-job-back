@@ -39,7 +39,6 @@ export class UserFactory implements Factory<User> {
       role: UserRoles.CANDIDATE,
       gender: faker.helpers.arrayElement([0, 1]) as Gender,
       phone: phone(fakePhoneNumber, { country: 'FRA' }).phoneNumber,
-      address: faker.address.streetAddress(),
       lastConnection: new Date(),
       zone: ZoneName.IDF,
       hashReset: faker.datatype.uuid(),
