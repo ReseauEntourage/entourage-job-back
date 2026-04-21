@@ -716,14 +716,12 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInCandidate.token}`)
               .send({
                 phone: updates.phone,
-                address: updates.address,
                 email: updates.email,
                 firstName: updates.firstName,
                 lastName: updates.lastName,
               });
           expect(response.status).toBe(200);
           expect(response.body.phone).toEqual(updates.phone);
-          expect(response.body.address).toEqual(updates.address);
         });
 
         it('Should return 200 and updated user when a referer update himself', async () => {
@@ -734,14 +732,12 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInReferer.token}`)
               .send({
                 phone: updates.phone,
-                address: updates.address,
                 email: updates.email,
                 firstName: updates.firstName,
                 lastName: updates.lastName,
               });
           expect(response.status).toBe(200);
           expect(response.body.phone).toEqual(updates.phone);
-          expect(response.body.address).toEqual(updates.address);
         });
         it('Should return 400 when a candidate update himself with invalid phone', async () => {
           const response: APIResponse<UsersController['updateUser']> =
@@ -761,7 +757,6 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInCoach.token}`)
               .send({
                 phone: updates.phone,
-                address: updates.address,
                 email: updates.email,
                 firstName: updates.firstName,
                 lastName: updates.lastName,
@@ -789,7 +784,6 @@ describe('Users', () => {
                 phone: updates.phone,
                 firstName: updates.firstName,
                 lastName: updates.lastName,
-                address: updates.address,
                 email: updates.email,
               });
           expect(response.status).toBe(200);

@@ -183,7 +183,6 @@ describe('UserCreation', () => {
         updatedAt,
         createdAt,
         lastConnection,
-        address,
         whatsappZoneName,
         whatsappZoneUrl,
         whatsappZoneQR,

@@ -144,13 +144,6 @@ export class User extends HistorizedModel {
   phone: string;
 
   @ApiProperty()
-  @IsString()
-  @IsOptional()
-  @AllowNull(true)
-  @Column
-  address: string;
-
-  @ApiProperty()
   @AllowNull(true)
   @Column
   lastConnection: Date;
