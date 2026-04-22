@@ -3,14 +3,20 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
+import { BusinessSector } from 'src/common/business-sectors/models/business-sector.model';
+import { Department } from 'src/common/departments/models/department.model';
+import { companiesAttributes } from 'src/companies/companies.attributes';
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
+import { Company } from 'src/companies/models/company.model';
+import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
 import { userProfileAttributes } from 'src/messaging/messaging.attributes';
 import { Conversation } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { ReadDocument } from 'src/read-documents/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
@@ -150,6 +156,100 @@ export class UsersService {
           as: 'companyUsers',
           attributes: ['isAdmin', 'role', 'companyId'],
           required: false,
+        },
+      ],
+    });
+  }
+
+  async findOneWithAttributes(id: string, attributes: string[]): Promise<User> {
+    return this.userModel.findByPk(id, { attributes });
+  }
+
+  async findOneWithCompanyOnly(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: Company,
+          as: 'companies',
+          attributes: companiesAttributes,
+          through: {
+            attributes: ['isAdmin', 'role'],
+            as: 'companyUser',
+          },
+          include: [
+            {
+              model: BusinessSector,
+              as: 'businessSectors',
+              attributes: ['id', 'name', 'value'],
+              through: { attributes: [] },
+            },
+            {
+              model: Department,
+              as: 'department',
+              attributes: ['id', 'name', 'value'],
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  async findOneWithOrganizationOnly(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: Organization,
+          as: 'organization',
+          attributes: ['id', 'name', 'address', 'zone'],
+        },
+      ],
+    });
+  }
+
+  async findOneWithReferredCandidatesOnly(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: User,
+          as: 'referredCandidates',
+          attributes: ['id', 'firstName', 'lastName', 'role'],
+        },
+      ],
+    });
+  }
+
+  async findOneWithRefererOnly(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: User,
+          as: 'referer',
+          attributes: ['id', 'firstName', 'lastName'],
+          paranoid: false,
+        },
+      ],
+    });
+  }
+
+  async findOneWithAchievementsOnly(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [userAchievementInclude()],
+    });
+  }
+
+  async findOneWithReadDocumentsOnly(id: string): Promise<User> {
+    return this.userModel.findByPk(id, {
+      attributes: [...UserAttributes],
+      include: [
+        {
+          model: ReadDocument,
+          as: 'readDocuments',
+          attributes: ['documentName', 'createdAt'],
         },
       ],
     });

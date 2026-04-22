@@ -19,10 +19,12 @@ import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { SkillsModule } from 'src/common/skills/skills.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { ContactsModule } from 'src/contacts/contacts.module';
+import { CurrentUserModule } from 'src/current-user/current-user.module';
 import { ElearningModule } from 'src/elearning/elearning.module';
 import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
+import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
@@ -75,6 +77,8 @@ import { UsersTestingModule } from './users/users-testing.module';
     UsersModule,
     UserSocialSituationsModule,
     AuthModule,
+    CurrentUserModule,
+    ProfileGenerationModule,
     BusinessSectorsModule,
     ContractsModule,
     LanguagesModule,

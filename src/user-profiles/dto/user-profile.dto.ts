@@ -21,6 +21,7 @@ export const generateUserProfileDto = (
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,
     hasPicture: userProfile.hasPicture,
+    optInRecommendations: userProfile.optInRecommendations,
   } as UserProfileDto;
   if (complete) {
     dto.allowPhysicalEvents = userProfile.allowPhysicalEvents;
