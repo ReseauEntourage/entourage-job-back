@@ -1,4 +1,4 @@
-name: Entourage Pro Backend Test
+name: Entourage Pro - Back CI
 
 on:
   push:
