@@ -2,7 +2,7 @@
 
 Document mis à jour le 04/11/2025
 
-[![Entourage-Pro Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/main.yml)
+[![Entourage-Pro Backend Test](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/ci.yml/badge.svg)](https://github.com/ReseauEntourage/entourage-job-back/actions/workflows/ci.yml)
 
 ## Modules principaux & versions
 
