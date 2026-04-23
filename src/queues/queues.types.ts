@@ -18,9 +18,6 @@ import {
 } from 'src/external-services/mailjet/mailjet.types';
 
 export const Jobs = {
-  // Jobs related to profile generation
-  GENERATE_CV_PDF: 'generate_cv_pdf',
-
   // Jobs related to worker queue
   SEND_MAIL: 'send_mail',
   NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription',
@@ -75,9 +72,6 @@ export const Jobs = {
 export type Job = (typeof Jobs)[keyof typeof Jobs];
 
 type JobsData = {
-  // Profile generation jobs
-  [Jobs.GENERATE_CV_PDF]: GenerateCVPDFJob;
-
   // Worker queue jobs
   [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
   [Jobs.NEWSLETTER_SUBSCRIPTION]: NewsletterSubscriptionJob;
@@ -128,12 +122,6 @@ export interface SendMailJob extends CustomMailParams {
 }
 
 export interface NewsletterSubscriptionJob extends CustomContactParams {}
-
-export interface GenerateCVPDFJob {
-  candidateId: string;
-  token: string;
-  fileName: string;
-}
 
 export interface CreateOrUpdateSalesforceUserJob {
   userId: string;

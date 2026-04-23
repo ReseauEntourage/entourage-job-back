@@ -23,6 +23,7 @@ import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { CurrentUserModule } from './current-user/current-user.module';
 import { ElearningModule } from './elearning/elearning.module';
 import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { EventsModule } from './events/events.module';
@@ -126,6 +127,7 @@ export function getSequelizeOptions(
     UsersCreationModule,
     UsersStatsModule,
     AuthModule,
+    CurrentUserModule,
     ExternalCvsModule,
     BusinessSectorsModule,
     EmbeddingsModule,
