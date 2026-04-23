@@ -145,9 +145,8 @@ export class CurrentUserService {
   async getWhatsappZone(userId: string): Promise<CurrentUserWhatsappZoneDto> {
     const user = await this.usersService.findOneWithAttributes(userId, [
       'id',
-      'whatsappZoneName',
-      'whatsappZoneUrl',
-      'whatsappZoneQR',
+      'zone',
+      'role',
     ]);
     if (!user) {
       throw new NotFoundException();
