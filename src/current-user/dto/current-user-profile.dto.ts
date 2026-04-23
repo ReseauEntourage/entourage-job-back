@@ -33,6 +33,7 @@ export type CurrentUserProfileCompleteDto = Pick<
   | 'department'
   | 'isAvailable'
   | 'currentJob'
+  | 'optInRecommendations'
   | 'nudges'
   | 'sectorOccupations'
   | 'allowPhysicalEvents'
@@ -84,6 +85,7 @@ export const generateCurrentUserProfileCompleteDto = (
     department: base.department,
     isAvailable: base.isAvailable,
     currentJob: base.currentJob,
+    optInRecommendations: base.optInRecommendations,
     nudges: base.nudges,
     sectorOccupations: base.sectorOccupations,
     allowPhysicalEvents: base.allowPhysicalEvents,
