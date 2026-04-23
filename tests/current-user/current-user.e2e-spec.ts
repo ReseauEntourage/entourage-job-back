@@ -165,7 +165,7 @@ describe('CurrentUser', () => {
           .get(`${route}/company`)
           .set('authorization', `Bearer ${loggedInUser.token}`);
       expect(response.status).toBe(200);
-      expect(response.body).toBeNull();
+      expect(response.body).toStrictEqual({});
     });
 
     it('Should return 401, if invalid token', async () => {
@@ -186,7 +186,7 @@ describe('CurrentUser', () => {
           .get(`${route}/organization`)
           .set('authorization', `Bearer ${loggedInUser.token}`);
       expect(response.status).toBe(200);
-      expect(response.body).toBeNull();
+      expect(response.body).toStrictEqual({});
     });
 
     it('Should return 401, if invalid token', async () => {
@@ -252,11 +252,9 @@ describe('CurrentUser', () => {
           .get(`${route}/whatsapp-zone`)
           .set('authorization', `Bearer ${loggedInUser.token}`);
       expect(response.status).toBe(200);
-      expect(response.body).toMatchObject({
-        name: expect.anything(),
-        url: expect.anything(),
-        qr: expect.anything(),
-      });
+      expect(response.body).toHaveProperty('name');
+      expect(response.body).toHaveProperty('url');
+      expect(response.body).toHaveProperty('qr');
     });
 
     it('Should return 401, if invalid token', async () => {

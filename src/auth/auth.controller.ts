@@ -7,12 +7,11 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  Query,
   Redirect,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { passwordStrength } from 'check-password-strength';
 import { SessionsService } from 'src/sessions/sessions.service';
@@ -155,59 +154,6 @@ export class AuthController {
     }
 
     return updatedUser;
-  }
-
-  @Throttle(60, 60)
-  @ApiBearerAuth()
-  @Get('current')
-  async getCurrent(
-    @UserPayload('id', new ParseUUIDPipe()) id: string,
-    @Query('complete') complete = 'false'
-  ) {
-    // Updating current user last connection date
-    const updatedUser = await this.authService.updateUser(id, {
-      lastConnection: new Date(),
-    });
-    if (!updatedUser) {
-      throw new NotFoundException();
-    }
-
-    return await this.authService.getCurrentUser(id, complete === 'true');
-  }
-
-  @Throttle(60, 60)
-  @ApiBearerAuth()
-  @Get('current/stats')
-  async getCurrentUserStats(
-    @UserPayload('id', new ParseUUIDPipe()) id: string,
-    @UserPayload('role') role: string
-  ) {
-    return await this.authService.getUsersStats(id, role as User['role']);
-  }
-
-  @ApiBearerAuth()
-  @Get('current/whatsapp-zone')
-  async getCurrentUserWhatsappZone(
-    @UserPayload('id', new ParseUUIDPipe()) id: string
-  ) {
-    const user = await this.authService.findOneUserById(id);
-    if (!user) {
-      throw new NotFoundException();
-    }
-    return {
-      name: user.whatsappZoneName,
-      url: user.whatsappZoneUrl,
-      qr: user.whatsappZoneQR,
-    };
-  }
-
-  @Throttle(60, 60)
-  @ApiBearerAuth()
-  @Get('current/staff-contact')
-  async getCurrentUserStaffContact(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string
-  ) {
-    return await this.authService.getPublicStaffContactInfo(userId);
   }
 
   @Public()
