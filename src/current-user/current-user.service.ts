@@ -129,16 +129,24 @@ export class CurrentUserService {
     userRole: UserRole
   ): Promise<CurrentUserStatsDto> {
     const user = await this.usersService.findOne(userId);
+    const [
+      averageDelayResponse,
+      responseRate,
+      totalConversationWithMirrorRoleCount,
+    ] = await Promise.all([
+      this.usersStatsService.getAverageDelayResponse(userId),
+      this.usersStatsService.getResponseRate(userId),
+      this.usersStatsService.getTotalConversationWithMirrorRoleCount(
+        userId,
+        userRole
+      ),
+    ]);
+
     return {
       createdAt: user.createdAt,
-      averageDelayResponse:
-        await this.usersStatsService.getAverageDelayResponse(userId),
-      responseRate: await this.usersStatsService.getResponseRate(userId),
-      totalConversationWithMirrorRoleCount:
-        await this.usersStatsService.getTotalConversationWithMirrorRoleCount(
-          userId,
-          userRole
-        ),
+      averageDelayResponse,
+      responseRate,
+      totalConversationWithMirrorRoleCount,
     };
   }
 
