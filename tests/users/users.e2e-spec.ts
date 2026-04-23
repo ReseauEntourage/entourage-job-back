@@ -4,7 +4,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -18,8 +17,8 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 import { UserFactory } from './user.factory';
-import { UsersHelper } from './users.helper';
 
 describe('Users', () => {
   let app: INestApplication;
@@ -120,10 +119,10 @@ describe('Users', () => {
   describe('CRUD User', () => {
     describe('R - Read 1 User', () => {
       describe('/:id - Get a user by id or email', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
+        let loggedInAdmin: LoggedInUser;
+        let loggedInCandidate: LoggedInUser;
+        let loggedInCoach: LoggedInUser;
+        let loggedInReferer: LoggedInUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -235,7 +234,7 @@ describe('Users', () => {
           expect(response.status).toBe(403);
         });
         describe('/members?limit=&offset=&role[]= - Get paginated and alphabetically sorted users filtered by role', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
 
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -350,7 +349,7 @@ describe('Users', () => {
           });
         });
         describe('/members?query= - Read all members with search query', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
 
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -423,7 +422,7 @@ describe('Users', () => {
           });
         });
         describe('/members?zone[]=&hidden[]=&businessSectors[]= - Read all members as admin with filters', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
@@ -519,7 +518,7 @@ describe('Users', () => {
           });
         });
         describe('/members - Read all members as admin with all filters', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
@@ -614,7 +613,7 @@ describe('Users', () => {
         });
 
         describe('/members - Read all members as admin with businessSectorIds filters', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
@@ -677,10 +676,10 @@ describe('Users', () => {
 
     describe('U - Update 1 User', () => {
       describe('/:id - Update user', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
+        let loggedInAdmin: LoggedInUser;
+        let loggedInCandidate: LoggedInUser;
+        let loggedInCoach: LoggedInUser;
+        let loggedInReferer: LoggedInUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -925,7 +924,7 @@ describe('Users', () => {
         });
       });
       describe('/changePwd - Update password', () => {
-        let loggedInCandidate: LoggedUser;
+        let loggedInCandidate: LoggedInUser;
         const password = 'Candidat123!';
 
         beforeEach(async () => {

@@ -3,7 +3,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
@@ -25,7 +24,7 @@ import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { OrganizationFactory } from 'tests/organizations/organization.factory';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
-import { UsersHelper } from 'tests/users/users.helper';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 
 describe('UserCreation', () => {
   let app: INestApplication;
@@ -127,8 +126,8 @@ describe('UserCreation', () => {
   });
 
   describe('POST /user - From admin', () => {
-    let loggedInAdmin: LoggedUser;
-    let loggedInCandidate: LoggedUser;
+    let loggedInAdmin: LoggedInUser;
+    let loggedInCandidate: LoggedInUser;
     let organization: Organization;
 
     beforeEach(async () => {
@@ -824,9 +823,9 @@ describe('UserCreation', () => {
     });
   });
   describe('POST /refering - Create user through refering', () => {
-    let loggedInReferer: LoggedUser;
-    let loggedInCandidate: LoggedUser;
-    let loggedInCoach: LoggedUser;
+    let loggedInReferer: LoggedInUser;
+    let loggedInCandidate: LoggedInUser;
+    let loggedInCoach: LoggedInUser;
     let organization: Organization;
 
     beforeEach(async () => {

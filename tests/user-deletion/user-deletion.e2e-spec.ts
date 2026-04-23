@@ -4,7 +4,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
-import { LoggedUser } from 'src/auth/auth.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
@@ -15,7 +14,7 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
-import { UsersHelper } from 'tests/users/users.helper';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 
 describe('UserDeletion', () => {
   let app: INestApplication;
@@ -89,9 +88,9 @@ describe('UserDeletion', () => {
   });
 
   describe('DELETE user/:id - Delete user and all associated dto', () => {
-    let loggedInAdmin: LoggedUser;
-    let loggedInCoach: LoggedUser;
-    let loggedInReferer: LoggedUser;
+    let loggedInAdmin: LoggedInUser;
+    let loggedInCoach: LoggedInUser;
+    let loggedInReferer: LoggedInUser;
     let candidate: User;
     let coach: User;
     let referer: User;

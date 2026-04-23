@@ -1,8 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { UsersHelper } from '../users/users.helper';
-import { LoggedUser } from 'src/auth/auth.types';
+import { UsersHelper, LoggedInUser } from '../users/users.helper';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingController } from 'src/messaging/messaging.controller';
 import { MessagingService } from 'src/messaging/messaging.service';
@@ -31,10 +30,10 @@ describe('MESSAGING', () => {
   let usersHelper: UsersHelper;
   let conversationFactory: ConversationFactory;
   let userFactory: UserFactory;
-  let loggedInCandidate: LoggedUser;
-  let loggedInCoach: LoggedUser;
-  let loggedInReferer: LoggedUser;
-  let loggedInOtherCandidate: LoggedUser;
+  let loggedInCandidate: LoggedInUser;
+  let loggedInCoach: LoggedInUser;
+  let loggedInReferer: LoggedInUser;
+  let loggedInOtherCandidate: LoggedInUser;
   let messagingService: MessagingService;
 
   beforeAll(async () => {

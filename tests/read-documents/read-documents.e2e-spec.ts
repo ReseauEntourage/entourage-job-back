@@ -2,7 +2,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { SalesforceMocks } from '../mocks.types';
-import { LoggedUser } from 'src/auth/auth.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { ReadDocumentsController } from 'src/read-documents/read-documents.controller';
@@ -12,7 +11,7 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
-import { UsersHelper } from 'tests/users/users.helper';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 
 describe('Read Documents', () => {
   let app: INestApplication;
@@ -56,7 +55,7 @@ describe('Read Documents', () => {
 
   describe('CRUD Read Documents', () => {
     describe('R - Read a document', () => {
-      let user: LoggedUser;
+      let user: LoggedInUser;
       let userBis: User;
 
       beforeEach(async () => {

@@ -53,17 +53,14 @@ export class AuthService {
   }
 
   async login(
-    user: CurrentUserDto,
+    id: string,
     expiration: string | number = '30d'
   ): Promise<LoggedUser> {
-    const { id } = user;
-
     const payload = {
       sub: id,
     };
 
     return {
-      user,
       token: this.jwtService.sign(payload, {
         secret: `${process.env.JWT_SECRET}`,
         expiresIn: expiration,

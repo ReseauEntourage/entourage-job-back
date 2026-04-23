@@ -2,7 +2,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthController } from 'src/auth/auth.controller';
-import { LoggedUser } from 'src/auth/auth.types';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
@@ -13,7 +12,7 @@ import { DatabaseHelper } from 'tests/database.helper';
 import { MailsServiceMock } from 'tests/mails/mails.service.mock';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
-import { UsersHelper } from 'tests/users/users.helper';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 import { AuthHelper } from './auth.helper';
 
 describe('Auth', () => {
@@ -63,7 +62,7 @@ describe('Auth', () => {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImxheW5lX2JhaHJpbmdlckBob3RtYWlsLmNvbSIsImlkIjoiMWM0NzI0MzEtZTg4NS00MGVhLWI0MWEtMjA1M2RlODJhZDJlIiwiZmlyc3ROYW1lIjoiT2N0YXZpYSIsImxhc3ROYW1lIjoiWXVuZHQiLCJwaG9uZSI6IjI2Mi0wMzItOTY2NCB4NzY5NCIsImdlbmRlciI6MCwicm9sZSI6IkNhbmRpZGF0IiwiZXhwIjoxNjAzNDM3OTE4LCJjYW5kaWRhdElkIjpudWxsLCJjb2FjaElkIjpudWxsLCJpYXQiOjE1OTgyNTM5MTh9.TrUmF20O7TJR2NwqjyyJJvEoBjs59Q3ClqX6PEHUsOw';
 
   describe('/login - Login', () => {
-    let loggedInCandidat: LoggedUser;
+    let loggedInCandidat: LoggedInUser;
 
     const password = 'Candidat123!';
 
@@ -74,7 +73,7 @@ describe('Auth', () => {
       });
     });
 
-    it("Should return 201 and user's info with token, if valid email and password", async () => {
+    it('Should return 201 and token, if valid email and password', async () => {
       const response: APIResponse<AuthController['login']> = await request(
         server
       )
@@ -84,11 +83,6 @@ describe('Auth', () => {
           password,
         });
       expect(response.status).toBe(201);
-      expect(response.body.user).toStrictEqual({
-        ...loggedInCandidat.user,
-        lastConnection: response.body.user.lastConnection,
-        onboardingCompletedAt: response.body.user.onboardingCompletedAt,
-      });
       expect(response.body.token).toBeTruthy();
     });
     it('Should return 400, if invalid email', async () => {

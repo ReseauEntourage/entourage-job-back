@@ -10,6 +10,8 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserFactory } from './user.factory';
 
+export type LoggedInUser = { user: CurrentUserDto; token: string };
+
 @Injectable()
 export class UsersHelper {
   constructor(
@@ -24,7 +26,7 @@ export class UsersHelper {
       userProfile?: UserProfileWithPartialAssociations;
     } = { userProfile: {} },
     insertInDB = true
-  ): Promise<{ user: CurrentUserDto; token: string }> {
+  ): Promise<LoggedInUser> {
     props.isEmailVerified = true;
     const { id } = await this.userFactory.create(
       props,
@@ -39,7 +41,7 @@ export class UsersHelper {
     );
     const userHasCurrentUserDto = generateCurrentUserDto(user, userProfile);
 
-    const { token } = await this.authService.login(userHasCurrentUserDto);
+    const { token } = await this.authService.login(userHasCurrentUserDto.id);
 
     return {
       user: userHasCurrentUserDto,

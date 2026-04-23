@@ -48,8 +48,7 @@ export class AuthController {
   })
   @Post('login')
   async login(@UserPayload('id') userId: string) {
-    const currentUser = await this.authService.getCurrentUser(userId);
-    const loggedInUser = await this.authService.login(currentUser);
+    const loggedInUser = await this.authService.login(userId);
     await this.sessionService.createOrUpdateSession(userId);
     return loggedInUser;
   }
