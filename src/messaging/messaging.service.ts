@@ -496,6 +496,29 @@ export class MessagingService {
     });
   }
 
+  async findConversationWithRecentMessages(
+    conversationId: string,
+    messageLimit: number
+  ) {
+    return this.conversationModel.findByPk(conversationId, {
+      include: [
+        {
+          model: Message,
+          as: 'messages',
+          include: messagingMessageIncludes,
+          order: [['createdAt', 'DESC']],
+          limit: messageLimit,
+        },
+        {
+          model: User,
+          as: 'participants',
+          attributes: userAttributes,
+          paranoid: false,
+        },
+      ],
+    });
+  }
+
   async reportConversation(
     conversationId: string,
     reportConversationDto: ReportConversationDto,
