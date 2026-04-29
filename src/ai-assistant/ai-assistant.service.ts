@@ -1,3 +1,4 @@
+import { TextBlockParam } from '@anthropic-ai/sdk/resources/messages';
 import {
   Inject,
   Injectable,
@@ -226,21 +227,36 @@ export class AiAssistantService {
       .slice(0, MAX_CONVERSATION_CONTEXT_MESSAGES)
       .reverse();
 
-    const systemPrompt = this.buildSystemPrompt(
+    const systemBlocks = this.buildSystemBlocks(
       caller,
       candidateUser,
       candidateProfile,
       recentConversationMessages
     );
 
-    const anthropicMessages: { role: 'user' | 'assistant'; content: string }[] =
-      [
-        ...existingMessages.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: message },
-      ];
+    // Cache all existing messages up to (and including) the last one so that
+    // the full AI conversation history is served from cache on subsequent calls.
+    const anthropicMessages = [
+      ...existingMessages.map((m, i) => {
+        const isLast = i === existingMessages.length - 1;
+        return {
+          role: m.role as 'user' | 'assistant',
+          content: isLast
+            ? [
+                {
+                  type: 'text' as const,
+                  text: m.content,
+                  cache_control: { type: 'ephemeral' as const },
+                },
+              ]
+            : m.content,
+        };
+      }),
+      { role: 'user' as const, content: message },
+    ];
 
     const stream = this.anthropicService.createStream(
-      systemPrompt,
+      systemBlocks,
       anthropicMessages
     );
 
@@ -317,7 +333,16 @@ export class AiAssistantService {
     }
   }
 
-  private buildSystemPrompt(
+  /**
+   * Builds the system prompt as two text blocks for Anthropic prompt caching.
+   *
+   * Block 1 (static, cache_control: ephemeral): everything that does not change
+   *   between messages — role, platform context, coaching philosophy, coach and
+   *   candidate profiles, rules, etc. Cached for up to 5 minutes.
+   * Block 2 (dynamic, no cache): the recent conversation history, which changes
+   *   with every new message and must always be fresh.
+   */
+  private buildSystemBlocks(
     user: User,
     candidateUser: User | undefined,
     candidateProfile: UserProfile | null,
@@ -326,7 +351,7 @@ export class AiAssistantService {
       createdAt?: Date | string;
       author?: { firstName: string; lastName: string };
     }[]
-  ): string {
+  ): TextBlockParam[] {
     const today = new Date().toLocaleDateString('fr-FR', {
       weekday: 'long',
       day: 'numeric',
@@ -441,7 +466,7 @@ export class AiAssistantService {
       .map((r) => `- ${fill(r)}`)
       .join('\n');
 
-    return `${AI_ASSISTANT_CONFIG.role}
+    const staticContent = `${AI_ASSISTANT_CONFIG.role}
 
 CONTEXTE DE LA PLATEFORME :
 ${AI_ASSISTANT_CONFIG.platformContext}
@@ -469,9 +494,6 @@ PROFIL DU CANDIDAT ACCOMPAGNÉ :
 
 ${profileSection}
 
-HISTORIQUE RÉCENT DE LA CONVERSATION (${MAX_CONVERSATION_CONTEXT_MESSAGES} derniers messages) :
-${conversationHistory}
-
 PRIORITÉS DE DÉCOUVERTE :
 ${fill(AI_ASSISTANT_CONFIG.discoveryPriorities)}
 
@@ -485,5 +507,17 @@ FORMAT DES MESSAGES SUGGÉRÉS :
 ${suggestionFormat}
 
 ${fill(AI_ASSISTANT_CONFIG.fewShotExample)}`;
+
+    const dynamicContent = `HISTORIQUE RÉCENT DE LA CONVERSATION (${MAX_CONVERSATION_CONTEXT_MESSAGES} derniers messages) :
+${conversationHistory}`;
+
+    return [
+      {
+        type: 'text',
+        text: staticContent,
+        cache_control: { type: 'ephemeral', ttl: '1h' },
+      },
+      { type: 'text', text: dynamicContent },
+    ];
   }
 }
