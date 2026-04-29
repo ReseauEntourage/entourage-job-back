@@ -46,6 +46,7 @@ module.exports = {
     '@typescript-eslint/interface-name-prefix': 0,
 
     // Import Rules
+    'import/no-unresolved': 'off',
     'import/extensions': [
       2,
       'always',

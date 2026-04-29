@@ -7,6 +7,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
 import { PoolOptions } from 'sequelize';
+import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
 import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
@@ -148,6 +149,7 @@ export function getSequelizeOptions(
     OrganizationsModule,
     ReadDocumentsModule,
     MessagingModule,
+    AiAssistantModule,
     UserSocialSituationsModule,
     MediasModule,
     OpenAiModule,
