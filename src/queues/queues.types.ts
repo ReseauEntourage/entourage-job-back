@@ -14,6 +14,7 @@ import { EmbeddingType } from 'src/embeddings/embedding.config';
 import {
   CustomContactParams,
   CustomMailParams,
+  MailjetContactSource,
   MailjetTemplate,
 } from 'src/external-services/mailjet/mailjet.types';
 
@@ -67,6 +68,9 @@ export const Jobs = {
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
   UPDATE_USER_PROFILE_EMBEDDINGS_BATCH: 'update_user_profile_embeddings_batch',
+
+  // Jobs related to user newsletter subscription
+  USER_NEWSLETTER_SUBSCRIPTION: 'user_newsletter_subscription',
 } as const;
 
 export type Job = (typeof Jobs)[keyof typeof Jobs];
@@ -112,6 +116,9 @@ type JobsData = {
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS_BATCH]: UpdateUserProfileEmbeddingsBatchJob;
+
+  // User newsletter subscription
+  [Jobs.USER_NEWSLETTER_SUBSCRIPTION]: UserNewsletterSubscriptionJob;
 };
 
 export type JobData<T extends Job> = JobsData[T];
@@ -122,6 +129,11 @@ export interface SendMailJob extends CustomMailParams {
 }
 
 export interface NewsletterSubscriptionJob extends CustomContactParams {}
+
+export interface UserNewsletterSubscriptionJob {
+  userId: string;
+  source: MailjetContactSource;
+}
 
 export interface CreateOrUpdateSalesforceUserJob {
   userId: string;
