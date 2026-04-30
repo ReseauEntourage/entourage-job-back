@@ -16,6 +16,7 @@ import {
   SendMailJob,
   SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
+  UserNewsletterSubscriptionJob,
 } from 'src/queues/queues.types';
 import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -59,6 +60,10 @@ export class WorkQueueProcessor extends WorkerHost {
       case Jobs.NEWSLETTER_SUBSCRIPTION:
         return this.processNewsletterSubscription(
           job as Job<NewsletterSubscriptionJob>
+        );
+      case Jobs.USER_NEWSLETTER_SUBSCRIPTION:
+        return this.processUserNewsletterSubscription(
+          job as Job<UserNewsletterSubscriptionJob>
         );
       case Jobs.SEND_STAFF_MESSAGING_MESSAGE:
         return this.processSendStaffMessagingMessage(
@@ -108,16 +113,31 @@ export class WorkQueueProcessor extends WorkerHost {
   }
 
   /**
-   * Process newsletter subscription job
+   * Process newsletter subscription job (landing-page flow, minimal contact data)
    * @param job - Job containing contact data to subscribe to newsletter
    * @returns A message indicating the result of the operation
    */
   async processNewsletterSubscription(job: Job<NewsletterSubscriptionJob>) {
     const { data } = job;
 
-    await this.mailjetService.sendContact(data);
+    await this.mailjetService.createContact(data);
 
     return `Contact '${data.email}' subscribed to newsletter`;
+  }
+
+  /**
+   * Process user newsletter subscription job (registration flow, full user data)
+   * @param job - Job containing userId and source to create a rich Mailjet contact
+   * @returns A message indicating the result of the operation
+   */
+  async processUserNewsletterSubscription(
+    job: Job<UserNewsletterSubscriptionJob>
+  ) {
+    const { data } = job;
+
+    await this.mailjetService.createContactForUser(data.userId, data.source);
+
+    return `User '${data.userId}' contact created in Mailjet newsletter`;
   }
 
   /**

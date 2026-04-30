@@ -1,12 +1,6 @@
 import _ from 'lodash';
 import { SendEmailV3_1 } from 'node-mailjet';
-import { UserRole, UserRoles } from 'src/users/users.types';
-import {
-  ContactStatus,
-  ContactStatuses,
-  CustomMailParams,
-  MailjetTemplates,
-} from './mailjet.types';
+import { CustomMailParams, MailjetTemplates } from './mailjet.types';
 
 const useCampaigns = process.env.MAILJET_CAMPAIGNS_ACTIVATED === 'true';
 
@@ -91,19 +85,4 @@ export function createMail({
     ...recipients,
     ...content,
   };
-}
-
-export function getContactStatusFromUserRole(role: UserRole): ContactStatus {
-  switch (role) {
-    case UserRoles.CANDIDATE:
-      return ContactStatuses.CANDIDATE;
-    case UserRoles.REFERER:
-      return ContactStatuses.ASSOCIATION;
-    case UserRoles.COACH:
-      return ContactStatuses.INDIVIDUAL;
-    case UserRoles.ADMIN:
-      return ContactStatuses.INDIVIDUAL;
-    default:
-      return ContactStatuses.INDIVIDUAL;
-  }
 }
