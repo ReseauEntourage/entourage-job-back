@@ -215,7 +215,23 @@ export class UsersService {
         {
           model: User,
           as: 'referredCandidates',
-          attributes: ['id', 'firstName', 'lastName', 'role'],
+          attributes: [
+            'id',
+            'firstName',
+            'lastName',
+            'role',
+            'email',
+            'createdAt',
+            'onboardingCompletedAt',
+          ],
+          include: [
+            {
+              model: Conversation,
+              as: 'conversations',
+              attributes: ['id'],
+              required: false,
+            },
+          ],
         },
       ],
     });
