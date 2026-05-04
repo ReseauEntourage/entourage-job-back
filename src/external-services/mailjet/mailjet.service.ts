@@ -267,9 +267,9 @@ export class MailjetService {
   ): MailjetCreateContactDto {
     const civility =
       user.gender === Genders.MALE
-        ? 'Monsieur'
+        ? 'M'
         : user.gender === Genders.FEMALE
-        ? 'Madame'
+        ? 'Mme'
         : null;
 
     // Extract department code from strings like "Paris (75)" → "75"
