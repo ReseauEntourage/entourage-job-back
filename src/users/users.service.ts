@@ -1,6 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
 import { BusinessSector } from 'src/common/business-sectors/models/business-sector.model';
@@ -223,14 +223,20 @@ export class UsersService {
             'email',
             'createdAt',
             'onboardingCompletedAt',
-          ],
-          include: [
-            {
-              model: Conversation,
-              as: 'conversations',
-              attributes: ['id'],
-              required: false,
-            },
+            [
+              Sequelize.literal(`(
+                SELECT COUNT(DISTINCT cp."conversationId")
+                FROM "ConversationParticipants" cp
+                INNER JOIN "ConversationParticipants" cp_coach
+                  ON cp_coach."conversationId" = cp."conversationId"
+                  AND cp_coach."userId" != "referredCandidates"."id"
+                INNER JOIN "Users" coach
+                  ON coach.id = cp_coach."userId"
+                  AND coach.role = 'Coach'
+                WHERE cp."userId" = "referredCandidates"."id"
+              )`),
+              'coachesContactedCount',
+            ],
           ],
         },
       ],
