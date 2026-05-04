@@ -156,9 +156,7 @@ export class MailjetService {
     };
 
     this.logger.log(
-      `Creating Mailjet contact for email ${
-        params.email
-      } in list ${listId} — body: ${JSON.stringify(body)}`
+      `Creating Mailjet contact for email ${params.email} in list ${listId}}`
     );
     try {
       const res = await this.mailjetNewsletter
