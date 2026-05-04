@@ -24,17 +24,74 @@ export interface CustomMailParams {
   templateId: MailjetTemplate;
 }
 
-export interface CustomContactParams {
-  email: string;
-  zone: ZoneName;
-  status: ContactStatus;
+export enum MailjetContactPropertyNames {
+  EMAIL = 'EMAIL',
+  CIVILITY = 'civilité',
+  FIRSTNAME = 'firstname',
+  LASTNAME = 'lastname',
+  POSTAL_CODE = 'code_postal',
+  LOCAL_BRANCH = 'antenne_linkedout',
+  PROGRAM = 'programme',
+  IS_CANDIDATE = 'candidat',
+  IS_COACH = 'coach',
+  IS_PRECA = 'préca',
+  IS_VOLUNTEER = 'bénévole',
+  IS_COMPANY = 'entreprise',
+  IS_ORGANIZATION = 'association',
+  SOURCE = 'source',
 }
 
-export const MailjetContactTagNames = {
-  NEWSLETTER: 'newsletter_linkedout',
-  ZONE: 'antenne_linkedout',
-  STATUS: 'profil_linkedout',
+export const ContactStatuses = {
+  INDIVIDUAL: 'PARTICULIER',
+  COMPANY: 'ENTREPRISE',
+  ASSOCIATION: 'ASSOCIATION',
+  CANDIDATE: 'CANDIDAT',
 } as const;
+
+export type ContactStatus =
+  (typeof ContactStatuses)[keyof typeof ContactStatuses];
+
+export interface CustomContactParams {
+  email: string;
+  zone?: ZoneName;
+  status?: ContactStatus;
+  source: MailjetContactSource;
+}
+
+export enum MailjetContactSource {
+  SITE_EP = 'Site EP',
+  BACKOFFICE_EP = 'Backoffice EP',
+}
+
+export const MailjetAntenneByZone: Record<ZoneName, string | null> = {
+  [ZoneName.IDF]: 'Île-de-France',
+  [ZoneName.NORD]: 'Haut-de-France',
+  [ZoneName.AURA]: 'Sud-Est',
+  [ZoneName.SUDOUEST]: 'Sud-Ouest',
+  [ZoneName.BRETAGNE]: 'Ouest',
+  [ZoneName.LORIENT]: 'Ouest',
+  [ZoneName.HZ]: null,
+};
+
+export interface MailjetCreateContactDto {
+  email: string;
+  /** 'M.' | 'Mme' | null */
+  civility: string | null;
+  firstName: string;
+  lastName: string;
+  /** Department code extracted from UserProfile.department, e.g. "75" */
+  postalCode: string | null;
+  /** SfLocalBranchName derived from User.zone */
+  antenne: string | null;
+  program: string;
+  isCandidate: boolean;
+  isCoach: boolean;
+  isPreca: boolean;
+  isVolunteer: boolean;
+  isCompany: boolean;
+  isOrganization: boolean;
+  source: MailjetContactSource;
+}
 
 const MailjetListActionsValues = {
   NO_FORCE: 'addnoforce',
@@ -47,11 +104,9 @@ export const MailjetListActions = MailjetListActionsValues as Record<
   BulkContactManagement.ManageContactsAction
 >;
 
-export interface MailjetContactProperties {
-  [MailjetContactTagNames.NEWSLETTER]: boolean;
-  [MailjetContactTagNames.ZONE]: ZoneName;
-  [MailjetContactTagNames.STATUS]: ContactStatus;
-}
+export type MailjetContactDto = {
+  [MailjetContactPropertyNames.EMAIL]: string;
+};
 
 export const MailjetTemplates = {
   ACCOUNT_CREATED: 3920498,
@@ -104,13 +159,3 @@ export const MailjetTemplates = {
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
 
 export type MailjetTemplate = (typeof MailjetTemplates)[MailjetTemplateKey];
-
-export const ContactStatuses = {
-  INDIVIDUAL: 'PARTICULIER',
-  COMPANY: 'ENTREPRISE',
-  ASSOCIATION: 'ASSOCIATION',
-  CANDIDATE: 'CANDIDAT',
-} as const;
-
-export type ContactStatus =
-  (typeof ContactStatuses)[keyof typeof ContactStatuses];

@@ -92,7 +92,8 @@ export const SalesforceMocks: ProviderMock<SalesforceService> = {
 
 export const MailjetMock: ProviderMock<MailjetService> = {
   sendMail: jest.fn(),
-  sendContact: jest.fn(),
+  createContact: jest.fn(),
+  createContactForUser: jest.fn(),
 } as const;
 
 export const SlackMocks: ProviderMock<SlackService> = {

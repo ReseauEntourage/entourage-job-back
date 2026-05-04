@@ -16,7 +16,7 @@ import {
   COMPANY_USER_ROLE_CAN_BE_ADMIN,
   CompanyUserRole,
 } from 'src/companies/company-user.utils';
-import { getContactStatusFromUserRole } from 'src/external-services/mailjet/mailjet.utils';
+import { MailjetContactSource } from 'src/external-services/mailjet/mailjet.types';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
@@ -259,11 +259,10 @@ export class UsersCreationController {
 
       // Newsletter subscription
       if (createUserRegistrationDto.optInNewsletter) {
-        await this.usersCreationService.sendContactToMailjet({
-          email: createUserRegistrationDto.email,
-          zone: createdUser.zone,
-          status: getContactStatusFromUserRole(createdUser.role),
-        });
+        await this.usersCreationService.sendContactToMailjet(
+          createdUserId,
+          MailjetContactSource.BACKOFFICE_EP
+        );
       }
 
       // Referer
