@@ -187,6 +187,7 @@ export class MailjetService {
           `Failed to create Mailjet contact for email ${params.email}`,
           error
         );
+        throw error;
       }
     }
   }
