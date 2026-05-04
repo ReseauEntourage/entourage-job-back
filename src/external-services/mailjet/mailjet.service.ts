@@ -138,16 +138,15 @@ export class MailjetService {
     const properties: Record<string, string> = {
       [MailjetContactPropertyNames.PROGRAM]: 'Entourage Pro',
       [MailjetContactPropertyNames.SOURCE]: params.source,
+      [MailjetContactPropertyNames.IS_CANDIDATE]:
+        params.status === ContactStatuses.CANDIDATE ? 'Oui' : 'Non',
+      [MailjetContactPropertyNames.IS_COMPANY]:
+        params.status === ContactStatuses.COMPANY ? 'Oui' : 'Non',
+      [MailjetContactPropertyNames.IS_ORGANIZATION]:
+        params.status === ContactStatuses.ASSOCIATION ? 'Oui' : 'Non',
     };
     if (antenne) {
       properties[MailjetContactPropertyNames.LOCAL_BRANCH] = antenne;
-    }
-    if (params.status === ContactStatuses.CANDIDATE) {
-      properties[MailjetContactPropertyNames.IS_CANDIDATE] = 'Oui';
-    } else if (params.status === ContactStatuses.COMPANY) {
-      properties[MailjetContactPropertyNames.IS_COMPANY] = 'Oui';
-    } else if (params.status === ContactStatuses.ASSOCIATION) {
-      properties[MailjetContactPropertyNames.IS_ORGANIZATION] = 'Oui';
     }
     const body = {
       Email: params.email,
@@ -236,18 +235,18 @@ export class MailjetService {
             [MailjetContactPropertyNames.PROGRAM]: dto.program,
             [MailjetContactPropertyNames.IS_CANDIDATE]: dto.isCandidate
               ? 'Oui'
-              : '',
-            [MailjetContactPropertyNames.IS_COACH]: dto.isCoach ? 'Oui' : '',
-            [MailjetContactPropertyNames.IS_PRECA]: dto.isPreca ? 'Oui' : '',
+              : 'Non',
+            [MailjetContactPropertyNames.IS_COACH]: dto.isCoach ? 'Oui' : 'Non',
+            [MailjetContactPropertyNames.IS_PRECA]: dto.isPreca ? 'Oui' : 'Non',
             [MailjetContactPropertyNames.IS_VOLUNTEER]: dto.isVolunteer
               ? 'Oui'
-              : '',
+              : 'Non',
             [MailjetContactPropertyNames.IS_COMPANY]: dto.isCompany
               ? 'Oui'
-              : '',
+              : 'Non',
             [MailjetContactPropertyNames.IS_ORGANIZATION]: dto.isOrganization
               ? 'Oui'
-              : '',
+              : 'Non',
             [MailjetContactPropertyNames.SOURCE]: dto.source,
           },
         });
