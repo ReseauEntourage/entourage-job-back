@@ -30,10 +30,10 @@ export const generateCurrentUserReferredUsersDto = (
       email: candidate.email,
       coachesContactedCount: conversations.length,
       referredAt: candidate.createdAt
-        ? new Date(candidate.createdAt).toLocaleDateString('fr')
+        ? new Date(candidate.createdAt).toLocaleDateString('fr-FR')
         : null,
       onboardingCompletedAt: candidate.onboardingCompletedAt
-        ? new Date(candidate.onboardingCompletedAt).toLocaleDateString('fr')
+        ? new Date(candidate.onboardingCompletedAt).toLocaleDateString('fr-FR')
         : null,
     };
   }),
