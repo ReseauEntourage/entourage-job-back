@@ -9,7 +9,7 @@ export interface CurrentUserReferredUserDto {
   email: string;
   coachesContactedCount: number;
   referredAt: string | null;
-  accountCreatedAt: string | null;
+  onboardingCompletedAt: string | null;
 }
 
 export interface CurrentUserReferredUsersDto {
@@ -32,7 +32,7 @@ export const generateCurrentUserReferredUsersDto = (
       referredAt: candidate.createdAt
         ? new Date(candidate.createdAt).toLocaleDateString('fr')
         : null,
-      accountCreatedAt: candidate.onboardingCompletedAt
+      onboardingCompletedAt: candidate.onboardingCompletedAt
         ? new Date(candidate.onboardingCompletedAt).toLocaleDateString('fr')
         : null,
     };
