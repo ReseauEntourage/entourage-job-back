@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { UserRole } from 'src/users/users.types';
 
 @Injectable()
 export class UsersStatsService {
-  constructor(private messagingService: MessagingService) {}
+  constructor(
+    @Inject(forwardRef(() => MessagingService))
+    private messagingService: MessagingService
+  ) {}
 
   async getAverageDelayResponse(userId: string) {
     return await this.messagingService.getAverageDelayResponse(userId);
