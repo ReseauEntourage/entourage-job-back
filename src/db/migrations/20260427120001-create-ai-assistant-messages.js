@@ -31,15 +31,18 @@ module.exports = {
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
       },
     });
   },
 
   async down(queryInterface) {
     await queryInterface.dropTable('AiAssistantMessages');
+    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_AiAssistantMessages_role";');
   },
 };
