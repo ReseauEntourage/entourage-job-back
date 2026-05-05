@@ -144,7 +144,7 @@ export class AiAssistantService {
 
     if (!caller || caller.role === UserRoles.CANDIDATE) {
       throw new UnauthorizedException(
-        "Seuls les accompagnants peuvent utiliser l'assistant IA."
+        "Seuls les coachs peuvent utiliser l'assistant."
       );
     }
 
