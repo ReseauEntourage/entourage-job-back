@@ -25,7 +25,6 @@ import {
 import {
   generateCurrentUserIdentityDto,
   CurrentUserIdentityDto,
-  CurrentUserIdentityAttributes,
 } from './dto/current-user-identity.dto';
 import {
   generateCurrentUserOrganizationDto,
@@ -66,9 +65,8 @@ export class CurrentUserService {
   ) {}
 
   async getIdentity(userId: string): Promise<CurrentUserIdentityDto> {
-    const user = await this.usersService.findOneWithAttributes(
-      userId,
-      CurrentUserIdentityAttributes
+    const user = await this.usersService.findOneWithIdentityAndFeatureFlags(
+      userId
     );
     if (!user) {
       throw new NotFoundException();

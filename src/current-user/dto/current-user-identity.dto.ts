@@ -18,7 +18,9 @@ export type CurrentUserIdentityDto = Pick<
   | 'onboardingStatus'
   | 'onboardingCompletedAt'
   | 'onboardingWebinarSkippedAt'
->;
+> & {
+  betaFeatures: Record<string, boolean>;
+};
 
 export const generateCurrentUserIdentityDto = (
   user: User
@@ -38,6 +40,9 @@ export const generateCurrentUserIdentityDto = (
   onboardingStatus: user.onboardingStatus,
   onboardingCompletedAt: user.onboardingCompletedAt,
   onboardingWebinarSkippedAt: user.onboardingWebinarSkippedAt,
+  betaFeatures: Object.fromEntries(
+    (user.featureFlags ?? []).map((f) => [f.featureKey, f.enabled])
+  ),
 });
 
 export const CurrentUserIdentityAttributes: (typeof UserAttributes)[number][] =
