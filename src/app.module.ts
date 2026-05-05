@@ -32,6 +32,7 @@ import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
@@ -159,6 +160,7 @@ export function getSequelizeOptions(
     PingModule,
     EventsModule,
     ElearningModule,
+    FeatureFlagsModule,
     GamificationModule,
   ],
   providers: [

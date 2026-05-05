@@ -43,6 +43,7 @@ import { capitalizeNameAndTrim, isRoleIncluded } from '../users.utils';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
+import { UserFeatureFlag } from 'src/feature-flags/models/user-feature-flag.model';
 import { UserAchievement } from 'src/gamification/models';
 import { Conversation, ConversationParticipant } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
@@ -274,6 +275,9 @@ export class User extends HistorizedModel {
 
   @HasMany(() => UserAchievement, 'userId')
   achievements: UserAchievement[];
+
+  @HasMany(() => UserFeatureFlag, 'userId')
+  featureFlags: UserFeatureFlag[];
 
   @BelongsToMany(() => Conversation, {
     through: () => ConversationParticipant,
