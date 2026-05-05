@@ -9,6 +9,7 @@ import { companiesAttributes } from 'src/companies/companies.attributes';
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
+import { CurrentUserIdentityAttributes } from 'src/current-user/dto/current-user-identity.dto';
 import { userFeatureFlagInclude } from 'src/feature-flags/models/user-feature-flag.helper';
 import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
@@ -267,23 +268,7 @@ export class UsersService {
 
   async findOneWithIdentityAndFeatureFlags(id: string): Promise<User> {
     return this.userModel.findByPk(id, {
-      attributes: [
-        'id',
-        'firstName',
-        'lastName',
-        'email',
-        'phone',
-        'role',
-        'zone',
-        'gender',
-        'lastConnection',
-        'isEmailVerified',
-        'OrganizationId',
-        'refererId',
-        'onboardingStatus',
-        'onboardingCompletedAt',
-        'onboardingWebinarSkippedAt',
-      ],
+      attributes: CurrentUserIdentityAttributes,
       include: [userFeatureFlagInclude()],
     });
   }

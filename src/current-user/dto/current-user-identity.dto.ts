@@ -1,8 +1,7 @@
+import { FeatureKey } from 'src/feature-flags/models/feature-key.types';
 import { User } from 'src/users/models';
-import { UserAttributes } from 'src/users/models/user.attributes';
 
-export type CurrentUserIdentityDto = Pick<
-  User,
+type CurrentUserIdentityUserKeys =
   | 'id'
   | 'firstName'
   | 'lastName'
@@ -17,10 +16,29 @@ export type CurrentUserIdentityDto = Pick<
   | 'refererId'
   | 'onboardingStatus'
   | 'onboardingCompletedAt'
-  | 'onboardingWebinarSkippedAt'
-> & {
-  betaFeatures: Record<string, boolean>;
+  | 'onboardingWebinarSkippedAt';
+
+export type CurrentUserIdentityDto = Pick<User, CurrentUserIdentityUserKeys> & {
+  betaFeatures: Record<FeatureKey, boolean>;
 };
+
+export const CurrentUserIdentityAttributes: CurrentUserIdentityUserKeys[] = [
+  'id',
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'role',
+  'zone',
+  'gender',
+  'lastConnection',
+  'isEmailVerified',
+  'OrganizationId',
+  'refererId',
+  'onboardingStatus',
+  'onboardingCompletedAt',
+  'onboardingWebinarSkippedAt',
+];
 
 export const generateCurrentUserIdentityDto = (
   user: User
@@ -42,24 +60,5 @@ export const generateCurrentUserIdentityDto = (
   onboardingWebinarSkippedAt: user.onboardingWebinarSkippedAt,
   betaFeatures: Object.fromEntries(
     (user.featureFlags ?? []).map((f) => [f.featureKey, f.enabled])
-  ),
+  ) as Record<FeatureKey, boolean>,
 });
-
-export const CurrentUserIdentityAttributes: (typeof UserAttributes)[number][] =
-  [
-    'id',
-    'firstName',
-    'lastName',
-    'email',
-    'phone',
-    'role',
-    'zone',
-    'gender',
-    'lastConnection',
-    'isEmailVerified',
-    'OrganizationId',
-    'refererId',
-    'onboardingStatus',
-    'onboardingCompletedAt',
-    'onboardingWebinarSkippedAt',
-  ];
