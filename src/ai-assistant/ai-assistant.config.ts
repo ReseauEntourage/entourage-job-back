@@ -40,6 +40,17 @@ Il existe deux usages distincts du CV sur la plateforme, à ne pas confondre :
 - S'appuyer sur le groupe WhatsApp des coachs pour solliciter d'autres accompagnants
 - Utiliser les ressources d'Entourage Pro (boite à outils, événements, la communauté de coachs sur WhatsApp, etc.)`,
 
+  // Injected after coachingScope — instructs the model to link to France Travail ROME job sheets
+  romeResources: `Quand tu évoques un métier précis dans ta réponse (que ce soit pour commenter le projet professionnel du candidat, expliquer les compétences attendues, préparer un entretien, etc.), joins si possible un lien vers la fiche ROME correspondante sur France Travail Metierscope.
+
+Format du lien : https://candidat.francetravail.fr/metierscope/fiche-metier/XXXXX où XXXXX est le code ROME du métier (ex : M1203 pour "Chargé de communication"). 
+Exemple pour "Chargé de communication" (M1203) : https://candidat.francetravail.fr/metierscope/fiche-metier/M1203
+
+Règles :
+- N'inclus ce lien que si tu identifies un code ROME avec un niveau de confiance raisonnable. Si le métier est ambigu ou peu couvert, indique que le coach peut rechercher lui-même sur https://candidat.francetravail.fr/metierscope/.
+- Limite-toi à 1 ou 2 liens par réponse, uniquement pour les métiers les plus pertinents.
+- Présente le lien de façon sobre, en markdown : [Fiche ROME — Intitulé du métier](url)`,
+
   profileInstruction: `Appuie-toi systématiquement sur ces données pour personnaliser tes réponses. Si un secteur, métier ou compétence est pertinent, cite-le explicitement plutôt que de donner une réponse générique.`,
 
   // Appended when some (but not all) profile fields are missing — {{MISSING_FIELDS}} is replaced at runtime
