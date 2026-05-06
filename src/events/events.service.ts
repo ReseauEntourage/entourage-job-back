@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DepartmentsService } from 'src/common/departments/departments.service';
 import { Departments } from 'src/common/locations/locations.types';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
@@ -17,6 +17,7 @@ import { convertSalesforceCampaignToEvent } from './events.utils';
 
 @Injectable()
 export class EventsService {
+  readonly logger = new Logger(EventsService.name);
   constructor(
     private salesforceService: SalesforceService,
     private departmentsService: DepartmentsService,
@@ -161,13 +162,13 @@ export class EventsService {
 
     // Error handling if campaign or contact not found
     if (!sfCampaign) {
-      console.error(
+      this.logger.error(
         `Event with ID ${eventId} not found in Salesforce, cannot update participation.`
       );
       throw new Error(`Event with ID ${eventId} not found in Salesforce`);
     }
     if (!sfContact) {
-      console.error(
+      this.logger.error(
         `Contact with email ${userEmail} not found in Salesforce, cannot update event participation.`
       );
       throw new Error(
@@ -185,7 +186,7 @@ export class EventsService {
           : SalesforceCampaignStatus.RESPONDED
       );
     } catch (error) {
-      console.error(
+      this.logger.error(
         `Failed to update participation for contact ${sfContact.Id} in campaign ${sfCampaign.Id}:`,
         error
       );

@@ -1,7 +1,3 @@
 export const RedisKeys = {
-  CV_PREFIX: 'cv-',
-  CV_LIST: 'cvList',
-  CVS_TOTAL_SHARES: 'cvsTotalShares',
-  RL_AUTH: 'rl-auth:',
-  RL_GENERAL: 'rl-general:',
+  RL_AI_ASSISTANT: 'rl-ai-assistant:',
 } as const;

@@ -51,7 +51,6 @@ export class UsersDeletionService {
       lastName: 'supprimé',
       email: `${Date.now()}@${uuid()}.deleted`,
       phone: null,
-      address: null,
     });
 
     await this.removeUserProfile(id);

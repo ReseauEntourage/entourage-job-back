@@ -7,10 +7,7 @@ import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 
 export interface CurrentUserDto
-  extends Partial<
-    Omit<User, 'userProfile' | 'company' | 'candidat' | 'createdAt'>
-  > {
-  createdAt: string;
+  extends Partial<Omit<User, 'userProfile' | 'company' | 'candidat'>> {
   userProfile: UserProfileDto;
   hasExtractedCvData: boolean;
   company?: Partial<Company>;
@@ -24,32 +21,18 @@ export interface CurrentUserDto
 export const generateCurrentUserDto = (
   user: User,
   userProfile: UserProfile,
-  usersStats?: {
-    averageDelayResponse: number | null;
-    responseRate: number | null;
-    totalConversationWithMirrorRoleCount: number | null;
-  },
   hasExtractedCvData?: boolean,
   complete = false
 ): CurrentUserDto => {
   const dto = {
     // From User
     id: user.id,
-    createdAt:
-      user.createdAt instanceof Date
-        ? user.createdAt.toISOString()
-        : user.createdAt,
-    whatsappZoneName: user.whatsappZoneName || null,
-    whatsappZoneUrl: user.whatsappZoneUrl || null,
-    whatsappZoneQR: user.whatsappZoneQR || null,
     OrganizationId: user.OrganizationId || null,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
     phone: user.phone,
-    address: user.address,
     role: user.role,
-    adminRole: user.adminRole,
     zone: user.zone,
     gender: user.gender,
     lastConnection: user.lastConnection,
@@ -80,12 +63,6 @@ export const generateCurrentUserDto = (
   }
   if (hasExtractedCvData !== undefined) {
     dto.hasExtractedCvData = hasExtractedCvData;
-  }
-  if (usersStats !== undefined) {
-    dto.averageDelayResponse = usersStats.averageDelayResponse;
-    dto.responseRate = usersStats.responseRate;
-    dto.totalConversationWithMirrorRoleCount =
-      usersStats.totalConversationWithMirrorRoleCount;
   }
   return dto as CurrentUserDto;
 };

@@ -1,8 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { UsersHelper } from '../users/users.helper';
-import { LoggedUser } from 'src/auth/auth.types';
+import { UsersHelper, LoggedInUser } from '../users/users.helper';
 import { Department } from 'src/common/departments/models/department.model';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import { Company } from 'src/companies/models/company.model';
@@ -34,9 +33,9 @@ describe('Companies', () => {
   let departmentHelper: DepartmentHelper;
 
   let company: Company;
-  let loggedInCompanyReferent: LoggedUser;
-  let loggedInCollaborator: LoggedUser;
-  let loggedInRandomUser: LoggedUser;
+  let loggedInCompanyReferent: LoggedInUser;
+  let loggedInCollaborator: LoggedInUser;
+  let loggedInRandomUser: LoggedInUser;
 
   let department01: Department;
 

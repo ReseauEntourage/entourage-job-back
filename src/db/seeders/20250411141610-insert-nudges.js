@@ -34,15 +34,6 @@ module.exports = {
         nameOffer: 'Partager mon réseau professionnel',
         order: 3,
       },
-      {
-        id: uuid.v4(),
-        value: 'event',
-        nameRequest:
-          'Se rencontrer et échanger avec les membres de la communauté',
-        nameOffer:
-          'Se rencontrer lors d’événements avec les membres de la communauté',
-        order: 4,
-      },
     ]);
   },
 

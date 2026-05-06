@@ -2,8 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
-import { UsersHelper } from '../users/users.helper';
-import { LoggedUser } from 'src/auth/auth.types';
+import { UsersHelper, LoggedInUser } from '../users/users.helper';
 import { ExternalCvsController } from 'src/external-cvs/external-cvs.controller';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -22,8 +21,8 @@ describe('ExternalCvs', () => {
   let databaseHelper: DatabaseHelper;
   let usersHelper: UsersHelper;
   let userProfilesHelper: UserProfilesHelper;
-  let loggedInCandidate: LoggedUser;
-  let loggedInCandidateWithCv: LoggedUser;
+  let loggedInCandidate: LoggedInUser;
+  let loggedInCandidateWithCv: LoggedInUser;
 
   const route = '/external-cv';
 

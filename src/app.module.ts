@@ -7,6 +7,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
 import { PoolOptions } from 'sequelize';
+import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
 import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
@@ -23,6 +24,7 @@ import { ReviewsModule } from './common/reviews/reviews.module';
 import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { CurrentUserModule } from './current-user/current-user.module';
 import { ElearningModule } from './elearning/elearning.module';
 import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { EventsModule } from './events/events.module';
@@ -30,6 +32,7 @@ import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
 import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { MailsModule } from './mails/mails.module';
 import { MediasModule } from './medias/medias.module';
@@ -126,6 +129,7 @@ export function getSequelizeOptions(
     UsersCreationModule,
     UsersStatsModule,
     AuthModule,
+    CurrentUserModule,
     ExternalCvsModule,
     BusinessSectorsModule,
     EmbeddingsModule,
@@ -146,6 +150,7 @@ export function getSequelizeOptions(
     OrganizationsModule,
     ReadDocumentsModule,
     MessagingModule,
+    AiAssistantModule,
     UserSocialSituationsModule,
     MediasModule,
     OpenAiModule,
@@ -155,6 +160,7 @@ export function getSequelizeOptions(
     PingModule,
     EventsModule,
     ElearningModule,
+    FeatureFlagsModule,
     GamificationModule,
   ],
   providers: [

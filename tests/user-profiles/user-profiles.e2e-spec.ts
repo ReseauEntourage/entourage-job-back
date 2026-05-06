@@ -5,7 +5,6 @@ import moment from 'moment';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
-import { LoggedUser } from 'src/auth/auth.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contract } from 'src/common/contracts/models';
 import { Department } from 'src/common/departments/models/department.model';
@@ -36,7 +35,7 @@ import { LanguageHelper } from 'tests/languages/language.helper';
 import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
-import { UsersHelper } from 'tests/users/users.helper';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 
 describe('UserProfiles', () => {
   let app: INestApplication;
@@ -62,7 +61,6 @@ describe('UserProfiles', () => {
   let nudgeTips: Nudge;
   let nudgeNetwork: Nudge;
   let nudgeInterview: Nudge;
-  let nudgeEvent: Nudge;
 
   let contractCdi: Contract;
   let contractCdd: Contract;
@@ -140,7 +138,6 @@ describe('UserProfiles', () => {
     nudgeTips = await nudgesHelper.findOne({ value: 'tips' });
     nudgeNetwork = await nudgesHelper.findOne({ value: 'network' });
     nudgeInterview = await nudgesHelper.findOne({ value: 'interview' });
-    nudgeEvent = await nudgesHelper.findOne({ value: 'event' });
 
     // Initialize the contracts
     await contractHelper.deleteAllContracts();
@@ -300,7 +297,7 @@ describe('UserProfiles', () => {
           });
         });
         describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
-          let loggedInCandidate: LoggedUser;
+          let loggedInCandidate: LoggedInUser;
 
           let secondCreatedCandidate: User;
           let thirdCreatedCandidate: User;
@@ -542,7 +539,7 @@ describe('UserProfiles', () => {
           });
         });
         describe('/profile?search= - Read all profiles with search query', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
 
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -615,7 +612,7 @@ describe('UserProfiles', () => {
           });
         });
         describe('/profile?departments[]=&businessSectors[]=&nudges[]= - Read all profiles with filters', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
@@ -1082,7 +1079,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1121,7 +1118,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1178,7 +1175,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1217,7 +1214,7 @@ describe('UserProfiles', () => {
               },
               {
                 userProfile: {
-                  nudges: [{ id: nudgeInterview.id }, { id: nudgeEvent.id }],
+                  nudges: [{ id: nudgeInterview.id }, { id: nudgeCv.id }],
                 },
               }
             );
@@ -1254,7 +1251,7 @@ describe('UserProfiles', () => {
           });
         });
         describe('/profile - Read all profiles with all filters', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
@@ -1358,7 +1355,7 @@ describe('UserProfiles', () => {
         });
 
         describe('/profile?isAvailable= - Filter profiles by availability', () => {
-          let loggedInAdmin: LoggedUser;
+          let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
               role: UserRoles.ADMIN,
@@ -1453,7 +1450,7 @@ describe('UserProfiles', () => {
       });
 
       describe('GET /user/profile/:userId - Get user profile', () => {
-        let loggedInUser: LoggedUser;
+        let loggedInUser: LoggedInUser;
         let randomUser: User;
         let randomUserProfile: UserProfile;
         beforeEach(async () => {
@@ -1562,10 +1559,10 @@ describe('UserProfiles', () => {
 
     describe('UPDATE', () => {
       describe('PUT /profile/:userId - Update user profile', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
+        let loggedInAdmin: LoggedInUser;
+        let loggedInCandidate: LoggedInUser;
+        let loggedInCoach: LoggedInUser;
+        let loggedInReferer: LoggedInUser;
 
         beforeEach(async () => {
           loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -2025,10 +2022,10 @@ describe('UserProfiles', () => {
       describe('PUT /profile/upload-image - Upload user profile picture', () => {
         let path: string;
 
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
-        let loggedInReferer: LoggedUser;
+        let loggedInAdmin: LoggedInUser;
+        let loggedInCandidate: LoggedInUser;
+        let loggedInCoach: LoggedInUser;
+        let loggedInReferer: LoggedInUser;
 
         beforeEach(async () => {
           path = userProfilesHelper.getTestImagePath();
@@ -2122,7 +2119,7 @@ describe('UserProfiles', () => {
   describe('UserProfiles Refering Context', () => {
     describe('GET /user/profile/refered', () => {
       describe('/profile/refered?limit=&offset= - Read only candidates that current user refered', () => {
-        let loggedInReferer: LoggedUser;
+        let loggedInReferer: LoggedInUser;
         beforeEach(async () => {
           loggedInReferer = await usersHelper.createLoggedInUser({
             role: UserRoles.REFERER,

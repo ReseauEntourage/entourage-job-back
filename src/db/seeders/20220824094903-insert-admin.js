@@ -25,7 +25,6 @@ module.exports = {
         firstName: 'John',
         lastName: 'Doe',
         role: 'Admin',
-        adminRole: null,
         password: hash,
         salt,
         gender: 0,

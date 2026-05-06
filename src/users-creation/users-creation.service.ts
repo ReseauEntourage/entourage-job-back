@@ -5,7 +5,7 @@ import { CompanyCreationContext } from 'src/companies/companies.types';
 import { CompanyInvitationsService } from 'src/companies/company-invitations.service';
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
-import { CustomContactParams } from 'src/external-services/mailjet/mailjet.types';
+import { MailjetContactSource } from 'src/external-services/mailjet/mailjet.types';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -141,11 +141,14 @@ export class UsersCreationService {
     );
   }
 
-  async sendContactToMailjet(contact: CustomContactParams) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.NEWSLETTER_SUBSCRIPTION,
-      contact
-    );
+  async sendContactToMailjet(
+    userId: string,
+    source: MailjetContactSource
+  ): Promise<void> {
+    await this.queuesService.addToWorkQueue(Jobs.USER_NEWSLETTER_SUBSCRIPTION, {
+      userId,
+      source,
+    });
   }
 
   async createUtm(createUtmDto: Partial<Utm>) {

@@ -5,20 +5,31 @@ import { SalesforceService } from 'src/external-services/salesforce/salesforce.s
 import { MailsService } from 'src/mails/mails.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class ContactsService {
   constructor(
     private mailsService: MailsService,
     private salesforceService: SalesforceService,
-    private queuesService: QueuesService
+    private queuesService: QueuesService,
+    private usersService: UsersService
   ) {}
 
   async sendContactToMailjet(contact: CustomContactParams) {
-    await this.queuesService.addToWorkQueue(
-      Jobs.NEWSLETTER_SUBSCRIPTION,
-      contact
-    );
+    const existingUser = await this.usersService.findOneByMail(contact.email);
+
+    if (existingUser) {
+      await this.queuesService.addToWorkQueue(
+        Jobs.USER_NEWSLETTER_SUBSCRIPTION,
+        { userId: existingUser.id, source: contact.source }
+      );
+    } else {
+      await this.queuesService.addToWorkQueue(
+        Jobs.NEWSLETTER_SUBSCRIPTION,
+        contact
+      );
+    }
   }
 
   async sendCompanyContactToSalesforce(

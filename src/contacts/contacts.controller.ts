@@ -15,7 +15,10 @@ import {
   ContactUsFormDto,
   ContactUsFormPipe,
 } from 'src/contacts/dto';
-import { ContactStatus } from 'src/external-services/mailjet/mailjet.types';
+import {
+  ContactStatus,
+  MailjetContactSource,
+} from 'src/external-services/mailjet/mailjet.types';
 import { isValidPhone } from 'src/utils/misc';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { ContactsService } from './contacts.service';
@@ -72,6 +75,7 @@ export class ContactsController {
       email,
       zone,
       status,
+      source: MailjetContactSource.SITE_EP,
     });
   }
 

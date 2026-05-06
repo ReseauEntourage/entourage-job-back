@@ -2,7 +2,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
-import { LoggedUser } from 'src/auth/auth.types';
 import { Organization } from 'src/organizations/models';
 import { OrganizationsController } from 'src/organizations/organizations.controller';
 import { QueuesService } from 'src/queues/producers/queues.service';
@@ -13,7 +12,7 @@ import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
-import { UsersHelper } from 'tests/users/users.helper';
+import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
 import { OrganizationFactory } from './organization.factory';
 import { OrganizationsHelper } from './organizations.helper';
 
@@ -312,9 +311,9 @@ describe('Organizations', () => {
     });
     describe('U - Update 1 Organization', () => {
       describe('/:id - Update organization', () => {
-        let loggedInAdmin: LoggedUser;
-        let loggedInCandidate: LoggedUser;
-        let loggedInCoach: LoggedUser;
+        let loggedInAdmin: LoggedInUser;
+        let loggedInCandidate: LoggedInUser;
+        let loggedInCoach: LoggedInUser;
 
         let organization: Organization;
 
