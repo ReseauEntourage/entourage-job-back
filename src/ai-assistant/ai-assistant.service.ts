@@ -471,6 +471,9 @@ export class AiAssistantService {
 CONTEXTE DE LA PLATEFORME :
 ${AI_ASSISTANT_CONFIG.platformContext}
 
+CHARTE ÉTHIQUE DE LA COMMUNAUTÉ :
+${AI_ASSISTANT_CONFIG.ethicalCharter}
+
 POSTURE DE COACHING :
 ${AI_ASSISTANT_CONFIG.coachingPhilosophy}
 
@@ -479,6 +482,9 @@ ${AI_ASSISTANT_CONFIG.coachingScope}
 
 FICHES MÉTIERS ROME :
 ${AI_ASSISTANT_CONFIG.romeResources}
+
+BOÎTE À OUTILS COACHS ENTOURAGE PRO :
+${AI_ASSISTANT_CONFIG.toolboxResources}
 
 Date du jour : ${today}
 
