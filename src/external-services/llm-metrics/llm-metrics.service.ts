@@ -5,7 +5,7 @@ import { tracer } from 'src/tracer';
 
 @Injectable()
 export class LlmMetricsService {
-  readonly logger = new Logger(LlmMetricsService.name);
+  private readonly logger = new Logger(LlmMetricsService.name);
   recordAnthropicUsage(
     model: string,
     usage: Usage,
