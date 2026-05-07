@@ -19,7 +19,6 @@ import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import {
-  messageAttributes,
   userAttributes,
   userAttributesWithDeletedAt,
 } from './messaging.attributes';
@@ -368,59 +367,7 @@ export class MessagingService {
       })
       .map((c) => c.conversationId);
 
-    // Dedicated internal query for feedback check — keeps deletedAt off public API
-    const feedbackParticipants =
-      await this.conversationParticipantModel.findAll({
-        where: { userId },
-        include: [
-          {
-            model: Conversation,
-            as: 'conversation',
-            include: [
-              {
-                model: Message,
-                as: 'messages',
-                attributes: messageAttributes,
-                separate: true,
-                order: [['createdAt', 'DESC']],
-              },
-              {
-                model: User,
-                as: 'participants',
-                attributes: userAttributesWithDeletedAt,
-                paranoid: false,
-                through: { attributes: [] },
-              },
-            ],
-          },
-        ],
-      });
-
-    // extract conversation ids where conversation.shouldGiveFeedback is true
-    // and at least one other participant is not deleted
-    const conversationsWithFeedbackRequired = feedbackParticipants
-      .filter((cp) => {
-        if (!cp.conversation) return false;
-        if (
-          !determineIfShoudGiveFeedback(
-            cp.conversation,
-            cp.feedbackRating,
-            cp.feedbackDate
-          )
-        )
-          return false;
-        const otherParticipants = (
-          cp.conversation.participants as Array<Pick<User, 'id' | 'deletedAt'>>
-        ).filter((p) => p.id !== userId);
-        return otherParticipants.some((p) => p.deletedAt === null);
-      })
-      .map((cp) => cp.conversationId);
-
-    // count unique conversation ids across unseen and feedback-required sets
-    return new Set([
-      ...unseenConversationIds,
-      ...conversationsWithFeedbackRequired,
-    ]).size;
+    return unseenConversationIds.length;
   }
 
   /**
