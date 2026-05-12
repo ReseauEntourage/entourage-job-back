@@ -4,14 +4,17 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessage,
 } from 'openai/resources/chat';
+import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { cvSchema, CvSchemaType } from './openai.schemas';
+
+const CV_EXTRACTION_MODEL = 'o4-mini-2025-04-16';
 
 @Injectable()
 export class OpenAiService {
   private readonly openai: OpenAI;
   private readonly logger = new Logger(OpenAiService.name);
 
-  constructor() {
+  constructor(private readonly llmMetrics: LlmMetricsService) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -42,7 +45,7 @@ export class OpenAiService {
 
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'o4-mini-2025-04-16',
+        model: CV_EXTRACTION_MODEL,
         max_completion_tokens: Number(
           process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096
         ),
@@ -98,6 +101,18 @@ export class OpenAiService {
           `Aucun tool_call n'a été retourné par l'API OpenAI (finish_reason=${String(
             finishReason
           )}).`
+        );
+      }
+
+      if (response.usage) {
+        this.logger.debug(
+          `OpenAI usage for CV extraction: ${JSON.stringify(response.usage)}`
+        );
+        this.llmMetrics.recordOpenAiUsage(
+          CV_EXTRACTION_MODEL,
+          response.usage,
+          'cv_extraction',
+          'cv_extraction'
         );
       }
 

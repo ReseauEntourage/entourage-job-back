@@ -17,6 +17,7 @@ import { Formation } from 'src/common/formations/models';
 import { Occupation } from 'src/common/occupations/models';
 import { Skill } from 'src/common/skills/models';
 import { AnthropicService } from 'src/external-services/anthropic/anthropic.service';
+import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { Organization } from 'src/organizations/models';
 import { REDIS_CLIENT } from 'src/redis/redis.module';
@@ -50,6 +51,7 @@ export class AiAssistantService {
     private userProfileModel: typeof UserProfile,
     private messagingService: MessagingService,
     private anthropicService: AnthropicService,
+    private llmMetrics: LlmMetricsService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis
   ) {}
 
@@ -271,6 +273,14 @@ export class AiAssistantService {
         subscriber.next({ data: { content: event.delta.text } });
       }
     }
+
+    const finalMessage = await stream.finalMessage();
+    this.llmMetrics.recordAnthropicUsage(
+      'claude-sonnet-4-6',
+      finalMessage.usage,
+      'stream',
+      'ai_assistant'
+    );
 
     const suggestionRegex = /\[SUGGESTION\]([\s\S]*?)\[\/SUGGESTION\]/g;
     const suggestions: string[] = [];

@@ -24,6 +24,7 @@ services:
       DB_USER: entourage_pro
       DB_PASSWORD: entourage_pro
       DB_NAME: entourage_pro
+      DD_AGENT_HOST: datadog
     depends_on:
       - db
       - redis
@@ -50,6 +51,29 @@ services:
       - 'log_temp_files=10240'
       - '-c'
       - 'shared_buffers=3GB'
+  ## DATADOG AGENT
+  datadog:
+    container_name: datadog
+    image: datadog/agent:latest
+    restart: always
+    environment:
+      DD_API_KEY: ${DD_API_KEY}
+      DD_SITE: ${DD_SITE:-datadoghq.eu}
+      DD_APM_ENABLED: true
+      DD_APM_NON_LOCAL_TRAFFIC: true
+      DD_LOGS_ENABLED: true
+      DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: true
+      DD_CONTAINER_EXCLUDE: 'name:datadog'
+      DD_DOGSTATSD_NON_LOCAL_TRAFFIC: true
+    ports:
+      - '8125:8125/udp'
+      - '8126:8126'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - ./docker/datadog/conf.d:/etc/datadog-agent/conf.d
+
   ## ENTOURAGE PRO BACKEND CACHE
   redis:
     container_name: redis

@@ -23,6 +23,7 @@ services:
       DB_USER: entourage_pro
       DB_PASSWORD: entourage_pro
       DB_NAME: entourage_pro
+      DD_AGENT_HOST: datadog
     depends_on:
       - db
       - redis

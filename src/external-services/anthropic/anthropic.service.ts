@@ -4,6 +4,7 @@ import {
   TextBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
 import { Injectable } from '@nestjs/common';
+import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 
 @Injectable()
 export class AnthropicService {
@@ -11,7 +12,7 @@ export class AnthropicService {
 
   private readonly MAX_TOKENS = 1024;
 
-  constructor() {
+  constructor(private readonly llmMetrics: LlmMetricsService) {
     this.client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -38,12 +39,19 @@ export class AnthropicService {
     userMessage: string,
     maxTokens = 5
   ): Promise<string> {
+    const model = 'claude-haiku-4-5-20251001';
     const response = await this.client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model,
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
     });
+    this.llmMetrics.recordAnthropicUsage(
+      model,
+      response.usage,
+      'classify',
+      'ai_assistant'
+    );
     const block = response.content[0];
     return block.type === 'text' ? block.text : '';
   }
