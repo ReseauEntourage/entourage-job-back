@@ -68,14 +68,35 @@ export class MailjetService {
     const fixieUrl = process.env.FIXIE_URL;
     if (!fixieUrl) return null;
 
-    const url = new URL(fixieUrl);
+    let url: URL;
+    try {
+      url = new URL(fixieUrl);
+    } catch {
+      this.logger.error(
+        'FIXIE_URL is set but could not be parsed as a valid URL — proxy disabled'
+      );
+      return null;
+    }
+
+    const port = parseInt(url.port, 10);
+    if (isNaN(port)) {
+      this.logger.error(
+        `FIXIE_URL has no valid port — proxy disabled (host: ${url.hostname})`
+      );
+      return null;
+    }
+
+    this.logger.log(`Mailjet proxy enabled via ${url.hostname}:${port}`);
     return {
       proxy: {
         protocol: url.protocol.replace(':', ''),
         host: url.hostname,
-        port: parseInt(url.port, 10),
+        port,
         ...(url.username && {
-          auth: { username: url.username, password: url.password },
+          auth: {
+            username: decodeURIComponent(url.username),
+            password: decodeURIComponent(url.password),
+          },
         }),
       },
     };
@@ -112,9 +133,12 @@ export class MailjetService {
             .post('send', MailjetOptions.MAILS)
             .request(mailjetParams);
         } catch (proxyError) {
-          this.logger.error(proxyError);
+          this.logger.error('sendMail: proxy retry failed', proxyError);
           throw proxyError;
         }
+      } else {
+        this.logger.error('sendMail failed', error);
+        throw error;
       }
     }
   }
@@ -217,44 +241,67 @@ export class MailjetService {
 
     const dto = this.buildContactDto(user, source);
 
-    try {
-      await this.mailjetNewsletter
+    const body = {
+      Email: dto.email,
+      Name: `${dto.firstName} ${dto.lastName}`,
+      Action: MailjetListActions.NO_FORCE,
+      Properties: {
+        [MailjetContactPropertyNames.CIVILITY]: dto.civility,
+        [MailjetContactPropertyNames.FIRSTNAME]: dto.firstName,
+        [MailjetContactPropertyNames.LASTNAME]: dto.lastName,
+        [MailjetContactPropertyNames.POSTAL_CODE]: dto.postalCode,
+        [MailjetContactPropertyNames.LOCAL_BRANCH]: dto.antenne,
+        [MailjetContactPropertyNames.PROGRAM]: dto.program,
+        [MailjetContactPropertyNames.IS_CANDIDATE]: dto.isCandidate
+          ? 'Oui'
+          : 'Non',
+        [MailjetContactPropertyNames.IS_COACH]: dto.isCoach ? 'Oui' : 'Non',
+        [MailjetContactPropertyNames.IS_PRECA]: dto.isPreca ? 'Oui' : 'Non',
+        [MailjetContactPropertyNames.IS_VOLUNTEER]: dto.isVolunteer
+          ? 'Oui'
+          : 'Non',
+        [MailjetContactPropertyNames.IS_COMPANY]: dto.isCompany ? 'Oui' : 'Non',
+        [MailjetContactPropertyNames.IS_ORGANIZATION]: dto.isOrganization
+          ? 'Oui'
+          : 'Non',
+        [MailjetContactPropertyNames.SOURCE]: dto.source,
+      },
+    };
+
+    const makeRequest = (client: Client) =>
+      client
         .post('contactslist', MailjetOptions.CONTACTS)
         .id(listId)
         .action('managecontact')
-        .request({
-          Email: dto.email,
-          Name: `${dto.firstName} ${dto.lastName}`,
-          Action: MailjetListActions.NO_FORCE,
-          Properties: {
-            [MailjetContactPropertyNames.CIVILITY]: dto.civility,
-            [MailjetContactPropertyNames.FIRSTNAME]: dto.firstName,
-            [MailjetContactPropertyNames.LASTNAME]: dto.lastName,
-            [MailjetContactPropertyNames.POSTAL_CODE]: dto.postalCode,
-            [MailjetContactPropertyNames.LOCAL_BRANCH]: dto.antenne,
-            [MailjetContactPropertyNames.PROGRAM]: dto.program,
-            [MailjetContactPropertyNames.IS_CANDIDATE]: dto.isCandidate
-              ? 'Oui'
-              : 'Non',
-            [MailjetContactPropertyNames.IS_COACH]: dto.isCoach ? 'Oui' : 'Non',
-            [MailjetContactPropertyNames.IS_PRECA]: dto.isPreca ? 'Oui' : 'Non',
-            [MailjetContactPropertyNames.IS_VOLUNTEER]: dto.isVolunteer
-              ? 'Oui'
-              : 'Non',
-            [MailjetContactPropertyNames.IS_COMPANY]: dto.isCompany
-              ? 'Oui'
-              : 'Non',
-            [MailjetContactPropertyNames.IS_ORGANIZATION]: dto.isOrganization
-              ? 'Oui'
-              : 'Non',
-            [MailjetContactPropertyNames.SOURCE]: dto.source,
-          },
-        });
+        .request(body);
 
+    try {
+      await makeRequest(this.mailjetNewsletter);
       this.logger.log(`Contact ${userId} successfully created in Mailjet`);
     } catch (error) {
-      this.logger.error(`Failed to create contact ${userId} in Mailjet`, error);
-      throw error;
+      if (this.isConnectionError(error) && this.mailjetNewsletterProxy) {
+        this.logger.warn(
+          `createContactForUser ${userId}: ECONNRESET, retrying via Fixie proxy`
+        );
+        try {
+          await makeRequest(this.mailjetNewsletterProxy);
+          this.logger.log(
+            `Contact ${userId} successfully created in Mailjet via proxy`
+          );
+        } catch (proxyError) {
+          this.logger.error(
+            `createContactForUser ${userId}: proxy retry failed`,
+            proxyError
+          );
+          throw proxyError;
+        }
+      } else {
+        this.logger.error(
+          `Failed to create contact ${userId} in Mailjet`,
+          error
+        );
+        throw error;
+      }
     }
   }
 
