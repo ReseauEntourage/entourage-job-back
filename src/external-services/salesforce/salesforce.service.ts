@@ -603,7 +603,13 @@ export class SalesforceService {
       .join(', ');
     const { records }: { records: { ContactId: string; expr0: number }[] } =
       await this.salesforce.query(
-        `SELECT ContactId, COUNT(Id) FROM ${ObjectNames.CAMPAIGN_MEMBER} WHERE ContactId IN (${escapedIds}) AND Status = 'Inscrit' GROUP BY ContactId`
+        `SELECT ContactId, COUNT(Id)
+         FROM ${ObjectNames.CAMPAIGN_MEMBER}
+         WHERE ContactId IN (${escapedIds})
+           AND Status = 'Inscrit'
+           AND Campaign.Type = 'Event'
+           AND Campaign.R_seaux__c = 'LinkedOut'
+         GROUP BY ContactId`
       );
     return records.reduce<Record<string, number>>((acc, r) => {
       acc[r.ContactId] = r.expr0;
