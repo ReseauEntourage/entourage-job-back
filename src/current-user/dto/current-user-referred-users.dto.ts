@@ -7,6 +7,7 @@ export interface CurrentUserReferredUserDto {
   role: string;
   email: string;
   coachesContactedCount: number;
+  eventsParticipatedCount: number;
   referredAt: string | null;
   onboardingCompletedAt: string | null;
 }
@@ -16,7 +17,8 @@ export interface CurrentUserReferredUsersDto {
 }
 
 export const generateCurrentUserReferredUsersDto = (
-  user: User
+  user: User,
+  eventsParticipatedCountByEmail: Record<string, number> = {}
 ): CurrentUserReferredUsersDto => ({
   referredCandidates: (user.referredCandidates || []).map((candidate) => ({
     id: candidate.id,
@@ -27,6 +29,8 @@ export const generateCurrentUserReferredUsersDto = (
     coachesContactedCount: candidate.getDataValue(
       'coachesContactedCount'
     ) as number,
+    eventsParticipatedCount:
+      eventsParticipatedCountByEmail[candidate.email?.toLowerCase()] ?? 0,
     referredAt: candidate.createdAt
       ? new Date(candidate.createdAt).toISOString()
       : null,
