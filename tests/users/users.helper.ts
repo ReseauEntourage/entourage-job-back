@@ -43,6 +43,13 @@ export class UsersHelper {
 
     const { token } = await this.authService.login(userHasCurrentUserDto.id);
 
+    // login() sets lastConnection to now as a side effect; restore the intended value if explicitly provided
+    if (props.lastConnection !== undefined) {
+      await this.usersService.update(id, {
+        lastConnection: props.lastConnection,
+      });
+    }
+
     return {
       user: userHasCurrentUserDto,
       token: token,
