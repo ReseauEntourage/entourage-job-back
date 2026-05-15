@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
+import { SalesforceModule } from 'src/external-services/salesforce/salesforce.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { SessionsModule } from 'src/sessions/sessions.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
@@ -14,6 +15,7 @@ import { CurrentUserService } from './current-user.service';
     forwardRef(() => UsersStatsModule),
     SessionsModule,
     ProfileGenerationModule,
+    SalesforceModule,
   ],
   controllers: [CurrentUserController],
   providers: [CurrentUserService],
