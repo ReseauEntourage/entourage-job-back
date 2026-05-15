@@ -72,6 +72,7 @@ export class CurrentUserService {
       throw new NotFoundException();
     }
     await this.sessionsService.createOrUpdateSession(userId);
+    await this.usersService.update(userId, { lastConnection: new Date() });
     return generateCurrentUserIdentityDto(user);
   }
 

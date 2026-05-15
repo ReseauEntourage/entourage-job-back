@@ -60,12 +60,14 @@ export class AuthService {
       sub: id,
     };
 
-    return {
-      token: this.jwtService.sign(payload, {
-        secret: `${process.env.JWT_SECRET}`,
-        expiresIn: expiration,
-      }),
-    };
+    const token = this.jwtService.sign(payload, {
+      secret: `${process.env.JWT_SECRET}`,
+      expiresIn: expiration,
+    });
+
+    await this.usersService.update(id, { lastConnection: new Date() });
+
+    return { token };
   }
 
   async getCurrentUser(
