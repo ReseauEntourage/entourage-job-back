@@ -186,6 +186,22 @@ export class User extends HistorizedModel {
   @Column
   onboardingWebinarSkippedAt: Date;
 
+  @AllowNull(true)
+  @Column
+  linkedinId: string;
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  linkedinAccessToken: string;
+
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  linkedinRefreshToken: string;
+
+  @AllowNull(true)
+  @Column
+  linkedinTokenExpiresAt: Date;
+
   @CreatedAt
   createdAt: Date;
 

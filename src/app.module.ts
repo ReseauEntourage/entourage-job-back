@@ -30,6 +30,7 @@ import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { EventsModule } from './events/events.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
+import { LinkedInModule } from './external-services/linkedin/linkedin.module';
 import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
@@ -146,6 +147,7 @@ export function getSequelizeOptions(
     MailsModule,
     ExternalDatabasesModule,
     SalesforceModule,
+    LinkedInModule,
     ContactsModule,
     OrganizationsModule,
     ReadDocumentsModule,

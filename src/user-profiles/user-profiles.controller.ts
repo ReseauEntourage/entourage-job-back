@@ -354,6 +354,12 @@ export class UserProfilesController {
     );
   }
 
+  @Get('/:userId/share-text')
+  async getShareText(@Param('userId', new ParseUUIDPipe()) userId: string) {
+    const text = await this.userProfilesService.getShareText(userId);
+    return { text };
+  }
+
   @Get('/:userId')
   async findByUserId(
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string
