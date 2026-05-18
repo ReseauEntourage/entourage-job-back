@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Public, UserPayload } from 'src/auth/guards';
+import { UserPayload } from 'src/auth/guards';
 import { LinkedInService } from './linkedin.service';
 
 @ApiTags('LinkedIn')
@@ -21,21 +21,15 @@ export class LinkedInController {
   constructor(private readonly linkedInService: LinkedInService) {}
 
   @Get('auth/linkedin/url')
-  getOAuthUrl(
-    @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Query('redirectAfterShare') redirectAfterShare?: string
-  ) {
-    const state = this.linkedInService.encodeState({
-      userId,
-      redirectAfterShare,
-    });
+  getOAuthUrl(@Query('redirectAfterShare') redirectAfterShare?: string) {
+    const state = this.linkedInService.encodeState({ redirectAfterShare });
     const url = this.linkedInService.buildOAuthUrl(state);
     return { url };
   }
 
-  @Public()
   @Post('auth/linkedin/exchange')
   async exchangeCode(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Body('code') code: string,
     @Body('state') state: string
   ): Promise<{ pendingShare?: string }> {
@@ -45,17 +39,13 @@ export class LinkedInController {
 
     const stateData = this.linkedInService.decodeState(state ?? '');
 
-    if (!stateData.userId) {
-      throw new BadRequestException('Invalid state');
-    }
-
     try {
       const tokenData = await this.linkedInService.exchangeCodeForToken(code);
-      await this.linkedInService.storeToken(stateData.userId, tokenData);
+      await this.linkedInService.storeToken(userId, tokenData);
       return { pendingShare: stateData.redirectAfterShare };
     } catch (err) {
       this.logger.error(
-        `LinkedIn token exchange failed for user ${stateData.userId}`,
+        `LinkedIn token exchange failed for user ${userId}`,
         err instanceof Error ? err.stack : JSON.stringify(err)
       );
       throw new BadRequestException('Failed to exchange LinkedIn token');

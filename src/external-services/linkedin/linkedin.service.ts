@@ -16,7 +16,6 @@ const LINKEDIN_POSTS_URL = `${LINKEDIN_API_URL}/rest/posts`;
 const LINKEDIN_API_VERSION = '202604';
 
 export interface LinkedInOAuthState {
-  userId?: string;
   redirectAfterShare?: string;
 }
 
