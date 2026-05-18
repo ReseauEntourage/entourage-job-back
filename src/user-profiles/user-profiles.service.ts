@@ -1572,7 +1572,7 @@ export class UserProfilesService {
 
     const posteRecherche = profile.currentJob
       ? stripParens(profile.currentJob)
-      : 'un poste';
+      : null;
 
     const skills = (profile.skills ?? [])
       .map((s) => stripParens(s.name))
@@ -1594,7 +1594,11 @@ export class UserProfilesService {
           ? '@[Entourage](urn:li:organization:9177905)'
           : 'Entourage'
       } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
-      `${prenom} est basé à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : décrocher un poste de ${posteRecherche}.${skillsLine}\n\n` +
+      `${prenom} est basé à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
+        posteRecherche
+          ? `décrocher un poste de ${posteRecherche}`
+          : 'décrocher un emploi'
+      }.${skillsLine}\n\n` +
       `Il a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
       `Son profil complet est ici : ${profileUrl}\n\n` +
       `N'hésitez pas à me contacter ou à contacter ${prenom} directement. Merci d'avance.`
