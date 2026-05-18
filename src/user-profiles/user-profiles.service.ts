@@ -1,9 +1,9 @@
 import fs from 'fs';
 import {
-  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
@@ -1527,7 +1527,7 @@ export class UserProfilesService {
     const userProfile = await this.findOneByUserId(profileUserId, true);
 
     if (!userProfile) {
-      throw new BadRequestException('Candidate profile not found');
+      throw new NotFoundException('Candidate profile not found');
     }
 
     const candidateUser = await this.usersService.findOneWithAttributes(
