@@ -336,8 +336,16 @@ export class User extends HistorizedModel {
 
   toJSON() {
     const attributes = this.get({ plain: true });
-    // Remove companies and add company
-    const { companies, ...rest } = attributes;
+    const {
+      companies,
+      password,
+      salt,
+      hashReset,
+      saltReset,
+      linkedinAccessToken,
+      linkedinRefreshToken,
+      ...rest
+    } = attributes;
     return {
       ...rest,
       company:
