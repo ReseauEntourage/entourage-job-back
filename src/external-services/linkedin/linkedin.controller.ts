@@ -63,7 +63,10 @@ export class LinkedInController {
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('profileUserId', new ParseUUIDPipe()) profileUserId: string
   ) {
-    await this.linkedInService.shareProfile(userId, profileUserId);
-    return { success: true };
+    const linkedinPostUrl = await this.linkedInService.shareProfile(
+      userId,
+      profileUserId
+    );
+    return { success: true, linkedinPostUrl };
   }
 }

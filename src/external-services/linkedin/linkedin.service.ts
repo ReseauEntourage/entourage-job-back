@@ -112,7 +112,7 @@ export class LinkedInService {
   async shareProfile(
     sharingUserId: string,
     profileUserId: string
-  ): Promise<void> {
+  ): Promise<string> {
     const user = await this.usersService.findOneWithAttributes(sharingUserId, [
       'id',
       'linkedinId',
@@ -139,7 +139,7 @@ export class LinkedInService {
       'linkedin'
     );
     try {
-      await axios.post(
+      const response = await axios.post(
         LINKEDIN_POSTS_URL,
         {
           author: `urn:li:person:${user.linkedinId}`,
@@ -172,6 +172,10 @@ export class LinkedInService {
           },
         }
       );
+      const postId: string = response.headers['x-linkedin-id'] ?? '';
+      return postId
+        ? `https://www.linkedin.com/feed/update/${encodeURIComponent(postId)}`
+        : '';
     } catch (error) {
       this.logger.error(
         `Failed to share profile on LinkedIn for user ${sharingUserId} and profile ${profileUserId}`,
