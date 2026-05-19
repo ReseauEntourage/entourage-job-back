@@ -1,5 +1,10 @@
 import fs from 'fs';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
@@ -67,6 +72,8 @@ import { SCORING_WEIGHTS } from './recommendations/scoring.config';
 import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { ContactTypeEnum } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
+
+const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
 
 @Injectable()
 export class UserProfilesService {
@@ -1510,6 +1517,91 @@ export class UserProfilesService {
         userId,
         embeddingTypes: embeddingTypesToUpdate,
       }
+    );
+  }
+
+  async getShareText(
+    profileUserId: string,
+    channel: 'linkedin' | 'default' = 'default'
+  ): Promise<string> {
+    const userProfile = await this.findOneByUserId(profileUserId, true);
+
+    if (!userProfile) {
+      throw new NotFoundException('Candidate profile not found');
+    }
+
+    const candidateUser = await this.usersService.findOneWithAttributes(
+      profileUserId,
+      ['id', 'firstName']
+    );
+
+    const profileUrl = `${process.env.FRONT_URL}/cv/${profileUserId}`;
+    return this.generateShareText(
+      userProfile,
+      candidateUser?.firstName ?? '',
+      profileUrl,
+      channel
+    );
+  }
+
+  generateShareText(
+    profile: UserProfile,
+    firstName: string,
+    profileUrl: string,
+    channel: 'linkedin' | 'default' = 'default'
+  ): string {
+    const stripParens = (s: string) => s.replace(/\s*\([^)]*\)/g, '').trim();
+
+    const prenom = firstName || 'ce candidat';
+    const ville = stripParens(profile.department || 'sa région');
+
+    const contracts = (profile.contracts ?? [])
+      .map((c) => stripParens(c.name))
+      .filter(Boolean);
+    const typeContrat = contracts[0] || 'un emploi';
+
+    const sectorNames = (profile.sectorOccupations ?? [])
+      .map((s) =>
+        stripParens(s.occupation?.name ?? s.businessSector?.name ?? '')
+      )
+      .filter(Boolean);
+    const secteurLine =
+      sectorNames.length > 0
+        ? ` dans les domaines ${sectorNames.slice(0, 2).join(' et ')}.`
+        : '.';
+
+    const posteRecherche = profile.currentJob
+      ? stripParens(profile.currentJob)
+      : null;
+
+    const skills = (profile.skills ?? [])
+      .map((s) => stripParens(s.name))
+      .filter(Boolean);
+    const skillsLine =
+      skills.length > 0
+        ? `\n\nCe qu'il apporte : ${skills
+            .slice(0, 3)
+            .join(', ')} — et bien plus encore.`
+        : '';
+
+    return (
+      `Je soutiens ${prenom} dans sa recherche professionnelle via ${
+        channel === 'linkedin'
+          ? `@[Entourage Pro](urn:li:organization:${LINKEDIN_ENTOURAGE_PRO_ORG_ID})`
+          : 'Entourage Pro'
+      } — un programme de l'association ${
+        channel === 'linkedin'
+          ? '@[Entourage](urn:li:organization:9177905)'
+          : 'Entourage'
+      } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
+      `${prenom} est basé à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
+        posteRecherche
+          ? `décrocher un poste de ${posteRecherche}`
+          : 'décrocher un emploi'
+      }.${skillsLine}\n\n` +
+      `Il a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
+      `Son profil complet est ici : ${profileUrl}\n\n` +
+      `N'hésitez pas à me contacter ou à contacter ${prenom} directement. Merci d'avance.`
     );
   }
 }
