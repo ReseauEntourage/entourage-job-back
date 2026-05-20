@@ -41,7 +41,13 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
+import {
+  Gender,
+  Genders,
+  OnboardingStatus,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { getDepartmentLocative } from 'src/utils/misc/department-locative';
 import {
@@ -1533,7 +1539,7 @@ export class UserProfilesService {
 
     const candidateUser = await this.usersService.findOneWithAttributes(
       profileUserId,
-      ['id', 'firstName']
+      ['id', 'firstName', 'gender']
     );
 
     const profileUrl = `${process.env.FRONT_URL}/cv/${profileUserId}`;
@@ -1541,7 +1547,8 @@ export class UserProfilesService {
       userProfile,
       candidateUser?.firstName ?? '',
       profileUrl,
-      channel
+      channel,
+      candidateUser?.gender
     );
   }
 
@@ -1549,11 +1556,14 @@ export class UserProfilesService {
     profile: UserProfile,
     firstName: string,
     profileUrl: string,
-    channel: 'linkedin' | 'default' = 'default'
+    channel: 'linkedin' | 'default' = 'default',
+    gender?: Gender
   ): string {
     const stripParens = (s: string) => s.replace(/\s*\([^)]*\)/g, '').trim();
 
-    const prenom = firstName || 'ce candidat';
+    const isFemale = gender === Genders.FEMALE;
+
+    const prenom = firstName || (isFemale ? 'cette candidate' : 'ce candidat');
     const locative = getDepartmentLocative(profile.department ?? null);
 
     const contracts = (profile.contracts ?? [])
@@ -1580,12 +1590,16 @@ export class UserProfilesService {
     const skills = (profile.skills ?? [])
       .map((s) => stripParens(s.name))
       .filter(Boolean);
+
+    const ceQuApporte = isFemale ? "Ce qu'elle apporte" : "Ce qu'il apporte";
     const skillsLine =
       skills.length > 0
-        ? `\n\nCe qu'il apporte : ${skills
+        ? `\n\n${ceQuApporte} : ${skills
             .slice(0, 3)
             .join(', ')} — et bien plus encore.`
         : '';
+
+    const ilElle = isFemale ? 'Elle' : 'Il';
 
     return (
       `Je soutiens ${prenom} dans sa recherche professionnelle via ${
@@ -1597,12 +1611,14 @@ export class UserProfilesService {
           ? '@[Entourage](urn:li:organization:9177905)'
           : 'Entourage'
       } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
-      `${prenom} est basé ${locative}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
+      `${prenom} est bas${
+        isFemale ? 'ée' : 'é'
+      } ${locative}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
         searchAmbition
           ? `décrocher un poste de ${searchAmbition}`
           : 'décrocher un emploi'
       }.${skillsLine}\n\n` +
-      `Il a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
+      `${ilElle} a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
       `Son profil complet est ici : ${profileUrl}\n\n` +
       `N'hésitez pas à me contacter ou à contacter ${prenom} directement. Merci d'avance.`
     );
