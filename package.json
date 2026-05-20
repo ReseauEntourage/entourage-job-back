@@ -5,6 +5,9 @@
   "engines": {
     "node": "24.x"
   },
+  "overrides": {
+    "@types/node": "^24.0.0"
+  },
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
