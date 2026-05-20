@@ -1558,7 +1558,7 @@ export class UserProfilesService {
     const contracts = (profile.contracts ?? [])
       .map((c) => stripParens(c.name))
       .filter(Boolean);
-    const typeContrat = contracts[0] || 'un emploi';
+    const typeContrat = contracts[0] || 'emploi';
 
     const sectorNames = (profile.sectorOccupations ?? [])
       .map((s) =>
@@ -1596,7 +1596,7 @@ export class UserProfilesService {
           ? '@[Entourage](urn:li:organization:9177905)'
           : 'Entourage'
       } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
-      `${prenom} est basé(e) à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} ${
+      `${prenom} est basé à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
         searchAmbition
           ? `décrocher un poste de ${searchAmbition}`
           : 'décrocher un emploi'
