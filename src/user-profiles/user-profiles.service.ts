@@ -1572,19 +1572,23 @@ export class UserProfilesService {
     const typeContrat = contracts[0] || 'emploi';
 
     const sectorNames = (profile.sectorOccupations ?? [])
-      .map((s) =>
-        stripParens(s.occupation?.name ?? s.businessSector?.name ?? '')
-      )
+      .map((s) => stripParens(s.businessSector?.name ?? ''))
       .filter(Boolean);
     const secteurLine =
       sectorNames.length > 0
         ? ` dans le${sectorNames.length > 1 ? 's' : ''} domaine${
             sectorNames.length > 1 ? 's' : ''
-          } ${sectorNames.slice(0, 2).join(' et ')}.`
+          } ${sectorNames.slice(0, 2).join(' ou ')}.`
         : '.';
+
+    const occupationNames = (profile.sectorOccupations ?? [])
+      .map((s) => stripParens(s.occupation?.name ?? ''))
+      .filter(Boolean);
 
     const searchAmbition = profile.currentJob
       ? stripParens(profile.currentJob)
+      : occupationNames.length > 0
+      ? occupationNames.slice(0, 2).join(' ou ')
       : null;
 
     const skills = (profile.skills ?? [])
