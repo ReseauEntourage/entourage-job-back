@@ -1567,10 +1567,12 @@ export class UserProfilesService {
       .filter(Boolean);
     const secteurLine =
       sectorNames.length > 0
-        ? ` dans les domaines ${sectorNames.slice(0, 2).join(' et ')}.`
+        ? ` dans le${sectorNames.length > 1 ? 's' : ''} domaine${
+            sectorNames.length > 1 ? 's' : ''
+          } ${sectorNames.slice(0, 2).join(' et ')}.`
         : '.';
 
-    const posteRecherche = profile.currentJob
+    const searchAmbition = profile.currentJob
       ? stripParens(profile.currentJob)
       : null;
 
@@ -1594,9 +1596,9 @@ export class UserProfilesService {
           ? '@[Entourage](urn:li:organization:9177905)'
           : 'Entourage'
       } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
-      `${prenom} est basé à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
-        posteRecherche
-          ? `décrocher un poste de ${posteRecherche}`
+      `${prenom} est basé(e) à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} ${
+        searchAmbition
+          ? `décrocher un poste de ${searchAmbition}`
           : 'décrocher un emploi'
       }.${skillsLine}\n\n` +
       `Il a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
