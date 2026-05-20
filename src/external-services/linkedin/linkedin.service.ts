@@ -111,7 +111,8 @@ export class LinkedInService {
 
   async shareProfile(
     sharingUserId: string,
-    profileUserId: string
+    profileUserId: string,
+    customText?: string
   ): Promise<string> {
     const user = await this.usersService.findOneWithAttributes(sharingUserId, [
       'id',
@@ -134,10 +135,9 @@ export class LinkedInService {
     }
 
     const profileUrl = `${process.env.FRONT_URL}/cv/${profileUserId}`;
-    const commentary = await this.userProfilesService.getShareText(
-      profileUserId,
-      'linkedin'
-    );
+    const commentary =
+      customText ??
+      (await this.userProfilesService.getShareText(profileUserId, 'linkedin'));
     try {
       const response = await axios.post(
         LINKEDIN_POSTS_URL,

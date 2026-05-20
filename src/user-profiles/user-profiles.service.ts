@@ -43,6 +43,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
+import { getDepartmentLocative } from 'src/utils/misc/department-locative';
 import {
   generatePublicProfileDto,
   PublicProfileDto,
@@ -1553,7 +1554,7 @@ export class UserProfilesService {
     const stripParens = (s: string) => s.replace(/\s*\([^)]*\)/g, '').trim();
 
     const prenom = firstName || 'ce candidat';
-    const ville = stripParens(profile.department || 'sa région');
+    const locative = getDepartmentLocative(profile.department ?? null);
 
     const contracts = (profile.contracts ?? [])
       .map((c) => stripParens(c.name))
@@ -1596,7 +1597,7 @@ export class UserProfilesService {
           ? '@[Entourage](urn:li:organization:9177905)'
           : 'Entourage'
       } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
-      `${prenom} est basé à ${ville}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
+      `${prenom} est basé ${locative}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
         searchAmbition
           ? `décrocher un poste de ${searchAmbition}`
           : 'décrocher un emploi'

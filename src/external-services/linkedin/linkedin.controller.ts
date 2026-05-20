@@ -61,11 +61,13 @@ export class LinkedInController {
   @Post('linkedin/share/:profileUserId')
   async shareProfile(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
-    @Param('profileUserId', new ParseUUIDPipe()) profileUserId: string
+    @Param('profileUserId', new ParseUUIDPipe()) profileUserId: string,
+    @Body('customText') customText?: string
   ) {
     const linkedinPostUrl = await this.linkedInService.shareProfile(
       userId,
-      profileUserId
+      profileUserId,
+      customText
     );
     return { success: true, linkedinPostUrl };
   }
