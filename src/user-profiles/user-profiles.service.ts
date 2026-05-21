@@ -1566,11 +1566,6 @@ export class UserProfilesService {
     const prenom = firstName || (isFemale ? 'cette candidate' : 'ce candidat');
     const locative = getDepartmentLocative(profile.department ?? null);
 
-    const contracts = (profile.contracts ?? [])
-      .map((c) => stripParens(c.name))
-      .filter(Boolean);
-    const typeContrat = contracts[0] || 'emploi';
-
     const sectorNames = (profile.sectorOccupations ?? [])
       .map((s) => stripParens(s.businessSector?.name ?? ''))
       .filter(Boolean);
@@ -1578,7 +1573,7 @@ export class UserProfilesService {
       sectorNames.length > 0
         ? ` dans le${sectorNames.length > 1 ? 's' : ''} domaine${
             sectorNames.length > 1 ? 's' : ''
-          } ${sectorNames.slice(0, 2).join(' ou ')}.`
+          } ${sectorNames.slice(0, 2).join(' et ')}.`
         : '.';
 
     const occupationNames = (profile.sectorOccupations ?? [])
@@ -1596,35 +1591,37 @@ export class UserProfilesService {
       .filter(Boolean);
 
     const ceQuApporte = isFemale ? "Ce qu'elle apporte" : "Ce qu'il apporte";
-    const skillsLine =
+    const skillsParagraph =
       skills.length > 0
         ? `\n\n${ceQuApporte} : ${skills
             .slice(0, 3)
-            .join(', ')} — et bien plus encore.`
+            .join(', ')}, et bien plus encore.`
         : '';
 
     const ilElle = isFemale ? 'Elle' : 'Il';
 
+    const entourageProRef =
+      channel === 'linkedin'
+        ? `@[Entourage Pro](urn:li:organization:${LINKEDIN_ENTOURAGE_PRO_ORG_ID})`
+        : 'Entourage Pro';
+    const entourageRef =
+      channel === 'linkedin'
+        ? '@[Entourage](urn:li:organization:9177905)'
+        : 'Entourage';
+
     return (
-      `Je soutiens ${prenom} dans sa recherche professionnelle via ${
-        channel === 'linkedin'
-          ? `@[Entourage Pro](urn:li:organization:${LINKEDIN_ENTOURAGE_PRO_ORG_ID})`
-          : 'Entourage Pro'
-      } — un programme de l'association ${
-        channel === 'linkedin'
-          ? '@[Entourage](urn:li:organization:9177905)'
-          : 'Entourage'
-      } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
+      `Je soutiens ${prenom} dans sa recherche professionnelle via ${entourageProRef}, le réseau professionnel solidaire de l'association ${entourageRef}.\n\n` +
       `${prenom} est bas${
         isFemale ? 'ée' : 'é'
-      } ${locative}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
+      } ${locative} à la recherche d'un emploi${secteurLine}\n` +
+      `Son objectif : ${
         searchAmbition
           ? `décrocher un poste de ${searchAmbition}`
           : 'décrocher un emploi'
-      }.${skillsLine}\n\n` +
-      `${ilElle} a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
-      `Son profil complet est ici : ${profileUrl}\n\n` +
-      `N'hésitez pas à me contacter ou à contacter ${prenom} directement. Merci d'avance.`
+      }.${skillsParagraph}\n\n` +
+      `${ilElle} a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange, votre coup de pouce peut changer la donne.\n\n` +
+      `Contactez-moi en MP, je ferai le lien avec ${prenom}.\nVous pouvez aussi liker ou republier ce post pour lui donner plus de visibilité, ça compte énormément.\n\n` +
+      `Son profil complet est ici : ${profileUrl}`
     );
   }
 }
