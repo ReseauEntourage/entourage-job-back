@@ -6,6 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import axios from 'axios';
+import { UserProfileSharesService } from 'src/user-profile-shares/user-profile-shares.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 
@@ -32,7 +33,8 @@ export class LinkedInService {
   private readonly logger = new Logger(LinkedInService.name);
   constructor(
     private readonly usersService: UsersService,
-    private readonly userProfilesService: UserProfilesService
+    private readonly userProfilesService: UserProfilesService,
+    private readonly userProfileSharesService: UserProfileSharesService
   ) {}
 
   buildOAuthUrl(state: string): string {
@@ -173,9 +175,16 @@ export class LinkedInService {
         }
       );
       const postId: string = response.headers['x-linkedin-id'] ?? '';
-      return postId
+      const postUrl = postId
         ? `https://www.linkedin.com/feed/update/${encodeURIComponent(postId)}`
         : '';
+      await this.userProfileSharesService.create({
+        sharedUserId: profileUserId,
+        sharingUserId,
+        channel: 'linkedin',
+        postUrl: postUrl || undefined,
+      });
+      return postUrl;
     } catch (error) {
       this.logger.error(
         `Failed to share profile on LinkedIn for user ${sharingUserId} and profile ${profileUserId}`,
