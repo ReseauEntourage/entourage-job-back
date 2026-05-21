@@ -91,7 +91,7 @@ export class UserFactory implements Factory<User> {
     }
     const builtUser = await this.userModel.build(userData);
     const { id, isEmailVerified, ...builtUserWithoutIdAndIsEmailVerified } =
-      builtUser.toJSON();
+      builtUser.get({ plain: true });
     return builtUserWithoutIdAndIsEmailVerified as User;
   }
 

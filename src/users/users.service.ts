@@ -734,6 +734,7 @@ export class UsersService {
             new Date().setHours(0, 0, 0, 0) -
               (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
           ),
+          isEmailVerified: true,
         },
         onboardingStatus: {
           [Op.ne]: OnboardingStatus.COMPLETED,

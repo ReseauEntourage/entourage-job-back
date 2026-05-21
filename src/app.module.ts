@@ -30,6 +30,7 @@ import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { EventsModule } from './events/events.module';
 import { ExternalCvsModule } from './external-cvs/external-cvs.module';
 import { ExternalDatabasesModule } from './external-databases/external-databases.module';
+import { LinkedInModule } from './external-services/linkedin/linkedin.module';
 import { OpenAiModule } from './external-services/openai/openai.module';
 import { SalesforceModule } from './external-services/salesforce/salesforce.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
@@ -45,6 +46,7 @@ import { QueuesBoardModule } from './queues/producers/queues-board.module';
 import { ReadDocumentsModule } from './read-documents/read-documents.module';
 import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
 import { RevisionsModule } from './revisions/revisions.module';
+import { UserProfileSharesModule } from './user-profile-shares/user-profile-shares.module';
 import { UserProfilesModule } from './user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from './user-social-situations/user-social-situations.module';
 import { UsersModule } from './users/users.module';
@@ -146,11 +148,13 @@ export function getSequelizeOptions(
     MailsModule,
     ExternalDatabasesModule,
     SalesforceModule,
+    LinkedInModule,
     ContactsModule,
     OrganizationsModule,
     ReadDocumentsModule,
     MessagingModule,
     AiAssistantModule,
+    UserProfileSharesModule,
     UserSocialSituationsModule,
     MediasModule,
     OpenAiModule,
@@ -202,6 +206,7 @@ export function getSequelizeOptions(
     OrganizationsModule,
     MessagingModule,
     MediasModule,
+    UserProfileSharesModule,
     UserSocialSituationsModule,
   ],
 })

@@ -8,6 +8,7 @@ import {
   generateStaffContactDto,
   StaffContactDto,
 } from 'src/auth/dto/staff-contact.dto';
+import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
@@ -61,7 +62,8 @@ export class CurrentUserService {
     private readonly profileGenerationService: ProfileGenerationService,
     @Inject(forwardRef(() => UsersStatsService))
     private readonly usersStatsService: UsersStatsService,
-    private readonly sessionsService: SessionsService
+    private readonly sessionsService: SessionsService,
+    private readonly salesforceService: SalesforceService
   ) {}
 
   async getIdentity(userId: string): Promise<CurrentUserIdentityDto> {
@@ -72,6 +74,7 @@ export class CurrentUserService {
       throw new NotFoundException();
     }
     await this.sessionsService.createOrUpdateSession(userId);
+    await this.usersService.update(userId, { lastConnection: new Date() });
     return generateCurrentUserIdentityDto(user);
   }
 
@@ -179,7 +182,34 @@ export class CurrentUserService {
     if (!user) {
       throw new NotFoundException();
     }
-    return generateCurrentUserReferredUsersDto(user);
+
+    const candidates = user.referredCandidates ?? [];
+    const emails = candidates
+      .map((c) => c.email)
+      .filter((e): e is string => !!e);
+
+    const emailToContactId =
+      await this.salesforceService.findContactIdsByEmails(emails);
+    const contactIds = Object.values(emailToContactId);
+    const contactIdToCount =
+      await this.salesforceService.findEventParticipationCountByContactIds(
+        contactIds
+      );
+
+    const eventsParticipatedCountByEmail = Object.fromEntries(
+      emails.map((email) => {
+        const contactId = emailToContactId[email.toLowerCase()];
+        return [
+          email.toLowerCase(),
+          contactId ? contactIdToCount[contactId] ?? 0 : 0,
+        ];
+      })
+    );
+
+    return generateCurrentUserReferredUsersDto(
+      user,
+      eventsParticipatedCountByEmail
+    );
   }
 
   async getReferrer(userId: string): Promise<CurrentUserReferrerDto> {

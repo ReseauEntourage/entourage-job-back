@@ -575,6 +575,48 @@ export class SalesforceService {
     return records[0]?.Id;
   }
 
+  async findContactIdsByEmails(
+    emails: string[]
+  ): Promise<Record<string, string>> {
+    if (emails.length === 0) return {};
+    await this.checkIfConnected();
+    const escapedEmails = emails
+      .map((e) => `'${escapeQuery(e.normalize('NFD').replace(/[̀-ͯ]/g, ''))}'`)
+      .join(', ');
+    const { records }: { records: { Id: string; Email: string }[] } =
+      await this.salesforce.query(
+        `SELECT Id, Email FROM ${ObjectNames.CONTACT} WHERE Email IN (${escapedEmails})`
+      );
+    return records.reduce<Record<string, string>>((acc, r) => {
+      if (r.Email) acc[r.Email.toLowerCase()] = r.Id;
+      return acc;
+    }, {});
+  }
+
+  async findEventParticipationCountByContactIds(
+    contactIds: string[]
+  ): Promise<Record<string, number>> {
+    if (contactIds.length === 0) return {};
+    await this.checkIfConnected();
+    const escapedIds = contactIds
+      .map((id) => `'${escapeQuery(id)}'`)
+      .join(', ');
+    const { records }: { records: { ContactId: string; expr0: number }[] } =
+      await this.salesforce.query(
+        `SELECT ContactId, COUNT(Id)
+         FROM ${ObjectNames.CAMPAIGN_MEMBER}
+         WHERE ContactId IN (${escapedIds})
+           AND Status = 'Inscrit'
+           AND Campaign.Type = 'Event'
+           AND Campaign.R_seaux__c = 'LinkedOut'
+         GROUP BY ContactId`
+      );
+    return records.reduce<Record<string, number>>((acc, r) => {
+      acc[r.ContactId] = r.expr0;
+      return acc;
+    }, {});
+  }
+
   async findAllCampaignMembersByCampaignId(
     campaignId: string,
     status?: SalesforceCampaignStatus
