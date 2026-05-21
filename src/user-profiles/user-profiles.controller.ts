@@ -354,6 +354,15 @@ export class UserProfilesController {
     );
   }
 
+  @Get('/:userId/share-text')
+  async getShareText(
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+    @Query('channel') channel?: 'linkedin' | 'default'
+  ) {
+    const text = await this.userProfilesService.getShareText(userId, channel);
+    return { text };
+  }
+
   @Get('/:userId')
   async findByUserId(
     @Param('userId', new ParseUUIDPipe()) userIdToGet: string

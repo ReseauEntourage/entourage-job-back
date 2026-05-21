@@ -1,5 +1,10 @@
 import fs from 'fs';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, WhereOptions, QueryTypes } from 'sequelize';
 import sharp from 'sharp';
@@ -36,8 +41,15 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
+import {
+  Gender,
+  Genders,
+  OnboardingStatus,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
+import { getDepartmentLocative } from 'src/utils/misc/department-locative';
 import {
   generatePublicProfileDto,
   PublicProfileDto,
@@ -67,6 +79,8 @@ import { SCORING_WEIGHTS } from './recommendations/scoring.config';
 import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { ContactTypeEnum } from './user-profiles.types';
 import { userProfileSearchQuery } from './user-profiles.utils';
+
+const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
 
 @Injectable()
 export class UserProfilesService {
@@ -1510,6 +1524,107 @@ export class UserProfilesService {
         userId,
         embeddingTypes: embeddingTypesToUpdate,
       }
+    );
+  }
+
+  async getShareText(
+    profileUserId: string,
+    channel: 'linkedin' | 'default' = 'default'
+  ): Promise<string> {
+    const userProfile = await this.findOneByUserId(profileUserId, true);
+
+    if (!userProfile) {
+      throw new NotFoundException('Candidate profile not found');
+    }
+
+    const candidateUser = await this.usersService.findOneWithAttributes(
+      profileUserId,
+      ['id', 'firstName', 'gender']
+    );
+
+    const profileUrl = `${process.env.FRONT_URL}/cv/${profileUserId}`;
+    return this.generateShareText(
+      userProfile,
+      candidateUser?.firstName ?? '',
+      profileUrl,
+      channel,
+      candidateUser?.gender
+    );
+  }
+
+  generateShareText(
+    profile: UserProfile,
+    firstName: string,
+    profileUrl: string,
+    channel: 'linkedin' | 'default' = 'default',
+    gender?: Gender
+  ): string {
+    const stripParens = (s: string) => s.replace(/\s*\([^)]*\)/g, '').trim();
+
+    const isFemale = gender === Genders.FEMALE;
+
+    const prenom = firstName || (isFemale ? 'cette candidate' : 'ce candidat');
+    const locative = getDepartmentLocative(profile.department ?? null);
+
+    const contracts = (profile.contracts ?? [])
+      .map((c) => stripParens(c.name))
+      .filter(Boolean);
+    const typeContrat = contracts[0] || 'emploi';
+
+    const sectorNames = (profile.sectorOccupations ?? [])
+      .map((s) => stripParens(s.businessSector?.name ?? ''))
+      .filter(Boolean);
+    const secteurLine =
+      sectorNames.length > 0
+        ? ` dans le${sectorNames.length > 1 ? 's' : ''} domaine${
+            sectorNames.length > 1 ? 's' : ''
+          } ${sectorNames.slice(0, 2).join(' ou ')}.`
+        : '.';
+
+    const occupationNames = (profile.sectorOccupations ?? [])
+      .map((s) => stripParens(s.occupation?.name ?? ''))
+      .filter(Boolean);
+
+    const searchAmbition = profile.currentJob
+      ? stripParens(profile.currentJob)
+      : occupationNames.length > 0
+      ? occupationNames.slice(0, 2).join(' ou ')
+      : null;
+
+    const skills = (profile.skills ?? [])
+      .map((s) => stripParens(s.name))
+      .filter(Boolean);
+
+    const ceQuApporte = isFemale ? "Ce qu'elle apporte" : "Ce qu'il apporte";
+    const skillsLine =
+      skills.length > 0
+        ? `\n\n${ceQuApporte} : ${skills
+            .slice(0, 3)
+            .join(', ')} — et bien plus encore.`
+        : '';
+
+    const ilElle = isFemale ? 'Elle' : 'Il';
+
+    return (
+      `Je soutiens ${prenom} dans sa recherche professionnelle via ${
+        channel === 'linkedin'
+          ? `@[Entourage Pro](urn:li:organization:${LINKEDIN_ENTOURAGE_PRO_ORG_ID})`
+          : 'Entourage Pro'
+      } — un programme de l'association ${
+        channel === 'linkedin'
+          ? '@[Entourage](urn:li:organization:9177905)'
+          : 'Entourage'
+      } qui redonne un réseau pro à ceux qui n'en ont pas.\n\n` +
+      `${prenom} est bas${
+        isFemale ? 'ée' : 'é'
+      } ${locative}, à la recherche d'un ${typeContrat}${secteurLine} Son objectif : ${
+        searchAmbition
+          ? `décrocher un poste de ${searchAmbition}`
+          : 'décrocher un emploi'
+      }.${skillsLine}\n\n` +
+      `${ilElle} a tout pour réussir. Ce qui lui manque, c'est du réseau. Si vous connaissez quelqu'un qui recrute, qui travaille dans ce secteur, ou si vous avez simplement 10 minutes pour un échange — votre coup de pouce peut changer la donne.\n\n` +
+      `Son profil complet est ici : ${profileUrl}\n\n` +
+      `N'hésitez pas à me contacter ou à contacter ${prenom} directement. Merci d'avance.`
     );
   }
 }
