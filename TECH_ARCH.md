@@ -256,7 +256,7 @@ graph TB
 ## Infrastructure
 
 - **Runtime** : Node.js 20.x
-- **Framework** : NestJS 9.4.x (TypeScript strict)
+- **Framework** : NestJS 9.4.x (TypeScript strict, mais `strictNullChecks` désactivé)
 - **Processus** : deux processus indépendants
   - **HTTP API** (`src/main.ts`) — expose les routes REST, applique les guards JWT + Throttler
   - **Background Worker** (`src/worker.ts`) — consomme les queues BullMQ et exécute les crons
