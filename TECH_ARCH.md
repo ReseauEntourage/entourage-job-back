@@ -260,7 +260,7 @@ graph TB
 - **Processus** : deux processus indépendants
   - **HTTP API** (`src/main.ts`) — expose les routes REST, applique les guards JWT + Throttler
   - **Background Worker** (`src/worker.ts`) — consomme les queues BullMQ et exécute les crons
-- **Base de données** : PostgreSQL via Sequelize 6 + sequelize-typescript ; migrations dans `db/migrations/`
+- **Base de données** : PostgreSQL via Sequelize 6 + sequelize-typescript ; migrations dans `src/db/migrations/`
 - **Cache** : Redis (TLS) via `ioredis` + `cache-manager-ioredis` (partagé entre API et Worker)
 - **Queue engine** : BullMQ 5 — 4 queues nommées (`work`, `profile-generation`, `embedding`, `cron-tasks`) ; Redis comme backing store
 - **Priorités de queue** : `HIGH=1`, `NORMAL=10`, `LOW=100` (plus la valeur est basse, plus la priorité est haute)
