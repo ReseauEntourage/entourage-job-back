@@ -70,7 +70,6 @@ graph TB
         subgraph AuthSec["Auth & Sécurité"]
             JWT["JwtAuthGuard\n(global)"]
             THROTTLE["ThrottlerGuard\n(100 req/min)"]
-            APIKEY["ApiKeysModule"]
             AUTHMOD["AuthModule\n(local + JWT strategy)"]
         end
 
