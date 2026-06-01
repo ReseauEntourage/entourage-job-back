@@ -22,8 +22,7 @@ Produce a `TECH_ARCH.md` that contains:
 
 Read the two root modules to understand what runs in each process:
 - `src/app.module.ts` — HTTP API process (all business modules + guards + interceptors)
-- `src/worker.module.ts` — Background worker process (ConsumersModule + CronModule + ApiKeysModule)
-
+- `src/worker.module.ts` — Background worker process (ConsumersModule + CronModule)
 List domain modules:
 ```bash
 ls src/
