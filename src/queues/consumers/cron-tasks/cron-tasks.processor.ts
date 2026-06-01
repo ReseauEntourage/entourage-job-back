@@ -1173,7 +1173,7 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareUnreadConversationsMails() {
-    const DAYS_TO_CONTACT = [4, 20];
+    const DAYS_TO_CONTACT = [2, 10, 20];
     this.logger.log(
       `Preparing unread conversations mails for days ${DAYS_TO_CONTACT.join(
         ', '
