@@ -1346,7 +1346,7 @@ TypeScript compiler for static type checking and transpilation.
 
 NestJS CLI for building, watching, and generating code (`nest build`, `nest start`).
 
-**Used in:** all `yarn api:*` and `yarn worker:*` scripts.
+**Used in:** all `pnpm run api:*` and `pnpm run worker:*` scripts.
 
 **Alternatives:** `tsc` directly, `ts-node`.
 
