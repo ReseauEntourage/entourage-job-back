@@ -267,7 +267,7 @@ graph TB
 - **Cron** : `@nestjs/schedule` (node-cron), tourne uniquement dans le processus Worker
 - **IA** : OpenAI SDK v4 (vision + chat), VoyageAI SDK — traitements asynchrones via queues dédiées
 - **Monitoring** : Datadog APM (`dd-trace`) initialisé dans `src/tracer.ts`
-- **Auth** : JWT (passport-jwt) + stratégie locale ; guard API-key pour les endpoints worker
+- **Auth** : JWT (passport-jwt) + stratégie locale ; Bull Board protégé par Basic Auth si `QUEUES_ADMIN_PASSWORD` est défini
 - **Rate limiting** : ThrottlerGuard global — 100 requêtes / 60 s
 - **Secrets** : variables d'environnement (`.env` local / config vars Heroku en production)
 - **Package manager** : pnpm (voir `package.json#packageManager` et `pnpm-lock.yaml`)
