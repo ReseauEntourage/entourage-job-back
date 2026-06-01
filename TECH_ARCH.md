@@ -270,6 +270,6 @@ graph TB
 - **Auth** : JWT (passport-jwt) + stratégie locale ; guard API-key pour les endpoints worker
 - **Rate limiting** : ThrottlerGuard global — 100 requêtes / 60 s
 - **Secrets** : variables d'environnement (`.env` local / config vars Heroku en production)
-- **Package manager** : yarn 1.22.x
+- **Package manager** : pnpm (voir `package.json#packageManager` et `pnpm-lock.yaml`)
 - **Build** : NestJS CLI (webpack + ts-loader) — configs séparées pour API (`nest-cli.json`) et Worker (`nest-cli.worker.json`)
 - **Bull Board** : interface de monitoring des queues, activée si `QUEUES_ADMIN_PASSWORD` est défini
