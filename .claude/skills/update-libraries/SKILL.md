@@ -50,12 +50,13 @@ One-sentence description of what the library does.
 Use these groups (create new ones if a package doesn't fit):
 
 **Production dependencies:**
+
 - Framework — NestJS core packages (common, core, platform-express, config, jwt, passport, schedule, swagger, throttler, bullmq, sequelize, mapped-types, testing)
 - Database — Sequelize, sequelize-typescript, sequelize-cli, pg, pg-hstore
 - Queue & Background Jobs — BullMQ, Bull Board (api, express, nestjs)
 - Cache — ioredis, cache-manager, cache-manager-ioredis
 - Authentication — Passport, passport-local, passport-jwt, express-basic-auth
-- AI & Embeddings — OpenAI SDK, VoyageAI
+- AI & Embeddings — OpenAI SDK, Anthropic SDK (`@anthropic-ai/sdk`), VoyageAI
 - CRM & Salesforce — jsforce
 - Email — node-mailjet, @mailchimp/mailchimp_marketing
 - SMS & Push Notifications — @vonage/server-sdk, pusher
@@ -66,7 +67,8 @@ Use these groups (create new ones if a package doesn't fit):
 - Validation & Transformation — class-validator, class-transformer, validator, check-password-strength, phone
 - Utilities — Lodash, Moment, moment-timezone, UUID, Bitly, deep-diff, diff-match-patch, thenby, rxjs, reflect-metadata, sharp, dotenv, source-map-support, multer
 
-**Dev dependencies *(dev)*:**
+**Dev dependencies _(dev)_:**
+
 - Testing — Jest, ts-jest, supertest, @nestjs/testing, Faker
 - Linting & Formatting — ESLint (typescript-eslint, import, prettier plugins), Prettier
 - Build Tooling — TypeScript, ts-loader, ts-node, tsconfig-paths, rimraf, NestJS CLI, NestJS Schematics
@@ -91,6 +93,6 @@ All npm packages declared in `package.json`, grouped by theme.
 ---
 ```
 
-Mark dev-only packages with *(dev)* in their section header or inline.
+Mark dev-only packages with _(dev)_ in their section header or inline.
 
 Be precise about versions — use the exact version string from `package.json` (e.g. `^9.4.1`, `^5.70.4`).
