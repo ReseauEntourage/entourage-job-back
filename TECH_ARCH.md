@@ -46,7 +46,6 @@ graph LR
     API --> REDIS
     Worker --> DB
     Worker --> REDIS
-    API --> REDIS
     API --> AWS
     API --> AI
     API --> Externes
