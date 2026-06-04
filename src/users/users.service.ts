@@ -19,6 +19,7 @@ import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { ReadDocument } from 'src/read-documents/models';
+import { SmsService } from 'src/sms/sms.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
 import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
@@ -64,6 +65,7 @@ export class UsersService {
     @InjectModel(User)
     private userModel: typeof User,
     private mailsService: MailsService,
+    private smsService: SmsService,
     @Inject(forwardRef(() => AuthService))
     private authService: AuthService,
     @Inject(forwardRef(() => CompanyUsersService))
@@ -1236,32 +1238,95 @@ export class UsersService {
     );
   }
 
-  async getUserRowsForUnreadConversations(
-    daysSinceLastConnection: number
-  ): Promise<{ id: string; unreadConversationsCount: number }[]> {
+  async getUserRowsForUnansweredConversations(
+    daysSinceFirstMessage: number
+  ): Promise<{ id: string; unansweredConversationsCount: number }[]> {
     return this.userModel.sequelize.query(
       `
       SELECT
-        u."id" as "id",
-        count(cp.id) as "unreadConversationsCount"
-      FROM "Users" u
-      JOIN "ConversationParticipants" cp ON cp."userId" = u.id
-      JOIN "UserProfiles" up ON u."id" = up."userId"
-      JOIN "Conversations" c ON c.id = cp."conversationId"
+        recipient.id AS "id",
+        COUNT(DISTINCT c.id) AS "unansweredConversationsCount"
+      FROM "Conversations" c
       JOIN (
-        SELECT "conversationId", MAX("createdAt") AS "lastMessageTime"
+        SELECT DISTINCT ON ("conversationId")
+          "conversationId",
+          "authorId" AS "senderId",
+          "createdAt" AS "firstMessageAt"
         FROM "Messages"
-        GROUP BY "conversationId"
-      ) lm ON lm."conversationId" = c.id
-      WHERE (cp."seenAt" IS NULL OR lm."lastMessageTime" >= cp."seenAt")
-        AND up."isAvailable" IS TRUE
-        AND u."lastConnection" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceLastConnection + 1
-        } days'
-        AND u."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceLastConnection} days'
-        AND u.role != 'Admin'
-        AND u."deletedAt" IS NULL
-      GROUP BY u.id
+        ORDER BY "conversationId", "createdAt" ASC
+      ) first_msg ON first_msg."conversationId" = c.id
+      JOIN "Users" sender
+        ON sender.id = first_msg."senderId"
+        AND sender."deletedAt" IS NULL
+        AND sender.role != 'Admin'
+      JOIN "ConversationParticipants" cp_recipient
+        ON cp_recipient."conversationId" = c.id
+        AND cp_recipient."userId" != first_msg."senderId"
+      JOIN "Users" recipient
+        ON recipient.id = cp_recipient."userId"
+        AND recipient."deletedAt" IS NULL
+        AND recipient.role != 'Admin'
+      WHERE
+        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
+        AND NOT EXISTS (
+          SELECT 1 FROM "Messages" m
+          WHERE m."conversationId" = c.id
+            AND m."authorId" = recipient.id
+        )
+      GROUP BY recipient.id
+      `,
+      { type: QueryTypes.SELECT, raw: true }
+    );
+  }
+
+  async getCandidateRowsForUnansweredConversationSms(
+    daysSinceFirstMessage: number
+  ): Promise<
+    {
+      candidateId: string;
+      candidatePhone: string;
+      coachFirstName: string;
+      coachId: string;
+      conversationId: string;
+    }[]
+  > {
+    return this.userModel.sequelize.query(
+      `
+      SELECT
+        candidate.id           AS "candidateId",
+        candidate.phone        AS "candidatePhone",
+        coach."firstName"      AS "coachFirstName",
+        coach.id               AS "coachId",
+        c.id                   AS "conversationId"
+      FROM "Conversations" c
+      JOIN (
+        SELECT DISTINCT ON ("conversationId")
+          "conversationId",
+          "authorId" AS "senderId",
+          "createdAt" AS "firstMessageAt"
+        FROM "Messages"
+        ORDER BY "conversationId", "createdAt" ASC
+      ) first_msg ON first_msg."conversationId" = c.id
+      JOIN "Users" coach
+        ON coach.id = first_msg."senderId"
+        AND coach.role = 'Coach'
+        AND coach."deletedAt" IS NULL
+      JOIN "ConversationParticipants" cp_candidate
+        ON cp_candidate."conversationId" = c.id
+        AND cp_candidate."userId" != first_msg."senderId"
+      JOIN "Users" candidate
+        ON candidate.id = cp_candidate."userId"
+        AND candidate.role = 'Candidat'
+        AND candidate."deletedAt" IS NULL
+        AND candidate.phone IS NOT NULL
+        AND candidate.phone != ''
+      WHERE
+        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
+        AND NOT EXISTS (
+          SELECT 1 FROM "Messages" m
+          WHERE m."conversationId" = c.id
+            AND m."authorId" = candidate.id
+        )
       `,
       { type: QueryTypes.SELECT, raw: true }
     );
@@ -1515,15 +1580,27 @@ export class UsersService {
     return this.mailsService.sendCommittedUsersFeedbackMail(user);
   }
 
-  async sendUnreadConversationsMail(
+  async sendUnansweredConversationsMail(
     user: User,
-    unreadConversationsCount: number,
+    unansweredConversationsCount: number,
     days: number
   ) {
-    return this.mailsService.sendUnreadConversationsMail(
+    return this.mailsService.sendUnansweredConversationsMail(
       user,
-      unreadConversationsCount,
+      unansweredConversationsCount,
       days
+    );
+  }
+
+  async sendCandidateUnansweredConversationSms(
+    candidatePhone: string,
+    coachFirstName: string,
+    coachId: string
+  ) {
+    return this.smsService.sendCandidateUnansweredConversationSms(
+      candidatePhone,
+      coachFirstName,
+      coachId
     );
   }
 
