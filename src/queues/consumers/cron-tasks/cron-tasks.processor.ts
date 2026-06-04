@@ -75,8 +75,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareCompanyCollabFollowMails();
       case Jobs.PREPARE_COMMITTED_USERS_FEEDBACK_MAILS:
         return this.prepareCommittedUsersFeedbackMails();
-      case Jobs.PREPARE_UNREAD_CONVERSATIONS_MAILS:
-        return this.prepareUnreadConversationsMails();
+      case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_MAILS:
+        return this.prepareUnansweredConversationsMails();
       case Jobs.PREPARE_UNAVAILABLE_USERS_MAILS:
         return this.prepareUnavailableUsersMails();
       case Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS:
@@ -87,8 +87,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareMessagingFeedbackMails();
       case Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS:
         return this.prepareWarnAccountDeletionMails();
-      case Jobs.PREPARE_UNREAD_CONVERSATIONS_SMS:
-        return this.prepareUnreadConversationsSms();
+      case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS:
+        return this.prepareUnansweredConversationsSms();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1174,10 +1174,10 @@ export class CronTasksProcessor extends WorkerHost {
     return `Sent ${successIds.length} committed users feedback mails`;
   }
 
-  async prepareUnreadConversationsMails() {
+  async prepareUnansweredConversationsMails() {
     const DAYS_TO_CONTACT = [2, 10, 20];
     this.logger.log(
-      `Preparing unread conversations mails for days ${DAYS_TO_CONTACT.join(
+      `Preparing unanswered conversations mails for days ${DAYS_TO_CONTACT.join(
         ', '
       )}...`
     );
@@ -1198,9 +1198,9 @@ export class CronTasksProcessor extends WorkerHost {
         rows.map(async (row) => {
           const user = await this.usersService.findOneWithRelations(row.id);
           if (!user) return;
-          await this.usersService.sendUnreadConversationsMail(
+          await this.usersService.sendUnansweredConversationsMail(
             user,
-            Number(row.unreadConversationsCount),
+            Number(row.unansweredConversationsCount),
             days
           );
         })
@@ -1211,7 +1211,7 @@ export class CronTasksProcessor extends WorkerHost {
         results,
         (userId, reason) => {
           this.logger.error(
-            `Failed sending unread conversations mail to user ${userId}`,
+            `Failed sending unanswered conversations mail to user ${userId}`,
             reason
           );
         }
@@ -1493,11 +1493,11 @@ export class CronTasksProcessor extends WorkerHost {
     return `Sent ${successIds.length} warn account deletion mails`;
   }
 
-  async prepareUnreadConversationsSms() {
+  async prepareUnansweredConversationsSms() {
     const DAYS_SINCE_LAST_CONNECTION = 3;
 
     this.logger.log(
-      `Preparing unread conversations SMS for candidates inactive since ${DAYS_SINCE_LAST_CONNECTION} days...`
+      `Preparing unanswered conversations SMS for candidates inactive since ${DAYS_SINCE_LAST_CONNECTION} days...`
     );
 
     const rows =
@@ -1506,7 +1506,7 @@ export class CronTasksProcessor extends WorkerHost {
       );
 
     this.logger.log(
-      `Found ${rows.length} candidates with unread conversations to notify via SMS`
+      `Found ${rows.length} candidates with unanswered conversations to notify via SMS`
     );
 
     const results = await Promise.allSettled(
@@ -1514,7 +1514,7 @@ export class CronTasksProcessor extends WorkerHost {
         this.logger.log(
           `Sending SMS to candidate ${row.candidateId} for conversation ${row.conversationId} with coach ${row.coachId}`
         );
-        return this.usersService.sendCandidateUnreadConversationSms(
+        return this.usersService.sendCandidateUnansweredConversationSms(
           row.candidatePhone,
           row.coachFirstName,
           row.coachId
@@ -1546,10 +1546,10 @@ export class CronTasksProcessor extends WorkerHost {
 
     if (!succeeded) {
       throw new Error(
-        `Failed sending ${failures.length}/${rows.length} unread conversation SMS`
+        `Failed sending ${failures.length}/${rows.length} unanswered conversation SMS`
       );
     }
 
-    return `Sent ${successIds.length} unread conversation SMS`;
+    return `Sent ${successIds.length} unanswered conversation SMS`;
   }
 }

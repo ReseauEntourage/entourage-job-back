@@ -862,30 +862,30 @@ export class MailsService {
     });
   }
 
-  async sendUnreadConversationsMail(
+  async sendUnansweredConversationsMail(
     user: User,
-    unreadConversationsCount: number,
+    unansweredConversationsCount: number,
     days: number
   ) {
     this.logger.log(
-      `Sending unread conversations mail to user with email ${user.email}`
+      `Sending unanswered conversations mail to user with email ${user.email}`
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       replyTo: user.staffContact.email,
-      subject: getUnreadConversationsSubject(
+      subject: getUnansweredConversationsSubject(
         days,
         user.role,
-        unreadConversationsCount
+        unansweredConversationsCount
       ),
-      templateId: MailjetTemplates.MAILER_UNREAD_CONVERSATIONS,
+      templateId: MailjetTemplates.MAILER_UNANSWERED_CONVERSATIONS,
       variables: {
         firstName: user.firstName || '',
         role: getRoleString(user),
         zone: user.zone || ZoneName.HZ,
         days,
         roleDay: getRoleString(user) + days.toString(),
-        count: unreadConversationsCount,
+        count: unansweredConversationsCount,
         answerUrl: `${process.env.FRONT_URL}/backoffice/messaging`,
         staffContact: user.staffContact,
       },
@@ -1064,7 +1064,7 @@ export class MailsService {
   }
 }
 
-const getUnreadConversationsSubject = (
+const getUnansweredConversationsSubject = (
   days: number,
   role: UserRole,
   count: number

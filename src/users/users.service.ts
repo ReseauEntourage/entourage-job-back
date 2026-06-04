@@ -1240,12 +1240,12 @@ export class UsersService {
 
   async getUserRowsForUnansweredConversations(
     daysSinceFirstMessage: number
-  ): Promise<{ id: string; unreadConversationsCount: number }[]> {
+  ): Promise<{ id: string; unansweredConversationsCount: number }[]> {
     return this.userModel.sequelize.query(
       `
       SELECT
         recipient.id AS "id",
-        COUNT(DISTINCT c.id) AS "unreadConversationsCount"
+        COUNT(DISTINCT c.id) AS "unansweredConversationsCount"
       FROM "Conversations" c
       JOIN (
         SELECT DISTINCT ON ("conversationId")
@@ -1580,24 +1580,24 @@ export class UsersService {
     return this.mailsService.sendCommittedUsersFeedbackMail(user);
   }
 
-  async sendUnreadConversationsMail(
+  async sendUnansweredConversationsMail(
     user: User,
-    unreadConversationsCount: number,
+    unansweredConversationsCount: number,
     days: number
   ) {
-    return this.mailsService.sendUnreadConversationsMail(
+    return this.mailsService.sendUnansweredConversationsMail(
       user,
-      unreadConversationsCount,
+      unansweredConversationsCount,
       days
     );
   }
 
-  async sendCandidateUnreadConversationSms(
+  async sendCandidateUnansweredConversationSms(
     candidatePhone: string,
     coachFirstName: string,
     coachId: string
   ) {
-    return this.smsService.sendCandidateUnreadConversationSms(
+    return this.smsService.sendCandidateUnansweredConversationSms(
       candidatePhone,
       coachFirstName,
       coachId

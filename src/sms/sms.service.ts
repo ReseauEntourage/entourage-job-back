@@ -8,7 +8,7 @@ export class SmsService {
 
   constructor(private readonly queuesService: QueuesService) {}
 
-  async sendCandidateUnreadConversationSms(
+  async sendCandidateUnansweredConversationSms(
     candidatePhone: string,
     coachFirstName: string,
     coachId: string

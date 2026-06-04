@@ -59,13 +59,14 @@ export const Jobs = {
   PREPARE_COMPANY_COLLAB_FOLLOW_MAILS: 'prepare_company_collab_follow_mails',
   PREPARE_COMMITTED_USERS_FEEDBACK_MAILS:
     'prepare_committed_users_feedback_mails',
-  PREPARE_UNREAD_CONVERSATIONS_MAILS: 'prepare_unread_conversations_mails',
+  PREPARE_UNANSWERED_CONVERSATIONS_MAILS:
+    'prepare_unanswered_conversations_mails',
   PREPARE_UNAVAILABLE_USERS_MAILS: 'prepare_unavailable_users_mails',
   PREPARE_CHURN_USERS_FEEDBACK_MAILS: 'prepare_churn_users_feedback_mails',
   PREPARE_INACTIVE_REFERERS_MAILS: 'prepare_inactive_referers_mails',
   PREPARE_MESSAGING_FEEDBACK_MAILS: 'prepare_messaging_feedback_mails',
   PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
-  PREPARE_UNREAD_CONVERSATIONS_SMS: 'prepare_unread_conversations_sms',
+  PREPARE_UNANSWERED_CONVERSATIONS_SMS: 'prepare_unanswered_conversations_sms',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -109,13 +110,13 @@ type JobsData = {
   [Jobs.PREPARE_NOT_COMPLETED_COMPANY_MAILS]: PrepareNotCompletedCompanyMailsJob;
   [Jobs.PREPARE_COMPANY_COLLAB_FOLLOW_MAILS]: PrepareCompanyCollabFollowMailsJob;
   [Jobs.PREPARE_COMMITTED_USERS_FEEDBACK_MAILS]: PrepareCommittedUsersFeedbackMailsJob;
-  [Jobs.PREPARE_UNREAD_CONVERSATIONS_MAILS]: PrepareUnreadConversationsMailsJob;
+  [Jobs.PREPARE_UNANSWERED_CONVERSATIONS_MAILS]: PrepareUnansweredConversationsMailsJob;
   [Jobs.PREPARE_UNAVAILABLE_USERS_MAILS]: PrepareUnavailableUsersMailsJob;
   [Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS]: PrepareChurnUsersFeedbackMailsJob;
   [Jobs.PREPARE_INACTIVE_REFERERS_MAILS]: PrepareInactiveReferersMailsJob;
   [Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS]: PrepareMessagingFeedbackMailsJob;
   [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
-  [Jobs.PREPARE_UNREAD_CONVERSATIONS_SMS]: PrepareUnreadConversationsSmsJob;
+  [Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS]: PrepareUnansweredConversationsSmsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -232,7 +233,7 @@ export interface PrepareCompanyCollabFollowMailsJob {}
 
 export interface PrepareCommittedUsersFeedbackMailsJob {}
 
-export interface PrepareUnreadConversationsMailsJob {}
+export interface PrepareUnansweredConversationsMailsJob {}
 
 export interface PrepareUnavailableUsersMailsJob {}
 
@@ -244,7 +245,7 @@ export interface PrepareMessagingFeedbackMailsJob {}
 
 export interface PrepareWarnAccountDeletionMailsJob {}
 
-export interface PrepareUnreadConversationsSmsJob {}
+export interface PrepareUnansweredConversationsSmsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;
