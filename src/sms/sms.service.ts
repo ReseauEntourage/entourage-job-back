@@ -14,7 +14,7 @@ export class SmsService {
     coachId: string
   ) {
     const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${coachId}`;
-    const text = `${coachFirstName}, Coach sur Entourage Pro, vous a envoyé un message. Lire son message : ${conversationUrl} STOP au 36111`;
+    const text = `${coachFirstName}, Coach sur Entourage Pro, vous a envoyé un message. Répondre à son message : ${conversationUrl}`;
 
     this.logger.log(
       `Queuing SMS to candidate for conversation with coach ${coachId}`

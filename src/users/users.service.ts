@@ -1267,10 +1267,7 @@ export class UsersService {
         AND recipient."deletedAt" IS NULL
         AND recipient.role != 'Admin'
       WHERE
-        first_msg."firstMessageAt" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceFirstMessage + 1
-        } days'
-        AND first_msg."firstMessageAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceFirstMessage} days'
+        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
         AND NOT EXISTS (
           SELECT 1 FROM "Messages" m
           WHERE m."conversationId" = c.id
@@ -1319,15 +1316,12 @@ export class UsersService {
         AND cp_candidate."userId" != first_msg."senderId"
       JOIN "Users" candidate
         ON candidate.id = cp_candidate."userId"
-        AND candidate.role = 'Candidate'
+        AND candidate.role = 'Candidat'
         AND candidate."deletedAt" IS NULL
         AND candidate.phone IS NOT NULL
         AND candidate.phone != ''
       WHERE
-        first_msg."firstMessageAt" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceFirstMessage + 1
-        } days'
-        AND first_msg."firstMessageAt" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceFirstMessage} days'
+        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
         AND NOT EXISTS (
           SELECT 1 FROM "Messages" m
           WHERE m."conversationId" = c.id
