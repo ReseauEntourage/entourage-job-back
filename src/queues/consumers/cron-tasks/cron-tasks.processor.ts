@@ -1497,7 +1497,7 @@ export class CronTasksProcessor extends WorkerHost {
     const DAYS_SINCE_LAST_CONNECTION = 3;
 
     this.logger.log(
-      `Preparing unanswered conversations SMS for candidates inactive since ${DAYS_SINCE_LAST_CONNECTION} days...`
+      `Preparing unanswered conversations SMS for candidates (first message sent ${DAYS_SINCE_LAST_CONNECTION} days ago)...`
     );
 
     const rows =
