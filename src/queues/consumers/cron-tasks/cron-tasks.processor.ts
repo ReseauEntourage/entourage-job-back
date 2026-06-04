@@ -1190,7 +1190,7 @@ export class CronTasksProcessor extends WorkerHost {
       const rows =
         await this.usersService.getUserRowsForUnansweredConversations(days);
       this.logger.log(
-        `Found ${rows.length} users with unread conversations since ${days} days`
+        `Found ${rows.length} users with unanswered conversations since ${days} days`
       );
       total += rows.length;
 
@@ -1224,18 +1224,18 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📫 Unread conversations - J+${DAYS_TO_CONTACT.join('/')}`,
+      `📫 Unanswered conversations - J+${DAYS_TO_CONTACT.join('/')}`,
       { total, success: totalSuccess, failure: allFailures.length },
       allFailures
     );
 
     if (!succeeded) {
       throw new Error(
-        `Failed sending ${allFailures.length}/${total} unread conversations mails`
+        `Failed sending ${allFailures.length}/${total} unanswered conversations mails`
       );
     }
 
-    return `Sent ${totalSuccess} unread conversations mails`;
+    return `Sent ${totalSuccess} unanswered conversations mails`;
   }
 
   async prepareUnavailableUsersMails() {
