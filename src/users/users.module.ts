@@ -5,6 +5,7 @@ import { BusinessSectorsModule } from 'src/common/business-sectors/business-sect
 import { CompaniesModule } from 'src/companies/companies.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers/queues.module';
+import { SmsModule } from 'src/sms/sms.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { User } from './models';
 import { UsersController } from './users.controller';
@@ -14,6 +15,7 @@ import { UsersService } from './users.service';
   imports: [
     SequelizeModule.forFeature([User]),
     forwardRef(() => MailsModule),
+    SmsModule,
     forwardRef(() => AuthModule),
     forwardRef(() => CompaniesModule),
     forwardRef(() => UserProfilesModule),

@@ -87,6 +87,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareMessagingFeedbackMails();
       case Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS:
         return this.prepareWarnAccountDeletionMails();
+      case Jobs.PREPARE_UNREAD_CONVERSATIONS_SMS:
+        return this.prepareUnreadConversationsSms();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1185,9 +1187,8 @@ export class CronTasksProcessor extends WorkerHost {
     const allFailures: SettledFailure[] = [];
 
     for (const days of DAYS_TO_CONTACT) {
-      const rows = await this.usersService.getUserRowsForUnreadConversations(
-        days
-      );
+      const rows =
+        await this.usersService.getUserRowsForUnansweredConversations(days);
       this.logger.log(
         `Found ${rows.length} users with unread conversations since ${days} days`
       );
@@ -1490,5 +1491,65 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} warn account deletion mails`;
+  }
+
+  async prepareUnreadConversationsSms() {
+    const DAYS_SINCE_LAST_CONNECTION = 3;
+
+    this.logger.log(
+      `Preparing unread conversations SMS for candidates inactive since ${DAYS_SINCE_LAST_CONNECTION} days...`
+    );
+
+    const rows =
+      await this.usersService.getCandidateRowsForUnansweredConversationSms(
+        DAYS_SINCE_LAST_CONNECTION
+      );
+
+    this.logger.log(
+      `Found ${rows.length} candidates with unread conversations to notify via SMS`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        this.logger.log(
+          `Sending SMS to candidate ${row.candidateId} for conversation ${row.conversationId} with coach ${row.coachId}`
+        );
+        return this.usersService.sendCandidateUnreadConversationSms(
+          row.candidatePhone,
+          row.coachFirstName,
+          row.coachId
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((row) => ({ id: row.candidateId })),
+      results,
+      (candidateId, reason) => {
+        this.logger.error(
+          `Failed sending SMS to candidate ${candidateId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📱 SMS conversations non répondues - J+${DAYS_SINCE_LAST_CONNECTION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} unread conversation SMS`
+      );
+    }
+
+    return `Sent ${successIds.length} unread conversation SMS`;
   }
 }

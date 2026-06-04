@@ -21,6 +21,7 @@ import {
 export const Jobs = {
   // Jobs related to worker queue
   SEND_MAIL: 'send_mail',
+  SEND_SMS: 'send_sms',
   NEWSLETTER_SUBSCRIPTION: 'newsletter_subscription',
   CREATE_OR_UPDATE_SALESFORCE_USER: 'create_or_update_salesforce_user',
   CREATE_OR_UPDATE_SALESFORCE_COMPANY: 'create_or_update_salesforce_company',
@@ -64,6 +65,7 @@ export const Jobs = {
   PREPARE_INACTIVE_REFERERS_MAILS: 'prepare_inactive_referers_mails',
   PREPARE_MESSAGING_FEEDBACK_MAILS: 'prepare_messaging_feedback_mails',
   PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
+  PREPARE_UNREAD_CONVERSATIONS_SMS: 'prepare_unread_conversations_sms',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -78,6 +80,7 @@ export type Job = (typeof Jobs)[keyof typeof Jobs];
 type JobsData = {
   // Worker queue jobs
   [Jobs.SEND_MAIL]: SendMailJob | SendMailJob[];
+  [Jobs.SEND_SMS]: SendSmsJob;
   [Jobs.NEWSLETTER_SUBSCRIPTION]: NewsletterSubscriptionJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_USER]: CreateOrUpdateSalesforceUserJob;
   [Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY]: CreateOrUpdateSalesforceCompanyJob;
@@ -112,6 +115,7 @@ type JobsData = {
   [Jobs.PREPARE_INACTIVE_REFERERS_MAILS]: PrepareInactiveReferersMailsJob;
   [Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS]: PrepareMessagingFeedbackMailsJob;
   [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
+  [Jobs.PREPARE_UNREAD_CONVERSATIONS_SMS]: PrepareUnreadConversationsSmsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -126,6 +130,11 @@ export type JobData<T extends Job> = JobsData[T];
 export interface SendMailJob extends CustomMailParams {
   templateId: MailjetTemplate;
   variables: object;
+}
+
+export interface SendSmsJob {
+  to: string;
+  text: string;
 }
 
 export interface NewsletterSubscriptionJob extends CustomContactParams {}
@@ -234,6 +243,8 @@ export interface PrepareInactiveReferersMailsJob {}
 export interface PrepareMessagingFeedbackMailsJob {}
 
 export interface PrepareWarnAccountDeletionMailsJob {}
+
+export interface PrepareUnreadConversationsSmsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;

@@ -327,6 +327,25 @@ export class CronService {
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_1PM)
+  async prepareUnreadConversationsSms() {
+    this.logger.log('Cron job started: prepareUnreadConversationsSms');
+
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_UNREAD_CONVERSATIONS_SMS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_UNREAD_CONVERSATIONS_SMS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_1PM)
   async prepareUnreadConversationsMails() {
     this.logger.log('Cron job started: prepareUnreadConversationsMails');
     const job = await this.queuesService.addToCronTasksQueue(

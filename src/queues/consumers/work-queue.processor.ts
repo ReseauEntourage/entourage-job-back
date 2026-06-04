@@ -4,6 +4,7 @@ import { Job, Queue } from 'bullmq';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { VonageService } from 'src/external-services/vonage/vonage.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import {
   BulkSendStaffMessagingMessageJob,
@@ -14,6 +15,7 @@ import {
   OnOnboardingCompletedJob,
   Queues,
   SendMailJob,
+  SendSmsJob,
   SendStaffMessagingMessageJob,
   UpdateSalesforceUserCompanyJob,
   UserNewsletterSubscriptionJob,
@@ -29,6 +31,7 @@ export class WorkQueueProcessor extends WorkerHost {
   constructor(
     @InjectQueue(Queues.WORK) private workQueue: Queue,
     private mailjetService: MailjetService,
+    private vonageService: VonageService,
     private salesforceService: SalesforceService,
     private companiesService: CompaniesService,
     private usersService: UsersService,
@@ -45,6 +48,8 @@ export class WorkQueueProcessor extends WorkerHost {
     switch (job.name) {
       case Jobs.SEND_MAIL:
         return this.processSendMail(job as Job<SendMailJob | SendMailJob[]>);
+      case Jobs.SEND_SMS:
+        return this.processSendSms(job as Job<SendSmsJob>);
       case Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY:
         return this.processCreateOrUpdateSalesforceCompany(
           job as Job<CreateOrUpdateSalesforceCompanyJob>
@@ -380,5 +385,11 @@ export class WorkQueueProcessor extends WorkerHost {
     return `Bulk message sent from staff member to users with emails ${messages
       .map((m) => m.addresseeEmail)
       .join(', ')}`;
+  }
+
+  async processSendSms(job: Job<SendSmsJob>) {
+    const { to, text } = job.data;
+    await this.vonageService.sendSms(to, text);
+    return `SMS sent to ${to}`;
   }
 }
