@@ -1171,9 +1171,11 @@ export class MessagingService {
       );
 
     const conversationIds = conversations.map((c) => c.id);
+    if (conversationIds.length === 0) {
+      return [];
+    }
     return this.conversationModel.findAll({
       where: { id: { [Op.in]: conversationIds } },
-      include: [
         {
           model: User,
           attributes: userAttributes,
