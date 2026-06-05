@@ -1114,6 +1114,75 @@ export class MessagingService {
     });
   }
 
+  async getConversationsReadyForLinkedInShareMail(
+    daysSinceThirdMessage: number
+  ) {
+    const conversations: { id: string }[] =
+      await this.conversationModel.sequelize.query(
+        `
+        SELECT c."id"
+        FROM "Conversations" c
+        WHERE
+          -- The 3rd message was sent exactly :days days ago
+          (
+            SELECT m."createdAt"
+            FROM "Messages" m
+            WHERE m."conversationId" = c."id"
+            ORDER BY m."createdAt" ASC
+            OFFSET 2 LIMIT 1
+          ) BETWEEN
+            (NOW() - make_interval(days => :daysPlusOne))
+            AND (NOW() - make_interval(days => :days))
+          AND (
+            SELECT COUNT(*)
+            FROM "ConversationParticipants" cp
+            JOIN "Users" u ON u."id" = cp."userId" AND u."deletedAt" IS NULL
+            WHERE cp."conversationId" = c."id"
+              AND u.role IN (:coachRole, :candidateRole)
+          ) = 2
+          AND (
+            SELECT COUNT(*)
+            FROM "ConversationParticipants" cp
+            JOIN "Users" u ON u."id" = cp."userId" AND u."deletedAt" IS NULL
+            WHERE cp."conversationId" = c."id"
+              AND u.role = :coachRole
+          ) = 1
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "ConversationParticipants" cp_all
+            WHERE cp_all."conversationId" = c."id"
+            AND NOT EXISTS (
+              SELECT 1
+              FROM "Messages" m
+              WHERE m."conversationId" = c."id"
+                AND m."authorId" = cp_all."userId"
+            )
+          )
+        `,
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            days: daysSinceThirdMessage,
+            daysPlusOne: daysSinceThirdMessage + 1,
+            coachRole: UserRoles.COACH,
+            candidateRole: UserRoles.CANDIDATE,
+          },
+        }
+      );
+
+    const conversationIds = conversations.map((c) => c.id);
+    return this.conversationModel.findAll({
+      where: { id: { [Op.in]: conversationIds } },
+      include: [
+        {
+          model: User,
+          attributes: userAttributes,
+          as: 'participants',
+        },
+      ],
+    });
+  }
+
   /**
    * Get IDs of users who are still available but haven't logged in for at least
    * `daysWithoutConnection` days AND have at least one unread conversation message

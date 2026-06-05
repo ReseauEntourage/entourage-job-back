@@ -969,6 +969,10 @@ export class UsersService {
     );
   }
 
+  async sendLinkedInShareProfileMail(coach: User, candidate: User) {
+    return this.mailsService.sendLinkedInShareProfileMail(coach, candidate);
+  }
+
   /**
    * Returns all non-deleted users who have connected to the platform
    * within the last `months` months, excluding Admins.

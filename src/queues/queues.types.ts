@@ -67,6 +67,7 @@ export const Jobs = {
   PREPARE_MESSAGING_FEEDBACK_MAILS: 'prepare_messaging_feedback_mails',
   PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
   PREPARE_UNANSWERED_CONVERSATIONS_SMS: 'prepare_unanswered_conversations_sms',
+  PREPARE_LINKEDIN_SHARE_PROFILE_MAILS: 'prepare_linkedin_share_profile_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -117,6 +118,7 @@ type JobsData = {
   [Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS]: PrepareMessagingFeedbackMailsJob;
   [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
   [Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS]: PrepareUnansweredConversationsSmsJob;
+  [Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS]: PrepareLinkedInShareProfileMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -246,6 +248,8 @@ export interface PrepareMessagingFeedbackMailsJob {}
 export interface PrepareWarnAccountDeletionMailsJob {}
 
 export interface PrepareUnansweredConversationsSmsJob {}
+
+export interface PrepareLinkedInShareProfileMailsJob {}
 
 export interface UpdateUserProfileEmbeddingsJob {
   userId: string;

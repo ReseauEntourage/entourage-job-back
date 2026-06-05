@@ -15,6 +15,7 @@ import { UserProfileRecommendationsService } from 'src/user-profiles/recommendat
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 
@@ -89,6 +90,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareWarnAccountDeletionMails();
       case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS:
         return this.prepareUnansweredConversationsSms();
+      case Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS:
+        return this.prepareLinkedInShareProfileMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1551,5 +1554,92 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} unanswered conversation SMS`;
+  }
+
+  private async prepareLinkedInShareProfileMails() {
+    const DAYS_SINCE_CONVERSATION_START = 7;
+    this.logger.log(
+      `Preparing LinkedIn share profile mails for coaches whose conversation reached 3 messages ${DAYS_SINCE_CONVERSATION_START} days ago...`
+    );
+
+    const conversations =
+      await this.messagingService.getConversationsReadyForLinkedInShareMail(
+        DAYS_SINCE_CONVERSATION_START
+      );
+
+    this.logger.log(
+      `Found ${conversations.length} conversations eligible for LinkedIn share profile mail`
+    );
+
+    const mailJobs = conversations.flatMap((conversation) => {
+      const coach = conversation.participants.find(
+        (p) => p.role === UserRoles.COACH
+      );
+      const candidate = conversation.participants.find(
+        (p) => p.role === UserRoles.CANDIDATE
+      );
+      if (!coach || !candidate) return [];
+      return [{ id: `${conversation.id}:${coach.id}`, coach, candidate }];
+    });
+
+    const participantIds = Array.from(
+      new Set(mailJobs.flatMap((j) => [j.coach.id, j.candidate.id]))
+    );
+    const participantsWithRelations =
+      participantIds.length > 0
+        ? await this.usersService.findByIdsWithRelations(participantIds)
+        : [];
+    const participantsById = new Map<string, User>(
+      participantsWithRelations.map((u) => [u.id, u])
+    );
+
+    const hydratedJobs = mailJobs.map((j) => ({
+      ...j,
+      coach: participantsById.get(j.coach.id) ?? j.coach,
+      candidate: participantsById.get(j.candidate.id) ?? j.candidate,
+    }));
+
+    const results = await Promise.allSettled(
+      hydratedJobs.map(async (job) => {
+        this.logger.log(
+          `Preparing LinkedIn share profile mail for coach ${job.coach.id} with candidate ${job.candidate.id}`
+        );
+        return await this.usersService.sendLinkedInShareProfileMail(
+          job.coach,
+          job.candidate
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      hydratedJobs,
+      results,
+      (jobId, reason) => {
+        const [conversationId, coachId] = String(jobId).split(':');
+        this.logger.error(
+          `Failed preparing LinkedIn share profile mail for coach ${coachId} (conversation ${conversationId})`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `🔗 LinkedIn share profile - J+${DAYS_SINCE_CONVERSATION_START}`,
+      {
+        total: hydratedJobs.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing LinkedIn share profile mails for ${failures.length}/${hydratedJobs.length} coaches`
+      );
+    }
+
+    return `Preparation of LinkedIn share profile mails for ${hydratedJobs.length} coaches started.`;
   }
 }

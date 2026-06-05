@@ -154,6 +154,7 @@ export const MailjetTemplates = {
   MAILER_INACTIVE_REFERERS: 6639639,
   MAILER_MESSAGING_FEEDBACK: 6811416,
   MAILER_WARN_ACCOUNT_DELETION: 6611907,
+  MAILER_LINKEDIN_SHARE_PROFILE: 8052814,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;
