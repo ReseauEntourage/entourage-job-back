@@ -136,6 +136,24 @@ export class CronService {
     };
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async prepareLinkedInShareProfileMails() {
+    this.logger.log('Cron job started: prepareLinkedInShareProfileMails');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job PREPARE_LINKEDIN_SHARE_PROFILE_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async prepareAutoSetUnavailableUsers() {
     this.logger.log('Cron job started: prepareAutoSetUnavailableUsers');

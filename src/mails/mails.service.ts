@@ -588,6 +588,23 @@ export class MailsService {
     });
   }
 
+  async sendLinkedInShareProfileMail(coach: User, candidate: User) {
+    this.logger.log(
+      `Sending LinkedIn share profile mail to coach ${coach.email} for candidate ${candidate.id}`
+    );
+    return await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: coach.email,
+      replyTo: coach.staffContact.email,
+      templateId: MailjetTemplates.MAILER_LINKEDIN_SHARE_PROFILE,
+      variables: {
+        firstName: coach.firstName,
+        interlocutorFirstName: candidate.firstName,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/profile/${candidate.id}`,
+        staffContact: coach.staffContact,
+      },
+    });
+  }
+
   async sendFollowUpMailForMutuallyRepliedConversation(
     user: User,
     conversation: Conversation
