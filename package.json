@@ -10,7 +10,7 @@
   },
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "nest build",
+    "build": "NODE_OPTIONS=--max-old-space-size=1024 nest build",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "api:start": "node dist/main",
     "api:start:debug": "nest start --debug --watch",
