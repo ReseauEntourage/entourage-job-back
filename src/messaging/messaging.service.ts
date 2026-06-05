@@ -1123,16 +1123,14 @@ export class MessagingService {
         SELECT c."id"
         FROM "Conversations" c
         WHERE
-          -- The 3rd message was sent exactly :days days ago
+          -- The 3rd message was sent on the calendar day exactly :days days ago
           (
-            SELECT m."createdAt"
+            SELECT m."createdAt"::date
             FROM "Messages" m
             WHERE m."conversationId" = c."id"
             ORDER BY m."createdAt" ASC
             OFFSET 2 LIMIT 1
-          ) BETWEEN
-            (NOW() - make_interval(days => :daysPlusOne))
-            AND (NOW() - make_interval(days => :days))
+          ) = CURRENT_DATE - make_interval(days => :days)
           AND (
             SELECT COUNT(*)
             FROM "ConversationParticipants" cp
@@ -1150,6 +1148,9 @@ export class MessagingService {
           AND NOT EXISTS (
             SELECT 1
             FROM "ConversationParticipants" cp_all
+            JOIN "Users" u_all ON u_all."id" = cp_all."userId"
+              AND u_all."deletedAt" IS NULL
+              AND u_all.role IN (:coachRole, :candidateRole)
             WHERE cp_all."conversationId" = c."id"
             AND NOT EXISTS (
               SELECT 1
@@ -1163,7 +1164,6 @@ export class MessagingService {
           type: QueryTypes.SELECT,
           replacements: {
             days: daysSinceThirdMessage,
-            daysPlusOne: daysSinceThirdMessage + 1,
             coachRole: UserRoles.COACH,
             candidateRole: UserRoles.CANDIDATE,
           },
@@ -1176,6 +1176,7 @@ export class MessagingService {
     }
     return this.conversationModel.findAll({
       where: { id: { [Op.in]: conversationIds } },
+      include: [
         {
           model: User,
           attributes: userAttributes,
