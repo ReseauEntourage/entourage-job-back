@@ -45,7 +45,9 @@ export class EventsController {
     @Query('departmentIds')
     departmentIds?: string[],
     @Query('isParticipating')
-    isParticipating?: string
+    isParticipating?: string,
+    @Query('publicSensibilise')
+    publicSensibilise?: string[]
   ) {
     const events = await this.eventsService.findAllEvents(
       userEmail,
@@ -56,7 +58,8 @@ export class EventsController {
       search,
       modes,
       eventTypes,
-      departmentIds
+      departmentIds,
+      publicSensibilise
     );
 
     return events;

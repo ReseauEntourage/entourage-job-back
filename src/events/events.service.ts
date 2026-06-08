@@ -40,7 +40,8 @@ export class EventsService {
     search = '',
     modes?: EventMode[],
     eventTypes?: EventType[],
-    departmentIds?: string[]
+    departmentIds?: string[],
+    publicSensibilise?: string[]
   ): Promise<Events> {
     const departmentNames =
       await this.departmentsService.mapDepartmentsIdsToFormattedNames(
@@ -66,7 +67,8 @@ export class EventsService {
       search,
       modes,
       eventTypes,
-      localBranches
+      localBranches,
+      publicSensibilise
     );
 
     return sfCampaigns

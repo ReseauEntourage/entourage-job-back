@@ -422,7 +422,8 @@ export class SalesforceService {
     search = '',
     modes?: EventMode[],
     eventTypes?: EventType[],
-    localBranches?: SfLocalBranchName[]
+    localBranches?: SfLocalBranchName[],
+    publicSensibilise?: string[]
   ) {
     await this.checkIfConnected();
 
@@ -483,6 +484,13 @@ export class SalesforceService {
             `
         : '';
 
+    const publicSensibiliseFilter =
+      publicSensibilise && publicSensibilise.length > 0
+        ? `AND Public_sensibilis__c INCLUDES (${publicSensibilise
+            .map((v) => `'${escapeQuery(v)}'`)
+            .join(', ')})`
+        : '';
+
     let isParticipatingCondition = '';
     if (contactId && isParticipating === true) {
       isParticipatingCondition = `
@@ -522,6 +530,7 @@ export class SalesforceService {
             ${modeFilters}
             ${eventTypesFilters}
             ${localBranchesCondition}
+            ${publicSensibiliseFilter}
             ${isParticipatingCondition}
             ${pastEventsCondition}
             ORDER BY StartDate ASC, Heure_d_but__c ASC
