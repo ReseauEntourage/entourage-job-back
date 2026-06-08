@@ -393,6 +393,7 @@ export interface SalesforceCampaign {
   CampaignMembers?: {
     records: Partial<SalesforceCampaignMember>[];
   };
+  Public_sensibilis__c?: string;
 }
 
 export enum SalesforceCampaignStatus {
