@@ -1,12 +1,9 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Get,
   NotFoundException,
   Param,
-  ParseBoolPipe,
-  ParseIntPipe,
   Put,
   Query,
   ValidationPipe,
@@ -14,7 +11,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { EventParticipationDto } from './dto/event-participation.dto';
-import { EventMode, EventPublicAudience, EventType } from './event.types';
+import { FindAllEventsQueryDto } from './dto/find-all-events-query.dto';
 import { EventsService } from './events.service';
 
 @ApiTags('Events')
@@ -26,29 +23,21 @@ export class EventsController {
   @Get()
   async findAll(
     @UserPayload('email') userEmail: string,
-    @Query('limit', new DefaultValuePipe(50), new ParseIntPipe())
-    limit: number,
-    @Query('offset', new DefaultValuePipe(0), new ParseIntPipe())
-    offset: number,
-    @Query(
-      'includePastEvents',
-      new DefaultValuePipe(false),
-      new ParseBoolPipe()
-    )
-    includePastEvents: boolean,
-    @Query('search')
-    search?: string,
-    @Query('modes')
-    modes?: EventMode[],
-    @Query('eventTypes')
-    eventTypes?: EventType[],
-    @Query('departmentIds')
-    departmentIds?: string[],
-    @Query('isParticipating')
-    isParticipating?: string,
-    @Query('publicSensibilise')
-    publicSensibilise?: EventPublicAudience[]
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    query: FindAllEventsQueryDto
   ) {
+    const {
+      limit,
+      offset,
+      includePastEvents,
+      isParticipating,
+      search,
+      modes,
+      eventTypes,
+      departmentIds,
+      publicSensibilise,
+    } = query;
+
     const events = await this.eventsService.findAllEvents(
       userEmail,
       limit,
