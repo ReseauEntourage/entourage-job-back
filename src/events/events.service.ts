@@ -9,6 +9,7 @@ import { SfLocalBranchName } from 'src/utils/types/local-branches.types';
 import {
   Event,
   EventMode,
+  EventPublicAudience,
   Events,
   EventType,
   EventWithParticipants,
@@ -41,7 +42,7 @@ export class EventsService {
     modes?: EventMode[],
     eventTypes?: EventType[],
     departmentIds?: string[],
-    publicSensibilise?: string[]
+    publicSensibilise?: EventPublicAudience[]
   ): Promise<Events> {
     const departmentNames =
       await this.departmentsService.mapDepartmentsIdsToFormattedNames(

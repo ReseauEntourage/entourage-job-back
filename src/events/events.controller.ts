@@ -14,7 +14,7 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { EventParticipationDto } from './dto/event-participation.dto';
-import { EventMode, EventType } from './event.types';
+import { EventMode, EventPublicAudience, EventType } from './event.types';
 import { EventsService } from './events.service';
 
 @ApiTags('Events')
@@ -47,7 +47,7 @@ export class EventsController {
     @Query('isParticipating')
     isParticipating?: string,
     @Query('publicSensibilise')
-    publicSensibilise?: string[]
+    publicSensibilise?: EventPublicAudience[]
   ) {
     const events = await this.eventsService.findAllEvents(
       userEmail,

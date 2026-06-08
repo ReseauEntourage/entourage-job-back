@@ -14,7 +14,11 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
-import { EventMode, EventType } from 'src/events/event.types';
+import {
+  EventMode,
+  EventPublicAudience,
+  EventType,
+} from 'src/events/event.types';
 import {
   eventTypeToSalesforceEventType,
   salesforceEventAttributes,
@@ -423,7 +427,7 @@ export class SalesforceService {
     modes?: EventMode[],
     eventTypes?: EventType[],
     localBranches?: SfLocalBranchName[],
-    publicSensibilise?: string[]
+    publicSensibilise?: EventPublicAudience[]
   ) {
     await this.checkIfConnected();
 
