@@ -1,4 +1,10 @@
-import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import chunk from 'lodash/chunk';
 import { Op } from 'sequelize';
@@ -14,6 +20,10 @@ import {
   AchievementTypes,
   CriterionStat,
 } from './config/achievements.config';
+import {
+  generatePublicAchievementDto,
+  PublicAchievementDto,
+} from './dto/public-achievement.dto';
 import { generateAchievementSlackConfig } from './gamification.utils';
 import { UserAchievement } from './models/user-achievement/user-achievement.model';
 
@@ -56,6 +66,46 @@ export class GamificationService {
     return this.userAchievementModel.findAll({
       where: { userId, active: true },
     });
+  }
+
+  /**
+   * Returns the public certificate data for a single achievement.
+   *
+   * Only achievements of type SUPER_ENGAGED_COACH are publicly accessible.
+   * The certificate remains accessible even if the badge has since expired,
+   * because the achievement was legitimately earned at a point in time.
+   * Throws NotFoundException if the achievement does not exist or belongs
+   * to a non-public type.
+   */
+  async getPublicAchievementById(
+    achievementId: string
+  ): Promise<PublicAchievementDto> {
+    const PUBLIC_ACHIEVEMENT_TYPES: AchievementType[] = [
+      AchievementTypes.SUPER_ENGAGED_COACH,
+    ];
+
+    const achievement = await this.userAchievementModel.findOne({
+      where: {
+        id: achievementId,
+        achievementType: PUBLIC_ACHIEVEMENT_TYPES,
+      },
+      include: [
+        {
+          association: 'user',
+          attributes: ['firstName', 'lastName', 'gender'],
+        },
+      ],
+    });
+
+    if (!achievement) {
+      throw new NotFoundException('Achievement not found');
+    }
+
+    return generatePublicAchievementDto(
+      achievement as UserAchievement & {
+        user: { firstName: string; lastName: string; gender: string };
+      }
+    );
   }
 
   /**

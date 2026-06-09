@@ -708,7 +708,7 @@ export class MailsService {
     this.logger.log(
       `Sending super engaged achievement mail to user with email ${user.email}`
     );
-    const certUrl = `${process.env.FRONT_URL}/coach_certification/${achievementId}`;
+    const certUrl = `${process.env.FRONT_URL}/coach-certification/${achievementId}`;
     const issueDate = new Date();
     const ctaUrlParams = new URLSearchParams({
       startTask: 'CERTIFICATION_NAME',
