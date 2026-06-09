@@ -87,7 +87,7 @@ export class GamificationService {
     const achievement = await this.userAchievementModel.findOne({
       where: {
         id: achievementId,
-        achievementType: PUBLIC_ACHIEVEMENT_TYPES,
+        achievementType: { [Op.in]: PUBLIC_ACHIEVEMENT_TYPES },
       },
       include: [
         {
