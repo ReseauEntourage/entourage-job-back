@@ -231,6 +231,7 @@ export class GamificationService {
 
           if (achievement.onGranted) {
             await achievement.onGranted({
+              achievementId: userAchievement.id,
               userId,
               userRole: user.role,
               expireAt: userAchievement.expireAt,
@@ -313,6 +314,7 @@ export class GamificationService {
 
         const user = await this.usersService.findOne(achievement.userId);
         const baseContext = {
+          achievementId: achievement.id,
           userId: achievement.userId,
           userRole: user.role,
           user: {
