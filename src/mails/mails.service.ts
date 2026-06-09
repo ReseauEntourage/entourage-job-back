@@ -702,11 +702,23 @@ export class MailsService {
       staffContact: InternalStaffContact;
     },
     stats: { conversationCount: number; responseRate: number },
-    nextEvaluationDate: Date
+    nextEvaluationDate: Date,
+    achievementId: string
   ) {
     this.logger.log(
       `Sending super engaged achievement mail to user with email ${user.email}`
     );
+    const certUrl = `${process.env.FRONT_URL}/coach-certification/${achievementId}`;
+    const issueDate = new Date();
+    const ctaUrlParams = new URLSearchParams({
+      startTask: 'CERTIFICATION_NAME',
+      name: 'Coach Entourage Pro',
+      organizationId: '42693016',
+      issueYear: String(issueDate.getFullYear()),
+      issueMonth: String(issueDate.getMonth() + 1),
+      certUrl,
+    });
+    const ctaUrl = `https://www.linkedin.com/profile/add?${ctaUrlParams.toString()}`;
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT,
@@ -718,6 +730,7 @@ export class MailsService {
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
         staffContact: user.staffContact,
+        ctaUrl,
       },
     });
   }

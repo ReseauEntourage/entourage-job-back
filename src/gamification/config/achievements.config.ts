@@ -70,6 +70,8 @@ export interface AchievementCallbackUser {
  * eligibility context.
  */
 export interface AchievementCallbackContext {
+  /** The UUID of the UserAchievement record just created or renewed. */
+  achievementId: string;
   userId: string;
   userRole: UserRole;
   /** The badge's expiration date — use as nextEvaluationDate in notifications. */
@@ -184,6 +186,7 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
       ];
     },
     onGranted: async ({
+      achievementId,
       user,
       userId,
       userRole,
@@ -198,10 +201,12 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
       await mailsService.sendSuperEngagedAchievementMail(
         user,
         { conversationCount, responseRate: responseRate ?? 0 },
-        expireAt
+        expireAt,
+        achievementId
       );
     },
     onRenewed: async ({
+      achievementId,
       user,
       userId,
       userRole,
@@ -216,7 +221,8 @@ export const ACHIEVEMENTS_CONFIG: AchievementDefinition[] = [
       await mailsService.sendSuperEngagedAchievementMail(
         user,
         { conversationCount, responseRate: responseRate ?? 0 },
-        expireAt
+        expireAt,
+        achievementId
       );
     },
     onExpired: async ({
