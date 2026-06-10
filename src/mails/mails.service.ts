@@ -599,7 +599,7 @@ export class MailsService {
       variables: {
         firstName: coach.firstName,
         interlocutorFirstName: candidate.firstName,
-        ctaUrl: `${process.env.FRONT_URL}/backoffice/profile/${candidate.id}`,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/profile/${candidate.id}?openLinkedInSharer=true`,
         staffContact: coach.staffContact,
       },
     });
