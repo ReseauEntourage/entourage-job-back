@@ -1247,37 +1247,83 @@ export class UsersService {
   ): Promise<{ id: string; unansweredConversationsCount: number }[]> {
     return this.userModel.sequelize.query(
       `
-      SELECT
-        recipient.id AS "id",
-        COUNT(DISTINCT c.id) AS "unansweredConversationsCount"
-      FROM "Conversations" c
-      JOIN (
-        SELECT DISTINCT ON ("conversationId")
-          "conversationId",
-          "authorId" AS "senderId",
-          "createdAt" AS "firstMessageAt"
-        FROM "Messages"
-        ORDER BY "conversationId", "createdAt" ASC
-      ) first_msg ON first_msg."conversationId" = c.id
-      JOIN "Users" sender
-        ON sender.id = first_msg."senderId"
-        AND sender."deletedAt" IS NULL
-        AND sender.role != 'Admin'
-      JOIN "ConversationParticipants" cp_recipient
-        ON cp_recipient."conversationId" = c.id
-        AND cp_recipient."userId" != first_msg."senderId"
-      JOIN "Users" recipient
-        ON recipient.id = cp_recipient."userId"
-        AND recipient."deletedAt" IS NULL
-        AND recipient.role != 'Admin'
-      WHERE
-        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
-        AND NOT EXISTS (
-          SELECT 1 FROM "Messages" m
-          WHERE m."conversationId" = c.id
-            AND m."authorId" = recipient.id
-        )
-      GROUP BY recipient.id
+      SELECT id, SUM("unansweredConversationsCount"::int) AS "unansweredConversationsCount"
+      FROM (
+
+        -- Case 1: never responded — first message sent X days ago, recipient never replied
+        SELECT
+          recipient.id AS "id",
+          COUNT(DISTINCT c.id) AS "unansweredConversationsCount"
+        FROM "Conversations" c
+        JOIN (
+          SELECT DISTINCT ON ("conversationId")
+            "conversationId",
+            "authorId" AS "senderId",
+            "createdAt" AS "firstMessageAt"
+          FROM "Messages"
+          ORDER BY "conversationId", "createdAt" ASC
+        ) first_msg ON first_msg."conversationId" = c.id
+        JOIN "Users" sender
+          ON sender.id = first_msg."senderId"
+          AND sender."deletedAt" IS NULL
+          AND sender.role != 'Admin'
+        JOIN "ConversationParticipants" cp_recipient
+          ON cp_recipient."conversationId" = c.id
+          AND cp_recipient."userId" != first_msg."senderId"
+        JOIN "Users" recipient
+          ON recipient.id = cp_recipient."userId"
+          AND recipient."deletedAt" IS NULL
+          AND recipient.role != 'Admin'
+        WHERE
+          DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
+          AND NOT EXISTS (
+            SELECT 1 FROM "Messages" m
+            WHERE m."conversationId" = c.id
+              AND m."authorId" = recipient.id
+          )
+        GROUP BY recipient.id
+
+        UNION ALL
+
+        -- Case 2: ongoing conversation — last message from other party sent X days ago and not yet read
+        SELECT
+          recipient.id AS "id",
+          COUNT(DISTINCT c.id) AS "unansweredConversationsCount"
+        FROM "Conversations" c
+        JOIN (
+          SELECT DISTINCT ON ("conversationId")
+            "conversationId",
+            "authorId" AS "lastSenderId",
+            "createdAt" AS "lastMessageAt"
+          FROM "Messages"
+          ORDER BY "conversationId", "createdAt" DESC
+        ) last_msg ON last_msg."conversationId" = c.id
+        JOIN "Users" sender
+          ON sender.id = last_msg."lastSenderId"
+          AND sender."deletedAt" IS NULL
+          AND sender.role != 'Admin'
+        JOIN "ConversationParticipants" cp_recipient
+          ON cp_recipient."conversationId" = c.id
+          AND cp_recipient."userId" != last_msg."lastSenderId"
+        JOIN "Users" recipient
+          ON recipient.id = cp_recipient."userId"
+          AND recipient."deletedAt" IS NULL
+          AND recipient.role != 'Admin'
+        WHERE
+          DATE(last_msg."lastMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
+          AND EXISTS (
+            SELECT 1 FROM "Messages" m
+            WHERE m."conversationId" = c.id
+              AND m."authorId" = recipient.id
+          )
+          AND (
+            cp_recipient."seenAt" IS NULL
+            OR cp_recipient."seenAt" < last_msg."lastMessageAt"
+          )
+        GROUP BY recipient.id
+
+      ) combined
+      GROUP BY id
       `,
       { type: QueryTypes.SELECT, raw: true }
     );
