@@ -15,6 +15,7 @@ import { UserProfileRecommendationsService } from 'src/user-profiles/recommendat
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
+import { UserRoles } from 'src/users/users.types';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 
@@ -75,8 +76,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareCompanyCollabFollowMails();
       case Jobs.PREPARE_COMMITTED_USERS_FEEDBACK_MAILS:
         return this.prepareCommittedUsersFeedbackMails();
-      case Jobs.PREPARE_UNREAD_CONVERSATIONS_MAILS:
-        return this.prepareUnreadConversationsMails();
+      case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_MAILS:
+        return this.prepareUnansweredConversationsMails();
       case Jobs.PREPARE_UNAVAILABLE_USERS_MAILS:
         return this.prepareUnavailableUsersMails();
       case Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS:
@@ -87,6 +88,10 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareMessagingFeedbackMails();
       case Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS:
         return this.prepareWarnAccountDeletionMails();
+      case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS:
+        return this.prepareUnansweredConversationsSms();
+      case Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS:
+        return this.prepareLinkedInShareProfileMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1172,10 +1177,10 @@ export class CronTasksProcessor extends WorkerHost {
     return `Sent ${successIds.length} committed users feedback mails`;
   }
 
-  async prepareUnreadConversationsMails() {
-    const DAYS_TO_CONTACT = [4, 20];
+  async prepareUnansweredConversationsMails() {
+    const DAYS_TO_CONTACT = [2, 10, 20];
     this.logger.log(
-      `Preparing unread conversations mails for days ${DAYS_TO_CONTACT.join(
+      `Preparing unanswered conversations mails for days ${DAYS_TO_CONTACT.join(
         ', '
       )}...`
     );
@@ -1185,11 +1190,10 @@ export class CronTasksProcessor extends WorkerHost {
     const allFailures: SettledFailure[] = [];
 
     for (const days of DAYS_TO_CONTACT) {
-      const rows = await this.usersService.getUserRowsForUnreadConversations(
-        days
-      );
+      const rows =
+        await this.usersService.getUserRowsForUnansweredConversations(days);
       this.logger.log(
-        `Found ${rows.length} users with unread conversations since ${days} days`
+        `Found ${rows.length} users with unanswered conversations since ${days} days`
       );
       total += rows.length;
 
@@ -1197,9 +1201,9 @@ export class CronTasksProcessor extends WorkerHost {
         rows.map(async (row) => {
           const user = await this.usersService.findOneWithRelations(row.id);
           if (!user) return;
-          await this.usersService.sendUnreadConversationsMail(
+          await this.usersService.sendUnansweredConversationsMail(
             user,
-            Number(row.unreadConversationsCount),
+            Number(row.unansweredConversationsCount),
             days
           );
         })
@@ -1210,7 +1214,7 @@ export class CronTasksProcessor extends WorkerHost {
         results,
         (userId, reason) => {
           this.logger.error(
-            `Failed sending unread conversations mail to user ${userId}`,
+            `Failed sending unanswered conversations mail to user ${userId}`,
             reason
           );
         }
@@ -1223,18 +1227,18 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📫 Unread conversations - J+${DAYS_TO_CONTACT.join('/')}`,
+      `📫 Unanswered conversations - J+${DAYS_TO_CONTACT.join('/')}`,
       { total, success: totalSuccess, failure: allFailures.length },
       allFailures
     );
 
     if (!succeeded) {
       throw new Error(
-        `Failed sending ${allFailures.length}/${total} unread conversations mails`
+        `Failed sending ${allFailures.length}/${total} unanswered conversations mails`
       );
     }
 
-    return `Sent ${totalSuccess} unread conversations mails`;
+    return `Sent ${totalSuccess} unanswered conversations mails`;
   }
 
   async prepareUnavailableUsersMails() {
@@ -1490,5 +1494,152 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} warn account deletion mails`;
+  }
+
+  async prepareUnansweredConversationsSms() {
+    const DAYS_SINCE_LAST_CONNECTION = 3;
+
+    this.logger.log(
+      `Preparing unanswered conversations SMS for candidates (first message sent ${DAYS_SINCE_LAST_CONNECTION} days ago)...`
+    );
+
+    const rows =
+      await this.usersService.getCandidateRowsForUnansweredConversationSms(
+        DAYS_SINCE_LAST_CONNECTION
+      );
+
+    this.logger.log(
+      `Found ${rows.length} candidates with unanswered conversations to notify via SMS`
+    );
+
+    const results = await Promise.allSettled(
+      rows.map(async (row) => {
+        this.logger.log(
+          `Sending SMS to candidate ${row.candidateId} for conversation ${row.conversationId} with coach ${row.coachId}`
+        );
+        return this.usersService.sendCandidateUnansweredConversationSms(
+          row.candidatePhone,
+          row.coachFirstName,
+          row.coachId
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      rows.map((row) => ({ id: row.candidateId })),
+      results,
+      (candidateId, reason) => {
+        this.logger.error(
+          `Failed sending SMS to candidate ${candidateId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📱 SMS conversations non répondues - J+${DAYS_SINCE_LAST_CONNECTION}`,
+      {
+        total: rows.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${rows.length} unanswered conversation SMS`
+      );
+    }
+
+    return `Sent ${successIds.length} unanswered conversation SMS`;
+  }
+
+  private async prepareLinkedInShareProfileMails() {
+    const DAYS_SINCE_CONVERSATION_START = 7;
+    this.logger.log(
+      `Preparing LinkedIn share profile mails for coaches whose conversation reached 3 messages ${DAYS_SINCE_CONVERSATION_START} days ago...`
+    );
+
+    const conversations =
+      await this.messagingService.getConversationsReadyForLinkedInShareMail(
+        DAYS_SINCE_CONVERSATION_START
+      );
+
+    this.logger.log(
+      `Found ${conversations.length} conversations eligible for LinkedIn share profile mail`
+    );
+
+    const mailJobs = conversations.flatMap((conversation) => {
+      const coach = conversation.participants.find(
+        (p) => p.role === UserRoles.COACH
+      );
+      const candidate = conversation.participants.find(
+        (p) => p.role === UserRoles.CANDIDATE
+      );
+      if (!coach || !candidate) return [];
+      return [{ id: `${conversation.id}:${coach.id}`, coach, candidate }];
+    });
+
+    const participantIds = Array.from(
+      new Set(mailJobs.flatMap((j) => [j.coach.id, j.candidate.id]))
+    );
+    const participantsWithRelations =
+      participantIds.length > 0
+        ? await this.usersService.findByIdsWithRelations(participantIds)
+        : [];
+    const participantsById = new Map<string, User>(
+      participantsWithRelations.map((u) => [u.id, u])
+    );
+
+    const hydratedJobs = mailJobs.map((j) => ({
+      ...j,
+      coach: participantsById.get(j.coach.id) ?? j.coach,
+      candidate: participantsById.get(j.candidate.id) ?? j.candidate,
+    }));
+
+    const results = await Promise.allSettled(
+      hydratedJobs.map(async (job) => {
+        this.logger.log(
+          `Preparing LinkedIn share profile mail for coach ${job.coach.id} with candidate ${job.candidate.id}`
+        );
+        return await this.usersService.sendLinkedInShareProfileMail(
+          job.coach,
+          job.candidate
+        );
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      hydratedJobs,
+      results,
+      (jobId, reason) => {
+        const [conversationId, coachId] = String(jobId).split(':');
+        this.logger.error(
+          `Failed preparing LinkedIn share profile mail for coach ${coachId} (conversation ${conversationId})`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `🔗 LinkedIn share profile - J+${DAYS_SINCE_CONVERSATION_START}`,
+      {
+        total: hydratedJobs.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing LinkedIn share profile mails for ${failures.length}/${hydratedJobs.length} coaches`
+      );
+    }
+
+    return `Preparation of LinkedIn share profile mails for ${hydratedJobs.length} coaches started.`;
   }
 }

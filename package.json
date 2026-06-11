@@ -1,13 +1,16 @@
 {
   "name": "entourage-pro-backend",
-  "version": "2.29.19",
+  "version": "2.29.20",
   "license": "ISC",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
+  },
+  "overrides": {
+    "@types/node": "^24.0.0"
   },
   "scripts": {
     "prebuild": "rimraf dist",
-    "build": "nest build",
+    "build": "NODE_OPTIONS=--max-old-space-size=1024 nest build",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "api:start": "node dist/main",
     "api:start:debug": "nest start --debug --watch",
@@ -57,7 +60,8 @@
     "@nestjs/throttler": "^4.0.0",
     "@slack/bolt": "^3.19.0",
     "@types/multer": "^1.4.12",
-    "@vonage/server-sdk": "^2.11.2",
+    "@vonage/messages": "^1.24.0",
+    "@vonage/server-sdk": "^3.27.0",
     "axios": "^1.9.0",
     "bitly": "^7.1.2",
     "bullmq": "^5.70.4",

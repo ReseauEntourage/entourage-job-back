@@ -17,6 +17,15 @@ export enum EventType {
   WORKSHOP = 'WORKSHOP',
 }
 
+export enum EventPublicAudience {
+  GENERAL_PUBLIC = 'Grand public',
+  COMPANIES = 'Entreprises',
+  ORGANIZATIONS = 'Associations',
+  SCHOLARS = 'Scolaire',
+  AUTHORITIES = 'Collectivité',
+  YOUNG_PUBLIC = 'Jeunes',
+}
+
 export enum SalesforceEventTypes {
   WELCOME_SESSION = 'Rdv de bienvenue Entourage Pro',
   COFFEE_SESSION = 'Info co candidat',
@@ -56,6 +65,7 @@ export interface Event {
   audience: string;
   sequences?: string[];
   isParticipating: boolean;
+  publicSensibilise: EventPublicAudience[] | null;
 }
 
 export type EventParticipant = Pick<

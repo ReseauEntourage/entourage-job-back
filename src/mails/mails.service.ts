@@ -588,6 +588,23 @@ export class MailsService {
     });
   }
 
+  async sendLinkedInShareProfileMail(coach: User, candidate: User) {
+    this.logger.log(
+      `Sending LinkedIn share profile mail to coach ${coach.email} for candidate ${candidate.id}`
+    );
+    return await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: coach.email,
+      replyTo: coach.staffContact.email,
+      templateId: MailjetTemplates.MAILER_LINKEDIN_SHARE_PROFILE,
+      variables: {
+        firstName: coach.firstName,
+        interlocutorFirstName: candidate.firstName,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/profile/${candidate.id}?openLinkedInSharer=true`,
+        staffContact: coach.staffContact,
+      },
+    });
+  }
+
   async sendFollowUpMailForMutuallyRepliedConversation(
     user: User,
     conversation: Conversation
@@ -685,11 +702,23 @@ export class MailsService {
       staffContact: InternalStaffContact;
     },
     stats: { conversationCount: number; responseRate: number },
-    nextEvaluationDate: Date
+    nextEvaluationDate: Date,
+    achievementId: string
   ) {
     this.logger.log(
       `Sending super engaged achievement mail to user with email ${user.email}`
     );
+    const certUrl = `${process.env.FRONT_URL}/coach-certification/${achievementId}`;
+    const issueDate = new Date();
+    const ctaUrlParams = new URLSearchParams({
+      startTask: 'CERTIFICATION_NAME',
+      name: 'Coach Entourage Pro',
+      organizationId: '42693016',
+      issueYear: String(issueDate.getFullYear()),
+      issueMonth: String(issueDate.getMonth() + 1),
+      certUrl,
+    });
+    const ctaUrl = `https://www.linkedin.com/profile/add?${ctaUrlParams.toString()}`;
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT,
@@ -701,6 +730,7 @@ export class MailsService {
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
         staffContact: user.staffContact,
+        ctaUrl,
       },
     });
   }
@@ -862,30 +892,30 @@ export class MailsService {
     });
   }
 
-  async sendUnreadConversationsMail(
+  async sendUnansweredConversationsMail(
     user: User,
-    unreadConversationsCount: number,
+    unansweredConversationsCount: number,
     days: number
   ) {
     this.logger.log(
-      `Sending unread conversations mail to user with email ${user.email}`
+      `Sending unanswered conversations mail to user with email ${user.email}`
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
       replyTo: user.staffContact.email,
-      subject: getUnreadConversationsSubject(
+      subject: getUnansweredConversationsSubject(
         days,
         user.role,
-        unreadConversationsCount
+        unansweredConversationsCount
       ),
-      templateId: MailjetTemplates.MAILER_UNREAD_CONVERSATIONS,
+      templateId: MailjetTemplates.MAILER_UNANSWERED_CONVERSATIONS,
       variables: {
         firstName: user.firstName || '',
         role: getRoleString(user),
         zone: user.zone || ZoneName.HZ,
         days,
         roleDay: getRoleString(user) + days.toString(),
-        count: unreadConversationsCount,
+        count: unansweredConversationsCount,
         answerUrl: `${process.env.FRONT_URL}/backoffice/messaging`,
         staffContact: user.staffContact,
       },
@@ -1064,7 +1094,7 @@ export class MailsService {
   }
 }
 
-const getUnreadConversationsSubject = (
+const getUnansweredConversationsSubject = (
   days: number,
   role: UserRole,
   count: number

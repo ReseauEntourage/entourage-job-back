@@ -3,6 +3,7 @@ import { SalesforceCampaign } from 'src/external-services/salesforce/salesforce.
 import {
   Event,
   EventMode,
+  EventPublicAudience,
   EventType,
   SalesforceEventTypes,
 } from './event.types';
@@ -25,6 +26,7 @@ export const salesforceEventAttributes = [
   'Nombre_de_participants__c',
   'Nombre_d_inscrits__c',
   'MeetingLink__c',
+  'Public_sensibilis__c',
 ];
 
 /**
@@ -253,6 +255,11 @@ export const convertSalesforceCampaignToEvent = (
     mode,
     duration: computeEventDurationFromSalesforceCampaign(campaign),
     isParticipating,
+    publicSensibilise: campaign.Public_sensibilis__c
+      ? (campaign.Public_sensibilis__c.split(';').map((v) =>
+          v.trim()
+        ) as EventPublicAudience[])
+      : null,
     ...additionalEventAttributesByEventType[eventType],
     ...(eventType === EventType.WORKSHOP && {
       format: mode === EventMode.ONLINE ? 'En ligne' : 'En présentiel',

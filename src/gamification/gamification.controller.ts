@@ -4,12 +4,13 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Param,
   ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { UserPayload } from 'src/auth/guards';
+import { Public, UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions, UserRole } from 'src/users/users.types';
 import { GamificationService } from './gamification.service';
@@ -21,6 +22,21 @@ export class GamificationController {
   private readonly logger = new Logger(GamificationController.name);
 
   constructor(private readonly gamificationService: GamificationService) {}
+
+  @Public()
+  @Get('achievements/:achievementId/public')
+  @ApiOperation({
+    summary: 'Get public certificate data for a single achievement',
+    description:
+      'Returns the coach name, gender, and achievement details for a certificate page. ' +
+      'The certificate remains accessible even if the badge has since expired. ' +
+      'Only publicly shareable types (e.g. SUPER_ENGAGED_COACH) are returned.',
+  })
+  getPublicAchievement(
+    @Param('achievementId', new ParseUUIDPipe()) achievementId: string
+  ) {
+    return this.gamificationService.getPublicAchievementById(achievementId);
+  }
 
   @Get('achievement-progression')
   @ApiBearerAuth()

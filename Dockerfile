@@ -1,5 +1,5 @@
 # ==== CONFIGURE BACK =====
-FROM node:20.19.1-slim AS base
+FROM node:24-slim AS base
 
 # GO INSIDE WORKING DIR
 WORKDIR /home/node
