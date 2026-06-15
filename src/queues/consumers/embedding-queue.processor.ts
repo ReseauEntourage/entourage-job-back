@@ -2,6 +2,12 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { EmbeddingBuilder } from 'src/embeddings/embedding.builder';
+import { EMBEDDING_CONFIG, SCORING_WEIGHTS } from 'src/embeddings/embedding.config';
+import { PusherService } from 'src/external-services/pusher/pusher.service';
+import {
+  PusherChannels,
+  PusherEvents,
+} from 'src/external-services/pusher/pusher.types';
 import {
   Jobs,
   Queues,
@@ -9,8 +15,10 @@ import {
   UpdateUserProfileEmbeddingsBatchJob,
 } from 'src/queues/queues.types';
 import { UserProfile } from 'src/user-profiles/models';
+import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersService } from 'src/users/users.service';
 
 @Processor(Queues.EMBEDDING, {
@@ -25,7 +33,9 @@ export class EmbeddingQueueProcessor extends WorkerHost {
   constructor(
     private readonly usersService: UsersService,
     private readonly userProfilesService: UserProfilesService,
-    private readonly embeddingBuilder: EmbeddingBuilder
+    private readonly embeddingBuilder: EmbeddingBuilder,
+    private readonly pusherService: PusherService,
+    private readonly userProfileRecommendationsService: UserProfileRecommendationsService
   ) {
     super();
   }
@@ -85,9 +95,70 @@ export class EmbeddingQueueProcessor extends WorkerHost {
       })
     );
 
+    if (user.onboardingStatus !== OnboardingStatus.COMPLETED) {
+      await this.dispatchWizardSuggestions(user);
+    }
+
     return `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
       ', '
     )}`;
+  }
+
+  /**
+   * Dispatch top matching profiles via Pusher to the user's wizard suggestions channel.
+   * Only called when the user has not yet completed onboarding.
+   * @param user - The user for whom embeddings were just computed
+   */
+  private async dispatchWizardSuggestions(user: User): Promise<void> {
+    try {
+      const rolesToFind =
+        user.role === UserRoles.CANDIDATE
+          ? [UserRoles.COACH]
+          : [UserRoles.CANDIDATE];
+
+      const scoringResults =
+        await this.userProfileRecommendationsService.findBySimilarity({
+          userId: user.id,
+          rolesToFind,
+          configVersionProfile: EMBEDDING_CONFIG.profile.version,
+          configVersionNeeds: EMBEDDING_CONFIG.needs.version,
+          weightProfile: SCORING_WEIGHTS.profile,
+          weightNeeds: SCORING_WEIGHTS.needs,
+          weightActivity: SCORING_WEIGHTS.activity,
+          weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
+          poolSize: 5,
+          annPoolSize: 10,
+          filterByAvailability: true,
+        });
+
+      if (scoringResults.length === 0) {
+        return;
+      }
+
+      const topUserIds = scoringResults.slice(0, 5).map((r) => r.userId);
+      const profiles = await this.usersService.findByIdsWithRelations(topUserIds);
+
+      const suggestions = profiles.map((p) => ({
+        userId: p.id,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        city: p.userProfile?.city ?? null,
+        isAvailable: p.userProfile?.isAvailable ?? false,
+        mainSector: p.userProfile?.sectorOccupations?.[0]?.name ?? null,
+      }));
+
+      await this.pusherService.sendEvent(
+        `${PusherChannels.WIZARD_SUGGESTIONS}-${user.id}`,
+        PusherEvents.WIZARD_SUGGESTIONS_READY,
+        { profiles: suggestions }
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to dispatch wizard suggestions for user ${user.id}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
   }
 
   async generateUserProfileEmbeddingsBatch(

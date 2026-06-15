@@ -187,6 +187,19 @@ export class User extends HistorizedModel {
   onboardingWebinarSkippedAt: Date;
 
   @AllowNull(true)
+  @Column(DataType.STRING(64))
+  otpCode: string;
+
+  @AllowNull(true)
+  @Column
+  otpExpiresAt: Date;
+
+  @Default(0)
+  @AllowNull(false)
+  @Column(DataType.INTEGER)
+  otpAttempts: number;
+
+  @AllowNull(true)
   @Column
   linkedinId: string;
 

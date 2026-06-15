@@ -1,4 +1,10 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthService } from 'src/auth/auth.service';
 import { CompaniesService } from 'src/companies/companies.service';
 import { CompanyCreationContext } from 'src/companies/companies.types';
@@ -195,6 +201,71 @@ export class UsersCreationService {
 
   async findOneCompanyUser(companyId: string) {
     return this.companyUsersService.findOneCompanyUser(companyId);
+  }
+
+  /**
+   * Generate and send a 6-digit OTP code to the user's email address.
+   * Hashes the code with SHA-256 before storing. Calling this method again
+   * invalidates the previous code by overwriting it.
+   * @param userId - The ID of the user to send the OTP to
+   * @throws NotFoundException if the user does not exist
+   */
+  async sendOtpCode(userId: string): Promise<void> {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const hashedCode = createHash('sha256').update(code).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.usersService.update(userId, {
+      otpCode: hashedCode,
+      otpExpiresAt: expiresAt,
+      otpAttempts: 0,
+    });
+
+    await this.mailsService.sendOtpVerificationMail(user, code);
+  }
+
+  /**
+   * Verify an OTP code submitted by the user.
+   * On success, marks the email as verified and clears the OTP fields.
+   * Increments otpAttempts on each failed attempt.
+   * @param userId - The ID of the user submitting the code
+   * @param code - The plain-text 6-digit OTP code entered by the user
+   * @throws BadRequestException with code MAX_ATTEMPTS, EXPIRED, or INVALID_CODE
+   * @throws NotFoundException if the user does not exist
+   */
+  async verifyOtpCode(userId: string, code: string): Promise<void> {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    if (user.otpAttempts >= 5) {
+      throw new BadRequestException('MAX_ATTEMPTS');
+    }
+
+    if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new BadRequestException('EXPIRED');
+    }
+
+    const hashedCode = createHash('sha256').update(code).digest('hex');
+    if (hashedCode !== user.otpCode) {
+      await this.usersService.update(userId, {
+        otpAttempts: user.otpAttempts + 1,
+      });
+      throw new BadRequestException('INVALID_CODE');
+    }
+
+    await this.usersService.update(userId, {
+      isEmailVerified: true,
+      otpCode: null,
+      otpExpiresAt: null,
+      otpAttempts: 0,
+    });
   }
 
   async linkInvitationToUser(

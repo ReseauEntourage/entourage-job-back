@@ -138,6 +138,25 @@ export class MailsService {
     });
   }
 
+  /**
+   * Send an OTP verification code to the user's email address.
+   * @param user - The user receiving the OTP email
+   * @param otpCode - The plain-text 6-digit OTP code to include in the email
+   */
+  async sendOtpVerificationMail(user: User, otpCode: string) {
+    this.logger.log(
+      `Sending OTP verification mail to user with email ${user.email}`
+    );
+    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.OTP_VERIFICATION,
+      variables: {
+        firstName: user.firstName,
+        otpCode,
+      },
+    });
+  }
+
   async sendOnboardingBAOMail(user: User) {
     this.logger.log(
       `Sending onboarding BAO mail to user with email ${user.email}`

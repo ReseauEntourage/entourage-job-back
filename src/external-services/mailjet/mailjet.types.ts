@@ -155,6 +155,8 @@ export const MailjetTemplates = {
   MAILER_MESSAGING_FEEDBACK: 6811416,
   MAILER_WARN_ACCOUNT_DELETION: 6611907,
   MAILER_LINKEDIN_SHARE_PROFILE: 8052814,
+  // OTP email verification for wizard — Mailjet template needs variables: { firstName, otpCode }
+  OTP_VERIFICATION: 8100000,
 } as const;
 
 export type MailjetTemplateKey = keyof typeof MailjetTemplates;

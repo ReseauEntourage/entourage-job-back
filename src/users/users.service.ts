@@ -1,5 +1,6 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { ElearningService } from 'src/elearning/elearning.service';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
@@ -75,7 +76,9 @@ export class UsersService {
     @Inject(forwardRef(() => UserProfilesService))
     private userProfilesService: UserProfilesService,
     @Inject(forwardRef(() => UserProfileRecommendationsService))
-    private userProfileRecommendationsService: UserProfileRecommendationsService
+    private userProfileRecommendationsService: UserProfileRecommendationsService,
+    @Inject(forwardRef(() => ElearningService))
+    private elearningService: ElearningService
   ) {}
 
   async create(createUserDto: Partial<User>) {
@@ -1722,5 +1725,87 @@ export class UsersService {
     staffContact: User['staffContact'];
   }) {
     return this.mailsService.sendRecruitmentAlertMail(alert);
+  }
+
+  /**
+   * Determine the next wizard sub-step for a user without storing a wizardStep field.
+   * Inspects actual profile data to find the first incomplete step.
+   * @param userId - The authenticated user's ID
+   * @returns An object containing the nextStep key and existing userData for pre-filling forms
+   */
+  async getWizardState(userId: string): Promise<{
+    nextStep: string;
+    userData: Record<string, unknown>;
+  }> {
+    const user = await this.findOneWithRelations(userId);
+    if (!user) {
+      return { nextStep: '1.1-nudges', userData: {} };
+    }
+
+    if (!user.isEmailVerified) {
+      return {
+        nextStep: '1.5-otp',
+        userData: { email: user.email },
+      };
+    }
+
+    if (user.onboardingStatus === OnboardingStatus.COMPLETED) {
+      return { nextStep: 'done', userData: {} };
+    }
+
+    const nudges = user.userProfile?.nudges ?? [];
+    if (nudges.length === 0) {
+      return { nextStep: '1.1-nudges', userData: this.buildUserData(user) };
+    }
+
+    const occupations = user.userProfile?.occupations ?? [];
+    if (occupations.length === 0) {
+      return {
+        nextStep: '1.2-metiers-secteurs',
+        userData: this.buildUserData(user),
+      };
+    }
+
+    const completions = await this.elearningService.findAllUnits({
+      userId,
+      userRole: user.role,
+    });
+    const hasAnyCompletion = completions.some(
+      (unit) =>
+        unit['completions'] &&
+        unit['completions'].some(
+          (c: { userId: string }) => c.userId === userId
+        )
+    );
+    if (!hasAnyCompletion) {
+      return { nextStep: '2.1-elearning', userData: this.buildUserData(user) };
+    }
+
+    if (
+      user.role === UserRoles.CANDIDATE &&
+      !user.userSocialSituation?.hasCompletedSurvey
+    ) {
+      return {
+        nextStep: '3.1-social-situation',
+        userData: this.buildUserData(user),
+      };
+    }
+
+    return { nextStep: 'done', userData: {} };
+  }
+
+  private buildUserData(user: User): Record<string, unknown> {
+    return {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      gender: user.gender,
+      role: user.role,
+      zone: user.zone,
+      nudges: user.userProfile?.nudges ?? [],
+      occupations: user.userProfile?.occupations ?? [],
+      sectorOccupations: user.userProfile?.sectorOccupations ?? [],
+      department: user.userProfile?.department,
+    };
   }
 }

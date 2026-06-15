@@ -54,6 +54,12 @@ import { isRoleIncluded } from './users.utils';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(SelfGuard)
+  @Get('wizard-state')
+  async getWizardState(@UserPayload('id') userId: string) {
+    return this.usersService.getWizardState(userId);
+  }
+
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
   @Get('members')

@@ -4,6 +4,8 @@ import {
   Body,
   ConflictException,
   Controller,
+  HttpCode,
+  HttpStatus,
   NotFoundException,
   Post,
   UseGuards,
@@ -36,6 +38,8 @@ import {
   CreateUserPipe,
   CreateUserRegistrationDto,
   CreateUserRegistrationPipe,
+  SendOtpDto,
+  VerifyOtpDto,
 } from './dto';
 import { CreateUserReferingDto } from './dto/create-user-refering.dto';
 import { CreateUserReferingPipe } from './dto/create-user-refering.pipe';
@@ -272,7 +276,7 @@ export class UsersCreationController {
         );
       }
 
-      await this.usersCreationService.sendVerificationMail(createdUser);
+      await this.usersCreationService.sendOtpCode(createdUserId);
 
       return createdUser;
     } catch (err) {
@@ -282,6 +286,25 @@ export class UsersCreationController {
       }
       console.error('Error during user registration creation:', err);
     }
+  }
+
+  @Public()
+  @Throttle(3, 600)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('send-otp')
+  async sendOtp(@Body() sendOtpDto: SendOtpDto) {
+    await this.usersCreationService.sendOtpCode(sendOtpDto.userId);
+  }
+
+  @Public()
+  @Throttle(10, 60)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('verify-otp')
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
+    await this.usersCreationService.verifyOtpCode(
+      verifyOtpDto.userId,
+      verifyOtpDto.code
+    );
   }
 
   @UserPermissions(Permissions.REFERER)

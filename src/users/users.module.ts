@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from 'src/auth/auth.module';
 import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
 import { CompaniesModule } from 'src/companies/companies.module';
+import { ElearningModule } from 'src/elearning/elearning.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers/queues.module';
 import { SmsModule } from 'src/sms/sms.module';
@@ -21,6 +22,7 @@ import { UsersService } from './users.service';
     forwardRef(() => UserProfilesModule),
     QueuesModule,
     BusinessSectorsModule,
+    forwardRef(() => ElearningModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],
