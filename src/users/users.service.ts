@@ -1,6 +1,5 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { ElearningService } from 'src/elearning/elearning.service';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
@@ -11,6 +10,7 @@ import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
 import { CurrentUserIdentityAttributes } from 'src/current-user/dto/current-user-identity.dto';
+import { ElearningService } from 'src/elearning/elearning.service';
 import { userFeatureFlagInclude } from 'src/feature-flags/models/user-feature-flag.helper';
 import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
@@ -1766,16 +1766,16 @@ export class UsersService {
       };
     }
 
-    const completions = await this.elearningService.findAllUnits({
-      userId,
-      userRole: user.role,
-    });
+    const completions = await this.elearningService.findAllUnits(
+      100,
+      0,
+      user.role,
+      userId
+    );
     const hasAnyCompletion = completions.some(
       (unit) =>
-        unit['completions'] &&
-        unit['completions'].some(
-          (c: { userId: string }) => c.userId === userId
-        )
+        unit.userCompletions &&
+        unit.userCompletions.some((c) => c.userId === userId)
     );
     if (!hasAnyCompletion) {
       return { nextStep: '2.1-elearning', userData: this.buildUserData(user) };

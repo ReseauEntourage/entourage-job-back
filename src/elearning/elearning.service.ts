@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -26,6 +28,7 @@ export class ElearningService {
     @InjectModel(ElearningCompletion)
     private elearningCompletionModel: typeof ElearningCompletion,
     readonly mailsService: MailsService,
+    @Inject(forwardRef(() => UsersService))
     readonly usersService: UsersService
   ) {}
 

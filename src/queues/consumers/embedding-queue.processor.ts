@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { EmbeddingBuilder } from 'src/embeddings/embedding.builder';
-import { EMBEDDING_CONFIG, SCORING_WEIGHTS } from 'src/embeddings/embedding.config';
+import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
 import {
   PusherChannels,
@@ -15,11 +15,12 @@ import {
   UpdateUserProfileEmbeddingsBatchJob,
 } from 'src/queues/queues.types';
 import { UserProfile } from 'src/user-profiles/models';
+import { SCORING_WEIGHTS } from 'src/user-profiles/recommendations/scoring.config';
 import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
-import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersService } from 'src/users/users.service';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 
 @Processor(Queues.EMBEDDING, {
   limiter: {
@@ -136,15 +137,18 @@ export class EmbeddingQueueProcessor extends WorkerHost {
       }
 
       const topUserIds = scoringResults.slice(0, 5).map((r) => r.userId);
-      const profiles = await this.usersService.findByIdsWithRelations(topUserIds);
+      const profiles = await this.usersService.findByIdsWithRelations(
+        topUserIds
+      );
 
       const suggestions = profiles.map((p) => ({
         userId: p.id,
         firstName: p.firstName,
         lastName: p.lastName,
-        city: p.userProfile?.city ?? null,
+        city: p.userProfile?.department ?? null,
         isAvailable: p.userProfile?.isAvailable ?? false,
-        mainSector: p.userProfile?.sectorOccupations?.[0]?.name ?? null,
+        mainSector:
+          p.userProfile?.sectorOccupations?.[0]?.businessSector?.name ?? null,
       }));
 
       await this.pusherService.sendEvent(

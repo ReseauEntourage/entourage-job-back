@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { MailsModule } from 'src/mails/mails.module';
 import { UsersModule } from 'src/users/users.module';
@@ -20,7 +20,7 @@ import { ElearningUnit } from './models/elearning-unit.model';
       ElearningCompletion,
     ]),
     MailsModule,
-    UsersModule,
+    forwardRef(() => UsersModule),
   ],
   controllers: [ElearningController],
   providers: [ElearningService],
