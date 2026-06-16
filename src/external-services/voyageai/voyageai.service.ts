@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { VoyageAIClient, VoyageAIError } from 'voyageai';
 
+import { LlmMetricsService } from '../llm-metrics/llm-metrics.service';
 import { EMBEDDING_MODEL } from 'src/embeddings/embedding.config';
 
 @Injectable()
@@ -8,7 +9,7 @@ export class VoyageAiService {
   private readonly voyageAi: VoyageAIClient;
   private readonly logger = new Logger(VoyageAiService.name);
 
-  constructor() {
+  constructor(private readonly llmMetricsService: LlmMetricsService) {
     this.voyageAi = new VoyageAIClient({
       apiKey: process.env.VOYAGEAI_API_KEY ?? '',
     });
@@ -20,6 +21,14 @@ export class VoyageAiService {
         input: data,
         model: EMBEDDING_MODEL,
       });
+      if (response.usage) {
+        this.llmMetricsService.recordVoyageAiUsage(
+          EMBEDDING_MODEL,
+          response.usage,
+          'embedding',
+          'profile_recommendation'
+        );
+      }
       return response.data[0].embedding;
     } catch (error) {
       if (error instanceof VoyageAIError) {
@@ -55,6 +64,15 @@ export class VoyageAiService {
         input: dataArray,
         model: EMBEDDING_MODEL,
       });
+
+      if (response.usage) {
+        this.llmMetricsService.recordVoyageAiUsage(
+          EMBEDDING_MODEL,
+          response.usage,
+          'embedding',
+          'profile_recommendation'
+        );
+      }
 
       // The API returns an array of embeddings corresponding to the input array
       return response.data.map((item) => item.embedding);
