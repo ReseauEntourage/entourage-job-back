@@ -239,7 +239,7 @@ export class MailsService {
       `Sending conversation reported mail to staff contact with email ${reporterUser.staffContact?.email}`
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: 'contact@entourage-pro.fr',
+      toEmail: reporterUser.staffContact?.email,
       templateId: MailjetTemplates.CONVERSATION_REPORTED_ADMIN,
       variables: {
         reporterFirstName: reporterUser.firstName,
