@@ -580,7 +580,7 @@ export class MailsService {
       templateId: MailjetTemplates.AUTO_SET_UNAVAILABLE,
       variables: {
         firstName: user.firstName,
-        ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/parametres?reactivate=true`,
         role: getRoleString(user),
         zone: user.zone,
         staffContact: user.staffContact,
