@@ -15,6 +15,11 @@ import { User } from 'src/users/models';
 import { ConversationParticipant } from './conversation-participant.model';
 import { Message } from './message.model';
 
+export enum ConversationType {
+  DIRECT = 'direct',
+  GROUP = 'group',
+}
+
 @Table({ tableName: 'Conversations' })
 export class Conversation extends Model {
   @IsUUID(4)
@@ -22,6 +27,10 @@ export class Conversation extends Model {
   @Default(DataType.UUIDV4)
   @Column
   id: string;
+
+  @Default(ConversationType.DIRECT)
+  @Column(DataType.STRING)
+  type: ConversationType;
 
   @CreatedAt
   createdAt: Date;

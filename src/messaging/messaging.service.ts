@@ -40,7 +40,7 @@ import {
   generateSlackMsgConfigUserSuspiciousUser,
 } from './messaging.utils';
 import { ConversationParticipant, MessageMedia } from './models';
-import { Conversation } from './models/conversation.model';
+import { Conversation, ConversationType } from './models/conversation.model';
 import { Message } from './models/message.model';
 
 @Injectable()
@@ -392,10 +392,16 @@ export class MessagingService {
       new Set([...participantIds, authorId])
     );
 
+    const type =
+      uniqueParticipantIds.length > 2
+        ? ConversationType.GROUP
+        : ConversationType.DIRECT;
+
     const conversation = await this.conversationModel.create(
-      {},
+      { type },
       { transaction: options?.transaction }
     );
+
     await this.addMembersToConversation(
       conversation.id,
       uniqueParticipantIds,
@@ -1075,6 +1081,8 @@ export class MessagingService {
         )
         SELECT f."conversationId" AS id
         FROM first_message_per_participant f
+        JOIN "Conversations" c ON c.id = f."conversationId"
+        WHERE c.type = '${ConversationType.DIRECT}'
         GROUP BY f."conversationId"
         HAVING
           -- every participant has sent at least one message

@@ -14,7 +14,7 @@ import { userFeatureFlagInclude } from 'src/feature-flags/models/user-feature-fl
 import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
 import { userProfileAttributes } from 'src/messaging/messaging.attributes';
-import { Conversation } from 'src/messaging/models';
+import { Conversation, ConversationType } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -1371,7 +1371,8 @@ export class UsersService {
         AND candidate.phone IS NOT NULL
         AND candidate.phone != ''
       WHERE
-        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
+        c.type = '${ConversationType.DIRECT}'
+        AND DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
         AND NOT EXISTS (
           SELECT 1 FROM "Messages" m
           WHERE m."conversationId" = c.id
@@ -1434,7 +1435,8 @@ export class UsersService {
         ON cp."conversationId" = cp_other."conversationId"
         AND cp."userId" != cp_other."userId"
       JOIN "Users" u_other ON cp_other."userId" = u_other."id"
-      WHERE cp."feedbackDate" IS NULL
+      WHERE c.type = '${ConversationType.DIRECT}'
+        AND cp."feedbackDate" IS NULL
         AND cp."feedbackRating" IS NULL
         AND m."createdAt" = (
           SELECT MAX(m2."createdAt")
