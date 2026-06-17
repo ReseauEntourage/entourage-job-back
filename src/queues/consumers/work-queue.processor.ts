@@ -4,6 +4,7 @@ import { Job, Queue } from 'bullmq';
 import { CompaniesService } from 'src/companies/companies.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import { SlackService } from 'src/external-services/slack/slack.service';
 import { VonageService } from 'src/external-services/vonage/vonage.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import {
@@ -37,7 +38,8 @@ export class WorkQueueProcessor extends WorkerHost {
     private usersService: UsersService,
     private userProfilesService: UserProfilesService,
     private messagingService: MessagingService,
-    private userProfileRecommendationsService: UserProfileRecommendationsService
+    private userProfileRecommendationsService: UserProfileRecommendationsService,
+    private slackService: SlackService
   ) {
     super();
   }
@@ -291,14 +293,26 @@ export class WorkQueueProcessor extends WorkerHost {
           userProfile,
           3
         );
-      if (recommendations.length > 0) {
+      if (recommendations.length >= 3) {
         await this.usersService.sendOnboardingCompletedMail(
           user,
           recommendations
         );
       } else {
         this.logger.log(
-          `No recommended profiles found for user with id ${userId} after onboarding completion`
+          `Skipping onboarding email for user ${userId}: only ${recommendations.length} recommendations found (need 3)`
+        );
+        await this.slackService.sendTechnicalMonitoringMessage(
+          false,
+          `📩 Onboarding email skipped - not enough recommendations`,
+          [
+            { title: 'User ID', content: userId },
+            {
+              title: 'Recommendations',
+              content: `${recommendations.length}/3`,
+            },
+          ],
+          `Email non envoyé : l'utilisateur ${userId} n'a que ${recommendations.length} recommandation(s) (minimum requis : 3).`
         );
       }
     } catch (err) {

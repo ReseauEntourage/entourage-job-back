@@ -349,11 +349,24 @@ export class CronTasksProcessor extends WorkerHost {
       `Found ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message`
     );
 
+    const skippedDtos = usersWithoutResponseToFirstMessageResults.filter(
+      (dto) => dto.recommendations.length < 3
+    );
+    const toProcessDtos = usersWithoutResponseToFirstMessageResults.filter(
+      (dto) => dto.recommendations.length >= 3
+    );
+
+    skippedDtos.forEach((dto) => {
+      this.logger.log(
+        `Skipping mail for user ${dto.user.id}: only ${dto.recommendations.length} recommendations found (need 3)`
+      );
+    });
+
     this.logger.log(
-      `Preparing mails for ${usersWithoutResponseToFirstMessageResults.length} users that have no response to their first message...`
+      `Preparing mails for ${toProcessDtos.length} users that have no response to their first message (${skippedDtos.length} skipped - not enough recommendations)...`
     );
     const results = await Promise.allSettled(
-      usersWithoutResponseToFirstMessageResults.map(async (dto) => {
+      toProcessDtos.map(async (dto) => {
         this.logger.log(
           `Preparing mail for user ${dto.user.id} that have no response to their first message`
         );
@@ -362,7 +375,7 @@ export class CronTasksProcessor extends WorkerHost {
     );
 
     const { succeeded, successIds, failures } = collectSettledResults(
-      usersWithoutResponseToFirstMessageResults,
+      toProcessDtos,
       results,
       (userId, reason) => {
         this.logger.error(
@@ -380,7 +393,8 @@ export class CronTasksProcessor extends WorkerHost {
         success: successIds.length,
         failure: failures.length,
       },
-      failures
+      failures,
+      skippedDtos.map((dto) => dto.user.id)
     );
 
     if (!succeeded) {
@@ -496,6 +510,7 @@ export class CronTasksProcessor extends WorkerHost {
     let totalSuccess = 0;
     let totalNotEnoughReco = 0;
     let totalFailures = 0;
+    const skippedUserIds: string[] = [];
 
     for (const days of DAYS_TO_CONTACT) {
       this.logger.log(
@@ -540,6 +555,7 @@ export class CronTasksProcessor extends WorkerHost {
 
             if (userRecommendations.length < 3) {
               totalNotEnoughReco++;
+              skippedUserIds.push(user.id);
               this.logger.log(
                 `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
               );
@@ -576,7 +592,8 @@ export class CronTasksProcessor extends WorkerHost {
         success: totalSuccess,
         failure: totalFailures + totalNotEnoughReco,
       },
-      []
+      [],
+      skippedUserIds
     );
 
     return `Recommendation mails sent: ${totalSuccess} success, ${totalNotEnoughReco} skipped (not enough recos), ${totalFailures} errors.`;
