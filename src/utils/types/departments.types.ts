@@ -1,4 +1,4 @@
-/* eslint-disable typescript-sort-keys/string-enum */
+/* eslint-disable typescript-sort-keys/string-enum -- DepartmentCode is intentionally ordered by official department code (not alphabetically). */
 export enum DepartmentCode {
   Ain = '01',
   Aisne = '02',
