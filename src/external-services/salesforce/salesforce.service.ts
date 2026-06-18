@@ -126,7 +126,7 @@ export class SalesforceService {
   async checkIfConnected() {
     try {
       await this.salesforce.query('SELECT Id FROM User LIMIT 1');
-    } catch (error) {
+    } catch {
       await this.refreshSalesforceInstance();
     }
   }
@@ -343,12 +343,12 @@ export class SalesforceService {
   async findContact(
     email: string,
     recordType?: ContactRecordType
-  ): Promise<{ Id: string; Casquettes_r_les__c: Casquette[] } | null> {
+  ): Promise<{ Casquettes_r_les__c: Casquette[]; Id: string } | null> {
     await this.checkIfConnected();
     const sfEmail = email.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const {
       records,
-    }: { records: { Id: string; Casquettes_r_les__c: string }[] } =
+    }: { records: { Casquettes_r_les__c: string; Id: string }[] } =
       await this.salesforce.query(
         `SELECT Id, Casquettes_r_les__c, AccountId
          FROM ${ObjectNames.CONTACT}
@@ -574,7 +574,7 @@ export class SalesforceService {
   }
 
   async findCampaignMember(
-    { leadId, contactId }: { leadId?: string; contactId?: string },
+    { leadId, contactId }: { contactId?: string; leadId?: string },
     campaignId: string
   ) {
     await this.checkIfConnected();
@@ -596,7 +596,7 @@ export class SalesforceService {
     const escapedEmails = emails
       .map((e) => `'${escapeQuery(e.normalize('NFD').replace(/[̀-ͯ]/g, ''))}'`)
       .join(', ');
-    const { records }: { records: { Id: string; Email: string }[] } =
+    const { records }: { records: { Email: string; Id: string }[] } =
       await this.salesforce.query(
         `SELECT Id, Email FROM ${ObjectNames.CONTACT} WHERE Email IN (${escapedEmails})`
       );
@@ -1079,7 +1079,7 @@ export class SalesforceService {
   }
 
   async createOrUpdateCampaignMember(
-    leadOrContactId: { leadId?: string; contactId?: string },
+    leadOrContactId: { contactId?: string; leadId?: string },
     campaignId: string,
     status: SalesforceCampaignStatus
   ) {
@@ -1139,21 +1139,21 @@ export class SalesforceService {
   async createOrUpdateSalesforceUser(
     userId: string,
     otherInfo: {
+      accommodation?: CandidateAccommodation;
       birthDate: Date;
       campaign?: string;
-      workingRight?: CandidateYesNoNSPPValue;
-      nationality?: Nationality;
-      accommodation?: CandidateAccommodation;
+      gender?: CandidateGender;
       hasSocialWorker?: YesNoJNSPRValue;
+      isCompanyAdmin?: boolean;
+      jobSearchDuration?: JobSearchDuration;
+      nationality?: Nationality;
+      position?: string;
+      refererEmail?: string;
       resources?: CandidateResource;
+      structure?: string;
       studiesLevel?: StudiesLevel;
       workingExperience?: WorkingExperience;
-      jobSearchDuration?: JobSearchDuration;
-      gender?: CandidateGender;
-      refererEmail?: string;
-      structure?: string;
-      isCompanyAdmin?: boolean;
-      position?: string;
+      workingRight?: CandidateYesNoNSPPValue;
     }
   ) {
     this.setIsWorker(true);

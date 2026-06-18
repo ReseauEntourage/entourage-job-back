@@ -53,10 +53,10 @@ import {
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export type NoResponseToFirstMessageResultDto = {
-  id: string;
-  user: User;
-  recommendations: RecommendationDto[];
   addressees: User[];
+  id: string;
+  recommendations: RecommendationDto[];
+  user: User;
 };
 
 @Injectable()
@@ -632,10 +632,10 @@ export class UsersService {
   // Get all users -except admins- that have connected once but not in the last 25 months and not deleted
   async getInactiveUsersForDeletion() {
     const inactiveUsers: {
-      id: string;
-      firstName: string;
-      lastName: string;
       candidatUrl: string | null;
+      firstName: string;
+      id: string;
+      lastName: string;
     }[] = await this.userModel.sequelize.query(
       `
         SELECT
@@ -869,8 +869,8 @@ export class UsersService {
     );
 
     const rows: {
-      authorId: string;
       addresseeId: string;
+      authorId: string;
       messageId: string;
     }[] = await this.userModel.sequelize.query(
       `
@@ -914,7 +914,7 @@ export class UsersService {
     // Create a structure to link authors to their addressees (one by message)
     const messageMap = new Map<
       string,
-      { authorId: string; addresseeIds: string[] }
+      { addresseeIds: string[]; authorId: string }
     >();
     rows.forEach(({ authorId, addresseeId, messageId }) => {
       if (!messageMap.has(messageId)) {
@@ -1181,11 +1181,11 @@ export class UsersService {
 
   async getReferedNotActivatedData(daysSinceCreation: number): Promise<
     {
-      refererId: string;
       candidateEmail: string;
       candidateFirstName: string;
       candidateLastName: string;
       candidateZone: string;
+      refererId: string;
     }[]
   > {
     const startDate = new Date(
@@ -1416,9 +1416,9 @@ export class UsersService {
 
   async getUserTriplesForMessagingFeedback(days: number): Promise<
     {
-      userId: string;
       interlocutorFirstName: string;
       interlocutorId: string;
+      userId: string;
     }[]
   > {
     return this.userModel.sequelize.query(
@@ -1509,7 +1509,7 @@ export class UsersService {
   async getCompanyInvitationPendingData(
     daysSinceInvitation: number
   ): Promise<
-    { adminId: string; invitationEmail: string; companyId: string }[]
+    { adminId: string; companyId: string; invitationEmail: string }[]
   > {
     return this.userModel.sequelize.query(
       `
@@ -1715,13 +1715,13 @@ export class UsersService {
   }
 
   async sendRecruitmentAlertMail(alert: {
+    alertId: string;
+    alertName: string;
     companyAdminEmail: string;
     firstName: string;
     newCandidatesCount: number;
-    alertName: string;
-    alertId: string;
-    zone: string;
     staffContact: User['staffContact'];
+    zone: string;
   }) {
     return this.mailsService.sendRecruitmentAlertMail(alert);
   }

@@ -41,7 +41,7 @@ export abstract class UserProfileRecommendationBase {
    */
   async findRecommendationsByUserId(
     userId: string,
-    options?: { limit?: number; cursor?: number }
+    options?: { cursor?: number; limit?: number }
   ): Promise<UserProfileRecommendation[]> {
     const where: Record<string, unknown> = { UserId: userId };
 
@@ -86,12 +86,12 @@ export abstract class UserProfileRecommendationBase {
    */
   async getStoredRecommendationsMeta(
     userId: string
-  ): Promise<{ recommendedUserId: string; rank: number | null }[]> {
+  ): Promise<{ rank: number | null; recommendedUserId: string }[]> {
     return this.userProfileRecommandationModel.findAll({
       where: { UserId: userId },
       attributes: ['recommendedUserId', 'rank'],
       raw: true,
-    }) as unknown as { recommendedUserId: string; rank: number | null }[];
+    }) as unknown as { rank: number | null; recommendedUserId: string }[];
   }
 
   /**

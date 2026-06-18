@@ -70,6 +70,8 @@ jobs:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
       OPENAI_API_KEY: ''
+      SHORTIO_DOMAIN: test.short.io
+      SHORTIO_API_KEY: test_api_key
 
     steps:
       - uses: actions/checkout@v4

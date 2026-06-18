@@ -379,7 +379,7 @@ export class MessagingService {
       authorId,
       participantIds,
       messageContent,
-    }: { authorId: string; participantIds: string[]; messageContent?: string },
+    }: { authorId: string; messageContent?: string; participantIds: string[] },
     options?: { transaction?: Transaction }
   ) {
     await this.handleDailyConversationLimit(

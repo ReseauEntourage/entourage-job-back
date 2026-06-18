@@ -1,6 +1,6 @@
 import { UserProfile, UserProfileWithPartialAssociations } from '../models';
 
-export interface UserProfileDto extends UserProfileWithPartialAssociations {}
+export type UserProfileDto = UserProfileWithPartialAssociations;
 
 export const generateUserProfileDto = (
   userProfile: UserProfile | null,

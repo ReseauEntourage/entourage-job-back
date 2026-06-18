@@ -14,11 +14,11 @@ import {
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Contracts } from 'src/common/contracts/contracts.types';
-import { Department } from 'src/common/locations/locations.types';
+import type { Department } from 'src/common/locations/locations.types';
 import { Skill } from 'src/common/skills/models';
 import { Company } from 'src/companies/models/company.model';
 import {
-  WorkingExperience,
+  type WorkingExperience,
   WorkingExperienceYears,
 } from 'src/contacts/contacts.types';
 import { RecruitementAlertBusinessSector } from './recruitement-alert-business-sector.model';

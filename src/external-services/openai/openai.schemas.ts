@@ -142,48 +142,50 @@ export const cvSchema = {
 
 // Définition du type pour les données extraites du CV
 export interface CvSchemaType {
-  schemaVersion: number;
-
   // UserProfile fields
   description?: string;
 
-  //Skills
-  skills?: Array<{ name: string; order?: number }>;
-
-  //Nudges
-  nudges?: Array<{ name: string; order?: number }>;
-
   // Experiences
   experiences?: Array<{
-    title: string;
-    description?: string;
     company?: string;
-    location?: string;
-    startDate?: string;
+    description?: string;
     endDate?: string;
+    location?: string;
     order?: number;
     skills?: Array<{ name: string; order?: number }>;
+    startDate?: string;
+    title: string;
   }>;
 
   // Formations
   formations?: Array<{
-    title: string;
     description?: string;
+    endDate?: string;
     institution?: string;
     location?: string;
-    startDate?: string;
-    endDate?: string;
     skills?: Array<{ name: string; order?: number }>;
-  }>;
-
-  // Languages
-  languages?: Array<{
-    name: string; // Nom de la langue en français
-    value: string; // Code ISO 639-1 de la langue
-    level?: string;
+    startDate?: string;
+    title: string;
   }>;
 
   interests?: Array<{ name: string }>;
+
+  // Languages
+  languages?: Array<{
+    // Code ISO 639-1 de la langue
+    level?: string;
+    name: string;
+    // Nom de la langue en français
+    value: string;
+  }>;
+
+  //Nudges
+  nudges?: Array<{ name: string; order?: number }>;
+
+  schemaVersion: number;
+
+  //Skills
+  skills?: Array<{ name: string; order?: number }>;
 
   // contracts?: Array<{ name: string }>;
 }

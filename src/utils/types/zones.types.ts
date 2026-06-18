@@ -3,37 +3,42 @@ import { FilterConstant } from './filters.types';
 import { SfLocalBranchName } from './local-branches.types';
 
 export enum ZoneName {
-  IDF = 'PARIS', // TO CONVERT TO IDF IN DATABASE AND METABASE IN FUTURE
-  AURA = 'LYON', // TO CONVERT TO AURA IN DATABASE AND METABASE IN FUTURE
-  NORD = 'LILLE', // TO CONVERT TO NORD IN DATABASE AND METABASE IN FUTURE
-  LORIENT = 'LORIENT', // TO _MOVE_ INTO BRETAGNE IN DATABASE AND METABASE IN FUTURE
-  BRETAGNE = 'RENNES', // TO CONVERT INTO BRETAGNE IN DATABASE AND METABASE IN FUTURE
-  SUDOUEST = 'SUDOUEST',
+  // TO CONVERT TO IDF IN DATABASE AND METABASE IN FUTURE
+  AURA = 'LYON',
+  // TO _MOVE_ INTO BRETAGNE IN DATABASE AND METABASE IN FUTURE
+  BRETAGNE = 'RENNES',
   HZ = 'HORS ZONE',
+  IDF = 'PARIS',
+  // TO CONVERT TO NORD IN DATABASE AND METABASE IN FUTURE
+  LORIENT = 'LORIENT',
+  // TO CONVERT TO AURA IN DATABASE AND METABASE IN FUTURE
+  NORD = 'LILLE',
+  // TO CONVERT INTO BRETAGNE IN DATABASE AND METABASE IN FUTURE
+  SUDOUEST = 'SUDOUEST',
 }
 
 export enum ZoneSuffix {
-  PARIS = 'PARIS',
-  LYON = 'LYON',
+  HZ = 'HZ',
   LILLE = 'LILLE',
   LORIENT = 'LORIENT',
+  LYON = 'LYON',
+  PARIS = 'PARIS',
   RENNES = 'RENNES',
   SUDOUEST = 'SUDOUEST',
-  HZ = 'HZ',
 }
 
 export enum StaffContactGroup {
-  MAIN = 'main',
-  COMPANY = 'company',
   CANDIDATE = 'candidate',
+  COMPANY = 'company',
+  MAIN = 'main',
 }
 
 export type InternalStaffContact = {
-  name: string;
   email: string;
-  img: string;
-  slackEmail: string;
   entourageProEmail: string;
+  img: string;
+  name: string;
+  slackEmail: string;
 };
 
 export type PublicStaffContact = Omit<
@@ -44,10 +49,10 @@ export type PublicStaffContact = Omit<
 export type Zone = {
   name: ZoneName;
   sfLocalBranchNames: SfLocalBranchName[];
-  suffix: ZoneSuffix;
   staffContact: {
     [key in StaffContactGroup]: InternalStaffContact;
   };
+  suffix: ZoneSuffix;
 };
 
 export const ZoneNameFilters: FilterConstant<ZoneName>[] = [

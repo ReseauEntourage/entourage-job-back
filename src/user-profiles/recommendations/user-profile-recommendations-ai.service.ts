@@ -44,18 +44,18 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
   }
 
   async findBySimilarity(params: {
-    userId: string;
-    rolesToFind: UserRole[];
-    configVersionProfile: string;
+    annPoolSize?: number;
     configVersionNeeds: string;
-    weightProfile: number;
-    weightNeeds: number;
-    weightActivity: number;
-    weightLocationCompatibility: number;
-    poolSize: number;
+    configVersionProfile: string;
     excludeUserIds?: string[];
     filterByAvailability?: boolean;
-    annPoolSize?: number;
+    poolSize: number;
+    rolesToFind: UserRole[];
+    userId: string;
+    weightActivity: number;
+    weightLocationCompatibility: number;
+    weightNeeds: number;
+    weightProfile: number;
   }): Promise<UserProfileScoringResult[]> {
     const {
       userId,
@@ -119,10 +119,10 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     userId: string,
     configVersionProfile: string,
     configVersionNeeds: string
-  ): Promise<{ profileVector: string | null; needsVector: string | null }> {
+  ): Promise<{ needsVector: string | null; profileVector: string | null }> {
     const rows = await this.userProfileRecommandationModel.sequelize.query<{
-      type: string;
       embedding: string;
+      type: string;
     }>(
       `SELECT type, embedding::text AS embedding
        FROM "UserProfileEmbeddings"

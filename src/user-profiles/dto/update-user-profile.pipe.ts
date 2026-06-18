@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import {
   ArgumentMetadata,
   BadRequestException,
@@ -7,13 +6,14 @@ import {
   Logger,
   PipeTransform,
   Scope,
+  type Type,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Permissions } from 'src/users/users.types';
 import { hasPermission } from 'src/users/users.utils';
-import { RequestWithUser } from 'src/utils/types';
+import type { RequestWithUser } from 'src/utils/types';
 import { UpdateCandidateUserProfileDto } from './update-candidate-user-profile.dto';
 import { UpdateCoachUserProfileDto } from './update-coach-user-profile.dto';
 
@@ -29,8 +29,8 @@ export class UpdateUserProfilePipe
 
   constructor(@Inject(REQUEST) private request: RequestWithUser) {}
 
-  private static toValidate(metatype: Function): boolean {
-    const types: Function[] = [String, Boolean, Number, Array];
+  private static toValidate(metatype: Type<unknown>): boolean {
+    const types: Array<Type<unknown>> = [String, Boolean, Number, Array];
     return !types.includes(metatype);
   }
 

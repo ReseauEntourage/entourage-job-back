@@ -1,22 +1,29 @@
 export enum SfLocalBranchName {
-  NATIONAL = 'National',
-  PARIS = 'Paris',
-  LILLE = 'Lille',
-  LYON = 'Lyon',
-  RENNES = 'Rennes',
-  SEINE_SAINT_DENIS = 'Seine-Saint-Denis', // deprecated
-  HAUTS_DE_SEINE = 'Hauts-de-Seine', // deprecated
-  MARSEILLE = 'Marseille', // deprecated
+  AUTRE_REGION = 'Autre région',
+  BORDEAUX = 'Bordeaux',
+  // deprecated
+  BRETAGNE = 'Bretagne',
+  GRENOBLE = 'Grenoble',
+  // deprecated
+  HAUTS_DE_SEINE = 'Hauts-de-Seine',
+  // deprecated
   HZ = 'Hors zone',
   IDF = 'IDF',
+  LILLE = 'Lille',
   LORIENT = 'Lorient',
+  LYON = 'Lyon',
+  // deprecated
+  MARSEILLE = 'Marseille',
   NANTES = 'Nantes',
-  BORDEAUX = 'Bordeaux',
-  AUTRE_REGION = 'Autre région', // deprecated
-  BRETAGNE = 'Bretagne', // deprecated
+  NATIONAL = 'National',
+  PARIS = 'Paris',
+  RENNES = 'Rennes',
+  // deprecated
+  ROUBAIX = 'Roubaix',
+  // deprecated
   SAINT_ETIENNE = 'Saint-Étienne', // deprecated
-  TOULOUSE = 'Toulouse', // deprecated
   SAINT_MALO = 'Saint-Malo',
-  GRENOBLE = 'Grenoble', // deprecated
-  ROUBAIX = 'Roubaix', // deprecated
+  SEINE_SAINT_DENIS = 'Seine-Saint-Denis',
+  // deprecated
+  TOULOUSE = 'Toulouse', // deprecated
 }

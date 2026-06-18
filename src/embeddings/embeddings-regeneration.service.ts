@@ -6,17 +6,17 @@ import { Jobs } from 'src/queues/queues.types';
 import { EMBEDDING_CONFIG, EmbeddingType } from './embedding.config';
 
 export interface RegenerationStats {
+  dryRun: boolean;
+  errors: number;
   totalUsers: number;
   usersEnqueued: number;
-  errors: number;
-  dryRun: boolean;
 }
 
 export interface RegenerationOptions {
-  embeddingType?: EmbeddingType | 'all';
-  dryRun?: boolean;
   batchSize?: number;
   delayBetweenBatches?: number;
+  dryRun?: boolean;
+  embeddingType?: EmbeddingType | 'all';
 }
 
 @Injectable()
@@ -186,17 +186,17 @@ export class EmbeddingsRegenerationService {
    * @returns Statistiques détaillées par type d'embedding
    */
   async getEmbeddingsStats(): Promise<{
-    profile: {
-      total: number;
-      upToDate: number;
-      outdated: number;
-      missing: number;
-    };
     needs: {
+      missing: number;
+      outdated: number;
       total: number;
       upToDate: number;
-      outdated: number;
+    };
+    profile: {
       missing: number;
+      outdated: number;
+      total: number;
+      upToDate: number;
     };
   }> {
     const profileStats = await this.getStatsForType('profile');
@@ -233,10 +233,10 @@ export class EmbeddingsRegenerationService {
     `;
 
     const [result] = await this.sequelize.query<{
+      missing: string;
+      outdated: string;
       total: string;
       up_to_date: string;
-      outdated: string;
-      missing: string;
     }>(query, {
       replacements: { type, targetVersion },
       type: QueryTypes.SELECT,

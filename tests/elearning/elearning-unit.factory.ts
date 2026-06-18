@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -38,16 +37,16 @@ export class ElearningUnitFactory implements Factory<ElearningUnit> {
   async create(
     props: Partial<ElearningUnit> = {},
     options: {
-      roles?: UserRole[];
       questions?: Array<{
+        answers?: Array<{
+          explanation?: string;
+          isCorrect?: boolean;
+          label?: string;
+        }>;
         label?: string;
         order?: number;
-        answers?: Array<{
-          label?: string;
-          isCorrect?: boolean;
-          explanation?: string;
-        }>;
       }>;
+      roles?: UserRole[];
     } = {}
   ): Promise<ElearningUnit> {
     const unitData = this.generateUnit(props);

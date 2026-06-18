@@ -177,8 +177,8 @@ export function getPostalCodeFromDepartment(department: Department): string {
 function isLeadRecordTypeProps<T extends LeadRecordType>(
   recordType: LeadRecordType,
   expectedValue: T,
-  props: AnyCantFix
-): props is LeadProp<T> {
+  _props: AnyCantFix
+): _props is LeadProp<T> {
   return recordType === expectedValue;
 }
 

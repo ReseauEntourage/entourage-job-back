@@ -56,8 +56,6 @@ export const ErrorCodes = {
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 export interface SalesforceError {
-  errorCode: ErrorCode;
-  message: string;
   duplicateResult: {
     matchResults: {
       matchRecords: {
@@ -67,6 +65,8 @@ export interface SalesforceError {
       }[];
     }[];
   };
+  errorCode: ErrorCode;
+  message: string;
 }
 
 export const ObjectNames = {
@@ -327,10 +327,10 @@ export const LeadBusinessSectors: {
 } as const;
 
 export enum Casquette {
+  CANDIDAT_COUP_DE_POUCE = 'PRO Candidat Coup de pouce',
+  COACH_COUP_DE_POUCE = 'PRO Coach Coup de pouce',
   CONTACT_ENTREPRISE_FINANCEUR = 'Contact Entreprise/Financeur',
   PRESCRIPTEUR = 'PRO Prescripteur',
-  COACH_COUP_DE_POUCE = 'PRO Coach Coup de pouce',
-  CANDIDAT_COUP_DE_POUCE = 'PRO Candidat Coup de pouce',
 }
 
 export interface SalesforceBinome {
@@ -338,62 +338,62 @@ export interface SalesforceBinome {
 }
 
 export interface SalesforceTask {
-  Id?: string;
   ActivityDate: Date;
-  Status: 'Completed' | 'Open';
-  WhoId: string;
-  Bin_me__c: string;
-  Subject: string;
-  OwnerId: string;
-  ID_Externe__c: string;
   Antenne__c: string;
+  Bin_me__c: string;
+  ID_Externe__c: string;
+  Id?: string;
+  OwnerId: string;
+  Status: 'Completed' | 'Open';
+  Subject: string;
+  WhoId: string;
 }
 
 export interface AccountProps {
-  name: string;
-  businessSectors?: BusinessSector[];
   address?: string;
+  businessSectors?: BusinessSector[];
   department?: Department;
   mainAccountSfId?: string;
-  phone?: string;
+  name: string;
   organizationType?: 'Entreprise';
+  phone?: string;
 }
 
 export interface SalesforceAccount {
-  Id?: string;
-  Name: string;
-  M_tiers_LinkedOut__c: string;
-  BillingStreet: string;
+  Antenne__c: string;
   BillingCity: string;
   BillingPostalCode: string;
+  BillingStreet: string;
+  Id?: string;
+  M_tiers_LinkedOut__c: string;
+  Name: string;
+  ParentId: string;
+  Phone?: string;
   RecordTypeId: AccountRecordType;
   Reseaux__c: 'LinkedOut';
-  Antenne__c: string;
   Type_org__c?: 'Entreprise';
-  Phone?: string;
-  ParentId: string;
 }
 
 export interface SalesforceCampaign {
-  Id?: string;
-  Name?: string;
-  Description?: string;
-  Antenne__c?: string;
-  StartDate?: string;
-  Heure_de_d_but__c?: string;
-  EndDate?: string;
-  Heure_de_fin__c?: string;
   Adresse_de_l_v_nement__c?: string;
-  Code_postal__c?: string;
-  Type_evenement__c?: string;
-  Nombre_d_inscrits__c?: number;
-  Nombre_de_participants__c?: number;
-  En_ligne__c?: string;
-  MeetingLink__c?: string;
+  Antenne__c?: string;
   CampaignMembers?: {
     records: Partial<SalesforceCampaignMember>[];
   };
+  Code_postal__c?: string;
+  Description?: string;
+  En_ligne__c?: string;
+  EndDate?: string;
+  Heure_de_d_but__c?: string;
+  Heure_de_fin__c?: string;
+  Id?: string;
+  MeetingLink__c?: string;
+  Name?: string;
+  Nombre_d_inscrits__c?: number;
+  Nombre_de_participants__c?: number;
   Public_sensibilis__c?: string;
+  StartDate?: string;
+  Type_evenement__c?: string;
 }
 
 export enum SalesforceCampaignStatus {
@@ -402,318 +402,320 @@ export enum SalesforceCampaignStatus {
 }
 
 export interface SalesforceCampaignMember {
-  Id?: string; // never used, only for TS purpose
-  LeadId?: string;
-  ContactId?: string;
   CampaignId: string;
-  Status: string; // Inscrit
+  ContactId?: string;
+  // Inscrit
   Email?: string;
+  Id?: string;
+  // never used, only for TS purpose
+  LeadId?: string;
+  Status: string;
 }
 
 export interface SalesforceUser {
-  Id?: string;
   Email: string;
+  Id?: string;
 }
 
 export interface ContactProps {
-  id?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  birthDate?: Date;
-  position?: string;
-  department?: Department;
-  accountSfId?: string;
-  casquettes?: Casquette[];
-  nationality?: Nationality;
   accommodation?: CandidateAccommodation;
+  accountSfId?: string;
+  birthDate?: Date;
+  casquettes?: Casquette[];
+  department?: Department;
+  email?: string;
+  firstName?: string;
+  gender?: CandidateGender;
   hasSocialWorker?: YesNoJNSPRValue;
+  id?: string;
+  jobSearchDuration?: JobSearchDuration;
+  lastName?: string;
+  nationality?: Nationality;
+  phone?: string;
+  position?: string;
+  refererId?: string;
   resources?: CandidateResource;
   studiesLevel?: StudiesLevel;
   workingExperience?: WorkingExperience;
-  jobSearchDuration?: JobSearchDuration;
-  gender?: CandidateGender;
-  refererId?: string;
 }
 
 export interface SalesforceContact {
+  Accompagnement_social_O_N__c: string;
+  AccountId: string;
+  Ann_es_d_exp_rience_professionnelle__c: string;
+  Antenne__c?: string;
+  Casquettes_r_les__c: string;
+  Date_de_naissance__c?: Date;
+  Dur_e_de_recherche_d_emploi__c: string;
+  Email: string;
+  FirstName: string;
+  Fonction?: string;
+  Genre__c: string;
+  ID_App_Entourage_Pro__c?: string;
   Id?: string;
   LastName: string;
-  FirstName: string;
-  Date_de_naissance__c?: Date;
-  Email: string;
-  Phone: string;
-  Title: string;
-  AccountId: string;
-  Casquettes_r_les__c: string;
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: ContactRecordType;
-  Antenne__c?: string;
   MailingPostalCode?: string;
-  ID_App_Entourage_Pro__c?: string;
-  Source__c: 'Lead entrant';
   Nationalit__c: string;
-  Accompagnement_social_O_N__c: string;
+  Phone: string;
   Plus_haut_niveau_de_formation_attein__c: string;
-  Ann_es_d_exp_rience_professionnelle__c: string;
-  Dur_e_de_recherche_d_emploi__c: string;
+  RecordTypeId: ContactRecordType;
+  Reseaux__c: 'LinkedOut';
   Situation_d_h_bergement__c: string;
-  Type_de_ressources__c?: string;
-  Genre__c: string;
+  Source__c: 'Lead entrant';
   TS_prescripteur__c?: string;
-  Fonction?: string;
+  Title: string;
+  Type_de_ressources__c?: string;
 }
 
 export interface CompanyLeadProps {
-  firstName: string;
-  lastName: string;
-  company: string;
-  position?: string;
-  email: string;
-  phone?: string;
   approach?: CompanyApproach;
-  zone: CompanyZone;
-  heardAbout?: HeardAboutValue;
   autreSource?: 'Formulaire_Contact_Candidat';
+  company: string;
+  email: string;
+  firstName: string;
+  heardAbout?: HeardAboutValue;
+  lastName: string;
   message?: string;
   newsletter?: 'Newsletter LinkedOut';
+  phone?: string;
+  position?: string;
+  zone: CompanyZone;
 }
 
 export interface CompanySalesforceLead {
-  Id?: string;
-  OwnerId?: string;
-  LastName: string;
-  FirstName: string;
-  Company: string;
-  Title: string;
-  Email: string;
-  Phone?: string;
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: LeadRecordType;
-  Antenne__c: string;
-  Votre_demarche__c: string;
-  Comment_vous_nous_avez_connu__c: string;
-  Source__c: 'Lead entrant';
-  Autre_source_LinkedOut__c?: 'Formulaire_Contact_Candidat';
-  Message_For__c?: string;
   Abonnements_Plezi__c?: 'Newsletter LinkedOut';
+  Antenne__c: string;
+  Autre_source_LinkedOut__c?: 'Formulaire_Contact_Candidat';
+  Comment_vous_nous_avez_connu__c: string;
+  Company: string;
+  Email: string;
+  FirstName: string;
+  Id?: string;
+  LastName: string;
+  Message_For__c?: string;
+  OwnerId?: string;
+  Phone?: string;
+  RecordTypeId: LeadRecordType;
+  Reseaux__c: 'LinkedOut';
+  Source__c: 'Lead entrant';
+  Title: string;
+  Votre_demarche__c: string;
 }
 
 export interface CandidateLeadProps {
-  firstName: string;
-  lastName: string;
-  helpWith?: CandidateHelpWithValue[];
-  gender?: CandidateGender;
-  birthDate?: Date;
-  address?: string;
-  postalCode?: string;
-  city?: string;
-  phone: string;
-  email?: string;
-  registeredUnemploymentOffice?: CandidateYesNoValue;
-  administrativeSituation?: CandidateAdministrativeSituation;
-  workingRight?: CandidateYesNoNSPPValue;
   accommodation?: CandidateAccommodation;
-  professionalSituation?: CandidateProfessionalSituation;
-  resources?: CandidateResource;
-  domiciliation?: CandidateYesNoValue;
-  socialSecurity?: CandidateYesNoValue;
-  handicapped?: CandidateYesNoValue;
+  address?: string;
+  administrativeSituation?: CandidateAdministrativeSituation;
+  associationSfId?: string;
+  autreSource?: 'Formulaire_Sourcing_Page_Travailler';
   bankAccount?: CandidateYesNoValue;
+  birthDate?: Date;
   businessSectors?: BusinessSectorValue[];
+  city?: string;
   description?: string;
   diagnostic?: string;
-  zone: CompanyZone;
-  workerSfIdAsProspect?: string;
-  workerSfIdAsContact?: string;
-  associationSfId?: string;
-  heardAbout?: HeardAboutValue;
-  location?: string;
-  autreSource?: 'Formulaire_Sourcing_Page_Travailler';
-  tsPrescripteur?: string;
-  nationality?: Nationality;
+  domiciliation?: CandidateYesNoValue;
+  email?: string;
+  firstName: string;
+  gender?: CandidateGender;
+  handicapped?: CandidateYesNoValue;
   hasSocialWorker?: YesNoJNSPRValue;
-  studiesLevel?: StudiesLevel;
-  workingExperience?: WorkingExperience;
+  heardAbout?: HeardAboutValue;
+  helpWith?: CandidateHelpWithValue[];
   jobSearchDuration?: JobSearchDuration;
+  lastName: string;
+  location?: string;
+  nationality?: Nationality;
+  phone: string;
+  postalCode?: string;
+  professionalSituation?: CandidateProfessionalSituation;
+  registeredUnemploymentOffice?: CandidateYesNoValue;
+  resources?: CandidateResource;
+  socialSecurity?: CandidateYesNoValue;
+  studiesLevel?: StudiesLevel;
+  tsPrescripteur?: string;
+  workerSfIdAsContact?: string;
+  workerSfIdAsProspect?: string;
+  workingExperience?: WorkingExperience;
+  workingRight?: CandidateYesNoNSPPValue;
+  zone: CompanyZone;
 }
 
 export interface CoachLeadProps {
+  company: string;
+  email: string;
   firstName: string;
   lastName: string;
-  email: string;
   phone: string;
-  company: string;
   position: string;
   zone: CompanyZone;
 }
 
 export interface WorkerLeadProps {
-  firstName: string;
-  lastName: string;
   company: string;
-  position?: string;
-  email: string;
-  phone: string;
-  heardAbout: HeardAboutValue;
   contactWithCoach: boolean;
+  email: string;
+  firstName: string;
+  heardAbout: HeardAboutValue;
+  lastName: string;
+  phone: string;
+  position?: string;
   zone: CompanyZone;
 }
 
 export interface CandidateInscriptionLeadProps {
   birthdate: Date;
+  department: Department;
   email: string;
   firstName: string;
   heardAbout?: HeardAboutValue;
   infoCo: string;
   lastName: string;
-  department: Department;
   phone: string;
-  workingRight: CandidateYesNoNSPPValue;
   tsPrescripteur?: string;
+  workingRight: CandidateYesNoNSPPValue;
 }
 
 export interface CandidateAndWorkerLeadProps {
+  accommodation: CandidateAccommodation;
+  address?: string;
+  administrativeSituation?: CandidateAdministrativeSituation;
+  bankAccount: CandidateYesNoValue;
+  birthDate?: Date;
+  businessSectors?: BusinessSectorValue[];
+  city?: string;
+  contactWithCoach?: boolean;
+  description: string;
+  diagnostic?: string;
+  domiciliation: CandidateYesNoValue;
+  email: string;
+  firstName: string;
+  gender: CandidateGender;
+  handicapped?: CandidateYesNoValue;
+  heardAbout: HeardAboutValue;
+  helpWith: CandidateHelpWithValue[];
+  lastName: string;
+  phone: string;
+  postalCode: string;
+  professionalSituation: CandidateProfessionalSituation;
+  registeredUnemploymentOffice: CandidateYesNoValue;
+  resources?: CandidateResource;
+  socialSecurity: CandidateYesNoValue;
+  structure: string;
+  tsPrescripteur?: string;
+  workerEmail: string;
   workerFirstName: string;
   workerLastName: string;
-  structure: string;
-  workerPosition?: string;
-  workerEmail: string;
   workerPhone: string;
-  firstName: string;
-  lastName: string;
-  helpWith: CandidateHelpWithValue[];
-  gender: CandidateGender;
-  birthDate?: Date;
-  address?: string;
-  postalCode: string;
-  city?: string;
-  phone: string;
-  email: string;
-  registeredUnemploymentOffice: CandidateYesNoValue;
-  administrativeSituation?: CandidateAdministrativeSituation;
+  workerPosition?: string;
   workingRight: CandidateYesNoNSPPValue;
-  accommodation: CandidateAccommodation;
-  professionalSituation: CandidateProfessionalSituation;
-  resources?: CandidateResource;
-  domiciliation: CandidateYesNoValue;
-  socialSecurity: CandidateYesNoValue;
-  handicapped?: CandidateYesNoValue;
-  bankAccount: CandidateYesNoValue;
-  businessSectors?: BusinessSectorValue[];
-  description: string;
-  heardAbout: HeardAboutValue;
-  diagnostic?: string;
-  contactWithCoach?: boolean;
-  tsPrescripteur?: string;
 }
 
 export interface CandidateSalesforceLead {
-  Id?: string;
-  OwnerId?: string;
-  LastName: string;
-  FirstName: string;
-  Email?: string;
-  Phone: string;
-  Genre__c: CandidateGender | null;
-  Date_de_naissance__c?: Date;
-  Situation_administrative__c?: string;
-  Droit_de_travailler_en_France__c: string;
-  Situation_hebergement__c: string;
-  Domiciliation__c: string;
-  Securite_Sociale__c: string;
-  Compte_bancaire__c: string;
-  Diagnostic_social_par_le_prescripteur__c?: string;
-  Association_prescriptrice__c: string;
-  TS_Prescripteur_Contact__c: string;
-  Prospect__c: string;
-  PostalCode?: string;
-  Street?: string;
-  City?: string;
-  Accompagnement_social__c: string;
-  Situation_Professionnelle__c: string;
-  Inscrit_au_Pole_Emploi__c: string;
-  RQTH__c?: string;
-  Familles_de_m_tiers__c?: string;
-  Message_For__c: string;
-  Type_de_ressources__c?: string;
-  Company: 'Candidats Entourage Pro';
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: LeadRecordType;
-  Antenne__c: string;
-  Source__c: 'Lead entrant';
-  Autre_source_LinkedOut__c: 'Formulaire_Sourcing_Page_Travailler';
-  TS_du_Candidat__c: string;
-  Comment_vous_nous_avez_connu__c: string;
-  Nationalite__c: string;
   Accompagnement_social_O_N__c: string;
-  Plus_haut_niveau_de_formation_atteint__c: string;
-  annees_d_experiences_professionnelles__c: string;
+  Accompagnement_social__c: string;
+  Antenne__c: string;
+  Association_prescriptrice__c: string;
+  Autre_source_LinkedOut__c: 'Formulaire_Sourcing_Page_Travailler';
+  City?: string;
+  Comment_vous_nous_avez_connu__c: string;
+  Company: 'Candidats Entourage Pro';
+  Compte_bancaire__c: string;
+  Date_de_naissance__c?: Date;
+  Diagnostic_social_par_le_prescripteur__c?: string;
+  Domiciliation__c: string;
+  Droit_de_travailler_en_France__c: string;
   Duree_de_recherche_d_emploi__c: string;
+  Email?: string;
+  Familles_de_m_tiers__c?: string;
+  FirstName: string;
+  Genre__c: CandidateGender | null;
+  Id?: string;
+  Inscrit_au_Pole_Emploi__c: string;
+  LastName: string;
+  Message_For__c: string;
+  Nationalite__c: string;
+  OwnerId?: string;
+  Phone: string;
+  Plus_haut_niveau_de_formation_atteint__c: string;
+  PostalCode?: string;
+  Prospect__c: string;
+  RQTH__c?: string;
+  RecordTypeId: LeadRecordType;
+  Reseaux__c: 'LinkedOut';
+  Securite_Sociale__c: string;
+  Situation_Professionnelle__c: string;
+  Situation_administrative__c?: string;
+  Situation_hebergement__c: string;
+  Source__c: 'Lead entrant';
+  Street?: string;
+  TS_Prescripteur_Contact__c: string;
+  TS_du_Candidat__c: string;
+  Type_de_ressources__c?: string;
+  annees_d_experiences_professionnelles__c: string;
 }
 
 export interface WorkerSalesforceLead {
-  Id?: string;
-  OwnerId?: string;
-  LastName: string;
-  FirstName: string;
-  Title?: string;
-  Email: string;
-  Phone: string;
-  Company: string;
-  Comment_vous_nous_avez_connu__c: string;
-  TS_Mettre_en_relation_Coach__c: boolean;
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: LeadRecordType;
-  Antenne__c: string;
-  Source__c: 'Lead entrant';
-  Nationalit__c?: string;
   Accompagnement_social_O_N__c?: string;
-  Plus_haut_niveau_de_formation_attein__c?: string;
   Ann_es_d_exp_rience_professionnelle__c?: string;
+  Antenne__c: string;
+  Comment_vous_nous_avez_connu__c: string;
+  Company: string;
   Dur_e_de_recherche_d_emploi__c?: string;
-  Type_de_ressources__c?: string;
+  Email: string;
+  FirstName: string;
+  Id?: string;
+  LastName: string;
+  Nationalit__c?: string;
+  OwnerId?: string;
+  Phone: string;
+  Plus_haut_niveau_de_formation_attein__c?: string;
+  RecordTypeId: LeadRecordType;
+  Reseaux__c: 'LinkedOut';
   Situation_d_h_bergement__c?: string;
+  Source__c: 'Lead entrant';
+  TS_Mettre_en_relation_Coach__c: boolean;
+  Title?: string;
+  Type_de_ressources__c?: string;
 }
 
 export interface CoachSalesforceLead {
-  Id?: string;
-  OwnerId?: string;
-  LastName: string;
-  FirstName: string;
-  Company: 'Coachs Entourage Pro' | string;
-  Title: string;
-  Email: string;
-  Phone?: string;
-  Reseaux__c: 'LinkedOut';
-  RecordTypeId: LeadRecordType;
   Antenne__c: string;
-  Source__c: 'Lead entrant';
+  Company: 'Coachs Entourage Pro' | string;
+  Email: string;
+  FirstName: string;
   Genre__c: CandidateGender | null;
+  Id?: string;
+  LastName: string;
+  OwnerId?: string;
+  Phone?: string;
+  RecordTypeId: LeadRecordType;
+  Reseaux__c: 'LinkedOut';
+  Source__c: 'Lead entrant';
+  Title: string;
 }
 
 export interface UserProps {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  department: Department;
-  role: RegistrableUserRole;
-  birthDate: Date;
-  workingRight?: CandidateYesNoNSPPValue;
-  campaign?: string;
-  nationality?: Nationality;
   accommodation?: CandidateAccommodation;
+  birthDate: Date;
+  campaign?: string;
+  department: Department;
+  email: string;
+  firstName: string;
+  gender?: CandidateGender;
   hasSocialWorker?: YesNoJNSPRValue;
+  id: string;
+  isCompanyAdmin?: boolean;
+  jobSearchDuration?: JobSearchDuration;
+  lastName: string;
+  nationality?: Nationality;
+  phone: string;
+  position?: string;
+  refererEmail?: string;
   resources?: CandidateResource;
+  role: RegistrableUserRole;
+  structure?: string;
   studiesLevel?: StudiesLevel;
   workingExperience?: WorkingExperience;
-  jobSearchDuration?: JobSearchDuration;
-  gender?: CandidateGender;
-  structure?: string;
-  refererEmail?: string;
-  isCompanyAdmin?: boolean;
-  position?: string;
+  workingRight?: CandidateYesNoNSPPValue;
 }

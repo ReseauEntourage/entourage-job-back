@@ -12,7 +12,7 @@ import {
   Table,
   Model,
 } from 'sequelize-typescript';
-import { DocumentType } from '../read-documents.types';
+import type { DocumentType } from '../read-documents.types';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'ReadDocuments' })

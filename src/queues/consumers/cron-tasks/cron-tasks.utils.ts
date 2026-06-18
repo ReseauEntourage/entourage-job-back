@@ -1,7 +1,7 @@
 export type DetailsCounts = {
-  total: number;
-  success: number;
   failure: number;
+  success: number;
+  total: number;
 };
 
 export type SettledFailure = { itemId: string | number; reason: unknown };
@@ -11,9 +11,9 @@ export function collectSettledResults<T extends { id?: string | number }>(
   results: Array<PromiseSettledResult<unknown>>,
   onFailure: (itemId: string | number, reason: unknown) => void
 ): {
-  successIds: Array<string | number>;
   failures: SettledFailure[];
   succeeded: boolean;
+  successIds: Array<string | number>;
 } {
   const successIds: Array<string | number> = [];
   const failures: SettledFailure[] = [];

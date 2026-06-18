@@ -1,8 +1,8 @@
 import { FilterConstant } from 'src/utils/types';
 
 export enum ContactTypeEnum {
-  REMOTE = 'remote',
   PHYSICAL = 'physical',
+  REMOTE = 'remote',
 }
 
 export type HelpValue = 'tips' | 'interview' | 'cv' | 'network';

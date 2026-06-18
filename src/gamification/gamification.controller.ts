@@ -12,7 +12,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public, UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
-import { Permissions, UserRole } from 'src/users/users.types';
+import { Permissions, type UserRole } from 'src/users/users.types';
 import { GamificationService } from './gamification.service';
 
 @ApiTags('Gamification')

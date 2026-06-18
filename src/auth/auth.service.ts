@@ -109,7 +109,7 @@ export class AuthService {
         secret: `${process.env.JWT_SECRET}`,
         ignoreExpiration: ignoreExpiration,
       });
-    } catch (err) {
+    } catch {
       return false;
     }
   }

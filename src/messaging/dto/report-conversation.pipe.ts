@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import {
   ArgumentMetadata,
   BadRequestException,
   PipeTransform,
+  type Type,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -12,8 +12,14 @@ export class ReportAbusePipe
   implements
     PipeTransform<ReportConversationDto, Promise<ReportConversationDto>>
 {
-  private static toValidate(metatype: Function): boolean {
-    const types: Function[] = [String, Boolean, Number, Array, Object];
+  private static toValidate(metatype: Type<unknown>): boolean {
+    const types: Array<Type<unknown>> = [
+      String,
+      Boolean,
+      Number,
+      Array,
+      Object,
+    ];
     return !types.includes(metatype);
   }
 

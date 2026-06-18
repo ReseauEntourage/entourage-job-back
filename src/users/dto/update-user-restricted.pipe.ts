@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import {
   ArgumentMetadata,
   BadRequestException,
@@ -6,13 +5,14 @@ import {
   Injectable,
   PipeTransform,
   Scope,
+  type Type,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { Permissions } from '../users.types';
 import { hasPermission } from '../users.utils';
-import { RequestWithUser } from 'src/utils/types';
+import type { RequestWithUser } from 'src/utils/types';
 import { UpdateUserRestrictedDto } from './update-user-restricted.dto';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -44,8 +44,14 @@ export class UpdateUserRestrictedPipe
     return value;
   }
 
-  private static toValidate(metatype: Function): boolean {
-    const types: Function[] = [String, Boolean, Number, Array, Object];
+  private static toValidate(metatype: Type<unknown>): boolean {
+    const types: Array<Type<unknown>> = [
+      String,
+      Boolean,
+      Number,
+      Array,
+      Object,
+    ];
     return !types.includes(metatype);
   }
 }

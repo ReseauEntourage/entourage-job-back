@@ -147,8 +147,8 @@ export function getCommonMembersFilterOptions(
   params: FilterParams<MemberFilterKey>,
   allBusinessSectors: BusinessSector[]
 ): {
-  replacements: FilterParams<MemberFilterKey>;
   filterOptions: string[];
+  replacements: FilterParams<MemberFilterKey>;
 } {
   const memberFilters = MemberFilters({
     businessSectors: allBusinessSectors,

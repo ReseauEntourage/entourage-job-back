@@ -14,7 +14,7 @@ import {
 } from 'sequelize-typescript';
 import {
   ACHIEVEMENTS_CONFIG,
-  AchievementType,
+  type AchievementType,
   AchievementTypes,
 } from 'src/gamification/config/achievements.config';
 import { User } from 'src/users/models';

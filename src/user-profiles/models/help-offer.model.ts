@@ -12,7 +12,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { HelpValue } from '../user-profiles.types';
+import type { HelpValue } from '../user-profiles.types';
 import { UserProfile } from './user-profile.model';
 
 @Table({ tableName: 'Help_Offers' })

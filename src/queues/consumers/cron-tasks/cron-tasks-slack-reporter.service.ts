@@ -45,10 +45,10 @@ export class CronTasksSlackReporterService {
   }
 
   private buildDetails(params: {
-    isSuccess: boolean;
-    statsLines: string[];
     failedItemIdsPreview?: string;
     failedReasonsPreview?: string;
+    isSuccess: boolean;
+    statsLines: string[];
   }): string {
     const {
       isSuccess,
@@ -72,10 +72,10 @@ export class CronTasksSlackReporterService {
   }
 
   private buildDetailsFromCounts(params: {
-    isSuccess: boolean;
     counts: DetailsCounts;
     failures: SettledFailure[];
     failuresPreviewLimit?: number;
+    isSuccess: boolean;
     skippedIds?: string[];
   }): string {
     const { isSuccess, counts, failures, failuresPreviewLimit, skippedIds } =

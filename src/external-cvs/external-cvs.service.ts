@@ -48,7 +48,7 @@ export class ExternalCvsService {
         where: { userProfileId: userProfile.id },
       });
       return uploadedCV.key;
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException();
     } finally {
       if (fs.existsSync(path)) {
@@ -73,7 +73,7 @@ export class ExternalCvsService {
         );
       }
       return null;
-    } catch (e) {
+    } catch {
       return null;
     }
   }

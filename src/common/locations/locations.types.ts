@@ -3,11 +3,11 @@ import { DepartmentCode } from 'src/utils/types/departments.types';
 import { ZoneName } from 'src/utils/types/zones.types';
 
 export type DepartmentType = {
-  name: string;
-  zone: ZoneName;
-  region: string;
   code: DepartmentCode;
   locative: string;
+  name: string;
+  region: string;
+  zone: ZoneName;
 };
 
 export const Departments: DepartmentType[] = [

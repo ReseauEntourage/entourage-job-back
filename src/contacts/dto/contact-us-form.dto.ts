@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import { HeardAboutValue } from 'src/contacts/contacts.types';
+import type { HeardAboutValue } from 'src/contacts/contacts.types';
 
 export class ContactUsFormDto {
   @ApiProperty()

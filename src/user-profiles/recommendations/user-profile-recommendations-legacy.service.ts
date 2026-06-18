@@ -84,18 +84,18 @@ export class UserProfileRecommendationsLegacyService extends UserProfileRecommen
     }
 
     interface UserRecommendationSQL {
-      id: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      department: Department;
-      currentJob: string;
-      role: UserRole;
-      lastConnection: Date;
-      createdAt: Date;
-      occupations: string;
       businessSectorIds: string;
+      createdAt: Date;
+      currentJob: string;
+      department: Department;
+      email: string;
+      firstName: string;
+      id: string;
+      lastConnection: Date;
+      lastName: string;
       nudgeIds: string;
+      occupations: string;
+      role: UserRole;
     }
 
     const sql = `

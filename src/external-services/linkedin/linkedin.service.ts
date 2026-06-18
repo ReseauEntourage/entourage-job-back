@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { UserProfileSharesService } from 'src/user-profile-shares/user-profile-shares.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
@@ -23,9 +23,9 @@ export interface LinkedInOAuthState {
 
 export interface LinkedInTokenData {
   accessToken: string;
-  refreshToken: string | null;
   expiresAt: Date;
   linkedinId: string;
+  refreshToken: string | null;
 }
 
 @Injectable()
@@ -190,7 +190,7 @@ export class LinkedInService {
         `Failed to share profile on LinkedIn for user ${sharingUserId} and profile ${profileUserId}`,
         error instanceof Error ? error.stack : JSON.stringify(error)
       );
-      if (axios.isAxiosError(error) && error.response?.status === 422) {
+      if (isAxiosError(error) && error.response?.status === 422) {
         throw new UnprocessableEntityException(
           "Unable to share profile on LinkedIn. Maybe due to LinkedIn's content policies or an issue with the profile URL."
         );

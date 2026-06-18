@@ -1,5 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
-
 // to be deleted soon
 
 // import { faker } from '@faker-js/faker';

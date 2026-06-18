@@ -9,7 +9,7 @@ import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
  * @param type - 'granted' for a new badge, 'renewed' for a renewal
  */
 export const generateAchievementSlackConfig = (
-  user: { firstName: string; lastName: string; email: string },
+  user: { email: string; firstName: string; lastName: string },
   achievement: { label: string },
   expireAt: Date,
   type: 'granted' | 'renewed'

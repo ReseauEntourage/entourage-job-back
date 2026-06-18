@@ -739,13 +739,13 @@ export class CronTasksProcessor extends WorkerHost {
     this.logger.log('Preparing recruitment alerts mails...');
     const recruitementAlerts = await this.recruitementAlertsService.findAll();
     const alertsToSend: {
+      alertId: string;
+      alertName: string;
       companyAdminEmail: string;
       firstName: string;
       newCandidatesCount: number;
-      alertName: string;
-      alertId: string;
-      zone: string;
       staffContact: User['staffContact'];
+      zone: string;
     }[] = [];
 
     for (const alert of recruitementAlerts) {

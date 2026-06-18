@@ -35,9 +35,9 @@ export const companiesWithUsers = ({
   businessSectorIds = [],
   asCompanyAdmin = false,
 }: {
-  departments?: string[];
-  businessSectorIds?: string[];
   asCompanyAdmin?: boolean;
+  businessSectorIds?: string[];
+  departments?: string[];
 }): IncludeOptions[] => [
   // Default includes
   ...companiesIncludes(departments, businessSectorIds),

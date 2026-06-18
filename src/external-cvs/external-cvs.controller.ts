@@ -50,7 +50,7 @@ export class ExternalCvsController {
       );
       const cvFile = await this.externalCvsService.findExternalCv(externalCvS3);
       return { url: cvFile };
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException();
     }
   }

@@ -203,16 +203,16 @@ export class UserProfilesService {
   }
 
   async findAll(query: {
-    role: UserRole[];
-    offset: number;
-    limit: number;
-    search: string;
-    nudgeIds: string[];
-    departments: string[];
     businessSectorIds: string[];
     contactTypes: ContactTypeEnum[];
-    isAvailable?: boolean;
+    departments: string[];
     hasSuperCoachBadge?: boolean;
+    isAvailable?: boolean;
+    limit: number;
+    nudgeIds: string[];
+    offset: number;
+    role: UserRole[];
+    search: string;
   }): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -371,16 +371,16 @@ export class UserProfilesService {
    */
   async findAllByRelevance(
     query: {
-      role: UserRole[];
-      offset: number;
-      limit: number;
-      search: string;
-      nudgeIds: string[];
-      departments: string[];
       businessSectorIds: string[];
       contactTypes: ContactTypeEnum[];
-      isAvailable?: boolean;
+      departments: string[];
       hasSuperCoachBadge?: boolean;
+      isAvailable?: boolean;
+      limit: number;
+      nudgeIds: string[];
+      offset: number;
+      role: UserRole[];
+      search: string;
     },
     requestingUserId: string
   ): Promise<PublicProfileDto[]> {
@@ -764,8 +764,8 @@ export class UserProfilesService {
   async findAllReferedCandidates(
     userId: string,
     query: {
-      offset: number;
       limit: number;
+      offset: number;
     }
   ): Promise<PublicProfileDto[]> {
     const { offset, limit } = query;
@@ -1294,7 +1294,7 @@ export class UserProfilesService {
         `${userId}.profile.jpg`
       );
       await this.updateHasPicture(userId, true);
-    } catch (error) {
+    } catch {
       uploadedImg = null;
     } finally {
       if (fs.existsSync(path)) {

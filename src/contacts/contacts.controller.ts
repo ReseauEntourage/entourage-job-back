@@ -16,7 +16,7 @@ import {
   ContactUsFormPipe,
 } from 'src/contacts/dto';
 import {
-  ContactStatus,
+  type ContactStatus,
   MailjetContactSource,
 } from 'src/external-services/mailjet/mailjet.types';
 import { isValidPhone } from 'src/utils/misc';

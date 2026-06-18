@@ -149,7 +149,7 @@ export class CompaniesController {
         throw new NotFoundException('Company not found for the user.');
       }
       await this.companiesService.uploadLogo(companyId, file);
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException();
     }
   }

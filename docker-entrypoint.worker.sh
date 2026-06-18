@@ -11,6 +11,9 @@ echo "- Current working directory: $(pwd)"
 echo "- Environment: $NODE_ENV"
 echo "==================================="
 
+echo "==> Installing dependencies..."
+pnpm install --frozen-lockfile
+
 echo "==> Starting the worker..."
 
 # Start the worker

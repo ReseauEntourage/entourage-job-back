@@ -4,8 +4,6 @@ import { Job, JobData } from 'src/queues/queues.types';
 
 @Injectable()
 export class QueuesServiceMock {
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-
   async addToWorkQueue<T extends Job>(
     _type: T,
     _data: JobData<T>,
@@ -32,5 +30,4 @@ export class QueuesServiceMock {
     // Mock implementation that doesn't actually perform any operation
     return { id: 'mock-job-id' };
   }
-  /* eslint-enable @typescript-eslint/no-unused-vars */
 }
