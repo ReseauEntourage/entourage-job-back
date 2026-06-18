@@ -11,6 +11,7 @@ services:
     volumes:
       - .:/home/node
       - worker_node_modules:/home/node/node_modules
+      - worker_dist:/home/node/dist
     env_file:
       - .env
     environment:
@@ -30,3 +31,4 @@ services:
 
 volumes:
   worker_node_modules:
+  worker_dist:

@@ -9,6 +9,9 @@
     "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "src/*": ["./src/*"],
       "tests/*": ["./tests/*"]
@@ -32,5 +35,5 @@
   "watchOptions": {
     "watchFile": "fixedPollingInterval"
   },
-  "exclude": ["node_modules", "dist", "eslint.config.mjs"]
+  "exclude": ["node_modules", "tests", "dist", "coverage", "eslint.config.mjs", ".lintstagedrc.js"]
 }

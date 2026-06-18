@@ -10,6 +10,7 @@ services:
     volumes:
       - .:/home/node
       - api_node_modules:/home/node/node_modules
+      - api_dist:/home/node/dist
     ports:
       - '3002:3002'
     env_file:
@@ -90,3 +91,4 @@ volumes:
   redis:
     driver: local
   api_node_modules:
+  api_dist:
