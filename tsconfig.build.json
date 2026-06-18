@@ -1,4 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "tests", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "exclude": ["node_modules", "tests", "dist", "coverage", "**/*spec.ts", "eslint.config.mjs"]
 }
