@@ -88,9 +88,9 @@ export const Genders = {
 export type Gender = (typeof Genders)[keyof typeof Genders];
 
 export interface MemberOptions {
+  businessSectorIds: { [Op.in]: string[] };
   role: { [Op.or]: UserRole[] };
   zone: { [Op.or]: ZoneName[] };
-  businessSectorIds: { [Op.in]: string[] };
 }
 
 export type MemberFilterKey = keyof MemberOptions;
@@ -125,9 +125,9 @@ export const MemberFilters = ({
 ];
 
 export enum OnboardingStatus {
-  NOT_STARTED = 'not_started',
-  IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
+  IN_PROGRESS = 'in_progress',
+  NOT_STARTED = 'not_started',
 }
 
 export const SequelizeUniqueConstraintError = 'SequelizeUniqueConstraintError';

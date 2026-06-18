@@ -7,16 +7,16 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { Department } from 'src/common/locations/locations.types';
+import type { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
-import {
+import type {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
 } from 'src/contacts/contacts.types';
 import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
-import { Gender, RegistrableUserRole } from 'src/users/users.types';
+import type { Gender, RegistrableUserRole } from 'src/users/users.types';
 
 export class CreateUserRegistrationDto extends PickType(User, [
   'firstName',

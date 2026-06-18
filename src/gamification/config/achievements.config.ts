@@ -27,16 +27,16 @@ export type AchievementType =
  * render progress bars and descriptive text without hardcoding any thresholds.
  */
 export interface CriterionStat {
+  /** The user's current value for this criterion. */
+  currentValue: number;
+  /** When true, values are displayed as percentages in the UI (e.g. "75%" instead of "75 / 100"). */
+  isPercentage?: boolean;
   /** Machine identifier, e.g. "responseRate" or "conversationCount". */
   key: string;
   /** Human-readable label displayed in the UI. */
   label: string;
-  /** The user's current value for this criterion. */
-  currentValue: number;
   /** The minimum value required to satisfy this criterion. */
   threshold: number;
-  /** When true, values are displayed as percentages in the UI (e.g. "75%" instead of "75 / 100"). */
-  isPercentage?: boolean;
 }
 
 /**
@@ -46,9 +46,9 @@ export interface CriterionStat {
  * to evaluate its criteria (e.g. `UserProfilesService` for profile completeness).
  */
 export interface AchievementContext {
+  messagingService: MessagingService;
   userId: string;
   userRole: UserRole;
-  messagingService: MessagingService;
 }
 
 /**
@@ -56,10 +56,10 @@ export interface AchievementContext {
  * Pre-fetched by `GamificationService` to avoid redundant DB queries.
  */
 export interface AchievementCallbackUser {
-  firstName: string;
   email: string;
-  zone: ZoneName | null;
+  firstName: string;
   staffContact: InternalStaffContact;
+  zone: ZoneName | null;
 }
 
 /**
@@ -72,14 +72,14 @@ export interface AchievementCallbackUser {
 export interface AchievementCallbackContext {
   /** The UUID of the UserAchievement record just created or renewed. */
   achievementId: string;
-  userId: string;
-  userRole: UserRole;
   /** The badge's expiration date — use as nextEvaluationDate in notifications. */
   expireAt: Date;
-  /** Pre-fetched user data available at callback time. */
-  user: AchievementCallbackUser;
   mailsService: MailsService;
   messagingService: MessagingService;
+  /** Pre-fetched user data available at callback time. */
+  user: AchievementCallbackUser;
+  userId: string;
+  userRole: UserRole;
 }
 
 /**
@@ -89,18 +89,14 @@ export interface AchievementCallbackContext {
  * Each entry in `ACHIEVEMENTS_CONFIG` must implement this interface.
  */
 export interface AchievementDefinition {
-  /** Unique identifier stored in the database. Must match the migration ENUM. */
-  type: AchievementType;
-  /** Human-readable label, used for display purposes. */
-  label: string;
-  /** How long the badge remains valid once granted, in months. */
-  durationMonths: number;
   /**
    * Evaluates whether the user currently meets the criteria for this achievement.
    * Called before granting and before each renewal attempt.
    * Must return `false` early if the user's role is not eligible.
    */
   checkEligibility: (ctx: AchievementContext) => Promise<boolean>;
+  /** How long the badge remains valid once granted, in months. */
+  durationMonths: number;
   /**
    * Optional. Returns the current progression stats for this achievement.
    *
@@ -117,6 +113,13 @@ export interface AchievementDefinition {
   getProgressionStats?: (
     ctx: AchievementContext
   ) => Promise<CriterionStat[] | null>;
+  /** Human-readable label, used for display purposes. */
+  label: string;
+  /**
+   * Optional. Called when a badge expires without being renewed.
+   * Typical use: notify the user their badge has lapsed.
+   */
+  onExpired?: (ctx: AchievementCallbackContext) => Promise<void>;
   /**
    * Optional. Called immediately after the badge is first granted.
    * Typical use: send a congratulations notification or email.
@@ -127,11 +130,8 @@ export interface AchievementDefinition {
    * Typical use: send a congratulations notification or email.
    */
   onRenewed?: (ctx: AchievementCallbackContext) => Promise<void>;
-  /**
-   * Optional. Called when a badge expires without being renewed.
-   * Typical use: notify the user their badge has lapsed.
-   */
-  onExpired?: (ctx: AchievementCallbackContext) => Promise<void>;
+  /** Unique identifier stored in the database. Must match the migration ENUM. */
+  type: AchievementType;
 }
 
 /**

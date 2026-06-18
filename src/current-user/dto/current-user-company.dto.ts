@@ -13,20 +13,20 @@ export interface CurrentUserCompanyDepartment {
 }
 
 export interface CurrentUserCompanyDto {
-  id: string;
-  name: string;
-  description: string | null;
-  goal: string | null;
-  url: string | null;
-  hiringUrl: string | null;
-  linkedInUrl: string | null;
-  logoUrl: string | null;
   businessSectors: CurrentUserCompanyBusinessSector[];
-  department: CurrentUserCompanyDepartment | null;
   companyUser: {
     isAdmin: boolean;
     role: string | null;
   };
+  department: CurrentUserCompanyDepartment | null;
+  description: string | null;
+  goal: string | null;
+  hiringUrl: string | null;
+  id: string;
+  linkedInUrl: string | null;
+  logoUrl: string | null;
+  name: string;
+  url: string | null;
 }
 
 export const generateCurrentUserCompanyDto = (

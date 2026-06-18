@@ -10,7 +10,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserFactory } from './user.factory';
 
-export type LoggedInUser = { user: CurrentUserDto; token: string };
+export type LoggedInUser = { token: string; user: CurrentUserDto };
 
 @Injectable()
 export class UsersHelper {

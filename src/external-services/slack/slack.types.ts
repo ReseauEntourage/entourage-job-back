@@ -14,13 +14,13 @@ export const slackChannels = {
 };
 
 export interface SlackMsgContextMrkdwn {
-  title: string;
   content: string;
+  title: string;
 }
 
 export interface SlackMsgContextImage {
-  imageUrl: string;
   altText: string;
+  imageUrl: string;
 }
 
 export type SlackMsgContext = SlackMsgContextMrkdwn | SlackMsgContextImage;
@@ -36,14 +36,14 @@ export interface SlackMsgAction {
 }
 
 export interface SlackBlockConfig {
-  title: string;
+  actions?: SlackMsgAction[];
   context?: SlackMsgContext[];
   msgParts: SlackMsgPart[];
-  actions?: SlackMsgAction[];
+  title: string;
 }
 
 export type SlackMessageResponse = {
+  [key: string]: unknown;
   ok: boolean;
   ts?: string;
-  [key: string]: unknown;
 };

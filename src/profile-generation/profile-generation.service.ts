@@ -75,7 +75,7 @@ export class ProfileGenerationService {
         existingData.fileHash !== fileHash ||
         existingData.schemaVersion !== currentSchemaVersion
       );
-    } catch (error) {
+    } catch {
       // En cas d'erreur, effectuer une extraction par sécurité
       return true;
     }
@@ -187,14 +187,14 @@ export class ProfileGenerationService {
             if (isNaN(startDate.getTime())) {
               startDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
 
           try {
             endDate = new Date(experience.endDate);
             if (isNaN(endDate.getTime())) {
               endDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
 
           return {
             title: experience.title,
@@ -218,14 +218,14 @@ export class ProfileGenerationService {
             if (isNaN(startDate.getTime())) {
               startDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
 
           try {
             endDate = new Date(formation.endDate);
             if (isNaN(endDate.getTime())) {
               endDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
           return {
             title: formation.title,
             description: formation.description,
@@ -266,7 +266,7 @@ export class ProfileGenerationService {
 
       await this.userProfileService.updateByUserId(userId, userProfileDto);
     } catch (error) {
-      console.error(`Error populating user profile for user ${userId}`);
+      console.error(`Error populating user profile for user ${userId}`, error);
       throw new InternalServerErrorException(
         'Failed to populate user profile from CV data'
       );

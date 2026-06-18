@@ -1,8 +1,8 @@
 import { User } from 'src/users/models';
 
 export interface CurrentUserReadDocumentDto {
-  documentName: string;
   createdAt: Date;
+  documentName: string;
 }
 
 export interface CurrentUserReadDocumentsDto {

@@ -1,9 +1,9 @@
 export enum CompanyUserRole {
+  EMPLOYEE = 'employee',
   EXECUTIVE = 'executive',
   MANAGER = 'manager',
-  RSE = 'rse',
   RH = 'rh',
-  EMPLOYEE = 'employee',
+  RSE = 'rse',
 }
 
 export const COMPANY_ROLES = [

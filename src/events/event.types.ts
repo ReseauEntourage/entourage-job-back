@@ -5,67 +5,67 @@ import { User } from 'src/users/models';
  * Event Types Enumeration
  */
 export enum EventType {
-  UNKNOWN = 'UNKNOWN',
-  WELCOME_SESSION = 'WELCOME_SESSION',
+  APERO_COACH = 'APERO_COACH',
+  APERO_ENTOURAGE = 'APERO_ENTOURAGE',
   COFFEE_SESSION = 'COFFEE_SESSION',
   NETWORKING = 'NETWORKING',
-  SPEED_MEETING = 'SPEED_MEETING',
   PAPOTAGES_PRO = 'PAPOTAGES_PRO',
   PHOTO_SHOOTING = 'PHOTO_SHOOTING',
-  APERO_ENTOURAGE = 'APERO_ENTOURAGE',
-  APERO_COACH = 'APERO_COACH',
+  SPEED_MEETING = 'SPEED_MEETING',
+  UNKNOWN = 'UNKNOWN',
+  WELCOME_SESSION = 'WELCOME_SESSION',
   WORKSHOP = 'WORKSHOP',
 }
 
 export enum EventPublicAudience {
-  GENERAL_PUBLIC = 'Grand public',
+  AUTHORITIES = 'Collectivité',
   COMPANIES = 'Entreprises',
+  GENERAL_PUBLIC = 'Grand public',
   ORGANIZATIONS = 'Associations',
   SCHOLARS = 'Scolaire',
-  AUTHORITIES = 'Collectivité',
   YOUNG_PUBLIC = 'Jeunes',
 }
 
 export enum SalesforceEventTypes {
-  WELCOME_SESSION = 'Rdv de bienvenue Entourage Pro',
+  APERO_COACH = 'Apéro coach',
+  APERO_ENTOURAGE = 'Apéro Entourage',
   COFFEE_SESSION = 'Info co candidat',
   NETWORKING = 'Atelier Réseau',
-  SPEED_MEETING = 'Rencontre Réseau Pro (ex Connecteurs)',
   PAPOTAGES_PRO = 'Papotages Pro',
   PHOTO_SHOOTING = 'Séance photo',
-  APERO_COACH = 'Apéro coach',
+  SPEED_MEETING = 'Rencontre Réseau Pro (ex Connecteurs)',
+  WELCOME_SESSION = 'Rdv de bienvenue Entourage Pro',
   WORKSHOP = 'Atelier Entourage Pro',
-  APERO_ENTOURAGE = 'Apéro Entourage',
 }
 
 /**
  * Event Mode Enumeration
  */
 export enum EventMode {
-  ONLINE = 'online',
   IRL = 'irl',
+  ONLINE = 'online',
 }
 
 export interface Event {
-  salesForceId: string;
-  name: string;
+  audience: string;
   description: string;
-  startDate: string;
+  duration: number | null;
   endDate: string;
   eventType: EventType;
-  registrationCount?: number;
-  participantsCount?: number;
-  mode: EventMode;
-  meetingLink: string | null;
-  image?: string;
-  fullAddress: string | null;
-  duration: number | null;
   format: string;
+  fullAddress: string | null;
   goal: string;
-  audience: string;
-  sequences?: string[];
+  image?: string;
   isParticipating: boolean;
+  meetingLink: string | null;
+  mode: EventMode;
+  name: string;
+  participantsCount?: number;
   publicSensibilise: EventPublicAudience[] | null;
+  registrationCount?: number;
+  salesForceId: string;
+  sequences?: string[];
+  startDate: string;
 }
 
 export type EventParticipant = Pick<

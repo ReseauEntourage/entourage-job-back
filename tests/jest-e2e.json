@@ -5,9 +5,9 @@
   "roots": ["<rootDir>/src", "<rootDir>/tests"],
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "isolatedModules": false, "module": "commonjs" } }]
   },
-  "transformIgnorePatterns": ["/node_modules/(?!.*(@slack|axios))"],
+  "transformIgnorePatterns": ["/node_modules/(?!.*(@slack|axios|@short\\.io))"],
   "moduleDirectories": ["node_modules"],
   "moduleNameMapper": {
     "^src/(.*)": "<rootDir>/src/$1",

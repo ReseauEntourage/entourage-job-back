@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
-import {
+import type {
   ChatCompletionContentPart,
   ChatCompletionMessage,
-} from 'openai/resources/chat';
+} from 'openai/resources/chat/completions';
 import { LlmMetricsService } from 'src/external-services/llm-metrics/llm-metrics.service';
 import { cvSchema, CvSchemaType } from './openai.schemas';
 

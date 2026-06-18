@@ -11,7 +11,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Self, SelfGuard } from 'src/users/guards';
 import { ReadDocumentsService } from './read-documents.service';
-import { DocumentType, DocumentsTypesArray } from './read-documents.types';
+import { type DocumentType, DocumentsTypesArray } from './read-documents.types';
 
 @ApiTags('ReadDocuments')
 @Controller('readDocuments')

@@ -103,7 +103,7 @@ export class GamificationService {
 
     return generatePublicAchievementDto(
       achievement as UserAchievement & {
-        user: { firstName: string; lastName: string; gender: string };
+        user: { firstName: string; gender: string; lastName: string };
       }
     );
   }
@@ -169,13 +169,13 @@ export class GamificationService {
     userRole: UserRole
   ): Promise<
     Array<{
-      type: AchievementType;
-      label: string;
-      hasAchievement: boolean;
       achievedAt: string | null;
-      expireAt: string | null;
-      statsWindowMonths: number;
       criteria: CriterionStat[];
+      expireAt: string | null;
+      hasAchievement: boolean;
+      label: string;
+      statsWindowMonths: number;
+      type: AchievementType;
     }>
   > {
     const context = {
@@ -211,13 +211,13 @@ export class GamificationService {
       (
         r
       ): r is {
-        type: AchievementType;
-        label: string;
-        hasAchievement: boolean;
         achievedAt: string | null;
-        expireAt: string | null;
-        statsWindowMonths: number;
         criteria: CriterionStat[];
+        expireAt: string | null;
+        hasAchievement: boolean;
+        label: string;
+        statsWindowMonths: number;
+        type: AchievementType;
       } => r !== null
     );
   }
@@ -237,8 +237,8 @@ export class GamificationService {
    * @param userId - The user's identifier to evaluate
    */
   async checkAndGrantAchievements(userId: string): Promise<{
-    user: { firstName: string; lastName: string; email: string };
     grantedTypes: AchievementType[];
+    user: { email: string; firstName: string; lastName: string };
   }> {
     this.logger.debug(`[check] Starting achievement check for user ${userId}`);
 
@@ -340,10 +340,10 @@ export class GamificationService {
    * Intended to be called daily via a cron job.
    */
   async processExpiredAchievements(): Promise<{
-    total: number;
-    renewed: number;
     expired: number;
     failures: Array<{ itemId: string; reason: unknown }>;
+    renewed: number;
+    total: number;
   }> {
     const expiredAchievements = await this.userAchievementModel.findAll({
       where: { active: true, expireAt: { [Op.lt]: new Date() } },
@@ -447,9 +447,9 @@ export class GamificationService {
    * Intended to be called daily via a cron job at 10 AM.
    */
   async prepareExpirationReminderMails(): Promise<{
-    total: number;
-    sent: number;
     failures: Array<{ itemId: string; reason: unknown }>;
+    sent: number;
+    total: number;
   }> {
     const today = new Date();
     const reminderDate = new Date(today);
@@ -557,8 +557,8 @@ export class GamificationService {
     }
 
     type BackfillSuccess = {
-      user: { firstName: string; lastName: string; email: string };
       grantedTypes: AchievementType[];
+      user: { email: string; firstName: string; lastName: string };
     };
 
     const grantedUsers: BackfillSuccess[] = [];

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import {
+import type {
   CandidateAccommodation,
   CandidateResource,
   JobSearchDuration,

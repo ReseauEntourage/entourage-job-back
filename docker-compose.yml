@@ -9,7 +9,7 @@ services:
         NODE_VERSION: 20.19.1
     volumes:
       - .:/home/node
-      - /home/node/node_modules
+      - api_node_modules:/home/node/node_modules
     ports:
       - '3002:3002'
     env_file:
@@ -89,3 +89,4 @@ volumes:
     driver: local
   redis:
     driver: local
+  api_node_modules:

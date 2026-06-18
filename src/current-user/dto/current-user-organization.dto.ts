@@ -1,9 +1,9 @@
 import { User } from 'src/users/models';
 
 export interface CurrentUserOrganizationDto {
+  address: string | null;
   id: string;
   name: string;
-  address: string | null;
   zone: string;
 }
 

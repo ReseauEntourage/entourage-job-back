@@ -4,12 +4,12 @@ import { User } from 'src/users/models';
 import { Gender } from 'src/users/users.types';
 
 export interface PublicAchievementDto {
-  firstName: string;
-  lastName: string;
-  gender: Gender;
   achievedAt: string;
-  title: string;
   achievementType: AchievementType;
+  firstName: string;
+  gender: Gender;
+  lastName: string;
+  title: string;
 }
 
 export const generatePublicAchievementDto = (

@@ -10,7 +10,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Department } from '../locations.types';
+import type { Department } from '../locations.types';
 
 @Table({ tableName: 'Locations' })
 export class Location extends Model {

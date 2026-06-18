@@ -15,8 +15,8 @@ import {
 import { UserProfile } from './user-profile.model';
 
 export enum UserProfileEmbeddingType {
-  profile = 'profile',
   needs = 'needs',
+  profile = 'profile',
 }
 
 @Table({ tableName: 'UserProfileEmbeddings' })

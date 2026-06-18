@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ShortioService } from 'src/external-services/shortio/shortio.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 
@@ -6,7 +7,10 @@ import { Jobs } from 'src/queues/queues.types';
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
 
-  constructor(private readonly queuesService: QueuesService) {}
+  constructor(
+    private readonly queuesService: QueuesService,
+    private readonly shortioService: ShortioService
+  ) {}
 
   async sendCandidateUnansweredConversationSms(
     candidatePhone: string,
@@ -14,7 +18,8 @@ export class SmsService {
     coachId: string
   ) {
     const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${coachId}`;
-    const text = `${coachFirstName}, Coach sur Entourage Pro, vous a envoyé un message. Répondre à son message : ${conversationUrl}`;
+    const shortUrl = await this.shortioService.shortenUrl(conversationUrl);
+    const text = `${coachFirstName}, Coach sur Entourage Pro, vous a envoyé un message. Répondre à son message : ${shortUrl}`;
 
     this.logger.log(
       `Queuing SMS to candidate for conversation with coach ${coachId}`

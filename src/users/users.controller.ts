@@ -27,7 +27,7 @@ import {
   UpdateUserRestrictedPipe,
 } from 'src/users/dto';
 import { isValidPhone } from 'src/utils/misc';
-import { FilterParams } from 'src/utils/types';
+import type { FilterParams } from 'src/utils/types';
 import {
   Self,
   SelfGuard,
@@ -115,7 +115,7 @@ export class UsersController {
     }
     try {
       await this.usersService.linkCompany(user, companyName);
-    } catch (err) {
+    } catch {
       throw new InternalServerErrorException('Could not link user to company');
     }
   }

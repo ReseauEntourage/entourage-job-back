@@ -8,14 +8,12 @@ import { User } from 'src/users/models';
 
 export interface CurrentUserDto
   extends Partial<Omit<User, 'userProfile' | 'company' | 'candidat'>> {
-  userProfile: UserProfileDto;
-  hasExtractedCvData: boolean;
-  company?: Partial<Company>;
-
-  // Stats
   averageDelayResponse?: number | null;
+  company?: Partial<Company>;
+  hasExtractedCvData: boolean;
   responseRate?: number | null;
   totalConversationWithMirrorRoleCount?: number | null;
+  userProfile: UserProfileDto;
 }
 
 export const generateCurrentUserDto = (

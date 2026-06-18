@@ -32,11 +32,11 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import {
-  Gender,
+  type Gender,
   Genders,
   OnboardingStatus,
   RolesWithOrganization,
-  UserRole,
+  type UserRole,
   UserRoles,
 } from '../users.types';
 import { capitalizeNameAndTrim, isRoleIncluded } from '../users.utils';
@@ -57,7 +57,7 @@ import {
 import { Zones } from 'src/utils/constants/zones';
 import { HistorizedModel } from 'src/utils/types';
 import {
-  InternalStaffContact,
+  type InternalStaffContact,
   StaffContactGroup,
   ZoneName,
 } from 'src/utils/types/zones.types';

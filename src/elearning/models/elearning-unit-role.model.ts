@@ -13,7 +13,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { UserRole } from 'src/users/users.types';
+import type { UserRole } from 'src/users/users.types';
 import { ElearningUnit } from './elearning-unit.model';
 
 @Table({ tableName: 'ElearningUnitRoles' })

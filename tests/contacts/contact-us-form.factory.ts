@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
 import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import phone from 'phone';

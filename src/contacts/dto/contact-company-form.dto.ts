@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
-import {
+import type {
   CompanyApproach,
   CompanyZone,
   HeardAboutValue,

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "node16",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -9,7 +9,11 @@
     "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": ".",
+    "rootDir": ".",
+    "paths": {
+      "src/*": ["./src/*"],
+      "tests/*": ["./tests/*"]
+    },
     "incremental": true,
     "strictNullChecks": false,
     "noImplicitAny": true,
@@ -20,13 +24,14 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "node16",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "preserveWatchOutput": true
+    "preserveWatchOutput": true,
+    "types": ["jest", "node", "multer"]
   },
   "watchOptions": {
     "watchFile": "fixedPollingInterval"
   },
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "eslint.config.mjs"]
 }

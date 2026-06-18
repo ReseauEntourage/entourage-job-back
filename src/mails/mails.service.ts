@@ -374,9 +374,9 @@ export class MailsService {
     email,
     invitationWithCompany,
   }: {
-    sender: User;
     email: string;
     invitationWithCompany: CompanyInvitation;
+    sender: User;
   }) {
     this.logger.log(
       `Sending company invitation mail to ${email} from sender with email ${sender.email}`
@@ -698,8 +698,8 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
-      zone: ZoneName | null;
       staffContact: InternalStaffContact;
+      zone: ZoneName | null;
     },
     stats: { conversationCount: number; responseRate: number },
     nextEvaluationDate: Date,
@@ -739,13 +739,13 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
-      zone: ZoneName | null;
       staffContact: InternalStaffContact;
+      zone: ZoneName | null;
     },
     stats: {
       conversationCount: number;
-      responseRate: number;
       goalAchieved: boolean;
+      responseRate: number;
     },
     expireAt: Date
   ) {
@@ -771,8 +771,8 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
-      zone: ZoneName | null;
       staffContact: InternalStaffContact;
+      zone: ZoneName | null;
     },
     stats: { conversationCount: number; responseRate: number }
   ) {
@@ -1066,13 +1066,13 @@ export class MailsService {
   }
 
   async sendRecruitmentAlertMail(alert: {
+    alertId: string;
+    alertName: string;
     companyAdminEmail: string;
     firstName: string;
     newCandidatesCount: number;
-    alertName: string;
-    alertId: string;
-    zone: string;
     staffContact: User['staffContact'];
+    zone: string;
   }) {
     this.logger.log(
       `Sending recruitment alert mail to user with email ${alert.companyAdminEmail}`

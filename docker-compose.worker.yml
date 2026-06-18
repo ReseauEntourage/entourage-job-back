@@ -10,7 +10,7 @@ services:
     entrypoint: ['./docker-entrypoint.worker.sh']
     volumes:
       - .:/home/node
-      - /home/node/node_modules
+      - worker_node_modules:/home/node/node_modules
     env_file:
       - .env
     environment:
@@ -27,3 +27,6 @@ services:
     depends_on:
       - db
       - redis
+
+volumes:
+  worker_node_modules:

@@ -119,7 +119,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
         user: User | null;
         userProfile: UserProfile | null;
       }) => user && userProfile
-    ) as Array<{ userId: string; user: User; userProfile: UserProfile }>;
+    ) as Array<{ user: User; userId: string; userProfile: UserProfile }>;
 
     if (validUsersData.length === 0) {
       throw new Error('No valid users found in batch');
@@ -154,7 +154,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
         const embeddingsArrays =
           await this.userProfilesService.generateEmbeddingsBatch(
             embeddingDataArray.map(
-              (item: { userId: string; userProfileId: string; data: string }) =>
+              (item: { data: string; userId: string; userProfileId: string }) =>
                 item.data
             )
           );

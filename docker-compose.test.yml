@@ -16,7 +16,7 @@ services:
       DB_NAME: entourage_pro_test
     volumes:
       - .:/home/node
-      - /home/node/node_modules
+      - test_node_modules:/home/node/node_modules
     depends_on:
       - db-test
 
@@ -41,3 +41,4 @@ services:
 volumes:
   db-test:
     driver: local
+  test_node_modules:

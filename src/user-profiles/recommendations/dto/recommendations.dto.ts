@@ -22,6 +22,6 @@ export type RecommendationsDto = RecommendationDto[];
  * `null` means there are no more results currently stored.
  */
 export type RecommendationsPageDto = {
-  recommendations: RecommendationDto[];
   nextCursor: number | null;
+  recommendations: RecommendationDto[];
 };

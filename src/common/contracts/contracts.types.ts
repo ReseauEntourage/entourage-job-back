@@ -1,17 +1,17 @@
 import { FilterConstant } from 'src/utils/types';
 
 export enum Contracts {
-  CDI = 'cdi',
-  CDD = 'cdd',
-  CDD_PLUS_6 = 'cdd+6',
-  CDD_MOINS_6 = 'cdd-6',
-  CDDI = 'cddi',
   ALTERNANCE = 'alt',
-  INTERIM = 'inte',
-  STAGE = 'stage',
-  FORMATION = 'form',
-  PMSMP = 'pmsmp',
   AUTRE = 'other',
+  CDD = 'cdd',
+  CDDI = 'cddi',
+  CDD_MOINS_6 = 'cdd-6',
+  CDD_PLUS_6 = 'cdd+6',
+  CDI = 'cdi',
+  FORMATION = 'form',
+  INTERIM = 'inte',
+  PMSMP = 'pmsmp',
+  STAGE = 'stage',
 }
 
 export const ContractFilters: FilterConstant<Contracts>[] = [
