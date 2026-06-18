@@ -35,7 +35,8 @@ export class ShortioService {
       return result.data.shortURL;
     } catch (error) {
       this.logger.error(`Failed to shorten URL ${originalUrl}`, error);
-      throw new Error(`Failed to shorten URL: ${error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to shorten URL: ${message}`);
     }
   }
 }
