@@ -10,7 +10,9 @@ export class ShortioService {
     const domain = process.env.SHORTIO_DOMAIN;
     const apiKey = process.env.SHORTIO_API_KEY;
     if (!domain || !apiKey) {
-      throw new Error('Short.io is not configured (SHORTIO_DOMAIN/SHORTIO_API_KEY)');
+      throw new Error(
+        'Short.io is not configured (SHORTIO_DOMAIN/SHORTIO_API_KEY)'
+      );
     }
     this.domain = domain;
     setApiKey(apiKey);
