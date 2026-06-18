@@ -19,10 +19,18 @@ export class ShortioService {
           domain: this.domain,
         },
       });
-      return result.data?.shortURL ?? originalUrl;
+      if (!result.data || !result.data.shortURL) {
+        this.logger.error(
+          `Invalid response from Short.io API for URL ${originalUrl}: ${JSON.stringify(
+            result
+          )}`
+        );
+        throw new Error('Invalid response from Short.io API');
+      }
+      return result.data.shortURL;
     } catch (error) {
       this.logger.error(`Failed to shorten URL ${originalUrl}`, error);
-      return originalUrl;
+      throw new Error(`Failed to shorten URL: ${error}`);
     }
   }
 }

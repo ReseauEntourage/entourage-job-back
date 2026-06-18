@@ -21,6 +21,7 @@ export class SmsService {
     const shortUrl = await this.shortioService.shortenUrl(conversationUrl);
     const text = `${coachFirstName}, Coach sur Entourage Pro, vous a envoyé un message. Répondre à son message : ${shortUrl}`;
 
+    this.logger.log('Shortened conversation URL for SMS: ' + shortUrl);
     this.logger.log(
       `Queuing SMS to candidate for conversation with coach ${coachId}`
     );
