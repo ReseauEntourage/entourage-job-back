@@ -19,6 +19,9 @@ export const UserAttributes = [
   'onboardingStatus',
   'onboardingCompletedAt',
   'onboardingWebinarSkippedAt',
+  'otpCode',
+  'otpSalt',
+  'otpExpiresAt',
 ] as const;
 
 export type UserAttribute = (typeof UserAttributes)[number];

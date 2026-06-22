@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import {
+  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
@@ -17,7 +18,12 @@ import { UsersService } from 'src/users/users.service';
 import { UserRole } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { LoggedUser } from './auth.types';
-import { encryptPassword, validatePassword } from './auth.utils';
+import {
+  encryptOtp,
+  encryptPassword,
+  validateOtp,
+  validatePassword,
+} from './auth.utils';
 import { CurrentUserDto, generateCurrentUserDto } from './dto/current-user.dto';
 import {
   generateStaffContactDto,
@@ -211,6 +217,46 @@ export class AuthService {
         expiresIn: '7d',
       }
     );
+  }
+
+  async generateAndSendVerificationWithOtp(user: User) {
+    const token = await this.generateVerificationToken(user);
+    const plainOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const { hash, salt } = encryptOtp(plainOtp);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await this.usersService.update(user.id, {
+      otpCode: hash,
+      otpSalt: salt,
+      otpExpiresAt: expiresAt,
+    });
+    await this.mailsService.sendVerificationMail(user, token, plainOtp);
+  }
+
+  async verifyOtp(email: string, code: string): Promise<LoggedUser> {
+    const user = await this.findOneUserByMail(email);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    if (!user.otpCode || !user.otpSalt || !user.otpExpiresAt) {
+      throw new BadRequestException('OTP_INVALID');
+    }
+    if (new Date() > user.otpExpiresAt) {
+      throw new BadRequestException('OTP_EXPIRED');
+    }
+    if (!validateOtp(code, user.otpCode, user.otpSalt)) {
+      throw new BadRequestException('OTP_INVALID');
+    }
+    await this.updateUser(user.id, {
+      isEmailVerified: true,
+      otpCode: null,
+      otpSalt: null,
+      otpExpiresAt: null,
+    });
+    if (!user.lastConnection) {
+      const updatedUser = await this.findOneUserComplete(user.id);
+      await this.sendWelcomeMail(updatedUser);
+    }
+    return this.login(user.id);
   }
 
   async sendWelcomeMail(user: User) {

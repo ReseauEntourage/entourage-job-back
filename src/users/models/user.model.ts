@@ -159,6 +159,18 @@ export class User extends HistorizedModel {
   @Column
   saltReset: string;
 
+  @AllowNull(true)
+  @Column
+  otpCode: string;
+
+  @AllowNull(true)
+  @Column
+  otpSalt: string;
+
+  @AllowNull(true)
+  @Column
+  otpExpiresAt: Date;
+
   @ApiProperty()
   @IsString()
   @AllowNull(true)
