@@ -571,7 +571,11 @@ export class UserProfilesService {
     role: UserRole,
     nudgeIds: string[] = [],
     businessSectorIds: string[] = []
-  ): Promise<{ count: number; profiles: PublicProfileDto[] }> {
+  ): Promise<{
+    broadened: boolean;
+    count: number;
+    profiles: PublicProfileDto[];
+  }> {
     const targetRole =
       role === UserRoles.CANDIDATE ? UserRoles.COACH : UserRoles.CANDIDATE;
 
@@ -589,6 +593,7 @@ export class UserProfilesService {
 
     let selectedIds: string[];
     let count: number;
+    let broadened = false;
 
     if (!hasNudges && !hasSectors) {
       count = await this.userProfileModel.count({
@@ -630,6 +635,29 @@ export class UserProfilesService {
       count = allIds.length;
       const shuffled = allIds.sort(() => 0.5 - Math.random());
       selectedIds = shuffled.slice(0, 6);
+
+      if (selectedIds.length === 0) {
+        const sectorMatches = await this.userProfileModel.findAll({
+          subQuery: false,
+          attributes: ['id'],
+          where: baseWhere,
+          include: [
+            userInclude,
+            {
+              model: UserProfileSectorOccupation,
+              as: 'sectorOccupations',
+              required: true,
+              attributes: [] as string[],
+              where: { businessSectorId: { [Op.in]: businessSectorIds } },
+            },
+          ],
+        });
+        const sectorIds = sectorMatches.map(({ id }) => id);
+        count = sectorIds.length;
+        const sectorShuffled = sectorIds.sort(() => 0.5 - Math.random());
+        selectedIds = sectorShuffled.slice(0, 6);
+        broadened = true;
+      }
     } else if (hasNudges) {
       const nudgeMatches = await this.userProfileModel.findAll({
         subQuery: false,
@@ -667,7 +695,7 @@ export class UserProfilesService {
     }
 
     if (selectedIds.length === 0) {
-      return { count: 0, profiles: [] };
+      return { count: 0, profiles: [], broadened: false };
     }
 
     const profileRows = await this.userProfileModel.findAll({
@@ -699,7 +727,7 @@ export class UserProfilesService {
       })
     );
 
-    return { count, profiles: publicProfiles };
+    return { count, profiles: publicProfiles, broadened };
   }
 
   /**
