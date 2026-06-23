@@ -73,6 +73,7 @@ import {
 } from './models/user-profile.attributes';
 import {
   getUserProfileInclude,
+  getUserProfileNudgesInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
 import { SCORING_WEIGHTS } from './recommendations/scoring.config';
@@ -561,6 +562,141 @@ export class UserProfilesService {
         };
       })
     );
+  }
+
+  async findPreRegistrationCompatibleProfiles(
+    role: UserRole,
+    nudgeIds: string[] = [],
+    businessSectorIds: string[] = []
+  ): Promise<{ count: number; profiles: PublicProfileDto[] }> {
+    const targetRole =
+      role === UserRoles.CANDIDATE ? UserRoles.COACH : UserRoles.CANDIDATE;
+
+    const baseWhere = { isAvailable: true };
+    const userInclude = {
+      model: User,
+      as: 'user',
+      where: { role: targetRole },
+      required: true,
+      attributes: [] as string[],
+    };
+
+    const hasNudges = nudgeIds.length > 0;
+    const hasSectors = businessSectorIds.length > 0;
+
+    let selectedIds: string[];
+    let count: number;
+
+    if (!hasNudges && !hasSectors) {
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: [userInclude],
+      });
+
+      const randomSample = await this.userProfileModel.findAll({
+        subQuery: false,
+        limit: 6,
+        attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
+        where: baseWhere,
+        include: [userInclude],
+      });
+      selectedIds = randomSample.map(({ id }) => id);
+    } else if (hasNudges && hasSectors) {
+      // AND: a profile must match at least one nudge AND at least one sector
+      const andMatches = await this.userProfileModel.findAll({
+        subQuery: false,
+        attributes: ['id'],
+        where: baseWhere,
+        include: [
+          userInclude,
+          ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
+          {
+            model: UserProfileSectorOccupation,
+            as: 'sectorOccupations',
+            required: true,
+            attributes: [] as string[],
+            where: { businessSectorId: { [Op.in]: businessSectorIds } },
+          },
+        ],
+        group: ['UserProfile.id'],
+      });
+      const allIds = andMatches.map(({ id }) => id);
+      count = allIds.length;
+      const shuffled = allIds.sort(() => 0.5 - Math.random());
+      selectedIds = shuffled.slice(0, 6);
+    } else if (hasNudges) {
+      const nudgeMatches = await this.userProfileModel.findAll({
+        subQuery: false,
+        attributes: ['id'],
+        where: baseWhere,
+        include: [
+          userInclude,
+          ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
+        ],
+      });
+      const allIds = nudgeMatches.map(({ id }) => id);
+      count = allIds.length;
+      const shuffled = allIds.sort(() => 0.5 - Math.random());
+      selectedIds = shuffled.slice(0, 6);
+    } else {
+      const sectorMatches = await this.userProfileModel.findAll({
+        subQuery: false,
+        attributes: ['id'],
+        where: baseWhere,
+        include: [
+          userInclude,
+          {
+            model: UserProfileSectorOccupation,
+            as: 'sectorOccupations',
+            required: true,
+            attributes: [] as string[],
+            where: { businessSectorId: { [Op.in]: businessSectorIds } },
+          },
+        ],
+      });
+      const allIds = sectorMatches.map(({ id }) => id);
+      count = allIds.length;
+      const shuffled = allIds.sort(() => 0.5 - Math.random());
+      selectedIds = shuffled.slice(0, 6);
+    }
+
+    if (selectedIds.length === 0) {
+      return { count: 0, profiles: [] };
+    }
+
+    const profileRows = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      where: { id: { [Op.in]: selectedIds } },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+          include: [userAchievementInclude()],
+        },
+      ],
+    });
+
+    const publicProfiles = await Promise.all(
+      profileRows.map(async (profile): Promise<PublicProfileDto> => {
+        const averageDelayResponse = await this.getAverageDelayResponse(
+          profile.user.id
+        );
+        const { user, ...restProfile } = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          id: profile.user.id,
+          averageDelayResponse,
+        };
+      })
+    );
+
+    return { count, profiles: publicProfiles };
   }
 
   /**
@@ -1491,6 +1627,13 @@ export class UserProfilesService {
       isAvailable: false,
       unavailabilityReason: UnavailabilityReason.INACTIVITY,
     });
+  }
+
+  async resetLastRecommendationsDate(userId: string): Promise<void> {
+    await this.userProfileModel.update(
+      { lastRecommendationsDate: null },
+      { where: { userId } }
+    );
   }
 
   // ─── Private helpers ─────────────────────────────────────────────────────────

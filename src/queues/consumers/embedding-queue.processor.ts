@@ -85,6 +85,10 @@ export class EmbeddingQueueProcessor extends WorkerHost {
       })
     );
 
+    // Invalidate cached recommendations so the next request triggers a fresh
+    // computation based on the updated embedding.
+    await this.userProfilesService.resetLastRecommendationsDate(userId);
+
     return `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
       ', '
     )}`;

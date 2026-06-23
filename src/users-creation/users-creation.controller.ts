@@ -4,8 +4,10 @@ import {
   Body,
   ConflictException,
   Controller,
+  Get,
   NotFoundException,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -17,6 +19,7 @@ import {
   CompanyUserRole,
 } from 'src/companies/company-user.utils';
 import { MailjetContactSource } from 'src/external-services/mailjet/mailjet.types';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
@@ -36,6 +39,7 @@ import {
   CreateUserPipe,
   CreateUserRegistrationDto,
   CreateUserRegistrationPipe,
+  GetPreRegistrationCompatibleProfilesDto,
 } from './dto';
 import { CreateUserReferingDto } from './dto/create-user-refering.dto';
 import { CreateUserReferingPipe } from './dto/create-user-refering.pipe';
@@ -49,7 +53,35 @@ function generateFakePassword() {
 @ApiTags('Users')
 @Controller('user')
 export class UsersCreationController {
-  constructor(private readonly usersCreationService: UsersCreationService) {}
+  constructor(
+    private readonly usersCreationService: UsersCreationService,
+    private readonly userProfilesService: UserProfilesService
+  ) {}
+
+  @Throttle(60, 60)
+  @Public()
+  @Get('registration/compatible-profiles')
+  async getPreRegistrationCompatibleProfiles(
+    @Query() dto: GetPreRegistrationCompatibleProfilesDto
+  ) {
+    const nudgeIds = Array.isArray(dto.nudgeIds)
+      ? dto.nudgeIds
+      : dto.nudgeIds
+      ? [dto.nudgeIds]
+      : [];
+
+    const businessSectorIds = Array.isArray(dto.businessSectorIds)
+      ? dto.businessSectorIds
+      : dto.businessSectorIds
+      ? [dto.businessSectorIds]
+      : [];
+
+    return this.userProfilesService.findPreRegistrationCompatibleProfiles(
+      dto.role,
+      nudgeIds,
+      businessSectorIds
+    );
+  }
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
