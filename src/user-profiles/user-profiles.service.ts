@@ -3,6 +3,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -85,6 +86,8 @@ const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
 
 @Injectable()
 export class UserProfilesService {
+  private readonly logger = new Logger(UserProfilesService.name);
+
   constructor(
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
@@ -1630,9 +1633,15 @@ export class UserProfilesService {
   }
 
   async resetLastRecommendationsDate(userId: string): Promise<void> {
+    this.logger.log(
+      `[Recommendations] Invalidating cached recommendations for user ${userId}`
+    );
     await this.userProfileModel.update(
       { lastRecommendationsDate: null },
       { where: { userId } }
+    );
+    this.logger.log(
+      `[Recommendations] lastRecommendationsDate reset to null for user ${userId} — pool will be recomputed on next request`
     );
   }
 
@@ -1642,13 +1651,10 @@ export class UserProfilesService {
     userId: string,
     updatedKeys: string[]
   ): Promise<void> {
-    // If no keys are updated, we don't need to update the embedding
     if (updatedKeys.length === 0) {
       return;
     }
 
-    // Determine which embedding types need to be updated based on the updated keys and the fields
-    // used in each embedding type(defined in EMBEDDING_CONFIG)
     const embeddingTypesToUpdate = Object.entries(EMBEDDING_CONFIG)
       .filter(([, config]) =>
         config.fields.some((key) => updatedKeys.includes(key))
@@ -1656,11 +1662,20 @@ export class UserProfilesService {
       .map(([type]) => type as EmbeddingType);
 
     if (embeddingTypesToUpdate.length === 0) {
-      // No embedding needs to be updated based on the updated keys
+      this.logger.log(
+        `[Embeddings] Profile update for user ${userId} touched no embedding fields (updated keys: ${updatedKeys.join(
+          ', '
+        )}) — skipping`
+      );
       return;
     }
 
-    // Add a job to the queue to update the embeddings of the user profile, with the list of embedding types to update
+    this.logger.log(
+      `[Embeddings] Queuing embedding update for user ${userId} — types: ${embeddingTypesToUpdate.join(
+        ', '
+      )} (triggered by: ${updatedKeys.join(', ')})`
+    );
+
     await this.queuesService.addToEmbeddingQueue(
       Jobs.UPDATE_USER_PROFILE_EMBEDDINGS,
       {
@@ -1668,6 +1683,8 @@ export class UserProfilesService {
         embeddingTypes: embeddingTypesToUpdate,
       }
     );
+
+    this.logger.log(`[Embeddings] Job enqueued for user ${userId}`);
   }
 
   async getShareText(

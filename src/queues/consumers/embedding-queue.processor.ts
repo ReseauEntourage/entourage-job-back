@@ -68,9 +68,17 @@ export class EmbeddingQueueProcessor extends WorkerHost {
       throw new Error(`User profile not found for userId: ${userId}`);
     }
 
-    // Generate embeddings for each specified embedding type
+    this.logger.log(
+      `[Embeddings] Generating embeddings for user ${userId} — types: ${embeddingTypes.join(
+        ', '
+      )}`
+    );
+
     await Promise.all(
       embeddingTypes.map(async (embeddingType) => {
+        this.logger.log(
+          `[Embeddings] Building and saving "${embeddingType}" embedding for user ${userId}`
+        );
         const embeddingData = this.embeddingBuilder.build(
           user.role,
           userProfile,
@@ -82,6 +90,9 @@ export class EmbeddingQueueProcessor extends WorkerHost {
           embeddingType,
           embeddingData
         );
+        this.logger.log(
+          `[Embeddings] "${embeddingType}" embedding saved for user ${userId}`
+        );
       })
     );
 
@@ -89,9 +100,11 @@ export class EmbeddingQueueProcessor extends WorkerHost {
     // computation based on the updated embedding.
     await this.userProfilesService.resetLastRecommendationsDate(userId);
 
-    return `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
+    const result = `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
       ', '
     )}`;
+    this.logger.log(`[Embeddings] ${result}`);
+    return result;
   }
 
   async generateUserProfileEmbeddingsBatch(
