@@ -15,8 +15,8 @@ import { UsersService } from 'src/users/users.service';
 
 @Processor(Queues.EMBEDDING, {
   limiter: {
-    max: 1,
-    duration: 1 * 60 * 1000, // 1 job per minute to respect rate limits of the embedding API
+    max: 120,
+    duration: 1 * 60 * 1000, // 120 jobs per minute (~240 VoyageAI RPM max, well within the 2,000 RPM quota)
   },
 })
 export class EmbeddingQueueProcessor extends WorkerHost {
