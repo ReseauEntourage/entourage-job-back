@@ -267,6 +267,10 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
+    if (userProfile.embeddingPendingAt !== null) {
+      return { embeddingPending: true, recommendations: [], nextCursor: null };
+    }
+
     // Ensure a fresh pool exists (recomputes if stale/empty/legacy).
     await this.userProfileRecommendationsService.ensureFreshPool(
       user,
@@ -321,7 +325,7 @@ export class UserProfilesController {
       };
     });
 
-    return { recommendations, nextCursor };
+    return { embeddingPending: false, recommendations, nextCursor };
   }
 
   // Only for admin users to get recommendations for any user, not only themselves

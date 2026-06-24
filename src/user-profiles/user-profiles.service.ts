@@ -1673,6 +1673,13 @@ export class UserProfilesService {
     );
   }
 
+  async clearEmbeddingPending(userId: string): Promise<void> {
+    await this.userProfileModel.update(
+      { embeddingPendingAt: null },
+      { where: { userId } }
+    );
+  }
+
   // ─── Private helpers ─────────────────────────────────────────────────────────
 
   private async enqueueUserProfileEmbeddingsUpdate(
@@ -1702,6 +1709,11 @@ export class UserProfilesService {
       `[Embeddings] Queuing embedding update for user ${userId} — types: ${embeddingTypesToUpdate.join(
         ', '
       )} (triggered by: ${updatedKeys.join(', ')})`
+    );
+
+    await this.userProfileModel.update(
+      { embeddingPendingAt: new Date() },
+      { where: { userId } }
     );
 
     await this.queuesService.addToEmbeddingQueue(

@@ -2,6 +2,11 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { EmbeddingBuilder } from 'src/embeddings/embedding.builder';
+import { PusherService } from 'src/external-services/pusher/pusher.service';
+import {
+  PusherChannels,
+  PusherEvents,
+} from 'src/external-services/pusher/pusher.types';
 import {
   Jobs,
   Queues,
@@ -25,7 +30,8 @@ export class EmbeddingQueueProcessor extends WorkerHost {
   constructor(
     private readonly usersService: UsersService,
     private readonly userProfilesService: UserProfilesService,
-    private readonly embeddingBuilder: EmbeddingBuilder
+    private readonly embeddingBuilder: EmbeddingBuilder,
+    private readonly pusherService: PusherService
   ) {
     super();
   }
@@ -56,55 +62,75 @@ export class EmbeddingQueueProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     const { userId, embeddingTypes } = job.data;
 
-    const user = await this.usersService.findOne(userId);
-    const userProfile = await this.userProfilesService.findOneByUserId(
-      userId,
-      true
-    );
-    if (!user) {
-      throw new Error(`User not found for userId: ${userId}`);
-    }
-    if (!userProfile) {
-      throw new Error(`User profile not found for userId: ${userId}`);
-    }
+    try {
+      const user = await this.usersService.findOne(userId);
+      const userProfile = await this.userProfilesService.findOneByUserId(
+        userId,
+        true
+      );
+      if (!user) {
+        throw new Error(`User not found for userId: ${userId}`);
+      }
+      if (!userProfile) {
+        throw new Error(`User profile not found for userId: ${userId}`);
+      }
 
-    this.logger.log(
-      `[Embeddings] Generating embeddings for user ${userId} — types: ${embeddingTypes.join(
+      this.logger.log(
+        `[Embeddings] Generating embeddings for user ${userId} — types: ${embeddingTypes.join(
+          ', '
+        )}`
+      );
+
+      await Promise.all(
+        embeddingTypes.map(async (embeddingType) => {
+          this.logger.log(
+            `[Embeddings] Building and saving "${embeddingType}" embedding for user ${userId}`
+          );
+          const embeddingData = this.embeddingBuilder.build(
+            user.role,
+            userProfile,
+            embeddingType
+          );
+
+          await this.userProfilesService.updateEmbedding(
+            userProfile.id,
+            embeddingType,
+            embeddingData
+          );
+          this.logger.log(
+            `[Embeddings] "${embeddingType}" embedding saved for user ${userId}`
+          );
+        })
+      );
+
+      // Invalidate cached recommendations so the next request triggers a fresh
+      // computation based on the updated embedding.
+      await this.userProfilesService.resetLastRecommendationsDate(userId);
+      await this.userProfilesService.clearEmbeddingPending(userId);
+      await this.pusherService.sendEvent(
+        `${PusherChannels.EMBEDDING}-${userId}`,
+        PusherEvents.EMBEDDING_READY,
+        { success: true }
+      );
+
+      const result = `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
         ', '
-      )}`
-    );
-
-    await Promise.all(
-      embeddingTypes.map(async (embeddingType) => {
-        this.logger.log(
-          `[Embeddings] Building and saving "${embeddingType}" embedding for user ${userId}`
-        );
-        const embeddingData = this.embeddingBuilder.build(
-          user.role,
-          userProfile,
-          embeddingType
-        );
-
-        await this.userProfilesService.updateEmbedding(
-          userProfile.id,
-          embeddingType,
-          embeddingData
-        );
-        this.logger.log(
-          `[Embeddings] "${embeddingType}" embedding saved for user ${userId}`
-        );
-      })
-    );
-
-    // Invalidate cached recommendations so the next request triggers a fresh
-    // computation based on the updated embedding.
-    await this.userProfilesService.resetLastRecommendationsDate(userId);
-
-    const result = `Embeddings updated for user ${userId} with embedding types: ${embeddingTypes.join(
-      ', '
-    )}`;
-    this.logger.log(`[Embeddings] ${result}`);
-    return result;
+      )}`;
+      this.logger.log(`[Embeddings] ${result}`);
+      return result;
+    } catch (error) {
+      await this.userProfilesService
+        .clearEmbeddingPending(userId)
+        .catch(() => {});
+      await this.pusherService
+        .sendEvent(
+          `${PusherChannels.EMBEDDING}-${userId}`,
+          PusherEvents.EMBEDDING_READY,
+          { success: false }
+        )
+        .catch(() => {});
+      throw error;
+    }
   }
 
   async generateUserProfileEmbeddingsBatch(
