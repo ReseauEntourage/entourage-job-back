@@ -192,6 +192,10 @@ export class User extends HistorizedModel {
   @Column
   onboardingCompletedAt: Date;
 
+  @AllowNull(true)
+  @Column
+  elearningCompletedAt: Date;
+
   @IsOptional()
   @IsDateString()
   @AllowNull(true)

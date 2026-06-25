@@ -135,6 +135,18 @@ export class ElearningService {
     });
   }
 
+  async hasCompletedAllUnits(userId: string, role: UserRole): Promise<boolean> {
+    const units = await this.elearningUnitModel.findAll({
+      attributes: ELEARNING_UNIT_ATTRIBUTES,
+      include: generateElearningUnitIncludes({ userRole: role, userId }),
+      order: [['order', 'ASC']],
+    });
+    if (units.length === 0) {
+      return false;
+    }
+    return units.every((unit) => unit.userCompletions?.[0]?.validatedAt);
+  }
+
   // -- PRIVATE METHODS --
 
   /**
@@ -154,19 +166,24 @@ export class ElearningService {
     // If the user is a candidate or coach, we check if they have completed all
     // elearning units and send them a congratulation mail if it's the case
     if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
-      this.allUnitsNotCompletedByUser(user)
-        .then(async (notCompletedUnits) => {
-          const allCompleted = notCompletedUnits.length === 0;
+      this.hasCompletedAllUnits(userId, user.role as UserRole)
+        .then(async (allCompleted) => {
           this.logger.log(
             `User with id ${userId} has completed all elearning units: ${allCompleted}`
           );
           if (allCompleted) {
-            if (user) {
+            if (!user.elearningCompletedAt) {
+              await this.usersService.update(userId, {
+                elearningCompletedAt: new Date(),
+              });
               this.logger.log(
-                `User with id ${userId} has completed all elearning units, sending congratulation mail`
+                `User with id ${userId} elearningCompletedAt updated`
               );
-              await this.mailsService.sendAllElearningUnitsCompletedMail(user);
             }
+            this.logger.log(
+              `User with id ${userId} has completed all elearning units, sending congratulation mail`
+            );
+            await this.mailsService.sendAllElearningUnitsCompletedMail(user);
           }
         })
         .catch((error) => {
