@@ -173,6 +173,7 @@ export class UsersCreationController {
         department: createUserRegistrationDto.department,
         nudges: createUserRegistrationDto.nudges,
         sectorOccupations: createUserRegistrationDto.sectorOccupations,
+        currentJob: createUserRegistrationDto.currentJob,
         optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
