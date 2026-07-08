@@ -13,7 +13,7 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { APIResponse } from 'src/utils/types';
@@ -592,6 +592,9 @@ describe('UserCreation', () => {
           }),
         })
       );
+
+      const createdUser = await usersHelper.findUser(response.body.id);
+      expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
     });
     it('Should return 201 and a created candidate if missing optional fields', async () => {
       const user = await userFactory.create(

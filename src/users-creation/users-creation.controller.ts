@@ -300,6 +300,12 @@ export class UsersCreationController {
 
       // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
+        // TODO: This should be removed when the onboarding step for referer creation is implemented in the new onboarding
+        // - Set the onboardingStatus to completed in user because the referer onboarding is not implemented yet (use legacy version)
+        await this.usersCreationService.updateUserById(createdUserId, {
+          onboardingStatus: OnboardingStatus.COMPLETED,
+        });
+
         await this.usersCreationService.sendAdminNewRefererNotifications(
           createdUser
         );
