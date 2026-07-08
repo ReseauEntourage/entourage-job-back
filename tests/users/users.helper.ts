@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import {
   CurrentUserDto,
@@ -17,7 +18,9 @@ export class UsersHelper {
   constructor(
     private authService: AuthService,
     private usersService: UsersService,
-    private userFactory: UserFactory
+    private userFactory: UserFactory,
+    @InjectModel(User)
+    private userModel: typeof User
   ) {}
 
   async createLoggedInUser(
@@ -58,6 +61,12 @@ export class UsersHelper {
 
   async findUser(userId: string): Promise<User> {
     const user = await this.usersService.findOneWithRelations(userId);
+    return user?.toJSON();
+  }
+
+  // Reads the raw row with all columns, unlike findUser which is limited to UserAttributes
+  async findUserRaw(userId: string): Promise<User> {
+    const user = await this.userModel.findByPk(userId);
     return user?.toJSON();
   }
 }

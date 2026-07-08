@@ -239,8 +239,10 @@ export class UsersCreationController {
         if (isCompanyAdmin) {
           // TODO: This is should be removed when the onboarding step for company admin creation is implemented in the new onboarding
           // - Set the onboardingStatus to completed in user because the company admin onboarding is not implemented yet (use legacy version)
+          // - Set elearningCompletedAt because company admins have no eLearning units assigned, so the contact gate must not block them
           await this.usersCreationService.updateUserById(createdUserId, {
             onboardingStatus: OnboardingStatus.COMPLETED,
+            elearningCompletedAt: new Date(),
           });
 
           await this.usersCreationService.updateUserProfileByUserId(
@@ -302,8 +304,10 @@ export class UsersCreationController {
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
         // TODO: This should be removed when the onboarding step for referer creation is implemented in the new onboarding
         // - Set the onboardingStatus to completed in user because the referer onboarding is not implemented yet (use legacy version)
+        // - Set elearningCompletedAt because referers have no eLearning units assigned, so the contact gate must not block them
         await this.usersCreationService.updateUserById(createdUserId, {
           onboardingStatus: OnboardingStatus.COMPLETED,
+          elearningCompletedAt: new Date(),
         });
 
         await this.usersCreationService.sendAdminNewRefererNotifications(

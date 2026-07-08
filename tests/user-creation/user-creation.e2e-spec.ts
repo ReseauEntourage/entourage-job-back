@@ -1,11 +1,13 @@
 /* eslint-disable no-console */
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
+import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
@@ -37,6 +39,7 @@ describe('UserCreation', () => {
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
+  let throttlerStorage: ThrottlerStorage;
 
   let businessSector1: BusinessSector;
   let nudgeCv: Nudge;
@@ -68,6 +71,7 @@ describe('UserCreation', () => {
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
+    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
   });
 
   beforeAll(async () => {
@@ -114,6 +118,10 @@ describe('UserCreation', () => {
   });
 
   beforeEach(async () => {
+    // Reset rate limiting between tests so the throttle quota applies per test, not per file
+    Object.keys(throttlerStorage.storage).forEach((key) => {
+      delete throttlerStorage.storage[key];
+    });
     try {
       await databaseHelper.resetTestDB();
     } catch (error) {
@@ -492,6 +500,9 @@ describe('UserCreation', () => {
           }),
         })
       );
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 200 and a created coach if valid coach data', async () => {
       const user = await userFactory.create(
@@ -536,6 +547,9 @@ describe('UserCreation', () => {
           }),
         })
       );
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 200 and a created referer if valid referer data', async () => {
       const user = await userFactory.create(
@@ -593,8 +607,41 @@ describe('UserCreation', () => {
         })
       );
 
-      const createdUser = await usersHelper.findUser(response.body.id);
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
       expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
+      expect(createdUser.elearningCompletedAt).not.toBeNull();
+    });
+    it('Should set elearningCompletedAt when a coach registers as company admin', async () => {
+      const user = await userFactory.create(
+        { role: UserRoles.COACH },
+        {},
+        false
+      );
+
+      const userToSend = {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gender: user.gender,
+        department: 'Paris (75)' as Department,
+        password: user.password,
+        birthDate: '1996-24-04',
+        materialInsecurity: CandidateYesNo.YES,
+        networkInsecurity: CandidateYesNo.NO,
+        companyName: 'Entreprise Admin Test',
+        companyRole: CompanyUserRole.EXECUTIVE,
+      };
+
+      const response: APIResponse<
+        UsersCreationController['createUserRegistration']
+      > = await request(server).post(`${route}/registration`).send(userToSend);
+      expect(response.status).toBe(201);
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
+      expect(createdUser.elearningCompletedAt).not.toBeNull();
     });
     it('Should return 201 and a created candidate if missing optional fields', async () => {
       const user = await userFactory.create(
