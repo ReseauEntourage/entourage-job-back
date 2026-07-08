@@ -2,10 +2,10 @@ import { execFile } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { PusherService } from 'src/external-services/pusher/pusher.service';
@@ -20,15 +20,33 @@ import {
 } from 'src/queues/queues.types';
 import { detectPdftocairoPath } from 'src/utils/misc/pdf-to-cairo';
 
+const CANCELLATION_CHECK_INTERVAL_MS = 2000;
+
+class ProfileGenerationCancelledError extends Error {}
+
 @Processor(Queues.PROFILE_GENERATION)
 @Injectable()
 export class ProfileGeneratorProcessor extends WorkerHost {
   constructor(
     private readonly openAiService: OpenAiService,
     private readonly pusherService: PusherService,
-    private readonly profileGenerationService: ProfileGenerationService
+    private readonly profileGenerationService: ProfileGenerationService,
+    @InjectQueue(Queues.PROFILE_GENERATION)
+    private readonly profileGenerationQueue: Queue
   ) {
     super();
+  }
+
+  /**
+   * Relit l'état du job depuis Redis (le worker peut tourner sur une instance
+   * différente de celle ayant reçu la requête d'annulation).
+   */
+  private async isJobCancelled(jobId: string | undefined): Promise<boolean> {
+    if (!jobId) {
+      return false;
+    }
+    const freshJob = await this.profileGenerationQueue.getJob(jobId);
+    return !!freshJob?.data?.cancelled;
   }
 
   async process(job: Job): Promise<void> {
@@ -43,6 +61,8 @@ export class ProfileGeneratorProcessor extends WorkerHost {
   async handleProfileGeneration(job: Job<GenerateProfileFromPDFJob>) {
     const { s3Key, userProfileId, userId, fileHash } = job.data;
     let tempPdfPath = '';
+    let cancelledDuringWait = false;
+    let cancellationCheckInterval: ReturnType<typeof setInterval> | undefined;
 
     try {
       await job.updateProgress(10);
@@ -83,12 +103,30 @@ export class ProfileGeneratorProcessor extends WorkerHost {
 
       await job.updateProgress(30);
 
-      // Traitement long avec OpenAI
+      // Traitement long avec OpenAI : annulation coopérative via un signal
+      // relu périodiquement depuis les métadonnées du job (Redis).
+      const abortController = new AbortController();
+      cancellationCheckInterval = setInterval(() => {
+        void this.isJobCancelled(job.id).then((isCancelled) => {
+          if (isCancelled) {
+            cancelledDuringWait = true;
+            abortController.abort();
+          }
+        });
+      }, CANCELLATION_CHECK_INTERVAL_MS);
+
       const extractedCVData = await this.openAiService.extractCVFromImages(
-        base64Images
+        base64Images,
+        abortController.signal
       );
 
       await job.updateProgress(80);
+
+      // Fenêtre résiduelle : l'annulation peut arriver après la réponse OpenAI
+      // mais avant l'écriture du profil.
+      if (cancelledDuringWait || (await this.isJobCancelled(job.id))) {
+        throw new ProfileGenerationCancelledError();
+      }
 
       await this.profileGenerationService.saveExtractedCVData(
         userProfileId,
@@ -119,19 +157,29 @@ export class ProfileGeneratorProcessor extends WorkerHost {
 
       return;
     } catch (error: unknown) {
+      const isCancelled =
+        cancelledDuringWait ||
+        error instanceof ProfileGenerationCancelledError ||
+        (await this.isJobCancelled(job.id));
+
       await this.pusherService.sendEvent(
         `${PusherChannels.PROFILE_GENERATION}-${userId}`,
         PusherEvents.PROFILE_GENERATION_COMPLETE,
         {
           success: false,
-          error:
-            error instanceof Error ? error.message : 'Une erreur est survenue',
+          reason: isCancelled ? 'cancelled' : 'error',
+          error: isCancelled
+            ? undefined
+            : error instanceof Error
+            ? error.message
+            : 'Une erreur est survenue',
           jobId: job.id,
           userProfileId,
         }
       );
       throw error;
     } finally {
+      clearInterval(cancellationCheckInterval);
       // Nettoyage des fichiers temporaires
       if (tempPdfPath && fs.existsSync(tempPdfPath)) {
         try {

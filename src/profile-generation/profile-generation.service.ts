@@ -52,6 +52,26 @@ export class ProfileGenerationService {
     };
   }
 
+  /**
+   * Annule un job de génération de profil en cours pour l'utilisateur donné.
+   * Job en attente : suppression directe. Job actif : signal d'annulation
+   * porté par les métadonnées du job (data.cancelled), relu par le worker.
+   */
+  async cancelProfileGeneration(jobId: string, userId: string): Promise<void> {
+    const job = await this.queuesService.getProfileGenerationJob(jobId);
+
+    if (!job || job.data?.userId !== userId) {
+      return;
+    }
+
+    if ((await job.isWaiting()) || (await job.isDelayed())) {
+      await job.remove();
+      return;
+    }
+
+    await job.updateData({ ...job.data, cancelled: true });
+  }
+
   async shouldExtractCV(
     userProfileId: string,
     fileHash: string

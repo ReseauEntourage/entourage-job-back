@@ -193,6 +193,7 @@ export interface BulkSendStaffMessagingMessageJob {
 }
 
 export interface GenerateProfileFromPDFJob {
+  cancelled?: boolean;
   fileHash: string;
   s3Key: string;
   userId: string;
