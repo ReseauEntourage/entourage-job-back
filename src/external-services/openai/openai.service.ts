@@ -127,11 +127,19 @@ export class OpenAiService {
 
       return extractedData;
     } catch (error) {
-      this.logger.error(
-        `Erreur lors de l'extraction des données du CV à partir d'images: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      if (signal?.aborted) {
+        this.logger.debug(
+          `Extraction du CV interrompue (annulation du job): ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      } else {
+        this.logger.error(
+          `Erreur lors de l'extraction des données du CV à partir d'images: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
       throw new Error(
         `Impossible d'extraire les données du CV à partir d'images: ${
           error instanceof Error ? error.message : String(error)

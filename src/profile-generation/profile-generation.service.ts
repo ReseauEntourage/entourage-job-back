@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { QueuesService } from '../queues/producers/queues.service';
@@ -23,6 +24,8 @@ import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
 @Injectable()
 export class ProfileGenerationService {
+  private readonly logger = new Logger(ProfileGenerationService.name);
+
   constructor(
     @InjectModel(ExtractedCVData)
     private extractedCVDataModel: typeof ExtractedCVData,
@@ -64,12 +67,20 @@ export class ProfileGenerationService {
       return;
     }
 
+    const { userProfileId } = job.data;
+
     if ((await job.isWaiting()) || (await job.isDelayed())) {
       await job.remove();
+      this.logger.warn(
+        `[ProfileGeneration] Génération de profil annulée par l'utilisateur (jobId=${jobId}, userId=${userId}, userProfileId=${userProfileId}, état=waiting)`
+      );
       return;
     }
 
     await job.updateData({ ...job.data, cancelled: true });
+    this.logger.warn(
+      `[ProfileGeneration] Génération de profil annulée par l'utilisateur (jobId=${jobId}, userId=${userId}, userProfileId=${userProfileId}, état=active)`
+    );
   }
 
   async shouldExtractCV(

@@ -3,7 +3,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { Job, Queue } from 'bullmq';
 import { ProfileGenerationService } from '../../profile-generation/profile-generation.service';
@@ -27,6 +27,8 @@ class ProfileGenerationCancelledError extends Error {}
 @Processor(Queues.PROFILE_GENERATION)
 @Injectable()
 export class ProfileGeneratorProcessor extends WorkerHost {
+  private readonly logger = new Logger(ProfileGeneratorProcessor.name);
+
   constructor(
     private readonly openAiService: OpenAiService,
     private readonly pusherService: PusherService,
@@ -161,6 +163,17 @@ export class ProfileGeneratorProcessor extends WorkerHost {
         cancelledDuringWait ||
         error instanceof ProfileGenerationCancelledError ||
         (await this.isJobCancelled(job.id));
+
+      if (!isCancelled) {
+        this.logger.error(
+          `[ProfileGeneration] Échec technique de la génération de profil (jobId=${
+            job.id
+          }, userId=${userId}): ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          error instanceof Error ? error.stack : undefined
+        );
+      }
 
       await this.pusherService.sendEvent(
         `${PusherChannels.PROFILE_GENERATION}-${userId}`,
