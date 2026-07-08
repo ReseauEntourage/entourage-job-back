@@ -121,9 +121,10 @@ export class UsersCreationController {
     try {
       createdUser = await this.usersCreationService.createUser(userToCreate);
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         throw new ConflictException();
       }
+      throw err;
     }
 
     await this.usersCreationService.sendNewAccountMail(createdUser, jwtToken);
@@ -319,11 +320,12 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         console.error('Duplicate email error:', err);
         throw new ConflictException();
       }
       console.error('Error during user registration creation:', err);
+      throw err;
     }
   }
 
@@ -407,9 +409,10 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         throw new ConflictException();
       }
+      throw err;
     }
   }
 }
