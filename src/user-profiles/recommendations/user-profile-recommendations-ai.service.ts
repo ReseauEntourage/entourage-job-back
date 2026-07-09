@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment';
 import { QueryTypes } from 'sequelize';
@@ -34,6 +34,8 @@ export const APPEND_BATCH_SIZE = 50;
 
 @Injectable()
 export class UserProfileRecommendationsService extends UserProfileRecommendationBase {
+  private readonly logger = new Logger(UserProfileRecommendationsService.name);
+
   constructor(
     @InjectModel(UserProfileRecommendation)
     userProfileRecommandationModel: typeof UserProfileRecommendation,
@@ -573,34 +575,47 @@ ${workloadCases}
       (r) => r.finalScore === null || r.rank === null
     );
 
-    /**
-     * Conditions for refreshing the pool:
-     * - No previous recommendations date (first time)
-     * - Last recommendations are older than 1 week
-     * - No recommendations currently stored
-     * - At least one recommended profile is no longer available
-     * - At least one recommended profile is now deleted
-     * - At least one recommendation is from the legacy system (finalScore is null or rank is null)
-     */
-    const needsRefresh =
-      !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecos.length === 0 ||
-      recIsUnavailable ||
-      recIsLegacy;
+    const noDate = !userProfile.lastRecommendationsDate;
+    const isStale =
+      !!userProfile.lastRecommendationsDate &&
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo);
+    const isEmpty = currentRecos.length === 0;
 
-    /**
-     * If any of the above conditions are met, we refresh the pool by deleting existing recommendations and computing a new set. We also update the lastRecommendationsDate to now.
-     * This ensures that users always see up-to-date and relevant recommendations when they access their pool.
-     * The check for availability and legacy records ensures that we don't show users recommendations that are no longer valid or from an outdated system, which could lead to a poor user experience.
-     */
-    if (needsRefresh) {
-      await this.removeRecommendationsByUserId(user.id);
-      await this.updateRecommendationsByUserId(user.id, INITIAL_POOL_SIZE);
-      await this.userProfilesService.updateByUserId(user.id, {
-        lastRecommendationsDate: moment().toDate(),
-      });
+    const needsRefresh =
+      noDate || isStale || isEmpty || recIsUnavailable || recIsLegacy;
+
+    const reason = noDate
+      ? 'no lastRecommendationsDate (first time or invalidated after profile update)'
+      : isStale
+      ? `pool is stale (last computed: ${userProfile.lastRecommendationsDate})`
+      : isEmpty
+      ? 'pool is empty'
+      : recIsUnavailable
+      ? 'at least one recommended profile is no longer available'
+      : recIsLegacy
+      ? 'at least one recommendation is from the legacy system'
+      : null;
+
+    if (!needsRefresh) {
+      this.logger.log(
+        `[Recommendations] Pool for user ${user.id} is fresh (${currentRecos.length} recommendations, last computed: ${userProfile.lastRecommendationsDate}) — skipping refresh`
+      );
+      return;
     }
+
+    this.logger.log(
+      `[Recommendations] Refreshing pool for user ${user.id} — reason: ${reason}`
+    );
+
+    await this.removeRecommendationsByUserId(user.id);
+    await this.updateRecommendationsByUserId(user.id, INITIAL_POOL_SIZE);
+    await this.userProfilesService.updateByUserId(user.id, {
+      lastRecommendationsDate: moment().toDate(),
+    });
+
+    this.logger.log(
+      `[Recommendations] Pool refreshed for user ${user.id} — ${INITIAL_POOL_SIZE} new recommendations computed`
+    );
   }
 
   /**

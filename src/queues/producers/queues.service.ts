@@ -53,4 +53,8 @@ export class QueuesService {
     this.logger.log(`Adding job to embedding queue: ${type}`);
     return this.embeddingQueue.add(type, data, opts);
   }
+
+  async getProfileGenerationJob(jobId: string) {
+    return this.profileGenerationQueue.getJob(jobId);
+  }
 }

@@ -198,9 +198,10 @@ export class UsersController {
     try {
       updatedUser = await this.usersService.update(userId, updateUserDto);
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         throw new ConflictException();
       }
+      throw err;
     }
 
     if (!updatedUser) {

@@ -16,7 +16,8 @@ type CurrentUserIdentityUserKeys =
   | 'refererId'
   | 'onboardingStatus'
   | 'onboardingCompletedAt'
-  | 'onboardingWebinarSkippedAt';
+  | 'onboardingWebinarSkippedAt'
+  | 'elearningCompletedAt';
 
 export type CurrentUserIdentityDto = Pick<User, CurrentUserIdentityUserKeys> & {
   betaFeatures: Record<FeatureKey, boolean>;
@@ -43,6 +44,7 @@ export const CurrentUserIdentityAttributes: (
   'onboardingStatus',
   'onboardingCompletedAt',
   'onboardingWebinarSkippedAt',
+  'elearningCompletedAt',
   'linkedinAccessToken',
 ];
 
@@ -64,6 +66,7 @@ export const generateCurrentUserIdentityDto = (
   onboardingStatus: user.onboardingStatus,
   onboardingCompletedAt: user.onboardingCompletedAt,
   onboardingWebinarSkippedAt: user.onboardingWebinarSkippedAt,
+  elearningCompletedAt: user.elearningCompletedAt,
   betaFeatures: Object.fromEntries(
     (user.featureFlags ?? []).map((f) => [f.featureKey, f.enabled])
   ) as Record<FeatureKey, boolean>,

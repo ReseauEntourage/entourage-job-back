@@ -135,6 +135,18 @@ export class ElearningService {
     });
   }
 
+  async hasCompletedAllUnits(userId: string, role: UserRole): Promise<boolean> {
+    const units = await this.elearningUnitModel.findAll({
+      attributes: ELEARNING_UNIT_ATTRIBUTES,
+      include: generateElearningUnitIncludes({ userRole: role, userId }),
+      order: [['order', 'ASC']],
+    });
+    if (units.length === 0) {
+      return false;
+    }
+    return units.every((unit) => unit.userCompletions?.[0]?.validatedAt);
+  }
+
   // -- PRIVATE METHODS --
 
   /**
@@ -154,27 +166,49 @@ export class ElearningService {
     // If the user is a candidate or coach, we check if they have completed all
     // elearning units and send them a congratulation mail if it's the case
     if (user.role === UserRoles.CANDIDATE || user.role === UserRoles.COACH) {
-      this.allUnitsNotCompletedByUser(user)
-        .then(async (notCompletedUnits) => {
-          const allCompleted = notCompletedUnits.length === 0;
+      try {
+        const allCompleted = await this.hasCompletedAllUnits(
+          userId,
+          user.role as UserRole
+        );
+        this.logger.log(
+          `User with id ${userId} has completed all elearning units: ${allCompleted}`
+        );
+        if (!allCompleted) {
+          return;
+        }
+
+        // La mise à jour est attendue avant de répondre : le front recharge
+        // /current juste après la dernière complétion pour débloquer le gate
+        // de contact, il ne doit pas pouvoir lire un elearningCompletedAt
+        // encore null.
+        if (!user.elearningCompletedAt) {
+          await this.usersService.update(userId, {
+            elearningCompletedAt: new Date(),
+          });
           this.logger.log(
-            `User with id ${userId} has completed all elearning units: ${allCompleted}`
+            `User with id ${userId} elearningCompletedAt updated`
           );
-          if (allCompleted) {
-            if (user) {
-              this.logger.log(
-                `User with id ${userId} has completed all elearning units, sending congratulation mail`
-              );
-              await this.mailsService.sendAllElearningUnitsCompletedMail(user);
-            }
-          }
-        })
-        .catch((error) => {
-          this.logger.error(
-            `Failed to process onElearningUnitCompleted for userId=${userId}`,
-            error instanceof Error ? error.stack : undefined
-          );
-        });
+        }
+
+        this.logger.log(
+          `User with id ${userId} has completed all elearning units, sending congratulation mail`
+        );
+        // Le mail reste hors du chemin critique de la réponse
+        this.mailsService
+          .sendAllElearningUnitsCompletedMail(user)
+          .catch((error) => {
+            this.logger.error(
+              `Failed to send elearning completion mail for userId=${userId}`,
+              error instanceof Error ? error.stack : undefined
+            );
+          });
+      } catch (error) {
+        this.logger.error(
+          `Failed to process onElearningUnitCompleted for userId=${userId}`,
+          error instanceof Error ? error.stack : undefined
+        );
+      }
     }
   }
 }

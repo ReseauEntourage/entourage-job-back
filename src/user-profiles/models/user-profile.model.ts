@@ -149,6 +149,11 @@ export class UserProfile extends Model {
   @Column
   lastRecommendationsDate: Date;
 
+  @IsDate()
+  @AllowNull(true)
+  @Column
+  embeddingPendingAt: Date;
+
   @CreatedAt
   createdAt: Date;
 

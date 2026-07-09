@@ -27,7 +27,10 @@ export class OpenAiService {
    * @param image Tableau de réponses ToBase64Response de pdf2pic
    * @returns Les données extraites selon le schéma fourni
    */
-  async extractCVFromImages(base64ImageArray: string[]): Promise<CvSchemaType> {
+  async extractCVFromImages(
+    base64ImageArray: string[],
+    signal?: AbortSignal
+  ): Promise<CvSchemaType> {
     const content: ChatCompletionContentPart[] = [
       {
         type: 'text',
@@ -44,37 +47,40 @@ export class OpenAiService {
     }
 
     try {
-      const response = await this.openai.chat.completions.create({
-        model: CV_EXTRACTION_MODEL,
-        max_completion_tokens: Number(
-          process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096
-        ),
-        messages: [
-          {
-            role: 'system',
-            content:
-              "Tu es un expert en analyse de CV. Tu dois extraire toutes les informations pertinentes d'un CV à partir d'images et les structurer selon le schéma JSON demandé. Le document peut être sur plusieurs pages, analyse toutes les pages. Pour la description, rédige un court résumé du CV à la première personne en mettant en avant les compétences clés, l'expérience et la formation de la personne.",
-          },
-          {
-            role: 'user',
-            content: content,
-          },
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'extract_cv_data',
-              description: "Extraire les données structurées d'un CV",
-              parameters: cvSchema,
+      const response = await this.openai.chat.completions.create(
+        {
+          model: CV_EXTRACTION_MODEL,
+          max_completion_tokens: Number(
+            process.env.OPENAI_MAX_COMPLETION_TOKENS ?? 4096
+          ),
+          messages: [
+            {
+              role: 'system',
+              content:
+                "Tu es un expert en analyse de CV. Tu dois extraire toutes les informations pertinentes d'un CV à partir d'images et les structurer selon le schéma JSON demandé. Le document peut être sur plusieurs pages, analyse toutes les pages. Pour la description, rédige un court résumé du CV à la première personne en mettant en avant les compétences clés, l'expérience et la formation de la personne.",
             },
+            {
+              role: 'user',
+              content: content,
+            },
+          ],
+          tools: [
+            {
+              type: 'function',
+              function: {
+                name: 'extract_cv_data',
+                description: "Extraire les données structurées d'un CV",
+                parameters: cvSchema,
+              },
+            },
+          ],
+          tool_choice: {
+            type: 'function',
+            function: { name: 'extract_cv_data' },
           },
-        ],
-        tool_choice: {
-          type: 'function',
-          function: { name: 'extract_cv_data' },
         },
-      });
+        { signal }
+      );
 
       const choice = response.choices?.[0];
       const toolCalls = (choice?.message as ChatCompletionMessage)?.tool_calls;
@@ -121,11 +127,19 @@ export class OpenAiService {
 
       return extractedData;
     } catch (error) {
-      this.logger.error(
-        `Erreur lors de l'extraction des données du CV à partir d'images: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      if (signal?.aborted) {
+        this.logger.debug(
+          `Extraction du CV interrompue (annulation du job): ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      } else {
+        this.logger.error(
+          `Erreur lors de l'extraction des données du CV à partir d'images: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
       throw new Error(
         `Impossible d'extraire les données du CV à partir d'images: ${
           error instanceof Error ? error.message : String(error)

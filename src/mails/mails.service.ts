@@ -120,7 +120,7 @@ export class MailsService {
     }
   }
 
-  async sendVerificationMail(user: User, token: string) {
+  async sendVerificationMail(user: User, token: string, otpCode?: string) {
     this.logger.log(
       `Sending verification mail to user with email ${user.email}`
     );
@@ -134,6 +134,7 @@ export class MailsService {
         token,
         zone: user.zone,
         staffContact: user.staffContact,
+        otpCode,
       },
     });
   }
