@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -62,24 +63,13 @@ export class UsersCreationController {
   @Public()
   @Get('registration/compatible-profiles')
   async getPreRegistrationCompatibleProfiles(
-    @Query() dto: GetPreRegistrationCompatibleProfilesDto
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    dto: GetPreRegistrationCompatibleProfilesDto
   ) {
-    const nudgeIds = Array.isArray(dto.nudgeIds)
-      ? dto.nudgeIds
-      : dto.nudgeIds
-      ? [dto.nudgeIds]
-      : [];
-
-    const businessSectorIds = Array.isArray(dto.businessSectorIds)
-      ? dto.businessSectorIds
-      : dto.businessSectorIds
-      ? [dto.businessSectorIds]
-      : [];
-
     return this.userProfilesService.findPreRegistrationCompatibleProfiles(
       dto.role,
-      nudgeIds,
-      businessSectorIds
+      dto.nudgeIds ?? [],
+      dto.businessSectorIds ?? []
     );
   }
 
