@@ -65,7 +65,7 @@ export class UsersHelper {
   }
 
   // Reads the raw row with all columns, unlike findUser which is limited to UserAttributes
-  async findUserRaw(userId: string): Promise<User> {
+  async findUserRaw(userId: string): Promise<User | undefined> {
     const user = await this.userModel.findByPk(userId);
     return user?.toJSON();
   }
