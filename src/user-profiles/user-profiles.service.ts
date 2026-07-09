@@ -614,13 +614,39 @@ export class UserProfilesService {
       selectedIds = randomSample.map(({ id }) => id);
     } else if (hasNudges && hasSectors) {
       // AND: a profile must match at least one nudge AND at least one sector
+      const andInclude = [
+        userInclude,
+        ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
+        {
+          model: UserProfileSectorOccupation,
+          as: 'sectorOccupations',
+          required: true,
+          attributes: [] as string[],
+          where: { businessSectorId: { [Op.in]: businessSectorIds } },
+        },
+      ];
+
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: andInclude,
+      });
+
       const andMatches = await this.userProfileModel.findAll({
         subQuery: false,
+        limit: 6,
         attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
         where: baseWhere,
-        include: [
+        include: andInclude,
+        group: ['UserProfile.id'],
+      });
+      selectedIds = andMatches.map(({ id }) => id);
+
+      if (selectedIds.length === 0) {
+        const sectorOnlyInclude = [
           userInclude,
-          ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
           {
             model: UserProfileSectorOccupation,
             as: 'sectorOccupations',
@@ -628,70 +654,79 @@ export class UserProfilesService {
             attributes: [] as string[],
             where: { businessSectorId: { [Op.in]: businessSectorIds } },
           },
-        ],
-        group: ['UserProfile.id'],
-      });
-      const allIds = andMatches.map(({ id }) => id);
-      count = allIds.length;
-      const shuffled = allIds.sort(() => 0.5 - Math.random());
-      selectedIds = shuffled.slice(0, 6);
+        ];
 
-      if (selectedIds.length === 0) {
+        count = await this.userProfileModel.count({
+          distinct: true,
+          col: 'id',
+          where: baseWhere,
+          include: sectorOnlyInclude,
+        });
+
         const sectorMatches = await this.userProfileModel.findAll({
           subQuery: false,
+          limit: 6,
           attributes: ['id'],
+          order: sequelize.literal('RANDOM()'),
           where: baseWhere,
-          include: [
-            userInclude,
-            {
-              model: UserProfileSectorOccupation,
-              as: 'sectorOccupations',
-              required: true,
-              attributes: [] as string[],
-              where: { businessSectorId: { [Op.in]: businessSectorIds } },
-            },
-          ],
+          include: sectorOnlyInclude,
+          group: ['UserProfile.id'],
         });
-        const sectorIds = sectorMatches.map(({ id }) => id);
-        count = sectorIds.length;
-        const sectorShuffled = sectorIds.sort(() => 0.5 - Math.random());
-        selectedIds = sectorShuffled.slice(0, 6);
+        selectedIds = sectorMatches.map(({ id }) => id);
         broadened = true;
       }
     } else if (hasNudges) {
+      const nudgeInclude = [
+        userInclude,
+        ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
+      ];
+
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: nudgeInclude,
+      });
+
       const nudgeMatches = await this.userProfileModel.findAll({
         subQuery: false,
+        limit: 6,
         attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
         where: baseWhere,
-        include: [
-          userInclude,
-          ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
-        ],
+        include: nudgeInclude,
+        group: ['UserProfile.id'],
       });
-      const allIds = nudgeMatches.map(({ id }) => id);
-      count = allIds.length;
-      const shuffled = allIds.sort(() => 0.5 - Math.random());
-      selectedIds = shuffled.slice(0, 6);
+      selectedIds = nudgeMatches.map(({ id }) => id);
     } else {
+      const sectorInclude = [
+        userInclude,
+        {
+          model: UserProfileSectorOccupation,
+          as: 'sectorOccupations',
+          required: true,
+          attributes: [] as string[],
+          where: { businessSectorId: { [Op.in]: businessSectorIds } },
+        },
+      ];
+
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: sectorInclude,
+      });
+
       const sectorMatches = await this.userProfileModel.findAll({
         subQuery: false,
+        limit: 6,
         attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
         where: baseWhere,
-        include: [
-          userInclude,
-          {
-            model: UserProfileSectorOccupation,
-            as: 'sectorOccupations',
-            required: true,
-            attributes: [] as string[],
-            where: { businessSectorId: { [Op.in]: businessSectorIds } },
-          },
-        ],
+        include: sectorInclude,
+        group: ['UserProfile.id'],
       });
-      const allIds = sectorMatches.map(({ id }) => id);
-      count = allIds.length;
-      const shuffled = allIds.sort(() => 0.5 - Math.random());
-      selectedIds = shuffled.slice(0, 6);
+      selectedIds = sectorMatches.map(({ id }) => id);
     }
 
     if (selectedIds.length === 0) {
