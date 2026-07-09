@@ -233,7 +233,7 @@ export class AuthService {
   }
 
   async verifyOtp(email: string, code: string): Promise<LoggedUser> {
-    const user = await this.findOneUserByMail(email);
+    const user = await this.usersService.findOneByMailWithOtp(email);
     if (!user) {
       throw new NotFoundException();
     }

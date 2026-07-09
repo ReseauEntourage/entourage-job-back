@@ -31,7 +31,7 @@ import { UserProfileRecommendationsService } from 'src/user-profiles/recommendat
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
-import { User, UserAttributes } from './models';
+import { OtpUserAttributes, User, UserAttributes } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
@@ -92,6 +92,13 @@ export class UsersService {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
+    });
+  }
+
+  async findOneByMailWithOtp(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...OtpUserAttributes],
     });
   }
 

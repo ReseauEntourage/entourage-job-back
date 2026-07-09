@@ -360,6 +360,9 @@ export class User extends HistorizedModel {
       saltReset,
       linkedinAccessToken,
       linkedinRefreshToken,
+      otpCode,
+      otpSalt,
+      otpExpiresAt,
       ...rest
     } = attributes;
     return {
