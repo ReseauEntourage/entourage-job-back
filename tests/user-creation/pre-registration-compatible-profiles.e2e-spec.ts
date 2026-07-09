@@ -84,6 +84,9 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
   });
 
   afterAll(async () => {
+    // Réinitialisation de la base de données pour ne pas polluer les suites suivantes
+    await databaseHelper.resetTestDB();
+
     // Fermeture de l'application NestJS
     await app.close();
 
