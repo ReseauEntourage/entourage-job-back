@@ -122,7 +122,7 @@ export class MailsService {
 
   async sendVerificationMail(user: User, token: string, otpCode?: string) {
     this.logger.log(
-      `Sending verification mail to user with email ${user.email} - OTP Code : ${otpCode}`
+      `Sending verification mail to user with email ${user.email}`
     );
     return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
       toEmail: user.email,
