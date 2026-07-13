@@ -792,14 +792,6 @@ export class UserProfilesService {
         sequelize.where(
           sequelize.fn(
             'LOWER',
-            sequelize.fn('unaccent', sequelize.col('UserProfile.introduction'))
-          ),
-          'LIKE',
-          `%${sanitizedJobName}%`
-        ),
-        sequelize.where(
-          sequelize.fn(
-            'LOWER',
             sequelize.fn('unaccent', sequelize.col('UserProfile.description'))
           ),
           'LIKE',
@@ -841,7 +833,7 @@ export class UserProfilesService {
 
     // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
-      attributes: ['id', 'introduction', 'description'],
+      attributes: ['id', 'description'],
       where: whereOptions,
       include: [
         {
@@ -1521,7 +1513,6 @@ export class UserProfilesService {
       SELECT
         up."hasPicture",
         up.department,
-        up.introduction,
         up.description,
         u."firstName",
         u."lastName",

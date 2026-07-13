@@ -34,7 +34,6 @@ export type PublicProfileDto = {
   hasPicture: boolean;
   id: string;
   interests: Interest[];
-  introduction: string;
   isAvailable: boolean;
   lastName: string;
   linkedinUrl?: string;
@@ -69,7 +68,6 @@ export const generatePublicProfileDto = (
     isAvailable: userProfile.isAvailable,
     nudges: userProfile.nudges,
     customNudges: userProfile.customNudges,
-    introduction: userProfile.introduction,
     description: userProfile.description,
     sectorOccupations: userProfile.sectorOccupations,
     userProfileLanguages: userProfile.userProfileLanguages,

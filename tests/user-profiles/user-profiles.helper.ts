@@ -40,7 +40,6 @@ export class UserProfilesHelper {
 
       // From UserProfileData
       description: userProfileData.description,
-      introduction: userProfileData.introduction,
       currentJob: userProfileData.currentJob,
       department: userProfileData.department,
       isAvailable: userProfileData.isAvailable,

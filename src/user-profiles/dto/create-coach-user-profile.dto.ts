@@ -5,7 +5,6 @@ import { UserProfile, UserProfileSectorOccupation } from '../models';
 export class CreateCoachUserProfileDto extends PickType(UserProfile, [
   'userId',
   'description',
-  'introduction',
   'department',
   'currentJob',
   'isAvailable',
