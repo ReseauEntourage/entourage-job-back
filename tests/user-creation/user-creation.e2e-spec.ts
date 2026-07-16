@@ -1,11 +1,13 @@
 /* eslint-disable no-console */
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { BusinessSector } from 'src/common/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
+import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
@@ -13,7 +15,7 @@ import {
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
-import { UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { APIResponse } from 'src/utils/types';
@@ -37,6 +39,7 @@ describe('UserCreation', () => {
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
+  let throttlerStorage: ThrottlerStorage;
 
   let businessSector1: BusinessSector;
   let nudgeCv: Nudge;
@@ -68,6 +71,7 @@ describe('UserCreation', () => {
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
+    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
   });
 
   beforeAll(async () => {
@@ -114,6 +118,10 @@ describe('UserCreation', () => {
   });
 
   beforeEach(async () => {
+    // Reset rate limiting between tests so the throttle quota applies per test, not per file
+    Object.keys(throttlerStorage.storage).forEach((key) => {
+      delete throttlerStorage.storage[key];
+    });
     try {
       await databaseHelper.resetTestDB();
     } catch (error) {
@@ -492,6 +500,9 @@ describe('UserCreation', () => {
           }),
         })
       );
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 200 and a created coach if valid coach data', async () => {
       const user = await userFactory.create(
@@ -536,6 +547,9 @@ describe('UserCreation', () => {
           }),
         })
       );
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 200 and a created referer if valid referer data', async () => {
       const user = await userFactory.create(
@@ -592,6 +606,141 @@ describe('UserCreation', () => {
           }),
         })
       );
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
+      expect(createdUser.elearningCompletedAt).not.toBeNull();
+    });
+    it('Should set elearningCompletedAt when a coach registers as company admin', async () => {
+      const user = await userFactory.create(
+        { role: UserRoles.COACH },
+        {},
+        false
+      );
+
+      const userToSend = {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gender: user.gender,
+        department: 'Paris (75)' as Department,
+        password: user.password,
+        birthDate: '1996-24-04',
+        materialInsecurity: CandidateYesNo.YES,
+        networkInsecurity: CandidateYesNo.NO,
+        companyName: 'Entreprise Admin Test',
+        companyRole: CompanyUserRole.EXECUTIVE,
+      };
+
+      const response: APIResponse<
+        UsersCreationController['createUserRegistration']
+      > = await request(server).post(`${route}/registration`).send(userToSend);
+      expect(response.status).toBe(201);
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.onboardingStatus).toBe(OnboardingStatus.COMPLETED);
+      expect(createdUser.elearningCompletedAt).not.toBeNull();
+    });
+    it('Should not complete onboarding when a coach registers to a company with a role that cannot be admin', async () => {
+      const user = await userFactory.create(
+        { role: UserRoles.COACH },
+        {},
+        false
+      );
+
+      const userToSend = {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        gender: user.gender,
+        department: 'Paris (75)' as Department,
+        password: user.password,
+        birthDate: '1996-24-04',
+        materialInsecurity: CandidateYesNo.YES,
+        networkInsecurity: CandidateYesNo.NO,
+        companyName: 'Entreprise Employee Test',
+        companyRole: CompanyUserRole.EMPLOYEE,
+      };
+
+      const response: APIResponse<
+        UsersCreationController['createUserRegistration']
+      > = await request(server).post(`${route}/registration`).send(userToSend);
+      expect(response.status).toBe(201);
+
+      const createdUser = await usersHelper.findUserRaw(response.body.id);
+      expect(createdUser.onboardingStatus).toBe(OnboardingStatus.NOT_STARTED);
+      expect(createdUser.elearningCompletedAt).toBeNull();
+    });
+    it('Should not complete onboarding for a second admin-eligible user joining a company that already has an admin', async () => {
+      const firstAdmin = await userFactory.create(
+        { role: UserRoles.COACH },
+        {},
+        false
+      );
+      const secondUser = await userFactory.create(
+        { role: UserRoles.COACH },
+        {},
+        false
+      );
+
+      const companyName = 'Entreprise Deja Admin Test';
+      const commonFields = {
+        department: 'Paris (75)' as Department,
+        birthDate: '1996-24-04',
+        materialInsecurity: CandidateYesNo.YES,
+        networkInsecurity: CandidateYesNo.NO,
+        companyName,
+        companyRole: CompanyUserRole.EXECUTIVE,
+      };
+
+      const firstResponse: APIResponse<
+        UsersCreationController['createUserRegistration']
+      > = await request(server)
+        .post(`${route}/registration`)
+        .send({
+          firstName: firstAdmin.firstName,
+          lastName: firstAdmin.lastName,
+          email: firstAdmin.email,
+          phone: firstAdmin.phone,
+          role: firstAdmin.role,
+          gender: firstAdmin.gender,
+          password: firstAdmin.password,
+          ...commonFields,
+        });
+      expect(firstResponse.status).toBe(201);
+      const firstCreatedUser = await usersHelper.findUserRaw(
+        firstResponse.body.id
+      );
+      expect(firstCreatedUser.onboardingStatus).toBe(
+        OnboardingStatus.COMPLETED
+      );
+
+      const secondResponse: APIResponse<
+        UsersCreationController['createUserRegistration']
+      > = await request(server)
+        .post(`${route}/registration`)
+        .send({
+          firstName: secondUser.firstName,
+          lastName: secondUser.lastName,
+          email: secondUser.email,
+          phone: secondUser.phone,
+          role: secondUser.role,
+          gender: secondUser.gender,
+          password: secondUser.password,
+          ...commonFields,
+        });
+      expect(secondResponse.status).toBe(201);
+      const secondCreatedUser = await usersHelper.findUserRaw(
+        secondResponse.body.id
+      );
+      expect(secondCreatedUser.onboardingStatus).toBe(
+        OnboardingStatus.NOT_STARTED
+      );
+      expect(secondCreatedUser.elearningCompletedAt).toBeNull();
     });
     it('Should return 201 and a created candidate if missing optional fields', async () => {
       const user = await userFactory.create(

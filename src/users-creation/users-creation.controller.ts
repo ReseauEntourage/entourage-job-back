@@ -4,9 +4,12 @@ import {
   Body,
   ConflictException,
   Controller,
+  Get,
   NotFoundException,
   Post,
+  Query,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -17,6 +20,7 @@ import {
   CompanyUserRole,
 } from 'src/companies/company-user.utils';
 import { MailjetContactSource } from 'src/external-services/mailjet/mailjet.types';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { User } from 'src/users/models';
 import {
@@ -36,6 +40,7 @@ import {
   CreateUserPipe,
   CreateUserRegistrationDto,
   CreateUserRegistrationPipe,
+  GetPreRegistrationCompatibleProfilesDto,
 } from './dto';
 import { CreateUserReferingDto } from './dto/create-user-refering.dto';
 import { CreateUserReferingPipe } from './dto/create-user-refering.pipe';
@@ -49,7 +54,24 @@ function generateFakePassword() {
 @ApiTags('Users')
 @Controller('user')
 export class UsersCreationController {
-  constructor(private readonly usersCreationService: UsersCreationService) {}
+  constructor(
+    private readonly usersCreationService: UsersCreationService,
+    private readonly userProfilesService: UserProfilesService
+  ) {}
+
+  @Throttle(60, 60)
+  @Public()
+  @Get('registration/compatible-profiles')
+  async getPreRegistrationCompatibleProfiles(
+    @Query(new ValidationPipe({ transform: true, whitelist: true }))
+    dto: GetPreRegistrationCompatibleProfilesDto
+  ) {
+    return this.userProfilesService.findPreRegistrationCompatibleProfiles(
+      dto.role,
+      dto.nudgeIds ?? [],
+      dto.businessSectorIds ?? []
+    );
+  }
 
   @UserPermissions(Permissions.ADMIN)
   @UseGuards(UserPermissionsGuard)
@@ -89,9 +111,10 @@ export class UsersCreationController {
     try {
       createdUser = await this.usersCreationService.createUser(userToCreate);
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         throw new ConflictException();
       }
+      throw err;
     }
 
     await this.usersCreationService.sendNewAccountMail(createdUser, jwtToken);
@@ -141,6 +164,7 @@ export class UsersCreationController {
         department: createUserRegistrationDto.department,
         nudges: createUserRegistrationDto.nudges,
         sectorOccupations: createUserRegistrationDto.sectorOccupations,
+        currentJob: createUserRegistrationDto.currentJob,
         optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
@@ -206,8 +230,10 @@ export class UsersCreationController {
         if (isCompanyAdmin) {
           // TODO: This is should be removed when the onboarding step for company admin creation is implemented in the new onboarding
           // - Set the onboardingStatus to completed in user because the company admin onboarding is not implemented yet (use legacy version)
+          // - Set elearningCompletedAt because company admins have no eLearning units assigned, so the contact gate must not block them
           await this.usersCreationService.updateUserById(createdUserId, {
             onboardingStatus: OnboardingStatus.COMPLETED,
+            elearningCompletedAt: new Date(),
           });
 
           await this.usersCreationService.updateUserProfileByUserId(
@@ -267,6 +293,14 @@ export class UsersCreationController {
 
       // Referer
       if (createUserRegistrationDto.role === UserRoles.REFERER) {
+        // TODO: This should be removed when the onboarding step for referer creation is implemented in the new onboarding
+        // - Set the onboardingStatus to completed in user because the referer onboarding is not implemented yet (use legacy version)
+        // - Set elearningCompletedAt because referers have no eLearning units assigned, so the contact gate must not block them
+        await this.usersCreationService.updateUserById(createdUserId, {
+          onboardingStatus: OnboardingStatus.COMPLETED,
+          elearningCompletedAt: new Date(),
+        });
+
         await this.usersCreationService.sendAdminNewRefererNotifications(
           createdUser
         );
@@ -276,11 +310,12 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         console.error('Duplicate email error:', err);
         throw new ConflictException();
       }
       console.error('Error during user registration creation:', err);
+      throw err;
     }
   }
 
@@ -364,9 +399,10 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         throw new ConflictException();
       }
+      throw err;
     }
   }
 }

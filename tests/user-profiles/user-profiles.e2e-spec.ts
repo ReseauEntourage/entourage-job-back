@@ -174,6 +174,9 @@ describe('UserProfiles', () => {
   });
 
   afterAll(async () => {
+    // Réinitialisation de la base de données pour ne pas polluer les suites suivantes
+    await databaseHelper.resetTestDB();
+
     // Fermeture de l'application NestJS
     await app.close();
 
@@ -324,14 +327,12 @@ describe('UserProfiles', () => {
               ],
               nudges: [{ id: nudgeInterview.id }],
               description: 'hello',
-              introduction: 'hello',
               department: 'Paris (75)',
             };
             const userProfileCoach: UserProfileWithPartialAssociations = {
               currentJob: 'peintre',
               businessSectors: [{ name: 'bat' }] as BusinessSector[],
               description: 'hello',
-              introduction: 'hello',
               department: 'Paris (75)',
             };
             await userFactory.create(
@@ -1630,7 +1631,6 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
-              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -1644,7 +1644,6 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .send({
               description: 'hello',
-              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -1658,7 +1657,6 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               description: 'hello',
-              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -1672,7 +1670,6 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
-              introduction: 'hello',
               isAvailable: false,
               department: 'Paris (75)',
             });
@@ -1684,7 +1681,6 @@ describe('UserProfiles', () => {
           });
           const updatedProfile = {
             description: 'hello',
-            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
             sectorOccupations: [
@@ -1734,7 +1730,6 @@ describe('UserProfiles', () => {
         it('Should return 400, if linkedinUrl does not match the regex pattern', async () => {
           const updatedProfile: UserProfileWithPartialAssociations = {
             description: 'hello',
-            introduction: 'hello',
             department: 'Paris (75)',
             isAvailable: false,
             sectorOccupations: [
@@ -1758,7 +1753,6 @@ describe('UserProfiles', () => {
         it('Should return 400, if candidate updates his profile with coach properties', async () => {
           const updatedProfile: Partial<UserProfile> = {
             description: 'hello',
-            introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,
@@ -1779,7 +1773,6 @@ describe('UserProfiles', () => {
           });
           const updatedProfile = {
             description: 'hello',
-            introduction: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
             isAvailable: false,

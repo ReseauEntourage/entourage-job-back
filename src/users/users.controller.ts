@@ -27,7 +27,7 @@ import {
   UpdateUserRestrictedPipe,
 } from 'src/users/dto';
 import { isValidPhone } from 'src/utils/misc';
-import { FilterParams } from 'src/utils/types';
+import type { FilterParams } from 'src/utils/types';
 import {
   Self,
   SelfGuard,
@@ -115,7 +115,7 @@ export class UsersController {
     }
     try {
       await this.usersService.linkCompany(user, companyName);
-    } catch (err) {
+    } catch {
       throw new InternalServerErrorException('Could not link user to company');
     }
   }
@@ -198,9 +198,10 @@ export class UsersController {
     try {
       updatedUser = await this.usersService.update(userId, updateUserDto);
     } catch (err) {
-      if (((err as Error).name = SequelizeUniqueConstraintError)) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
         throw new ConflictException();
       }
+      throw err;
     }
 
     if (!updatedUser) {

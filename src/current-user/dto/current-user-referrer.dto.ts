@@ -2,8 +2,8 @@ import { User } from 'src/users/models';
 
 export interface CurrentUserReferrerDto {
   referer: {
-    id: string;
     firstName: string;
+    id: string;
     lastName: string;
   } | null;
 }

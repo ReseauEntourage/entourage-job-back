@@ -3,7 +3,7 @@ name: Release on master
 on:
   pull_request:
     branches: [master]
-    types: [opened, synchronize]
+    types: [opened, synchronize, labeled]
 
 jobs:
   release:
@@ -27,9 +27,22 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump patch version
+      - name: Determine version bump type
+        id: bump
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          npm version patch --message "chore: release %s"
+          if echo "$LABELS" | grep -q '"release:major"'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q '"release:minor"'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version
+        run: |
+          npm version ${{ steps.bump.outputs.type }} --message "chore: release %s"
 
       - name: Push commit & tag to develop
         run: git push origin ${{ github.head_ref }} --follow-tags

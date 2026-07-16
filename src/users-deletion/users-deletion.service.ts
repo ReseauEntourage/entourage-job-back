@@ -37,7 +37,6 @@ export class UsersDeletionService {
     await this.userProfilesService.updateByUserId(id, {
       currentJob: null,
       description: null,
-      introduction: null,
     });
     return this.userProfilesService.removeByUserId(id);
   }

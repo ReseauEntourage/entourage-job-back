@@ -14,7 +14,7 @@ import { userFeatureFlagInclude } from 'src/feature-flags/models/user-feature-fl
 import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
 import { userProfileAttributes } from 'src/messaging/messaging.attributes';
-import { Conversation } from 'src/messaging/models';
+import { Conversation, ConversationType } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -31,7 +31,7 @@ import { UserProfileRecommendationsService } from 'src/user-profiles/recommendat
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
-import { User, UserAttributes } from './models';
+import { OtpUserAttributes, User, UserAttributes } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
@@ -53,10 +53,10 @@ import {
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export type NoResponseToFirstMessageResultDto = {
-  id: string;
-  user: User;
-  recommendations: RecommendationDto[];
   addressees: User[];
+  id: string;
+  recommendations: RecommendationDto[];
+  user: User;
 };
 
 @Injectable()
@@ -92,6 +92,13 @@ export class UsersService {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
+    });
+  }
+
+  async findOneByMailWithOtp(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...OtpUserAttributes],
     });
   }
 
@@ -632,10 +639,10 @@ export class UsersService {
   // Get all users -except admins- that have connected once but not in the last 25 months and not deleted
   async getInactiveUsersForDeletion() {
     const inactiveUsers: {
-      id: string;
-      firstName: string;
-      lastName: string;
       candidatUrl: string | null;
+      firstName: string;
+      id: string;
+      lastName: string;
     }[] = await this.userModel.sequelize.query(
       `
         SELECT
@@ -869,8 +876,8 @@ export class UsersService {
     );
 
     const rows: {
-      authorId: string;
       addresseeId: string;
+      authorId: string;
       messageId: string;
     }[] = await this.userModel.sequelize.query(
       `
@@ -914,7 +921,7 @@ export class UsersService {
     // Create a structure to link authors to their addressees (one by message)
     const messageMap = new Map<
       string,
-      { authorId: string; addresseeIds: string[] }
+      { addresseeIds: string[]; authorId: string }
     >();
     rows.forEach(({ authorId, addresseeId, messageId }) => {
       if (!messageMap.has(messageId)) {
@@ -1181,11 +1188,11 @@ export class UsersService {
 
   async getReferedNotActivatedData(daysSinceCreation: number): Promise<
     {
-      refererId: string;
       candidateEmail: string;
       candidateFirstName: string;
       candidateLastName: string;
       candidateZone: string;
+      refererId: string;
     }[]
   > {
     const startDate = new Date(
@@ -1371,7 +1378,8 @@ export class UsersService {
         AND candidate.phone IS NOT NULL
         AND candidate.phone != ''
       WHERE
-        DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
+        c.type = '${ConversationType.DIRECT}'
+        AND DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
         AND NOT EXISTS (
           SELECT 1 FROM "Messages" m
           WHERE m."conversationId" = c.id
@@ -1415,9 +1423,9 @@ export class UsersService {
 
   async getUserTriplesForMessagingFeedback(days: number): Promise<
     {
-      userId: string;
       interlocutorFirstName: string;
       interlocutorId: string;
+      userId: string;
     }[]
   > {
     return this.userModel.sequelize.query(
@@ -1434,7 +1442,8 @@ export class UsersService {
         ON cp."conversationId" = cp_other."conversationId"
         AND cp."userId" != cp_other."userId"
       JOIN "Users" u_other ON cp_other."userId" = u_other."id"
-      WHERE cp."feedbackDate" IS NULL
+      WHERE c.type = '${ConversationType.DIRECT}'
+        AND cp."feedbackDate" IS NULL
         AND cp."feedbackRating" IS NULL
         AND m."createdAt" = (
           SELECT MAX(m2."createdAt")
@@ -1507,7 +1516,7 @@ export class UsersService {
   async getCompanyInvitationPendingData(
     daysSinceInvitation: number
   ): Promise<
-    { adminId: string; invitationEmail: string; companyId: string }[]
+    { adminId: string; companyId: string; invitationEmail: string }[]
   > {
     return this.userModel.sequelize.query(
       `
@@ -1713,13 +1722,13 @@ export class UsersService {
   }
 
   async sendRecruitmentAlertMail(alert: {
+    alertId: string;
+    alertName: string;
     companyAdminEmail: string;
     firstName: string;
     newCandidatesCount: number;
-    alertName: string;
-    alertId: string;
-    zone: string;
     staffContact: User['staffContact'];
+    zone: string;
   }) {
     return this.mailsService.sendRecruitmentAlertMail(alert);
   }

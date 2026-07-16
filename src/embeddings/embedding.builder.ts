@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import moment from 'moment';
+
 import 'moment/locale/fr';
 import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';

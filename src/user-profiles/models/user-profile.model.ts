@@ -34,7 +34,7 @@ import { Experience } from 'src/common/experiences/models';
 import { Formation } from 'src/common/formations/models';
 import { Interest } from 'src/common/interests/models';
 import { Language } from 'src/common/languages/models';
-import { Department } from 'src/common/locations/locations.types';
+import type { Department } from 'src/common/locations/locations.types';
 import { Nudge } from 'src/common/nudge/models';
 import { Occupation } from 'src/common/occupations/models';
 import { Review } from 'src/common/reviews/models';
@@ -51,12 +51,12 @@ import { UserProfileSkill } from './user-profile-skill.model';
 const LINKEDIN_URL_REGEX = new RegExp('linkedin\\.com');
 
 export enum UnavailabilityReason {
-  NO_MORE_TIME = 'no_more_time',
-  VACATION = 'vacation',
   ALREADY_FULL = 'already_full',
-  NO_MORE_HELP = 'no_more_help',
-  OTHER_SUPPORT = 'other_support',
   INACTIVITY = 'inactivity',
+  NO_MORE_HELP = 'no_more_help',
+  NO_MORE_TIME = 'no_more_time',
+  OTHER_SUPPORT = 'other_support',
+  VACATION = 'vacation',
 }
 
 @Table({ tableName: 'UserProfiles' })
@@ -73,13 +73,6 @@ export class UserProfile extends Model {
   @AllowNull(false)
   @Column
   userId: string;
-
-  @ApiProperty()
-  @IsString()
-  @MaxLength(500)
-  @AllowNull(true)
-  @Column
-  introduction: string;
 
   @ApiProperty()
   @IsString()
@@ -148,6 +141,11 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   lastRecommendationsDate: Date;
+
+  @IsDate()
+  @AllowNull(true)
+  @Column
+  embeddingPendingAt: Date;
 
   @CreatedAt
   createdAt: Date;
@@ -373,14 +371,14 @@ export type UserProfileWithPartialAssociations = Partial<
     | 'reviews'
   >
 > & {
-  sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
-  nudges?: Partial<Nudge>[];
+  contracts?: Partial<Contract>[];
   customNudges?: Partial<UserProfileNudge>[];
   experiences?: Partial<Experience>[];
   formations?: Partial<Formation>[];
-  contracts?: Partial<Contract>[];
+  interests?: Partial<Interest>[];
+  nudges?: Partial<Nudge>[];
+  reviews?: Partial<Review>[];
+  sectorOccupations?: Partial<UserProfileSectorOccupationWithPartialAssociations>[];
   skills?: Partial<Skill>[];
   userProfileLanguages?: Partial<UserProfileLanguage>[];
-  interests?: Partial<Interest>[];
-  reviews?: Partial<Review>[];
 };

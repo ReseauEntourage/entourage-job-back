@@ -1,7 +1,7 @@
 import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
 import { ErrorMessagingMailingListInvalid } from './messaging.errors';
-import { Conversation } from './models';
+import { Conversation, ConversationType } from './models';
 
 export const generateSlackMsgConfigConversationReported = (
   conversation: Conversation,
@@ -110,6 +110,10 @@ export const determineIfShoudGiveFeedback = (
   feedbackRating: number | null,
   feedbackDate: Date | null
 ): boolean => {
+  if (conversation.type !== ConversationType.DIRECT) {
+    return false;
+  }
+
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(now.getDate() - 30);

@@ -3,7 +3,6 @@ import { UserProfile } from '../models';
 
 export class CreateCandidateUserProfileDto extends PickType(UserProfile, [
   'userId',
-  'introduction',
   'description',
   'department',
   'isAvailable',

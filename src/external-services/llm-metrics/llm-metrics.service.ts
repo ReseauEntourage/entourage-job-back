@@ -1,6 +1,7 @@
 import { Usage } from '@anthropic-ai/sdk/resources/messages/messages';
 import { Injectable, Logger } from '@nestjs/common';
 import { CompletionUsage } from 'openai/resources/completions';
+import { EmbedResponseUsage } from 'voyageai';
 import { tracer } from 'src/tracer';
 
 @Injectable()
@@ -54,6 +55,26 @@ export class LlmMetricsService {
         feature,
         prompt_tokens: usage.prompt_tokens,
         completion_tokens: usage.completion_tokens,
+      })}`
+    );
+
+    tracer.dogstatsd.flush();
+  }
+
+  recordVoyageAiUsage(
+    model: string,
+    usage: EmbedResponseUsage,
+    operation: string,
+    feature: string
+  ): void {
+    const tags = { model, provider: 'voyageai', operation, feature };
+    tracer.dogstatsd.increment('ai.tokens.input', usage.totalTokens ?? 0, tags);
+    this.logger.debug(
+      `VoyageAI usage recorded: ${JSON.stringify({
+        model,
+        operation,
+        feature,
+        total_tokens: usage.totalTokens,
       })}`
     );
 

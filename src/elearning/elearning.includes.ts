@@ -24,8 +24,8 @@ export const generateElearningUnitIncludes = ({
   userRole,
   userId,
 }: {
-  userRole?: UserRole;
   userId?: string;
+  userRole?: UserRole;
 }): IncludeOptions[] => [
   {
     model: ElearningQuestion,

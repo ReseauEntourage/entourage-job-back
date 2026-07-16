@@ -37,12 +37,12 @@ export class CompaniesService {
   ) {}
 
   async findAll(query: {
+    businessSectorIds: string[];
+    departments: Department[];
     limit: number;
     offset: number;
-    search: string;
-    departments: Department[];
-    businessSectorIds: string[];
     onlyWithReferent?: boolean;
+    search: string;
   }) {
     const {
       limit,

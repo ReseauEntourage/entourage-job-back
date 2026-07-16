@@ -3,6 +3,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -73,6 +74,7 @@ import {
 } from './models/user-profile.attributes';
 import {
   getUserProfileInclude,
+  getUserProfileNudgesInclude,
   getUserProfileOrder,
 } from './models/user-profile.include';
 import { SCORING_WEIGHTS } from './recommendations/scoring.config';
@@ -84,6 +86,8 @@ const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
 
 @Injectable()
 export class UserProfilesService {
+  private readonly logger = new Logger(UserProfilesService.name);
+
   constructor(
     @InjectModel(UserProfile)
     private userProfileModel: typeof UserProfile,
@@ -203,16 +207,16 @@ export class UserProfilesService {
   }
 
   async findAll(query: {
-    role: UserRole[];
-    offset: number;
-    limit: number;
-    search: string;
-    nudgeIds: string[];
-    departments: string[];
     businessSectorIds: string[];
     contactTypes: ContactTypeEnum[];
-    isAvailable?: boolean;
+    departments: string[];
     hasSuperCoachBadge?: boolean;
+    isAvailable?: boolean;
+    limit: number;
+    nudgeIds: string[];
+    offset: number;
+    role: UserRole[];
+    search: string;
   }): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -371,16 +375,16 @@ export class UserProfilesService {
    */
   async findAllByRelevance(
     query: {
-      role: UserRole[];
-      offset: number;
-      limit: number;
-      search: string;
-      nudgeIds: string[];
-      departments: string[];
       businessSectorIds: string[];
       contactTypes: ContactTypeEnum[];
-      isAvailable?: boolean;
+      departments: string[];
       hasSuperCoachBadge?: boolean;
+      isAvailable?: boolean;
+      limit: number;
+      nudgeIds: string[];
+      offset: number;
+      role: UserRole[];
+      search: string;
     },
     requestingUserId: string
   ): Promise<PublicProfileDto[]> {
@@ -563,6 +567,204 @@ export class UserProfilesService {
     );
   }
 
+  async findPreRegistrationCompatibleProfiles(
+    role: UserRole,
+    nudgeIds: string[] = [],
+    businessSectorIds: string[] = []
+  ): Promise<{
+    broadened: boolean;
+    count: number;
+    profiles: PublicProfileDto[];
+  }> {
+    const targetRole =
+      role === UserRoles.CANDIDATE ? UserRoles.COACH : UserRoles.CANDIDATE;
+
+    const baseWhere = { isAvailable: true };
+    const userInclude = {
+      model: User,
+      as: 'user',
+      where: { role: targetRole },
+      required: true,
+      attributes: [] as string[],
+    };
+
+    const hasNudges = nudgeIds.length > 0;
+    const hasSectors = businessSectorIds.length > 0;
+
+    let selectedIds: string[];
+    let count: number;
+    let broadened = false;
+
+    if (!hasNudges && !hasSectors) {
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: [userInclude],
+      });
+
+      const randomSample = await this.userProfileModel.findAll({
+        subQuery: false,
+        limit: 6,
+        attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
+        where: baseWhere,
+        include: [userInclude],
+      });
+      selectedIds = randomSample.map(({ id }) => id);
+    } else if (hasNudges && hasSectors) {
+      // AND: a profile must match at least one nudge AND at least one sector
+      const andInclude = [
+        userInclude,
+        ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
+        {
+          model: UserProfileSectorOccupation,
+          as: 'sectorOccupations',
+          required: true,
+          attributes: [] as string[],
+          where: { businessSectorId: { [Op.in]: businessSectorIds } },
+        },
+      ];
+
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: andInclude,
+      });
+
+      const andMatches = await this.userProfileModel.findAll({
+        subQuery: false,
+        limit: 6,
+        attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
+        where: baseWhere,
+        include: andInclude,
+        group: ['UserProfile.id'],
+      });
+      selectedIds = andMatches.map(({ id }) => id);
+
+      if (selectedIds.length === 0) {
+        const sectorOnlyInclude = [
+          userInclude,
+          {
+            model: UserProfileSectorOccupation,
+            as: 'sectorOccupations',
+            required: true,
+            attributes: [] as string[],
+            where: { businessSectorId: { [Op.in]: businessSectorIds } },
+          },
+        ];
+
+        count = await this.userProfileModel.count({
+          distinct: true,
+          col: 'id',
+          where: baseWhere,
+          include: sectorOnlyInclude,
+        });
+
+        const sectorMatches = await this.userProfileModel.findAll({
+          subQuery: false,
+          limit: 6,
+          attributes: ['id'],
+          order: sequelize.literal('RANDOM()'),
+          where: baseWhere,
+          include: sectorOnlyInclude,
+          group: ['UserProfile.id'],
+        });
+        selectedIds = sectorMatches.map(({ id }) => id);
+        broadened = true;
+      }
+    } else if (hasNudges) {
+      const nudgeInclude = [
+        userInclude,
+        ...getUserProfileNudgesInclude({ id: { [Op.in]: nudgeIds } }, false),
+      ];
+
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: nudgeInclude,
+      });
+
+      const nudgeMatches = await this.userProfileModel.findAll({
+        subQuery: false,
+        limit: 6,
+        attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
+        where: baseWhere,
+        include: nudgeInclude,
+        group: ['UserProfile.id'],
+      });
+      selectedIds = nudgeMatches.map(({ id }) => id);
+    } else {
+      const sectorInclude = [
+        userInclude,
+        {
+          model: UserProfileSectorOccupation,
+          as: 'sectorOccupations',
+          required: true,
+          attributes: [] as string[],
+          where: { businessSectorId: { [Op.in]: businessSectorIds } },
+        },
+      ];
+
+      count = await this.userProfileModel.count({
+        distinct: true,
+        col: 'id',
+        where: baseWhere,
+        include: sectorInclude,
+      });
+
+      const sectorMatches = await this.userProfileModel.findAll({
+        subQuery: false,
+        limit: 6,
+        attributes: ['id'],
+        order: sequelize.literal('RANDOM()'),
+        where: baseWhere,
+        include: sectorInclude,
+        group: ['UserProfile.id'],
+      });
+      selectedIds = sectorMatches.map(({ id }) => id);
+    }
+
+    if (selectedIds.length === 0) {
+      return { count: 0, profiles: [], broadened: false };
+    }
+
+    const profileRows = await this.userProfileModel.findAll({
+      attributes: UserProfilesAttributes,
+      where: { id: { [Op.in]: selectedIds } },
+      include: [
+        ...getUserProfileInclude(),
+        {
+          model: User,
+          as: 'user',
+          attributes: UserProfilesUserAttributes,
+          include: [userAchievementInclude()],
+        },
+      ],
+    });
+
+    const publicProfiles = await Promise.all(
+      profileRows.map(async (profile): Promise<PublicProfileDto> => {
+        const averageDelayResponse = await this.getAverageDelayResponse(
+          profile.user.id
+        );
+        const { user, ...restProfile } = profile.toJSON();
+        return {
+          ...user,
+          ...restProfile,
+          id: profile.user.id,
+          averageDelayResponse,
+        };
+      })
+    );
+
+    return { count, profiles: publicProfiles, broadened };
+  }
+
   /**
    * Finds profiles matching the criteria of a recruitment alert
    * @param recruitementAlert Recruitment alert to use for the search
@@ -587,14 +789,6 @@ export class UserProfilesService {
     const whereOptions = {
       // Job Name
       [Op.or]: [
-        sequelize.where(
-          sequelize.fn(
-            'LOWER',
-            sequelize.fn('unaccent', sequelize.col('UserProfile.introduction'))
-          ),
-          'LIKE',
-          `%${sanitizedJobName}%`
-        ),
         sequelize.where(
           sequelize.fn(
             'LOWER',
@@ -639,7 +833,7 @@ export class UserProfilesService {
 
     // Get all profiles matching the criteria
     const filteredProfiles = await this.userProfileModel.findAll({
-      attributes: ['id', 'introduction', 'description'],
+      attributes: ['id', 'description'],
       where: whereOptions,
       include: [
         {
@@ -764,8 +958,8 @@ export class UserProfilesService {
   async findAllReferedCandidates(
     userId: string,
     query: {
-      offset: number;
       limit: number;
+      offset: number;
     }
   ): Promise<PublicProfileDto[]> {
     const { offset, limit } = query;
@@ -1294,7 +1488,7 @@ export class UserProfilesService {
         `${userId}.profile.jpg`
       );
       await this.updateHasPicture(userId, true);
-    } catch (error) {
+    } catch {
       uploadedImg = null;
     } finally {
       if (fs.existsSync(path)) {
@@ -1319,7 +1513,6 @@ export class UserProfilesService {
       SELECT
         up."hasPicture",
         up.department,
-        up.introduction,
         up.description,
         u."firstName",
         u."lastName",
@@ -1493,19 +1686,36 @@ export class UserProfilesService {
     });
   }
 
+  async resetLastRecommendationsDate(userId: string): Promise<void> {
+    this.logger.log(
+      `[Recommendations] Invalidating cached recommendations for user ${userId}`
+    );
+    await this.userProfileModel.update(
+      { lastRecommendationsDate: null },
+      { where: { userId } }
+    );
+    this.logger.log(
+      `[Recommendations] lastRecommendationsDate reset to null for user ${userId} — pool will be recomputed on next request`
+    );
+  }
+
+  async clearEmbeddingPending(userId: string): Promise<void> {
+    await this.userProfileModel.update(
+      { embeddingPendingAt: null },
+      { where: { userId } }
+    );
+  }
+
   // ─── Private helpers ─────────────────────────────────────────────────────────
 
   private async enqueueUserProfileEmbeddingsUpdate(
     userId: string,
     updatedKeys: string[]
   ): Promise<void> {
-    // If no keys are updated, we don't need to update the embedding
     if (updatedKeys.length === 0) {
       return;
     }
 
-    // Determine which embedding types need to be updated based on the updated keys and the fields
-    // used in each embedding type(defined in EMBEDDING_CONFIG)
     const embeddingTypesToUpdate = Object.entries(EMBEDDING_CONFIG)
       .filter(([, config]) =>
         config.fields.some((key) => updatedKeys.includes(key))
@@ -1513,11 +1723,25 @@ export class UserProfilesService {
       .map(([type]) => type as EmbeddingType);
 
     if (embeddingTypesToUpdate.length === 0) {
-      // No embedding needs to be updated based on the updated keys
+      this.logger.log(
+        `[Embeddings] Profile update for user ${userId} touched no embedding fields (updated keys: ${updatedKeys.join(
+          ', '
+        )}) — skipping`
+      );
       return;
     }
 
-    // Add a job to the queue to update the embeddings of the user profile, with the list of embedding types to update
+    this.logger.log(
+      `[Embeddings] Queuing embedding update for user ${userId} — types: ${embeddingTypesToUpdate.join(
+        ', '
+      )} (triggered by: ${updatedKeys.join(', ')})`
+    );
+
+    await this.userProfileModel.update(
+      { embeddingPendingAt: new Date() },
+      { where: { userId } }
+    );
+
     await this.queuesService.addToEmbeddingQueue(
       Jobs.UPDATE_USER_PROFILE_EMBEDDINGS,
       {
@@ -1525,6 +1749,8 @@ export class UserProfilesService {
         embeddingTypes: embeddingTypesToUpdate,
       }
     );
+
+    this.logger.log(`[Embeddings] Job enqueued for user ${userId}`);
   }
 
   async getShareText(

@@ -1,15 +1,15 @@
 import { User } from 'src/users/models';
 
 export interface CurrentUserReferredUserDto {
-  id: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  email: string;
   coachesContactedCount: number;
+  email: string;
   eventsParticipatedCount: number;
-  referredAt: string | null;
+  firstName: string;
+  id: string;
+  lastName: string;
   onboardingCompletedAt: string | null;
+  referredAt: string | null;
+  role: string;
 }
 
 export interface CurrentUserReferredUsersDto {

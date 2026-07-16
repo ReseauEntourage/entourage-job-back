@@ -136,47 +136,47 @@ export interface SendMailJob extends CustomMailParams {
 }
 
 export interface SendSmsJob {
-  to: string;
   text: string;
+  to: string;
 }
 
-export interface NewsletterSubscriptionJob extends CustomContactParams {}
+export type NewsletterSubscriptionJob = CustomContactParams;
 
 export interface UserNewsletterSubscriptionJob {
-  userId: string;
   source: MailjetContactSource;
+  userId: string;
 }
 
 export interface CreateOrUpdateSalesforceUserJob {
-  userId: string;
+  accommodation?: CandidateAccommodation;
   birthDate?: Date;
   campaign?: string;
-  nationality?: Nationality;
-  accommodation?: CandidateAccommodation;
-  hasSocialWorker?: YesNoJNSPRValue;
-  resources?: CandidateResource;
-  studiesLevel?: StudiesLevel;
-  workingExperience?: WorkingExperience;
-  jobSearchDuration?: JobSearchDuration;
-  workingRight?: CandidateYesNoNSPPValue;
-  gender?: CandidateGender;
-  refererEmail?: string;
-  structure?: string;
   companyId?: string;
-  isCompanyAdmin?: boolean;
   companyRole?: CompanyUserRole;
+  gender?: CandidateGender;
+  hasSocialWorker?: YesNoJNSPRValue;
+  isCompanyAdmin?: boolean;
+  jobSearchDuration?: JobSearchDuration;
+  nationality?: Nationality;
+  refererEmail?: string;
+  resources?: CandidateResource;
+  structure?: string;
+  studiesLevel?: StudiesLevel;
+  userId: string;
+  workingExperience?: WorkingExperience;
+  workingRight?: CandidateYesNoNSPPValue;
 }
 
 export interface CreateOrUpdateSalesforceCompanyJob {
-  name: string;
   department?: string;
+  name: string;
   phone?: string;
   userId?: string;
 }
 
 export interface UpdateSalesforceUserCompanyJob {
-  userId: string;
   companyId: string | null;
+  userId: string;
 }
 
 export interface OnOnboardingCompletedJob {
@@ -193,72 +193,79 @@ export interface BulkSendStaffMessagingMessageJob {
 }
 
 export interface GenerateProfileFromPDFJob {
-  s3Key: string;
-  userProfileId: string;
-  userId: string;
+  cancelled?: boolean;
   fileHash: string;
+  s3Key: string;
+  userId: string;
+  userProfileId: string;
 }
 
-export interface SendReminderToUserNotCompletedOnboardingJob {}
+export type SendReminderToUserNotCompletedOnboardingJob = Record<string, never>;
 
-export interface DeleteInactiveUsersJob {}
+export type DeleteInactiveUsersJob = Record<string, never>;
 
-export interface PreparePostOnboardingCompletionMailsJob {}
+export type PreparePostOnboardingCompletionMailsJob = Record<string, never>;
 
-export interface PrepareNotCompletedProfileMailsJob {}
+export type PrepareNotCompletedProfileMailsJob = Record<string, never>;
 
-export interface PrepareUserWithoutResponseToFirstMessageMailsJob {}
+export type PrepareUserWithoutResponseToFirstMessageMailsJob = Record<
+  string,
+  never
+>;
 
-export interface PrepareUserConversationFollowUpMailsJob {}
+export type PrepareUserConversationFollowUpMailsJob = Record<string, never>;
 
-export interface PrepareRecommendationMailsJob {}
+export type PrepareRecommendationMailsJob = Record<string, never>;
 
-export interface PrepareAutoSetUnavailableUsersJob {}
+export type PrepareAutoSetUnavailableUsersJob = Record<string, never>;
 
-export interface ProcessExpiredAchievementsJob {}
+export type ProcessExpiredAchievementsJob = Record<string, never>;
 
-export interface PrepareSuperEngagedAchievementReminderMailsJob {}
+export type PrepareSuperEngagedAchievementReminderMailsJob = Record<
+  string,
+  never
+>;
 
-export interface PrepareRecruitmentAlertsMailsJob {}
+export type PrepareRecruitmentAlertsMailsJob = Record<string, never>;
 
-export interface PrepareCompanyNoAlertsReminderMailsJob {}
+export type PrepareCompanyNoAlertsReminderMailsJob = Record<string, never>;
 
-export interface PrepareReferedNotActivatedMailsJob {}
+export type PrepareReferedNotActivatedMailsJob = Record<string, never>;
 
-export interface PrepareRemindCompanyInvitationMailsJob {}
+export type PrepareRemindCompanyInvitationMailsJob = Record<string, never>;
 
-export interface PrepareCompanyInvitationsPendingMailsJob {}
+export type PrepareCompanyInvitationsPendingMailsJob = Record<string, never>;
 
-export interface PrepareNotCompletedCompanyMailsJob {}
+export type PrepareNotCompletedCompanyMailsJob = Record<string, never>;
 
-export interface PrepareCompanyCollabFollowMailsJob {}
+export type PrepareCompanyCollabFollowMailsJob = Record<string, never>;
 
-export interface PrepareCommittedUsersFeedbackMailsJob {}
+export type PrepareCommittedUsersFeedbackMailsJob = Record<string, never>;
 
-export interface PrepareUnansweredConversationsMailsJob {}
+export type PrepareUnansweredConversationsMailsJob = Record<string, never>;
 
-export interface PrepareUnavailableUsersMailsJob {}
+export type PrepareUnavailableUsersMailsJob = Record<string, never>;
 
-export interface PrepareChurnUsersFeedbackMailsJob {}
+export type PrepareChurnUsersFeedbackMailsJob = Record<string, never>;
 
-export interface PrepareInactiveReferersMailsJob {}
+export type PrepareInactiveReferersMailsJob = Record<string, never>;
 
-export interface PrepareMessagingFeedbackMailsJob {}
+export type PrepareMessagingFeedbackMailsJob = Record<string, never>;
 
-export interface PrepareWarnAccountDeletionMailsJob {}
+export type PrepareWarnAccountDeletionMailsJob = Record<string, never>;
 
-export interface PrepareUnansweredConversationsSmsJob {}
+export type PrepareUnansweredConversationsSmsJob = Record<string, never>;
 
-export interface PrepareLinkedInShareProfileMailsJob {}
+export type PrepareLinkedInShareProfileMailsJob = Record<string, never>;
 
 export interface UpdateUserProfileEmbeddingsJob {
-  userId: string;
   embeddingTypes: EmbeddingType[];
+  userId: string;
 }
 
 export interface UpdateUserProfileEmbeddingsBatchJob {
-  userIds: string[];
   embeddingTypes: EmbeddingType[];
+  userIds: string[];
 }
 
 export const Queues = {

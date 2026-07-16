@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
-import { UserRole } from 'src/users/users.types';
+import type { UserRole } from 'src/users/users.types';
 import { ElearningService } from './elearning.service';
 
 @ApiTags('Elearning')

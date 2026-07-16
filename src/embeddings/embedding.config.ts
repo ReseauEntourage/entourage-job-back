@@ -4,8 +4,8 @@ export type EmbeddingType = 'profile' | 'needs';
 
 export const EMBEDDING_DIMENSIONS = 1024;
 export type EmbeddingConfig = {
-  version: string;
   fields: (keyof UserProfile)[];
+  version: string;
 };
 
 /**
@@ -20,7 +20,6 @@ export const EMBEDDING_CONFIG: Record<EmbeddingType, EmbeddingConfig> = {
     fields: [
       'currentJob',
       'description',
-      'introduction',
       'skills',
       'experiences',
       'formations',

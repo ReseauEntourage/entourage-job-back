@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
-import { ShareChannel } from './models/user-profile-share.model';
+import type { ShareChannel } from './models/user-profile-share.model';
 import { UserProfileSharesService } from './user-profile-shares.service';
 
 @ApiTags('UserProfileShares')

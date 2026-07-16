@@ -120,7 +120,7 @@ export class MailsService {
     }
   }
 
-  async sendVerificationMail(user: User, token: string) {
+  async sendVerificationMail(user: User, token: string, otpCode?: string) {
     this.logger.log(
       `Sending verification mail to user with email ${user.email}`
     );
@@ -134,6 +134,7 @@ export class MailsService {
         token,
         zone: user.zone,
         staffContact: user.staffContact,
+        otpCode,
       },
     });
   }
@@ -239,7 +240,7 @@ export class MailsService {
       `Sending conversation reported mail to staff contact with email ${reporterUser.staffContact?.email}`
     );
     await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: 'contact@entourage-pro.fr',
+      toEmail: reporterUser.staffContact?.email,
       templateId: MailjetTemplates.CONVERSATION_REPORTED_ADMIN,
       variables: {
         reporterFirstName: reporterUser.firstName,
@@ -374,9 +375,9 @@ export class MailsService {
     email,
     invitationWithCompany,
   }: {
-    sender: User;
     email: string;
     invitationWithCompany: CompanyInvitation;
+    sender: User;
   }) {
     this.logger.log(
       `Sending company invitation mail to ${email} from sender with email ${sender.email}`
@@ -481,9 +482,9 @@ export class MailsService {
         role: getRoleString(user),
         zone: user.zone,
         staffContact: user.staffContact,
-        reco1: formattedRecommendedProfiles[0] || '',
-        reco2: formattedRecommendedProfiles[1] || '',
-        reco3: formattedRecommendedProfiles[2] || '',
+        reco1: formattedRecommendedProfiles[0] || null,
+        reco2: formattedRecommendedProfiles[1] || null,
+        reco3: formattedRecommendedProfiles[2] || null,
         nbReco: formattedRecommendedProfiles.length,
       },
     });
@@ -528,9 +529,9 @@ export class MailsService {
         role: getRoleStringFromRole(user.role),
         zone: user.zone,
         staffContact: user.staffContact,
-        reco1: formattedRecommendedProfiles[0] || '',
-        reco2: formattedRecommendedProfiles[1] || '',
-        reco3: formattedRecommendedProfiles[2] || '',
+        reco1: formattedRecommendedProfiles[0] || null,
+        reco2: formattedRecommendedProfiles[1] || null,
+        reco3: formattedRecommendedProfiles[2] || null,
         nbReco: formattedRecommendedProfiles.length,
         addresseesFirstNames,
       },
@@ -563,9 +564,9 @@ export class MailsService {
         zone: user.zone || ZoneName.HZ,
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        reco1: formattedRecommendedProfiles[0] || '',
-        reco2: formattedRecommendedProfiles[1] || '',
-        reco3: formattedRecommendedProfiles[2] || '',
+        reco1: formattedRecommendedProfiles[0] || null,
+        reco2: formattedRecommendedProfiles[1] || null,
+        reco3: formattedRecommendedProfiles[2] || null,
         nbReco: formattedRecommendedProfiles.length,
       },
     });
@@ -580,7 +581,7 @@ export class MailsService {
       templateId: MailjetTemplates.AUTO_SET_UNAVAILABLE,
       variables: {
         firstName: user.firstName,
-        ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
+        ctaUrl: `${process.env.FRONT_URL}/backoffice/parametres?reactivate=true`,
         role: getRoleString(user),
         zone: user.zone,
         staffContact: user.staffContact,
@@ -698,8 +699,8 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
-      zone: ZoneName | null;
       staffContact: InternalStaffContact;
+      zone: ZoneName | null;
     },
     stats: { conversationCount: number; responseRate: number },
     nextEvaluationDate: Date,
@@ -739,13 +740,13 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
-      zone: ZoneName | null;
       staffContact: InternalStaffContact;
+      zone: ZoneName | null;
     },
     stats: {
       conversationCount: number;
-      responseRate: number;
       goalAchieved: boolean;
+      responseRate: number;
     },
     expireAt: Date
   ) {
@@ -771,8 +772,8 @@ export class MailsService {
     user: {
       email: string;
       firstName: string;
-      zone: ZoneName | null;
       staffContact: InternalStaffContact;
+      zone: ZoneName | null;
     },
     stats: { conversationCount: number; responseRate: number }
   ) {
@@ -1066,13 +1067,13 @@ export class MailsService {
   }
 
   async sendRecruitmentAlertMail(alert: {
+    alertId: string;
+    alertName: string;
     companyAdminEmail: string;
     firstName: string;
     newCandidatesCount: number;
-    alertName: string;
-    alertId: string;
-    zone: string;
     staffContact: User['staffContact'];
+    zone: string;
   }) {
     this.logger.log(
       `Sending recruitment alert mail to user with email ${alert.companyAdminEmail}`

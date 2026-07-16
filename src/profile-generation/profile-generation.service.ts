@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { QueuesService } from '../queues/producers/queues.service';
@@ -23,6 +24,8 @@ import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
 @Injectable()
 export class ProfileGenerationService {
+  private readonly logger = new Logger(ProfileGenerationService.name);
+
   constructor(
     @InjectModel(ExtractedCVData)
     private extractedCVDataModel: typeof ExtractedCVData,
@@ -52,6 +55,34 @@ export class ProfileGenerationService {
     };
   }
 
+  /**
+   * Annule un job de génération de profil en cours pour l'utilisateur donné.
+   * Job en attente : suppression directe. Job actif : signal d'annulation
+   * porté par les métadonnées du job (data.cancelled), relu par le worker.
+   */
+  async cancelProfileGeneration(jobId: string, userId: string): Promise<void> {
+    const job = await this.queuesService.getProfileGenerationJob(jobId);
+
+    if (!job || job.data?.userId !== userId) {
+      return;
+    }
+
+    const { userProfileId } = job.data;
+
+    if ((await job.isWaiting()) || (await job.isDelayed())) {
+      await job.remove();
+      this.logger.warn(
+        `[ProfileGeneration] Génération de profil annulée par l'utilisateur (jobId=${jobId}, userId=${userId}, userProfileId=${userProfileId}, état=waiting)`
+      );
+      return;
+    }
+
+    await job.updateData({ ...job.data, cancelled: true });
+    this.logger.warn(
+      `[ProfileGeneration] Génération de profil annulée par l'utilisateur (jobId=${jobId}, userId=${userId}, userProfileId=${userProfileId}, état=active)`
+    );
+  }
+
   async shouldExtractCV(
     userProfileId: string,
     fileHash: string
@@ -75,7 +106,7 @@ export class ProfileGenerationService {
         existingData.fileHash !== fileHash ||
         existingData.schemaVersion !== currentSchemaVersion
       );
-    } catch (error) {
+    } catch {
       // En cas d'erreur, effectuer une extraction par sécurité
       return true;
     }
@@ -187,14 +218,14 @@ export class ProfileGenerationService {
             if (isNaN(startDate.getTime())) {
               startDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
 
           try {
             endDate = new Date(experience.endDate);
             if (isNaN(endDate.getTime())) {
               endDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
 
           return {
             title: experience.title,
@@ -218,14 +249,14 @@ export class ProfileGenerationService {
             if (isNaN(startDate.getTime())) {
               startDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
 
           try {
             endDate = new Date(formation.endDate);
             if (isNaN(endDate.getTime())) {
               endDate = new Date();
             }
-          } catch (e) {}
+          } catch {}
           return {
             title: formation.title,
             description: formation.description,
@@ -266,7 +297,7 @@ export class ProfileGenerationService {
 
       await this.userProfileService.updateByUserId(userId, userProfileDto);
     } catch (error) {
-      console.error(`Error populating user profile for user ${userId}`);
+      console.error(`Error populating user profile for user ${userId}`, error);
       throw new InternalServerErrorException(
         'Failed to populate user profile from CV data'
       );

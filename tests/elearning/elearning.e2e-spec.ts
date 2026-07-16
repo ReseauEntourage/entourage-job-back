@@ -211,6 +211,72 @@ describe('Elearning', () => {
 
       expect(second.status).toBe(409);
     });
+
+    it('Should set elearningCompletedAt only when the last unit of the role is completed', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      const unit1 = await elearningUnitFactory.create(
+        { order: 1 },
+        { roles: [UserRoles.CANDIDATE] }
+      );
+      const unit2 = await elearningUnitFactory.create(
+        { order: 2 },
+        { roles: [UserRoles.CANDIDATE] }
+      );
+
+      const firstCompletion = await request(server)
+        .post(`${route}/units/${unit1.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(firstCompletion.status).toBe(201);
+
+      // Complétion non-finale : le champ reste null
+      const identityAfterFirst = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(identityAfterFirst.status).toBe(200);
+      expect(identityAfterFirst.body.elearningCompletedAt).toBeNull();
+
+      const lastCompletion = await request(server)
+        .post(`${route}/units/${unit2.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(lastCompletion.status).toBe(201);
+
+      // Complétion finale : le champ est horodaté
+      const identityAfterLast = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(identityAfterLast.status).toBe(200);
+      expect(identityAfterLast.body.elearningCompletedAt).not.toBeNull();
+    });
+
+    it('Should ignore units assigned to other roles when checking completion', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      const candidateUnit = await elearningUnitFactory.create(
+        { order: 1 },
+        { roles: [UserRoles.CANDIDATE] }
+      );
+      await elearningUnitFactory.create(
+        { order: 2 },
+        { roles: [UserRoles.COACH] }
+      );
+
+      const completion = await request(server)
+        .post(`${route}/units/${candidateUnit.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(completion.status).toBe(201);
+
+      // La seule unité du rôle candidat est complétée : l'unité coach ne compte pas
+      const identity = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(identity.status).toBe(200);
+      expect(identity.body.elearningCompletedAt).not.toBeNull();
+    });
   });
 
   describe('DELETE /units/:unitId/completions', () => {

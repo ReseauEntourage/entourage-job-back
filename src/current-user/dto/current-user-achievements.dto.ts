@@ -2,11 +2,11 @@ import { UserAchievement } from 'src/gamification/models';
 import { User } from 'src/users/models';
 
 export interface CurrentUserAchievementDto {
-  id: string;
   achievementType: string;
-  title: string;
   active: boolean;
   createdAt: Date;
+  id: string;
+  title: string;
 }
 
 export interface CurrentUserAchievementsDto {

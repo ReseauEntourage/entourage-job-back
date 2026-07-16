@@ -12,6 +12,9 @@ echo "- Environment: $NODE_ENV"
 echo "- Port: $PORT"
 echo "================================"
 
+echo "==> Installing dependencies..."
+pnpm install --frozen-lockfile
+
 echo "==> Starting the API..."
 
 # Start the API in the background

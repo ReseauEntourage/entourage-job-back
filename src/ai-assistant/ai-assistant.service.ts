@@ -357,9 +357,9 @@ export class AiAssistantService {
     candidateUser: User | undefined,
     candidateProfile: UserProfile | null,
     recentMessages: {
+      author?: { firstName: string; lastName: string };
       content: string;
       createdAt?: Date | string;
-      author?: { firstName: string; lastName: string };
     }[]
   ): TextBlockParam[] {
     const today = new Date().toLocaleDateString('fr-FR', {

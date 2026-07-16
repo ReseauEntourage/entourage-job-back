@@ -1,4 +1,4 @@
-import { pbkdf2Sync, randomBytes } from 'crypto';
+import { createHash, pbkdf2Sync, randomBytes } from 'crypto';
 
 export function getTokenFromHeaders(
   req: Request & { headers: Request['headers'] & { authorization: string } }
@@ -37,4 +37,19 @@ export function validatePassword(password: string, hash: string, salt: string) {
   ).toString('hex');
 
   return passwordHash === hash;
+}
+
+export function encryptOtp(otp: string) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = createHash('sha256')
+    .update(otp + salt)
+    .digest('hex');
+  return { hash, salt };
+}
+
+export function validateOtp(otp: string, hash: string, salt: string) {
+  const otpHash = createHash('sha256')
+    .update(otp + salt)
+    .digest('hex');
+  return otpHash === hash;
 }

@@ -25,11 +25,7 @@ export function getBullProfileGenerationQueueOptions(): RegisterQueueOptions {
   return {
     name: Queues.PROFILE_GENERATION,
     defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 10000,
-      },
+      attempts: 1, // Pas de retry : un job annulé ou en échec ne doit jamais écrire de résultat plus tard
       removeOnFail: false, // Garder les jobs échoués pour inspection
       removeOnComplete: true,
       priority: QueuePriority.HIGH, // Priorité élevée pour les tâches de génération de profil, les utilisateurs attendent un résultat rapide

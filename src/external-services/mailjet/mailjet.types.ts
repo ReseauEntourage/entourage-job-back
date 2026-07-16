@@ -8,36 +8,36 @@ export const MailjetOptions: { [K in string]: RequestConstructorConfig } = {
 } as const;
 
 export interface CustomMailParams {
+  html?: string;
+  replyTo?: string;
+  subject?: string;
+  templateId: MailjetTemplate;
+  text?: string;
   toEmail:
     | string
     | string[]
     | {
-        to: string | string[];
-        cc?: string | string[];
         bcc?: string | string[];
+        cc?: string | string[];
+        to: string | string[];
       };
-  replyTo?: string;
-  subject?: string;
-  text?: string;
-  html?: string;
   variables?: object;
-  templateId: MailjetTemplate;
 }
 
 export enum MailjetContactPropertyNames {
-  EMAIL = 'EMAIL',
   CIVILITY = 'civility',
+  EMAIL = 'EMAIL',
   FIRSTNAME = 'first_name',
-  LASTNAME = 'last_name',
-  POSTAL_CODE = 'postal_code',
-  LOCAL_BRANCH = 'local_branch_pro',
-  PROGRAM = 'program',
   IS_CANDIDATE = 'is_candidate',
   IS_COACH = 'is_coach',
-  IS_PRECA = 'is_precarious',
-  IS_VOLUNTEER = 'is_volunteer',
   IS_COMPANY = 'is_company',
   IS_ORGANIZATION = 'is_organization',
+  IS_PRECA = 'is_precarious',
+  IS_VOLUNTEER = 'is_volunteer',
+  LASTNAME = 'last_name',
+  LOCAL_BRANCH = 'local_branch_pro',
+  POSTAL_CODE = 'postal_code',
+  PROGRAM = 'program',
   SOURCE = 'source',
 }
 
@@ -53,14 +53,14 @@ export type ContactStatus =
 
 export interface CustomContactParams {
   email: string;
-  zone?: ZoneName;
-  status?: ContactStatus;
   source: MailjetContactSource;
+  status?: ContactStatus;
+  zone?: ZoneName;
 }
 
 export enum MailjetContactSource {
-  SITE_EP = 'Site EP',
   BACKOFFICE_EP = 'Backoffice EP',
+  SITE_EP = 'Site EP',
 }
 
 export const MailjetAntenneByZone: Record<ZoneName, string | null> = {
@@ -74,22 +74,22 @@ export const MailjetAntenneByZone: Record<ZoneName, string | null> = {
 };
 
 export interface MailjetCreateContactDto {
-  email: string;
+  /** SfLocalBranchName derived from User.zone */
+  antenne: string | null;
   /** 'M.' | 'Mme' | null */
   civility: string | null;
+  email: string;
   firstName: string;
+  isCandidate: boolean;
+  isCoach: boolean;
+  isCompany: boolean;
+  isOrganization: boolean;
+  isPreca: boolean;
+  isVolunteer: boolean;
   lastName: string;
   /** Department code extracted from UserProfile.department, e.g. "75" */
   postalCode: string | null;
-  /** SfLocalBranchName derived from User.zone */
-  antenne: string | null;
   program: string;
-  isCandidate: boolean;
-  isCoach: boolean;
-  isPreca: boolean;
-  isVolunteer: boolean;
-  isCompany: boolean;
-  isOrganization: boolean;
   source: MailjetContactSource;
 }
 
@@ -118,7 +118,7 @@ export const MailjetTemplates = {
   PASSWORD_RESET: 3271976,
   CONTACT_FORM: 3272334,
   MESSAGING_MESSAGE: 6305900,
-  USER_EMAIL_VERIFICATION: 5899611,
+  USER_EMAIL_VERIFICATION: 8132248,
   USER_REPORTED_ADMIN: 6223181,
   CONVERSATION_REPORTED_ADMIN: 6276909,
   ONBOARDING_J1_BAO: 6129684,

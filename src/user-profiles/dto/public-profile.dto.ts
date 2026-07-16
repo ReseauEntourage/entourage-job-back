@@ -16,36 +16,35 @@ import { Gender, UserRole } from 'src/users/users.types';
 import { ZoneName } from 'src/utils/types/zones.types';
 
 export type PublicProfileDto = {
-  id: string;
-  createdAt: Date;
-  firstName: string;
-  lastName: string;
-  role: UserRole;
-  gender: Gender;
-  department: Department;
-  currentJob: string;
-  isAvailable: boolean;
-  nudges: Nudge[];
-  customNudges: UserProfileNudge[];
-  introduction: string;
-  description: string;
-  sectorOccupations: UserProfileSectorOccupation[];
-  userProfileLanguages: UserProfileLanguage[];
-  experiences: Experience[];
-  formations: Formation[];
-  skills: Skill[];
+  achievements: UserAchievement[];
+  averageDelayResponse?: number | null;
+  company: Partial<Company> | null;
   contracts: Contract[];
-  reviews: Review[];
-  interests: Interest[];
+  createdAt: Date;
+  currentJob: string;
+  customNudges: UserProfileNudge[];
   cvUrl?: string;
-  linkedinUrl?: string;
+  department: Department;
+  description: string;
+  experiences: Experience[];
+  firstName: string;
+  formations: Formation[];
+  gender: Gender;
   hasExternalCv: boolean;
   hasPicture: boolean;
-  company: Partial<Company> | null;
-  zone: ZoneName;
-  averageDelayResponse?: number | null;
+  id: string;
+  interests: Interest[];
+  isAvailable: boolean;
+  lastName: string;
+  linkedinUrl?: string;
+  nudges: Nudge[];
+  reviews: Review[];
+  role: UserRole;
+  sectorOccupations: UserProfileSectorOccupation[];
+  skills: Skill[];
   totalConversationWithMirrorRoleCount?: number | null;
-  achievements: UserAchievement[];
+  userProfileLanguages: UserProfileLanguage[];
+  zone: ZoneName;
 };
 
 export const generatePublicProfileDto = (
@@ -69,7 +68,6 @@ export const generatePublicProfileDto = (
     isAvailable: userProfile.isAvailable,
     nudges: userProfile.nudges,
     customNudges: userProfile.customNudges,
-    introduction: userProfile.introduction,
     description: userProfile.description,
     sectorOccupations: userProfile.sectorOccupations,
     userProfileLanguages: userProfile.userProfileLanguages,

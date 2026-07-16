@@ -73,8 +73,7 @@ export class UsersCreationService {
   }
 
   async sendVerificationMail(user: User) {
-    const token = await this.authService.generateVerificationToken(user);
-    return this.mailsService.sendVerificationMail(user, token);
+    return this.authService.generateAndSendVerificationWithOtp(user);
   }
 
   async sendFinalizeAccountReferedUser(candidate: User, referer: User) {

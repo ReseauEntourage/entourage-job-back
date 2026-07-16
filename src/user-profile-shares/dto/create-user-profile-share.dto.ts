@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { ShareChannel } from '../models/user-profile-share.model';
+import type { ShareChannel } from '../models/user-profile-share.model';
 
 export class CreateUserProfileShareDto {
   @IsUUID(4)

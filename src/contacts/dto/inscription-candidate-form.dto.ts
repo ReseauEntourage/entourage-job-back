@@ -2,7 +2,7 @@
 
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
-import {
+import type {
   CandidateYesNoNSPPValue,
   HeardAboutValue,
 } from 'src/contacts/contacts.types';

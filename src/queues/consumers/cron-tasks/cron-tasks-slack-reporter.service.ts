@@ -13,12 +13,14 @@ export class CronTasksSlackReporterService {
     succeeded: boolean,
     title: string,
     counts: DetailsCounts,
-    failures: SettledFailure[]
+    failures: SettledFailure[],
+    skippedIds?: string[]
   ): Promise<void> {
     const details = this.buildDetailsFromCounts({
       isSuccess: succeeded,
       counts,
       failures,
+      skippedIds,
     });
 
     await this.slackService.sendTechnicalMonitoringMessage(
@@ -43,10 +45,10 @@ export class CronTasksSlackReporterService {
   }
 
   private buildDetails(params: {
-    isSuccess: boolean;
-    statsLines: string[];
     failedItemIdsPreview?: string;
     failedReasonsPreview?: string;
+    isSuccess: boolean;
+    statsLines: string[];
   }): string {
     const {
       isSuccess,
@@ -70,17 +72,19 @@ export class CronTasksSlackReporterService {
   }
 
   private buildDetailsFromCounts(params: {
-    isSuccess: boolean;
     counts: DetailsCounts;
     failures: SettledFailure[];
     failuresPreviewLimit?: number;
+    isSuccess: boolean;
+    skippedIds?: string[];
   }): string {
-    const { isSuccess, counts, failures, failuresPreviewLimit } = params;
+    const { isSuccess, counts, failures, failuresPreviewLimit, skippedIds } =
+      params;
 
     const { failedItemIdsPreview, failedReasonsPreview } =
       this.buildFailuresPreview(failures, failuresPreviewLimit);
 
-    return this.buildDetails({
+    const baseDetails = this.buildDetails({
       isSuccess,
       statsLines: [
         `Total: ${counts.total}`,
@@ -90,6 +94,17 @@ export class CronTasksSlackReporterService {
       failedItemIdsPreview,
       failedReasonsPreview,
     });
+
+    if (!skippedIds?.length) {
+      return baseDetails;
+    }
+
+    const skippedSection = [
+      `⚠️ Skipped (not enough recommendations): ${skippedIds.length}`,
+      skippedIds.map((id) => `- ${id}`).join('\n'),
+    ].join('\n');
+
+    return [baseDetails, skippedSection].join('\n');
   }
 
   private buildFailuresPreview(

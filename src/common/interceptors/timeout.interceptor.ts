@@ -6,7 +6,7 @@ import {
   RequestTimeoutException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-// eslint-disable-next-line import/no-unresolved
+
 import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { TIMEOUT_KEY } from '../decorators/timeout.decorator';
