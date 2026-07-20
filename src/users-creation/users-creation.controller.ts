@@ -310,6 +310,9 @@ export class UsersCreationController {
 
       return createdUser;
     } catch (err) {
+      if (err instanceof ConflictException) {
+        throw err;
+      }
       if ((err as Error).name === SequelizeUniqueConstraintError) {
         console.error('Duplicate email error:', err);
         throw new ConflictException();
