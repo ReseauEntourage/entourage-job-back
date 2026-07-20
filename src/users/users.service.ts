@@ -85,7 +85,10 @@ export class UsersService {
 
   async create(createUserDto: Partial<User>) {
     if (createUserDto.email) {
-      const existingUser = await this.findOneByMail(createUserDto.email);
+      const existingUser = await this.userModel.findOne({
+        where: { email: createUserDto.email.toLowerCase() },
+        attributes: ['id'],
+      });
       if (existingUser) {
         throw new ConflictException();
       }
