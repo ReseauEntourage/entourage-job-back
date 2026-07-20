@@ -1,14 +1,13 @@
-onlyBuiltDependencies:
-  - sharp
-  - '@datadog/native-appsec'
-  - '@datadog/native-iast-taint-tracking'
-  - '@datadog/native-metrics'
-  - '@datadog/pprof'
-  - '@nestjs/core'
-  - dd-trace
-  - msgpackr-extract
-  - unrs-resolver
-
 supportedArchitectures:
   cpu: [x64, arm64]
   os: [current, linux, darwin]
+allowBuilds:
+  sharp: true
+  '@datadog/native-appsec': true
+  '@datadog/native-iast-taint-tracking': true
+  '@datadog/native-metrics': true
+  '@datadog/pprof': true
+  '@nestjs/core': true
+  dd-trace: true
+  msgpackr-extract: true
+  unrs-resolver: true
