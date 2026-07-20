@@ -1,4 +1,9 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
@@ -79,6 +84,15 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: Partial<User>) {
+    if (createUserDto.email) {
+      const existingUser = await this.userModel.findOne({
+        where: { email: createUserDto.email.toLowerCase() },
+        attributes: ['id'],
+      });
+      if (existingUser) {
+        throw new ConflictException();
+      }
+    }
     return this.userModel.create(createUserDto, { hooks: true });
   }
 
