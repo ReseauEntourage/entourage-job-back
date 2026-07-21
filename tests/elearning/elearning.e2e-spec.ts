@@ -211,27 +211,29 @@ describe('Elearning', () => {
         'sendAllElearningUnitsCompletedMail'
       );
 
-      const first = await request(server)
-        .post(`${route}/units/${unit.id}/completions`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
-      expect(first.status).toBe(201);
-      expect(mailSpy).toHaveBeenCalledTimes(1);
+      try {
+        const first = await request(server)
+          .post(`${route}/units/${unit.id}/completions`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+        expect(first.status).toBe(201);
+        expect(mailSpy).toHaveBeenCalledTimes(1);
 
-      const second = await request(server)
-        .post(`${route}/units/${unit.id}/completions`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
+        const second = await request(server)
+          .post(`${route}/units/${unit.id}/completions`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
 
-      expect(second.status).toBe(201);
-      expect(second.body.id).toBe(first.body.id);
-      expect(second.body.validatedAt).toBe(first.body.validatedAt);
-      expect(mailSpy).toHaveBeenCalledTimes(1);
+        expect(second.status).toBe(201);
+        expect(second.body.id).toBe(first.body.id);
+        expect(second.body.validatedAt).toBe(first.body.validatedAt);
+        expect(mailSpy).toHaveBeenCalledTimes(1);
 
-      const unitsResponse = await request(server)
-        .get(`${route}/units`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
-      expect(unitsResponse.body[0].userCompletions).toHaveLength(1);
-
-      mailSpy.mockRestore();
+        const unitsResponse = await request(server)
+          .get(`${route}/units`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+        expect(unitsResponse.body[0].userCompletions).toHaveLength(1);
+      } finally {
+        mailSpy.mockRestore();
+      }
     });
 
     it('Should set elearningCompletedAt only when the last unit of the role is completed', async () => {

@@ -8,7 +8,11 @@ import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import {
+  SequelizeUniqueConstraintError,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import {
   ELEARNING_UNIT_ATTRIBUTES,
   ELEARNING_COMPLETION_ATTRIBUTES,
@@ -103,21 +107,37 @@ export class ElearningService {
     // Check if the completion already exists
     const existingCompletion = await this.elearningCompletionModel.findOne({
       where: { userId, unitId },
+      attributes: ELEARNING_COMPLETION_ATTRIBUTES,
     });
     if (existingCompletion) {
-      return this.findOneElearningCompletionById(existingCompletion.id);
+      return existingCompletion;
     }
 
-    // Create the completion
-    const completion = await this.elearningCompletionModel.create({
-      userId,
-      unitId,
-      validatedAt: new Date(),
-    });
+    // Create the completion. Two concurrent replays can both pass the
+    // findOne check above; the unique (userId, unitId) constraint then
+    // rejects the second create, so we fall back to returning the row the
+    // other request just inserted instead of surfacing a 500.
+    let completionId: string;
+    try {
+      const completion = await this.elearningCompletionModel.create({
+        userId,
+        unitId,
+        validatedAt: new Date(),
+      });
+      completionId = completion.id;
+    } catch (err) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
+        return this.elearningCompletionModel.findOne({
+          where: { userId, unitId },
+          attributes: ELEARNING_COMPLETION_ATTRIBUTES,
+        });
+      }
+      throw err;
+    }
 
     await this.onElearningUnitCompleted(userId);
 
-    return this.findOneElearningCompletionById(completion.id);
+    return this.findOneElearningCompletionById(completionId);
   }
 
   async allUnitsNotCompletedByUser(user: User): Promise<ElearningUnit[]> {
