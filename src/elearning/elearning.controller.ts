@@ -8,6 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserPayload } from 'src/auth/guards';
 import type { UserRole } from 'src/users/users.types';
 import { ElearningService } from './elearning.service';
@@ -30,12 +31,18 @@ export class ElearningController {
     return this.elearningService.findAllUnits(limit, offset, userRole, userId);
   }
 
+  @Throttle(60, 60)
   @Post('/units/:unitId/completions')
   async createElearningCompletion(
     @UserPayload('id') userId: string,
+    @UserPayload('role') userRole: UserRole,
     @Param('unitId')
     unitId: string
   ) {
-    return this.elearningService.createElearningCompletion(userId, unitId);
+    return this.elearningService.createElearningCompletion(
+      userId,
+      unitId,
+      userRole
+    );
   }
 }

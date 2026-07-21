@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
@@ -10,6 +15,7 @@ import {
 } from './elearning.attributes';
 import { generateElearningUnitIncludes } from './elearning.includes';
 import { ElearningCompletion } from './models/elearning-completion.model';
+import { ElearningUnitRole } from './models/elearning-unit-role.model';
 import { ElearningUnit } from './models/elearning-unit.model';
 
 @Injectable()
@@ -18,6 +24,8 @@ export class ElearningService {
   constructor(
     @InjectModel(ElearningUnit)
     private elearningUnitModel: typeof ElearningUnit,
+    @InjectModel(ElearningUnitRole)
+    private elearningUnitRoleModel: typeof ElearningUnitRole,
     @InjectModel(ElearningCompletion)
     private elearningCompletionModel: typeof ElearningCompletion,
     readonly mailsService: MailsService,
@@ -66,14 +74,30 @@ export class ElearningService {
    * side effects on the original completion).
    * @param userId The ID of the user
    * @param unitId The ID of the elearning unit
+   * @param userRole The role of the current user
    * @returns The existing or newly created ElearningCompletion
    * @throws NotFoundException if the elearning unit does not exist
+   * @throws ForbiddenException if the elearning unit does not belong to the user's role
    */
-  async createElearningCompletion(userId: string, unitId: string) {
+  async createElearningCompletion(
+    userId: string,
+    unitId: string,
+    userRole: UserRole
+  ) {
     // Check the unitId exists
     const unit = await this.elearningUnitModel.findByPk(unitId);
     if (!unit) {
       throw new NotFoundException('Elearning unit not found');
+    }
+
+    // Check the unit belongs to the current user's role
+    const unitRole = await this.elearningUnitRoleModel.findOne({
+      where: { unitId, role: userRole },
+    });
+    if (!unitRole) {
+      throw new ForbiddenException(
+        'Elearning unit does not belong to the user role'
+      );
     }
 
     // Check if the completion already exists

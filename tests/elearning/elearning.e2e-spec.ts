@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import * as uuid from 'uuid';
 import { MailsService } from 'src/mails/mails.service';
@@ -20,6 +21,7 @@ describe('Elearning', () => {
   let databaseHelper: DatabaseHelper;
   let usersHelper: UsersHelper;
   let elearningUnitFactory: ElearningUnitFactory;
+  let throttlerStorage: ThrottlerStorage;
 
   const route = '/elearning';
 
@@ -41,6 +43,7 @@ describe('Elearning', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     elearningUnitFactory =
       moduleFixture.get<ElearningUnitFactory>(ElearningUnitFactory);
+    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
   });
 
   afterAll(async () => {
@@ -54,6 +57,9 @@ describe('Elearning', () => {
 
   beforeEach(async () => {
     await databaseHelper.resetTestDB();
+    Object.keys(throttlerStorage.storage).forEach((key) => {
+      delete throttlerStorage.storage[key];
+    });
   });
 
   describe('GET /units', () => {
@@ -293,6 +299,45 @@ describe('Elearning', () => {
         .set('authorization', `Bearer ${loggedIn.token}`);
       expect(identity.status).toBe(200);
       expect(identity.body.elearningCompletedAt).not.toBeNull();
+    });
+
+    it('Should return 403 and create no completion when the unit does not belong to the user role', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      const coachUnit = await elearningUnitFactory.create(
+        { order: 1 },
+        { roles: [UserRoles.COACH] }
+      );
+
+      const response = await request(server)
+        .post(`${route}/units/${coachUnit.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+
+      expect(response.status).toBe(403);
+
+      const unitsResponse = await request(server)
+        .get(`${route}/units`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(unitsResponse.body[0].userCompletions).toHaveLength(0);
+    });
+
+    it('Should return 429 when the completion route is called past the throttle limit', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      const unit = await elearningUnitFactory.create({ order: 1 });
+
+      let lastResponse: request.Response;
+      for (let i = 0; i < 61; i += 1) {
+        lastResponse = await request(server)
+          .post(`${route}/units/${unit.id}/completions`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+      }
+
+      expect(lastResponse.status).toBe(429);
     });
   });
 });
