@@ -32,10 +32,12 @@ import { ReportAbusePipe } from './dto/report-conversation.pipe';
 import { UserInConversation } from './guards/user-in-conversation';
 import {
   ErrorMessagingCantParticipate,
+  ErrorMessagingElearningNotCompleted,
   ErrorMessagingInvalidMessage,
   ErrorMessagingMailingListInvalid,
   ErrorMessagingNeedParticipantsOrConversationId,
   ErrorMessagingReachedDailyConversationLimit,
+  ErrorMessagingRecipientNotEligible,
 } from './messaging.errors';
 import { MessagingService } from './messaging.service';
 
@@ -94,6 +96,14 @@ export class MessagingController {
       } else if (error instanceof ErrorMessagingCantParticipate) {
         throw new UnauthorizedException(
           'Vous ne pouvez pas participer à cette conversation.'
+        );
+      } else if (error instanceof ErrorMessagingElearningNotCompleted) {
+        throw new UnauthorizedException(
+          "Vous devez terminer votre parcours de formation avant de pouvoir contacter d'autres membres. Rendez-vous sur la page Formations pour le compléter."
+        );
+      } else if (error instanceof ErrorMessagingRecipientNotEligible) {
+        throw new UnauthorizedException(
+          "Cette personne n'est pas disponible actuellement."
         );
       } else if (error instanceof ErrorMessagingReachedDailyConversationLimit) {
         throw new HttpException(

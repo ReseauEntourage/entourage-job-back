@@ -215,6 +215,7 @@ describe('Elearning', () => {
     it('Should set elearningCompletedAt only when the last unit of the role is completed', async () => {
       const loggedIn = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
+        elearningCompletedAt: null,
       });
 
       const unit1 = await elearningUnitFactory.create(
