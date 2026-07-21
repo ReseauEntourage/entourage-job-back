@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
@@ -66,11 +61,12 @@ export class ElearningService {
   }
 
   /**
-   * Create a new elearning completion for a user and unit.
+   * Find or create an elearning completion for a user and unit. If a completion
+   * already exists, it is returned as-is (a replay never mutates or re-triggers
+   * side effects on the original completion).
    * @param userId The ID of the user
    * @param unitId The ID of the elearning unit
-   * @returns The created ElearningCompletion
-   * @throws ConflictException if the completion already exists
+   * @returns The existing or newly created ElearningCompletion
    * @throws NotFoundException if the elearning unit does not exist
    */
   async createElearningCompletion(userId: string, unitId: string) {
@@ -85,9 +81,7 @@ export class ElearningService {
       where: { userId, unitId },
     });
     if (existingCompletion) {
-      throw new ConflictException(
-        'Completion already exists for this user and unit'
-      );
+      return this.findOneElearningCompletionById(existingCompletion.id);
     }
 
     // Create the completion
@@ -100,26 +94,6 @@ export class ElearningService {
     await this.onElearningUnitCompleted(userId);
 
     return this.findOneElearningCompletionById(completion.id);
-  }
-
-  /**
-   * Delete an elearning completion for a user and unit.
-   * @param userId The ID of the user
-   * @param unitId The ID of the elearning unit
-   * @returns void
-   * @throws NotFoundException if the completion does not exist
-   */
-  async deleteElearningCompletion(userId: string, unitId: string) {
-    const completion = await this.elearningCompletionModel.findOne({
-      where: { userId, unitId },
-    });
-    if (!completion) {
-      throw new NotFoundException(
-        'Completion not found for this user and unit'
-      );
-    }
-
-    await completion.destroy();
   }
 
   async allUnitsNotCompletedByUser(user: User): Promise<ElearningUnit[]> {

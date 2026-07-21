@@ -1,7 +1,6 @@
 import {
   Controller,
   DefaultValuePipe,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -38,14 +37,5 @@ export class ElearningController {
     unitId: string
   ) {
     return this.elearningService.createElearningCompletion(userId, unitId);
-  }
-
-  @Delete('/units/:unitId/completions')
-  async deleteElearningCompletion(
-    @UserPayload('id') userId: string,
-    @Param('unitId')
-    unitId: string
-  ) {
-    return this.elearningService.deleteElearningCompletion(userId, unitId);
   }
 }
