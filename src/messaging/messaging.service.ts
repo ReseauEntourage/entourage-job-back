@@ -236,14 +236,15 @@ export class MessagingService {
       authorId,
       ...recipientIds,
     ]);
+    const usersById = new Map(users.map((user) => [user.id, user]));
 
-    const author = users.find((user) => user.id === authorId);
+    const author = usersById.get(authorId);
     if (!author || !author.elearningCompletedAt) {
       throw new ErrorMessagingElearningNotCompleted();
     }
 
     const hasIneligibleRecipient = recipientIds.some((recipientId) => {
-      const recipient = users.find((user) => user.id === recipientId);
+      const recipient = usersById.get(recipientId);
       return !recipient || !recipient.elearningCompletedAt;
     });
     if (hasIneligibleRecipient) {
