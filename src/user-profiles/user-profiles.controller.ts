@@ -48,6 +48,7 @@ import {
 } from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
+import { isProfileVisibilityEligible } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
 @ApiBearerAuth()
@@ -377,7 +378,7 @@ export class UserProfilesController {
       true
     );
 
-    if (!user || !userProfile) {
+    if (!user || !userProfile || !isProfileVisibilityEligible(user)) {
       throw new NotFoundException();
     }
 

@@ -42,13 +42,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import {
-  Gender,
-  Genders,
-  OnboardingStatus,
-  UserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { Gender, Genders, UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { getDepartmentLocative } from 'src/utils/misc/department-locative';
 import {
@@ -80,7 +74,10 @@ import {
 import { SCORING_WEIGHTS } from './recommendations/scoring.config';
 import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { ContactTypeEnum } from './user-profiles.types';
-import { userProfileSearchQuery } from './user-profiles.utils';
+import {
+  profileVisibilityEligibilityWhere,
+  userProfileSearchQuery,
+} from './user-profiles.utils';
 
 const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
 
@@ -296,7 +293,7 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
-            onboardingStatus: OnboardingStatus.COMPLETED,
+            ...profileVisibilityEligibilityWhere,
           },
           required: true,
           ...(hasSuperCoachBadge
@@ -477,7 +474,7 @@ export class UserProfilesService {
             id: { [Op.in]: candidateUserIds },
             role: normalizedRole,
             lastConnection: { [Op.ne]: null },
-            onboardingStatus: OnboardingStatus.COMPLETED,
+            ...profileVisibilityEligibilityWhere,
           },
           required: true,
           ...(hasSuperCoachBadge

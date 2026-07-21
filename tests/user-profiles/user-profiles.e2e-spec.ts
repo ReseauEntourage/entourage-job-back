@@ -20,7 +20,7 @@ import { UserProfileRecommendationsService } from 'src/user-profiles/recommendat
 import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
-import { UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
@@ -297,6 +297,55 @@ describe('UserProfiles', () => {
                 .get(`${route}/profile?offset=0&limit=25`)
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
+          });
+        });
+        describe('/profile?limit=&offset=&role[]= - Elearning completion gate (visibility)', () => {
+          it('Should not include a profile with onboarding completed but elearning not completed', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const ineligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+              elearningCompletedAt: null,
+            });
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).not.toContain(
+              ineligibleCoach.id
+            );
+          });
+
+          it('Should allow a user who has not completed elearning to see eligible profiles of others', async () => {
+            const loggedInIneligibleCandidate =
+              await usersHelper.createLoggedInUser({
+                role: UserRoles.CANDIDATE,
+                elearningCompletedAt: null,
+              });
+            const eligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+            });
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                )
+                .set(
+                  'authorization',
+                  `Bearer ${loggedInIneligibleCandidate.token}`
+                );
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).toContain(
+              eligibleCoach.id
+            );
           });
         });
         describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
@@ -1554,6 +1603,28 @@ describe('UserProfiles', () => {
               ),
             })
           );
+        });
+
+        it('Should return 404, if the targeted profile has not completed onboarding', async () => {
+          const ineligibleUser = await userFactory.create({
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+          });
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(server)
+              .get(`${route}/profile/${ineligibleUser.id}`)
+              .set('authorization', `Bearer ${loggedInUser.token}`);
+          expect(response.status).toBe(404);
+        });
+
+        it('Should return 404, if the targeted profile has completed onboarding but not elearning', async () => {
+          const ineligibleUser = await userFactory.create({
+            elearningCompletedAt: null,
+          });
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(server)
+              .get(`${route}/profile/${ineligibleUser.id}`)
+              .set('authorization', `Bearer ${loggedInUser.token}`);
+          expect(response.status).toBe(404);
         });
       });
     });

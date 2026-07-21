@@ -222,6 +222,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
         AND u."onboardingStatus"  = :onboardingStatusCompleted
+        AND u."elearningCompletedAt" IS NOT NULL
         ${excludeClause}
       ORDER BY upe.embedding <=> ${vec}
       LIMIT :annPoolSize
@@ -265,6 +266,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
         AND u."onboardingStatus"  = :onboardingStatusCompleted
+        AND u."elearningCompletedAt" IS NOT NULL
         ${excludeClause}
       ORDER BY upe.embedding <=> ${vec}
       LIMIT :annPoolSize
