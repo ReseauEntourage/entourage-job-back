@@ -102,6 +102,11 @@ export class MailjetService {
     };
   }
 
+  /** Extracts a stack trace for `Logger#error`'s trace param, when available. */
+  private errorStack(error: unknown): string | undefined {
+    return error instanceof Error ? error.stack : undefined;
+  }
+
   private isConnectionError(error: unknown): boolean {
     return (
       typeof error === 'object' &&
@@ -145,13 +150,37 @@ export class MailjetService {
     };
   }
 
+  // Variable keys carrying auth secrets (password reset / email verification
+  // tokens, OTP codes) — never write their value to logs.
+  private static readonly SENSITIVE_VARIABLE_KEYS = new Set([
+    'token',
+    'otpCode',
+  ]);
+
+  private redactSensitiveVariables(
+    variables: Record<string, unknown> | undefined
+  ): Record<string, unknown> | undefined {
+    if (!variables) {
+      return variables;
+    }
+    return Object.fromEntries(
+      Object.entries(variables).map(([key, value]) =>
+        MailjetService.SENSITIVE_VARIABLE_KEYS.has(key)
+          ? [key, '[REDACTED]']
+          : [key, value]
+      )
+    );
+  }
+
   /** Summarizes the outgoing request so a failure can be traced back to a recipient/template. */
   private describeMailjetRequest(mailjetParams: SendEmailV3_1.Body) {
     return mailjetParams.Messages.map((m) => ({
       to: m.To?.map((r) => r.Email),
       cc: m.Cc?.map((r) => r.Email),
       templateId: m.TemplateID,
-      variables: m.Variables,
+      variables: this.redactSensitiveVariables(
+        m.Variables as Record<string, unknown> | undefined
+      ),
     }));
   }
 
@@ -182,7 +211,8 @@ export class MailjetService {
               this.describeMailjetRequest(mailjetParams)
             )} — error: ${JSON.stringify(
               this.describeMailjetError(proxyError)
-            )}`
+            )}`,
+            this.errorStack(proxyError)
           );
           throw proxyError;
         }
@@ -190,7 +220,8 @@ export class MailjetService {
         this.logger.error(
           `sendMail failed — request: ${JSON.stringify(
             this.describeMailjetRequest(mailjetParams)
-          )} — error: ${JSON.stringify(this.describeMailjetError(error))}`
+          )} — error: ${JSON.stringify(this.describeMailjetError(error))}`,
+          this.errorStack(error)
         );
         throw error;
       }
