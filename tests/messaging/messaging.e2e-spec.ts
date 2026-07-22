@@ -421,6 +421,50 @@ describe('MESSAGING', () => {
 
           expect(response.status).toBe(201);
         });
+
+        it('should return 201 and create a conversation when the author is Admin, even if the recipient has not completed elearning', async () => {
+          const loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const loggedInIneligibleCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+            elearningCompletedAt: null,
+          });
+
+          const response: APIResponse<MessagingController['postMessage']> =
+            await request(server)
+              .post(`/messaging/messages`)
+              .send({
+                content: 'Super message',
+                participantIds: [loggedInIneligibleCoach.user.id],
+              })
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(201);
+        });
+
+        it('should not throw when a message is sent by an Admin author to an ineligible recipient, matching the staff welcome message job path', async () => {
+          const admin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const ineligibleCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            elearningCompletedAt: null,
+          });
+
+          // Mirrors the call made by processSendStaffMessagingMessage
+          // (work-queue.processor.ts): a staff account creates a new
+          // conversation with a recipient that has not completed elearning.
+          await expect(
+            messagingService.createMessageWithConversation(
+              {
+                content: 'Message de bienvenue',
+                participantIds: [ineligibleCandidate.user.id],
+              },
+              admin.user.id
+            )
+          ).resolves.toBeDefined();
+        });
       });
 
       it('should return 400 if neither the participantIds nor the conversationId is provided', async () => {

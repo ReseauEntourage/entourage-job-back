@@ -102,6 +102,11 @@ export class MailjetService {
     };
   }
 
+  /** Extracts a stack trace for `Logger#error`'s trace param, when available. */
+  private errorStack(error: unknown): string | undefined {
+    return error instanceof Error ? error.stack : undefined;
+  }
+
   private isConnectionError(error: unknown): boolean {
     return (
       typeof error === 'object' &&
@@ -109,6 +114,74 @@ export class MailjetService {
       'code' in error &&
       (error as { code: string }).code === 'ECONNRESET'
     );
+  }
+
+  /**
+   * node-mailjet flattens the API's error body onto the thrown Error (see
+   * node_modules/node-mailjet Request#request), but the per-message detail
+   * that actually names the offending field (ErrorRelatedTo) only lives
+   * under `response.data.Messages[].Errors`, one level deeper than what
+   * `error.message` already contains — surface all of it so a 400 like
+   * "Property value cannot be null" is actionable without re-triggering it.
+   */
+  private describeMailjetError(error: unknown): Record<string, unknown> {
+    if (typeof error !== 'object' || error === null) {
+      return { raw: String(error) };
+    }
+    const err = error as {
+      ErrorCode?: string;
+      ErrorIdentifier?: string;
+      ErrorMessage?: string;
+      ErrorRelatedTo?: string[];
+      message?: string;
+      response?: { data?: unknown };
+      statusCode?: number;
+    };
+    return {
+      statusCode: err.statusCode ?? null,
+      message: err.message ?? null,
+      errorCode: err.ErrorCode ?? null,
+      errorIdentifier: err.ErrorIdentifier ?? null,
+      errorMessage: err.ErrorMessage ?? null,
+      errorRelatedTo: err.ErrorRelatedTo ?? null,
+      // Raw response body — contains Messages[].Errors[].ErrorRelatedTo,
+      // which names the exact property Mailjet rejected.
+      responseBody: err.response?.data ?? null,
+    };
+  }
+
+  // Variable keys carrying auth secrets (password reset / email verification
+  // tokens, OTP codes) — never write their value to logs.
+  private static readonly SENSITIVE_VARIABLE_KEYS = new Set([
+    'token',
+    'otpCode',
+  ]);
+
+  private redactSensitiveVariables(
+    variables: Record<string, unknown> | undefined
+  ): Record<string, unknown> | undefined {
+    if (!variables) {
+      return variables;
+    }
+    return Object.fromEntries(
+      Object.entries(variables).map(([key, value]) =>
+        MailjetService.SENSITIVE_VARIABLE_KEYS.has(key)
+          ? [key, '[REDACTED]']
+          : [key, value]
+      )
+    );
+  }
+
+  /** Summarizes the outgoing request so a failure can be traced back to a recipient/template. */
+  private describeMailjetRequest(mailjetParams: SendEmailV3_1.Body) {
+    return mailjetParams.Messages.map((m) => ({
+      to: m.To?.map((r) => r.Email),
+      cc: m.Cc?.map((r) => r.Email),
+      templateId: m.TemplateID,
+      variables: this.redactSensitiveVariables(
+        m.Variables as Record<string, unknown> | undefined
+      ),
+    }));
   }
 
   async sendMail(params: CustomMailParams | CustomMailParams[]) {
@@ -133,11 +206,23 @@ export class MailjetService {
             .post('send', MailjetOptions.MAILS)
             .request(mailjetParams);
         } catch (proxyError) {
-          this.logger.error('sendMail: proxy retry failed', proxyError);
+          this.logger.error(
+            `sendMail: proxy retry failed — request: ${JSON.stringify(
+              this.describeMailjetRequest(mailjetParams)
+            )} — error: ${JSON.stringify(
+              this.describeMailjetError(proxyError)
+            )}`,
+            this.errorStack(proxyError)
+          );
           throw proxyError;
         }
       } else {
-        this.logger.error('sendMail failed', error);
+        this.logger.error(
+          `sendMail failed — request: ${JSON.stringify(
+            this.describeMailjetRequest(mailjetParams)
+          )} — error: ${JSON.stringify(this.describeMailjetError(error))}`,
+          this.errorStack(error)
+        );
         throw error;
       }
     }

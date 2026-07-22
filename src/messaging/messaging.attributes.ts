@@ -6,6 +6,7 @@ export const userAttributes = [
   'gender',
   'role',
   'zone',
+  'elearningCompletedAt',
 ];
 
 export const userAttributesWithDeletedAt = [...userAttributes, 'deletedAt'];

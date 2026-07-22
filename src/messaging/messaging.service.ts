@@ -15,6 +15,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { isEntourageAdmin } from 'src/users/users.utils';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
@@ -241,6 +242,10 @@ export class MessagingService {
     const author = usersById.get(authorId);
     if (!author || !author.elearningCompletedAt) {
       throw new ErrorMessagingElearningNotCompleted();
+    }
+
+    if (isEntourageAdmin(author.role)) {
+      return;
     }
 
     const hasIneligibleRecipient = recipientIds.some((recipientId) => {

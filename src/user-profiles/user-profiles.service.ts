@@ -203,18 +203,21 @@ export class UserProfilesService {
     return this.usersService.findOneWithRelations(userId);
   }
 
-  async findAll(query: {
-    businessSectorIds: string[];
-    contactTypes: ContactTypeEnum[];
-    departments: string[];
-    hasSuperCoachBadge?: boolean;
-    isAvailable?: boolean;
-    limit: number;
-    nudgeIds: string[];
-    offset: number;
-    role: UserRole[];
-    search: string;
-  }): Promise<PublicProfileDto[]> {
+  async findAll(
+    query: {
+      businessSectorIds: string[];
+      contactTypes: ContactTypeEnum[];
+      departments: string[];
+      hasSuperCoachBadge?: boolean;
+      isAvailable?: boolean;
+      limit: number;
+      nudgeIds: string[];
+      offset: number;
+      role: UserRole[];
+      search: string;
+    },
+    isAdminRequester = false
+  ): Promise<PublicProfileDto[]> {
     const {
       role,
       offset,
@@ -293,7 +296,7 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
-            ...profileVisibilityEligibilityWhere,
+            ...(!isAdminRequester && profileVisibilityEligibilityWhere),
           },
           required: true,
           ...(hasSuperCoachBadge
@@ -383,7 +386,8 @@ export class UserProfilesService {
       role: UserRole[];
       search: string;
     },
-    requestingUserId: string
+    requestingUserId: string,
+    isAdminRequester = false
   ): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -417,6 +421,7 @@ export class UserProfilesService {
         annPoolSize: 500,
         excludeUserIds: [requestingUserId],
         filterByAvailability: isAvailable,
+        isAdminRequester,
       });
 
     if (scoringResults.length === 0) return [];
@@ -474,7 +479,7 @@ export class UserProfilesService {
             id: { [Op.in]: candidateUserIds },
             role: normalizedRole,
             lastConnection: { [Op.ne]: null },
-            ...profileVisibilityEligibilityWhere,
+            ...(!isAdminRequester && profileVisibilityEligibilityWhere),
           },
           required: true,
           ...(hasSuperCoachBadge
