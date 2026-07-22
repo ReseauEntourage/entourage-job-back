@@ -26,6 +26,7 @@ export type PublicProfileDto = {
   cvUrl?: string;
   department: Department;
   description: string;
+  elearningCompletedAt: Date | null;
   experiences: Experience[];
   firstName: string;
   formations: Formation[];
@@ -63,6 +64,7 @@ export const generatePublicProfileDto = (
     lastName: user.lastName,
     role: user.role,
     gender: user.gender,
+    elearningCompletedAt: user.elearningCompletedAt,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     isAvailable: userProfile.isAvailable,

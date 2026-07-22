@@ -9,6 +9,7 @@ import { UserProfilesService } from '../user-profiles.service';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { User } from 'src/users/models';
 import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
+import { isEntourageAdmin } from 'src/users/users.utils';
 import { RecommendationsDto } from './dto/recommendations.dto';
 import {
   ACTIVITY_SCORING_CONFIG,
@@ -51,6 +52,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     configVersionProfile: string;
     excludeUserIds?: string[];
     filterByAvailability?: boolean;
+    isAdminRequester?: boolean;
     poolSize: number;
     rolesToFind: UserRole[];
     userId: string;
@@ -72,6 +74,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       excludeUserIds = [],
       filterByAvailability = undefined,
       annPoolSize = ANN_POOL_SIZE,
+      isAdminRequester = false,
     } = params;
 
     // Fetch the current user's raw vectors first so the main query can use
@@ -89,7 +92,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       profileVector,
       needsVector,
       excludeUserIds,
-      filterByAvailability
+      filterByAvailability,
+      isAdminRequester
     );
 
     return this.userProfileRecommandationModel.sequelize.query<UserProfileScoringResult>(
@@ -154,7 +158,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     profileVector: string | null,
     needsVector: string | null,
     excludeUserIds: string[] = [],
-    filterByAvailability?: boolean
+    filterByAvailability?: boolean,
+    isAdminRequester = false
   ): string {
     const rolesPlaceholder = rolesToFind.map((r) => `'${r}'`).join(', ');
     // Safe to interpolate: values are UUIDs coming from our own DB
@@ -171,13 +176,15 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         rolesPlaceholder,
         profileVector,
         excludeClause,
-        filterByAvailability
+        filterByAvailability,
+        isAdminRequester
       )},
       ${this.buildTopByNeedsCTE(
         rolesPlaceholder,
         needsVector,
         excludeClause,
-        filterByAvailability
+        filterByAvailability,
+        isAdminRequester
       )},
       ${this.buildCandidatePoolCTE()},
       ${this.buildUserScoresCTE()}
@@ -194,7 +201,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesPlaceholder: string,
     profileVector: string | null,
     excludeClause: string,
-    filterByAvailability?: boolean
+    filterByAvailability?: boolean,
+    isAdminRequester = false
   ): string {
     if (!profileVector) {
       return `top_by_profile AS (
@@ -209,6 +217,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         : filterByAvailability === false
         ? `AND up."isAvailable" = false`
         : '';
+    const elearningClause = isAdminRequester
+      ? ''
+      : `AND u."elearningCompletedAt" IS NOT NULL`;
 
     return `top_by_profile AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS profile_score
@@ -222,7 +233,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
         AND u."onboardingStatus"  = :onboardingStatusCompleted
-        AND u."elearningCompletedAt" IS NOT NULL
+        ${elearningClause}
         ${excludeClause}
       ORDER BY upe.embedding <=> ${vec}
       LIMIT :annPoolSize
@@ -238,7 +249,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesPlaceholder: string,
     needsVector: string | null,
     excludeClause: string,
-    filterByAvailability?: boolean
+    filterByAvailability?: boolean,
+    isAdminRequester = false
   ): string {
     if (!needsVector) {
       return `top_by_needs AS (
@@ -253,6 +265,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         : filterByAvailability === false
         ? `AND up."isAvailable" = false`
         : '';
+    const elearningClause = isAdminRequester
+      ? ''
+      : `AND u."elearningCompletedAt" IS NOT NULL`;
 
     return `top_by_needs AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS needs_score
@@ -266,7 +281,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
         AND u."onboardingStatus"  = :onboardingStatusCompleted
-        AND u."elearningCompletedAt" IS NOT NULL
+        ${elearningClause}
         ${excludeClause}
       ORDER BY upe.embedding <=> ${vec}
       LIMIT :annPoolSize
@@ -653,6 +668,7 @@ ${workloadCases}
       poolSize: batchSize,
       excludeUserIds,
       filterByAvailability: true,
+      isAdminRequester: isEntourageAdmin(user.role),
     });
 
     if (scoringResults.length === 0) return;
@@ -693,6 +709,7 @@ ${workloadCases}
       weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
       poolSize,
       filterByAvailability: true,
+      isAdminRequester: isEntourageAdmin(user.role),
     });
 
     const matchingResults = this.computeRelativeReasons(scoringResults);

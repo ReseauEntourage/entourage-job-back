@@ -13,6 +13,7 @@ import {
   Permission,
   UserPermissions,
   UserRole,
+  UserRoles,
 } from './users.types';
 
 export function isRoleIncluded(
@@ -42,6 +43,15 @@ export function hasPermission(
   return (
     _.intersection(userPermissionsArray, permissionsToCheckArray).length > 0
   );
+}
+
+/**
+ * Single predicate for the eLearning gate exemption granted to Entourage
+ * staff accounts, reused by every gate touchpoint (messaging, profile,
+ * directory/search, AI recommendations).
+ */
+export function isEntourageAdmin(role: UserRole): boolean {
+  return role === UserRoles.ADMIN;
 }
 
 export function capitalizeNameAndTrim(name: string) {
