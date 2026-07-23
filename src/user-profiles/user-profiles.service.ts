@@ -1507,6 +1507,17 @@ export class UserProfilesService {
     });
   }
 
+  // Bypasses updateByUserId on purpose: the profile row is about to be
+  // destroyed by removeByUserId, so going through the regular update path
+  // would queue an embedding regeneration that fails once the user/profile
+  // no longer exist.
+  async clearProfileFieldsForDeletion(userId: string): Promise<void> {
+    await this.userProfileModel.update(
+      { currentJob: null, description: null },
+      { where: { userId }, individualHooks: true }
+    );
+  }
+
   // ─── Analytics ───────────────────────────────────────────────────────────────
 
   async calculateProfileCompletion(userId: string): Promise<number> {
