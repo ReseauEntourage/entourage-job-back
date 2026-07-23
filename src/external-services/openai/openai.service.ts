@@ -87,7 +87,7 @@ export class OpenAiService {
       const toolCall = toolCalls?.[0];
       const functionArgs =
         toolCall && 'function' in toolCall
-          ? toolCall.function.arguments
+          ? toolCall.function?.arguments
           : undefined;
 
       if (!functionArgs) {
