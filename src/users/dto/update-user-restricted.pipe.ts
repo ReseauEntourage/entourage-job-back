@@ -13,6 +13,7 @@ import { validate } from 'class-validator';
 import { Permissions } from '../users.types';
 import { hasPermission } from '../users.utils';
 import type { RequestWithUser } from 'src/utils/types';
+import { UpdateUserAdminDto } from './update-user-admin.dto';
 import { UpdateUserRestrictedDto } from './update-user-restricted.dto';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -29,19 +30,27 @@ export class UpdateUserRestrictedPipe
     if (!metatype || !UpdateUserRestrictedPipe.toValidate(metatype)) {
       return value;
     }
-    const object = plainToInstance(metatype, value);
+
+    const { role } = this.request.user;
+
+    // Les admins peuvent modifier des champs hors du DTO restreint (ex. role, zone,
+    // OrganizationId depuis le backoffice) : on les valide contre le DTO admin
+    // au lieu d'ignorer les erreurs de validation.
+    const dtoType = hasPermission(Permissions.ADMIN, role)
+      ? UpdateUserAdminDto
+      : metatype;
+
+    const object = plainToInstance(dtoType, value);
     const errors = await validate(object, {
       whitelist: true,
       forbidNonWhitelisted: true,
       forbidUnknownValues: true,
     });
 
-    const { role } = this.request.user;
-
-    if (errors.length > 0 && !hasPermission(Permissions.ADMIN, role)) {
+    if (errors.length > 0) {
       throw new BadRequestException();
     }
-    return value;
+    return object;
   }
 
   private static toValidate(metatype: Type<unknown>): boolean {

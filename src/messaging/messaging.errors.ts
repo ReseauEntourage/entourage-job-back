@@ -32,3 +32,17 @@ export class ErrorMessagingMailingListInvalid extends Error {
     this.name = 'ErrorMessagingMailingListInvalid';
   }
 }
+
+export class ErrorMessagingElearningNotCompleted extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ErrorMessagingElearningNotCompleted';
+  }
+}
+
+export class ErrorMessagingRecipientNotEligible extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ErrorMessagingRecipientNotEligible';
+  }
+}

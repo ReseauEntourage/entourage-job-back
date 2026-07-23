@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import moment from 'moment';
 import { QueryTypes } from 'sequelize';
@@ -9,6 +9,7 @@ import { UserProfilesService } from '../user-profiles.service';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { User } from 'src/users/models';
 import { OnboardingStatus, UserRole, UserRoles } from 'src/users/users.types';
+import { isEntourageAdmin } from 'src/users/users.utils';
 import { RecommendationsDto } from './dto/recommendations.dto';
 import {
   ACTIVITY_SCORING_CONFIG,
@@ -34,6 +35,8 @@ export const APPEND_BATCH_SIZE = 50;
 
 @Injectable()
 export class UserProfileRecommendationsService extends UserProfileRecommendationBase {
+  private readonly logger = new Logger(UserProfileRecommendationsService.name);
+
   constructor(
     @InjectModel(UserProfileRecommendation)
     userProfileRecommandationModel: typeof UserProfileRecommendation,
@@ -49,6 +52,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     configVersionProfile: string;
     excludeUserIds?: string[];
     filterByAvailability?: boolean;
+    isAdminRequester?: boolean;
     poolSize: number;
     rolesToFind: UserRole[];
     userId: string;
@@ -70,6 +74,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       excludeUserIds = [],
       filterByAvailability = undefined,
       annPoolSize = ANN_POOL_SIZE,
+      isAdminRequester = false,
     } = params;
 
     // Fetch the current user's raw vectors first so the main query can use
@@ -87,7 +92,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       profileVector,
       needsVector,
       excludeUserIds,
-      filterByAvailability
+      filterByAvailability,
+      isAdminRequester
     );
 
     return this.userProfileRecommandationModel.sequelize.query<UserProfileScoringResult>(
@@ -152,7 +158,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     profileVector: string | null,
     needsVector: string | null,
     excludeUserIds: string[] = [],
-    filterByAvailability?: boolean
+    filterByAvailability?: boolean,
+    isAdminRequester = false
   ): string {
     const rolesPlaceholder = rolesToFind.map((r) => `'${r}'`).join(', ');
     // Safe to interpolate: values are UUIDs coming from our own DB
@@ -169,13 +176,15 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         rolesPlaceholder,
         profileVector,
         excludeClause,
-        filterByAvailability
+        filterByAvailability,
+        isAdminRequester
       )},
       ${this.buildTopByNeedsCTE(
         rolesPlaceholder,
         needsVector,
         excludeClause,
-        filterByAvailability
+        filterByAvailability,
+        isAdminRequester
       )},
       ${this.buildCandidatePoolCTE()},
       ${this.buildUserScoresCTE()}
@@ -192,7 +201,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesPlaceholder: string,
     profileVector: string | null,
     excludeClause: string,
-    filterByAvailability?: boolean
+    filterByAvailability?: boolean,
+    isAdminRequester = false
   ): string {
     if (!profileVector) {
       return `top_by_profile AS (
@@ -207,6 +217,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         : filterByAvailability === false
         ? `AND up."isAvailable" = false`
         : '';
+    const elearningClause = isAdminRequester
+      ? ''
+      : `AND u."elearningCompletedAt" IS NOT NULL`;
 
     return `top_by_profile AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS profile_score
@@ -220,6 +233,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
         AND u."onboardingStatus"  = :onboardingStatusCompleted
+        ${elearningClause}
         ${excludeClause}
       ORDER BY upe.embedding <=> ${vec}
       LIMIT :annPoolSize
@@ -235,7 +249,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     rolesPlaceholder: string,
     needsVector: string | null,
     excludeClause: string,
-    filterByAvailability?: boolean
+    filterByAvailability?: boolean,
+    isAdminRequester = false
   ): string {
     if (!needsVector) {
       return `top_by_needs AS (
@@ -250,6 +265,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         : filterByAvailability === false
         ? `AND up."isAvailable" = false`
         : '';
+    const elearningClause = isAdminRequester
+      ? ''
+      : `AND u."elearningCompletedAt" IS NOT NULL`;
 
     return `top_by_needs AS (
       SELECT up."userId", 1 - (upe.embedding <=> ${vec}) AS needs_score
@@ -263,6 +281,7 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
         AND u.id                  != :userId
         AND u.role                IN (${rolesPlaceholder})
         AND u."onboardingStatus"  = :onboardingStatusCompleted
+        ${elearningClause}
         ${excludeClause}
       ORDER BY upe.embedding <=> ${vec}
       LIMIT :annPoolSize
@@ -573,34 +592,47 @@ ${workloadCases}
       (r) => r.finalScore === null || r.rank === null
     );
 
-    /**
-     * Conditions for refreshing the pool:
-     * - No previous recommendations date (first time)
-     * - Last recommendations are older than 1 week
-     * - No recommendations currently stored
-     * - At least one recommended profile is no longer available
-     * - At least one recommended profile is now deleted
-     * - At least one recommendation is from the legacy system (finalScore is null or rank is null)
-     */
-    const needsRefresh =
-      !userProfile.lastRecommendationsDate ||
-      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo) ||
-      currentRecos.length === 0 ||
-      recIsUnavailable ||
-      recIsLegacy;
+    const noDate = !userProfile.lastRecommendationsDate;
+    const isStale =
+      !!userProfile.lastRecommendationsDate &&
+      moment(userProfile.lastRecommendationsDate).isBefore(oneWeekAgo);
+    const isEmpty = currentRecos.length === 0;
 
-    /**
-     * If any of the above conditions are met, we refresh the pool by deleting existing recommendations and computing a new set. We also update the lastRecommendationsDate to now.
-     * This ensures that users always see up-to-date and relevant recommendations when they access their pool.
-     * The check for availability and legacy records ensures that we don't show users recommendations that are no longer valid or from an outdated system, which could lead to a poor user experience.
-     */
-    if (needsRefresh) {
-      await this.removeRecommendationsByUserId(user.id);
-      await this.updateRecommendationsByUserId(user.id, INITIAL_POOL_SIZE);
-      await this.userProfilesService.updateByUserId(user.id, {
-        lastRecommendationsDate: moment().toDate(),
-      });
+    const needsRefresh =
+      noDate || isStale || isEmpty || recIsUnavailable || recIsLegacy;
+
+    const reason = noDate
+      ? 'no lastRecommendationsDate (first time or invalidated after profile update)'
+      : isStale
+      ? `pool is stale (last computed: ${userProfile.lastRecommendationsDate})`
+      : isEmpty
+      ? 'pool is empty'
+      : recIsUnavailable
+      ? 'at least one recommended profile is no longer available'
+      : recIsLegacy
+      ? 'at least one recommendation is from the legacy system'
+      : null;
+
+    if (!needsRefresh) {
+      this.logger.log(
+        `[Recommendations] Pool for user ${user.id} is fresh (${currentRecos.length} recommendations, last computed: ${userProfile.lastRecommendationsDate}) — skipping refresh`
+      );
+      return;
     }
+
+    this.logger.log(
+      `[Recommendations] Refreshing pool for user ${user.id} — reason: ${reason}`
+    );
+
+    await this.removeRecommendationsByUserId(user.id);
+    await this.updateRecommendationsByUserId(user.id, INITIAL_POOL_SIZE);
+    await this.userProfilesService.updateByUserId(user.id, {
+      lastRecommendationsDate: moment().toDate(),
+    });
+
+    this.logger.log(
+      `[Recommendations] Pool refreshed for user ${user.id} — ${INITIAL_POOL_SIZE} new recommendations computed`
+    );
   }
 
   /**
@@ -636,6 +668,7 @@ ${workloadCases}
       poolSize: batchSize,
       excludeUserIds,
       filterByAvailability: true,
+      isAdminRequester: isEntourageAdmin(user.role),
     });
 
     if (scoringResults.length === 0) return;
@@ -676,6 +709,7 @@ ${workloadCases}
       weightLocationCompatibility: SCORING_WEIGHTS.locationCompatibility,
       poolSize,
       filterByAvailability: true,
+      isAdminRequester: isEntourageAdmin(user.role),
     });
 
     const matchingResults = this.computeRelativeReasons(scoringResults);

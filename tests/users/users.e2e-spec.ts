@@ -847,6 +847,32 @@ describe('Users', () => {
           expect(new Date(response.body.onboardingCompletedAt)).not.toBeNull();
         });
 
+        it('Should return 200 and set onboardingWebinarSkippedAt when a candidate skips the webinar', async () => {
+          const skippedAt = new Date().toISOString();
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingWebinarSkippedAt: skippedAt,
+              });
+          expect(response.status).toBe(200);
+          expect(
+            new Date(response.body.onboardingWebinarSkippedAt).toISOString()
+          ).toBe(skippedAt);
+        });
+
+        it('Should return 400 when onboardingWebinarSkippedAt is not a valid date', async () => {
+          const response: APIResponse<UsersController['updateUser']> =
+            await request(server)
+              .put(`${route}/${loggedInCandidate.user.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`)
+              .send({
+                onboardingWebinarSkippedAt: 'not-a-date',
+              });
+          expect(response.status).toBe(400);
+        });
+
         it('Should handle onboarding transition end-to-end (status + completedAt + job)', async () => {
           loggedInCandidate = await usersHelper.createLoggedInUser({
             role: UserRoles.CANDIDATE,

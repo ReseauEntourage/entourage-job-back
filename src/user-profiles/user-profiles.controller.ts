@@ -30,10 +30,10 @@ import {
 import {
   AllUserRoles,
   Permissions,
-  UserRole,
+  type UserRole,
   UserRoles,
 } from 'src/users/users.types';
-import { isRoleIncluded } from 'src/users/users.utils';
+import { isEntourageAdmin, isRoleIncluded } from 'src/users/users.utils';
 import { UpdateCoachUserProfileDto } from './dto';
 import { generatePublicProfileDto } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
@@ -48,6 +48,7 @@ import {
 } from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
+import { isProfileVisibilityEligible } from './user-profiles.utils';
 
 @ApiTags('UserProfiles')
 @ApiBearerAuth()
@@ -131,6 +132,7 @@ export class UserProfilesController {
   @Get()
   async findAll(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @UserPayload('role') viewerRole: UserRole,
     @Query('limit', new ParseIntPipe())
     limit: number,
     @Query('offset', new ParseIntPipe())
@@ -198,11 +200,17 @@ export class UserProfilesController {
       hasSuperCoachBadge,
     };
 
+    const isAdminRequester = isEntourageAdmin(viewerRole);
+
     try {
       if (sort === 'relevance') {
-        return this.userProfilesService.findAllByRelevance(filters, userId);
+        return this.userProfilesService.findAllByRelevance(
+          filters,
+          userId,
+          isAdminRequester
+        );
       }
-      return this.userProfilesService.findAll(filters);
+      return this.userProfilesService.findAll(filters, isAdminRequester);
     } catch (error) {
       console.error('Error in findAll:', error);
       throw new InternalServerErrorException();
@@ -267,6 +275,10 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
+    if (userProfile.embeddingPendingAt !== null) {
+      return { embeddingPending: true, recommendations: [], nextCursor: null };
+    }
+
     // Ensure a fresh pool exists (recomputes if stale/empty/legacy).
     await this.userProfileRecommendationsService.ensureFreshPool(
       user,
@@ -321,7 +333,7 @@ export class UserProfilesController {
       };
     });
 
-    return { recommendations, nextCursor };
+    return { embeddingPending: false, recommendations, nextCursor };
   }
 
   // Only for admin users to get recommendations for any user, not only themselves
@@ -365,7 +377,8 @@ export class UserProfilesController {
 
   @Get('/:userId')
   async findByUserId(
-    @Param('userId', new ParseUUIDPipe()) userIdToGet: string
+    @Param('userId', new ParseUUIDPipe()) userIdToGet: string,
+    @UserPayload('role') viewerRole: UserRole
   ) {
     const user = await this.userProfilesService.findOneUser(userIdToGet);
     const userProfile = await this.userProfilesService.findOneByUserId(
@@ -373,7 +386,11 @@ export class UserProfilesController {
       true
     );
 
-    if (!user || !userProfile) {
+    if (
+      !user ||
+      !userProfile ||
+      (!isEntourageAdmin(viewerRole) && !isProfileVisibilityEligible(user))
+    ) {
       throw new NotFoundException();
     }
 

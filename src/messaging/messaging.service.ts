@@ -15,6 +15,7 @@ import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { isEntourageAdmin } from 'src/users/users.utils';
 import { CreateMessageDto, PostFeedbackDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
@@ -24,10 +25,12 @@ import {
 } from './messaging.attributes';
 import {
   ErrorMessagingCantParticipate,
+  ErrorMessagingElearningNotCompleted,
   ErrorMessagingInvalidMessage,
   ErrorMessagingMailingListInvalid,
   ErrorMessagingNeedParticipantsOrConversationId,
   ErrorMessagingReachedDailyConversationLimit,
+  ErrorMessagingRecipientNotEligible,
 } from './messaging.errors';
 import {
   messagingConversationIncludes,
@@ -195,8 +198,13 @@ export class MessagingService {
     userId: string,
     createMessageDto: CreateMessageDto
   ) {
-    // Ignore if the conversationId is not provided but the participantIds are
+    // New conversation: verify both the author and every recipient have
+    // completed their eLearning before allowing the conversation to start.
     if (!createMessageDto.conversationId && createMessageDto.participantIds) {
+      await this.assertElearningCompletedForNewConversation(
+        userId,
+        createMessageDto.participantIds
+      );
       return true;
     }
 
@@ -212,6 +220,41 @@ export class MessagingService {
     }
 
     return true;
+  }
+
+  /**
+   * Guards the creation of a new conversation (not a reply to an existing
+   * one): both the author and every designated recipient must have
+   * `elearningCompletedAt` set. Two distinct errors are thrown so the author
+   * gets an actionable message (own training incomplete) while a blocked
+   * recipient's training status is never revealed (neutral message).
+   */
+  private async assertElearningCompletedForNewConversation(
+    authorId: string,
+    recipientIds: string[]
+  ): Promise<void> {
+    const users = await this.usersService.findByIdsWithRelations([
+      authorId,
+      ...recipientIds,
+    ]);
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    const author = usersById.get(authorId);
+    if (!author || !author.elearningCompletedAt) {
+      throw new ErrorMessagingElearningNotCompleted();
+    }
+
+    if (isEntourageAdmin(author.role)) {
+      return;
+    }
+
+    const hasIneligibleRecipient = recipientIds.some((recipientId) => {
+      const recipient = usersById.get(recipientId);
+      return !recipient || !recipient.elearningCompletedAt;
+    });
+    if (hasIneligibleRecipient) {
+      throw new ErrorMessagingRecipientNotEligible();
+    }
   }
 
   /**

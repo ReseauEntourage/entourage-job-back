@@ -123,7 +123,6 @@ describe('PublicCVs', () => {
           department: 'Nord (59)',
           isAvailable: true,
           hasPicture: true,
-          introduction: 'Je suis un candidat avec un profil complet',
           description: 'Description détaillée de mon parcours professionnel',
           currentJob: 'Développeur Web',
           sectorOccupations: [
@@ -193,7 +192,6 @@ describe('PublicCVs', () => {
           department: 'Nord (59)',
           isAvailable: true,
           hasPicture: false, // Pas de photo
-          introduction: 'Je suis un candidat sans photo',
           description: 'Description de mon parcours',
           sectorOccupations: [
             {
@@ -395,7 +393,6 @@ describe('PublicCVs', () => {
       // User Profile Attributes
       expect(response.body.userProfile).toHaveProperty('department');
       expect(response.body.userProfile).toHaveProperty('description');
-      expect(response.body.userProfile).toHaveProperty('introduction');
       expect(response.body.userProfile).toHaveProperty('linkedinUrl');
       expect(response.body.userProfile).toHaveProperty('userProfileLanguages');
       expect(response.body.userProfile).toHaveProperty('contracts');

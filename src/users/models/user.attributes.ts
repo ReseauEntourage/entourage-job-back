@@ -19,9 +19,21 @@ export const UserAttributes = [
   'onboardingStatus',
   'onboardingCompletedAt',
   'onboardingWebinarSkippedAt',
+  'elearningCompletedAt',
 ] as const;
 
 export type UserAttribute = (typeof UserAttributes)[number];
+
+export const OtpUserAttributes = [
+  'id',
+  'email',
+  'lastConnection',
+  'otpCode',
+  'otpSalt',
+  'otpExpiresAt',
+] as const;
+
+export type OtpUserAttribute = (typeof OtpUserAttributes)[number];
 
 export const PublicUserAttributes = [
   'id',

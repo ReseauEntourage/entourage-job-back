@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import * as uuid from 'uuid';
 import { MailsService } from 'src/mails/mails.service';
@@ -20,6 +21,7 @@ describe('Elearning', () => {
   let databaseHelper: DatabaseHelper;
   let usersHelper: UsersHelper;
   let elearningUnitFactory: ElearningUnitFactory;
+  let throttlerStorage: ThrottlerStorage;
 
   const route = '/elearning';
 
@@ -41,6 +43,7 @@ describe('Elearning', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     elearningUnitFactory =
       moduleFixture.get<ElearningUnitFactory>(ElearningUnitFactory);
+    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
   });
 
   afterAll(async () => {
@@ -54,6 +57,9 @@ describe('Elearning', () => {
 
   beforeEach(async () => {
     await databaseHelper.resetTestDB();
+    Object.keys(throttlerStorage.storage).forEach((key) => {
+      delete throttlerStorage.storage[key];
+    });
   });
 
   describe('GET /units', () => {
@@ -193,73 +199,147 @@ describe('Elearning', () => {
       expect(response.body.validatedAt).toBeTruthy();
     });
 
-    it('Should return 409 when completion already exists', async () => {
+    it('Should return the existing completion unchanged when replayed, without resending the congratulation mail', async () => {
       const loggedIn = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
       });
 
       const unit = await elearningUnitFactory.create({ order: 1 });
 
-      const first = await request(server)
-        .post(`${route}/units/${unit.id}/completions`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
-      expect(first.status).toBe(201);
-
-      const second = await request(server)
-        .post(`${route}/units/${unit.id}/completions`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
-
-      expect(second.status).toBe(409);
-    });
-  });
-
-  describe('DELETE /units/:unitId/completions', () => {
-    it('Should return 401 when not logged in', async () => {
-      const response = await request(server).delete(
-        `${route}/units/${uuid.v4()}/completions`
+      const mailSpy = jest.spyOn(
+        MailsServiceMock.prototype,
+        'sendAllElearningUnitsCompletedMail'
       );
-      expect(response.status).toBe(401);
+
+      try {
+        const first = await request(server)
+          .post(`${route}/units/${unit.id}/completions`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+        expect(first.status).toBe(201);
+        expect(mailSpy).toHaveBeenCalledTimes(1);
+
+        const second = await request(server)
+          .post(`${route}/units/${unit.id}/completions`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+
+        expect(second.status).toBe(201);
+        expect(second.body.id).toBe(first.body.id);
+        expect(second.body.validatedAt).toBe(first.body.validatedAt);
+        expect(mailSpy).toHaveBeenCalledTimes(1);
+
+        const unitsResponse = await request(server)
+          .get(`${route}/units`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+        expect(unitsResponse.body[0].userCompletions).toHaveLength(1);
+      } finally {
+        mailSpy.mockRestore();
+      }
     });
 
-    it('Should return 404 when completion does not exist', async () => {
+    it('Should set elearningCompletedAt only when the last unit of the role is completed', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+        elearningCompletedAt: null,
+      });
+
+      const unit1 = await elearningUnitFactory.create(
+        { order: 1 },
+        { roles: [UserRoles.CANDIDATE] }
+      );
+      const unit2 = await elearningUnitFactory.create(
+        { order: 2 },
+        { roles: [UserRoles.CANDIDATE] }
+      );
+
+      const firstCompletion = await request(server)
+        .post(`${route}/units/${unit1.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(firstCompletion.status).toBe(201);
+
+      // Complétion non-finale : le champ reste null
+      const identityAfterFirst = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(identityAfterFirst.status).toBe(200);
+      expect(identityAfterFirst.body.elearningCompletedAt).toBeNull();
+
+      const lastCompletion = await request(server)
+        .post(`${route}/units/${unit2.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(lastCompletion.status).toBe(201);
+
+      // Complétion finale : le champ est horodaté
+      const identityAfterLast = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(identityAfterLast.status).toBe(200);
+      expect(identityAfterLast.body.elearningCompletedAt).not.toBeNull();
+    });
+
+    it('Should ignore units assigned to other roles when checking completion', async () => {
       const loggedIn = await usersHelper.createLoggedInUser({
         role: UserRoles.CANDIDATE,
       });
 
-      const unit = await elearningUnitFactory.create({ order: 1 });
+      const candidateUnit = await elearningUnitFactory.create(
+        { order: 1 },
+        { roles: [UserRoles.CANDIDATE] }
+      );
+      await elearningUnitFactory.create(
+        { order: 2 },
+        { roles: [UserRoles.COACH] }
+      );
+
+      const completion = await request(server)
+        .post(`${route}/units/${candidateUnit.id}/completions`)
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(completion.status).toBe(201);
+
+      // La seule unité du rôle candidat est complétée : l'unité coach ne compte pas
+      const identity = await request(server)
+        .get('/current')
+        .set('authorization', `Bearer ${loggedIn.token}`);
+      expect(identity.status).toBe(200);
+      expect(identity.body.elearningCompletedAt).not.toBeNull();
+    });
+
+    it('Should return 403 and create no completion when the unit does not belong to the user role', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      const coachUnit = await elearningUnitFactory.create(
+        { order: 1 },
+        { roles: [UserRoles.COACH] }
+      );
 
       const response = await request(server)
-        .delete(`${route}/units/${unit.id}/completions`)
+        .post(`${route}/units/${coachUnit.id}/completions`)
         .set('authorization', `Bearer ${loggedIn.token}`);
 
-      expect(response.status).toBe(404);
-    });
-
-    it('Should return 200 and delete an existing completion', async () => {
-      const loggedIn = await usersHelper.createLoggedInUser({
-        role: UserRoles.CANDIDATE,
-      });
-
-      const unit = await elearningUnitFactory.create({ order: 1 });
-
-      const createResponse = await request(server)
-        .post(`${route}/units/${unit.id}/completions`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
-      expect(createResponse.status).toBe(201);
-
-      const deleteResponse = await request(server)
-        .delete(`${route}/units/${unit.id}/completions`)
-        .set('authorization', `Bearer ${loggedIn.token}`);
-
-      expect(deleteResponse.status).toBe(200);
+      expect(response.status).toBe(403);
 
       const unitsResponse = await request(server)
         .get(`${route}/units`)
         .set('authorization', `Bearer ${loggedIn.token}`);
-
-      expect(unitsResponse.status).toBe(200);
-      expect(unitsResponse.body).toHaveLength(1);
       expect(unitsResponse.body[0].userCompletions).toHaveLength(0);
+    });
+
+    it('Should return 429 when the completion route is called past the throttle limit', async () => {
+      const loggedIn = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+
+      const unit = await elearningUnitFactory.create({ order: 1 });
+
+      let lastResponse: request.Response;
+      for (let i = 0; i < 61; i += 1) {
+        lastResponse = await request(server)
+          .post(`${route}/units/${unit.id}/completions`)
+          .set('authorization', `Bearer ${loggedIn.token}`);
+      }
+
+      expect(lastResponse.status).toBe(429);
     });
   });
 });

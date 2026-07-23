@@ -26,6 +26,7 @@ export type PublicProfileDto = {
   cvUrl?: string;
   department: Department;
   description: string;
+  elearningCompletedAt: Date | null;
   experiences: Experience[];
   firstName: string;
   formations: Formation[];
@@ -34,7 +35,6 @@ export type PublicProfileDto = {
   hasPicture: boolean;
   id: string;
   interests: Interest[];
-  introduction: string;
   isAvailable: boolean;
   lastName: string;
   linkedinUrl?: string;
@@ -64,12 +64,12 @@ export const generatePublicProfileDto = (
     lastName: user.lastName,
     role: user.role,
     gender: user.gender,
+    elearningCompletedAt: user.elearningCompletedAt,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     isAvailable: userProfile.isAvailable,
     nudges: userProfile.nudges,
     customNudges: userProfile.customNudges,
-    introduction: userProfile.introduction,
     description: userProfile.description,
     sectorOccupations: userProfile.sectorOccupations,
     userProfileLanguages: userProfile.userProfileLanguages,

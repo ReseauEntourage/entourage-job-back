@@ -20,7 +20,6 @@ export const EMBEDDING_CONFIG: Record<EmbeddingType, EmbeddingConfig> = {
     fields: [
       'currentJob',
       'description',
-      'introduction',
       'skills',
       'experiences',
       'formations',

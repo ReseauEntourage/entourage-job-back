@@ -242,6 +242,7 @@ describe('Auth', () => {
           lastConnection: response.body.lastConnection,
           createdAt: response.body.createdAt,
           onboardingCompletedAt: response.body.onboardingCompletedAt,
+          elearningCompletedAt: response.body.elearningCompletedAt,
         });
       });
       it('Should return 400, if not matching passwords', async () => {

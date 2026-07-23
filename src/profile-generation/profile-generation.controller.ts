@@ -2,6 +2,8 @@ import { createHash } from 'crypto';
 import {
   Controller,
   Get,
+  Post,
+  Param,
   UseGuards,
   ParseUUIDPipe,
   NotFoundException,
@@ -87,5 +89,15 @@ export class ProfileGenerationController {
       console.error('Error extracting CV data:', error);
       throw new InternalServerErrorException('Failed to extract CV data: ');
     }
+  }
+
+  @ApiBearerAuth()
+  @Post(':jobId/cancel')
+  async cancelGenerateFromPDF(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('jobId') jobId: string
+  ) {
+    await this.profileGenerationService.cancelProfileGeneration(jobId, userId);
+    return { status: 'cancelled' };
   }
 }

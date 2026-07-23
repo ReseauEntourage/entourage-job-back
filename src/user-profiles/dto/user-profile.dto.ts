@@ -16,7 +16,6 @@ export const generateUserProfileDto = (
     currentJob: userProfile.currentJob,
     nudges: userProfile.nudges,
     description: userProfile.description,
-    introduction: userProfile.introduction,
     linkedinUrl: userProfile.linkedinUrl,
     hasExternalCv: userProfile.hasExternalCv,
     sectorOccupations: userProfile.sectorOccupations,

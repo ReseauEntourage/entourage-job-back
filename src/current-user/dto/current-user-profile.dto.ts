@@ -10,7 +10,6 @@ export type CurrentUserProfileDto = Pick<
   | 'hasPicture'
   | 'hasExternalCv'
   | 'description'
-  | 'introduction'
   | 'linkedinUrl'
   | 'department'
   | 'isAvailable'
@@ -28,7 +27,6 @@ export type CurrentUserProfileCompleteDto = Pick<
   | 'hasPicture'
   | 'hasExternalCv'
   | 'description'
-  | 'introduction'
   | 'linkedinUrl'
   | 'department'
   | 'isAvailable'
@@ -57,7 +55,6 @@ export const generateCurrentUserProfileDto = (
     hasPicture: base.hasPicture,
     hasExternalCv: base.hasExternalCv,
     description: base.description,
-    introduction: base.introduction,
     linkedinUrl: base.linkedinUrl,
     department: base.department,
     isAvailable: base.isAvailable,
@@ -80,7 +77,6 @@ export const generateCurrentUserProfileCompleteDto = (
     hasPicture: base.hasPicture,
     hasExternalCv: base.hasExternalCv,
     description: base.description,
-    introduction: base.introduction,
     linkedinUrl: base.linkedinUrl,
     department: base.department,
     isAvailable: base.isAvailable,

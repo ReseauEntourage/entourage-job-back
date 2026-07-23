@@ -76,13 +76,6 @@ export class UserProfile extends Model {
 
   @ApiProperty()
   @IsString()
-  @MaxLength(500)
-  @AllowNull(true)
-  @Column
-  introduction: string;
-
-  @ApiProperty()
-  @IsString()
   @MaxLength(1000)
   @AllowNull(true)
   @Column
@@ -148,6 +141,11 @@ export class UserProfile extends Model {
   @AllowNull(true)
   @Column
   lastRecommendationsDate: Date;
+
+  @IsDate()
+  @AllowNull(true)
+  @Column
+  embeddingPendingAt: Date;
 
   @CreatedAt
   createdAt: Date;

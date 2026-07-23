@@ -17,6 +17,7 @@
       "tests/*": ["./tests/*"]
     },
     "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "strictNullChecks": false,
     "noImplicitAny": true,
     "strictBindCallApply": false,

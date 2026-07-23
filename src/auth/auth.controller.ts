@@ -227,11 +227,22 @@ export class AuthController {
       }
     }
 
-    const tokenToSend = await this.authService.generateVerificationToken(user);
-
-    await this.authService.sendVerificationMail(user, tokenToSend);
+    await this.authService.generateAndSendVerificationWithOtp(user);
 
     return;
+  }
+
+  @Throttle(10, 60)
+  @Public()
+  @Post('verify-otp')
+  async verifyOtp(
+    @Body('email') email: string,
+    @Body('code') code: string
+  ): Promise<{ token: string }> {
+    if (!email || !code) {
+      throw new BadRequestException();
+    }
+    return this.authService.verifyOtp(email, code);
   }
 
   @Throttle(60, 60)

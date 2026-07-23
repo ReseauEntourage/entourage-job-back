@@ -1,4 +1,9 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
@@ -31,7 +36,7 @@ import { UserProfileRecommendationsService } from 'src/user-profiles/recommendat
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
-import { User, UserAttributes } from './models';
+import { OtpUserAttributes, User, UserAttributes } from './models';
 import { PublicUserAttributes } from './models/user.attributes';
 import {
   getUserCandidatOrder,
@@ -79,6 +84,15 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: Partial<User>) {
+    if (createUserDto.email) {
+      const existingUser = await this.userModel.findOne({
+        where: { email: createUserDto.email.toLowerCase() },
+        attributes: ['id'],
+      });
+      if (existingUser) {
+        throw new ConflictException();
+      }
+    }
     return this.userModel.create(createUserDto, { hooks: true });
   }
 
@@ -92,6 +106,13 @@ export class UsersService {
     return this.userModel.findOne({
       where: { email: email.toLowerCase() },
       attributes: [...UserAttributes],
+    });
+  }
+
+  async findOneByMailWithOtp(email: string) {
+    return this.userModel.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: [...OtpUserAttributes],
     });
   }
 
