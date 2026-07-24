@@ -149,7 +149,11 @@ export class WorkQueueProcessor extends WorkerHost {
 
   /**
    * Create or update a user in Salesforce
-   * If companyId is provided, also create or update the company in Salesforce through a separate job (CREATE_OR_UPDATE_SALESFORCE_COMPANY)
+   * If companyId is provided:
+   * - and the user is the company admin (creating it), create or update the Company account
+   *   through a separate job (CREATE_OR_UPDATE_SALESFORCE_COMPANY), unchanged
+   * - otherwise, enqueue UPDATE_SALESFORCE_USER_COMPANY directly so the coach goes through the
+   *   same gated Company account lookup/fallback logic as `PUT /user/company`
    * @param job - Job containing user data to create or update in Salesforce
    * @returns A message indicating the result of the operation
    */
@@ -177,14 +181,20 @@ export class WorkQueueProcessor extends WorkerHost {
         // The "Position" field in Salesforce corresponds to the user's role in the company
         position: data.companyRole,
       });
-      // If companyId is provided, create or update the company in Salesforce
       if (data.companyId) {
-        const company = await this.companiesService.findOne(data.companyId);
-        if (!company) throw new Error('Company not found');
-        await this.workQueue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY, {
-          name: company.name,
-          userId: data.userId,
-        });
+        if (data.isCompanyAdmin) {
+          const company = await this.companiesService.findOne(data.companyId);
+          if (!company) throw new Error('Company not found');
+          await this.workQueue.add(Jobs.CREATE_OR_UPDATE_SALESFORCE_COMPANY, {
+            name: company.name,
+            userId: data.userId,
+          });
+        } else {
+          await this.workQueue.add(Jobs.UPDATE_SALESFORCE_USER_COMPANY, {
+            userId: data.userId,
+            companyId: data.companyId,
+          });
+        }
       }
       return `Salesforce : created or updated user '${data.userId}'`;
     }
@@ -224,6 +234,8 @@ export class WorkQueueProcessor extends WorkerHost {
 
   /**
    * Update a user's company in Salesforce
+   * If data.companyId is null (coach removing their company), this is a nominal case that falls back
+   * to a household account - it does not throw
    * @param job - Job containing userId and companyId to update the user's company in Salesforce
    * @returns A message indicating the result of the operation
    */
@@ -232,15 +244,30 @@ export class WorkQueueProcessor extends WorkerHost {
   ) {
     const { data } = job;
     if (process.env.ENABLE_SF === 'true') {
-      const company = await this.companiesService.findOne(data.companyId);
-      if (!company) throw new Error('Company not found');
-      const isAdmin = company.admin && company.admin.id === data.userId;
+      const company = data.companyId
+        ? await this.companiesService.findOne(data.companyId)
+        : null;
+      if (data.companyId && !company) throw new Error('Company not found');
 
-      await this.salesforceService.updateSalesforceUserCompany(
-        data.userId,
-        company ? company.name : null,
-        isAdmin
-      );
+      // hasAdmin: does the declared company have any admin at all (gates Company account lookup)
+      const hasAdmin = company?.admin != null;
+      // isThisUserTheAdmin: is this specific user the admin (only affects Contact RecordType)
+      const isThisUserTheAdmin = company?.admin?.id === data.userId;
+
+      const { companyAccountNotFound } =
+        await this.salesforceService.updateSalesforceUserCompany(
+          data.userId,
+          company ? company.name : null,
+          isThisUserTheAdmin,
+          hasAdmin
+        );
+
+      if (companyAccountNotFound) {
+        this.logger.warn(
+          `Salesforce Company account not found for company '${company?.name}' (id ${data.companyId}) despite an existing admin - user '${data.userId}' falls back to household account`
+        );
+      }
+
       return `Salesforce : updated user '${data.userId}' company to '${data.companyId}'`;
     }
     return `Salesforce job ignored : update of user '${data.userId}' company to '${data.companyId}'`;

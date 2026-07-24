@@ -483,6 +483,7 @@ export const mapSalesforceContactFields = (
     jobSearchDuration,
     gender,
     refererId,
+    companyName,
   }: ContactProps,
   recordType: ContactRecordType
 ): SalesforceContact => {
@@ -525,6 +526,7 @@ export const mapSalesforceContactFields = (
       : undefined,
     ID_App_Entourage_Pro__c: id || undefined,
     Source__c: 'Lead entrant',
+    Raison_social_Entreprise__c: companyName ?? null,
     ...socialSituationFields,
     Genre__c: gender
       ? formatSalesforceValue<CandidateGender>(gender, LeadGender)

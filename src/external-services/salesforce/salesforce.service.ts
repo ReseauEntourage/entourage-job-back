@@ -1211,16 +1211,21 @@ export class SalesforceService {
 
   /**
    * Link or unlink a Salesforce contact to a company account in Salesforce
-   * If companyId is null or company not found, link the contact to a household account instead
+   * Never creates or updates a Company account here - only an existing Company admin flow does that
+   * (via createOrUpdateSalesforceCompany). If hasAdmin is false, or the Company account can't be
+   * found in Salesforce despite hasAdmin being true, the contact falls back to a household account
    *
    * @param userId user's id in our database
    * @param companyName company name to link the user to in Salesforce, or null to unlink from any company
+   * @param isCompanyAdmin whether this specific user is the admin of the declared company (used for RecordType only)
+   * @param hasAdmin whether the declared company has any admin at all (gates Company account lookup)
    */
   async updateSalesforceUserCompany(
     userId: string,
     companyName: string | null,
-    isCompanyAdmin = false
-  ) {
+    isCompanyAdmin = false,
+    hasAdmin = false
+  ): Promise<{ companyAccountNotFound: boolean }> {
     this.setIsWorker(true);
 
     const userToUpdate = await this.findContactFromUserId(userId);
@@ -1231,22 +1236,27 @@ export class SalesforceService {
       throw new Error(`Contact not found in Salesforce for user ${userId}`);
     }
 
-    // Find the company in Salesforce if companyName is provided
-    let accountSfId = null;
-    if (companyName)
-      accountSfId = await this.createOrUpdateSalesforceCompany(companyName, {});
-
     const contactSfId = contactSf.Id;
 
-    // If no company found or companyName is null, unlink the contact from any company and link to household account
+    // Read-only lookup of the existing Company account: only when the declared company already has an admin
+    let accountSfId: string | null = null;
+    let companyAccountNotFound = false;
+    if (companyName && hasAdmin) {
+      const sfCompany = await this.findCompanyFromCompanyName(companyName);
+      if (sfCompany) {
+        accountSfId = sfCompany.Id;
+      } else {
+        companyAccountNotFound = true;
+      }
+    }
+
+    // No admin, no company declared, or Company account not found: fall back to a household account
     if (!accountSfId) {
-      // Create or find household account
-      const householdAccountId = await this.findOrCreateHouseholdAccount({
+      accountSfId = await this.findOrCreateHouseholdAccount({
         name: `${userToUpdate.firstName} ${userToUpdate.lastName} Foyer`,
         department: userToUpdate.department,
         address: getPostalCodeFromDepartment(userToUpdate.department),
       });
-      accountSfId = householdAccountId;
     }
 
     if (!accountSfId) {
@@ -1255,14 +1265,16 @@ export class SalesforceService {
       );
     }
 
-    // Link the contact to the new company or unlink if companyId is null
     await this.updateContact(
       contactSfId,
       {
         accountSfId,
+        companyName,
       },
       determineContactRecordType(userToUpdate.role, isCompanyAdmin)
     );
+
+    return { companyAccountNotFound };
   }
 
   async createOrUpdateCompanySalesforceLead(lead: CompanyLeadProps) {
