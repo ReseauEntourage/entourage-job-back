@@ -74,12 +74,16 @@ export class CompanyUsersService {
     updateInExternalDB = true
   ) {
     // If companyName is provided, find or create the company
+    // createInExternalDB is always false here: this method only ever links a non-admin coach
+    // (isAdmin is hardcoded to false below), so it must never trigger Salesforce Company account
+    // creation - the gated lookup/fallback logic in updateSalesforceUserCompany handles that instead
     let company: Company | null = null;
     if (companyName) {
       company = await this.companiesService.findOrCreateByName(
         companyName,
         user,
-        CompanyCreationContext.COACH_LINKING
+        CompanyCreationContext.COACH_LINKING,
+        false
       );
     }
 
