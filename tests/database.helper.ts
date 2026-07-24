@@ -134,7 +134,7 @@ export class DatabaseHelper {
 
   async createEntities<
     F extends Factory<Awaited<ReturnType<F['create']>>>,
-    A extends Parameters<F['create']>
+    A extends Parameters<F['create']>,
   >(factory: F, n: number, ...args: A) {
     const promises: Promise<Awaited<ReturnType<F['create']>>>[] = [];
     for (let i = 0; i < n; i += 1) {

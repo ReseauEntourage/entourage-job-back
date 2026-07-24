@@ -150,9 +150,8 @@ export class AiAssistantService {
       );
     }
 
-    const { allowed, remaining, resetInSeconds } = await this.checkRateLimit(
-      userId
-    );
+    const { allowed, remaining, resetInSeconds } =
+      await this.checkRateLimit(userId);
 
     if (!allowed) {
       subscriber.next({ data: { type: 'rate_limit', resetInSeconds } });

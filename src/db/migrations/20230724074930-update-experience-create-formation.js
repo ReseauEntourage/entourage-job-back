@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-  async up (queryInterface, Sequelize) {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Formations', {
       id: {
         allowNull: false,
@@ -14,7 +14,7 @@ module.exports = {
         type: Sequelize.UUID,
         references: {
           model: 'CVs',
-          key: 'id'
+          key: 'id',
         },
         onDelete: 'cascade',
         onUpdate: 'cascade',
@@ -50,8 +50,7 @@ module.exports = {
         allowNull: true,
         type: Sequelize.STRING,
       },
-    })
-
+    });
 
     await queryInterface.createTable('Formation_Skills', {
       id: {
@@ -89,7 +88,7 @@ module.exports = {
         allowNull: false,
         defaultValue: -1,
       },
-    })
+    });
 
     // await queryInterface.addConstraint('Formations', {
     //   fields: ['CVId'],
@@ -102,39 +101,34 @@ module.exports = {
     //   onDelete: 'cascade',
     //   onUpdate: 'cascade',
     // });
-    
 
-    await queryInterface.addColumn('Experiences', 'location',
-     {
-        allownull: true,
-        type: Sequelize.STRING,
-      })
+    await queryInterface.addColumn('Experiences', 'location', {
+      allownull: true,
+      type: Sequelize.STRING,
+    });
 
-    await queryInterface.addColumn('Experiences', 'company',
-    {
-       allownull: true,
-       type: Sequelize.STRING,
-     })
+    await queryInterface.addColumn('Experiences', 'company', {
+      allownull: true,
+      type: Sequelize.STRING,
+    });
 
-     queryInterface.addColumn('Experiences', 'dateStart', {
+    queryInterface.addColumn('Experiences', 'dateStart', {
       allownull: true,
       type: Sequelize.DATE,
-    })
+    });
     queryInterface.addColumn('Experiences', 'dateEnd', {
       allownull: true,
       type: Sequelize.DATE,
-    })
+    });
     queryInterface.addColumn('Experiences', 'title', {
       allownull: true,
       type: Sequelize.STRING,
-    })
+    });
   },
 
-  async down (queryInterface, Sequelize) {
-    
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Formation_Skills');
     await queryInterface.dropTable('Formations');
-
 
     await queryInterface.removeColumn('Experiences', 'company');
 
@@ -150,6 +144,5 @@ module.exports = {
     //   'Formations',
     //   'Formations_CVId_fkey'
     // );
-
-  }
+  },
 };

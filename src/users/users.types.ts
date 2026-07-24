@@ -45,8 +45,7 @@ export const UserPermissions: { [K in UserRole]: Permission | Permission[] } = {
 };
 
 export type NormalUserRole =
-  | typeof UserRoles.CANDIDATE
-  | typeof UserRoles.COACH;
+  typeof UserRoles.CANDIDATE | typeof UserRoles.COACH;
 
 export const NormalUserRoles: NormalUserRole[] = [
   UserRoles.CANDIDATE,

@@ -880,9 +880,8 @@ export class CronTasksProcessor extends WorkerHost {
   async prepareReferedNotActivatedMails() {
     const DAYS_SINCE_CREATION = 15;
     this.logger.log('Preparing refered not activated mails...');
-    const rows = await this.usersService.getReferedNotActivatedData(
-      DAYS_SINCE_CREATION
-    );
+    const rows =
+      await this.usersService.getReferedNotActivatedData(DAYS_SINCE_CREATION);
     this.logger.log(`Found ${rows.length} inactive refered candidates`);
 
     const results = await Promise.allSettled(
@@ -1364,9 +1363,10 @@ export class CronTasksProcessor extends WorkerHost {
   async prepareInactiveReferersMails() {
     const DAYS_SINCE_CREATION = 15;
     this.logger.log('Preparing inactive referers mails...');
-    const rows = await this.usersService.getUserIdsForInactiveReferers(
-      DAYS_SINCE_CREATION
-    );
+    const rows =
+      await this.usersService.getUserIdsForInactiveReferers(
+        DAYS_SINCE_CREATION
+      );
     this.logger.log(`Found ${rows.length} inactive referers`);
 
     const results = await Promise.allSettled(
@@ -1412,9 +1412,10 @@ export class CronTasksProcessor extends WorkerHost {
   async prepareMessagingFeedbackMails() {
     const MESSAGING_DAYS = 30;
     this.logger.log('Preparing messaging feedback mails...');
-    const rows = await this.usersService.getUserTriplesForMessagingFeedback(
-      MESSAGING_DAYS
-    );
+    const rows =
+      await this.usersService.getUserTriplesForMessagingFeedback(
+        MESSAGING_DAYS
+      );
     this.logger.log(
       `Found ${rows.length} user-conversation pairs for messaging feedback`
     );

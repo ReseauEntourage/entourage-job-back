@@ -124,9 +124,8 @@ export class EventsService {
       .map((member) => member.Email);
 
     // Retrieve Users from CampaignMembers where Email is defined
-    const participantUsers = await this.usersService.findAllByMail(
-      membersEmails
-    );
+    const participantUsers =
+      await this.usersService.findAllByMail(membersEmails);
 
     const participants = participantUsers.map((user) => ({
       id: user.id,

@@ -8,13 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { UpdateUserSocialSituationDto } from './update-user-social-situation.dto';
 
-export class UpdateUserSocialSituationPipe
-  implements
-    PipeTransform<
-      UpdateUserSocialSituationDto,
-      Promise<UpdateUserSocialSituationDto>
-    >
-{
+export class UpdateUserSocialSituationPipe implements PipeTransform<
+  UpdateUserSocialSituationDto,
+  Promise<UpdateUserSocialSituationDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

@@ -215,8 +215,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       filterByAvailability === true
         ? `AND up."isAvailable" = true`
         : filterByAvailability === false
-        ? `AND up."isAvailable" = false`
-        : '';
+          ? `AND up."isAvailable" = false`
+          : '';
     const elearningClause = isAdminRequester
       ? ''
       : `AND u."elearningCompletedAt" IS NOT NULL`;
@@ -263,8 +263,8 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
       filterByAvailability === true
         ? `AND up."isAvailable" = true`
         : filterByAvailability === false
-        ? `AND up."isAvailable" = false`
-        : '';
+          ? `AND up."isAvailable" = false`
+          : '';
     const elearningClause = isAdminRequester
       ? ''
       : `AND u."elearningCompletedAt" IS NOT NULL`;
@@ -604,14 +604,14 @@ ${workloadCases}
     const reason = noDate
       ? 'no lastRecommendationsDate (first time or invalidated after profile update)'
       : isStale
-      ? `pool is stale (last computed: ${userProfile.lastRecommendationsDate})`
-      : isEmpty
-      ? 'pool is empty'
-      : recIsUnavailable
-      ? 'at least one recommended profile is no longer available'
-      : recIsLegacy
-      ? 'at least one recommendation is from the legacy system'
-      : null;
+        ? `pool is stale (last computed: ${userProfile.lastRecommendationsDate})`
+        : isEmpty
+          ? 'pool is empty'
+          : recIsUnavailable
+            ? 'at least one recommended profile is no longer available'
+            : recIsLegacy
+              ? 'at least one recommendation is from the legacy system'
+              : null;
 
     if (!needsRefresh) {
       this.logger.log(

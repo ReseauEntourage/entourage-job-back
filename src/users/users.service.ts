@@ -391,8 +391,8 @@ export class UsersService {
         WHERE 
           "User"."deletedAt" IS NULL
           AND ${filterOptions.join(' AND ')} ${
-          search ? `AND ${userSearchQueryRaw(search, true)}` : ''
-        }
+            search ? `AND ${userSearchQueryRaw(search, true)}` : ''
+          }
 
         GROUP BY "User"."id"
         ORDER BY "User"."firstName" ASC
@@ -460,8 +460,8 @@ export class UsersService {
             
         WHERE "User"."deletedAt" IS NULL
           AND ${filterOptions.join(' AND ')} ${
-          search ? `AND ${userSearchQueryRaw(search, true)}` : ''
-        }
+            search ? `AND ${userSearchQueryRaw(search, true)}` : ''
+          }
         
         GROUP BY "User"."id"
         ORDER BY "User"."firstName" ASC
@@ -529,8 +529,8 @@ export class UsersService {
             
         WHERE "User"."deletedAt" IS NULL
           AND ${filterOptions.join(' AND ')} ${
-          search ? `AND ${userSearchQueryRaw(search, true)}` : ''
-        }
+            search ? `AND ${userSearchQueryRaw(search, true)}` : ''
+          }
         
         GROUP BY "User"."id"
         ORDER BY "User"."firstName" ASC

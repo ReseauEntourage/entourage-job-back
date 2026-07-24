@@ -17,10 +17,10 @@ import { UpdateUserAdminDto } from './update-user-admin.dto';
 import { UpdateUserRestrictedDto } from './update-user-restricted.dto';
 
 @Injectable({ scope: Scope.REQUEST })
-export class UpdateUserRestrictedPipe
-  implements
-    PipeTransform<UpdateUserRestrictedDto, Promise<UpdateUserRestrictedDto>>
-{
+export class UpdateUserRestrictedPipe implements PipeTransform<
+  UpdateUserRestrictedDto,
+  Promise<UpdateUserRestrictedDto>
+> {
   constructor(@Inject(REQUEST) private request: RequestWithUser) {}
 
   async transform(

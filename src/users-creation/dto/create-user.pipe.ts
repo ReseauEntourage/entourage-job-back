@@ -8,9 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CreateUserDto } from './create-user.dto';
 
-export class CreateUserPipe
-  implements PipeTransform<CreateUserDto, Promise<CreateUserDto>>
-{
+export class CreateUserPipe implements PipeTransform<
+  CreateUserDto,
+  Promise<CreateUserDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

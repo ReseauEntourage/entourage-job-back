@@ -77,9 +77,8 @@ export class OrganizationFactory implements Factory<Organization> {
     if (dbOrganization) {
       return dbOrganization.toJSON();
     }
-    const builtOrganization = await this.organizationModel.build(
-      organizationData
-    );
+    const builtOrganization =
+      await this.organizationModel.build(organizationData);
 
     const builtOrganizationReferent =
       await this.organizationReferentModel.build(organizationReferentData);

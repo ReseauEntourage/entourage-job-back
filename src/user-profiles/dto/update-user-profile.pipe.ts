@@ -18,13 +18,10 @@ import { UpdateCandidateUserProfileDto } from './update-candidate-user-profile.d
 import { UpdateCoachUserProfileDto } from './update-coach-user-profile.dto';
 
 @Injectable({ scope: Scope.REQUEST })
-export class UpdateUserProfilePipe
-  implements
-    PipeTransform<
-      UpdateCandidateUserProfileDto | UpdateCoachUserProfileDto,
-      Promise<UpdateCandidateUserProfileDto | UpdateCoachUserProfileDto>
-    >
-{
+export class UpdateUserProfilePipe implements PipeTransform<
+  UpdateCandidateUserProfileDto | UpdateCoachUserProfileDto,
+  Promise<UpdateCandidateUserProfileDto | UpdateCoachUserProfileDto>
+> {
   private readonly logger = new Logger(UpdateUserProfilePipe.name);
 
   constructor(@Inject(REQUEST) private request: RequestWithUser) {}

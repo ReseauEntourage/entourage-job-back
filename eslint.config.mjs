@@ -1,8 +1,8 @@
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
-import importPlugin from 'eslint-plugin-import';
+import importPlugin from 'eslint-plugin-import-x';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
-import typescriptSortKeys from 'eslint-plugin-typescript-sort-keys';
+import perfectionist from 'eslint-plugin-perfectionist';
 import globals from 'globals';
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -19,7 +19,7 @@ export default [
   {
     files: ['**/*.ts'],
     plugins: {
-      'typescript-sort-keys': typescriptSortKeys,
+      perfectionist,
     },
     languageOptions: {
       parser: tsParser,
@@ -33,7 +33,7 @@ export default [
       },
     },
     settings: {
-      'import/resolver': {
+      'import-x/resolver': {
         typescript: {},
       },
     },
@@ -45,19 +45,22 @@ export default [
       '@typescript-eslint/no-empty-interface': 0,
       '@typescript-eslint/explicit-function-return-type': 0,
 
-      'import/no-unresolved': 'off',
-      'import/extensions': [
+      'import-x/no-unresolved': 'off',
+      'import-x/namespace': 'off',
+      'import-x/no-named-as-default': 'off',
+      'import-x/no-named-as-default-member': 'off',
+      'import-x/extensions': [
         2,
         'always',
         { ts: 'never', tsx: 'never', js: 'never' },
       ],
-      'import/no-default-export': 2,
-      'import/prefer-default-export': 0,
-      'import/no-extraneous-dependencies': [
+      'import-x/no-default-export': 2,
+      'import-x/prefer-default-export': 0,
+      'import-x/no-extraneous-dependencies': [
         'error',
         { devDependencies: ['tests/**/*', '**/*.spec.ts'] },
       ],
-      'import/order': [
+      'import-x/order': [
         1,
         {
           groups: [
@@ -76,8 +79,8 @@ export default [
         },
       ],
 
-      'typescript-sort-keys/interface': 'error',
-      'typescript-sort-keys/string-enum': 'error',
+      'perfectionist/sort-interfaces': 'error',
+      'perfectionist/sort-enums': 'error',
 
       'no-console': [1, { allow: ['warn', 'error'] }],
       'no-multiple-empty-lines': [2, { max: 1 }],

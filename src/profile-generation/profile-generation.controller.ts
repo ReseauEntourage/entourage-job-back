@@ -31,9 +31,8 @@ export class ProfileGenerationController {
   ) {
     try {
       // Récupération du CV depuis AWS S3
-      const userProfile = await this.userProfilesService.findOneByUserId(
-        userId
-      );
+      const userProfile =
+        await this.userProfilesService.findOneByUserId(userId);
 
       if (!userProfile || !userProfile.hasExternalCv) {
         throw new NotFoundException();

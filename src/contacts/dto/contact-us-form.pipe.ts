@@ -8,9 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { ContactUsFormDto } from './contact-us-form.dto';
 
-export class ContactUsFormPipe
-  implements PipeTransform<ContactUsFormDto, Promise<ContactUsFormDto>>
-{
+export class ContactUsFormPipe implements PipeTransform<
+  ContactUsFormDto,
+  Promise<ContactUsFormDto>
+> {
   async transform(
     value: ContactUsFormDto,
     { metatype }: ArgumentMetadata

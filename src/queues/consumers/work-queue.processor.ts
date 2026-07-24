@@ -357,9 +357,8 @@ export class WorkQueueProcessor extends WorkerHost {
     const { data } = job;
     const { addresseeEmail, message } = data;
 
-    const addressee = await this.usersService.findOneByMailWithRelations(
-      addresseeEmail
-    );
+    const addressee =
+      await this.usersService.findOneByMailWithRelations(addresseeEmail);
 
     if (!addressee) {
       this.logger.error(
@@ -379,9 +378,8 @@ export class WorkQueueProcessor extends WorkerHost {
         `No staff contact email found for user with email ${addresseeEmail}, zone: ${addressee.zone}`
       );
     }
-    const staffContactEpUser = await this.usersService.findOneByMail(
-      staffContactEmail
-    );
+    const staffContactEpUser =
+      await this.usersService.findOneByMail(staffContactEmail);
     if (!staffContactEpUser) {
       this.logger.error(
         `Staff contact with email ${staffContactEmail} not found for user with email ${addresseeEmail}, zone: ${addressee.zone}`

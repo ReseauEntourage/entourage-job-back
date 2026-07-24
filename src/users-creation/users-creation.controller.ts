@@ -156,9 +156,8 @@ export class UsersCreationController {
     };
 
     try {
-      const { id: createdUserId } = await this.usersCreationService.createUser(
-        userToCreate
-      );
+      const { id: createdUserId } =
+        await this.usersCreationService.createUser(userToCreate);
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserRegistrationDto.department,
@@ -168,9 +167,8 @@ export class UsersCreationController {
         optInNewsletter: createUserRegistrationDto.optInNewsletter ?? false,
       });
 
-      const createdUser = await this.usersCreationService.findOneUser(
-        createdUserId
-      );
+      const createdUser =
+        await this.usersCreationService.findOneUser(createdUserId);
 
       if (createUserRegistrationDto.invitationId) {
         // Link the invitation to the user
@@ -357,9 +355,8 @@ export class UsersCreationController {
     };
 
     try {
-      const { id: createdUserId } = await this.usersCreationService.createUser(
-        userToCreate
-      );
+      const { id: createdUserId } =
+        await this.usersCreationService.createUser(userToCreate);
 
       await this.usersCreationService.updateUserProfileByUserId(createdUserId, {
         department: createUserReferingDto.department,
@@ -367,9 +364,8 @@ export class UsersCreationController {
         sectorOccupations: createUserReferingDto.sectorOccupations,
       });
 
-      const createdUser = await this.usersCreationService.findOneUser(
-        createdUserId
-      );
+      const createdUser =
+        await this.usersCreationService.findOneUser(createdUserId);
 
       await this.usersCreationService.createExternalDBUser(createdUserId, {
         birthDate: createUserReferingDto.birthDate,

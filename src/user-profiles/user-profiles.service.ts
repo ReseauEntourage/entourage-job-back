@@ -1822,8 +1822,8 @@ export class UserProfilesService {
     const searchAmbition = profile.currentJob
       ? stripParens(profile.currentJob)
       : occupationNames.length > 0
-      ? occupationNames.slice(0, 2).join(' ou ')
-      : null;
+        ? occupationNames.slice(0, 2).join(' ou ')
+        : null;
 
     const skills = (profile.skills ?? [])
       .map((s) => stripParens(s.name))
