@@ -184,8 +184,8 @@ export class ProfileGeneratorProcessor extends WorkerHost {
           error: isCancelled
             ? undefined
             : error instanceof Error
-            ? error.message
-            : 'Une erreur est survenue',
+              ? error.message
+              : 'Une erreur est survenue',
           jobId: job.id,
           userProfileId,
         }

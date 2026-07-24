@@ -7,9 +7,7 @@ import { Factory } from 'src/utils/types';
 import { ZoneNameFilters } from 'src/utils/types/zones.types';
 
 @Injectable()
-export class ContactCompanyFormFactory
-  implements Factory<ContactCompanyFormDto>
-{
+export class ContactCompanyFormFactory implements Factory<ContactCompanyFormDto> {
   generateContactCompanyFormAnswers(
     props: Partial<ContactCompanyFormDto>
   ): ContactCompanyFormDto {

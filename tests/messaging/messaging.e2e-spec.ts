@@ -938,9 +938,8 @@ describe('MESSAGING', () => {
         }
       );
 
-      const results = await messagingService.getAllMutuallyRepliedConversations(
-        15
-      );
+      const results =
+        await messagingService.getAllMutuallyRepliedConversations(15);
       const resultIds = results.map((c) => c.id);
 
       expect(resultIds).toContain(conversation.id);
@@ -967,9 +966,8 @@ describe('MESSAGING', () => {
         }
       );
 
-      const results = await messagingService.getAllMutuallyRepliedConversations(
-        15
-      );
+      const results =
+        await messagingService.getAllMutuallyRepliedConversations(15);
       const resultIds = results.map((c) => c.id);
 
       expect(resultIds).not.toContain(conversation.id);

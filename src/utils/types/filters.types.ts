@@ -33,7 +33,7 @@ export interface FilterConstant<T, C extends AnyToFix = AnyToFix> {
 
 export type FilterObject<
   K extends string,
-  T extends AnyToFix = AnyToFix
+  T extends AnyToFix = AnyToFix,
 > = Partial<Record<K, FilterConstant<T>[]>>;
 
 export type FilterParams<K extends string> = Partial<Record<K, string[]>>;

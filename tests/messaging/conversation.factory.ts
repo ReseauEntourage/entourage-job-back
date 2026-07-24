@@ -43,9 +43,8 @@ export class ConversationFactory implements Factory<Conversation> {
       return dbConversation.toJSON();
     }
 
-    const builtConversation = await this.conversationModel.build(
-      conversationData
-    );
+    const builtConversation =
+      await this.conversationModel.build(conversationData);
 
     const { id, ...builtConversationWithoutId } = builtConversation.toJSON();
 

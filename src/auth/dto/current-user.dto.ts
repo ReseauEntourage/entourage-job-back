@@ -6,8 +6,9 @@ import {
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 
-export interface CurrentUserDto
-  extends Partial<Omit<User, 'userProfile' | 'company' | 'candidat'>> {
+export interface CurrentUserDto extends Partial<
+  Omit<User, 'userProfile' | 'company' | 'candidat'>
+> {
   averageDelayResponse?: number | null;
   company?: Partial<Company>;
   hasExtractedCvData: boolean;

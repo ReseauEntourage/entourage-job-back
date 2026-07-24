@@ -43,6 +43,8 @@ module.exports = {
 
   async down(queryInterface) {
     await queryInterface.dropTable('AiAssistantMessages');
-    await queryInterface.sequelize.query('DROP TYPE IF EXISTS "enum_AiAssistantMessages_role";');
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "enum_AiAssistantMessages_role";'
+    );
   },
 };

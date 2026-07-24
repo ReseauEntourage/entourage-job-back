@@ -8,13 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { InscriptionCandidateFormDto } from './inscription-candidate-form.dto';
 
-export class InscriptionCandidateFormPipe
-  implements
-    PipeTransform<
-      InscriptionCandidateFormDto,
-      Promise<InscriptionCandidateFormDto>
-    >
-{
+export class InscriptionCandidateFormPipe implements PipeTransform<
+  InscriptionCandidateFormDto,
+  Promise<InscriptionCandidateFormDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

@@ -8,10 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CreateUserReferingDto } from './create-user-refering.dto';
 
-export class CreateUserReferingPipe
-  implements
-    PipeTransform<CreateUserReferingDto, Promise<CreateUserReferingDto>>
-{
+export class CreateUserReferingPipe implements PipeTransform<
+  CreateUserReferingDto,
+  Promise<CreateUserReferingDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

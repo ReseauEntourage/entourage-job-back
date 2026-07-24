@@ -14,14 +14,14 @@ Un candidat dont le profil est vide ou incomplet peut importer son CV PDF. Le sy
 
 ### Ce qui est extrait
 
-| Champ extrait | Destination sur le profil |
-|---|---|
-| Résumé (1ère personne, max 500 caractères) | Description / accroche professionnelle |
-| Compétences | Liste des compétences |
-| Expériences professionnelles | Titre, entreprise, lieu, dates, description |
-| Formations | Titre, institution, lieu, dates, description |
-| Langues parlées | Langue + niveau (notions / intermédiaire / courant / natif) |
-| Centres d'intérêt | Liste des intérêts |
+| Champ extrait                              | Destination sur le profil                                   |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| Résumé (1ère personne, max 500 caractères) | Description / accroche professionnelle                      |
+| Compétences                                | Liste des compétences                                       |
+| Expériences professionnelles               | Titre, entreprise, lieu, dates, description                 |
+| Formations                                 | Titre, institution, lieu, dates, description                |
+| Langues parlées                            | Langue + niveau (notions / intermédiaire / courant / natif) |
+| Centres d'intérêt                          | Liste des intérêts                                          |
 
 ### Comment ça se passe pour l'utilisateur ?
 
@@ -117,34 +117,34 @@ Le contrôleur :
 
 **Configuration de la queue :**
 
-| Paramètre | Valeur |
-|---|---|
-| Priorité | `HIGH (1)` — traitée avant les jobs de travail standard |
-| Tentatives | 3 |
-| Backoff | Exponentiel, délai initial 10 secondes |
-| `removeOnFail` | `false` — jobs échoués conservés pour inspection |
-| `removeOnComplete` | `true` |
+| Paramètre          | Valeur                                                  |
+| ------------------ | ------------------------------------------------------- |
+| Priorité           | `HIGH (1)` — traitée avant les jobs de travail standard |
+| Tentatives         | 3                                                       |
+| Backoff            | Exponentiel, délai initial 10 secondes                  |
+| `removeOnFail`     | `false` — jobs échoués conservés pour inspection        |
+| `removeOnComplete` | `true`                                                  |
 
 **Payload du job (`GenerateProfileFromPDFJob`) :**
 
 ```typescript
 {
-  s3Key: string;        // ex: "external-cvs/{userId}.pdf"
+  s3Key: string; // ex: "external-cvs/{userId}.pdf"
   userProfileId: string;
   userId: string;
-  fileHash: string;     // hash MD5 pour traçabilité
+  fileHash: string; // hash MD5 pour traçabilité
 }
 ```
 
 **Progression rapportée via `job.updateProgress()` :**
 
-| Étape | Progression |
-|---|---|
-| Démarrage | 10 % |
-| Fin de conversion PDF → images | 30 % |
-| Fin d'extraction OpenAI | 80 % |
-| Fin de peuplement du profil | 90 % |
-| Terminé | 100 % |
+| Étape                          | Progression |
+| ------------------------------ | ----------- |
+| Démarrage                      | 10 %        |
+| Fin de conversion PDF → images | 30 %        |
+| Fin d'extraction OpenAI        | 80 %        |
+| Fin de peuplement du profil    | 90 %        |
+| Terminé                        | 100 %       |
 
 **Gestion des fichiers temporaires :**
 
@@ -188,14 +188,14 @@ tool_choice: { type: 'function', function: { name: 'extract_cv_data' } }
 
 #### Schéma d'extraction (`openai.schemas.ts`) — version `SCHEMA_VERSION = 5`
 
-| Champ | Type | Contraintes |
-|---|---|---|
-| `description` | `string` | max 500 chars, rédigé à la 1ère personne |
-| `skills[]` | `{ name, order? }` | max 50 items, name max 80 chars |
-| `experiences[]` | `{ title, company?, description?, location?, startDate?, endDate?, order?, skills[] }` | dates ISO YYYY-MM-DD |
-| `formations[]` | `{ title, institution?, description?, location?, startDate?, endDate?, skills[] }` | dates ISO YYYY-MM-DD |
-| `languages[]` | `{ name, value, level? }` | value = code ISO 639-1 (ex: `en`), level = `NOTIONS \| INTERMEDIATE \| FLUENT \| NATIVE` |
-| `interests[]` | `{ name }` | max 10 items |
+| Champ           | Type                                                                                   | Contraintes                                                                              |
+| --------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `description`   | `string`                                                                               | max 500 chars, rédigé à la 1ère personne                                                 |
+| `skills[]`      | `{ name, order? }`                                                                     | max 50 items, name max 80 chars                                                          |
+| `experiences[]` | `{ title, company?, description?, location?, startDate?, endDate?, order?, skills[] }` | dates ISO YYYY-MM-DD                                                                     |
+| `formations[]`  | `{ title, institution?, description?, location?, startDate?, endDate?, skills[] }`     | dates ISO YYYY-MM-DD                                                                     |
+| `languages[]`   | `{ name, value, level? }`                                                              | value = code ISO 639-1 (ex: `en`), level = `NOTIONS \| INTERMEDIATE \| FLUENT \| NATIVE` |
+| `interests[]`   | `{ name }`                                                                             | max 10 items                                                                             |
 
 La `schemaVersion` est incrémentée à chaque modification du schéma. Tout enregistrement `ExtractedCVData` avec une version inférieure à `SCHEMA_VERSION` déclenche une nouvelle extraction au prochain appel.
 
@@ -205,17 +205,18 @@ La `schemaVersion` est incrémentée à chaque modification du schéma. Tout enr
 **Modèle :** `ExtractedCVData`
 
 Upsert sur `userProfileId` :
+
 - Si une entrée existe → `update({ data, fileHash, schemaVersion })`
 - Sinon → `create({ userProfileId, data, fileHash, schemaVersion })`
 
 **Table `ExtractedCVData` :**
 
-| Colonne | Type | Contraintes |
-|---|---|---|
-| `id` | UUID PK | auto-généré |
-| `userProfileId` | UUID FK | → `UserProfiles.id`, NOT NULL |
-| `data` | JSONB | données extraites au format `CvSchemaType` |
-| `fileHash` | STRING | hash MD5 du PDF |
+| Colonne         | Type    | Contraintes                                 |
+| --------------- | ------- | ------------------------------------------- |
+| `id`            | UUID PK | auto-généré                                 |
+| `userProfileId` | UUID FK | → `UserProfiles.id`, NOT NULL               |
+| `data`          | JSONB   | données extraites au format `CvSchemaType`  |
+| `fileHash`      | STRING  | hash MD5 du PDF                             |
 | `schemaVersion` | INTEGER | version du schéma au moment de l'extraction |
 
 **Migration :** `20250519120000-create-extracted-cv-data.js`
@@ -226,14 +227,14 @@ Upsert sur `userProfileId` :
 
 Construit un `UserProfileDto` partiel depuis `CvSchemaType` puis appelle `userProfileService.updateByUserId()` :
 
-| Champ CV | Traitement | Destination profil |
-|---|---|---|
-| `description` | Copie directe | `UserProfile.description` |
-| `skills[]` | Mapping `{ name, userProfileSkill: { order } }` | `UserProfile.skills` |
-| `experiences[]` | Parse des dates ISO → `Date` (fallback `new Date()` si invalide) | `UserProfile.experiences` |
-| `formations[]` | Parse des dates ISO → `Date` (fallback `new Date()` si invalide) | `UserProfile.formations` |
-| `interests[]` | Mapping `{ name }` | `UserProfile.interests` |
-| `languages[]` | Lookup `LanguagesService.findByValue(code ISO)` → `UserProfileLanguage` | `UserProfile.userProfileLanguages` |
+| Champ CV        | Traitement                                                              | Destination profil                 |
+| --------------- | ----------------------------------------------------------------------- | ---------------------------------- |
+| `description`   | Copie directe                                                           | `UserProfile.description`          |
+| `skills[]`      | Mapping `{ name, userProfileSkill: { order } }`                         | `UserProfile.skills`               |
+| `experiences[]` | Parse des dates ISO → `Date` (fallback `new Date()` si invalide)        | `UserProfile.experiences`          |
+| `formations[]`  | Parse des dates ISO → `Date` (fallback `new Date()` si invalide)        | `UserProfile.formations`           |
+| `interests[]`   | Mapping `{ name }`                                                      | `UserProfile.interests`            |
+| `languages[]`   | Lookup `LanguagesService.findByValue(code ISO)` → `UserProfileLanguage` | `UserProfile.userProfileLanguages` |
 
 Les langues font l'objet d'une résolution en base : le code ISO 639-1 extrait par l'IA (`en`, `fr`, `es`…) est résolu en `Language` via `languagesService.findByValue()`. Si la langue n'est pas trouvée dans le référentiel, elle est ignorée silencieusement.
 
@@ -252,12 +253,13 @@ Les langues font l'objet d'une résolution en base : le code ISO 639-1 extrait p
 
 Expose deux éléments :
 
-| Retour | Type | Description |
-|---|---|---|
+| Retour                  | Type                  | Description                                                                                |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
 | `generateProfileFromCV` | `() => Promise<void>` | Déclenche `GET /profile-generation/generate-profile-from-cv` et passe `isLoading` à `true` |
-| `isLoading` | `boolean` | `true` pendant toute la durée du traitement |
+| `isLoading`             | `boolean`             | `true` pendant toute la durée du traitement                                                |
 
 **Abonnement Pusher :** monté dans un `useEffect` sur `userId`. À la réception de `PROFILE_GENERATION_COMPLETE` :
+
 - Succès → notification toast `success`, dispatch `fetchCurrentProfileCompleteRequested`, appel `onProfileGenerated()`
 - Erreur → notification toast `danger`
 - Dans les deux cas → `setIsLoading(false)`
@@ -269,6 +271,7 @@ Le canal est désabonné au démontage du composant.
 Composant avec `forwardRef` exposant `{ generateProfileFromCV }` via `useImperativeHandle`. Permet aux parents de déclencher la génération programmatiquement (ex: automatiquement après un upload de CV réussi dans `CvCompletionAccordion`).
 
 Affiche :
+
 - Un avertissement si `overwriteWarning === true` (données existantes qui seront écrasées)
 - L'illustration du CV ou `ProfileGenerationLoadingIndicator` (GIF animé `/static/img/illustrations/cv-ia.gif`) pendant le traitement
 - Le bouton "Générer mon profil avec l'IA" (désactivé pendant `isLoading`)
@@ -276,37 +279,39 @@ Affiche :
 
 #### Points d'entrée dans l'interface
 
-| Contexte | Composant | Comportement |
-|---|---|---|
-| Onboarding (accordéon CV) | `CvCompletionAccordion` | Upload → génération automatique enchaînée, synchronisation des champs du formulaire |
-| Paramètres de profil | `GenerateProfileConfirmModal` | Modal de confirmation, bouton explicite |
+| Contexte                  | Composant                     | Comportement                                                                        |
+| ------------------------- | ----------------------------- | ----------------------------------------------------------------------------------- |
+| Onboarding (accordéon CV) | `CvCompletionAccordion`       | Upload → génération automatique enchaînée, synchronisation des champs du formulaire |
+| Paramètres de profil      | `GenerateProfileConfirmModal` | Modal de confirmation, bouton explicite                                             |
 
 ### Endpoints API
 
-| Méthode | Route | Accès | Description |
-|---|---|---|---|
-| `POST` | `/external-cv` | Utilisateur authentifié | Upload du PDF vers S3, invalide le cache |
-| `GET` | `/external-cv/:userId` | Utilisateur authentifié | URL signée S3 pour visualiser le CV |
-| `DELETE` | `/external-cv` | Utilisateur authentifié | Supprime le flag `hasExternalCv` |
-| `GET` | `/profile-generation/generate-profile-from-cv` | Utilisateur authentifié | Déclenche le pipeline (ou réutilise le cache) |
+| Méthode  | Route                                          | Accès                   | Description                                   |
+| -------- | ---------------------------------------------- | ----------------------- | --------------------------------------------- |
+| `POST`   | `/external-cv`                                 | Utilisateur authentifié | Upload du PDF vers S3, invalide le cache      |
+| `GET`    | `/external-cv/:userId`                         | Utilisateur authentifié | URL signée S3 pour visualiser le CV           |
+| `DELETE` | `/external-cv`                                 | Utilisateur authentifié | Supprime le flag `hasExternalCv`              |
+| `GET`    | `/profile-generation/generate-profile-from-cv` | Utilisateur authentifié | Déclenche le pipeline (ou réutilise le cache) |
 
 ### Variables d'environnement
 
-| Variable | Requis | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | Oui | Clé API OpenAI |
-| `OPENAI_MAX_COMPLETION_TOKENS` | Non | Budget tokens pour l'extraction (défaut : 4 096) |
-| `AWSS3_BUCKET_NAME` | Oui | Nom du bucket S3 |
-| `AWSS3_FILE_DIRECTORY` | Oui | Préfixe de chemin S3 |
+| Variable                       | Requis | Description                                      |
+| ------------------------------ | ------ | ------------------------------------------------ |
+| `OPENAI_API_KEY`               | Oui    | Clé API OpenAI                                   |
+| `OPENAI_MAX_COMPLETION_TOKENS` | Non    | Budget tokens pour l'extraction (défaut : 4 096) |
+| `AWSS3_BUCKET_NAME`            | Oui    | Nom du bucket S3                                 |
+| `AWSS3_FILE_DIRECTORY`         | Oui    | Préfixe de chemin S3                             |
 
 ### Dépendances
 
 **Back-end :**
+
 ```json
 "openai": "^4.98.0"
 ```
 
 **Système (doit être installé sur le serveur) :**
+
 ```
 poppler-utils  →  fournit le binaire pdftocairo
 ```

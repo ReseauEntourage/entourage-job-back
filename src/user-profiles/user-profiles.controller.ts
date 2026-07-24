@@ -79,8 +79,7 @@ export class UserProfilesController {
     @Param('userId', new ParseUUIDPipe()) userId: string,
     @Body(UpdateUserProfilePipe)
     updateUserProfileDto:
-      | UpdateCandidateUserProfileDto
-      | UpdateCoachUserProfileDto
+      UpdateCandidateUserProfileDto | UpdateCoachUserProfileDto
   ) {
     const user = this.userProfilesService.findOneUser(userId);
 
@@ -110,9 +109,8 @@ export class UserProfilesController {
   ): Promise<void> {
     // Set the reportedUser and reporterUser
     const userReported = await this.userProfilesService.findOneUser(userId);
-    const userReporter = await this.userProfilesService.findOneUser(
-      currentUserId
-    );
+    const userReporter =
+      await this.userProfilesService.findOneUser(currentUserId);
 
     // Check users exists
     if (!userReported || !userReporter) {
@@ -181,8 +179,8 @@ export class UserProfilesController {
       isAvailableQuery === 'true'
         ? true
         : isAvailableQuery === 'false'
-        ? false
-        : undefined;
+          ? false
+          : undefined;
 
     const hasSuperCoachBadge =
       hasSuperCoachBadgeQuery === 'true' ? true : undefined;

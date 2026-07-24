@@ -8,11 +8,11 @@ All npm packages declared in `package.json`, grouped by theme.
 
 ### `@nestjs/common`
 
-| | |
-|---|---|
-| **Version** | `^9.4.1` |
-| **Release date** | April 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^9.4.1`                                                                |
+| **Release date** | April 2023                                                              |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
 
 Core NestJS package providing decorators, pipes, guards, interceptors, and utilities.
 
@@ -24,11 +24,11 @@ Core NestJS package providing decorators, pipes, guards, interceptors, and utili
 
 ### `@nestjs/core`
 
-| | |
-|---|---|
-| **Version** | `^9.4.1` |
-| **Release date** | April 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^9.4.1`                                                                |
+| **Release date** | April 2023                                                              |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
 
 NestJS runtime kernel: bootstraps the application, wires the DI container, and manages module lifecycle.
 
@@ -40,11 +40,11 @@ NestJS runtime kernel: bootstraps the application, wires the DI container, and m
 
 ### `@nestjs/platform-express`
 
-| | |
-|---|---|
-| **Version** | `^9.4.1` |
-| **Release date** | April 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^9.4.1`                                                                |
+| **Release date** | April 2023                                                              |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
 
 Express HTTP adapter for NestJS, enabling the framework to serve HTTP requests via Express.
 
@@ -56,11 +56,11 @@ Express HTTP adapter for NestJS, enabling the framework to serve HTTP requests v
 
 ### `@nestjs/config`
 
-| | |
-|---|---|
-| **Version** | `^2.3.2` |
-| **Release date** | March 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^2.3.2`                                                                |
+| **Release date** | March 2023                                                              |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
 
 NestJS module for loading and accessing environment variables and `.env` files via `ConfigService`.
 
@@ -72,11 +72,11 @@ NestJS module for loading and accessing environment variables and `.env` files v
 
 ### `@nestjs/jwt`
 
-| | |
-|---|---|
-| **Version** | `^10.0.3` |
-| **Release date** | January 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/jwt/blob/master/CHANGELOG.md) |
+|                  |                                                                        |
+| ---------------- | ---------------------------------------------------------------------- |
+| **Version**      | `^10.0.3`                                                              |
+| **Release date** | January 2023                                                           |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/jwt/blob/master/CHANGELOG.md) |
 
 NestJS wrapper for `jsonwebtoken` — signs and verifies JWT tokens.
 
@@ -88,11 +88,11 @@ NestJS wrapper for `jsonwebtoken` — signs and verifies JWT tokens.
 
 ### `@nestjs/mapped-types`
 
-| | |
-|---|---|
-| **Version** | `*` |
-| **Release date** | — |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/mapped-types/blob/master/CHANGELOG.md) |
+|                  |                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Version**      | `*`                                                                             |
+| **Release date** | —                                                                               |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/mapped-types/blob/master/CHANGELOG.md) |
 
 Utility types (`PartialType`, `PickType`, `OmitType`, `IntersectionType`) for NestJS DTOs.
 
@@ -104,11 +104,11 @@ Utility types (`PartialType`, `PickType`, `OmitType`, `IntersectionType`) for Ne
 
 ### `@nestjs/passport`
 
-| | |
-|---|---|
-| **Version** | `^9.0.3` |
-| **Release date** | January 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/passport/blob/master/CHANGELOG.md) |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Version**      | `^9.0.3`                                                                    |
+| **Release date** | January 2023                                                                |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/passport/blob/master/CHANGELOG.md) |
 
 NestJS Passport integration — adapts Passport.js strategies into NestJS guards.
 
@@ -120,11 +120,11 @@ NestJS Passport integration — adapts Passport.js strategies into NestJS guards
 
 ### `@nestjs/schedule`
 
-| | |
-|---|---|
-| **Version** | `^6.0.0` |
-| **Release date** | 2024 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/schedule/blob/master/CHANGELOG.md) |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Version**      | `^6.0.0`                                                                    |
+| **Release date** | 2024                                                                        |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/schedule/blob/master/CHANGELOG.md) |
 
 NestJS cron/interval scheduler backed by `node-cron`.
 
@@ -136,11 +136,11 @@ NestJS cron/interval scheduler backed by `node-cron`.
 
 ### `@nestjs/sequelize`
 
-| | |
-|---|---|
-| **Version** | `^9.0.2` |
-| **Release date** | January 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/sequelize/blob/master/CHANGELOG.md) |
+|                  |                                                                              |
+| ---------------- | ---------------------------------------------------------------------------- |
+| **Version**      | `^9.0.2`                                                                     |
+| **Release date** | January 2023                                                                 |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/sequelize/blob/master/CHANGELOG.md) |
 
 NestJS Sequelize integration — provides `SequelizeModule.forRoot()` and `@InjectModel()`.
 
@@ -152,11 +152,11 @@ NestJS Sequelize integration — provides `SequelizeModule.forRoot()` and `@Inje
 
 ### `@nestjs/swagger`
 
-| | |
-|---|---|
-| **Version** | `^6.3.0` |
-| **Release date** | March 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/swagger/blob/master/CHANGELOG.md) |
+|                  |                                                                            |
+| ---------------- | -------------------------------------------------------------------------- |
+| **Version**      | `^6.3.0`                                                                   |
+| **Release date** | March 2023                                                                 |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/swagger/blob/master/CHANGELOG.md) |
 
 Auto-generates OpenAPI (Swagger) documentation from NestJS decorators and DTOs.
 
@@ -168,11 +168,11 @@ Auto-generates OpenAPI (Swagger) documentation from NestJS decorators and DTOs.
 
 ### `@nestjs/throttler`
 
-| | |
-|---|---|
-| **Version** | `^4.0.0` |
-| **Release date** | January 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/nestjs/throttler/blob/master/CHANGELOG.md) |
+|                  |                                                                              |
+| ---------------- | ---------------------------------------------------------------------------- |
+| **Version**      | `^4.0.0`                                                                     |
+| **Release date** | January 2023                                                                 |
+| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/throttler/blob/master/CHANGELOG.md) |
 
 Rate-limiting guard for NestJS routes using in-memory or Redis storage.
 
@@ -184,11 +184,11 @@ Rate-limiting guard for NestJS routes using in-memory or Redis storage.
 
 ### `reflect-metadata`
 
-| | |
-|---|---|
-| **Version** | `^0.1.13` |
-| **Release date** | 2016 |
-| **Changelog** | [GitHub](https://github.com/rbuckton/reflect-metadata) |
+|                  |                                                        |
+| ---------------- | ------------------------------------------------------ |
+| **Version**      | `^0.1.13`                                              |
+| **Release date** | 2016                                                   |
+| **Changelog**    | [GitHub](https://github.com/rbuckton/reflect-metadata) |
 
 Polyfill for the ES Metadata Reflection API, required by TypeScript decorators and NestJS DI.
 
@@ -200,11 +200,11 @@ Polyfill for the ES Metadata Reflection API, required by TypeScript decorators a
 
 ### `rxjs`
 
-| | |
-|---|---|
-| **Version** | `^7.8.2` |
-| **Release date** | March 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/ReactiveX/rxjs/blob/master/CHANGELOG.md) |
+|                  |                                                                            |
+| ---------------- | -------------------------------------------------------------------------- |
+| **Version**      | `^7.8.2`                                                                   |
+| **Release date** | March 2023                                                                 |
+| **Changelog**    | [CHANGELOG.md](https://github.com/ReactiveX/rxjs/blob/master/CHANGELOG.md) |
 
 Reactive Extensions for JavaScript — observable streams used by NestJS internals and custom interceptors.
 
@@ -218,11 +218,11 @@ Reactive Extensions for JavaScript — observable streams used by NestJS interna
 
 ### `sequelize`
 
-| | |
-|---|---|
-| **Version** | `^6.29.0` |
-| **Release date** | January 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/sequelize/sequelize/blob/main/CHANGELOG.md) |
+|                  |                                                                               |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **Version**      | `^6.29.0`                                                                     |
+| **Release date** | January 2023                                                                  |
+| **Changelog**    | [CHANGELOG.md](https://github.com/sequelize/sequelize/blob/main/CHANGELOG.md) |
 
 Promise-based ORM for Node.js supporting PostgreSQL, MySQL, SQLite and more.
 
@@ -234,11 +234,11 @@ Promise-based ORM for Node.js supporting PostgreSQL, MySQL, SQLite and more.
 
 ### `sequelize-typescript`
 
-| | |
-|---|---|
-| **Version** | `^2.1.6` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub releases](https://github.com/sequelize/sequelize-typescript/releases) |
+|                  |                                                                               |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **Version**      | `^2.1.6`                                                                      |
+| **Release date** | 2022                                                                          |
+| **Changelog**    | [GitHub releases](https://github.com/sequelize/sequelize-typescript/releases) |
 
 TypeScript decorators (`@Table`, `@Column`, `@Model`, etc.) for Sequelize models.
 
@@ -250,11 +250,11 @@ TypeScript decorators (`@Table`, `@Column`, `@Model`, etc.) for Sequelize models
 
 ### `sequelize-cli`
 
-| | |
-|---|---|
-| **Version** | `^6.4.1` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/sequelize/cli) |
+|                  |                                            |
+| ---------------- | ------------------------------------------ |
+| **Version**      | `^6.4.1`                                   |
+| **Release date** | 2022                                       |
+| **Changelog**    | [GitHub](https://github.com/sequelize/cli) |
 
 CLI for running migrations and seeders (`yarn db:migrate`, `yarn db:seed`).
 
@@ -266,11 +266,11 @@ CLI for running migrations and seeders (`yarn db:migrate`, `yarn db:seed`).
 
 ### `pg`
 
-| | |
-|---|---|
-| **Version** | `^8.8.0` |
-| **Release date** | October 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/brianc/node-postgres/blob/master/CHANGELOG.md) |
+|                  |                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------- |
+| **Version**      | `^8.8.0`                                                                         |
+| **Release date** | October 2022                                                                     |
+| **Changelog**    | [CHANGELOG.md](https://github.com/brianc/node-postgres/blob/master/CHANGELOG.md) |
 
 PostgreSQL client for Node.js — the underlying driver used by Sequelize.
 
@@ -282,11 +282,11 @@ PostgreSQL client for Node.js — the underlying driver used by Sequelize.
 
 ### `pg-hstore`
 
-| | |
-|---|---|
-| **Version** | `^2.3.4` |
-| **Release date** | 2018 |
-| **Changelog** | [GitHub](https://github.com/scarney81/pg-hstore) |
+|                  |                                                  |
+| ---------------- | ------------------------------------------------ |
+| **Version**      | `^2.3.4`                                         |
+| **Release date** | 2018                                             |
+| **Changelog**    | [GitHub](https://github.com/scarney81/pg-hstore) |
 
 Serializes/deserializes PostgreSQL `hstore` data type, required by `pg` when using hstore columns.
 
@@ -300,11 +300,11 @@ Serializes/deserializes PostgreSQL `hstore` data type, required by `pg` when usi
 
 ### `bullmq`
 
-| | |
-|---|---|
-| **Version** | `^5.70.4` |
-| **Release date** | March 2025 |
-| **Changelog** | [CHANGELOG.md](https://github.com/taskforcesh/bullmq/blob/master/docs/gitbook/changelog.md) |
+|                  |                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| **Version**      | `^5.70.4`                                                                                   |
+| **Release date** | March 2025                                                                                  |
+| **Changelog**    | [CHANGELOG.md](https://github.com/taskforcesh/bullmq/blob/master/docs/gitbook/changelog.md) |
 
 Redis-backed job queue with support for delayed jobs, priorities, retries, and workers.
 
@@ -316,11 +316,11 @@ Redis-backed job queue with support for delayed jobs, priorities, retries, and w
 
 ### `@nestjs/bullmq`
 
-| | |
-|---|---|
-| **Version** | `^11.0.4` |
-| **Release date** | 2024 |
-| **Changelog** | [GitHub releases](https://github.com/nestjs/bullmq/releases) |
+|                  |                                                              |
+| ---------------- | ------------------------------------------------------------ |
+| **Version**      | `^11.0.4`                                                    |
+| **Release date** | 2024                                                         |
+| **Changelog**    | [GitHub releases](https://github.com/nestjs/bullmq/releases) |
 
 NestJS integration for BullMQ providing `BullModule`, `@Processor`, `@InjectQueue` decorators.
 
@@ -332,11 +332,11 @@ NestJS integration for BullMQ providing `BullModule`, `@Processor`, `@InjectQueu
 
 ### `@bull-board/api`
 
-| | |
-|---|---|
-| **Version** | `^6.13.1` |
-| **Release date** | 2024 |
-| **Changelog** | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
+|                  |                                                                     |
+| ---------------- | ------------------------------------------------------------------- |
+| **Version**      | `^6.13.1`                                                           |
+| **Release date** | 2024                                                                |
+| **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
 
 Framework-agnostic API layer for the Bull Board queue monitoring UI.
 
@@ -348,11 +348,11 @@ Framework-agnostic API layer for the Bull Board queue monitoring UI.
 
 ### `@bull-board/express`
 
-| | |
-|---|---|
-| **Version** | `^6.13.1` |
-| **Release date** | 2024 |
-| **Changelog** | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
+|                  |                                                                     |
+| ---------------- | ------------------------------------------------------------------- |
+| **Version**      | `^6.13.1`                                                           |
+| **Release date** | 2024                                                                |
+| **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
 
 Express adapter for Bull Board — serves the UI as an Express router.
 
@@ -364,11 +364,11 @@ Express adapter for Bull Board — serves the UI as an Express router.
 
 ### `@bull-board/nestjs`
 
-| | |
-|---|---|
-| **Version** | `^6.13.1` |
-| **Release date** | 2024 |
-| **Changelog** | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
+|                  |                                                                     |
+| ---------------- | ------------------------------------------------------------------- |
+| **Version**      | `^6.13.1`                                                           |
+| **Release date** | 2024                                                                |
+| **Changelog**    | [GitHub releases](https://github.com/felixmosh/bull-board/releases) |
 
 NestJS adapter to mount Bull Board via `BullBoardModule`.
 
@@ -382,11 +382,11 @@ NestJS adapter to mount Bull Board via `BullBoardModule`.
 
 ### `ioredis`
 
-| | |
-|---|---|
-| **Version** | `^5.6.1` |
-| **Release date** | 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/redis/ioredis/blob/main/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^5.6.1`                                                                |
+| **Release date** | 2023                                                                    |
+| **Changelog**    | [CHANGELOG.md](https://github.com/redis/ioredis/blob/main/CHANGELOG.md) |
 
 Robust, full-featured Redis client for Node.js with clustering, pipelining, and Lua scripting support.
 
@@ -398,11 +398,11 @@ Robust, full-featured Redis client for Node.js with clustering, pipelining, and 
 
 ### `cache-manager`
 
-| | |
-|---|---|
-| **Version** | `^4.1.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/node-cache-manager/node-cache-manager) |
+|                  |                                                                    |
+| ---------------- | ------------------------------------------------------------------ |
+| **Version**      | `^4.1.0`                                                           |
+| **Release date** | 2022                                                               |
+| **Changelog**    | [GitHub](https://github.com/node-cache-manager/node-cache-manager) |
 
 Flexible multi-store cache module for Node.js, used as the NestJS cache abstraction layer.
 
@@ -414,11 +414,11 @@ Flexible multi-store cache module for Node.js, used as the NestJS cache abstract
 
 ### `cache-manager-ioredis`
 
-| | |
-|---|---|
-| **Version** | `^2.1.0` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/dabroek/node-cache-manager-ioredis) |
+|                  |                                                                 |
+| ---------------- | --------------------------------------------------------------- |
+| **Version**      | `^2.1.0`                                                        |
+| **Release date** | 2021                                                            |
+| **Changelog**    | [GitHub](https://github.com/dabroek/node-cache-manager-ioredis) |
 
 Redis store adapter for `cache-manager` backed by `ioredis`.
 
@@ -432,11 +432,11 @@ Redis store adapter for `cache-manager` backed by `ioredis`.
 
 ### `passport`
 
-| | |
-|---|---|
-| **Version** | `^0.6.0` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/jaredhanson/passport/blob/master/CHANGELOG.md) |
+|                  |                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------- |
+| **Version**      | `^0.6.0`                                                                         |
+| **Release date** | 2022                                                                             |
+| **Changelog**    | [CHANGELOG.md](https://github.com/jaredhanson/passport/blob/master/CHANGELOG.md) |
 
 Authentication middleware for Node.js with a strategy-based plugin architecture.
 
@@ -448,11 +448,11 @@ Authentication middleware for Node.js with a strategy-based plugin architecture.
 
 ### `passport-local`
 
-| | |
-|---|---|
-| **Version** | `^1.0.0` |
-| **Release date** | 2013 |
-| **Changelog** | [GitHub](https://github.com/jaredhanson/passport-local) |
+|                  |                                                         |
+| ---------------- | ------------------------------------------------------- |
+| **Version**      | `^1.0.0`                                                |
+| **Release date** | 2013                                                    |
+| **Changelog**    | [GitHub](https://github.com/jaredhanson/passport-local) |
 
 Passport strategy for username/password authentication.
 
@@ -464,11 +464,11 @@ Passport strategy for username/password authentication.
 
 ### `passport-jwt`
 
-| | |
-|---|---|
-| **Version** | `^4.0.0` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/mikenicholson/passport-jwt) |
+|                  |                                                         |
+| ---------------- | ------------------------------------------------------- |
+| **Version**      | `^4.0.0`                                                |
+| **Release date** | 2021                                                    |
+| **Changelog**    | [GitHub](https://github.com/mikenicholson/passport-jwt) |
 
 Passport strategy that validates JWT Bearer tokens from the `Authorization` header.
 
@@ -480,11 +480,11 @@ Passport strategy that validates JWT Bearer tokens from the `Authorization` head
 
 ### `express-basic-auth`
 
-| | |
-|---|---|
-| **Version** | `^1.2.1` |
-| **Release date** | 2020 |
-| **Changelog** | [GitHub](https://github.com/LionC/express-basic-auth) |
+|                  |                                                       |
+| ---------------- | ----------------------------------------------------- |
+| **Version**      | `^1.2.1`                                              |
+| **Release date** | 2020                                                  |
+| **Changelog**    | [GitHub](https://github.com/LionC/express-basic-auth) |
 
 Simple HTTP Basic Auth middleware for Express.
 
@@ -498,11 +498,11 @@ Simple HTTP Basic Auth middleware for Express.
 
 ### `openai`
 
-| | |
-|---|---|
-| **Version** | `^4.98.0` |
-| **Release date** | April 2025 |
-| **Changelog** | [CHANGELOG.md](https://github.com/openai/openai-node/blob/master/CHANGELOG.md) |
+|                  |                                                                                |
+| ---------------- | ------------------------------------------------------------------------------ |
+| **Version**      | `^4.98.0`                                                                      |
+| **Release date** | April 2025                                                                     |
+| **Changelog**    | [CHANGELOG.md](https://github.com/openai/openai-node/blob/master/CHANGELOG.md) |
 
 Official OpenAI Node.js SDK for chat completions and vision APIs.
 
@@ -514,11 +514,11 @@ Official OpenAI Node.js SDK for chat completions and vision APIs.
 
 ### `voyageai`
 
-| | |
-|---|---|
-| **Version** | `^0.2.1` |
-| **Release date** | 2024 |
-| **Changelog** | [GitHub](https://github.com/voyage-ai/voyageai-node) |
+|                  |                                                      |
+| ---------------- | ---------------------------------------------------- |
+| **Version**      | `^0.2.1`                                             |
+| **Release date** | 2024                                                 |
+| **Changelog**    | [GitHub](https://github.com/voyage-ai/voyageai-node) |
 
 Voyage AI client for generating high-quality text embeddings.
 
@@ -532,11 +532,11 @@ Voyage AI client for generating high-quality text embeddings.
 
 ### `jsforce`
 
-| | |
-|---|---|
-| **Version** | `^1.11.0` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/jsforce/jsforce/blob/master/CHANGELOG.md) |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Version**      | `^1.11.0`                                                                   |
+| **Release date** | 2021                                                                        |
+| **Changelog**    | [CHANGELOG.md](https://github.com/jsforce/jsforce/blob/master/CHANGELOG.md) |
 
 Salesforce API client for Node.js — SOQL queries, REST/Bulk API, OAuth support.
 
@@ -550,11 +550,11 @@ Salesforce API client for Node.js — SOQL queries, REST/Bulk API, OAuth support
 
 ### `node-mailjet`
 
-| | |
-|---|---|
-| **Version** | `^6.0.4` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/mailjet/mailjet-apiv3-nodejs) |
+|                  |                                                           |
+| ---------------- | --------------------------------------------------------- |
+| **Version**      | `^6.0.4`                                                  |
+| **Release date** | 2022                                                      |
+| **Changelog**    | [GitHub](https://github.com/mailjet/mailjet-apiv3-nodejs) |
 
 Official Mailjet API v3 client for sending transactional emails via templates.
 
@@ -566,11 +566,11 @@ Official Mailjet API v3 client for sending transactional emails via templates.
 
 ### `@mailchimp/mailchimp_marketing`
 
-| | |
-|---|---|
-| **Version** | `^3.0.78` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/mailchimp/mailchimp-marketing-node) |
+|                  |                                                                 |
+| ---------------- | --------------------------------------------------------------- |
+| **Version**      | `^3.0.78`                                                       |
+| **Release date** | 2022                                                            |
+| **Changelog**    | [GitHub](https://github.com/mailchimp/mailchimp-marketing-node) |
 
 Official Mailchimp Marketing API client for managing contacts and lists.
 
@@ -584,11 +584,11 @@ Official Mailchimp Marketing API client for managing contacts and lists.
 
 ### `@vonage/server-sdk`
 
-| | |
-|---|---|
-| **Version** | `^2.11.2` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/Vonage/vonage-node-sdk) |
+|                  |                                                     |
+| ---------------- | --------------------------------------------------- |
+| **Version**      | `^2.11.2`                                           |
+| **Release date** | 2022                                                |
+| **Changelog**    | [GitHub](https://github.com/Vonage/vonage-node-sdk) |
 
 Vonage (Nexmo) SDK for sending SMS messages and other communication APIs.
 
@@ -600,11 +600,11 @@ Vonage (Nexmo) SDK for sending SMS messages and other communication APIs.
 
 ### `pusher`
 
-| | |
-|---|---|
-| **Version** | `^5.1.1-beta` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/pusher/pusher-http-node) |
+|                  |                                                      |
+| ---------------- | ---------------------------------------------------- |
+| **Version**      | `^5.1.1-beta`                                        |
+| **Release date** | 2022                                                 |
+| **Changelog**    | [GitHub](https://github.com/pusher/pusher-http-node) |
 
 Pusher Channels server SDK for broadcasting real-time events to connected clients.
 
@@ -618,11 +618,11 @@ Pusher Channels server SDK for broadcasting real-time events to connected client
 
 ### `pdf-lib`
 
-| | |
-|---|---|
-| **Version** | `^1.17.1` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/Hopding/pdf-lib/blob/master/CHANGELOG.md) |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Version**      | `^1.17.1`                                                                   |
+| **Release date** | 2021                                                                        |
+| **Changelog**    | [CHANGELOG.md](https://github.com/Hopding/pdf-lib/blob/master/CHANGELOG.md) |
 
 Pure JavaScript PDF creation and modification library — no native dependencies.
 
@@ -634,11 +634,11 @@ Pure JavaScript PDF creation and modification library — no native dependencies
 
 ### `pdf2pic`
 
-| | |
-|---|---|
-| **Version** | `^3.1.4` |
-| **Release date** | 2023 |
-| **Changelog** | [GitHub](https://github.com/yakovmeister/pdf2image) |
+|                  |                                                     |
+| ---------------- | --------------------------------------------------- |
+| **Version**      | `^3.1.4`                                            |
+| **Release date** | 2023                                                |
+| **Changelog**    | [GitHub](https://github.com/yakovmeister/pdf2image) |
 
 Converts PDF pages to images (PNG/JPEG) using `pdftocairo` / GraphicsMagick.
 
@@ -650,11 +650,11 @@ Converts PDF pages to images (PNG/JPEG) using `pdftocairo` / GraphicsMagick.
 
 ### `puppeteer-core`
 
-| | |
-|---|---|
-| **Version** | `^16.1.0` |
-| **Release date** | September 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/puppeteer/puppeteer/blob/main/CHANGELOG.md) |
+|                  |                                                                               |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **Version**      | `^16.1.0`                                                                     |
+| **Release date** | September 2022                                                                |
+| **Changelog**    | [CHANGELOG.md](https://github.com/puppeteer/puppeteer/blob/main/CHANGELOG.md) |
 
 Headless Chromium automation library (without bundled Chrome) for HTML-to-PDF rendering.
 
@@ -668,11 +668,11 @@ Headless Chromium automation library (without bundled Chrome) for HTML-to-PDF re
 
 ### `@aws-sdk/client-s3`
 
-| | |
-|---|---|
-| **Version** | `^3.142.0` |
-| **Release date** | August 2022 |
-| **Changelog** | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
+|                  |                                                |
+| ---------------- | ---------------------------------------------- |
+| **Version**      | `^3.142.0`                                     |
+| **Release date** | August 2022                                    |
+| **Changelog**    | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
 
 AWS SDK v3 S3 client — uploads, downloads, and manages objects in S3 buckets.
 
@@ -684,11 +684,11 @@ AWS SDK v3 S3 client — uploads, downloads, and manages objects in S3 buckets.
 
 ### `@aws-sdk/lib-storage`
 
-| | |
-|---|---|
-| **Version** | `^3.180.0` |
-| **Release date** | October 2022 |
-| **Changelog** | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
+|                  |                                                |
+| ---------------- | ---------------------------------------------- |
+| **Version**      | `^3.180.0`                                     |
+| **Release date** | October 2022                                   |
+| **Changelog**    | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
 
 S3 multipart upload utility (`Upload` class) for streaming large files to S3 reliably.
 
@@ -700,11 +700,11 @@ S3 multipart upload utility (`Upload` class) for streaming large files to S3 rel
 
 ### `@aws-sdk/s3-request-presigner`
 
-| | |
-|---|---|
-| **Version** | `^3.142.0` |
-| **Release date** | August 2022 |
-| **Changelog** | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
+|                  |                                                |
+| ---------------- | ---------------------------------------------- |
+| **Version**      | `^3.142.0`                                     |
+| **Release date** | August 2022                                    |
+| **Changelog**    | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
 
 Generates pre-signed S3 URLs for temporary, authenticated access to private objects.
 
@@ -716,11 +716,11 @@ Generates pre-signed S3 URLs for temporary, authenticated access to private obje
 
 ### `@aws-sdk/client-cloudfront`
 
-| | |
-|---|---|
-| **Version** | `^3.142.0` |
-| **Release date** | August 2022 |
-| **Changelog** | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
+|                  |                                                |
+| ---------------- | ---------------------------------------------- |
+| **Version**      | `^3.142.0`                                     |
+| **Release date** | August 2022                                    |
+| **Changelog**    | [GitHub](https://github.com/aws/aws-sdk-js-v3) |
 
 AWS SDK v3 CloudFront client — creates cache invalidations when S3 objects are updated.
 
@@ -734,11 +734,11 @@ AWS SDK v3 CloudFront client — creates cache invalidations when S3 objects are
 
 ### `axios`
 
-| | |
-|---|---|
-| **Version** | `^1.9.0` |
-| **Release date** | April 2025 |
-| **Changelog** | [CHANGELOG.md](https://github.com/axios/axios/blob/master/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^1.9.0`                                                                |
+| **Release date** | April 2025                                                              |
+| **Changelog**    | [CHANGELOG.md](https://github.com/axios/axios/blob/master/CHANGELOG.md) |
 
 Promise-based HTTP client for Node.js and browsers.
 
@@ -750,11 +750,11 @@ Promise-based HTTP client for Node.js and browsers.
 
 ### `node-fetch`
 
-| | |
-|---|---|
-| **Version** | `^2.6.7` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/node-fetch/node-fetch/blob/main/CHANGELOG.md) |
+|                  |                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Version**      | `^2.6.7`                                                                        |
+| **Release date** | 2021                                                                            |
+| **Changelog**    | [CHANGELOG.md](https://github.com/node-fetch/node-fetch/blob/main/CHANGELOG.md) |
 
 Lightweight Fetch API implementation for Node.js (v2 — CommonJS compatible).
 
@@ -766,11 +766,11 @@ Lightweight Fetch API implementation for Node.js (v2 — CommonJS compatible).
 
 ### `qs`
 
-| | |
-|---|---|
-| **Version** | `^6.11.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/ljharb/qs) |
+|                  |                                        |
+| ---------------- | -------------------------------------- |
+| **Version**      | `^6.11.0`                              |
+| **Release date** | 2022                                   |
+| **Changelog**    | [GitHub](https://github.com/ljharb/qs) |
 
 Query string parser and stringifier with support for nested objects and arrays.
 
@@ -784,11 +784,11 @@ Query string parser and stringifier with support for nested objects and arrays.
 
 ### `dd-trace`
 
-| | |
-|---|---|
-| **Version** | `^5.76.0` |
-| **Release date** | April 2025 |
-| **Changelog** | [CHANGELOG.md](https://github.com/DataDog/dd-trace-js/blob/master/CHANGELOG.md) |
+|                  |                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Version**      | `^5.76.0`                                                                       |
+| **Release date** | April 2025                                                                      |
+| **Changelog**    | [CHANGELOG.md](https://github.com/DataDog/dd-trace-js/blob/master/CHANGELOG.md) |
 
 Datadog APM tracer for Node.js — auto-instruments HTTP, database, Redis, and queue calls.
 
@@ -800,11 +800,11 @@ Datadog APM tracer for Node.js — auto-instruments HTTP, database, Redis, and q
 
 ### `@slack/bolt`
 
-| | |
-|---|---|
-| **Version** | `^3.19.0` |
-| **Release date** | 2024 |
-| **Changelog** | [CHANGELOG.md](https://github.com/slackapi/bolt-js/blob/main/CHANGELOG.md) |
+|                  |                                                                            |
+| ---------------- | -------------------------------------------------------------------------- |
+| **Version**      | `^3.19.0`                                                                  |
+| **Release date** | 2024                                                                       |
+| **Changelog**    | [CHANGELOG.md](https://github.com/slackapi/bolt-js/blob/main/CHANGELOG.md) |
 
 Slack Bolt framework for building Slack apps — handles event subscriptions, slash commands, and messaging.
 
@@ -818,11 +818,11 @@ Slack Bolt framework for building Slack apps — handles event subscriptions, sl
 
 ### `class-validator`
 
-| | |
-|---|---|
-| **Version** | `^0.14.0` |
-| **Release date** | November 2022 |
-| **Changelog** | [GitHub](https://github.com/typestack/class-validator) |
+|                  |                                                        |
+| ---------------- | ------------------------------------------------------ |
+| **Version**      | `^0.14.0`                                              |
+| **Release date** | November 2022                                          |
+| **Changelog**    | [GitHub](https://github.com/typestack/class-validator) |
 
 Decorator-based validation for TypeScript classes, integrated with NestJS `ValidationPipe`.
 
@@ -834,11 +834,11 @@ Decorator-based validation for TypeScript classes, integrated with NestJS `Valid
 
 ### `class-transformer`
 
-| | |
-|---|---|
-| **Version** | `^0.5.1` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/typestack/class-transformer) |
+|                  |                                                          |
+| ---------------- | -------------------------------------------------------- |
+| **Version**      | `^0.5.1`                                                 |
+| **Release date** | 2022                                                     |
+| **Changelog**    | [GitHub](https://github.com/typestack/class-transformer) |
 
 Transforms plain objects to/from class instances, works alongside `class-validator`.
 
@@ -850,11 +850,11 @@ Transforms plain objects to/from class instances, works alongside `class-validat
 
 ### `validator`
 
-| | |
-|---|---|
-| **Version** | `^13.7.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/validatorjs/validator.js) |
+|                  |                                                       |
+| ---------------- | ----------------------------------------------------- |
+| **Version**      | `^13.7.0`                                             |
+| **Release date** | 2022                                                  |
+| **Changelog**    | [GitHub](https://github.com/validatorjs/validator.js) |
 
 String validation and sanitization library (email, URL, UUID, etc.).
 
@@ -866,11 +866,11 @@ String validation and sanitization library (email, URL, UUID, etc.).
 
 ### `check-password-strength`
 
-| | |
-|---|---|
-| **Version** | `^2.0.7` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/deanilvincent/check-password-strength) |
+|                  |                                                                    |
+| ---------------- | ------------------------------------------------------------------ |
+| **Version**      | `^2.0.7`                                                           |
+| **Release date** | 2022                                                               |
+| **Changelog**    | [GitHub](https://github.com/deanilvincent/check-password-strength) |
 
 Evaluates password strength and returns a score with feedback.
 
@@ -882,11 +882,11 @@ Evaluates password strength and returns a score with feedback.
 
 ### `phone`
 
-| | |
-|---|---|
-| **Version** | `^3.1.23` |
-| **Release date** | 2023 |
-| **Changelog** | [GitHub](https://github.com/AfterShip/phone) |
+|                  |                                              |
+| ---------------- | -------------------------------------------- |
+| **Version**      | `^3.1.23`                                    |
+| **Release date** | 2023                                         |
+| **Changelog**    | [GitHub](https://github.com/AfterShip/phone) |
 
 Validates and normalises international phone numbers (E.164 format).
 
@@ -900,11 +900,11 @@ Validates and normalises international phone numbers (E.164 format).
 
 ### `lodash`
 
-| | |
-|---|---|
-| **Version** | `^4.17.21` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/lodash/lodash/wiki/Changelog) |
+|                  |                                                                 |
+| ---------------- | --------------------------------------------------------------- |
+| **Version**      | `^4.17.21`                                                      |
+| **Release date** | 2021                                                            |
+| **Changelog**    | [CHANGELOG.md](https://github.com/lodash/lodash/wiki/Changelog) |
 
 General-purpose utility library for arrays, objects, strings, and functions.
 
@@ -916,11 +916,11 @@ General-purpose utility library for arrays, objects, strings, and functions.
 
 ### `moment`
 
-| | |
-|---|---|
-| **Version** | `^2.29.4` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/moment/moment/blob/develop/CHANGELOG.md) |
+|                  |                                                                            |
+| ---------------- | -------------------------------------------------------------------------- |
+| **Version**      | `^2.29.4`                                                                  |
+| **Release date** | 2022                                                                       |
+| **Changelog**    | [CHANGELOG.md](https://github.com/moment/moment/blob/develop/CHANGELOG.md) |
 
 Date parsing, validation, and formatting library (legacy but widely used).
 
@@ -932,11 +932,11 @@ Date parsing, validation, and formatting library (legacy but widely used).
 
 ### `moment-timezone`
 
-| | |
-|---|---|
-| **Version** | `^0.5.43` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/moment/moment-timezone/blob/develop/CHANGELOG.md) |
+|                  |                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| **Version**      | `^0.5.43`                                                                           |
+| **Release date** | 2022                                                                                |
+| **Changelog**    | [CHANGELOG.md](https://github.com/moment/moment-timezone/blob/develop/CHANGELOG.md) |
 
 Timezone-aware date handling extending `moment`.
 
@@ -948,11 +948,11 @@ Timezone-aware date handling extending `moment`.
 
 ### `uuid`
 
-| | |
-|---|---|
-| **Version** | `^8.3.2` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/uuidjs/uuid/blob/main/CHANGELOG.md) |
+|                  |                                                                       |
+| ---------------- | --------------------------------------------------------------------- |
+| **Version**      | `^8.3.2`                                                              |
+| **Release date** | 2021                                                                  |
+| **Changelog**    | [CHANGELOG.md](https://github.com/uuidjs/uuid/blob/main/CHANGELOG.md) |
 
 RFC 4122 UUID generation (`v4`) and validation.
 
@@ -964,11 +964,11 @@ RFC 4122 UUID generation (`v4`) and validation.
 
 ### `bitly`
 
-| | |
-|---|---|
-| **Version** | `^7.1.2` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/tanepiper/node-bitly) |
+|                  |                                                   |
+| ---------------- | ------------------------------------------------- |
+| **Version**      | `^7.1.2`                                          |
+| **Release date** | 2021                                              |
+| **Changelog**    | [GitHub](https://github.com/tanepiper/node-bitly) |
 
 Bitly API client for shortening URLs.
 
@@ -980,11 +980,11 @@ Bitly API client for shortening URLs.
 
 ### `deep-diff`
 
-| | |
-|---|---|
-| **Version** | `^1.0.2` |
-| **Release date** | 2019 |
-| **Changelog** | [GitHub](https://github.com/flitbit/diff) |
+|                  |                                           |
+| ---------------- | ----------------------------------------- |
+| **Version**      | `^1.0.2`                                  |
+| **Release date** | 2019                                      |
+| **Changelog**    | [GitHub](https://github.com/flitbit/diff) |
 
 Computes structural differences between two JavaScript objects.
 
@@ -996,11 +996,11 @@ Computes structural differences between two JavaScript objects.
 
 ### `diff-match-patch`
 
-| | |
-|---|---|
-| **Version** | `^1.0.5` |
-| **Release date** | 2019 |
-| **Changelog** | [GitHub](https://github.com/google/diff-match-patch) |
+|                  |                                                      |
+| ---------------- | ---------------------------------------------------- |
+| **Version**      | `^1.0.5`                                             |
+| **Release date** | 2019                                                 |
+| **Changelog**    | [GitHub](https://github.com/google/diff-match-patch) |
 
 Google's diff/match/patch algorithm for text strings.
 
@@ -1012,11 +1012,11 @@ Google's diff/match/patch algorithm for text strings.
 
 ### `thenby`
 
-| | |
-|---|---|
-| **Version** | `^1.3.4` |
-| **Release date** | 2019 |
-| **Changelog** | [GitHub](https://github.com/Teun/thenby) |
+|                  |                                          |
+| ---------------- | ---------------------------------------- |
+| **Version**      | `^1.3.4`                                 |
+| **Release date** | 2019                                     |
+| **Changelog**    | [GitHub](https://github.com/Teun/thenby) |
 
 Chainable multi-column sort for arrays of objects (`firstBy(...).thenBy(...)`).
 
@@ -1028,11 +1028,11 @@ Chainable multi-column sort for arrays of objects (`firstBy(...).thenBy(...)`).
 
 ### `sharp`
 
-| | |
-|---|---|
-| **Version** | `^0.32.6` |
-| **Release date** | 2023 |
-| **Changelog** | [CHANGELOG.md](https://github.com/lovell/sharp/blob/main/CHANGELOG.md) |
+|                  |                                                                        |
+| ---------------- | ---------------------------------------------------------------------- |
+| **Version**      | `^0.32.6`                                                              |
+| **Release date** | 2023                                                                   |
+| **Changelog**    | [CHANGELOG.md](https://github.com/lovell/sharp/blob/main/CHANGELOG.md) |
 
 High-performance Node.js image processing — resize, compress, and convert images.
 
@@ -1044,11 +1044,11 @@ High-performance Node.js image processing — resize, compress, and convert imag
 
 ### `multer`
 
-| | |
-|---|---|
-| **Version** | `1.4.5-lts.2` |
-| **Release date** | 2022 (LTS patch) |
-| **Changelog** | [GitHub](https://github.com/expressjs/multer) |
+|                  |                                               |
+| ---------------- | --------------------------------------------- |
+| **Version**      | `1.4.5-lts.2`                                 |
+| **Release date** | 2022 (LTS patch)                              |
+| **Changelog**    | [GitHub](https://github.com/expressjs/multer) |
 
 Express middleware for handling `multipart/form-data` file uploads.
 
@@ -1060,11 +1060,11 @@ Express middleware for handling `multipart/form-data` file uploads.
 
 ### `dotenv`
 
-| | |
-|---|---|
-| **Version** | `^16.0.1` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/motdotla/dotenv/blob/master/CHANGELOG.md) |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Version**      | `^16.0.1`                                                                   |
+| **Release date** | 2022                                                                        |
+| **Changelog**    | [CHANGELOG.md](https://github.com/motdotla/dotenv/blob/master/CHANGELOG.md) |
 
 Loads environment variables from a `.env` file into `process.env`.
 
@@ -1076,11 +1076,11 @@ Loads environment variables from a `.env` file into `process.env`.
 
 ### `rimraf`
 
-| | |
-|---|---|
-| **Version** | `^3.0.2` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/isaacs/rimraf) |
+|                  |                                            |
+| ---------------- | ------------------------------------------ |
+| **Version**      | `^3.0.2`                                   |
+| **Release date** | 2021                                       |
+| **Changelog**    | [GitHub](https://github.com/isaacs/rimraf) |
 
 Cross-platform `rm -rf` for Node.js.
 
@@ -1090,15 +1090,15 @@ Cross-platform `rm -rf` for Node.js.
 
 ---
 
-## Testing *(dev)*
+## Testing _(dev)_
 
 ### `jest`
 
-| | |
-|---|---|
-| **Version** | `^27.2.5` |
-| **Release date** | September 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/facebook/jest/blob/main/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^27.2.5`                                                               |
+| **Release date** | September 2021                                                          |
+| **Changelog**    | [CHANGELOG.md](https://github.com/facebook/jest/blob/main/CHANGELOG.md) |
 
 JavaScript testing framework with built-in assertions, mocking, and coverage.
 
@@ -1110,11 +1110,11 @@ JavaScript testing framework with built-in assertions, mocking, and coverage.
 
 ### `ts-jest`
 
-| | |
-|---|---|
-| **Version** | `^27.0.3` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/kulshekhar/ts-jest) |
+|                  |                                                 |
+| ---------------- | ----------------------------------------------- |
+| **Version**      | `^27.0.3`                                       |
+| **Release date** | 2021                                            |
+| **Changelog**    | [GitHub](https://github.com/kulshekhar/ts-jest) |
 
 Jest transformer that runs TypeScript test files directly without a separate compile step.
 
@@ -1126,11 +1126,11 @@ Jest transformer that runs TypeScript test files directly without a separate com
 
 ### `supertest`
 
-| | |
-|---|---|
-| **Version** | `^6.1.3` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/ladjs/supertest) |
+|                  |                                              |
+| ---------------- | -------------------------------------------- |
+| **Version**      | `^6.1.3`                                     |
+| **Release date** | 2021                                         |
+| **Changelog**    | [GitHub](https://github.com/ladjs/supertest) |
 
 HTTP assertion library for testing Express/NestJS endpoints without starting a real server.
 
@@ -1142,11 +1142,11 @@ HTTP assertion library for testing Express/NestJS endpoints without starting a r
 
 ### `@nestjs/testing`
 
-| | |
-|---|---|
-| **Version** | `^9.4.1` |
-| **Release date** | April 2023 |
-| **Changelog** | [GitHub](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
+|                  |                                                                   |
+| ---------------- | ----------------------------------------------------------------- |
+| **Version**      | `^9.4.1`                                                          |
+| **Release date** | April 2023                                                        |
+| **Changelog**    | [GitHub](https://github.com/nestjs/nest/blob/master/CHANGELOG.md) |
 
 NestJS testing utilities (`Test.createTestingModule()`) for bootstrapping isolated module contexts in tests.
 
@@ -1158,11 +1158,11 @@ NestJS testing utilities (`Test.createTestingModule()`) for bootstrapping isolat
 
 ### `@faker-js/faker`
 
-| | |
-|---|---|
-| **Version** | `^7.0.0` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/faker-js/faker/blob/next/CHANGELOG.md) |
+|                  |                                                                          |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Version**      | `^7.0.0`                                                                 |
+| **Release date** | 2022                                                                     |
+| **Changelog**    | [CHANGELOG.md](https://github.com/faker-js/faker/blob/next/CHANGELOG.md) |
 
 Generates realistic fake data (names, emails, addresses, etc.) for tests and seeds.
 
@@ -1172,15 +1172,15 @@ Generates realistic fake data (names, emails, addresses, etc.) for tests and see
 
 ---
 
-## Linting & Formatting *(dev)*
+## Linting & Formatting _(dev)_
 
 ### `eslint`
 
-| | |
-|---|---|
-| **Version** | `^8.0.1` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/eslint/eslint/blob/main/CHANGELOG.md) |
+|                  |                                                                         |
+| ---------------- | ----------------------------------------------------------------------- |
+| **Version**      | `^8.0.1`                                                                |
+| **Release date** | 2021                                                                    |
+| **Changelog**    | [CHANGELOG.md](https://github.com/eslint/eslint/blob/main/CHANGELOG.md) |
 
 Pluggable JavaScript/TypeScript linter.
 
@@ -1192,11 +1192,11 @@ Pluggable JavaScript/TypeScript linter.
 
 ### `@typescript-eslint/eslint-plugin`
 
-| | |
-|---|---|
-| **Version** | `^5.0.0` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/typescript-eslint/typescript-eslint) |
+|                  |                                                                  |
+| ---------------- | ---------------------------------------------------------------- |
+| **Version**      | `^5.0.0`                                                         |
+| **Release date** | 2021                                                             |
+| **Changelog**    | [GitHub](https://github.com/typescript-eslint/typescript-eslint) |
 
 ESLint rules specific to TypeScript (type-aware linting).
 
@@ -1208,11 +1208,11 @@ ESLint rules specific to TypeScript (type-aware linting).
 
 ### `@typescript-eslint/parser`
 
-| | |
-|---|---|
-| **Version** | `^5.0.0` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/typescript-eslint/typescript-eslint) |
+|                  |                                                                  |
+| ---------------- | ---------------------------------------------------------------- |
+| **Version**      | `^5.0.0`                                                         |
+| **Release date** | 2021                                                             |
+| **Changelog**    | [GitHub](https://github.com/typescript-eslint/typescript-eslint) |
 
 ESLint parser that understands TypeScript syntax.
 
@@ -1224,11 +1224,11 @@ ESLint parser that understands TypeScript syntax.
 
 ### `eslint-config-prettier`
 
-| | |
-|---|---|
-| **Version** | `^8.5.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/prettier/eslint-config-prettier) |
+|                  |                                                              |
+| ---------------- | ------------------------------------------------------------ |
+| **Version**      | `^8.5.0`                                                     |
+| **Release date** | 2022                                                         |
+| **Changelog**    | [GitHub](https://github.com/prettier/eslint-config-prettier) |
 
 Disables ESLint rules that conflict with Prettier formatting.
 
@@ -1240,11 +1240,11 @@ Disables ESLint rules that conflict with Prettier formatting.
 
 ### `eslint-plugin-import`
 
-| | |
-|---|---|
-| **Version** | `^2.25.4` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/import-js/eslint-plugin-import) |
+|                  |                                                             |
+| ---------------- | ----------------------------------------------------------- |
+| **Version**      | `^2.25.4`                                                   |
+| **Release date** | 2022                                                        |
+| **Changelog**    | [GitHub](https://github.com/import-js/eslint-plugin-import) |
 
 Lints ES module import/export syntax, missing modules, and import order.
 
@@ -1256,11 +1256,11 @@ Lints ES module import/export syntax, missing modules, and import order.
 
 ### `eslint-import-resolver-typescript`
 
-| | |
-|---|---|
-| **Version** | `^2.5.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/import-js/eslint-import-resolver-typescript) |
+|                  |                                                                          |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Version**      | `^2.5.0`                                                                 |
+| **Release date** | 2022                                                                     |
+| **Changelog**    | [GitHub](https://github.com/import-js/eslint-import-resolver-typescript) |
 
 Teaches `eslint-plugin-import` to resolve TypeScript path aliases and `.ts` files.
 
@@ -1272,11 +1272,11 @@ Teaches `eslint-plugin-import` to resolve TypeScript path aliases and `.ts` file
 
 ### `eslint-plugin-prettier`
 
-| | |
-|---|---|
-| **Version** | `^4.0.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/prettier/eslint-plugin-prettier) |
+|                  |                                                              |
+| ---------------- | ------------------------------------------------------------ |
+| **Version**      | `^4.0.0`                                                     |
+| **Release date** | 2022                                                         |
+| **Changelog**    | [GitHub](https://github.com/prettier/eslint-plugin-prettier) |
 
 Runs Prettier as an ESLint rule and reports formatting differences as lint errors.
 
@@ -1288,11 +1288,11 @@ Runs Prettier as an ESLint rule and reports formatting differences as lint error
 
 ### `eslint-plugin-typescript-sort-keys`
 
-| | |
-|---|---|
-| **Version** | `^2.1.0` |
-| **Release date** | 2022 |
-| **Changelog** | [GitHub](https://github.com/infctr/eslint-plugin-typescript-sort-keys) |
+|                  |                                                                        |
+| ---------------- | ---------------------------------------------------------------------- |
+| **Version**      | `^2.1.0`                                                               |
+| **Release date** | 2022                                                                   |
+| **Changelog**    | [GitHub](https://github.com/infctr/eslint-plugin-typescript-sort-keys) |
 
 Enforces alphabetical ordering of TypeScript interface/type keys.
 
@@ -1304,11 +1304,11 @@ Enforces alphabetical ordering of TypeScript interface/type keys.
 
 ### `prettier`
 
-| | |
-|---|---|
-| **Version** | `^2.6.0` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/prettier/prettier/blob/main/CHANGELOG.md) |
+|                  |                                                                             |
+| ---------------- | --------------------------------------------------------------------------- |
+| **Version**      | `^2.6.0`                                                                    |
+| **Release date** | 2022                                                                        |
+| **Changelog**    | [CHANGELOG.md](https://github.com/prettier/prettier/blob/main/CHANGELOG.md) |
 
 Opinionated code formatter for TypeScript, JSON, and more.
 
@@ -1318,15 +1318,15 @@ Opinionated code formatter for TypeScript, JSON, and more.
 
 ---
 
-## Build Tooling *(dev)*
+## Build Tooling _(dev)_
 
 ### `typescript`
 
-| | |
-|---|---|
-| **Version** | `^4.3.5` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/microsoft/TypeScript/wiki/Breaking-Changes) |
+|                  |                                                                               |
+| ---------------- | ----------------------------------------------------------------------------- |
+| **Version**      | `^4.3.5`                                                                      |
+| **Release date** | 2021                                                                          |
+| **Changelog**    | [CHANGELOG.md](https://github.com/microsoft/TypeScript/wiki/Breaking-Changes) |
 
 TypeScript compiler for static type checking and transpilation.
 
@@ -1338,11 +1338,11 @@ TypeScript compiler for static type checking and transpilation.
 
 ### `@nestjs/cli`
 
-| | |
-|---|---|
-| **Version** | `^11.0.12` |
-| **Release date** | 2024 |
-| **Changelog** | [GitHub](https://github.com/nestjs/nest-cli) |
+|                  |                                              |
+| ---------------- | -------------------------------------------- |
+| **Version**      | `^11.0.12`                                   |
+| **Release date** | 2024                                         |
+| **Changelog**    | [GitHub](https://github.com/nestjs/nest-cli) |
 
 NestJS CLI for building, watching, and generating code (`nest build`, `nest start`).
 
@@ -1354,11 +1354,11 @@ NestJS CLI for building, watching, and generating code (`nest build`, `nest star
 
 ### `@nestjs/schematics`
 
-| | |
-|---|---|
-| **Version** | `^9.2.0` |
-| **Release date** | 2023 |
-| **Changelog** | [GitHub](https://github.com/nestjs/schematics) |
+|                  |                                                |
+| ---------------- | ---------------------------------------------- |
+| **Version**      | `^9.2.0`                                       |
+| **Release date** | 2023                                           |
+| **Changelog**    | [GitHub](https://github.com/nestjs/schematics) |
 
 Angular-style code generation schematics used by the NestJS CLI.
 
@@ -1370,11 +1370,11 @@ Angular-style code generation schematics used by the NestJS CLI.
 
 ### `ts-node`
 
-| | |
-|---|---|
-| **Version** | `^10.0.0` |
-| **Release date** | 2021 |
-| **Changelog** | [CHANGELOG.md](https://github.com/TypeStrong/ts-node/blob/main/CHANGELOG.md) |
+|                  |                                                                              |
+| ---------------- | ---------------------------------------------------------------------------- |
+| **Version**      | `^10.0.0`                                                                    |
+| **Release date** | 2021                                                                         |
+| **Changelog**    | [CHANGELOG.md](https://github.com/TypeStrong/ts-node/blob/main/CHANGELOG.md) |
 
 TypeScript execution engine for Node.js — runs `.ts` files directly without pre-compilation.
 
@@ -1386,11 +1386,11 @@ TypeScript execution engine for Node.js — runs `.ts` files directly without pr
 
 ### `ts-loader`
 
-| | |
-|---|---|
-| **Version** | `^9.2.3` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/TypeStrong/ts-loader) |
+|                  |                                                   |
+| ---------------- | ------------------------------------------------- |
+| **Version**      | `^9.2.3`                                          |
+| **Release date** | 2021                                              |
+| **Changelog**    | [GitHub](https://github.com/TypeStrong/ts-loader) |
 
 Webpack loader for TypeScript files (used by NestJS CLI's webpack build mode).
 
@@ -1402,11 +1402,11 @@ Webpack loader for TypeScript files (used by NestJS CLI's webpack build mode).
 
 ### `tsconfig-paths`
 
-| | |
-|---|---|
-| **Version** | `^3.10.1` |
-| **Release date** | 2021 |
-| **Changelog** | [GitHub](https://github.com/dividab/tsconfig-paths) |
+|                  |                                                     |
+| ---------------- | --------------------------------------------------- |
+| **Version**      | `^3.10.1`                                           |
+| **Release date** | 2021                                                |
+| **Changelog**    | [GitHub](https://github.com/dividab/tsconfig-paths) |
 
 Resolves TypeScript path aliases (e.g. `src/...`) at runtime for `ts-node`.
 
@@ -1418,11 +1418,11 @@ Resolves TypeScript path aliases (e.g. `src/...`) at runtime for `ts-node`.
 
 ### `source-map-support`
 
-| | |
-|---|---|
-| **Version** | `^0.5.20` |
-| **Release date** | 2020 |
-| **Changelog** | [GitHub](https://github.com/evanw/node-source-map-support) |
+|                  |                                                            |
+| ---------------- | ---------------------------------------------------------- |
+| **Version**      | `^0.5.20`                                                  |
+| **Release date** | 2020                                                       |
+| **Changelog**    | [GitHub](https://github.com/evanw/node-source-map-support) |
 
 Maps compiled JavaScript stack traces back to TypeScript source lines.
 
@@ -1432,15 +1432,15 @@ Maps compiled JavaScript stack traces back to TypeScript source lines.
 
 ---
 
-## Developer Experience *(dev)*
+## Developer Experience _(dev)_
 
 ### `husky`
 
-| | |
-|---|---|
-| **Version** | `^8.0.1` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/typicode/husky/blob/main/CHANGELOG.md) |
+|                  |                                                                          |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Version**      | `^8.0.1`                                                                 |
+| **Release date** | 2022                                                                     |
+| **Changelog**    | [CHANGELOG.md](https://github.com/typicode/husky/blob/main/CHANGELOG.md) |
 
 Git hooks manager — runs scripts on `pre-commit`, `commit-msg`, etc.
 
@@ -1452,11 +1452,11 @@ Git hooks manager — runs scripts on `pre-commit`, `commit-msg`, etc.
 
 ### `lint-staged`
 
-| | |
-|---|---|
-| **Version** | `^13.0.3` |
-| **Release date** | 2022 |
-| **Changelog** | [CHANGELOG.md](https://github.com/okonet/lint-staged/blob/master/CHANGELOG.md) |
+|                  |                                                                                |
+| ---------------- | ------------------------------------------------------------------------------ |
+| **Version**      | `^13.0.3`                                                                      |
+| **Release date** | 2022                                                                           |
+| **Changelog**    | [CHANGELOG.md](https://github.com/okonet/lint-staged/blob/master/CHANGELOG.md) |
 
 Runs linters and formatters only on staged Git files for fast pre-commit checks.
 
@@ -1468,11 +1468,11 @@ Runs linters and formatters only on staged Git files for fast pre-commit checks.
 
 ### `npm-run-all`
 
-| | |
-|---|---|
-| **Version** | `^4.1.5` |
-| **Release date** | 2019 |
-| **Changelog** | [GitHub](https://github.com/mysticatea/npm-run-all) |
+|                  |                                                     |
+| ---------------- | --------------------------------------------------- |
+| **Version**      | `^4.1.5`                                            |
+| **Release date** | 2019                                                |
+| **Changelog**    | [GitHub](https://github.com/mysticatea/npm-run-all) |
 
 Runs multiple npm scripts sequentially (`run-s`) or in parallel (`run-p`).
 

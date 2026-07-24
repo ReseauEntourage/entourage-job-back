@@ -353,8 +353,8 @@ export class SalesforceService {
         `SELECT Id, Casquettes_r_les__c, AccountId
          FROM ${ObjectNames.CONTACT}
          WHERE Email = '${sfEmail}' ${
-          recordType ? `AND RecordTypeId = '${recordType}'` : ''
-        } LIMIT 1`
+           recordType ? `AND RecordTypeId = '${recordType}'` : ''
+         } LIMIT 1`
       );
     if (!records[0]) {
       return null;
@@ -377,8 +377,8 @@ export class SalesforceService {
         `SELECT Id
          FROM ${ObjectNames.LEAD}
          WHERE Email = '${escapeQuery(email)}' ${
-          recordType ? `AND RecordTypeId = '${recordType}'` : ''
-        } LIMIT 1
+           recordType ? `AND RecordTypeId = '${recordType}'` : ''
+         } LIMIT 1
         `
       );
     return records[0]?.Id;

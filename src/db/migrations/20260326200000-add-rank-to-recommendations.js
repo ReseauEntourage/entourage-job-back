@@ -9,9 +9,13 @@ module.exports = {
     });
 
     // Composite index for efficient cursor-based pagination per user
-    await queryInterface.addIndex('UserProfileRecommendations', ['UserId', 'rank'], {
-      name: 'user_profile_recommendations_user_id_rank_idx',
-    });
+    await queryInterface.addIndex(
+      'UserProfileRecommendations',
+      ['UserId', 'rank'],
+      {
+        name: 'user_profile_recommendations_user_id_rank_idx',
+      }
+    );
   },
 
   async down(queryInterface) {

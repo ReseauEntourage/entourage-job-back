@@ -8,9 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { PostFeedbackDto } from '.';
 
-export class PostFeedbackPipe
-  implements PipeTransform<PostFeedbackDto, Promise<PostFeedbackDto>>
-{
+export class PostFeedbackPipe implements PipeTransform<
+  PostFeedbackDto,
+  Promise<PostFeedbackDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

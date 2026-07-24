@@ -242,7 +242,7 @@ export class MailjetService {
     }
 
     const antenne = params.zone
-      ? MailjetAntenneByZone[params.zone] ?? null
+      ? (MailjetAntenneByZone[params.zone] ?? null)
       : null;
     const properties: Record<string, string> = {
       [MailjetContactPropertyNames.PROGRAM]: 'Entourage Pro',
@@ -401,22 +401,23 @@ export class MailjetService {
       user.gender === Genders.MALE
         ? 'M'
         : user.gender === Genders.FEMALE
-        ? 'Mme'
-        : null;
+          ? 'Mme'
+          : null;
 
     // Extract department code from strings like "Paris (75)" → "75"
     const userProfile = user.userProfile;
     const postalCode = userProfile?.department
-      ? userProfile.department.match(/\((\d+)\)/)?.[1] ?? null
+      ? (userProfile.department.match(/\((\d+)\)/)?.[1] ?? null)
       : null;
 
     // Derive zone from the user's department for accurate antenne mapping —
     // avoids returning null for HZ users who still have a known department.
     const departmentZone = userProfile?.department
-      ? Departments.find((d) => d.name === userProfile.department)?.zone ?? null
+      ? (Departments.find((d) => d.name === userProfile.department)?.zone ??
+        null)
       : null;
     const zone = (departmentZone ?? user.zone ?? null) as ZoneName | null;
-    const antenne = zone ? MailjetAntenneByZone[zone] ?? null : null;
+    const antenne = zone ? (MailjetAntenneByZone[zone] ?? null) : null;
 
     return {
       email: user.email,

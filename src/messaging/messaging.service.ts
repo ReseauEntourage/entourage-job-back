@@ -342,9 +342,8 @@ export class MessagingService {
       cp.feedbackDate
     );
 
-    const conversationMedias = await this.findMediasByConversationId(
-      conversationId
-    );
+    const conversationMedias =
+      await this.findMediasByConversationId(conversationId);
 
     cp.conversation.messages.forEach((message) => {
       const messageMedias = conversationMedias.filter((media) =>
@@ -521,9 +520,8 @@ export class MessagingService {
     reporterUserId: string
   ) {
     const conversation = await this.findConversation(conversationId);
-    const reporterUser = await this.usersService.findOneWithRelations(
-      reporterUserId
-    );
+    const reporterUser =
+      await this.usersService.findOneWithRelations(reporterUserId);
     const reportedParticipantIds = conversation.participants
       .filter((participant) => participant.id !== reporterUserId)
       .map((participant) => participant.id);
@@ -992,9 +990,8 @@ export class MessagingService {
       }
 
       const moderatorSlackEmail = sender.staffContact?.slackEmail;
-      const referentSlackUserId = await this.slackService.getUserIdByEmail(
-        moderatorSlackEmail
-      );
+      const referentSlackUserId =
+        await this.slackService.getUserIdByEmail(moderatorSlackEmail);
       const slackMsgConfig: SlackBlockConfig =
         generateSlackMsgConfigUserSuspiciousUser(
           sender,
@@ -1036,9 +1033,8 @@ export class MessagingService {
   async createMailingList(createMailingListDto: CreateMailingListDto) {
     const { recipientEmails, content } = createMailingListDto;
     // Check if emails exists in the database and get the corresponding users
-    const users = await this.usersService.findByEmailsWithRelations(
-      recipientEmails
-    );
+    const users =
+      await this.usersService.findByEmailsWithRelations(recipientEmails);
     const existingEmails = users.map((user) => user.email);
     const nonExistingEmails = recipientEmails.filter(
       (email) => !existingEmails.includes(email)

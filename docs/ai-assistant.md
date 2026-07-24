@@ -31,13 +31,13 @@ Les messages suggérés respectent le registre de tutoiement ou de vouvoiement u
 
 Pour éviter d'avoir à formuler une question, quatre boutons de suggestions rapides sont disponibles en permanence. L'un d'eux est contextuel : il propose de "Démarrer la discussion" si aucun message n'a encore été échangé, ou "Proposer une réponse" si la conversation est déjà entamée.
 
-| Suggestion | Ce qu'elle fait |
-|---|---|
-| Démarrer la discussion *(contextuel, sans historique)* | Propose un premier message bienveillant à envoyer au candidat |
-| Proposer une réponse *(contextuel, avec historique)* | Rédige une réponse adaptée au dernier message du candidat |
-| Relancer le candidat | Propose un message de relance pour un candidat silencieux |
-| Comprendre le secteur | Brief sur le secteur visé : métiers, attentes recruteurs, vocabulaire |
-| Résumer la conversation | Synthèse de l'échange : besoins, attentes, état d'esprit du candidat |
+| Suggestion                                             | Ce qu'elle fait                                                       |
+| ------------------------------------------------------ | --------------------------------------------------------------------- |
+| Démarrer la discussion _(contextuel, sans historique)_ | Propose un premier message bienveillant à envoyer au candidat         |
+| Proposer une réponse _(contextuel, avec historique)_   | Rédige une réponse adaptée au dernier message du candidat             |
+| Relancer le candidat                                   | Propose un message de relance pour un candidat silencieux             |
+| Comprendre le secteur                                  | Brief sur le secteur visé : métiers, attentes recruteurs, vocabulaire |
+| Résumer la conversation                                | Synthèse de l'échange : besoins, attentes, état d'esprit du candidat  |
 
 ### Limites d'utilisation
 
@@ -92,11 +92,11 @@ PostgreSQL
 
 Tous les endpoints sont protégés par le guard `UserInConversation` (vérifie que l'appelant participe bien à la conversation).
 
-| Méthode | Route | Description |
-|---|---|---|
-| `GET` | `/ai-assistant/conversations/:conversationId/session` | Retourne la session et ses messages, ou `{ messages: [] }` si aucune session n'existe |
-| `POST` + `@Sse()` | `/ai-assistant/conversations/:conversationId/stream` | Démarre le streaming SSE d'une réponse |
-| `DELETE` | `/ai-assistant/conversations/:conversationId/session/messages` | Supprime tous les messages de la session — répond 204 |
+| Méthode           | Route                                                          | Description                                                                           |
+| ----------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `GET`             | `/ai-assistant/conversations/:conversationId/session`          | Retourne la session et ses messages, ou `{ messages: [] }` si aucune session n'existe |
+| `POST` + `@Sse()` | `/ai-assistant/conversations/:conversationId/stream`           | Démarre le streaming SSE d'une réponse                                                |
+| `DELETE`          | `/ai-assistant/conversations/:conversationId/session/messages` | Supprime tous les messages de la session — répond 204                                 |
 
 Le corps du POST est validé par `AiStreamPipe` → `AiStreamDto` : `message: string` (requis, max 12 000 caractères).
 
@@ -140,11 +140,11 @@ La méthode `streamResponse()` retourne un `Observable<MessageEvent>` (RxJS). Le
 
 **Implémentation :** Redis INCR + EXPIRE
 
-| Paramètre | Valeur |
-|---|---|
-| Clé Redis | `RL_AI_ASSISTANT:<userId>` |
-| Limite | 10 messages par fenêtre |
-| Fenêtre | 3 600 secondes (1 heure glissante) |
+| Paramètre | Valeur                             |
+| --------- | ---------------------------------- |
+| Clé Redis | `RL_AI_ASSISTANT:<userId>`         |
+| Limite    | 10 messages par fenêtre            |
+| Fenêtre   | 3 600 secondes (1 heure glissante) |
 
 `INCR` atomique ; `EXPIRE` posé uniquement sur le premier incrément (`count === 1`) pour ne pas réinitialiser la fenêtre à chaque appel. Le TTL courant est retourné pour calculer `resetInSeconds`.
 
@@ -179,11 +179,11 @@ Few-shot example
 
 **Logique de la section profil :**
 
-| Situation | Contenu injecté |
-|---|---|
-| Tous les champs vides | `emptyProfileInstruction` — invite à importer un CV |
+| Situation                   | Contenu injecté                                                         |
+| --------------------------- | ----------------------------------------------------------------------- |
+| Tous les champs vides       | `emptyProfileInstruction` — invite à importer un CV                     |
 | Profil partiellement rempli | `profileInstruction` + `missingFieldsNote` (liste des champs manquants) |
-| Profil complet | `profileInstruction` seul |
+| Profil complet              | `profileInstruction` seul                                               |
 
 **Bloc 2 — dynamique (jamais mis en cache)**
 
@@ -191,12 +191,12 @@ Few-shot example
 
 **Placeholders substitués à l'exécution :**
 
-| Placeholder | Valeur |
-|---|---|
-| `{{USER_NAME}}` | Prénom et nom du coach |
-| `{{CANDIDATE_NAME}}` | Prénom et nom du candidat |
-| `{{MISSING_FIELDS}}` | Liste des champs de profil non renseignés |
-| `{{TEXT}}` | Texte complet de la réponse (classificateur d'escalade uniquement) |
+| Placeholder          | Valeur                                                             |
+| -------------------- | ------------------------------------------------------------------ |
+| `{{USER_NAME}}`      | Prénom et nom du coach                                             |
+| `{{CANDIDATE_NAME}}` | Prénom et nom du candidat                                          |
+| `{{MISSING_FIELDS}}` | Liste des champs de profil non renseignés                          |
+| `{{TEXT}}`           | Texte complet de la réponse (classificateur d'escalade uniquement) |
 
 ### Prompt caching Anthropic
 
@@ -237,15 +237,15 @@ generateText(systemPrompt, userMessage, maxTokens = 5): Promise<string>
 
 Le back-end émet des `MessageEvent` NestJS au format SSE standard (`data: <JSON>\n\n`).
 
-| Événement | Moment d'émission | Description |
-|---|---|---|
-| `{ type: 'rate_limit_info', remaining }` | En premier, avant tout contenu | Nombre de messages restants dans la fenêtre |
-| `{ content: string }` | En continu pendant le stream | Chunk de texte de la réponse |
-| `{ type: 'suggest', suggestions: string[] }` | En fin de stream | Messages à envoyer au candidat (extraits des balises `[SUGGESTION]`) |
-| `{ type: 'escalate', referentUserId, referentName }` | En fin de stream si détecté | Identité du référent à contacter |
-| `{ type: 'rate_limit', resetInSeconds }` | À la place du contenu si limite atteinte | Temps avant réinitialisation de la fenêtre |
-| `{ error: string }` | En cas d'erreur | Message d'erreur générique |
-| `[DONE]` | Toujours en dernier | Signal de fin du stream |
+| Événement                                            | Moment d'émission                        | Description                                                          |
+| ---------------------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------- |
+| `{ type: 'rate_limit_info', remaining }`             | En premier, avant tout contenu           | Nombre de messages restants dans la fenêtre                          |
+| `{ content: string }`                                | En continu pendant le stream             | Chunk de texte de la réponse                                         |
+| `{ type: 'suggest', suggestions: string[] }`         | En fin de stream                         | Messages à envoyer au candidat (extraits des balises `[SUGGESTION]`) |
+| `{ type: 'escalate', referentUserId, referentName }` | En fin de stream si détecté              | Identité du référent à contacter                                     |
+| `{ type: 'rate_limit', resetInSeconds }`             | À la place du contenu si limite atteinte | Temps avant réinitialisation de la fenêtre                           |
+| `{ error: string }`                                  | En cas d'erreur                          | Message d'erreur générique                                           |
+| `[DONE]`                                             | Toujours en dernier                      | Signal de fin du stream                                              |
 
 ### Modèles de données
 
@@ -253,24 +253,24 @@ Le back-end émet des `MessageEvent` NestJS au format SSE standard (`data: <JSON
 
 Une session par paire `(conversationId, userId)`, créée à la première interaction via `findOrCreate`.
 
-| Colonne | Type | Contraintes |
-|---|---|---|
-| `id` | UUID PK | auto-généré |
-| `conversationId` | UUID FK | → `Conversations.id`, NOT NULL |
-| `userId` | UUID FK | → `Users.id`, NOT NULL |
-| `createdAt` | TIMESTAMP | auto |
-| `updatedAt` | TIMESTAMP | auto |
+| Colonne          | Type      | Contraintes                    |
+| ---------------- | --------- | ------------------------------ |
+| `id`             | UUID PK   | auto-généré                    |
+| `conversationId` | UUID FK   | → `Conversations.id`, NOT NULL |
+| `userId`         | UUID FK   | → `Users.id`, NOT NULL         |
+| `createdAt`      | TIMESTAMP | auto                           |
+| `updatedAt`      | TIMESTAMP | auto                           |
 
 **`AiAssistantMessage`** — table `AiAssistantMessages`
 
-| Colonne | Type | Contraintes |
-|---|---|---|
-| `id` | UUID PK | auto-généré |
-| `sessionId` | UUID FK | → `AiAssistantSessions.id`, NOT NULL |
-| `role` | ENUM | `'user'` ou `'assistant'`, NOT NULL |
-| `content` | TEXT | NOT NULL (inclut les balises `[SUGGESTION]` brutes) |
-| `createdAt` | TIMESTAMP | auto |
-| `updatedAt` | TIMESTAMP | auto |
+| Colonne     | Type      | Contraintes                                         |
+| ----------- | --------- | --------------------------------------------------- |
+| `id`        | UUID PK   | auto-généré                                         |
+| `sessionId` | UUID FK   | → `AiAssistantSessions.id`, NOT NULL                |
+| `role`      | ENUM      | `'user'` ou `'assistant'`, NOT NULL                 |
+| `content`   | TEXT      | NOT NULL (inclut les balises `[SUGGESTION]` brutes) |
+| `createdAt` | TIMESTAMP | auto                                                |
+| `updatedAt` | TIMESTAMP | auto                                                |
 
 **Migrations :** `20260427120000-create-ai-assistant-sessions.js`, `20260427120001-create-ai-assistant-messages.js`
 
@@ -280,11 +280,11 @@ Une session par paire `(conversationId, userId)`, créée à la première intera
 
 Métriques DogStatsD envoyées à Datadog après chaque appel :
 
-| Métrique | Description |
-|---|---|
-| `ai.tokens.input` | Tokens d'entrée |
-| `ai.tokens.output` | Tokens de sortie |
-| `ai.tokens.cache_read` | Tokens lus depuis le cache Anthropic |
+| Métrique                | Description                           |
+| ----------------------- | ------------------------------------- |
+| `ai.tokens.input`       | Tokens d'entrée                       |
+| `ai.tokens.output`      | Tokens de sortie                      |
+| `ai.tokens.cache_read`  | Tokens lus depuis le cache Anthropic  |
 | `ai.tokens.cache_write` | Tokens écrits dans le cache Anthropic |
 
 Tags : `model`, `provider: 'anthropic'`, `operation` (`stream` ou `classify`), `feature: 'ai_assistant'`.
@@ -295,24 +295,24 @@ Tags : `model`, `provider: 'anthropic'`, `operation` (`stream` ou `classify`), `
 
 L'objet `AI_ASSISTANT_CONFIG` est la source unique de vérité du contenu du prompt. **Pour modifier le comportement de l'IA, c'est ici qu'il faut intervenir.**
 
-| Clé | Description |
-|---|---|
-| `role` | Définition du rôle et de la mission de l'assistant |
-| `platformContext` | Contexte Entourage Pro + distinction import CV vs partage CV |
-| `ethicalCharter` | Valeurs, comportements interdits, gestion des données personnelles |
-| `coachingPhilosophy` | Posture coach, écoute active, autonomie, humilité |
-| `coachingScope` | Liste des axes d'intervention du coach |
-| `romeResources` | Instruction pour lier les fiches ROME France Travail |
-| `toolboxResources` | Boîte à outils Notion (20+ ressources catégorisées) |
-| `profileInstruction` | Instruction quand le profil candidat est rempli |
-| `missingFieldsNote` | Complément quand des champs sont manquants |
-| `emptyProfileInstruction` | Instruction quand le profil est entièrement vide |
-| `discoveryPriorities` | Ordre de priorité : projet pro → outils de candidature → échéances |
-| `difficultSituations` | Gestion des sujets hors périmètre (social, administratif) |
-| `rules` | 7 règles strictes de comportement (langue, format, limites) |
-| `suggestionFormat` | Instructions de format pour les balises `[SUGGESTION]` |
-| `escalationClassifierSystem` / `escalationClassifierPrompt` | Prompt du classificateur d'escalade |
-| `fewShotExample` | Exemple de réponse correcte avec message suggéré |
+| Clé                                                         | Description                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------------ |
+| `role`                                                      | Définition du rôle et de la mission de l'assistant                 |
+| `platformContext`                                           | Contexte Entourage Pro + distinction import CV vs partage CV       |
+| `ethicalCharter`                                            | Valeurs, comportements interdits, gestion des données personnelles |
+| `coachingPhilosophy`                                        | Posture coach, écoute active, autonomie, humilité                  |
+| `coachingScope`                                             | Liste des axes d'intervention du coach                             |
+| `romeResources`                                             | Instruction pour lier les fiches ROME France Travail               |
+| `toolboxResources`                                          | Boîte à outils Notion (20+ ressources catégorisées)                |
+| `profileInstruction`                                        | Instruction quand le profil candidat est rempli                    |
+| `missingFieldsNote`                                         | Complément quand des champs sont manquants                         |
+| `emptyProfileInstruction`                                   | Instruction quand le profil est entièrement vide                   |
+| `discoveryPriorities`                                       | Ordre de priorité : projet pro → outils de candidature → échéances |
+| `difficultSituations`                                       | Gestion des sujets hors périmètre (social, administratif)          |
+| `rules`                                                     | 7 règles strictes de comportement (langue, format, limites)        |
+| `suggestionFormat`                                          | Instructions de format pour les balises `[SUGGESTION]`             |
+| `escalationClassifierSystem` / `escalationClassifierPrompt` | Prompt du classificateur d'escalade                                |
+| `fewShotExample`                                            | Exemple de réponse correcte avec message suggéré                   |
 
 ### Front-end
 
@@ -331,14 +331,14 @@ src/features/backoffice/messaging/MessagingAIPanel/
 
 #### `MessagingAIAssistant` — état local
 
-| Variable | Type | Rôle |
-|---|---|---|
-| `messages` | `AiAssistantMessage[]` | Messages affichés dans le fil |
-| `isLoading` | `boolean` | Streaming en cours |
-| `inputValue` | `string` | Contenu du textarea |
-| `escalation` | `EscalationState \| null` | Référent à contacter |
-| `rateLimitRemaining` | `number \| null` | Messages restants |
-| `rateLimitResetAt` | `number \| null` | Timestamp (ms) de reset |
+| Variable             | Type                      | Rôle                          |
+| -------------------- | ------------------------- | ----------------------------- |
+| `messages`           | `AiAssistantMessage[]`    | Messages affichés dans le fil |
+| `isLoading`          | `boolean`                 | Streaming en cours            |
+| `inputValue`         | `string`                  | Contenu du textarea           |
+| `escalation`         | `EscalationState \| null` | Référent à contacter          |
+| `rateLimitRemaining` | `number \| null`          | Messages restants             |
+| `rateLimitResetAt`   | `number \| null`          | Timestamp (ms) de reset       |
 
 **Flux d'envoi (`sendMessage`) :**
 
@@ -361,10 +361,10 @@ Lit le `ReadableStream` par chunks via `TextDecoder({ stream: true })`. Accumule
 
 `parseSegments(content)` découpe le texte en segments alternés selon les balises `[SUGGESTION]...[/SUGGESTION]` :
 
-| Segment | Rendu |
-|---|---|
-| `text` | `marked.parse()` → HTML · `DOMPurify.sanitize()` → `dangerouslySetInnerHTML` |
-| `suggestion` | `<Button>` cliquable → `onUseSuggestion(content)` |
+| Segment      | Rendu                                                                        |
+| ------------ | ---------------------------------------------------------------------------- |
+| `text`       | `marked.parse()` → HTML · `DOMPurify.sanitize()` → `dangerouslySetInnerHTML` |
+| `suggestion` | `<Button>` cliquable → `onUseSuggestion(content)`                            |
 
 Les blocs `[SUGGESTION]` incomplets (en cours de streaming) sont détectés et ignorés pour éviter un affichage partiel.
 
@@ -374,18 +374,20 @@ L'accès à l'assistant est conditionné par `FeatureKey.MESSAGING_AI_ASSISTANT`
 
 ### Variables d'environnement
 
-| Variable | Requis | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Oui | Clé API Anthropic pour le SDK |
+| Variable            | Requis | Description                   |
+| ------------------- | ------ | ----------------------------- |
+| `ANTHROPIC_API_KEY` | Oui    | Clé API Anthropic pour le SDK |
 
 ### Dépendances
 
 **Back-end :**
+
 ```json
 "@anthropic-ai/sdk": "^0.91.1"
 ```
 
 **Front-end :**
+
 ```json
 "marked"     // Markdown → HTML (rendu des réponses)
 "dompurify"  // Sanitisation XSS du HTML généré
