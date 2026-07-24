@@ -1269,7 +1269,7 @@ export class SalesforceService {
       contactSfId,
       {
         accountSfId,
-        companyName: companyName || undefined,
+        companyName,
       },
       determineContactRecordType(userToUpdate.role, isCompanyAdmin)
     );

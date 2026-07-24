@@ -422,7 +422,7 @@ export interface ContactProps {
   accountSfId?: string;
   birthDate?: Date;
   casquettes?: Casquette[];
-  companyName?: string;
+  companyName?: string | null;
   department?: Department;
   email?: string;
   firstName?: string;
@@ -459,7 +459,7 @@ export interface SalesforceContact {
   Nationalit__c: string;
   Phone: string;
   Plus_haut_niveau_de_formation_attein__c: string;
-  Raison_social_Entreprise__c?: string;
+  Raison_social_Entreprise__c?: string | null;
   RecordTypeId: ContactRecordType;
   Reseaux__c: 'LinkedOut';
   Situation_d_h_bergement__c: string;
