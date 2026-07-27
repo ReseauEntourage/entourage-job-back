@@ -1,5 +1,5 @@
 import {
-  ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -8,13 +8,18 @@ import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRole, UserRoles } from 'src/users/users.types';
+import {
+  SequelizeUniqueConstraintError,
+  UserRole,
+  UserRoles,
+} from 'src/users/users.types';
 import {
   ELEARNING_UNIT_ATTRIBUTES,
   ELEARNING_COMPLETION_ATTRIBUTES,
 } from './elearning.attributes';
 import { generateElearningUnitIncludes } from './elearning.includes';
 import { ElearningCompletion } from './models/elearning-completion.model';
+import { ElearningUnitRole } from './models/elearning-unit-role.model';
 import { ElearningUnit } from './models/elearning-unit.model';
 
 @Injectable()
@@ -23,6 +28,8 @@ export class ElearningService {
   constructor(
     @InjectModel(ElearningUnit)
     private elearningUnitModel: typeof ElearningUnit,
+    @InjectModel(ElearningUnitRole)
+    private elearningUnitRoleModel: typeof ElearningUnitRole,
     @InjectModel(ElearningCompletion)
     private elearningCompletionModel: typeof ElearningCompletion,
     readonly mailsService: MailsService,
@@ -66,60 +73,71 @@ export class ElearningService {
   }
 
   /**
-   * Create a new elearning completion for a user and unit.
+   * Find or create an elearning completion for a user and unit. If a completion
+   * already exists, it is returned as-is (a replay never mutates or re-triggers
+   * side effects on the original completion).
    * @param userId The ID of the user
    * @param unitId The ID of the elearning unit
-   * @returns The created ElearningCompletion
-   * @throws ConflictException if the completion already exists
+   * @param userRole The role of the current user
+   * @returns The existing or newly created ElearningCompletion
    * @throws NotFoundException if the elearning unit does not exist
+   * @throws ForbiddenException if the elearning unit does not belong to the user's role
    */
-  async createElearningCompletion(userId: string, unitId: string) {
+  async createElearningCompletion(
+    userId: string,
+    unitId: string,
+    userRole: UserRole
+  ) {
     // Check the unitId exists
     const unit = await this.elearningUnitModel.findByPk(unitId);
     if (!unit) {
       throw new NotFoundException('Elearning unit not found');
     }
 
+    // Check the unit belongs to the current user's role
+    const unitRole = await this.elearningUnitRoleModel.findOne({
+      where: { unitId, role: userRole },
+    });
+    if (!unitRole) {
+      throw new ForbiddenException(
+        'Elearning unit does not belong to the user role'
+      );
+    }
+
     // Check if the completion already exists
     const existingCompletion = await this.elearningCompletionModel.findOne({
       where: { userId, unitId },
+      attributes: ELEARNING_COMPLETION_ATTRIBUTES,
     });
     if (existingCompletion) {
-      throw new ConflictException(
-        'Completion already exists for this user and unit'
-      );
+      return existingCompletion;
     }
 
-    // Create the completion
-    const completion = await this.elearningCompletionModel.create({
-      userId,
-      unitId,
-      validatedAt: new Date(),
-    });
+    // Create the completion. Two concurrent replays can both pass the
+    // findOne check above; the unique (userId, unitId) constraint then
+    // rejects the second create, so we fall back to returning the row the
+    // other request just inserted instead of surfacing a 500.
+    let completionId: string;
+    try {
+      const completion = await this.elearningCompletionModel.create({
+        userId,
+        unitId,
+        validatedAt: new Date(),
+      });
+      completionId = completion.id;
+    } catch (err) {
+      if ((err as Error).name === SequelizeUniqueConstraintError) {
+        return this.elearningCompletionModel.findOne({
+          where: { userId, unitId },
+          attributes: ELEARNING_COMPLETION_ATTRIBUTES,
+        });
+      }
+      throw err;
+    }
 
     await this.onElearningUnitCompleted(userId);
 
-    return this.findOneElearningCompletionById(completion.id);
-  }
-
-  /**
-   * Delete an elearning completion for a user and unit.
-   * @param userId The ID of the user
-   * @param unitId The ID of the elearning unit
-   * @returns void
-   * @throws NotFoundException if the completion does not exist
-   */
-  async deleteElearningCompletion(userId: string, unitId: string) {
-    const completion = await this.elearningCompletionModel.findOne({
-      where: { userId, unitId },
-    });
-    if (!completion) {
-      throw new NotFoundException(
-        'Completion not found for this user and unit'
-      );
-    }
-
-    await completion.destroy();
+    return this.findOneElearningCompletionById(completionId);
   }
 
   async allUnitsNotCompletedByUser(user: User): Promise<ElearningUnit[]> {

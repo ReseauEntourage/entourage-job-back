@@ -46,6 +46,15 @@ export class UserFactory implements Factory<User> {
       updatedAt: moment().toDate(),
       onboardingStatus: props.onboardingStatus || OnboardingStatus.COMPLETED,
       onboardingCompletedAt: props.onboardingCompletedAt || moment().toDate(),
+      // Defaults to an eligible (elearning completed) user, matching the
+      // onboarding default above — pass `elearningCompletedAt: null`
+      // explicitly to build an ineligible test user. An explicit
+      // `undefined` (e.g. from a merged props object) is treated the
+      // same as "not provided" rather than as an override.
+      elearningCompletedAt:
+        props.elearningCompletedAt === undefined
+          ? moment().toDate()
+          : props.elearningCompletedAt,
     };
 
     return {

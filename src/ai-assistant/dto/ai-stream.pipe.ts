@@ -8,9 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { AiStreamDto } from './ai-stream.dto';
 
-export class AiStreamPipe
-  implements PipeTransform<AiStreamDto, Promise<AiStreamDto>>
-{
+export class AiStreamPipe implements PipeTransform<
+  AiStreamDto,
+  Promise<AiStreamDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

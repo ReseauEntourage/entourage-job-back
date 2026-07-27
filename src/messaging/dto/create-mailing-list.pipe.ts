@@ -10,9 +10,10 @@ import { validate } from 'class-validator';
 import { CreateMailingListDto } from './create-mailing-list.dto';
 
 @Injectable()
-export class CreateMailingListPipe
-  implements PipeTransform<CreateMailingListDto, Promise<CreateMailingListDto>>
-{
+export class CreateMailingListPipe implements PipeTransform<
+  CreateMailingListDto,
+  Promise<CreateMailingListDto>
+> {
   private static toValidate(metatype: Type<unknown>): boolean {
     const types: Array<Type<unknown>> = [
       String,

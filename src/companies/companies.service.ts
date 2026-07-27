@@ -126,9 +126,8 @@ export class CompaniesService {
     if (zone) {
       const moderationSlackEmail = zone.staffContact.company.slackEmail;
 
-      const referentSlackUserId = await this.slackService.getUserIdByEmail(
-        moderationSlackEmail
-      );
+      const referentSlackUserId =
+        await this.slackService.getUserIdByEmail(moderationSlackEmail);
 
       this.sendSlackNotificationCompanyCreated(
         company,

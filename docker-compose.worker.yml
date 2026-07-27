@@ -5,8 +5,6 @@ services:
     build:
       context: ./
       target: base
-      args:
-        NODE_VERSION: 20.19.1
     entrypoint: ['./docker-entrypoint.worker.sh']
     volumes:
       - .:/home/node

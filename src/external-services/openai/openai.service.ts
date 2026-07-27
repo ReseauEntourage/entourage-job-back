@@ -84,7 +84,11 @@ export class OpenAiService {
 
       const choice = response.choices?.[0];
       const toolCalls = (choice?.message as ChatCompletionMessage)?.tool_calls;
-      const functionArgs = toolCalls?.[0]?.function?.arguments;
+      const toolCall = toolCalls?.[0];
+      const functionArgs =
+        toolCall && 'function' in toolCall
+          ? toolCall.function?.arguments
+          : undefined;
 
       if (!functionArgs) {
         const finishReason = choice?.finish_reason;

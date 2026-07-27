@@ -36,5 +36,12 @@
   "watchOptions": {
     "watchFile": "fixedPollingInterval"
   },
-  "exclude": ["node_modules", "tests", "dist", "coverage", "eslint.config.mjs", ".lintstagedrc.js"]
+  "exclude": [
+    "node_modules",
+    "tests",
+    "dist",
+    "coverage",
+    "eslint.config.mjs",
+    ".lintstagedrc.js"
+  ]
 }

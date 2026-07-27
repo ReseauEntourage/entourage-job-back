@@ -325,6 +325,148 @@ describe('MESSAGING', () => {
         expect(response.status).toBe(401);
       });
 
+      describe('Elearning completion gate', () => {
+        it('should return 401 and not create a conversation when the author has not completed elearning', async () => {
+          const loggedInIneligibleCandidate =
+            await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+              elearningCompletedAt: null,
+            });
+          const nbConversationBefore =
+            await messagingHelper.countConversation();
+
+          const response: APIResponse<MessagingController['postMessage']> =
+            await request(server)
+              .post(`/messaging/messages`)
+              .send({
+                content: 'Super message',
+                participantIds: [loggedInCoach.user.id],
+              })
+              .set(
+                'authorization',
+                `Bearer ${loggedInIneligibleCandidate.token}`
+              );
+
+          const nbConversationAfter = await messagingHelper.countConversation();
+
+          expect(response.status).toBe(401);
+          expect(
+            (response.body as unknown as { message: string }).message
+          ).toMatch(/formation/i);
+          expect(nbConversationAfter).toBe(nbConversationBefore);
+        });
+
+        it('should return 401 and not create a conversation when the recipient has not completed elearning, without revealing the reason', async () => {
+          const loggedInIneligibleCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+            elearningCompletedAt: null,
+          });
+          const nbConversationBefore =
+            await messagingHelper.countConversation();
+
+          const response: APIResponse<MessagingController['postMessage']> =
+            await request(server)
+              .post(`/messaging/messages`)
+              .send({
+                content: 'Super message',
+                participantIds: [loggedInIneligibleCoach.user.id],
+              })
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          const nbConversationAfter = await messagingHelper.countConversation();
+
+          expect(response.status).toBe(401);
+          expect(
+            (response.body as unknown as { message: string }).message
+          ).not.toMatch(/formation/i);
+          expect(nbConversationAfter).toBe(nbConversationBefore);
+        });
+
+        it('should return 201 and create a conversation when both the author and the recipient have completed elearning', async () => {
+          const response: APIResponse<MessagingController['postMessage']> =
+            await request(server)
+              .post(`/messaging/messages`)
+              .send({
+                content: 'Super message',
+                participantIds: [loggedInCoach.user.id],
+              })
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(201);
+        });
+
+        it('should return 201 when replying to an existing conversation, regardless of elearning completion', async () => {
+          const loggedInIneligibleCandidate =
+            await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+              elearningCompletedAt: null,
+            });
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInIneligibleCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response: APIResponse<MessagingController['postMessage']> =
+            await request(server)
+              .post(`/messaging/messages`)
+              .send({
+                content: 'Super message',
+                conversationId: conversation.id,
+              })
+              .set(
+                'authorization',
+                `Bearer ${loggedInIneligibleCandidate.token}`
+              );
+
+          expect(response.status).toBe(201);
+        });
+
+        it('should return 201 and create a conversation when the author is Admin, even if the recipient has not completed elearning', async () => {
+          const loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const loggedInIneligibleCoach = await usersHelper.createLoggedInUser({
+            role: UserRoles.COACH,
+            elearningCompletedAt: null,
+          });
+
+          const response: APIResponse<MessagingController['postMessage']> =
+            await request(server)
+              .post(`/messaging/messages`)
+              .send({
+                content: 'Super message',
+                participantIds: [loggedInIneligibleCoach.user.id],
+              })
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+          expect(response.status).toBe(201);
+        });
+
+        it('should not throw when a message is sent by an Admin author to an ineligible recipient, matching the staff welcome message job path', async () => {
+          const admin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const ineligibleCandidate = await usersHelper.createLoggedInUser({
+            role: UserRoles.CANDIDATE,
+            elearningCompletedAt: null,
+          });
+
+          // Mirrors the call made by processSendStaffMessagingMessage
+          // (work-queue.processor.ts): a staff account creates a new
+          // conversation with a recipient that has not completed elearning.
+          await expect(
+            messagingService.createMessageWithConversation(
+              {
+                content: 'Message de bienvenue',
+                participantIds: [ineligibleCandidate.user.id],
+              },
+              admin.user.id
+            )
+          ).resolves.toBeDefined();
+        });
+      });
+
       it('should return 400 if neither the participantIds nor the conversationId is provided', async () => {
         const response: APIResponse<MessagingController['postMessage']> =
           await request(server)
@@ -796,9 +938,8 @@ describe('MESSAGING', () => {
         }
       );
 
-      const results = await messagingService.getAllMutuallyRepliedConversations(
-        15
-      );
+      const results =
+        await messagingService.getAllMutuallyRepliedConversations(15);
       const resultIds = results.map((c) => c.id);
 
       expect(resultIds).toContain(conversation.id);
@@ -825,9 +966,8 @@ describe('MESSAGING', () => {
         }
       );
 
-      const results = await messagingService.getAllMutuallyRepliedConversations(
-        15
-      );
+      const results =
+        await messagingService.getAllMutuallyRepliedConversations(15);
       const resultIds = results.map((c) => c.id);
 
       expect(resultIds).not.toContain(conversation.id);

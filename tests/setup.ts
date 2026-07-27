@@ -1,7 +1,5 @@
-import 'openai/shims/node';
 import { EventEmitter } from 'events';
 
-// Mocks pour ioredis
 jest.mock('ioredis', () => {
   class MockRedis extends EventEmitter {
     private keyValueStore: Record<string, string> = {};
@@ -52,4 +50,16 @@ jest.mock('ioredis', () => {
   }
 
   return MockRedis;
+});
+
+jest.mock('openai', () => {
+  class MockOpenAI {
+    chat = {
+      completions: {
+        create: jest.fn(),
+      },
+    };
+  }
+
+  return { __esModule: true, default: MockOpenAI };
 });

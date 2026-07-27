@@ -9,8 +9,8 @@ module.exports = {
       {
         id: uuid.v4(),
         value: 'tips',
-        nameRequest: 'Demander des conseils aux membres de la communauté',
-        nameOffer: 'Donner des conseils aux membres de la communauté',
+        nameRequest: 'Obtenir des conseils',
+        nameOffer: 'Donner des conseils',
         order: 0,
       },
       {
@@ -23,7 +23,7 @@ module.exports = {
       {
         id: uuid.v4(),
         value: 'cv',
-        nameRequest: 'Réaliser son CV et ses lettres de motivation',
+        nameRequest: 'Réaliser un CV et des lettres de motivation',
         nameOffer: 'Aider à réaliser un CV et une lettre de motivation',
         order: 2,
       },

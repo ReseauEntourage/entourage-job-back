@@ -8,10 +8,10 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CreateOrganizationDto } from './create-organization.dto';
 
-export class CreateOrganizationPipe
-  implements
-    PipeTransform<CreateOrganizationDto, Promise<CreateOrganizationDto>>
-{
+export class CreateOrganizationPipe implements PipeTransform<
+  CreateOrganizationDto,
+  Promise<CreateOrganizationDto>
+> {
   async transform(
     value: CreateOrganizationDto,
     { metatype }: ArgumentMetadata

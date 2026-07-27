@@ -67,9 +67,8 @@ export class CurrentUserService {
   ) {}
 
   async getIdentity(userId: string): Promise<CurrentUserIdentityDto> {
-    const user = await this.usersService.findOneWithIdentityAndFeatureFlags(
-      userId
-    );
+    const user =
+      await this.usersService.findOneWithIdentityAndFeatureFlags(userId);
     if (!user) {
       throw new NotFoundException();
     }
@@ -176,9 +175,8 @@ export class CurrentUserService {
   }
 
   async getReferredUsers(userId: string): Promise<CurrentUserReferredUsersDto> {
-    const user = await this.usersService.findOneWithReferredCandidatesOnly(
-      userId
-    );
+    const user =
+      await this.usersService.findOneWithReferredCandidatesOnly(userId);
     if (!user) {
       throw new NotFoundException();
     }
@@ -201,7 +199,7 @@ export class CurrentUserService {
         const contactId = emailToContactId[email.toLowerCase()];
         return [
           email.toLowerCase(),
-          contactId ? contactIdToCount[contactId] ?? 0 : 0,
+          contactId ? (contactIdToCount[contactId] ?? 0) : 0,
         ];
       })
     );

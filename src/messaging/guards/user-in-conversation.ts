@@ -15,9 +15,8 @@ export class UserInConversation implements CanActivate {
     const userId = request.user.id;
     const { conversationId } = request.params;
 
-    const conversation = await this.messagingService.findConversation(
-      conversationId
-    );
+    const conversation =
+      await this.messagingService.findConversation(conversationId);
     if (
       !conversation.participants.some(
         (participant) => participant.id === userId

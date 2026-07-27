@@ -95,7 +95,7 @@ type SalesforceObjects<K extends LeadRecordType> = {
 
 export type SalesforceObject<
   T extends ObjectName,
-  K extends LeadRecordType = AnyCantFix
+  K extends LeadRecordType = AnyCantFix,
 > = SalesforceObjects<K>[T];
 
 export const ContactRecordTypesIds = {
@@ -341,8 +341,8 @@ export interface SalesforceTask {
   ActivityDate: Date;
   Antenne__c: string;
   Bin_me__c: string;
-  ID_Externe__c: string;
   Id?: string;
+  ID_Externe__c: string;
   OwnerId: string;
   Status: 'Completed' | 'Open';
   Subject: string;
@@ -422,6 +422,7 @@ export interface ContactProps {
   accountSfId?: string;
   birthDate?: Date;
   casquettes?: Casquette[];
+  companyName?: string | null;
   department?: Department;
   email?: string;
   firstName?: string;
@@ -451,19 +452,20 @@ export interface SalesforceContact {
   FirstName: string;
   Fonction?: string;
   Genre__c: string;
-  ID_App_Entourage_Pro__c?: string;
   Id?: string;
+  ID_App_Entourage_Pro__c?: string;
   LastName: string;
   MailingPostalCode?: string;
   Nationalit__c: string;
   Phone: string;
   Plus_haut_niveau_de_formation_attein__c: string;
+  Raison_social_Entreprise__c?: string | null;
   RecordTypeId: ContactRecordType;
   Reseaux__c: 'LinkedOut';
   Situation_d_h_bergement__c: string;
   Source__c: 'Lead entrant';
-  TS_prescripteur__c?: string;
   Title: string;
+  TS_prescripteur__c?: string;
   Type_de_ressources__c?: string;
 }
 
@@ -612,8 +614,9 @@ export interface CandidateAndWorkerLeadProps {
 }
 
 export interface CandidateSalesforceLead {
-  Accompagnement_social_O_N__c: string;
   Accompagnement_social__c: string;
+  Accompagnement_social_O_N__c: string;
+  annees_d_experiences_professionnelles__c: string;
   Antenne__c: string;
   Association_prescriptrice__c: string;
   Autre_source_LinkedOut__c: 'Formulaire_Sourcing_Page_Travailler';
@@ -640,19 +643,18 @@ export interface CandidateSalesforceLead {
   Plus_haut_niveau_de_formation_atteint__c: string;
   PostalCode?: string;
   Prospect__c: string;
-  RQTH__c?: string;
   RecordTypeId: LeadRecordType;
   Reseaux__c: 'LinkedOut';
+  RQTH__c?: string;
   Securite_Sociale__c: string;
-  Situation_Professionnelle__c: string;
   Situation_administrative__c?: string;
   Situation_hebergement__c: string;
+  Situation_Professionnelle__c: string;
   Source__c: 'Lead entrant';
   Street?: string;
-  TS_Prescripteur_Contact__c: string;
   TS_du_Candidat__c: string;
+  TS_Prescripteur_Contact__c: string;
   Type_de_ressources__c?: string;
-  annees_d_experiences_professionnelles__c: string;
 }
 
 export interface WorkerSalesforceLead {
@@ -674,8 +676,8 @@ export interface WorkerSalesforceLead {
   Reseaux__c: 'LinkedOut';
   Situation_d_h_bergement__c?: string;
   Source__c: 'Lead entrant';
-  TS_Mettre_en_relation_Coach__c: boolean;
   Title?: string;
+  TS_Mettre_en_relation_Coach__c: boolean;
   Type_de_ressources__c?: string;
 }
 

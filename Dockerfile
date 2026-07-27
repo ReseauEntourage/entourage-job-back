@@ -1,5 +1,5 @@
 # ==== CONFIGURE BACK =====
-FROM node:24-slim AS base
+FROM node:24.15.0-slim AS base
 
 # GO INSIDE WORKING DIR
 WORKDIR /home/node
@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 # INSTALL PNPM
-RUN npm install -g pnpm@10.30.3
+RUN npm install -g pnpm@11.15.0
 
 # NOTE: node_modules installation is done in entrypoint scripts
 # because the volume mount overwrites the image's node_modules

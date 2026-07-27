@@ -166,6 +166,7 @@ describe('UserCreation', () => {
         company,
         onboardingCompletedAt,
         onboardingStatus,
+        elearningCompletedAt,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -197,6 +198,7 @@ describe('UserCreation', () => {
         company,
         onboardingCompletedAt,
         onboardingStatus,
+        elearningCompletedAt,
         ...user
       } = await userFactory.create({}, {}, false);
       const response: APIResponse<UsersCreationController['createUser']> =
@@ -294,6 +296,7 @@ describe('UserCreation', () => {
         company,
         onboardingCompletedAt,
         onboardingStatus,
+        elearningCompletedAt,
         ...candidate
       } = await userFactory.create(
         {
@@ -329,6 +332,7 @@ describe('UserCreation', () => {
           company,
           onboardingCompletedAt,
           onboardingStatus,
+          elearningCompletedAt,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
         const response: APIResponse<UsersCreationController['createUser']> =
@@ -361,6 +365,7 @@ describe('UserCreation', () => {
           company,
           onboardingCompletedAt,
           onboardingStatus,
+          elearningCompletedAt,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 
@@ -393,6 +398,7 @@ describe('UserCreation', () => {
           staffContact,
           onboardingCompletedAt,
           onboardingStatus,
+          elearningCompletedAt,
           ...candidate
         } = await userFactory.create({ role: UserRoles.CANDIDATE }, {}, false);
 
@@ -422,6 +428,7 @@ describe('UserCreation', () => {
           staffContact,
           onboardingCompletedAt,
           onboardingStatus,
+          elearningCompletedAt,
           ...coach
         } = await userFactory.create({ role: UserRoles.COACH }, {}, false);
 

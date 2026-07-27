@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { INestApplication } from '@nestjs/common';
+import { getModelToken } from '@nestjs/sequelize';
 import { Test, TestingModule } from '@nestjs/testing';
 import moment from 'moment';
 import request from 'supertest';
@@ -10,17 +11,22 @@ import { Contract } from 'src/common/contracts/models';
 import { Department } from 'src/common/departments/models/department.model';
 import { Language } from 'src/common/languages/models';
 import { Nudge } from 'src/common/nudge/models';
+import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import {
   UserProfile,
   UserProfileWithPartialAssociations,
 } from 'src/user-profiles/models';
+import {
+  UserProfileEmbedding,
+  UserProfileEmbeddingType,
+} from 'src/user-profiles/models/user-profile-embedding.model';
 import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
-import { UserRoles } from 'src/users/users.types';
+import { OnboardingStatus, UserRoles } from 'src/users/users.types';
 import { APIResponse } from 'src/utils/types';
 import { ZoneName } from 'src/utils/types/zones.types';
 import { BusinessSectorHelper } from 'tests/business-sectors/business-sector.helper';
@@ -36,6 +42,11 @@ import { NudgesHelper } from 'tests/nudges/nudges.helper';
 import { QueuesServiceMock } from 'tests/queues/queues.service.mock';
 import { UserFactory } from 'tests/users/user.factory';
 import { LoggedInUser, UsersHelper } from 'tests/users/users.helper';
+
+// A fixed, non-zero 1024-dimension vector so cosine similarity is defined.
+// Using the same vector for every embedded profile guarantees a similarity
+// of 1 (distance 0) between them, so they all rank inside the ANN pool.
+const FAKE_PROFILE_VECTOR = `[${Array(1024).fill(0.1).join(',')}]`;
 
 describe('UserProfiles', () => {
   let app: INestApplication;
@@ -54,6 +65,7 @@ describe('UserProfiles', () => {
   let nudgesHelper: NudgesHelper;
   let contractHelper: ContractHelper;
   let languageHelper: LanguageHelper;
+  let userProfileEmbeddingModel: typeof UserProfileEmbedding;
 
   let businessSector1: BusinessSector;
 
@@ -72,6 +84,15 @@ describe('UserProfiles', () => {
   let departmentParis: Department;
 
   const route = '/user';
+
+  async function createProfileEmbedding(userProfileId: string) {
+    await userProfileEmbeddingModel.create({
+      userProfileId,
+      type: UserProfileEmbeddingType.profile,
+      embedding: FAKE_PROFILE_VECTOR,
+      configVersion: EMBEDDING_CONFIG.profile.version,
+    });
+  }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -112,6 +133,9 @@ describe('UserProfiles', () => {
     nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     contractHelper = moduleFixture.get<ContractHelper>(ContractHelper);
     languageHelper = moduleFixture.get<LanguageHelper>(LanguageHelper);
+    userProfileEmbeddingModel = moduleFixture.get(
+      getModelToken(UserProfileEmbedding)
+    );
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     experienceFactory = moduleFixture.get<ExperienceFactory>(ExperienceFactory);
     formationFactory = moduleFixture.get<FormationFactory>(FormationFactory);
@@ -296,6 +320,154 @@ describe('UserProfiles', () => {
               await request(server)
                 .get(`${route}/profile?offset=0&limit=25`)
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
+            expect(response.status).toBe(400);
+          });
+        });
+        describe('/profile?limit=&offset=&role[]= - Elearning completion gate (visibility)', () => {
+          it('Should not include a profile with onboarding completed but elearning not completed', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const ineligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+              elearningCompletedAt: null,
+            });
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).not.toContain(
+              ineligibleCoach.id
+            );
+          });
+
+          it('Should allow a user who has not completed elearning to see eligible profiles of others', async () => {
+            const loggedInIneligibleCandidate =
+              await usersHelper.createLoggedInUser({
+                role: UserRoles.CANDIDATE,
+                elearningCompletedAt: null,
+              });
+            const eligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+            });
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                )
+                .set(
+                  'authorization',
+                  `Bearer ${loggedInIneligibleCandidate.token}`
+                );
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).toContain(
+              eligibleCoach.id
+            );
+          });
+
+          it('Should include an ineligible profile in the default-sort results for an Admin requester', async () => {
+            const loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+            const ineligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+              elearningCompletedAt: null,
+            });
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).toContain(
+              ineligibleCoach.id
+            );
+          });
+
+          it('Should include an ineligible profile in the relevance-sort results for an Admin requester', async () => {
+            const loggedInAdmin = await usersHelper.createLoggedInUser({
+              role: UserRoles.ADMIN,
+            });
+            const adminProfile =
+              await userProfilesHelper.findOneProfileByUserId(
+                loggedInAdmin.user.id
+              );
+            await createProfileEmbedding(adminProfile.id);
+
+            const ineligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+              elearningCompletedAt: null,
+            });
+            await createProfileEmbedding(ineligibleCoach.userProfile.id);
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}&sort=relevance`
+                )
+                .set('authorization', `Bearer ${loggedInAdmin.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).toContain(
+              ineligibleCoach.id
+            );
+          });
+
+          it('Should not include an ineligible profile in the relevance-sort results for a non-Admin requester', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+            const candidateProfile =
+              await userProfilesHelper.findOneProfileByUserId(
+                loggedInCandidate.user.id
+              );
+            await createProfileEmbedding(candidateProfile.id);
+
+            const ineligibleCoach = await userFactory.create({
+              role: UserRoles.COACH,
+              elearningCompletedAt: null,
+            });
+            await createProfileEmbedding(ineligibleCoach.userProfile.id);
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}&sort=relevance`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.map((profile) => profile.id)).not.toContain(
+              ineligibleCoach.id
+            );
+          });
+
+          it('Should return 400 and never include Admin accounts in another user’s role-filtered results', async () => {
+            const loggedInCandidate = await usersHelper.createLoggedInUser({
+              role: UserRoles.CANDIDATE,
+            });
+
+            const response: APIResponse<UserProfilesController['findAll']> =
+              await request(server)
+                .get(
+                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.ADMIN}`
+                )
+                .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            // The `role` query param only accepts search-facing roles
+            // (Candidate/Coach/Referer) — Admin accounts are excluded from
+            // this filter independently of the eLearning gate, and this
+            // change must not affect that.
             expect(response.status).toBe(400);
           });
         });
@@ -1554,6 +1726,53 @@ describe('UserProfiles', () => {
               ),
             })
           );
+        });
+
+        it('Should return 404, if the targeted profile has not completed onboarding', async () => {
+          const ineligibleUser = await userFactory.create({
+            onboardingStatus: OnboardingStatus.IN_PROGRESS,
+          });
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(server)
+              .get(`${route}/profile/${ineligibleUser.id}`)
+              .set('authorization', `Bearer ${loggedInUser.token}`);
+          expect(response.status).toBe(404);
+        });
+
+        it('Should return 404, if the targeted profile has completed onboarding but not elearning', async () => {
+          const ineligibleUser = await userFactory.create({
+            elearningCompletedAt: null,
+          });
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(server)
+              .get(`${route}/profile/${ineligibleUser.id}`)
+              .set('authorization', `Bearer ${loggedInUser.token}`);
+          expect(response.status).toBe(404);
+        });
+
+        it('Should return 200, if the viewer is Admin and the targeted profile has not completed elearning', async () => {
+          const ineligibleUser = await userFactory.create({
+            elearningCompletedAt: null,
+          });
+          const loggedInAdmin = await usersHelper.createLoggedInUser({
+            role: UserRoles.ADMIN,
+          });
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(server)
+              .get(`${route}/profile/${ineligibleUser.id}`)
+              .set('authorization', `Bearer ${loggedInAdmin.token}`);
+          expect(response.status).toBe(200);
+        });
+
+        it('Should return 404, if the viewer is not Admin and the targeted profile has not completed elearning', async () => {
+          const ineligibleUser = await userFactory.create({
+            elearningCompletedAt: null,
+          });
+          const response: APIResponse<UserProfilesController['findByUserId']> =
+            await request(server)
+              .get(`${route}/profile/${ineligibleUser.id}`)
+              .set('authorization', `Bearer ${loggedInUser.token}`);
+          expect(response.status).toBe(404);
         });
       });
     });

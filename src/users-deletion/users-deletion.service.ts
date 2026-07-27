@@ -34,10 +34,7 @@ export class UsersDeletionService {
   }
 
   async removeUserProfile(id: string) {
-    await this.userProfilesService.updateByUserId(id, {
-      currentJob: null,
-      description: null,
-    });
+    await this.userProfilesService.clearProfileFieldsForDeletion(id);
     return this.userProfilesService.removeByUserId(id);
   }
   async deleteCompleteUser(

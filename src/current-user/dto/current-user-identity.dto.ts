@@ -26,8 +26,7 @@ export type CurrentUserIdentityDto = Pick<User, CurrentUserIdentityUserKeys> & {
 
 // linkedinAccessToken is fetched but not exposed in the DTO — only hasLinkedinLinked is returned
 export const CurrentUserIdentityAttributes: (
-  | CurrentUserIdentityUserKeys
-  | 'linkedinAccessToken'
+  CurrentUserIdentityUserKeys | 'linkedinAccessToken'
 )[] = [
   'id',
   'firstName',

@@ -5,8 +5,6 @@ services:
     build:
       context: ./
       target: base
-      args:
-        NODE_VERSION: 20.19.1
     volumes:
       - .:/home/node
       - api_node_modules:/home/node/node_modules

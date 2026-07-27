@@ -5,6 +5,7 @@
 NestJS + Sequelize + PostgreSQL + pgvector REST API for the Entourage Pro platform — a network connecting job seekers, coaches, and companies.
 
 **Related repos:**
+
 - `entourage-job-front` — Next.js frontend (always update in parallel when touching API contracts)
 - `entourage-landing-pages`, `entourage-tasks`, `sql-tools` — secondary repos
 
@@ -26,12 +27,14 @@ profile(40%) + needs(20%) + activity(30%) + locationCompatibility(10%)
 ```
 
 Key parameters:
-| Use case | `annPoolSize` | `poolSize` | `filterByAvailability` |
-|---|---|---|---|
-| Recommendations | 200 | 200 | `true` |
-| Network directory (relevance sort) | 500 | 500 | `isAvailable === true` |
+
+| Use case                           | `annPoolSize` | `poolSize` | `filterByAvailability` |
+| ---------------------------------- | ------------- | ---------- | ---------------------- |
+| Recommendations                    | 200           | 200        | `true`                 |
+| Network directory (relevance sort) | 500           | 500        | `isAvailable === true` |
 
 For the relevance sort, the flow is:
+
 1. `findBySimilarity(annPoolSize=500, poolSize=500)` → ranked IDs
 2. Intersect with Sequelize filters (availability, location, etc.)
 3. Slice offset/limit
@@ -58,5 +61,6 @@ This was added as part of EN-9019. Do not remove the `forwardRef` wrappers.
 ## Cross-repo workflow
 
 When a change touches an API endpoint, update both repos in the same session:
+
 1. Update the controller/service here in `entourage-job-back`
 2. Update the API type in `src/api/types.ts` and the consuming saga/hook in `entourage-job-front`

@@ -9,6 +9,7 @@ Generate or update `TECH_ARCH.md` at the root of the entourage-job-back repo wit
 ## Goal
 
 Produce a `TECH_ARCH.md` that contains:
+
 1. A **simplified overview diagram** (high-level, nodes grouped by layer, no labels on arrows)
 2. A **detailed diagram** (all NestJS modules, queues, cron jobs, external services with labeled data flows)
 3. A **BullMQ queues table** (all queues with their jobs and processors)
@@ -21,9 +22,11 @@ Produce a `TECH_ARCH.md` that contains:
 ### 1. Discover the module structure
 
 Read the two root modules to understand what runs in each process:
+
 - `src/app.module.ts` — HTTP API process (all business modules + guards + interceptors)
 - `src/worker.module.ts` — Background worker process (ConsumersModule + CronModule)
-List domain modules:
+  List domain modules:
+
 ```bash
 ls src/
 ls src/external-services/
@@ -33,11 +36,13 @@ ls src/queues/consumers/
 ### 2. Extract queue and job definitions
 
 Read `src/queues/queues.types.ts` — it defines:
+
 - All **queue names** (`Queues` const)
 - All **job names** (`Jobs` const) grouped by: profile-generation, worker, cron-tasks, embedding
 - All **job payload types**
 
 Read each processor to understand what it does:
+
 - `src/queues/consumers/work-queue.processor.ts` — handles `WORK` queue
 - `src/queues/consumers/profile-generator.processor.ts` — handles `PROFILE_GENERATION` queue
 - `src/queues/consumers/embedding-queue.processor.ts` — handles `EMBEDDING` queue
@@ -51,6 +56,7 @@ Map each cron method to its schedule expression and the job it enqueues.
 ### 4. Identify external services
 
 From `src/external-services/` subdirectories and env var patterns:
+
 - **AWS S3** (`src/external-services/aws/s3.service.ts`) — file storage (CVs, logos, media)
 - **AWS CloudFront** (`src/external-services/aws/cloud-front.service.ts`) — CDN cache invalidation
 - **OpenAI** (`src/external-services/openai/`) — CV extraction (vision), profile generation
@@ -101,6 +107,7 @@ graph LR
 ```
 
 Rules for the simplified diagram:
+
 - **No labels on arrows** — plain `-->` and `<-->` only
 - API process (green `#E8F5E9`) and Worker process (blue `#E3F2FD`) as the two main boxes
 - AWS resources grouped in `AWS` subgraph on one line via `~~~`
@@ -154,6 +161,7 @@ graph TB
 ```
 
 Rules for the detailed diagram:
+
 - Group API routes by domain cluster (Auth, Users, Social, Companies, Content, Admin)
 - Show queue names and their primary job types in node labels
 - Show cron schedules in node labels (e.g. `\n10:00 UTC daily`)
@@ -174,6 +182,7 @@ Columns: Méthode | Schedule | Heure UTC | Description
 Source from `src/cron/cron.service.ts`. Convert `CronExpression` constants to human-readable UTC times.
 
 Known mappings:
+
 - `EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT` → `0 0 1 * *` → 1st of month, 00:00 UTC
 - `EVERY_DAY_AT_9AM` → `0 9 * * *` → 09:00 UTC daily
 - `EVERY_DAY_AT_10AM` → `0 10 * * *` → 10:00 UTC daily
@@ -204,6 +213,7 @@ Columns: Service | Rôle | Authentification | Utilisé par (module)
 ### 11. Update TECH_ARCH.md
 
 Rewrite the file with all sections in order:
+
 1. Title + one-sentence intro
 2. `## Aperçu simplifié` + simplified diagram
 3. `## Vue d'ensemble détaillée` + detailed diagram

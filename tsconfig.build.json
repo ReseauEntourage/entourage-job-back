@@ -4,5 +4,12 @@
     "rootDir": "./src",
     "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
   },
-  "exclude": ["node_modules", "tests", "dist", "coverage", "**/*spec.ts", "eslint.config.mjs"]
+  "exclude": [
+    "node_modules",
+    "tests",
+    "dist",
+    "coverage",
+    "**/*spec.ts",
+    "eslint.config.mjs"
+  ]
 }

@@ -200,9 +200,8 @@ export class UsersCreationService {
     userId: string,
     invitationId: string
   ): Promise<void> {
-    const invitation = await this.companyInvitationsService.findOneById(
-      invitationId
-    );
+    const invitation =
+      await this.companyInvitationsService.findOneById(invitationId);
     if (!invitation) {
       throw new Error(`Invitation with ID ${invitationId} not found`);
     }

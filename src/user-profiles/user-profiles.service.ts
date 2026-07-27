@@ -42,13 +42,7 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import {
-  Gender,
-  Genders,
-  OnboardingStatus,
-  UserRole,
-  UserRoles,
-} from 'src/users/users.types';
+import { Gender, Genders, UserRole, UserRoles } from 'src/users/users.types';
 import { UsersStatsService } from 'src/users-stats/users-stats.service';
 import { getDepartmentLocative } from 'src/utils/misc/department-locative';
 import {
@@ -80,7 +74,10 @@ import {
 import { SCORING_WEIGHTS } from './recommendations/scoring.config';
 import { UserProfileRecommendationsService } from './recommendations/user-profile-recommendations-ai.service';
 import { ContactTypeEnum } from './user-profiles.types';
-import { userProfileSearchQuery } from './user-profiles.utils';
+import {
+  profileVisibilityEligibilityWhere,
+  userProfileSearchQuery,
+} from './user-profiles.utils';
 
 const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
 
@@ -206,18 +203,21 @@ export class UserProfilesService {
     return this.usersService.findOneWithRelations(userId);
   }
 
-  async findAll(query: {
-    businessSectorIds: string[];
-    contactTypes: ContactTypeEnum[];
-    departments: string[];
-    hasSuperCoachBadge?: boolean;
-    isAvailable?: boolean;
-    limit: number;
-    nudgeIds: string[];
-    offset: number;
-    role: UserRole[];
-    search: string;
-  }): Promise<PublicProfileDto[]> {
+  async findAll(
+    query: {
+      businessSectorIds: string[];
+      contactTypes: ContactTypeEnum[];
+      departments: string[];
+      hasSuperCoachBadge?: boolean;
+      isAvailable?: boolean;
+      limit: number;
+      nudgeIds: string[];
+      offset: number;
+      role: UserRole[];
+      search: string;
+    },
+    isAdminRequester = false
+  ): Promise<PublicProfileDto[]> {
     const {
       role,
       offset,
@@ -296,7 +296,7 @@ export class UserProfilesService {
           where: {
             role,
             lastConnection: { [Op.ne]: null },
-            onboardingStatus: OnboardingStatus.COMPLETED,
+            ...(!isAdminRequester && profileVisibilityEligibilityWhere),
           },
           required: true,
           ...(hasSuperCoachBadge
@@ -386,7 +386,8 @@ export class UserProfilesService {
       role: UserRole[];
       search: string;
     },
-    requestingUserId: string
+    requestingUserId: string,
+    isAdminRequester = false
   ): Promise<PublicProfileDto[]> {
     const {
       role,
@@ -420,6 +421,7 @@ export class UserProfilesService {
         annPoolSize: 500,
         excludeUserIds: [requestingUserId],
         filterByAvailability: isAvailable,
+        isAdminRequester,
       });
 
     if (scoringResults.length === 0) return [];
@@ -477,7 +479,7 @@ export class UserProfilesService {
             id: { [Op.in]: candidateUserIds },
             role: normalizedRole,
             lastConnection: { [Op.ne]: null },
-            onboardingStatus: OnboardingStatus.COMPLETED,
+            ...(!isAdminRequester && profileVisibilityEligibilityWhere),
           },
           required: true,
           ...(hasSuperCoachBadge
@@ -1505,6 +1507,17 @@ export class UserProfilesService {
     });
   }
 
+  // Bypasses updateByUserId on purpose: the profile row is about to be
+  // destroyed by removeByUserId, so going through the regular update path
+  // would queue an embedding regeneration that fails once the user/profile
+  // no longer exist.
+  async clearProfileFieldsForDeletion(userId: string): Promise<void> {
+    await this.userProfileModel.update(
+      { currentJob: null, description: null },
+      { where: { userId }, individualHooks: true }
+    );
+  }
+
   // ─── Analytics ───────────────────────────────────────────────────────────────
 
   async calculateProfileCompletion(userId: string): Promise<number> {
@@ -1809,8 +1822,8 @@ export class UserProfilesService {
     const searchAmbition = profile.currentJob
       ? stripParens(profile.currentJob)
       : occupationNames.length > 0
-      ? occupationNames.slice(0, 2).join(' ou ')
-      : null;
+        ? occupationNames.slice(0, 2).join(' ou ')
+        : null;
 
     const skills = (profile.skills ?? [])
       .map((s) => stripParens(s.name))

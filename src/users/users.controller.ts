@@ -221,9 +221,8 @@ export class UsersController {
         throw new NotFoundException();
       }
 
-      const token = await this.usersService.generateVerificationToken(
-        updatedUser
-      );
+      const token =
+        await this.usersService.generateVerificationToken(updatedUser);
       this.usersService.sendVerificationMail(updatedUser, token);
     }
 

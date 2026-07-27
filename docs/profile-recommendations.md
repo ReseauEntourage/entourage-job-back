@@ -14,24 +14,24 @@ Le système fonctionne dans les deux sens : un candidat reçoit des suggestions 
 
 Quatre critères entrent en jeu pour calculer le score final d'un profil recommandé :
 
-| Critère | Poids | Ce que ça mesure |
-|---|---|---|
-| **Similarité de parcours** | 40 % | À quel point le profil professionnel du candidat (expériences, compétences, formations) ressemble à ce que le coach peut accompagner |
-| **Correspondance des besoins** | 20 % | À quel point les secteurs visés et les coups de pouce du candidat correspondent aux spécialisations du coach |
-| **Activité et réactivité** | 30 % | Est-ce que l'utilisateur est disponible, réactif et pas surchargé ? |
-| **Proximité géographique** | 10 % | Sont-ils dans la même zone ? |
+| Critère                        | Poids | Ce que ça mesure                                                                                                                     |
+| ------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Similarité de parcours**     | 40 %  | À quel point le profil professionnel du candidat (expériences, compétences, formations) ressemble à ce que le coach peut accompagner |
+| **Correspondance des besoins** | 20 %  | À quel point les secteurs visés et les coups de pouce du candidat correspondent aux spécialisations du coach                         |
+| **Activité et réactivité**     | 30 %  | Est-ce que l'utilisateur est disponible, réactif et pas surchargé ?                                                                  |
+| **Proximité géographique**     | 10 %  | Sont-ils dans la même zone ?                                                                                                         |
 
 ### Comment l'activité est-elle évaluée ?
 
 L'activité est le critère le plus nuancé. Il est lui-même composé de cinq sous-critères calculés sur les 30 derniers jours :
 
-| Sous-critère | Poids | Détail |
-|---|---|---|
-| **Taux de réponse** | 35 % | Proportion des conversations auxquelles l'utilisateur a répondu au premier message |
-| **Vitesse de réponse** | 15 % | < 24h → excellent · < 72h → bien · < 120h → moyen · au-delà → faible |
-| **Fraîcheur de connexion** | 5 % | < 24h → excellent · < 7j → bien · < 30j → moyen · au-delà → faible |
-| **Charge actuelle** | 15 % | 0 conv. → pleinement disponible · 1–3 → très dispo · 4–5 → dispo · 6–8 → chargé · 9+ → très chargé |
-| **Badge super_engaged_coach** | 30 % | Bonus maximal accordé aux coachs ayant obtenu ce badge d'engagement |
+| Sous-critère                  | Poids | Détail                                                                                             |
+| ----------------------------- | ----- | -------------------------------------------------------------------------------------------------- |
+| **Taux de réponse**           | 35 %  | Proportion des conversations auxquelles l'utilisateur a répondu au premier message                 |
+| **Vitesse de réponse**        | 15 %  | < 24h → excellent · < 72h → bien · < 120h → moyen · au-delà → faible                               |
+| **Fraîcheur de connexion**    | 5 %   | < 24h → excellent · < 7j → bien · < 30j → moyen · au-delà → faible                                 |
+| **Charge actuelle**           | 15 %  | 0 conv. → pleinement disponible · 1–3 → très dispo · 4–5 → dispo · 6–8 → chargé · 9+ → très chargé |
+| **Badge super_engaged_coach** | 30 %  | Bonus maximal accordé aux coachs ayant obtenu ce badge d'engagement                                |
 
 > Ce dernier sous-critère est exclusif aux coachs. Pour les candidats, il ne contribue pas au score.
 
@@ -44,6 +44,7 @@ La compatibilité géographique n'est pas prise en compte pour la raison dominan
 ### Qui est éligible à apparaître dans mes recommandations ?
 
 Un profil peut apparaître uniquement si :
+
 - Il est du rôle opposé (candidat pour un coach, coach pour un candidat)
 - Son onboarding est complété
 - Son compte n'est pas supprimé
@@ -99,10 +100,10 @@ GET /user/profile/recommendations
 
 Deux types d'embeddings sont générés par profil :
 
-| Type | Version | Champs du profil |
-|---|---|---|
-| `profile` | v3.0 | `currentJob`, `description`, `introduction`, `skills`, `experiences`, `formations`, `languages` |
-| `needs` | v2.0 | `sectorOccupations`, `nudges`, `customNudges` |
+| Type      | Version | Champs du profil                                                                                |
+| --------- | ------- | ----------------------------------------------------------------------------------------------- |
+| `profile` | v3.0    | `currentJob`, `description`, `introduction`, `skills`, `experiences`, `formations`, `languages` |
+| `needs`   | v2.0    | `sectorOccupations`, `nudges`, `customNudges`                                                   |
 
 - **Modèle :** `voyage-4-lite` (VoyageAI)
 - **Dimensions :** 1 024
@@ -126,15 +127,16 @@ La queue BullMQ `EMBEDDING` est limitée à **1 job par minute** pour respecter 
 
 Table `UserProfileEmbeddings` :
 
-| Colonne | Type | Contraintes |
-|---|---|---|
-| `id` | UUID PK | auto-généré |
-| `userProfileId` | UUID FK | → `UserProfiles.id`, NOT NULL |
-| `type` | ENUM | `'profile'` ou `'needs'` |
-| `embedding` | `vector(1024)` | pgvector, NOT NULL |
-| `configVersion` | STRING | version de la config au moment de la génération |
+| Colonne         | Type           | Contraintes                                     |
+| --------------- | -------------- | ----------------------------------------------- |
+| `id`            | UUID PK        | auto-généré                                     |
+| `userProfileId` | UUID FK        | → `UserProfiles.id`, NOT NULL                   |
+| `type`          | ENUM           | `'profile'` ou `'needs'`                        |
+| `embedding`     | `vector(1024)` | pgvector, NOT NULL                              |
+| `configVersion` | STRING         | version de la config au moment de la génération |
 
 Index :
+
 - **HNSW** sur `embedding` avec `vector_cosine_ops` → exploité par les requêtes `ORDER BY <=>` dans le matching
 - Index composite `(userProfileId, type)` → lookup rapide des vecteurs d'un utilisateur
 
@@ -143,9 +145,9 @@ Index :
 #### Constantes
 
 ```typescript
-ANN_POOL_SIZE    = 200   // candidats pré-filtrés par ANN avant scoring complet
-INITIAL_POOL_SIZE = 50   // taille du premier lot stocké
-APPEND_BATCH_SIZE = 50   // taille de chaque lot suivant (refill)
+ANN_POOL_SIZE = 200; // candidats pré-filtrés par ANN avant scoring complet
+INITIAL_POOL_SIZE = 50; // taille du premier lot stocké
+APPEND_BATCH_SIZE = 50; // taille de chaque lot suivant (refill)
 ```
 
 #### Flux principal : `findBySimilarity()`
@@ -308,52 +310,52 @@ Lorsque l'utilisateur a consommé suffisamment de recommandations, un job de ref
 
 Contient la logique commune aux deux implémentations (AI et Legacy) :
 
-| Méthode | Description |
-|---|---|
-| `findRecommendationsByUserId(userId, { cursor, limit })` | Lecture paginée par `rank ASC` avec filtre `rank > cursor` |
-| `countRecommendationsByUserId(userId)` | Comptage pour décider le refill |
-| `getStoredRecommendationsMeta(userId)` | Lecture légère (sans JOIN profil) pour construire `excludeUserIds` |
-| `createRecommendationsFromUserProfileMatchingResult(userId, results, startRank)` | Bulk insert avec scores, raison et rang |
-| `removeRecommendationsByUserId(userId)` | Suppression de toutes les recommandations |
-| `updateRecommendationsByUserId()` | **Abstraite** — à implémenter dans chaque sous-classe |
+| Méthode                                                                          | Description                                                        |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `findRecommendationsByUserId(userId, { cursor, limit })`                         | Lecture paginée par `rank ASC` avec filtre `rank > cursor`         |
+| `countRecommendationsByUserId(userId)`                                           | Comptage pour décider le refill                                    |
+| `getStoredRecommendationsMeta(userId)`                                           | Lecture légère (sans JOIN profil) pour construire `excludeUserIds` |
+| `createRecommendationsFromUserProfileMatchingResult(userId, results, startRank)` | Bulk insert avec scores, raison et rang                            |
+| `removeRecommendationsByUserId(userId)`                                          | Suppression de toutes les recommandations                          |
+| `updateRecommendationsByUserId()`                                                | **Abstraite** — à implémenter dans chaque sous-classe              |
 
 ### Modèle de données — `UserProfileRecommendation`
 
 Table `UserProfileRecommendations` :
 
-| Colonne | Type | Contraintes |
-|---|---|---|
-| `id` | UUID PK | auto-généré |
-| `UserId` | UUID FK | → `Users.id` (qui reçoit la reco) |
-| `recommendedUserId` | UUID FK | → `Users.id` (profil recommandé) |
-| `reason` | ENUM | `PROFILE`, `NEEDS`, `ACTIVITY`, `LOCATION_COMPATIBILITY` |
-| `profileScore` | FLOAT | score brut de similarité de parcours |
-| `needsScore` | FLOAT | score brut de similarité de besoins |
-| `activityScore` | FLOAT | score brut d'activité |
-| `locationCompatibilityScore` | FLOAT | `1.0` (même zone) ou `0.5` (zones compatibles) |
-| `finalScore` | FLOAT | score pondéré final |
-| `rank` | INTEGER | position dans la pool triée |
+| Colonne                      | Type    | Contraintes                                              |
+| ---------------------------- | ------- | -------------------------------------------------------- |
+| `id`                         | UUID PK | auto-généré                                              |
+| `UserId`                     | UUID FK | → `Users.id` (qui reçoit la reco)                        |
+| `recommendedUserId`          | UUID FK | → `Users.id` (profil recommandé)                         |
+| `reason`                     | ENUM    | `PROFILE`, `NEEDS`, `ACTIVITY`, `LOCATION_COMPATIBILITY` |
+| `profileScore`               | FLOAT   | score brut de similarité de parcours                     |
+| `needsScore`                 | FLOAT   | score brut de similarité de besoins                      |
+| `activityScore`              | FLOAT   | score brut d'activité                                    |
+| `locationCompatibilityScore` | FLOAT   | `1.0` (même zone) ou `0.5` (zones compatibles)           |
+| `finalScore`                 | FLOAT   | score pondéré final                                      |
+| `rank`                       | INTEGER | position dans la pool triée                              |
 
 Index composite `(UserId, rank)` → optimise la lecture paginée.
 
 ### Endpoints
 
-| Méthode | Route | Accès | Description |
-|---|---|---|---|
-| `GET` | `/user/profile/recommendations?limit=20&cursor=0` | Utilisateur authentifié | Retourne la page courante de recommandations avec `nextCursor` |
-| `GET` | `/user/profile/recommendations-ai/:userId?forceRefresh=true&poolSize=3` | Admin uniquement | Recommandations pour un utilisateur arbitraire, recalcul forcé possible |
-| `GET` | `/user/profile?sort=relevance` | Utilisateur authentifié | Annuaire trié par similarité (hybrid search : ANN + filtres multi-critères) |
+| Méthode | Route                                                                   | Accès                   | Description                                                                 |
+| ------- | ----------------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- |
+| `GET`   | `/user/profile/recommendations?limit=20&cursor=0`                       | Utilisateur authentifié | Retourne la page courante de recommandations avec `nextCursor`              |
+| `GET`   | `/user/profile/recommendations-ai/:userId?forceRefresh=true&poolSize=3` | Admin uniquement        | Recommandations pour un utilisateur arbitraire, recalcul forcé possible     |
+| `GET`   | `/user/profile?sort=relevance`                                          | Utilisateur authentifié | Annuaire trié par similarité (hybrid search : ANN + filtres multi-critères) |
 
 ### Régénération des embeddings — `embeddings-regeneration.service.ts`
 
 Endpoint admin `POST /embeddings/regenerate` :
 
-| Paramètre | Défaut | Description |
-|---|---|---|
-| `type` | `all` | `profile`, `needs` ou `all` |
-| `dryRun` | `false` | Simulation sans écriture |
-| `batchSize` | `50` (max 50) | Utilisateurs par lot |
-| `delay` | `100` ms | Délai entre les lots |
+| Paramètre   | Défaut        | Description                 |
+| ----------- | ------------- | --------------------------- |
+| `type`      | `all`         | `profile`, `needs` ou `all` |
+| `dryRun`    | `false`       | Simulation sans écriture    |
+| `batchSize` | `50` (max 50) | Utilisateurs par lot        |
+| `delay`     | `100` ms      | Délai entre les lots        |
 
 **Optimisation batch :** pour un lot de 50 utilisateurs et 2 types d'embeddings, le service effectue **2 appels** à VoyageAI (un par type) au lieu de 100. Chaque appel `generateEmbeddingsBatch()` envoie tous les textes du lot en une seule requête.
 
@@ -368,16 +370,27 @@ Réponse :
 Source unique de vérité pour tous les paramètres numériques. Modifier ce fichier suffit pour ajuster le comportement du scoring sans toucher à la logique SQL.
 
 ```typescript
-SCORING_WEIGHTS        = { profile: 0.40, needs: 0.20, activity: 0.30, locationCompatibility: 0.10 }
-ACTIVITY_SCORING_CONFIG.weights = { responseRate: 0.35, responseTime: 0.15, lastConnection: 0.05, workload: 0.15, superEngagedCoach: 0.30 }
-LOCATION_COMPATIBILITY_CONFIG   = { sameZone: 1.0, differentZone: 0.5 }
+SCORING_WEIGHTS = {
+  profile: 0.4,
+  needs: 0.2,
+  activity: 0.3,
+  locationCompatibility: 0.1,
+};
+ACTIVITY_SCORING_CONFIG.weights = {
+  responseRate: 0.35,
+  responseTime: 0.15,
+  lastConnection: 0.05,
+  workload: 0.15,
+  superEngagedCoach: 0.3,
+};
+LOCATION_COMPATIBILITY_CONFIG = { sameZone: 1.0, differentZone: 0.5 };
 ```
 
 ### Variables d'environnement
 
-| Variable | Requis | Description |
-|---|---|---|
-| `VOYAGE_API_KEY` | Oui | Clé API VoyageAI pour la génération d'embeddings |
+| Variable         | Requis | Description                                      |
+| ---------------- | ------ | ------------------------------------------------ |
+| `VOYAGE_API_KEY` | Oui    | Clé API VoyageAI pour la génération d'embeddings |
 
 ### Dépendances
 
