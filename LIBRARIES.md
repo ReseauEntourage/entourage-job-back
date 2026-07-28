@@ -1092,19 +1092,19 @@ Disables ESLint rules that conflict with Prettier formatting.
 
 ---
 
-### `eslint-plugin-import`
+### `eslint-plugin-import-x`
 
-|                  |                                                             |
-| ---------------- | ----------------------------------------------------------- |
-| **Version**      | `^2.25.4`                                                   |
-| **Release date** | 2022                                                        |
-| **Changelog**    | [GitHub](https://github.com/import-js/eslint-plugin-import) |
+|                  |                                                          |
+| ---------------- | -------------------------------------------------------- |
+| **Version**      | `^4.17.1`                                                |
+| **Release date** | 2024                                                     |
+| **Changelog**    | [GitHub](https://github.com/un-ts/eslint-plugin-import-x) |
 
-Lints ES module import/export syntax, missing modules, and import order.
+Actively maintained fork of `eslint-plugin-import` — lints ES module import/export syntax, missing modules, and import order.
 
-**Used in:** `.eslintrc.js`.
+**Used in:** `eslint.config.mjs` via `importPlugin.flatConfigs.recommended` / `.typescript`, with custom `import-x/order` and `import-x/no-extraneous-dependencies` rules.
 
-**Alternatives:** `eslint-plugin-n`.
+**Alternatives:** `eslint-plugin-import` (original, slower releases), `eslint-plugin-n`.
 
 ---
 
@@ -1112,13 +1112,13 @@ Lints ES module import/export syntax, missing modules, and import order.
 
 |                  |                                                                          |
 | ---------------- | ------------------------------------------------------------------------ |
-| **Version**      | `^2.5.0`                                                                 |
-| **Release date** | 2022                                                                     |
+| **Version**      | `^3.0.0`                                                                 |
+| **Release date** | 2023                                                                     |
 | **Changelog**    | [GitHub](https://github.com/import-js/eslint-import-resolver-typescript) |
 
-Teaches `eslint-plugin-import` to resolve TypeScript path aliases and `.ts` files.
+Teaches `eslint-plugin-import-x` to resolve TypeScript path aliases and `.ts` files.
 
-**Used in:** `.eslintrc.js` alongside `eslint-plugin-import`.
+**Used in:** `eslint.config.mjs` via the `import-x/resolver.typescript` setting.
 
 **Alternatives:** —
 
@@ -1140,19 +1140,19 @@ Runs Prettier as an ESLint rule and reports formatting differences as lint error
 
 ---
 
-### `eslint-plugin-typescript-sort-keys`
+### `eslint-plugin-perfectionist`
 
-|                  |                                                                        |
-| ---------------- | ---------------------------------------------------------------------- |
-| **Version**      | `^2.1.0`                                                               |
-| **Release date** | 2022                                                                   |
-| **Changelog**    | [GitHub](https://github.com/infctr/eslint-plugin-typescript-sort-keys) |
+|                  |                                                                |
+| ---------------- | -------------------------------------------------------------- |
+| **Version**      | `^5.10.0`                                                      |
+| **Release date** | 2025                                                           |
+| **Changelog**    | [GitHub](https://github.com/azat-io/eslint-plugin-perfectionist) |
 
-Enforces alphabetical ordering of TypeScript interface/type keys.
+Enforces consistent sorting of interfaces, enums, objects, and other constructs via customizable natural-order rules.
 
-**Used in:** `.eslintrc.js` to keep interface/type definitions consistently sorted.
+**Used in:** `eslint.config.mjs` — `perfectionist/sort-interfaces` and `perfectionist/sort-enums` rules.
 
-**Alternatives:** —
+**Alternatives:** `eslint-plugin-typescript-sort-keys` (interface/type keys only, no longer used here).
 
 ---
 
