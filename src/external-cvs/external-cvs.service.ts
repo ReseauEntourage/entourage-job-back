@@ -2,7 +2,6 @@ import fs from 'fs';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { S3File, S3Service } from 'src/external-services/aws/s3.service';
-import { CvSchemaType } from 'src/external-services/openai/openai.schemas';
 import { OpenAiService } from 'src/external-services/openai/openai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { ExtractedCVData } from './models/extracted-cv-data.model';
@@ -87,15 +86,5 @@ export class ExternalCvsService {
     await this.userProfileService.updateByUserId(userId, {
       hasExternalCv: false,
     });
-  }
-
-  async extractDataFromCVImages(
-    base64ImageArray: string[]
-  ): Promise<CvSchemaType> {
-    try {
-      return await this.openAiService.extractCVFromImages(base64ImageArray);
-    } catch (error) {
-      throw error;
-    }
   }
 }
