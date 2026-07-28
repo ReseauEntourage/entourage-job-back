@@ -95,7 +95,7 @@
     "sequelize-cli": "^6.4.1",
     "sequelize-typescript": "^2.1.6",
     "sharp": "^0.32.6",
-    "uuid": "^8.3.2",
+    "uuid": "^14.0.0",
     "validator": "^13.7.0",
     "voyageai": "^0.2.1"
   },
