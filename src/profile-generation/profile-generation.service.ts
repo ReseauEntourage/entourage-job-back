@@ -276,20 +276,23 @@ export class ProfileGenerationService {
       }
 
       if (cvData.languages) {
-        const userProfileLanguages = await Promise.all(
-          cvData.languages.map(async (cvDataLang) => {
-            const language = await this.languagesService.findByValue(
-              cvDataLang.value
-            );
-            if (language) {
+        const userProfileLanguages = (
+          await Promise.all(
+            cvData.languages.map(async (cvDataLang) => {
+              const language = await this.languagesService.findByValue(
+                cvDataLang.value
+              );
+              if (!language) {
+                return null;
+              }
               return {
                 userProfileId: userProfile.id,
                 languageId: language.id,
                 level: cvDataLang.level,
               };
-            }
-          })
-        );
+            })
+          )
+        ).filter((userProfileLanguage) => userProfileLanguage !== null);
 
         userProfileDto.userProfileLanguages =
           userProfileLanguages as UserProfileLanguage[];
@@ -297,9 +300,9 @@ export class ProfileGenerationService {
 
       await this.userProfileService.updateByUserId(userId, userProfileDto);
     } catch (error) {
-      console.error(`Error populating user profile for user ${userId}`, error);
+      const detail = error instanceof Error ? error.message : String(error);
       throw new InternalServerErrorException(
-        'Failed to populate user profile from CV data'
+        `Failed to populate user profile from CV data: ${detail}`
       );
     }
   }
