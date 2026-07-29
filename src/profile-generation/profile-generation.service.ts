@@ -19,7 +19,6 @@ import {
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
-import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
 @Injectable()
@@ -292,17 +291,26 @@ export class ProfileGenerationService {
               };
             })
           )
-        ).filter((userProfileLanguage) => userProfileLanguage !== null);
+        ).filter(
+          (
+            userProfileLanguage
+          ): userProfileLanguage is NonNullable<typeof userProfileLanguage> =>
+            userProfileLanguage !== null
+        );
 
-        userProfileDto.userProfileLanguages =
-          userProfileLanguages as UserProfileLanguage[];
+        userProfileDto.userProfileLanguages = userProfileLanguages;
       }
 
       await this.userProfileService.updateByUserId(userId, userProfileDto);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to populate user profile from CV data (userId=${userId}): ${
+          error instanceof Error ? error.stack : String(error)
+        }`
+      );
       throw new InternalServerErrorException(
-        `Failed to populate user profile from CV data: ${detail}`
+        'Failed to populate user profile from CV data',
+        { cause: error instanceof Error ? error : undefined }
       );
     }
   }
