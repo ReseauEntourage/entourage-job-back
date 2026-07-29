@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { FormationsModule } from 'src/common/formations/formations.module';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { Formation, FormationSkill } from 'src/formations/models';
 import { FormationFactory } from './formation.factory';
 
 @Module({
-  imports: [FormationsModule],
+  imports: [SequelizeModule.forFeature([Formation, FormationSkill])],
   providers: [FormationFactory],
   exports: [],
 })

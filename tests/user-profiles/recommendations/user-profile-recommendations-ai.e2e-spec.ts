@@ -5,11 +5,11 @@ import { S3Mocks } from '../../mocks.types';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import {
   UserProfileEmbedding,
   UserProfileEmbeddingType,
 } from 'src/user-profiles/models/user-profile-embedding.model';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserRoles } from 'src/users/users.types';
 import { CustomTestingModule } from 'tests/custom-testing.module';
 import { DatabaseHelper } from 'tests/database.helper';

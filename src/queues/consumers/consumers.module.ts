@@ -18,6 +18,7 @@ import {
   getBullCronTasksQueueOptions,
   getEmbeddingQueueOptions,
 } from 'src/queues/queues.utils';
+import { UserProfileEmbeddingsModule } from 'src/user-profile-embeddings/user-profile-embeddings.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';
 import { UsersDeletionModule } from 'src/users-deletion/users-deletion.module';
@@ -44,6 +45,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     UsersDeletionModule,
     UsersModule,
     UserProfilesModule,
+    UserProfileEmbeddingsModule,
     MessagingModule,
     EmbeddingsModule,
     GamificationModule,

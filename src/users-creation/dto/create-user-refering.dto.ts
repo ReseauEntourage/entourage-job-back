@@ -1,11 +1,11 @@
 import { ApiProperty, PickType } from '@nestjs/swagger';
 import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 import type { Department } from 'src/common/locations/locations.types';
-import { Nudge } from 'src/common/nudge/models';
 import type {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
 } from 'src/contacts/contacts.types';
+import { Nudge } from 'src/nudge/models';
 import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import type { Gender } from 'src/users/users.types';

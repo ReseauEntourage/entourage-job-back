@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Formation } from 'src/common/formations/models';
+import { Formation } from 'src/formations/models';
 import { UserProfile } from './user-profile.model';
 
 @Table({ tableName: 'UserProfileFormations', timestamps: false })

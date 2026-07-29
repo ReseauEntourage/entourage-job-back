@@ -4,15 +4,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
-import { Nudge } from 'src/common/nudge/models';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
 } from 'src/contacts/contacts.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { Nudge } from 'src/nudge/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';

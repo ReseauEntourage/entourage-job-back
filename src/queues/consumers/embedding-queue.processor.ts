@@ -13,6 +13,7 @@ import {
   UpdateUserProfileEmbeddingsJob,
   UpdateUserProfileEmbeddingsBatchJob,
 } from 'src/queues/queues.types';
+import { UserProfileEmbeddingsService } from 'src/user-profile-embeddings/user-profile-embeddings.service';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
@@ -30,6 +31,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
   constructor(
     private readonly usersService: UsersService,
     private readonly userProfilesService: UserProfilesService,
+    private readonly userProfileEmbeddingsService: UserProfileEmbeddingsService,
     private readonly embeddingBuilder: EmbeddingBuilder,
     private readonly pusherService: PusherService
   ) {
@@ -92,7 +94,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
             embeddingType
           );
 
-          await this.userProfilesService.updateEmbedding(
+          await this.userProfileEmbeddingsService.updateEmbedding(
             userProfile.id,
             embeddingType,
             embeddingData
@@ -105,8 +107,10 @@ export class EmbeddingQueueProcessor extends WorkerHost {
 
       // Invalidate cached recommendations so the next request triggers a fresh
       // computation based on the updated embedding.
-      await this.userProfilesService.resetLastRecommendationsDate(userId);
-      await this.userProfilesService.clearEmbeddingPending(userId);
+      await this.userProfileEmbeddingsService.resetLastRecommendationsDate(
+        userId
+      );
+      await this.userProfileEmbeddingsService.clearEmbeddingPending(userId);
       await this.pusherService.sendEvent(
         `${PusherChannels.EMBEDDING}-${userId}`,
         PusherEvents.EMBEDDING_READY,
@@ -119,7 +123,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
       this.logger.log(`[Embeddings] ${result}`);
       return result;
     } catch (error) {
-      await this.userProfilesService
+      await this.userProfileEmbeddingsService
         .clearEmbeddingPending(userId)
         .catch(() => {});
       await this.pusherService
@@ -195,7 +199,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
 
         // Call the VoyageAI API once for all users
         const embeddingsArrays =
-          await this.userProfilesService.generateEmbeddingsBatch(
+          await this.userProfileEmbeddingsService.generateEmbeddingsBatch(
             embeddingDataArray.map(
               (item: { data: string; userId: string; userProfileId: string }) =>
                 item.data
@@ -215,7 +219,7 @@ export class EmbeddingQueueProcessor extends WorkerHost {
               try {
                 const embeddingArray = embeddingsArrays[index];
                 const embedding = `[${embeddingArray.join(',')}]`;
-                await this.userProfilesService.saveEmbedding(
+                await this.userProfileEmbeddingsService.saveEmbedding(
                   userProfileId,
                   embeddingType,
                   embedding

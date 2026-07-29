@@ -10,7 +10,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Skill } from 'src/common/skills/models';
+import { Skill } from 'src/skills/models';
 import { RecruitementAlert } from './recruitement-alert.model';
 
 @Table({ tableName: 'RecruitementAlertSkills', timestamps: false })

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
+import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
 import { BusinessSectorFactory } from './business-sector.factory';
 import { BusinessSectorHelper } from './business-sector.helper';
 

@@ -35,6 +35,7 @@ export class AuthService {
   constructor(
     private mailsService: MailsService,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => UsersStatsService))
     private usersStatsService: UsersStatsService,
     private profileGenerationService: ProfileGenerationService,
     private sessionService: SessionsService,

@@ -1,7 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from 'src/auth/auth.module';
-import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
+import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers/queues.module';

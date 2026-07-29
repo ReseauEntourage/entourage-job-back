@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { SkillsModule } from 'src/common/skills/skills.module';
 import { CompanyUser } from 'src/companies/models/company-user.model';
+import { SkillsModule } from 'src/skills/skills.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import {
   RecruitementAlert,

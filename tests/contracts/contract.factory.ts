@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as uuid from 'uuid';
-import { Contract } from 'src/common/contracts/models';
+import { Contract } from 'src/contracts/models';
 import { Factory } from 'src/utils/types';
 
 @Injectable()

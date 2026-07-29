@@ -1,8 +1,8 @@
 import {
   BusinessSectorFilters,
   BusinessSectorValue,
-} from 'src/common/business-sectors/business-sectors.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
+} from 'src/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/business-sectors/models';
 import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,

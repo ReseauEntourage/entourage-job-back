@@ -7,15 +7,15 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { QueuesService } from '../queues/producers/queues.service';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
-import { Interest } from 'src/common/interests/models';
-import { LanguagesService } from 'src/common/languages/languages.service';
+import { Experience } from 'src/experiences/models';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
 import {
   CvSchemaType,
   SCHEMA_VERSION,
 } from 'src/external-services/openai/openai.schemas';
+import { Formation } from 'src/formations/models';
+import { Interest } from 'src/interests/models';
+import { LanguagesService } from 'src/languages/languages.service';
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';

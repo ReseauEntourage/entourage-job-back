@@ -1,5 +1,5 @@
 import { IncludeOptions, Op } from 'sequelize';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { Department } from 'src/common/departments/models/department.model';
 import { Conversation } from 'src/messaging/models';
 import { UserProfile } from 'src/user-profiles/models';

@@ -10,7 +10,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { RecruitementAlert } from './recruitement-alert.model';
 
 @Table({ tableName: 'RecruitementAlertBusinessSectors', timestamps: false })

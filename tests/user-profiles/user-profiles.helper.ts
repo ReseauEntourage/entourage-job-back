@@ -1,8 +1,8 @@
 import path from 'path';
 import { Injectable } from '@nestjs/common';
+import { MatchingReason } from 'src/user-profile-recommendations/user-profile-recommendation.types';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfile } from 'src/user-profiles/models';
-import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-recommendation.types';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 

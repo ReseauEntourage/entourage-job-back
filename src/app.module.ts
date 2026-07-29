@@ -7,21 +7,19 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
 import { PoolOptions } from 'sequelize';
+import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
+import { ContractsModule } from 'src/contracts/contracts.module';
+import { LanguagesModule } from 'src/languages/languages.module';
+import { NudgesModule } from 'src/nudge/nudges.module';
+import { SkillsModule } from 'src/skills/skills.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
-import { BusinessSectorsModule } from './common/business-sectors/business-sectors.module';
-import { ContractsModule } from './common/contracts/contracts.module';
-import { ExperiencesModule } from './common/experiences/experiences.module';
-import { FormationsModule } from './common/formations/formations.module';
 import { TimeoutInterceptor } from './common/interceptors';
-import { InterestsModule } from './common/interests/interests.module';
-import { LanguagesModule } from './common/languages/languages.module';
 import { LocationsModule } from './common/locations/locations.module';
 import { PassionsModule } from './common/passions/passions.module';
 import { RecruitementAlertsModule } from './common/recruitement-alerts/recruitement-alerts.module';
 import { ReviewsModule } from './common/reviews/reviews.module';
-import { SkillsModule } from './common/skills/skills.module';
 import { CompaniesModule } from './companies/companies.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { CurrentUserModule } from './current-user/current-user.module';
@@ -138,11 +136,9 @@ export function getSequelizeOptions(
     LocationsModule,
     ContractsModule,
     LanguagesModule,
-    InterestsModule,
+    NudgesModule,
     PassionsModule,
     SkillsModule,
-    ExperiencesModule,
-    FormationsModule,
     ReviewsModule,
     RecruitementAlertsModule,
     MailsModule,
@@ -194,10 +190,9 @@ export function getSequelizeOptions(
     LocationsModule,
     ContractsModule,
     LanguagesModule,
+    NudgesModule,
     PassionsModule,
     SkillsModule,
-    ExperiencesModule,
-    FormationsModule,
     ReviewsModule,
     MailsModule,
     ExternalDatabasesModule,

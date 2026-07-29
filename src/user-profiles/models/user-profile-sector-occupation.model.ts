@@ -10,8 +10,8 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Occupation } from 'src/common/occupations/models';
+import { BusinessSector } from 'src/business-sectors/models';
+import { Occupation } from 'src/occupations/models';
 import { UserProfile } from './user-profile.model';
 
 @Table({ tableName: 'UserProfileSectorOccupations', timestamps: false })

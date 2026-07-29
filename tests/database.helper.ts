@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { Experience, ExperienceSkill } from 'src/common/experiences/models';
-import { Formation, FormationSkill } from 'src/common/formations/models';
 import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
-import { Skill } from 'src/common/skills/models';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
@@ -14,6 +11,8 @@ import { ElearningCompletion } from 'src/elearning/models/elearning-completion.m
 import { ElearningQuestion } from 'src/elearning/models/elearning-question.model';
 import { ElearningUnitRole } from 'src/elearning/models/elearning-unit-role.model';
 import { ElearningUnit } from 'src/elearning/models/elearning-unit.model';
+import { Experience, ExperienceSkill } from 'src/experiences/models';
+import { Formation, FormationSkill } from 'src/formations/models';
 import {
   Conversation,
   ConversationParticipant,
@@ -22,6 +21,7 @@ import {
 import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
 import { Revision, RevisionChange } from 'src/revisions/models';
+import { Skill } from 'src/skills/models';
 import {
   UserProfile,
   UserProfileSectorOccupation,

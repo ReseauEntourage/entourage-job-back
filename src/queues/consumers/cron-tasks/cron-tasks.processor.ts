@@ -11,7 +11,7 @@ import {
   SettledFailure,
 } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
