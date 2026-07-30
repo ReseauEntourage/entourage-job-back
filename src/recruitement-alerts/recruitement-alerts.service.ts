@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, Transaction } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
@@ -64,14 +68,52 @@ export class RecruitementAlertsService {
     });
   }
 
-  async create(createRecruitementAlertDto: CreateRecruitementAlertDto) {
-    const { businessSectorIds, skills, ...recruitementAlertData } =
+  // Resolves the companyId the requesting user belongs to. Throws if the
+  // user has no company, so callers can't operate on alerts without a
+  // company to scope the ownership check against.
+  private async getCompanyIdForUser(userId: string): Promise<string> {
+    const companyUser = await this.companyUserModel.findOne({
+      where: { userId },
+      attributes: ['companyId'],
+    });
+
+    if (!companyUser) {
+      throw new ForbiddenException('User is not associated with a company');
+    }
+
+    return companyUser.companyId;
+  }
+
+  // Verifies the alert belongs to the requesting user's company, throwing
+  // otherwise. This is the ownership check backing update/delete/matching.
+  private async verifyAlertBelongsToUser(
+    recruitementAlert: RecruitementAlert,
+    userId: string
+  ): Promise<void> {
+    const companyId = await this.getCompanyIdForUser(userId);
+
+    if (recruitementAlert.companyId !== companyId) {
+      throw new ForbiddenException(
+        'Recruitement alert does not belong to your company'
+      );
+    }
+  }
+
+  async create(
+    userId: string,
+    createRecruitementAlertDto: CreateRecruitementAlertDto
+  ) {
+    const { businessSectorIds, skills, companyId, ...recruitementAlertData } =
       createRecruitementAlertDto;
+    // companyId is intentionally not taken from the DTO: it must always
+    // come from the requesting user's own company membership.
+    void companyId;
+    const ownCompanyId = await this.getCompanyIdForUser(userId);
 
     const result = await this.sequelize.transaction(async (transaction) => {
       // Create the recruitement alert
       const recruitementAlert = await this.recruitementAlertModel.create(
-        recruitementAlertData,
+        { ...recruitementAlertData, companyId: ownCompanyId },
         { transaction }
       );
       // update business sectors
@@ -103,10 +145,14 @@ export class RecruitementAlertsService {
 
   async update(
     recruitementAlertId: string,
+    userId: string,
     updateRecruitementAlertDto: UpdateRecruitementAlertDto
   ) {
-    const { businessSectorIds, skills, ...recruitementAlertData } =
+    // companyId is stripped: an alert may never be reassigned to another
+    // company through an update.
+    const { businessSectorIds, skills, companyId, ...recruitementAlertData } =
       updateRecruitementAlertDto;
+    void companyId;
 
     return this.sequelize.transaction(async (transaction) => {
       const recruitementAlert = await this.findOne(
@@ -119,6 +165,8 @@ export class RecruitementAlertsService {
           `Recruitement alert with ID ${recruitementAlertId} not found`
         );
       }
+
+      await this.verifyAlertBelongsToUser(recruitementAlert, userId);
 
       // Mettre à jour les données de base de l'alerte
       if (Object.keys(recruitementAlertData).length > 0) {
@@ -325,13 +373,23 @@ export class RecruitementAlertsService {
     }
   }
 
-  async getRecruitementAlertMatching(recruitementAlertId: string) {
+  // userId is optional here because this is also called internally by the
+  // recruitment-alerts cron job, which legitimately iterates over every
+  // company's alerts. Endpoint-facing callers must always pass userId.
+  async getRecruitementAlertMatching(
+    recruitementAlertId: string,
+    userId?: string
+  ) {
     const recruitementAlert = await this.findOne(recruitementAlertId);
 
     if (!recruitementAlert) {
       throw new NotFoundException(
         `Recruitement alert with ID ${recruitementAlertId} not found`
       );
+    }
+
+    if (userId) {
+      await this.verifyAlertBelongsToUser(recruitementAlert, userId);
     }
 
     const matchingProfiles =
@@ -342,7 +400,7 @@ export class RecruitementAlertsService {
     return matchingProfiles;
   }
 
-  async delete(recruitementAlertId: string): Promise<boolean> {
+  async delete(recruitementAlertId: string, userId: string): Promise<boolean> {
     const recruitementAlert = await this.findOne(recruitementAlertId);
 
     if (!recruitementAlert) {
@@ -350,6 +408,8 @@ export class RecruitementAlertsService {
         `Recruitement alert with ID ${recruitementAlertId} not found`
       );
     }
+
+    await this.verifyAlertBelongsToUser(recruitementAlert, userId);
 
     return this.sequelize.transaction(async (transaction) => {
       await this.recruitementAlertBusinessSectorModel.destroy({

@@ -22,6 +22,7 @@ import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { PassionsModule } from 'src/passions/passions.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
+import { RecruitementAlertsModule } from 'src/recruitement-alerts/recruitement-alerts.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
 import { SkillsModule } from 'src/skills/skills.module';
@@ -44,6 +45,7 @@ import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { PublicCVsTestingModule } from './public-cvs/public-cvs-testing.module';
 import { QueuesTestingModule } from './queues/queues-testing.module';
+import { RecruitementAlertsTestingModule } from './recruitement-alerts/recruitement-alerts-testing.module';
 import { UserCreationTestingModule } from './user-creation/user-creation-testing.module';
 import { UserDeletionTestingModule } from './user-deletion/user-deletion-testing.module';
 import { UserProfilesTestingModule } from './user-profiles/user-profiles-testing.module';
@@ -91,6 +93,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     CompaniesModule,
     ExternalCvsModule,
     ElearningModule,
+    RecruitementAlertsModule,
 
     // Modules de test spécifiques
     AuthTestingModule,
@@ -110,6 +113,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     QueuesTestingModule,
     CompaniesTestingModule,
     ElearningTestingModule,
+    RecruitementAlertsTestingModule,
   ],
   providers: [
     // Configuration du garde d'authentification global

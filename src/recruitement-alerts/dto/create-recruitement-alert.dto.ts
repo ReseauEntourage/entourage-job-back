@@ -12,9 +12,12 @@ import type { Department } from 'src/locations/locations.types';
 import { FilterConstant } from 'src/utils/types';
 
 export class CreateRecruitementAlertDto {
+  // Ignored server-side: the companyId is always derived from the
+  // authenticated user to prevent creating/reassigning alerts for a
+  // company the caller does not belong to.
   @IsUUID()
-  @IsNotEmpty()
-  companyId: string;
+  @IsOptional()
+  companyId?: string;
 
   @IsString()
   @IsNotEmpty()

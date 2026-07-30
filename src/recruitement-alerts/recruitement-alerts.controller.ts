@@ -22,9 +22,13 @@ export class RecruitementAlertsController {
   ) {}
 
   @Post()
-  async create(@Body() createRecruitementAlertDto: CreateRecruitementAlertDto) {
+  async create(
+    @UserPayload('id') userId: string,
+    @Body() createRecruitementAlertDto: CreateRecruitementAlertDto
+  ) {
     try {
       return await this.recruitementAlertsService.create(
+        userId,
         createRecruitementAlertDto
       );
     } catch (error) {
@@ -44,10 +48,14 @@ export class RecruitementAlertsController {
   }
 
   @Get(':id/matching')
-  async getRecruitementAlertMatching(@Param('id') alertId: string) {
+  async getRecruitementAlertMatching(
+    @UserPayload('id') userId: string,
+    @Param('id') alertId: string
+  ) {
     try {
       return await this.recruitementAlertsService.getRecruitementAlertMatching(
-        alertId
+        alertId,
+        userId
       );
     } catch (error) {
       console.error(error);
@@ -56,9 +64,12 @@ export class RecruitementAlertsController {
   }
 
   @Delete(':id')
-  async deleteRecruitementAlert(@Param('id') alertId: string) {
+  async deleteRecruitementAlert(
+    @UserPayload('id') userId: string,
+    @Param('id') alertId: string
+  ) {
     try {
-      return await this.recruitementAlertsService.delete(alertId);
+      return await this.recruitementAlertsService.delete(alertId, userId);
     } catch (error) {
       console.error(error);
       throw error;
@@ -67,12 +78,14 @@ export class RecruitementAlertsController {
 
   @Put(':id')
   async updateRecruitementAlert(
+    @UserPayload('id') userId: string,
     @Param('id') alertId: string,
     @Body() updateRecruitementAlertDto: UpdateRecruitementAlertDto
   ) {
     try {
       return await this.recruitementAlertsService.update(
         alertId,
+        userId,
         updateRecruitementAlertDto
       );
     } catch (error) {
