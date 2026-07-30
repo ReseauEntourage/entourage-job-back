@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DepartmentsService } from 'src/common/departments/departments.service';
-import { Departments } from 'src/common/locations/locations.types';
+import { DepartmentsService } from 'src/departments/departments.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SalesforceCampaignStatus } from 'src/external-services/salesforce/salesforce.types';
+import { Departments } from 'src/locations/locations.types';
 import { UsersService } from 'src/users/users.service';
 import { Zones } from 'src/utils/constants/zones';
 import { SfLocalBranchName } from 'src/utils/types/local-branches.types';

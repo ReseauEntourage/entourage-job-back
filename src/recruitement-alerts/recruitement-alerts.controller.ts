@@ -1,0 +1,96 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard, UserPayload } from 'src/auth/guards';
+import { CreateRecruitementAlertDto, UpdateRecruitementAlertDto } from './dto';
+import { RecruitementAlertsService } from './recruitement-alerts.service';
+
+@ApiTags('recruitement-alerts')
+@Controller('recruitement-alerts')
+@UseGuards(JwtAuthGuard)
+export class RecruitementAlertsController {
+  constructor(
+    private readonly recruitementAlertsService: RecruitementAlertsService
+  ) {}
+
+  @Post()
+  async create(
+    @UserPayload('id') userId: string,
+    @Body() createRecruitementAlertDto: CreateRecruitementAlertDto
+  ) {
+    try {
+      return await this.recruitementAlertsService.create(
+        userId,
+        createRecruitementAlertDto
+      );
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  @Get()
+  async getRecruitementAlerts(@UserPayload('id') userId: string) {
+    try {
+      return await this.recruitementAlertsService.findAllByUserId(userId);
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  @Get(':id/matching')
+  async getRecruitementAlertMatching(
+    @UserPayload('id') userId: string,
+    @Param('id') alertId: string
+  ) {
+    try {
+      return await this.recruitementAlertsService.getRecruitementAlertMatching(
+        alertId,
+        userId
+      );
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  @Delete(':id')
+  async deleteRecruitementAlert(
+    @UserPayload('id') userId: string,
+    @Param('id') alertId: string
+  ) {
+    try {
+      return await this.recruitementAlertsService.delete(alertId, userId);
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  @Put(':id')
+  async updateRecruitementAlert(
+    @UserPayload('id') userId: string,
+    @Param('id') alertId: string,
+    @Body() updateRecruitementAlertDto: UpdateRecruitementAlertDto
+  ) {
+    try {
+      return await this.recruitementAlertsService.update(
+        alertId,
+        userId,
+        updateRecruitementAlertDto
+      );
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+}

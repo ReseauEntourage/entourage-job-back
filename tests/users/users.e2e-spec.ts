@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';

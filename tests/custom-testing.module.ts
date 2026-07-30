@@ -7,27 +7,25 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { getSequelizeOptions } from 'src/app.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
-import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
-import { ContractsModule } from 'src/common/contracts/contracts.module';
-import { ExperiencesModule } from 'src/common/experiences/experiences.module';
-import { FormationsModule } from 'src/common/formations/formations.module';
+import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
 import { TimeoutInterceptor } from 'src/common/interceptors';
-import { InterestsModule } from 'src/common/interests/interests.module';
-import { LanguagesModule } from 'src/common/languages/languages.module';
-import { PassionsModule } from 'src/common/passions/passions.module';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
-import { SkillsModule } from 'src/common/skills/skills.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { ContactsModule } from 'src/contacts/contacts.module';
+import { ContractsModule } from 'src/contracts/contracts.module';
 import { CurrentUserModule } from 'src/current-user/current-user.module';
 import { ElearningModule } from 'src/elearning/elearning.module';
 import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
+import { LanguagesModule } from 'src/languages/languages.module';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
+import { PassionsModule } from 'src/passions/passions.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { ReadDocumentsModule } from 'src/read-documents/read-documents.module';
+import { RecruitementAlertsModule } from 'src/recruitement-alerts/recruitement-alerts.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { RevisionsModule } from 'src/revisions/revisions.module';
+import { SkillsModule } from 'src/skills/skills.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from 'src/user-social-situations/user-social-situations.module';
 import { UsersModule } from 'src/users/users.module';
@@ -47,6 +45,7 @@ import { NudgesTestingModule } from './nudges/nudges-testing.module';
 import { OrganizationsTestingModule } from './organizations/organizations-testing.module';
 import { PublicCVsTestingModule } from './public-cvs/public-cvs-testing.module';
 import { QueuesTestingModule } from './queues/queues-testing.module';
+import { RecruitementAlertsTestingModule } from './recruitement-alerts/recruitement-alerts-testing.module';
 import { UserCreationTestingModule } from './user-creation/user-creation-testing.module';
 import { UserDeletionTestingModule } from './user-deletion/user-deletion-testing.module';
 import { UserProfilesTestingModule } from './user-profiles/user-profiles-testing.module';
@@ -82,11 +81,8 @@ import { UsersTestingModule } from './users/users-testing.module';
     BusinessSectorsModule,
     ContractsModule,
     LanguagesModule,
-    InterestsModule,
     PassionsModule,
     SkillsModule,
-    ExperiencesModule,
-    FormationsModule,
     ReviewsModule,
     ContactsModule,
     OrganizationsModule,
@@ -97,6 +93,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     CompaniesModule,
     ExternalCvsModule,
     ElearningModule,
+    RecruitementAlertsModule,
 
     // Modules de test spécifiques
     AuthTestingModule,
@@ -116,6 +113,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     QueuesTestingModule,
     CompaniesTestingModule,
     ElearningTestingModule,
+    RecruitementAlertsTestingModule,
   ],
   providers: [
     // Configuration du garde d'authentification global

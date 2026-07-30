@@ -28,17 +28,17 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Contract } from 'src/common/contracts/models';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
-import { Interest } from 'src/common/interests/models';
-import { Language } from 'src/common/languages/models';
-import type { Department } from 'src/common/locations/locations.types';
-import { Nudge } from 'src/common/nudge/models';
-import { Occupation } from 'src/common/occupations/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { Review } from 'src/common/reviews/models';
-import { Skill } from 'src/common/skills/models';
+import { Contract } from 'src/contracts/models';
+import { Experience } from 'src/experiences/models';
+import { Formation } from 'src/formations/models';
+import { Interest } from 'src/interests/models';
+import { Language } from 'src/languages/models';
+import type { Department } from 'src/locations/locations.types';
+import { Nudge } from 'src/nudge/models';
+import { Occupation } from 'src/occupations/models';
+import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 import { UserProfileContract } from './user-profile-contract.model';

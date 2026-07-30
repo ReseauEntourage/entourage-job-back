@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { SkillsModule } from 'src/common/skills/skills.module';
+import { SkillsModule } from 'src/skills/skills.module';
 import { SkillFactory } from './skill.factory';
 import { SkillsHelper } from './skills.helper';
 

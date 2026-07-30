@@ -6,14 +6,16 @@ import moment from 'moment';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
 import { UserProfilesHelper } from '../user-profiles/user-profiles.helper';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Contract } from 'src/common/contracts/models';
-import { Department } from 'src/common/departments/models/department.model';
-import { Language } from 'src/common/languages/models';
-import { Nudge } from 'src/common/nudge/models';
+import { BusinessSector } from 'src/business-sectors/models';
+import { Contract } from 'src/contracts/models';
+import { Department } from 'src/departments/models/department.model';
 import { EMBEDDING_CONFIG } from 'src/embeddings/embedding.config';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { Language } from 'src/languages/models';
+import { Nudge } from 'src/nudge/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
+import { UserProfileRecommendationsLegacyService } from 'src/user-profile-recommendations/user-profile-recommendations-legacy.service';
 import {
   UserProfile,
   UserProfileWithPartialAssociations,
@@ -22,8 +24,6 @@ import {
   UserProfileEmbedding,
   UserProfileEmbeddingType,
 } from 'src/user-profiles/models/user-profile-embedding.model';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
-import { UserProfileRecommendationsLegacyService } from 'src/user-profiles/recommendations/user-profile-recommendations-legacy.service';
 import { UserProfilesController } from 'src/user-profiles/user-profiles.controller';
 import { User } from 'src/users/models';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';

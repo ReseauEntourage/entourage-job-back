@@ -10,7 +10,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Language } from 'src/common/languages/models';
+import { Language } from 'src/languages/models';
 import { UserProfile } from './user-profile.model';
 
 @Table({ tableName: 'UserProfileLanguages', timestamps: false })

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { NudgesModule } from 'src/common/nudge/nudges.module';
+import { NudgesModule } from 'src/nudge/nudges.module';
 import { NudgeFactory } from './nudge.factory';
 import { NudgesHelper } from './nudges.helper';
 

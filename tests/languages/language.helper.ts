@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Language } from 'src/common/languages/models';
+import { Language } from 'src/languages/models';
 import { LanguageFactory } from './language.factory';
 
 @Injectable()

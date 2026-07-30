@@ -7,14 +7,14 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
-import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
-import { BusinessSector } from 'src/common/business-sectors/models/business-sector.model';
-import { Department } from 'src/common/departments/models/department.model';
+import { BusinessSectorsService } from 'src/business-sectors/business-sectors.service';
+import { BusinessSector } from 'src/business-sectors/models/business-sector.model';
 import { companiesAttributes } from 'src/companies/companies.attributes';
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
 import { CurrentUserIdentityAttributes } from 'src/current-user/dto/current-user-identity.dto';
+import { Department } from 'src/departments/models/department.model';
 import { userFeatureFlagInclude } from 'src/feature-flags/models/user-feature-flag.helper';
 import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
@@ -25,14 +25,14 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { ReadDocument } from 'src/read-documents/models';
 import { SmsService } from 'src/sms/sms.service';
-import { UserProfile } from 'src/user-profiles/models';
-import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
-import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import {
   RecommendationDto,
   RecommendationsDto,
-} from 'src/user-profiles/recommendations/dto/recommendations.dto';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+} from 'src/user-profile-recommendations/dto/recommendations.dto';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
+import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
+import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';

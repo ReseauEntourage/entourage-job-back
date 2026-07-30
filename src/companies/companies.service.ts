@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { DepartmentsService } from 'src/common/departments/departments.service';
-import { Department } from 'src/common/locations/locations.types';
+import { DepartmentsService } from 'src/departments/departments.service';
 import { ExternalDatabasesService } from 'src/external-databases/external-databases.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { slackChannels } from 'src/external-services/slack/slack.types';
+import { Department } from 'src/locations/locations.types';
 import { User } from 'src/users/models';
 import { Zones } from 'src/utils/constants/zones';
 import { searchInColumnWhereOption } from 'src/utils/misc';

@@ -1,6 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { DepartmentsModule } from 'src/common/departments/departments.module';
+import { DepartmentsModule } from 'src/departments/departments.module';
 import { ExternalDatabasesModule } from 'src/external-databases/external-databases.module';
 import { AWSModule } from 'src/external-services/aws/aws.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';

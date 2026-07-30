@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import {
   getFiltersObjectsFromQueryParams,
   searchInColumnWhereOption,

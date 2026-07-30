@@ -23,7 +23,7 @@ import { Throttle } from '@nestjs/throttler';
 import { validate as uuidValidate } from 'uuid';
 import { isEmail } from 'validator';
 import { Public, UserPayload } from 'src/auth/guards';
-import { Department } from 'src/common/locations/locations.types';
+import { Department } from 'src/locations/locations.types';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { UsersService } from 'src/users/users.service';
 import { CompaniesService } from './companies.service';

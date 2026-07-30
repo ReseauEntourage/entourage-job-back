@@ -2,7 +2,6 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
-import { RecruitementAlertsService } from 'src/common/recruitement-alerts/recruitement-alerts.service';
 import { GamificationService } from 'src/gamification/gamification.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
@@ -11,7 +10,8 @@ import {
   SettledFailure,
 } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+import { RecruitementAlertsService } from 'src/recruitement-alerts/recruitement-alerts.service';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';

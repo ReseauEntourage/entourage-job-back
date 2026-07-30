@@ -3,9 +3,8 @@ import * as _ from 'lodash';
 import {
   BusinessSectorFilters,
   BusinessSectorValue,
-} from 'src/common/business-sectors/business-sectors.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Department } from 'src/common/locations/locations.types';
+} from 'src/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/business-sectors/models';
 import {
   CandidateAccommodation,
   CandidateAdministrativeSituation,
@@ -24,6 +23,7 @@ import {
   WorkingExperience,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
+import { Department } from 'src/locations/locations.types';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { Zones } from 'src/utils/constants/zones';
 import { getZoneNameFromDepartment } from 'src/utils/misc';

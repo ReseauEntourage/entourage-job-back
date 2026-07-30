@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ExperiencesModule } from 'src/common/experiences/experiences.module';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { Experience, ExperienceSkill } from 'src/experiences/models';
 import { ExperienceFactory } from './experience.factory';
 
 @Module({
-  imports: [ExperiencesModule],
+  imports: [SequelizeModule.forFeature([Experience, ExperienceSkill])],
   providers: [ExperienceFactory],
   exports: [],
 })

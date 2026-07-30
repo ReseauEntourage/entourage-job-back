@@ -21,6 +21,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
+import { UserProfileAnalyticsService } from 'src/user-profile-analytics/user-profile-analytics.service';
+import { UserProfileMediaService } from 'src/user-profile-media/user-profile-media.service';
+import { UserProfileModerationService } from 'src/user-profile-moderation/user-profile-moderation.service';
+import { RecommendationsPageDto } from 'src/user-profile-recommendations/dto/recommendations.dto';
+import {
+  APPEND_BATCH_SIZE,
+  UserProfileRecommendationsService,
+} from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import {
   Self,
   SelfGuard,
@@ -41,11 +49,6 @@ import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
-import { RecommendationsPageDto } from './recommendations/dto/recommendations.dto';
-import {
-  APPEND_BATCH_SIZE,
-  UserProfileRecommendationsService,
-} from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
 import { isProfileVisibilityEligible } from './user-profiles.utils';
@@ -61,7 +64,10 @@ export class UserProfilesController {
 
   constructor(
     private readonly userProfilesService: UserProfilesService,
-    private readonly userProfileRecommendationsService: UserProfileRecommendationsService
+    private readonly userProfileRecommendationsService: UserProfileRecommendationsService,
+    private readonly userProfileMediaService: UserProfileMediaService,
+    private readonly userProfileAnalyticsService: UserProfileAnalyticsService,
+    private readonly userProfileModerationService: UserProfileModerationService
   ) {}
 
   @ApiBearerAuth()
@@ -69,7 +75,9 @@ export class UserProfilesController {
   async getProfileCompletion(
     @UserPayload('id', new ParseUUIDPipe()) id: string
   ) {
-    return await this.userProfilesService.calculateProfileCompletion(id);
+    return await this.userProfileAnalyticsService.calculateProfileCompletion(
+      id
+    );
   }
 
   @Self('params.userId')
@@ -107,23 +115,10 @@ export class UserProfilesController {
     @Body(new ReportAbuseUserProfilePipe())
     reportAbuseDto: ReportAbuseUserProfileDto
   ): Promise<void> {
-    // Set the reportedUser and reporterUser
-    const userReported = await this.userProfilesService.findOneUser(userId);
-    const userReporter =
-      await this.userProfilesService.findOneUser(currentUserId);
-
-    // Check users exists
-    if (!userReported || !userReporter) {
-      this.logger.warn(
-        `User not found: reported=${userId}, reporter=${currentUserId}`
-      );
-      throw new NotFoundException();
-    }
-
-    return await this.userProfilesService.reportAbuse(
-      reportAbuseDto,
-      userReporter,
-      userReported
+    return this.userProfileModerationService.reportAbuse(
+      currentUserId,
+      userId,
+      reportAbuseDto
     );
   }
 
@@ -248,7 +243,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    const profileImage = await this.userProfilesService.uploadProfileImage(
+    const profileImage = await this.userProfileMediaService.uploadProfileImage(
       userId,
       file
     );

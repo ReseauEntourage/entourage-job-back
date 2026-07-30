@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import * as uuid from 'uuid';
-import { Department } from 'src/common/departments/models/department.model';
+import { Department } from 'src/departments/models/department.model';
 import { Factory } from 'src/utils/types';
 import { DepartmentCode } from 'src/utils/types/departments.types';
 

@@ -8,9 +8,9 @@ import { ReportConversationDto } from 'src/messaging/dto/report-conversation.dto
 import { Conversation, Message } from 'src/messaging/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { RecommendationDto } from 'src/user-profile-recommendations/dto/recommendations.dto';
+import { MatchingReason } from 'src/user-profile-recommendations/user-profile-recommendation.types';
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
-import { RecommendationDto } from 'src/user-profiles/recommendations/dto/recommendations.dto';
-import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-recommendation.types';
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';

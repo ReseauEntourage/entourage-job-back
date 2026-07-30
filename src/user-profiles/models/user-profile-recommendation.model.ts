@@ -14,7 +14,7 @@ import {
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { MatchingReason } from '../recommendations/user-profile-recommendation.types';
+import { MatchingReason } from 'src/user-profile-recommendations/user-profile-recommendation.types';
 import { User } from 'src/users/models';
 
 @Table({ tableName: 'UserProfileRecommendations' })

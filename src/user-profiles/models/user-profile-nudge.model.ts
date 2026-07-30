@@ -11,7 +11,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Nudge } from 'src/common/nudge/models';
+import { Nudge } from 'src/nudge/models';
 import { UserProfile } from 'src/user-profiles/models';
 
 @Table({ tableName: 'UserProfileNudges', updatedAt: false })
