@@ -1,6 +1,6 @@
 import { IncludeOptions, Op } from 'sequelize';
 import { BusinessSector } from 'src/business-sectors/models';
-import { Department } from 'src/common/departments/models/department.model';
+import { Department } from 'src/departments/models/department.model';
 import { Conversation } from 'src/messaging/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { getUserProfileInclude } from 'src/user-profiles/models/user-profile.include';

@@ -7,12 +7,12 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import type { Department } from 'src/common/locations/locations.types';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import type {
   CandidateYesNoNSPPValue,
   CandidateYesNoValue,
 } from 'src/contacts/contacts.types';
+import type { Department } from 'src/locations/locations.types';
 import { Nudge } from 'src/nudge/models';
 import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { User } from 'src/users/models';

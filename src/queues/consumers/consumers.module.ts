@@ -1,6 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
-import { RecruitementAlertsModule } from 'src/common/recruitement-alerts/recruitement-alerts.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
@@ -18,6 +17,7 @@ import {
   getBullCronTasksQueueOptions,
   getEmbeddingQueueOptions,
 } from 'src/queues/queues.utils';
+import { RecruitementAlertsModule } from 'src/recruitement-alerts/recruitement-alerts.module';
 import { UserProfileEmbeddingsModule } from 'src/user-profile-embeddings/user-profile-embeddings.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UsersModule } from 'src/users/users.module';

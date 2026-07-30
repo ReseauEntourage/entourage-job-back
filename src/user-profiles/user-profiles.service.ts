@@ -8,10 +8,9 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import sequelize, { Op, WhereOptions } from 'sequelize';
 import { BusinessSector } from 'src/business-sectors/models';
-import { DepartmentsService } from 'src/common/departments/departments.service';
-import { RecruitementAlert } from 'src/common/recruitement-alerts/models';
 import { ReviewsService } from 'src/common/reviews/reviews.service';
 import { Contract } from 'src/contracts/models';
+import { DepartmentsService } from 'src/departments/departments.service';
 import {
   EMBEDDING_CONFIG,
   EmbeddingType,
@@ -25,6 +24,7 @@ import { Nudge } from 'src/nudge/models';
 import { Occupation } from 'src/occupations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { RecruitementAlert } from 'src/recruitement-alerts/models';
 import { Skill } from 'src/skills/models';
 import { UserProfileAnalyticsService } from 'src/user-profile-analytics/user-profile-analytics.service';
 import { UserProfileContractsService } from 'src/user-profile-contracts/user-profile-contracts.service';

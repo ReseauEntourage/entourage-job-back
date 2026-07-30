@@ -13,13 +13,13 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/business-sectors/models';
-import type { Department } from 'src/common/locations/locations.types';
 import { Company } from 'src/companies/models/company.model';
 import {
   type WorkingExperience,
   WorkingExperienceYears,
 } from 'src/contacts/contacts.types';
 import { Contracts } from 'src/contracts/contracts.types';
+import type { Department } from 'src/locations/locations.types';
 import { Skill } from 'src/skills/models';
 import { RecruitementAlertBusinessSector } from './recruitement-alert-business-sector.model';
 import { RecruitementAlertSkill } from './recruitement-alert-skill.model';

@@ -1,4 +1,4 @@
-import { Departments } from 'src/common/locations/locations.types';
+import { Departments } from 'src/locations/locations.types';
 
 /**
  * Returns the grammatically correct locative phrase for a department.

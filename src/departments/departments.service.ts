@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
-import { Department as DepartmentName } from 'src/common/locations/locations.types';
+import { Department as DepartmentName } from 'src/locations/locations.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
 import { Department } from './models/department.model';
 

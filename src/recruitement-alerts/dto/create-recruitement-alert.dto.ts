@@ -7,8 +7,8 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import type { Department } from 'src/common/locations/locations.types';
 import { Contracts } from 'src/contracts/contracts.types';
+import type { Department } from 'src/locations/locations.types';
 import { FilterConstant } from 'src/utils/types';
 
 export class CreateRecruitementAlertDto {

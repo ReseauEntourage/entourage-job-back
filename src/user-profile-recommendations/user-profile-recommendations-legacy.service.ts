@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import _ from 'lodash';
 import { QueryTypes } from 'sequelize';
-import { Department, Departments } from 'src/common/locations/locations.types';
+import { Department, Departments } from 'src/locations/locations.types';
 import { UserProfileSectorOccupation } from 'src/user-profiles/models';
 import { UserProfileRecommendation } from 'src/user-profiles/models/user-profile-recommendation.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';

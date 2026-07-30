@@ -1,5 +1,5 @@
 import { ZoneName } from '../types/zones.types';
-import { Department, Departments } from 'src/common/locations/locations.types';
+import { Department, Departments } from 'src/locations/locations.types';
 
 export function getZoneNameFromDepartment(dept: Department) {
   const deptObj = Departments.find((deptObj) => {

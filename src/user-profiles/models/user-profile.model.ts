@@ -29,13 +29,13 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/business-sectors/models';
-import type { Department } from 'src/common/locations/locations.types';
 import { Review } from 'src/common/reviews/models';
 import { Contract } from 'src/contracts/models';
 import { Experience } from 'src/experiences/models';
 import { Formation } from 'src/formations/models';
 import { Interest } from 'src/interests/models';
 import { Language } from 'src/languages/models';
+import type { Department } from 'src/locations/locations.types';
 import { Nudge } from 'src/nudge/models';
 import { Occupation } from 'src/occupations/models';
 import { Skill } from 'src/skills/models';

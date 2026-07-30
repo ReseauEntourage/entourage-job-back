@@ -1,7 +1,6 @@
 import { UserProfile, UserProfileSectorOccupation } from '../models';
 import { UserProfileLanguage } from '../models/user-profile-language.model';
 import { UserProfileNudge } from '../models/user-profile-nudge.model';
-import { Department } from 'src/common/locations/locations.types';
 import { Review } from 'src/common/reviews/models';
 import { Company } from 'src/companies/models/company.model';
 import { Contract } from 'src/contracts/models';
@@ -9,6 +8,7 @@ import { Experience } from 'src/experiences/models';
 import { Formation } from 'src/formations/models';
 import { UserAchievement } from 'src/gamification/models';
 import { Interest } from 'src/interests/models';
+import { Department } from 'src/locations/locations.types';
 import { Nudge } from 'src/nudge/models';
 import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';

@@ -1,8 +1,8 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { DepartmentsModule } from 'src/common/departments/departments.module';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { CompanyUser } from 'src/companies/models/company-user.model';
+import { DepartmentsModule } from 'src/departments/departments.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
 import { QueuesModule } from 'src/queues/producers';

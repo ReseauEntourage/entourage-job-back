@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { DestroyOptions } from 'sequelize/types/model';
-import { Passion } from 'src/common/passions/models';
 import { Review } from 'src/common/reviews/models';
 import { CompanyInvitation } from 'src/companies/models/company-invitation.model';
 import { CompanyUser } from 'src/companies/models/company-user.model';
@@ -20,6 +19,7 @@ import {
 } from 'src/messaging/models';
 import { Organization } from 'src/organizations/models';
 import { OrganizationReferent } from 'src/organizations/models/organization-referent.model';
+import { Passion } from 'src/passions/models';
 import { Revision, RevisionChange } from 'src/revisions/models';
 import { Skill } from 'src/skills/models';
 import {

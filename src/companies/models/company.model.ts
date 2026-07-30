@@ -17,7 +17,7 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { BusinessSector } from 'src/business-sectors/models';
-import { Department } from 'src/common/departments/models/department.model';
+import { Department } from 'src/departments/models/department.model';
 import { User } from 'src/users/models';
 import { CompanyBusinessSector } from './company-business-sector.model';
 import { CompanyInvitation } from './company-invitation.model';

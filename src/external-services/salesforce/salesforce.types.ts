@@ -3,7 +3,6 @@ import {
   BusinessSectorValue,
 } from 'src/business-sectors/business-sectors.types';
 import { BusinessSector } from 'src/business-sectors/models';
-import { Department } from 'src/common/locations/locations.types';
 import {
   CandidateAccommodation,
   CandidateAccommodations,
@@ -37,6 +36,7 @@ import {
   YesNoJNSPR,
   YesNoJNSPRValue,
 } from 'src/contacts/contacts.types';
+import { Department } from 'src/locations/locations.types';
 
 import { RegistrableUserRole } from 'src/users/users.types';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
