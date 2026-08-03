@@ -1025,9 +1025,9 @@ export class UsersService {
    * server's local date (the cron runs daily at noon, so this stays stable
    * across a single day).
    */
-  async getUsersInactiveForRecommendationMails(
+  async getUsersEligibleForRecommendationMails(
     intervalDays: number = RECOMMENDATION_MAILS_INTERVAL_DAYS
-  ): Promise<Pick<User, 'id' | 'firstName' | 'email' | 'role' | 'zone'>[]> {
+  ): Promise<Pick<User, 'id'>[]> {
     // Truncated to the cron server's local date (not the DB server's), so the
     // modulo stays stable across a single day regardless of the exact time
     // onboarding was completed.

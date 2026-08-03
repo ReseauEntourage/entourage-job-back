@@ -15,7 +15,7 @@ import { UserFactory } from 'tests/users/user.factory';
 const onboardingCompletedDaysAgo = (daysAgo: number) =>
   moment().startOf('day').subtract(daysAgo, 'days').toDate();
 
-describe('UsersService.getUsersInactiveForRecommendationMails', () => {
+describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   let app: INestApplication;
   let databaseHelper: DatabaseHelper;
   let userFactory: UserFactory;
@@ -55,7 +55,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).toContain(user.id);
   });
@@ -66,7 +66,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).toContain(user.id);
   });
@@ -77,7 +77,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).not.toContain(user.id);
   });
@@ -88,7 +88,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).not.toContain(user.id);
   });
@@ -99,7 +99,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: false } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).not.toContain(user.id);
   });
@@ -113,7 +113,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).not.toContain(user.id);
   });
@@ -124,7 +124,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: false, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).not.toContain(user.id);
   });
@@ -137,17 +137,19 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
     );
 
     const missedDayResult =
-      await usersService.getUsersInactiveForRecommendationMails();
+      await usersService.getUsersEligibleForRecommendationMails();
     expect(missedDayResult.map((u) => u.id)).not.toContain(user.id);
 
-    // ...becomes available again the next day, still off-cycle (11 days).
+    // ...becomes available again, simulated as the next day (11 days into
+    // the cycle, still off-cycle) by shifting onboardingCompletedAt back one
+    // day rather than advancing real time.
     await usersService.update(user.id, {
       onboardingCompletedAt: onboardingCompletedDaysAgo(11),
     });
     await userProfilesService.updateByUserId(user.id, { isAvailable: true });
 
     const offCycleResult =
-      await usersService.getUsersInactiveForRecommendationMails();
+      await usersService.getUsersEligibleForRecommendationMails();
     expect(offCycleResult.map((u) => u.id)).not.toContain(user.id);
   });
 
@@ -160,7 +162,7 @@ describe('UsersService.getUsersInactiveForRecommendationMails', () => {
       { userProfile: { isAvailable: true, optInRecommendations: true } }
     );
 
-    const result = await usersService.getUsersInactiveForRecommendationMails();
+    const result = await usersService.getUsersEligibleForRecommendationMails();
 
     expect(result.map((u) => u.id)).not.toContain(admin.id);
   });

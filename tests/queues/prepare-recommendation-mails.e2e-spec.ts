@@ -8,7 +8,7 @@ import { CronTasksProcessor } from 'src/queues/consumers/cron-tasks/cron-tasks.p
 describe('CronTasksProcessor.prepareRecommendationMails', () => {
   const buildProcessor = (users: { id: string }[]) => {
     const usersService = {
-      getUsersInactiveForRecommendationMails: jest
+      getUsersEligibleForRecommendationMails: jest
         .fn()
         .mockResolvedValue(users),
       findOneWithRelations: jest
@@ -54,10 +54,10 @@ describe('CronTasksProcessor.prepareRecommendationMails', () => {
     await processor.prepareRecommendationMails();
 
     expect(
-      usersService.getUsersInactiveForRecommendationMails
+      usersService.getUsersEligibleForRecommendationMails
     ).toHaveBeenCalledTimes(1);
     expect(
-      usersService.getUsersInactiveForRecommendationMails
+      usersService.getUsersEligibleForRecommendationMails
     ).toHaveBeenCalledWith();
   });
 

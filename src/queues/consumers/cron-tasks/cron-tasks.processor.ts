@@ -507,9 +507,10 @@ export class CronTasksProcessor extends WorkerHost {
     let totalNotEnoughReco = 0;
     let totalFailures = 0;
     const skippedUserIds: string[] = [];
+    const failures: SettledFailure[] = [];
 
     const users =
-      await this.usersService.getUsersInactiveForRecommendationMails();
+      await this.usersService.getUsersEligibleForRecommendationMails();
 
     this.logger.log(
       `Found ${users.length} users eligible for recommendation mail`
@@ -566,8 +567,10 @@ export class CronTasksProcessor extends WorkerHost {
       batchResults.forEach((result, index) => {
         if (result.status === 'rejected') {
           totalFailures++;
+          const itemId = batch[index]?.id ?? `unknown-${index}`;
+          failures.push({ itemId, reason: result.reason });
           this.logger.error(
-            `Failed preparing recommendation mail for user ${batch[index]?.id}`,
+            `Failed preparing recommendation mail for user ${itemId}`,
             result.reason
           );
         }
@@ -584,7 +587,7 @@ export class CronTasksProcessor extends WorkerHost {
         success: totalSuccess,
         failure: totalFailures + totalNotEnoughReco,
       },
-      [],
+      failures,
       skippedUserIds
     );
 
