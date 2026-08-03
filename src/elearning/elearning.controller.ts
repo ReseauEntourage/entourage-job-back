@@ -31,7 +31,7 @@ export class ElearningController {
     return this.elearningService.findAllUnits(limit, offset, userRole, userId);
   }
 
-  @Throttle(60, 60)
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Post('/units/:unitId/completions')
   async createElearningCompletion(
     @UserPayload('id') userId: string,

@@ -1,10 +1,9 @@
 import { BullModule } from '@nestjs/bullmq';
-import { CacheModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SequelizeModuleOptions, SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import * as ioRedisStore from 'cache-manager-ioredis';
 import { RedisOptions } from 'ioredis';
 import { PoolOptions } from 'sequelize';
 import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
@@ -103,10 +102,12 @@ export function getSequelizeOptions(
     }),
     RedisModule, // Module Redis partagé ajouté avant les modules qui utilisent Redis
     SequelizeModule.forRoot(getSequelizeOptions()),
-    ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 100,
-    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     BullModule.forRootAsync({
       imports: [RedisModule],
       inject: [REDIS_CLIENT],
@@ -115,12 +116,6 @@ export function getSequelizeOptions(
       }),
     }),
     ...(process.env.QUEUES_ADMIN_PASSWORD ? [QueuesBoardModule] : []),
-    CacheModule.register<RedisOptions>({
-      isGlobal: true,
-      store: ioRedisStore,
-      ...(ENV === 'dev-test' || ENV === 'test' ? {} : getRedisOptions()),
-      // Configuration avec cache-manager-ioredis qui est compatible avec ioredis
-    }),
     RevisionsModule,
     UserProfilesModule,
     // Put UserProfilesModule before UsersModule

@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { MailsService } from 'src/mails/mails.service';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
@@ -69,7 +69,7 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload, {
       secret: `${process.env.JWT_SECRET}`,
-      expiresIn: expiration,
+      expiresIn: expiration as JwtSignOptions['expiresIn'],
     });
 
     await this.usersService.update(id, { lastConnection: new Date() });
@@ -145,7 +145,7 @@ export class AuthService {
         },
         {
           secret: process.env.JWT_SECRET,
-          expiresIn: expiration || '1d',
+          expiresIn: (expiration || '1d') as JwtSignOptions['expiresIn'],
         }
       ),
     };

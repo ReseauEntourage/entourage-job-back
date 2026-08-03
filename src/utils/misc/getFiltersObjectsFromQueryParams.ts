@@ -5,6 +5,7 @@ import {
   AnyToFix,
   FilterObject,
 } from 'src/utils/types';
+import { toArray } from './toArray';
 
 function findConstant<K, T>(filters: Filters<K, T>, key: K) {
   return filters.find(({ key: filterKey }) => {
@@ -22,7 +23,7 @@ export function getFiltersObjectsFromQueryParams<K extends string, T>(
     _.forEach(Object.keys(params), (paramKey) => {
       const filter = findConstant<K, T>(filtersConst, paramKey as K);
       if (filter) {
-        const valueArray = params[paramKey as K];
+        const valueArray = toArray(params[paramKey as K]) ?? [];
         if (valueArray.length > 0) {
           filters = {
             ...filters,

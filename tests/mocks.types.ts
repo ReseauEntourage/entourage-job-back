@@ -1,5 +1,4 @@
 import { Queue } from 'bullmq';
-import { Cache } from 'cache-manager';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
@@ -13,12 +12,6 @@ export const QueueMocks: Partial<ProviderMock<Queue>> & {
 } = {
   add: jest.fn(),
   redisOptions: {},
-} as const;
-
-export const CacheMocks: Partial<ProviderMock<Cache>> = {
-  get: jest.fn(),
-  set: jest.fn(),
-  del: jest.fn(),
 } as const;
 
 export const S3Mocks: ProviderMock<S3Service> = {

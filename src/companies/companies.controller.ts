@@ -26,13 +26,14 @@ import { Public, UserPayload } from 'src/auth/guards';
 import { Department } from 'src/locations/locations.types';
 import { IsCompanyAdminGuard } from 'src/users/guards/is-company-admin.guard';
 import { UsersService } from 'src/users/users.service';
+import { toArray } from 'src/utils/misc';
 import { CompaniesService } from './companies.service';
 import { CompanyInvitationsService } from './company-invitations.service';
 import { InviteCollaboratorsDto } from './dto/invite-collaborators.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
 @ApiTags('Companies')
-@Throttle(20, 60)
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 @Controller('companies')
 export class CompaniesController {
   constructor(
@@ -42,7 +43,7 @@ export class CompaniesController {
     private readonly usersService: UsersService
   ) {}
 
-  @Throttle(60, 60)
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Public()
   @Get()
   async findAll(
@@ -55,6 +56,9 @@ export class CompaniesController {
     @Query('search') search?: string,
     @Query('onlyWithReferent', new ParseBoolPipe()) onlyWithReferent = false
   ) {
+    businessSectorIds = toArray(businessSectorIds);
+    departments = toArray(departments);
+
     if (departments) {
       for (const dept of departments) {
         if (!uuidValidate(dept)) {
@@ -101,7 +105,7 @@ export class CompaniesController {
     );
   }
 
-  @Throttle(5, 60)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Put()
   async update(
     @Body() updateCompanyDto: UpdateCompanyDto,
@@ -154,7 +158,7 @@ export class CompaniesController {
     }
   }
 
-  @Throttle(5, 60)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(IsCompanyAdminGuard)
   @Post(':companyId/invite-collaborators')
   async inviteCollaborators(

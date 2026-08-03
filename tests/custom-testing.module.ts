@@ -1,4 +1,4 @@
-import { CacheModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -60,15 +60,14 @@ import { UsersTestingModule } from './users/users-testing.module';
     }),
     RedisModule,
     SequelizeModule.forRoot(getSequelizeOptions()),
-    ThrottlerModule.forRoot({
-      ttl: 60,
-      limit: 100,
-    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     // Note: BullModule n'est pas configuré pour les tests car QueuesTestingModule
     // mocke directement le QueuesService, évitant ainsi le besoin d'une vraie connexion Redis
-    CacheModule.register({
-      isGlobal: true,
-    }),
 
     // Modules de base nécessaires pour les tests
     RevisionsModule,
