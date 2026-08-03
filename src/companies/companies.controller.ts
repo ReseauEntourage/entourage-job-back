@@ -50,9 +50,9 @@ export class CompaniesController {
     @Query('limit', new ParseIntPipe()) limit: number,
     @Query('offset', new ParseIntPipe()) offset: number,
     @Query('businessSectorIds')
-    businessSectorIds: string[],
+    businessSectorIds: string | string[] | undefined,
     @Query('departments')
-    departments: Department[],
+    departments: Department | Department[] | undefined,
     @Query('search') search?: string,
     @Query('onlyWithReferent', new ParseBoolPipe()) onlyWithReferent = false
   ) {

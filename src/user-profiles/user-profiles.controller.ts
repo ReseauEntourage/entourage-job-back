@@ -132,17 +132,17 @@ export class UserProfilesController {
     @Query('offset', new ParseIntPipe())
     offset: number,
     @Query('role')
-    role: UserRole[],
+    role: UserRole | UserRole[] | undefined,
     @Query('search')
     search: string,
     @Query('nudgeIds')
-    nudgeIds: string[],
+    nudgeIds: string | string[] | undefined,
     @Query('departments')
-    departments: string[],
+    departments: string | string[] | undefined,
     @Query('businessSectorIds')
-    businessSectorIds: string[],
+    businessSectorIds: string | string[] | undefined,
     @Query('contactTypes')
-    contactTypes: ContactTypeEnum[],
+    contactTypes: ContactTypeEnum | ContactTypeEnum[] | undefined,
     @Query('isAvailable')
     isAvailableQuery?: string,
     @Query('sort')
