@@ -40,14 +40,15 @@ export class SmsService {
       `Queuing unanswered conversation reminder SMS to ${recipientRole} for conversation with ${senderRole} ${senderId}`
     );
 
-    tracer.dogstatsd.increment('sms.reminder.sent', 1, {
-      role: METRIC_ROLE_TAG[recipientRole],
-    });
-    tracer.dogstatsd.flush();
-
-    return this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
+    const result = await this.queuesService.addToWorkQueue(Jobs.SEND_SMS, {
       to: recipientPhone,
       text,
     });
+
+    tracer.dogstatsd.increment('sms.reminder.sent', 1, {
+      role: METRIC_ROLE_TAG[recipientRole],
+    });
+
+    return result;
   }
 }

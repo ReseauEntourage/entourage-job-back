@@ -42,12 +42,14 @@ export class VonageService {
       const errorMessage = error instanceof Error ? error.message : undefined;
 
       if (errorCode || errorStatus || errorMessage) {
-        this.logger.error(`Failed to send SMS to ${normalizedTo}`, {
-          to: normalizedTo,
-          errorCode,
-          errorStatus,
-          errorMessage,
-        });
+        this.logger.error(
+          `Failed to send SMS to ${normalizedTo} (errorCode=${
+            errorCode ?? 'n/a'
+          }, errorStatus=${errorStatus ?? 'n/a'}, errorMessage=${
+            errorMessage ?? 'n/a'
+          })`,
+          error
+        );
       } else {
         this.logger.error(`Failed to send SMS to ${normalizedTo}`, error);
       }

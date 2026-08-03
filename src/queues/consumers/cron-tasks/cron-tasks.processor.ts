@@ -11,6 +11,7 @@ import {
 } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
 import { RecruitementAlertsService } from 'src/recruitement-alerts/recruitement-alerts.service';
+import { tracer } from 'src/tracer';
 import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
@@ -1515,7 +1516,7 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareUnansweredConversationsSms() {
-    const DAYS_SINCE_LAST_CONNECTION = 3;
+    const DAYS_SINCE_FIRST_MESSAGE = 3;
     const recipientRoles: NormalUserRole[] = [
       UserRoles.CANDIDATE,
       UserRoles.COACH,
@@ -1525,10 +1526,12 @@ export class CronTasksProcessor extends WorkerHost {
       recipientRoles.map((recipientRole) =>
         this.sendUnansweredConversationsSmsForRole(
           recipientRole,
-          DAYS_SINCE_LAST_CONNECTION
+          DAYS_SINCE_FIRST_MESSAGE
         )
       )
     );
+
+    tracer.dogstatsd.flush();
 
     const failedSummaries = summaries.filter((summary) => !summary.succeeded);
 
