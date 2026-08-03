@@ -45,6 +45,7 @@ import {
 } from './models/user.include';
 import {
   MemberFilterKey,
+  NormalUserRole,
   OnboardingStatus,
   UserRole,
   UserRoles,
@@ -1350,24 +1351,30 @@ export class UsersService {
     );
   }
 
-  async getCandidateRowsForUnansweredConversationSms(
+  async getUnansweredConversationSmsRows(
+    recipientRole: NormalUserRole,
     daysSinceFirstMessage: number
   ): Promise<
     {
-      candidateId: string;
-      candidatePhone: string;
-      coachFirstName: string;
-      coachId: string;
+      recipientId: string;
+      recipientPhone: string;
+      senderFirstName: string;
+      senderId: string;
       conversationId: string;
     }[]
   > {
+    const senderRole =
+      recipientRole === UserRoles.CANDIDATE
+        ? UserRoles.COACH
+        : UserRoles.CANDIDATE;
+
     return this.userModel.sequelize.query(
       `
       SELECT
-        candidate.id           AS "candidateId",
-        candidate.phone        AS "candidatePhone",
-        coach."firstName"      AS "coachFirstName",
-        coach.id               AS "coachId",
+        recipient.id           AS "recipientId",
+        recipient.phone        AS "recipientPhone",
+        sender."firstName"     AS "senderFirstName",
+        sender.id              AS "senderId",
         c.id                   AS "conversationId"
       FROM "Conversations" c
       JOIN (
@@ -1378,26 +1385,26 @@ export class UsersService {
         FROM "Messages"
         ORDER BY "conversationId", "createdAt" ASC
       ) first_msg ON first_msg."conversationId" = c.id
-      JOIN "Users" coach
-        ON coach.id = first_msg."senderId"
-        AND coach.role = 'Coach'
-        AND coach."deletedAt" IS NULL
-      JOIN "ConversationParticipants" cp_candidate
-        ON cp_candidate."conversationId" = c.id
-        AND cp_candidate."userId" != first_msg."senderId"
-      JOIN "Users" candidate
-        ON candidate.id = cp_candidate."userId"
-        AND candidate.role = 'Candidat'
-        AND candidate."deletedAt" IS NULL
-        AND candidate.phone IS NOT NULL
-        AND candidate.phone != ''
+      JOIN "Users" sender
+        ON sender.id = first_msg."senderId"
+        AND sender.role = '${senderRole}'
+        AND sender."deletedAt" IS NULL
+      JOIN "ConversationParticipants" cp_recipient
+        ON cp_recipient."conversationId" = c.id
+        AND cp_recipient."userId" != first_msg."senderId"
+      JOIN "Users" recipient
+        ON recipient.id = cp_recipient."userId"
+        AND recipient.role = '${recipientRole}'
+        AND recipient."deletedAt" IS NULL
+        AND recipient.phone IS NOT NULL
+        AND recipient.phone != ''
       WHERE
         c.type = '${ConversationType.DIRECT}'
         AND DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
         AND NOT EXISTS (
           SELECT 1 FROM "Messages" m
           WHERE m."conversationId" = c.id
-            AND m."authorId" = candidate.id
+            AND m."authorId" = recipient.id
         )
       `,
       { type: QueryTypes.SELECT, raw: true }
@@ -1665,15 +1672,17 @@ export class UsersService {
     );
   }
 
-  async sendCandidateUnansweredConversationSms(
-    candidatePhone: string,
-    coachFirstName: string,
-    coachId: string
+  async sendUnansweredConversationSms(
+    recipientPhone: string,
+    recipientRole: NormalUserRole,
+    senderFirstName: string,
+    senderId: string
   ) {
-    return this.smsService.sendCandidateUnansweredConversationSms(
-      candidatePhone,
-      coachFirstName,
-      coachId
+    return this.smsService.sendUnansweredConversationSms(
+      recipientPhone,
+      recipientRole,
+      senderFirstName,
+      senderId
     );
   }
 

@@ -36,7 +36,22 @@ export class VonageService {
         `SMS sent successfully to ${normalizedTo} (uuid: ${messageUUID})`
       );
     } catch (error) {
-      this.logger.error(`Failed to send SMS to ${normalizedTo}`, error);
+      const errorCode = (error as { code?: string })?.code;
+      const errorStatus = (error as { response?: { status?: number } })
+        ?.response?.status;
+      const errorMessage = error instanceof Error ? error.message : undefined;
+
+      if (errorCode || errorStatus || errorMessage) {
+        this.logger.error(`Failed to send SMS to ${normalizedTo}`, {
+          to: normalizedTo,
+          errorCode,
+          errorStatus,
+          errorMessage,
+        });
+      } else {
+        this.logger.error(`Failed to send SMS to ${normalizedTo}`, error);
+      }
+
       throw error;
     }
   }

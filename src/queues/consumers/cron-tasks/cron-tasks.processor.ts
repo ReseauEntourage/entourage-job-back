@@ -15,7 +15,7 @@ import { UserProfileRecommendationsService } from 'src/user-profile-recommendati
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/users/users.types';
+import { NormalUserRole, UserRoles } from 'src/users/users.types';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 
@@ -1516,39 +1516,78 @@ export class CronTasksProcessor extends WorkerHost {
 
   async prepareUnansweredConversationsSms() {
     const DAYS_SINCE_LAST_CONNECTION = 3;
+    const recipientRoles: NormalUserRole[] = [
+      UserRoles.CANDIDATE,
+      UserRoles.COACH,
+    ];
 
-    this.logger.log(
-      `Preparing unanswered conversations SMS for candidates (first message sent ${DAYS_SINCE_LAST_CONNECTION} days ago)...`
+    const summaries = await Promise.all(
+      recipientRoles.map((recipientRole) =>
+        this.sendUnansweredConversationsSmsForRole(
+          recipientRole,
+          DAYS_SINCE_LAST_CONNECTION
+        )
+      )
     );
 
-    const rows =
-      await this.usersService.getCandidateRowsForUnansweredConversationSms(
-        DAYS_SINCE_LAST_CONNECTION
+    const failedSummaries = summaries.filter((summary) => !summary.succeeded);
+
+    if (failedSummaries.length > 0) {
+      throw new Error(
+        failedSummaries
+          .map(
+            (summary) =>
+              `Failed sending ${summary.failureCount}/${summary.total} unanswered conversation SMS to ${summary.recipientRole}`
+          )
+          .join('; ')
       );
+    }
+
+    return summaries
+      .map(
+        (summary) =>
+          `Sent ${summary.successCount} unanswered conversation SMS to ${summary.recipientRole}`
+      )
+      .join(', ');
+  }
+
+  private async sendUnansweredConversationsSmsForRole(
+    recipientRole: NormalUserRole,
+    daysSinceFirstMessage: number
+  ) {
+    this.logger.log(
+      `Preparing unanswered conversations SMS for ${recipientRole} (first message sent ${daysSinceFirstMessage} days ago)...`
+    );
+
+    const rows = await this.usersService.getUnansweredConversationSmsRows(
+      recipientRole,
+      daysSinceFirstMessage
+    );
 
     this.logger.log(
-      `Found ${rows.length} candidates with unanswered conversations to notify via SMS`
+      `Found ${rows.length} ${recipientRole} with unanswered conversations to notify via SMS`
     );
 
     const results = await Promise.allSettled(
       rows.map(async (row) => {
         this.logger.log(
-          `Sending SMS to candidate ${row.candidateId} for conversation ${row.conversationId} with coach ${row.coachId}`
+          `Sending SMS to ${recipientRole} ${row.recipientId} for conversation ${row.conversationId} with ${row.senderId}`
         );
-        return this.usersService.sendCandidateUnansweredConversationSms(
-          row.candidatePhone,
-          row.coachFirstName,
-          row.coachId
+        return this.usersService.sendUnansweredConversationSms(
+          row.recipientPhone,
+          recipientRole,
+          row.senderFirstName,
+          row.senderId
         );
       })
     );
 
     const { succeeded, successIds, failures } = collectSettledResults(
-      rows.map((row) => ({ id: row.candidateId })),
+      rows.map((row) => ({ id: row.recipientId })),
       results,
-      (candidateId, reason) => {
+      (recipientId, reason) => {
         this.logger.error(
-          `Failed sending SMS to candidate ${candidateId}`,
+          `Failed sending SMS to ${recipientRole} ${recipientId}`,
           reason
         );
       }
@@ -1556,7 +1595,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📱 SMS conversations non répondues - J+${DAYS_SINCE_LAST_CONNECTION}`,
+      `📱 SMS conversations non répondues (${recipientRole}) - J+${daysSinceFirstMessage}`,
       {
         total: rows.length,
         success: successIds.length,
@@ -1565,13 +1604,13 @@ export class CronTasksProcessor extends WorkerHost {
       failures
     );
 
-    if (!succeeded) {
-      throw new Error(
-        `Failed sending ${failures.length}/${rows.length} unanswered conversation SMS`
-      );
-    }
-
-    return `Sent ${successIds.length} unanswered conversation SMS`;
+    return {
+      recipientRole,
+      total: rows.length,
+      successCount: successIds.length,
+      failureCount: failures.length,
+      succeeded,
+    };
   }
 
   private async prepareLinkedInShareProfileMails() {
