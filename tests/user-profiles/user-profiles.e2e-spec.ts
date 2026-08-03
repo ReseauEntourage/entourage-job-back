@@ -240,7 +240,7 @@ describe('UserProfiles', () => {
           it('Should return 401 if user is not logged in', async () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server).get(
-                `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
               );
             expect(response.status).toBe(401);
           });
@@ -261,7 +261,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -273,7 +273,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -285,7 +285,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCoach.token}`);
             expect(response.status).toBe(200);
@@ -297,7 +297,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInReferer.token}`);
             expect(response.status).toBe(200);
@@ -308,7 +308,7 @@ describe('UserProfiles', () => {
             });
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
-                .get(`${route}/profile?role[]=${UserRoles.CANDIDATE}`)
+                .get(`${route}/profile?role=${UserRoles.CANDIDATE}`)
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
           });
@@ -323,7 +323,7 @@ describe('UserProfiles', () => {
             expect(response.status).toBe(400);
           });
         });
-        describe('/profile?limit=&offset=&role[]= - Elearning completion gate (visibility)', () => {
+        describe('/profile?limit=&offset=&role= - Elearning completion gate (visibility)', () => {
           it('Should not include a profile with onboarding completed but elearning not completed', async () => {
             const loggedInCandidate = await usersHelper.createLoggedInUser({
               role: UserRoles.CANDIDATE,
@@ -336,7 +336,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
@@ -359,7 +359,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}`
                 )
                 .set(
                   'authorization',
@@ -384,7 +384,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -413,7 +413,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}&sort=relevance`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}&sort=relevance`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -442,7 +442,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.COACH}&sort=relevance`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.COACH}&sort=relevance`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
@@ -460,7 +460,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?offset=0&limit=25&role[]=${UserRoles.ADMIN}`
+                  `${route}/profile?offset=0&limit=25&role=${UserRoles.ADMIN}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
@@ -471,7 +471,7 @@ describe('UserProfiles', () => {
             expect(response.status).toBe(400);
           });
         });
-        describe('/profile?limit=&offset=&role[]= - Get paginated and creation date sorted users filtered by role', () => {
+        describe('/profile?limit=&offset=&role= - Get paginated and creation date sorted users filtered by role', () => {
           let loggedInCandidate: LoggedInUser;
 
           let secondCreatedCandidate: User;
@@ -583,7 +583,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=1&offset=5&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?limit=1&offset=5&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -598,7 +598,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?limit=2&offset=0&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -624,7 +624,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=0&role[]=${UserRoles.REFERER}`
+                  `${route}/profile?limit=2&offset=0&role=${UserRoles.REFERER}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(400);
@@ -633,7 +633,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=3&offset=0&role[]=${UserRoles.COACH}`
+                  `${route}/profile?limit=3&offset=0&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -663,7 +663,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?limit=2&offset=2&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -690,7 +690,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=2&offset=2&role[]=${UserRoles.COACH}`
+                  `${route}/profile?limit=2&offset=2&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInCandidate.token}`);
             expect(response.status).toBe(200);
@@ -743,7 +743,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&search=XXX`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&search=XXX`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -774,7 +774,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&search=XXX`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&search=XXX`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -784,7 +784,7 @@ describe('UserProfiles', () => {
             );
           });
         });
-        describe('/profile?departments[]=&businessSectors[]=&nudges[]= - Read all profiles with filters', () => {
+        describe('/profile?departments=&businessSectors=&nudges= - Read all profiles with filters', () => {
           let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -842,7 +842,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&departments[]=${departmentRhone.id}&departments[]=${departmentParis.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&departments=${departmentRhone.id}&departments=${departmentParis.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -906,7 +906,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&departments[]=${departmentRhone.id}&departments[]=${departmentParis.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&departments=${departmentRhone.id}&departments=${departmentParis.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1066,7 +1066,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector3.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1220,7 +1220,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector3.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector3.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1317,7 +1317,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeInterview.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1413,7 +1413,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeInterview.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeInterview.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1468,7 +1468,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX&departments[]=${departmentRhone.id}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&query=XXX&departments=${departmentRhone.id}&businessSectorIds=${businessSector1.id}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -1515,7 +1515,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&departments[]=${departmentRhone.id}&businessSectorIds[]=${businessSector1.id}&nudgeIds[]=${nudgeNetwork.id}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.COACH}&query=XXX&departments=${departmentRhone.id}&businessSectorIds=${businessSector1.id}&nudgeIds=${nudgeNetwork.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1554,7 +1554,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&isAvailable=true`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&isAvailable=true`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1584,7 +1584,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&isAvailable=false`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}&isAvailable=false`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 
@@ -1612,7 +1612,7 @@ describe('UserProfiles', () => {
             const response: APIResponse<UserProfilesController['findAll']> =
               await request(server)
                 .get(
-                  `${route}/profile?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/profile?limit=50&offset=0&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
 

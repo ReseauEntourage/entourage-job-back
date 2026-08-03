@@ -1,6 +1,6 @@
 supportedArchitectures:
-  cpu: [x64, arm64]
-  os: [current, linux, darwin]
+  cpu: [ x64, arm64 ]
+  os: [ current, linux, darwin ]
 allowBuilds:
   sharp: true
   '@datadog/native-appsec': true
@@ -11,3 +11,4 @@ allowBuilds:
   dd-trace: true
   msgpackr-extract: true
   unrs-resolver: true
+  '@scarf/scarf': false

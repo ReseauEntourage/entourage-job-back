@@ -274,7 +274,7 @@ describe('Organizations', () => {
           ];
           const response: APIResponse<OrganizationsController['findAll']> =
             await request(server).get(
-              `${route}?limit=50&offset=0&zone[]=${ZoneName.IDF}`
+              `${route}?limit=50&offset=0&zone=${ZoneName.IDF}`
             );
           expect(response.status).toBe(200);
           expect(response.body.length).toBe(5);

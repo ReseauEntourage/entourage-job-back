@@ -21,7 +21,7 @@ import { encryptPassword } from './auth.utils';
 import { LocalAuthGuard, Public, UserPayload } from './guards';
 
 @ApiTags('Auth')
-@Throttle(10, 60)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -195,7 +195,7 @@ export class AuthController {
     return;
   }
 
-  @Throttle(60, 60)
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Public()
   @Post('send-verify-email')
   async sendVerifyEmail(
@@ -232,7 +232,7 @@ export class AuthController {
     return;
   }
 
-  @Throttle(10, 60)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Public()
   @Post('verify-otp')
   async verifyOtp(
@@ -245,7 +245,7 @@ export class AuthController {
     return this.authService.verifyOtp(email, code);
   }
 
-  @Throttle(60, 60)
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Public()
   @Post('finalize-refered-user')
   async finalizeReferedUser(

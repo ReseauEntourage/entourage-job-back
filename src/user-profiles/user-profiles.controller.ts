@@ -42,6 +42,7 @@ import {
   UserRoles,
 } from 'src/users/users.types';
 import { isEntourageAdmin, isRoleIncluded } from 'src/users/users.utils';
+import { toArray } from 'src/utils/misc';
 import { UpdateCoachUserProfileDto } from './dto';
 import { generatePublicProfileDto } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
@@ -131,17 +132,17 @@ export class UserProfilesController {
     @Query('offset', new ParseIntPipe())
     offset: number,
     @Query('role')
-    role: UserRole[],
+    role: UserRole | UserRole[] | undefined,
     @Query('search')
     search: string,
     @Query('nudgeIds')
-    nudgeIds: string[],
+    nudgeIds: string | string[] | undefined,
     @Query('departments')
-    departments: string[],
+    departments: string | string[] | undefined,
     @Query('businessSectorIds')
-    businessSectorIds: string[],
+    businessSectorIds: string | string[] | undefined,
     @Query('contactTypes')
-    contactTypes: ContactTypeEnum[],
+    contactTypes: ContactTypeEnum | ContactTypeEnum[] | undefined,
     @Query('isAvailable')
     isAvailableQuery?: string,
     @Query('sort')
@@ -149,6 +150,12 @@ export class UserProfilesController {
     @Query('hasSuperCoachBadge')
     hasSuperCoachBadgeQuery?: string
   ) {
+    role = toArray(role);
+    nudgeIds = toArray(nudgeIds);
+    departments = toArray(departments);
+    businessSectorIds = toArray(businessSectorIds);
+    contactTypes = toArray(contactTypes);
+
     if (!role || role.length === 0) {
       throw new BadRequestException();
     }

@@ -232,7 +232,7 @@ describe('Companies', () => {
       });
 
       const response = await request(server).get(
-        `/companies?search=&departments[]=${department01.id}&limit=10&offset=0&onlyWithReferent=false`
+        `/companies?search=&departments=${department01.id}&limit=10&offset=0&onlyWithReferent=false`
       );
 
       expect(response.body).toBeDefined();

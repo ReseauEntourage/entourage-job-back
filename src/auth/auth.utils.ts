@@ -1,8 +1,7 @@
 import { createHash, pbkdf2Sync, randomBytes } from 'crypto';
+import { Request } from 'express';
 
-export function getTokenFromHeaders(
-  req: Request & { headers: Request['headers'] & { authorization: string } }
-) {
+export function getTokenFromHeaders(req: Request) {
   const {
     headers: { authorization },
   } = req;
