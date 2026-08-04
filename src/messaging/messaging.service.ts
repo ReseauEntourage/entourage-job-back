@@ -816,6 +816,7 @@ export class MessagingService {
                 ? [
                     {
                       model: UserProfile,
+                      as: 'userProfile',
                       attributes: ['isAvailable'],
                     },
                   ]
