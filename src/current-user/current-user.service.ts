@@ -133,10 +133,15 @@ export class CurrentUserService {
       averageDelayResponse,
       responseRate,
       totalConversationWithMirrorRoleCount,
+      availableMirrorRoleParticipantsCount,
     ] = await Promise.all([
       this.usersStatsService.getAverageDelayResponse(userId),
       this.usersStatsService.getResponseRate(userId),
       this.usersStatsService.getTotalConversationWithMirrorRoleCount(
+        userId,
+        userRole
+      ),
+      this.usersStatsService.getAvailableMirrorRoleParticipantsCount(
         userId,
         userRole
       ),
@@ -147,6 +152,7 @@ export class CurrentUserService {
       averageDelayResponse,
       responseRate,
       totalConversationWithMirrorRoleCount,
+      availableMirrorRoleParticipantsCount,
     };
   }
 
