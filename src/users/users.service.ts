@@ -65,6 +65,14 @@ export type NoResponseToFirstMessageResultDto = {
   user: User;
 };
 
+export type UnavailableSenderNotificationResultDto = {
+  // The author of the single, unanswered message — the actual recipient of
+  // this notification mail (reassured that they won't get a reply because
+  // the other person became unavailable).
+  messageAuthor: User;
+  unavailableUser: User;
+};
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -977,6 +985,84 @@ export class UsersService {
     );
   }
 
+  /**
+   * For each UserProfile that became unavailable within [startDate, endDate),
+   * finds every single-message conversation where that user is the recipient
+   * of the sole message — the message author is the one to notify (they sent
+   * a message and will never get a reply).
+   * Reuses the `GROUP BY conversationId HAVING COUNT(*) = 1` pattern from
+   * `getUsersWithNoResponseToFirstMessage`.
+   */
+  async getUnavailableSenderNotifications(
+    startDate: Date,
+    endDate: Date
+  ): Promise<UnavailableSenderNotificationResultDto[]> {
+    const rows: { authorId: string; unavailableUserId: string }[] =
+      await this.userModel.sequelize.query(
+        `
+      SELECT
+        m."authorId" as "authorId",
+        up."userId" as "unavailableUserId"
+      FROM "Messages" m
+      INNER JOIN (
+        SELECT "conversationId"
+        FROM "Messages"
+        GROUP BY "conversationId"
+        HAVING COUNT(*) = 1
+      ) AS single_message_conversations
+        ON single_message_conversations."conversationId" = m."conversationId"
+      INNER JOIN "ConversationParticipants" cp
+        ON cp."conversationId" = m."conversationId"
+        AND cp."userId" != m."authorId"
+      INNER JOIN "Users" u ON u.id = cp."userId"
+      INNER JOIN "UserProfiles" up ON up."userId" = u.id
+      INNER JOIN "Users" author ON author.id = m."authorId"
+      WHERE up."unavailableAt" >= :startDate
+        AND up."unavailableAt" < :endDate
+        AND u."deletedAt" IS NULL
+        AND author."deletedAt" IS NULL
+      `,
+        {
+          type: QueryTypes.SELECT,
+          raw: true,
+          replacements: { startDate, endDate },
+        }
+      );
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const uniqueUserIds = Array.from(
+      new Set(rows.flatMap((row) => [row.authorId, row.unavailableUserId]))
+    );
+    const users = await this.findByIdsWithRelations(uniqueUserIds);
+    const userById = new Map(users.map((user) => [user.id, user]));
+
+    return rows
+      .map((row) => {
+        const messageAuthor = userById.get(row.authorId);
+        const unavailableUser = userById.get(row.unavailableUserId);
+        if (!messageAuthor || !unavailableUser) {
+          return null;
+        }
+        return { messageAuthor, unavailableUser };
+      })
+      .filter(
+        (result): result is UnavailableSenderNotificationResultDto =>
+          result !== null
+      );
+  }
+
+  async sendUnavailableSenderNotificationMail(
+    dto: UnavailableSenderNotificationResultDto
+  ) {
+    return this.mailsService.sendUnavailableSenderNotificationMail(
+      dto.unavailableUser,
+      dto.messageAuthor
+    );
+  }
+
   async sendReminderToCompleteProfile(user: User) {
     return this.mailsService.sendReminderToCompleteProfile(user);
   }
@@ -1036,7 +1122,7 @@ export class UsersService {
       FROM "Users" u
       JOIN "UserProfiles" up ON u.id = up."userId"
       WHERE
-        up."isAvailable" IS TRUE
+        up."unavailableAt" IS NULL
         AND u."lastConnection" >= :startDate
         AND u."lastConnection" < :endDate
         AND u."onboardingStatus" = :onboardingStatus
@@ -1186,7 +1272,7 @@ export class UsersService {
       LEFT JOIN "Users" r ON r."refererId" = u.id
       LEFT JOIN "UserProfiles" up ON u."id" = up."userId"
       WHERE u.role = 'Prescripteur'
-        AND up."isAvailable" = TRUE
+        AND up."unavailableAt" IS NULL
         AND u."createdAt" >= :startDate
         AND u."createdAt" < :endDate
         AND u."deletedAt" IS NULL
@@ -1429,7 +1515,7 @@ export class UsersService {
         GROUP BY "conversationId"
       ) lm ON lm."conversationId" = c.id
       WHERE (cp."seenAt" IS NULL OR lm."lastMessageTime" >= cp."seenAt")
-        AND up."isAvailable" IS TRUE
+        AND up."unavailableAt" IS NULL
         AND lm."lastMessageTime" >= CURRENT_TIMESTAMP - INTERVAL '${
           daysSinceLastConversation + 1
         } days'

@@ -50,7 +50,7 @@ export const companiesWithUsers = ({
     include: [
       {
         model: UserProfile,
-        attributes: ['id', 'hasPicture', 'isAvailable', 'currentJob'],
+        attributes: ['id', 'hasPicture', 'unavailableAt', 'currentJob'],
         include: [...getUserProfileInclude()],
       },
       ...(asCompanyAdmin

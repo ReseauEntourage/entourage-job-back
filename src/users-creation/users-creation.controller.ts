@@ -237,7 +237,7 @@ export class UsersCreationController {
           await this.usersCreationService.updateUserProfileByUserId(
             createdUserId,
             {
-              isAvailable: false,
+              unavailableAt: new Date(),
             }
           );
         }

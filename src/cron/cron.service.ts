@@ -389,6 +389,26 @@ export class CronService {
     return { jobId: job.id, status: 'processing' };
   }
 
+  /**
+   * Sends the unavailability notification mail (template 8156335) to the
+   * author of a single, unanswered message when their interlocutor became
+   * unavailable the previous calendar day. Runs daily at 9 AM.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async prepareUnavailableSenderNotificationMails() {
+    this.logger.log(
+      'Cron job started: prepareUnavailableSenderNotificationMails'
+    );
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS,
+      {}
+    );
+    this.logger.log(
+      `Job PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_3PM)
   async prepareChurnUsersFeedbackMails() {
     this.logger.log('Cron job started: prepareChurnUsersFeedbackMails');

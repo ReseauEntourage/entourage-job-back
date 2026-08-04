@@ -82,11 +82,9 @@ export class UserProfile extends Model {
   description: string;
 
   @ApiProperty()
-  @IsBoolean()
-  @AllowNull(false)
-  @Default(true)
+  @AllowNull(true)
   @Column
-  isAvailable: boolean;
+  unavailableAt: Date;
 
   @ApiProperty({ enum: UnavailabilityReason })
   @IsEnum(UnavailabilityReason)

@@ -589,6 +589,41 @@ export class MailsService {
     });
   }
 
+  /**
+   * Mailjet template 8156335 variable naming (fixed external contract, per
+   * the template copy): `sender*` = the actual mail recipient — the author
+   * of the single message that never got a reply, greeted "Bonjour
+   * {{senderFirstName}}" — `addressee*` = the user who became unavailable,
+   * referred to as "vous avez écrit à {{addresseeFirstName}}".
+   */
+  async sendUnavailableSenderNotificationMail(
+    unavailableUser: User,
+    messageAuthor: User
+  ) {
+    this.logger.log(
+      `Sending unavailable sender notification mail to message author with email ${messageAuthor.email}`
+    );
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: messageAuthor.email,
+      templateId: MailjetTemplates.MAILER_UNAVAILABLE_SENDER_NOTIFICATION,
+      variables: {
+        // Sender (the recipient of this mail — the message author)
+        senderFirstName: messageAuthor.firstName,
+        senderRole: getRoleString(messageAuthor),
+
+        // Addressee (the user who became unavailable)
+        addresseeFirstName: unavailableUser.firstName,
+        addresseeRole: getRoleString(unavailableUser),
+
+        // General
+        zone: messageAuthor.zone,
+        role: messageAuthor.role,
+        staffContact: messageAuthor.staffContact,
+        siteLink: process.env.FRONT_URL,
+      },
+    });
+  }
+
   async sendLinkedInShareProfileMail(coach: User, candidate: User) {
     this.logger.log(
       `Sending LinkedIn share profile mail to coach ${coach.email} for candidate ${candidate.id}`

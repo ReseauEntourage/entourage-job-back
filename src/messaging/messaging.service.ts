@@ -1250,7 +1250,7 @@ export class MessagingService {
       FROM "Users" u
       JOIN "UserProfiles" up ON up."userId" = u.id
       WHERE
-        up."isAvailable" IS TRUE
+        up."unavailableAt" IS NULL
         AND u."deletedAt" IS NULL
         AND u.role NOT IN (:adminRole)
         AND u."lastConnection" < NOW() - make_interval(days => :daysWithoutConnection)

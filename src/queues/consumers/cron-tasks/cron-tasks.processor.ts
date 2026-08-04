@@ -20,6 +20,8 @@ import { NormalUserRole, UserRoles } from 'src/users/users.types';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 @Processor(Queues.CRON_TASKS)
 export class CronTasksProcessor extends WorkerHost {
   private readonly logger = new Logger(CronTasksProcessor.name);
@@ -93,6 +95,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareUnansweredConversationsSms();
       case Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS:
         return this.prepareLinkedInShareProfileMails();
+      case Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS:
+        return this.prepareUnavailableSenderNotificationMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1309,6 +1313,66 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} unavailable user mails`;
+  }
+
+  async prepareUnavailableSenderNotificationMails() {
+    this.logger.log('Preparing unavailable sender notification mails...');
+
+    const yesterdayStart = new Date(
+      new Date().setHours(0, 0, 0, 0) - DAY_IN_MS
+    );
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+
+    const notifications =
+      await this.usersService.getUnavailableSenderNotifications(
+        yesterdayStart,
+        todayStart
+      );
+
+    this.logger.log(
+      `Found ${notifications.length} unavailable sender notifications to send`
+    );
+
+    const results = await Promise.allSettled(
+      notifications.map(async (dto) => {
+        this.logger.log(
+          `Sending unavailable sender notification mail to ${dto.messageAuthor.email} about ${dto.unavailableUser.id}`
+        );
+        await this.usersService.sendUnavailableSenderNotificationMail(dto);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      notifications.map((dto, index) => ({
+        id: `${dto.unavailableUser.id}-${dto.messageAuthor.id}-${index}`,
+      })),
+      results,
+      (itemId, reason) => {
+        this.logger.error(
+          `Failed sending unavailable sender notification mail (${itemId})`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📭 Unavailable sender notifications',
+      {
+        total: notifications.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${notifications.length} unavailable sender notification mails`
+      );
+    }
+
+    return `Sent ${successIds.length} unavailable sender notification mails`;
   }
 
   async prepareChurnUsersFeedbackMails() {

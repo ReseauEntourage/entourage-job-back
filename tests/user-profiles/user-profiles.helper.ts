@@ -42,7 +42,7 @@ export class UserProfilesHelper {
       description: userProfileData.description,
       currentJob: userProfileData.currentJob,
       department: userProfileData.department,
-      isAvailable: userProfileData.isAvailable,
+      unavailableAt: userProfileData.unavailableAt,
       sectorOccupations: expect.arrayContaining(
         userProfileData.sectorOccupations.map((sectorOccupation) => ({
           id: sectorOccupation.id,
