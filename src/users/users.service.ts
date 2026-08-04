@@ -57,6 +57,7 @@ import {
 } from './users.utils';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const RECOMMENDATION_MAILS_INTERVAL_DAYS = 10;
 
 export type NoResponseToFirstMessageResultDto = {
   addressees: User[];
@@ -1104,16 +1105,19 @@ export class UsersService {
     });
   }
 
-  async getUsersInactiveForRecommendationMails(
-    daysSinceLastConnection: number
-  ): Promise<Pick<User, 'id' | 'firstName' | 'email' | 'role' | 'zone'>[]> {
-    const startDate = new Date(
-      new Date().setHours(0, 0, 0, 0) - daysSinceLastConnection * DAY_IN_MS
-    );
-    const endDate = new Date(
-      new Date().setHours(0, 0, 0, 0) -
-        (daysSinceLastConnection - 1) * DAY_IN_MS
-    );
+  /**
+   * Users are eligible every `intervalDays` days after `onboardingCompletedAt`,
+   * regardless of connection activity. Day comparisons are truncated to the
+   * server's local date (the cron runs daily at noon, so this stays stable
+   * across a single day).
+   */
+  async getUsersEligibleForRecommendationMails(
+    intervalDays: number = RECOMMENDATION_MAILS_INTERVAL_DAYS
+  ): Promise<Pick<User, 'id'>[]> {
+    // Truncated to the cron server's local date (not the DB server's), so the
+    // modulo stays stable across a single day regardless of the exact time
+    // onboarding was completed.
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
 
     return this.userModel.sequelize.query(
       `
@@ -1123,9 +1127,11 @@ export class UsersService {
       JOIN "UserProfiles" up ON u.id = up."userId"
       WHERE
         up."unavailableAt" IS NULL
-        AND u."lastConnection" >= :startDate
-        AND u."lastConnection" < :endDate
+        AND up."optInRecommendations" IS TRUE
         AND u."onboardingStatus" = :onboardingStatus
+        AND u."onboardingCompletedAt" IS NOT NULL
+        AND (:today::timestamptz::date - u."onboardingCompletedAt"::date) > 0
+        AND (:today::timestamptz::date - u."onboardingCompletedAt"::date) % :intervalDays = 0
         AND u.role IN (:candidateRole, :coachRole)
         AND u."deletedAt" IS NULL
       `,
@@ -1133,8 +1139,8 @@ export class UsersService {
         type: QueryTypes.SELECT,
         raw: true,
         replacements: {
-          startDate,
-          endDate,
+          today,
+          intervalDays,
           onboardingStatus: OnboardingStatus.COMPLETED,
           candidateRole: UserRoles.CANDIDATE,
           coachRole: UserRoles.COACH,
