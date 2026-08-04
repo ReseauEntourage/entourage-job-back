@@ -2,6 +2,7 @@ import { Op, WhereOptions } from 'sequelize';
 import { User } from 'src/users/models';
 import { OnboardingStatus } from 'src/users/users.types';
 import { searchInColumnWhereOption } from 'src/utils/misc';
+import { UserProfile } from './models';
 
 export function userProfileSearchQuery(query = '') {
   return [
@@ -42,4 +43,18 @@ export function isProfileVisibilityEligible(
     user.onboardingStatus === OnboardingStatus.COMPLETED &&
     user.elearningCompletedAt != null
   );
+}
+
+/**
+ * Translates the public "isAvailable" filter (still expressed as a boolean at
+ * the API boundary) into a `WhereOptions` targeting `unavailableAt`, the
+ * actual source of truth: `NULL` = available, a date = unavailable since then.
+ */
+export function availabilityWhere(
+  isAvailable: boolean | undefined
+): WhereOptions<UserProfile> {
+  if (isAvailable === undefined) return {};
+  return isAvailable
+    ? { unavailableAt: null }
+    : { unavailableAt: { [Op.ne]: null } };
 }

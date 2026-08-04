@@ -1540,13 +1540,13 @@ describe('UserProfiles', () => {
               userFactory,
               2,
               { role: UserRoles.CANDIDATE },
-              { userProfile: { isAvailable: true } }
+              { userProfile: { unavailableAt: null } }
             );
             await databaseHelper.createEntities(
               userFactory,
               2,
               { role: UserRoles.CANDIDATE },
-              { userProfile: { isAvailable: false } }
+              { userProfile: { unavailableAt: new Date() } }
             );
 
             const expectedIds = availableCandidates.map(({ id }) => id);
@@ -1570,13 +1570,13 @@ describe('UserProfiles', () => {
               userFactory,
               2,
               { role: UserRoles.CANDIDATE },
-              { userProfile: { isAvailable: true } }
+              { userProfile: { unavailableAt: null } }
             );
             const unavailableCandidates = await databaseHelper.createEntities(
               userFactory,
               2,
               { role: UserRoles.CANDIDATE },
-              { userProfile: { isAvailable: false } }
+              { userProfile: { unavailableAt: new Date() } }
             );
 
             const expectedIds = unavailableCandidates.map(({ id }) => id);
@@ -1600,13 +1600,13 @@ describe('UserProfiles', () => {
               userFactory,
               2,
               { role: UserRoles.CANDIDATE },
-              { userProfile: { isAvailable: true } }
+              { userProfile: { unavailableAt: null } }
             );
             await databaseHelper.createEntities(
               userFactory,
               2,
               { role: UserRoles.CANDIDATE },
-              { userProfile: { isAvailable: false } }
+              { userProfile: { unavailableAt: new Date() } }
             );
 
             const response: APIResponse<UserProfilesController['findAll']> =
@@ -1796,7 +1796,7 @@ describe('UserProfiles', () => {
             {
               userProfile: {
                 department: 'Rhône (69)',
-                isAvailable: true,
+                unavailableAt: null,
                 sectorOccupations: [
                   {
                     businessSectorId: businessSector1.id,
@@ -1816,7 +1816,7 @@ describe('UserProfiles', () => {
               userProfile: {
                 department: 'Rhône (69)',
                 currentJob: 'peintre',
-                isAvailable: true,
+                unavailableAt: null,
                 nudges: [{ id: nudgeInterview.id }],
                 sectorOccupations: [
                   {
@@ -1850,7 +1850,7 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInAdmin.token}`)
             .send({
               description: 'hello',
-              isAvailable: false,
+              unavailableAt: new Date(),
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -1863,7 +1863,7 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInReferer.token}`)
             .send({
               description: 'hello',
-              isAvailable: false,
+              unavailableAt: new Date(),
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -1876,7 +1876,7 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInCoach.token}`)
             .send({
               description: 'hello',
-              isAvailable: false,
+              unavailableAt: new Date(),
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -1889,7 +1889,7 @@ describe('UserProfiles', () => {
             .set('authorization', `Bearer ${loggedInCandidate.token}`)
             .send({
               description: 'hello',
-              isAvailable: false,
+              unavailableAt: new Date(),
               department: 'Paris (75)',
             });
           expect(response.status).toBe(403);
@@ -1901,7 +1901,7 @@ describe('UserProfiles', () => {
           const updatedProfile = {
             description: 'hello',
             department: 'Paris (75)',
-            isAvailable: false,
+            unavailableAt: new Date(),
             sectorOccupations: [
               {
                 businessSectorId: businessSector.id,
@@ -1950,7 +1950,7 @@ describe('UserProfiles', () => {
           const updatedProfile: UserProfileWithPartialAssociations = {
             description: 'hello',
             department: 'Paris (75)',
-            isAvailable: false,
+            unavailableAt: new Date(),
             sectorOccupations: [
               {
                 businessSectorId: businessSector1.id,
@@ -1974,7 +1974,7 @@ describe('UserProfiles', () => {
             description: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
-            isAvailable: false,
+            unavailableAt: new Date(),
             businessSectors: [{ name: 'id' }] as BusinessSector[],
             // helpOffers: [{ name: 'network' }] as HelpOffer[],
           };
@@ -1994,7 +1994,7 @@ describe('UserProfiles', () => {
             description: 'hello',
             currentJob: 'mécanicien',
             department: 'Paris (75)',
-            isAvailable: false,
+            unavailableAt: new Date(),
             sectorOccupations: [
               {
                 businessSectorId: businessSector.id,
@@ -2016,6 +2016,7 @@ describe('UserProfiles', () => {
           expect(response.body).toEqual(
             expect.objectContaining({
               ...updatedProfile,
+              unavailableAt: updatedProfile.unavailableAt.toISOString(),
               sectorOccupations: [
                 expect.objectContaining({
                   businessSector: expect.objectContaining({ name: 'Sector 1' }),

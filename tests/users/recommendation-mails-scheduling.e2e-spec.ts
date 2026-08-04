@@ -52,7 +52,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   it('retains an eligible user exactly 10 days after onboarding completion', async () => {
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(10) },
-      { userProfile: { isAvailable: true, optInRecommendations: true } }
+      { userProfile: { unavailableAt: null, optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -63,7 +63,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   it('retains an eligible user exactly 20 days after onboarding completion', async () => {
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(20) },
-      { userProfile: { isAvailable: true, optInRecommendations: true } }
+      { userProfile: { unavailableAt: null, optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -74,7 +74,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   it('excludes a user on the day onboarding was completed (day 0)', async () => {
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(0) },
-      { userProfile: { isAvailable: true, optInRecommendations: true } }
+      { userProfile: { unavailableAt: null, optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -85,7 +85,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   it('excludes a user outside the 10-day cycle', async () => {
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(7) },
-      { userProfile: { isAvailable: true, optInRecommendations: true } }
+      { userProfile: { unavailableAt: null, optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -96,7 +96,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   it('excludes a user who opted out of recommendation emails', async () => {
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(10) },
-      { userProfile: { isAvailable: true, optInRecommendations: false } }
+      { userProfile: { unavailableAt: null, optInRecommendations: false } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -110,7 +110,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
         onboardingStatus: OnboardingStatus.IN_PROGRESS,
         onboardingCompletedAt: null,
       },
-      { userProfile: { isAvailable: true, optInRecommendations: true } }
+      { userProfile: { unavailableAt: null, optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -121,7 +121,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
   it('excludes an unavailable user', async () => {
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(10) },
-      { userProfile: { isAvailable: false, optInRecommendations: true } }
+      { userProfile: { unavailableAt: new Date(), optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();
@@ -133,7 +133,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
     // Unavailable exactly on their cycle day (10)...
     const user = await userFactory.create(
       { onboardingCompletedAt: onboardingCompletedDaysAgo(10) },
-      { userProfile: { isAvailable: false, optInRecommendations: true } }
+      { userProfile: { unavailableAt: new Date(), optInRecommendations: true } }
     );
 
     const missedDayResult =
@@ -146,7 +146,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
     await usersService.update(user.id, {
       onboardingCompletedAt: onboardingCompletedDaysAgo(11),
     });
-    await userProfilesService.updateByUserId(user.id, { isAvailable: true });
+    await userProfilesService.updateByUserId(user.id, { unavailableAt: null });
 
     const offCycleResult =
       await usersService.getUsersEligibleForRecommendationMails();
@@ -159,7 +159,7 @@ describe('UsersService.getUsersEligibleForRecommendationMails', () => {
         role: UserRoles.ADMIN,
         onboardingCompletedAt: onboardingCompletedDaysAgo(10),
       },
-      { userProfile: { isAvailable: true, optInRecommendations: true } }
+      { userProfile: { unavailableAt: null, optInRecommendations: true } }
     );
 
     const result = await usersService.getUsersEligibleForRecommendationMails();

@@ -63,6 +63,7 @@ import {
 } from './models/user-profile.include';
 import { ContactTypeEnum } from './user-profiles.types';
 import {
+  availabilityWhere,
   profileVisibilityEligibilityWhere,
   userProfileSearchQuery,
 } from './user-profiles.utils';
@@ -300,7 +301,7 @@ export class UserProfilesService {
         ...searchOptions,
         ...(contactTypesWhereClause ?? {}),
         ...(departmentsOptions ?? {}),
-        ...(isAvailable !== undefined ? { isAvailable } : {}),
+        ...availabilityWhere(isAvailable),
       },
       group: ['UserProfile.id', 'user.id', 'user.lastConnection'],
     });
@@ -484,7 +485,7 @@ export class UserProfilesService {
         ...searchOptions,
         ...(contactTypesWhereClause ?? {}),
         ...(departmentsOptions ?? {}),
-        ...(isAvailable !== undefined ? { isAvailable } : {}),
+        ...availabilityWhere(isAvailable),
       },
       group: ['UserProfile.id', 'user.id'],
     });
@@ -562,7 +563,7 @@ export class UserProfilesService {
     const targetRole =
       role === UserRoles.CANDIDATE ? UserRoles.COACH : UserRoles.CANDIDATE;
 
-    const baseWhere = { isAvailable: true };
+    const baseWhere: WhereOptions<UserProfile> = { unavailableAt: null };
     const userInclude = {
       model: User,
       as: 'user',
@@ -1114,7 +1115,7 @@ export class UserProfilesService {
   async setUserAsUnavailableDueToInactivity(user: User): Promise<void> {
     await this.mailsService.sendAutoSetUnavailableMail(user);
     await this.updateByUserId(user.id, {
-      isAvailable: false,
+      unavailableAt: new Date(),
       unavailabilityReason: UnavailabilityReason.INACTIVITY,
     });
   }
