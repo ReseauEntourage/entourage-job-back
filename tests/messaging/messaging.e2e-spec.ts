@@ -1240,7 +1240,7 @@ describe('MESSAGING', () => {
     it('should count an available mirror role participant when onlyAvailableMirrorParticipant is true', async () => {
       const availableCoach = await usersHelper.createLoggedInUser(
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
       const conversation = await conversationFactory.create({
         type: ConversationType.DIRECT,
@@ -1272,7 +1272,7 @@ describe('MESSAGING', () => {
     it('should exclude an unavailable mirror role participant when onlyAvailableMirrorParticipant is true', async () => {
       const unavailableCoach = await usersHelper.createLoggedInUser(
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: false } }
+        { userProfile: { unavailableAt: new Date() } }
       );
       const conversation = await conversationFactory.create({
         type: ConversationType.DIRECT,

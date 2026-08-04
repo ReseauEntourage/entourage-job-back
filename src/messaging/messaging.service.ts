@@ -817,7 +817,7 @@ export class MessagingService {
                     {
                       model: UserProfile,
                       as: 'userProfile',
-                      attributes: ['isAvailable'],
+                      attributes: ['unavailableAt'],
                     },
                   ]
                 : [],
@@ -856,7 +856,7 @@ export class MessagingService {
         const mirrorParticipant = participants.find(
           (p) => p.role === mirrorRole
         );
-        if (!mirrorParticipant?.userProfile?.isAvailable) continue;
+        if (mirrorParticipant?.userProfile?.unavailableAt) continue;
       }
 
       count++;
