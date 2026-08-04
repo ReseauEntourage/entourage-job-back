@@ -17,6 +17,7 @@ import { ZoneName } from 'src/utils/types/zones.types';
 
 export type PublicProfileDto = {
   achievements: UserAchievement[];
+  availableMirrorRoleParticipantsCount?: number | null;
   averageDelayResponse?: number | null;
   company: Partial<Company> | null;
   contracts: Contract[];
@@ -55,6 +56,7 @@ export const generatePublicProfileDto = (
     averageDelayResponse: number | null;
     responseRate: number | null;
     totalConversationWithMirrorRoleCount: number | null;
+    availableMirrorRoleParticipantsCount: number | null;
   }
 ): PublicProfileDto => {
   const dto = {
@@ -96,6 +98,8 @@ export const generatePublicProfileDto = (
     dto.averageDelayResponse = usersStats.averageDelayResponse;
     dto.totalConversationWithMirrorRoleCount =
       usersStats.totalConversationWithMirrorRoleCount;
+    dto.availableMirrorRoleParticipantsCount =
+      usersStats.availableMirrorRoleParticipantsCount;
   }
   return dto;
 };

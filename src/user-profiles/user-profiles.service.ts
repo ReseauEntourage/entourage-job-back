@@ -1093,21 +1093,34 @@ export class UserProfilesService {
     );
   }
 
+  async getAvailableMirrorRoleParticipantsCount(
+    userId: string,
+    userRole: UserRole
+  ): Promise<number> {
+    return this.usersStatsService.getAvailableMirrorRoleParticipantsCount(
+      userId,
+      userRole
+    );
+  }
+
   async getUsersStats(userId: string, userRole: UserRole) {
     const [
       averageDelayResponse,
       responseRate,
       totalConversationWithMirrorRoleCount,
+      availableMirrorRoleParticipantsCount,
     ] = await Promise.all([
       this.userProfileAnalyticsService.getAverageDelayResponse(userId),
       this.userProfileAnalyticsService.getResponseRate(userId),
       this.getTotalConversationWithMirrorRoleCount(userId, userRole),
+      this.getAvailableMirrorRoleParticipantsCount(userId, userRole),
     ]);
 
     return {
       averageDelayResponse,
       responseRate,
       totalConversationWithMirrorRoleCount,
+      availableMirrorRoleParticipantsCount,
     };
   }
 

@@ -12,6 +12,7 @@ import { MediasService } from 'src/medias/medias.service';
 import { Media } from 'src/medias/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
@@ -763,20 +764,22 @@ export class MessagingService {
   }
 
   /**
-   * Returns the number of conversations within a given time window where:
+   * Returns the number of direct conversations within a given time window where:
    * - All participants have sent at least one message (mutual exchange)
    * - The conversation has mirror roles: at least one CANDIDATE and at least one COACH/REFERER
-   *   (group conversations with multiple candidates or coaches/referers are included)
    * - No ADMIN participant is involved
+   * - Group conversations are excluded
    *
    * @param userId - The ID of the user to count conversations for
    * @param delayMonths - How far back to look, in months (ignored if not provided, meaning all conversations are considered)
+   * @param onlyAvailableMirrorParticipant - When true, only count conversations whose mirror role participant is available
    * @returns The count of mirror role conversations with mutual exchange for the user within the specified time window
    */
   async getMirrorRoleConversationCount(
     userId: string,
     userRole: UserRole,
-    delayMonths?: number
+    delayMonths?: number,
+    onlyAvailableMirrorParticipant?: boolean
   ): Promise<number> {
     const mirrorRole = await this.usersService.getUserMirrorRole(userRole);
     const createdAtFilter =
@@ -797,6 +800,7 @@ export class MessagingService {
         {
           model: Conversation,
           as: 'conversation',
+          where: { type: ConversationType.DIRECT },
           include: [
             {
               model: Message,
@@ -808,6 +812,14 @@ export class MessagingService {
               as: 'participants',
               attributes: ['id', 'role'],
               paranoid: false,
+              include: onlyAvailableMirrorParticipant
+                ? [
+                    {
+                      model: UserProfile,
+                      attributes: ['isAvailable'],
+                    },
+                  ]
+                : [],
             },
           ],
         },
@@ -837,6 +849,14 @@ export class MessagingService {
         messages.some((m) => m.authorId === participantId)
       );
       if (!allParticipantsReplied) continue;
+
+      // Restrict to conversations whose mirror role participant is available
+      if (onlyAvailableMirrorParticipant) {
+        const mirrorParticipant = participants.find(
+          (p) => p.role === mirrorRole
+        );
+        if (!mirrorParticipant?.userProfile?.isAvailable) continue;
+      }
 
       count++;
     }

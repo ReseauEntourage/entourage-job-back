@@ -26,4 +26,16 @@ export class UsersStatsService {
       userRole
     );
   }
+
+  async getAvailableMirrorRoleParticipantsCount(
+    userId: string,
+    userRole: UserRole
+  ) {
+    return this.messagingService.getMirrorRoleConversationCount(
+      userId,
+      userRole,
+      undefined,
+      true
+    );
+  }
 }
