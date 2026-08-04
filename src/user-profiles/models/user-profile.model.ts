@@ -82,7 +82,6 @@ export class UserProfile extends Model {
   description: string;
 
   @ApiProperty()
-  @IsDate()
   @AllowNull(true)
   @Column
   unavailableAt: Date;
