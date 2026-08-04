@@ -19,7 +19,6 @@ import { LanguagesService } from 'src/languages/languages.service';
 
 import { Jobs, GenerateProfileFromPDFJob } from 'src/queues/queues.types';
 import { UserProfileWithPartialAssociations } from 'src/user-profiles/models';
-import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 
 @Injectable()
@@ -276,30 +275,42 @@ export class ProfileGenerationService {
       }
 
       if (cvData.languages) {
-        const userProfileLanguages = await Promise.all(
-          cvData.languages.map(async (cvDataLang) => {
-            const language = await this.languagesService.findByValue(
-              cvDataLang.value
-            );
-            if (language) {
+        const userProfileLanguages = (
+          await Promise.all(
+            cvData.languages.map(async (cvDataLang) => {
+              const language = await this.languagesService.findByValue(
+                cvDataLang.value
+              );
+              if (!language) {
+                return null;
+              }
               return {
                 userProfileId: userProfile.id,
                 languageId: language.id,
                 level: cvDataLang.level,
               };
-            }
-          })
+            })
+          )
+        ).filter(
+          (
+            userProfileLanguage
+          ): userProfileLanguage is NonNullable<typeof userProfileLanguage> =>
+            userProfileLanguage !== null
         );
 
-        userProfileDto.userProfileLanguages =
-          userProfileLanguages as UserProfileLanguage[];
+        userProfileDto.userProfileLanguages = userProfileLanguages;
       }
 
       await this.userProfileService.updateByUserId(userId, userProfileDto);
     } catch (error) {
-      console.error(`Error populating user profile for user ${userId}`, error);
+      this.logger.error(
+        `Failed to populate user profile from CV data (userId=${userId}): ${
+          error instanceof Error ? error.stack : String(error)
+        }`
+      );
       throw new InternalServerErrorException(
-        'Failed to populate user profile from CV data'
+        'Failed to populate user profile from CV data',
+        { cause: error instanceof Error ? error : undefined }
       );
     }
   }
