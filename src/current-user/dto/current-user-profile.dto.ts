@@ -12,7 +12,7 @@ export type CurrentUserProfileDto = Pick<
   | 'description'
   | 'linkedinUrl'
   | 'department'
-  | 'isAvailable'
+  | 'unavailableAt'
   | 'currentJob'
   | 'optInRecommendations'
   | 'nudges'
@@ -29,7 +29,7 @@ export type CurrentUserProfileCompleteDto = Pick<
   | 'description'
   | 'linkedinUrl'
   | 'department'
-  | 'isAvailable'
+  | 'unavailableAt'
   | 'currentJob'
   | 'optInRecommendations'
   | 'nudges'
@@ -57,7 +57,7 @@ export const generateCurrentUserProfileDto = (
     description: base.description,
     linkedinUrl: base.linkedinUrl,
     department: base.department,
-    isAvailable: base.isAvailable,
+    unavailableAt: base.unavailableAt,
     currentJob: base.currentJob,
     optInRecommendations: base.optInRecommendations,
     nudges: base.nudges,
@@ -79,7 +79,7 @@ export const generateCurrentUserProfileCompleteDto = (
     description: base.description,
     linkedinUrl: base.linkedinUrl,
     department: base.department,
-    isAvailable: base.isAvailable,
+    unavailableAt: base.unavailableAt,
     currentJob: base.currentJob,
     optInRecommendations: base.optInRecommendations,
     nudges: base.nudges,

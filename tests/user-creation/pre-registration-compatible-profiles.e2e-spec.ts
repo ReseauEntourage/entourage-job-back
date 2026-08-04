@@ -153,19 +153,19 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         3,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
       await databaseHelper.createEntities(
         userFactory,
         1,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: false } }
+        { userProfile: { unavailableAt: new Date() } }
       );
       await databaseHelper.createEntities(
         userFactory,
         2,
         { role: UserRoles.CANDIDATE },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(
@@ -188,13 +188,13 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         2,
         { role: UserRoles.CANDIDATE },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
       await databaseHelper.createEntities(
         userFactory,
         2,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(`role=${UserRoles.COACH}`);
@@ -213,7 +213,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         8,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(
@@ -230,7 +230,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         2,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: false } }
+        { userProfile: { unavailableAt: new Date() } }
       );
 
       const response = await getCompatibleProfiles(
@@ -250,7 +250,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         1,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(

@@ -121,7 +121,7 @@ describe('PublicCVs', () => {
       {
         userProfile: {
           department: 'Nord (59)',
-          isAvailable: true,
+          unavailableAt: null,
           hasPicture: true,
           description: 'Description détaillée de mon parcours professionnel',
           currentJob: 'Développeur Web',
@@ -190,7 +190,7 @@ describe('PublicCVs', () => {
       {
         userProfile: {
           department: 'Nord (59)',
-          isAvailable: true,
+          unavailableAt: null,
           hasPicture: false, // Pas de photo
           description: 'Description de mon parcours',
           sectorOccupations: [
@@ -216,7 +216,7 @@ describe('PublicCVs', () => {
       {
         userProfile: {
           department: 'Nord (59)',
-          isAvailable: true,
+          unavailableAt: null,
           hasPicture: true, // A une photo
           // Peu de champs remplis, ce qui donnera un taux de complétion < 70%
           sectorOccupations: [
@@ -245,7 +245,7 @@ describe('PublicCVs', () => {
       {
         userProfile: {
           department: 'Paris (75)',
-          isAvailable: true,
+          unavailableAt: null,
           hasPicture: true,
           currentJob: 'Développeur',
           sectorOccupations: [

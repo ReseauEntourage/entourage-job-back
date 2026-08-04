@@ -5,7 +5,7 @@ export const UserProfilesAttributes = [
   'currentJob',
   'department',
   'description',
-  'isAvailable',
+  'unavailableAt',
   'linkedinUrl',
   'optInNewsletter',
   'optInRecommendations',

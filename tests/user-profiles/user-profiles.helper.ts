@@ -42,7 +42,7 @@ export class UserProfilesHelper {
       description: userProfileData.description,
       currentJob: userProfileData.currentJob,
       department: userProfileData.department,
-      isAvailable: userProfileData.isAvailable,
+      unavailableAt: userProfileData.unavailableAt?.toISOString() ?? null,
       sectorOccupations: expect.arrayContaining(
         userProfileData.sectorOccupations.map((sectorOccupation) => ({
           id: sectorOccupation.id,
@@ -58,7 +58,7 @@ export class UserProfilesHelper {
         }))
       ),
       nudges: userProfileData.nudges,
-    } as Partial<UserProfile & User>;
+    } as unknown as Partial<UserProfile & User>;
     if (completeExpected) {
       config.experiences = expect.arrayContaining(
         userProfileData.experiences.map((experience) => ({

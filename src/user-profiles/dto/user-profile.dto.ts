@@ -11,7 +11,7 @@ export const generateUserProfileDto = (
   }
   const dto = {
     id: userProfile.id,
-    isAvailable: userProfile.isAvailable,
+    unavailableAt: userProfile.unavailableAt,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
     nudges: userProfile.nudges,

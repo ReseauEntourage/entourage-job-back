@@ -113,7 +113,7 @@ describe('CurrentUser', () => {
         id: expect.any(String),
         hasPicture: expect.any(Boolean),
         hasExternalCv: expect.any(Boolean),
-        isAvailable: expect.any(Boolean),
+        unavailableAt: null,
       });
       expect(response.body).not.toHaveProperty('experiences');
       expect(response.body).not.toHaveProperty('formations');

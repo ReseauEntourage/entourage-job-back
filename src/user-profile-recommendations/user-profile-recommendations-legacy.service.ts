@@ -122,7 +122,7 @@ export class UserProfileRecommendationsLegacyService extends UserProfileRecommen
       ON up.id = upn."userProfileId"
     
     WHERE u."deletedAt" IS NULL
-    AND up."isAvailable" IS TRUE
+    AND up."unavailableAt" IS NULL
     AND up.department IN (${sameRegionDepartmentsOptions.map(
       // remplacer un appostrophe par deux appostrophes
       (department) => `'${department.replace(/'/g, "''")}'`

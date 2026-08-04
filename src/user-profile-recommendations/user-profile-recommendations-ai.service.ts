@@ -213,9 +213,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     const vec = `'${profileVector}'::vector`;
     const availabilityClause =
       filterByAvailability === true
-        ? `AND up."isAvailable" = true`
+        ? `AND up."unavailableAt" IS NULL`
         : filterByAvailability === false
-          ? `AND up."isAvailable" = false`
+          ? `AND up."unavailableAt" IS NOT NULL`
           : '';
     const elearningClause = isAdminRequester
       ? ''
@@ -261,9 +261,9 @@ export class UserProfileRecommendationsService extends UserProfileRecommendation
     const vec = `'${needsVector}'::vector`;
     const availabilityClause =
       filterByAvailability === true
-        ? `AND up."isAvailable" = true`
+        ? `AND up."unavailableAt" IS NULL`
         : filterByAvailability === false
-          ? `AND up."isAvailable" = false`
+          ? `AND up."unavailableAt" IS NOT NULL`
           : '';
     const elearningClause = isAdminRequester
       ? ''
@@ -586,7 +586,7 @@ ${workloadCases}
     const currentRecos = await this.findRecommendationsByUserId(user.id);
 
     const recIsUnavailable = currentRecos.some(
-      (r) => !r?.recUser?.userProfile?.isAvailable
+      (r) => !!r?.recUser?.userProfile?.unavailableAt
     );
     const recIsLegacy = currentRecos.some(
       (r) => r.finalScore === null || r.rank === null
