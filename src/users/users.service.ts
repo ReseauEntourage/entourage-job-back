@@ -1523,15 +1523,21 @@ export class UsersService {
       ) lm ON lm."conversationId" = c.id
       WHERE (cp."seenAt" IS NULL OR lm."lastMessageTime" >= cp."seenAt")
         AND up."unavailableAt" IS NULL
-        AND lm."lastMessageTime" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceLastConversation + 1
-        } days'
-        AND lm."lastMessageTime" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceLastConversation} days'
+        AND lm."lastMessageTime" >= CURRENT_TIMESTAMP - make_interval(days => :daysSinceLastConversationPlusOne)
+        AND lm."lastMessageTime" < CURRENT_TIMESTAMP - make_interval(days => :daysSinceLastConversation)
         AND u.role IN (:roles)
         AND u."deletedAt" IS NULL
       GROUP BY u.id
       `,
-      { type: QueryTypes.SELECT, raw: true, replacements: { roles } }
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: {
+          roles,
+          daysSinceLastConversation,
+          daysSinceLastConversationPlusOne: daysSinceLastConversation + 1,
+        },
+      }
     );
   }
 
