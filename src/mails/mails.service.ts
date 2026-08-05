@@ -272,7 +272,7 @@ export class MailsService {
     await Promise.all(
       addressees.map((addressee) => {
         const autologinToken = autologinTokensByAddresseeId[addressee.id];
-        const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${message.authorId}&autologinToken=${autologinToken}`;
+        const conversationUrl = `${process.env.FRONT_URL}/backoffice/messaging?userId=${message.authorId}&autologinToken=${encodeURIComponent(autologinToken)}`;
 
         return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
           toEmail: addressee.email,

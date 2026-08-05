@@ -320,7 +320,13 @@ export class AuthService {
       throw new UnauthorizedException('AUTOLOGIN_TOKEN_INVALID');
     }
 
-    await autologinToken.update({ consumedAt: new Date() });
+    const [affectedCount] = await this.autologinTokenModel.update(
+      { consumedAt: new Date() },
+      { where: { id: autologinToken.id, consumedAt: null } }
+    );
+    if (affectedCount === 0) {
+      throw new UnauthorizedException('AUTOLOGIN_TOKEN_ALREADY_USED');
+    }
 
     return this.login(autologinToken.userId);
   }
