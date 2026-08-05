@@ -5,8 +5,10 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { InjectModel } from '@nestjs/sequelize';
 import { MailsService } from 'src/mails/mails.service';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
 import { SessionsService } from 'src/sessions/sessions.service';
@@ -29,6 +31,9 @@ import {
   generateStaffContactDto,
   StaffContactDto,
 } from './dto/staff-contact.dto';
+import { AutologinToken } from './models/autologin-token.model';
+
+const AUTOLOGIN_TOKEN_EXPIRATION_MS = 12 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -42,7 +47,9 @@ export class AuthService {
     @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     @Inject(forwardRef(() => UserProfilesService))
-    private userProfileService: UserProfilesService
+    private userProfileService: UserProfilesService,
+    @InjectModel(AutologinToken)
+    private autologinTokenModel: typeof AutologinToken
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -262,6 +269,66 @@ export class AuthService {
 
   async sendWelcomeMail(user: User) {
     return this.mailsService.sendWelcomeMail(user);
+  }
+
+  /**
+   * Generates a one-time autologin token for a given user, scoped to the
+   * new message notification email link. The plain token embeds the
+   * created row's id (used for lookup) and a random secret (validated
+   * against `tokenHash`/`salt`), following the same never-store-in-clear
+   * principle as `hashReset`/`saltReset`.
+   */
+  async generateAutologinToken(
+    userId: string,
+    expirationMs: number = AUTOLOGIN_TOKEN_EXPIRATION_MS
+  ): Promise<string> {
+    const secret = randomBytes(32).toString('hex');
+    const { hash, salt } = encryptPassword(secret);
+
+    const autologinToken = await this.autologinTokenModel.create({
+      userId,
+      tokenHash: hash,
+      salt,
+      expiresAt: new Date(Date.now() + expirationMs),
+    });
+
+    return `${autologinToken.id}.${secret}`;
+  }
+
+  /**
+   * Validates and immediately consumes an autologin token, then logs the
+   * associated user in — same exit mechanism as `verifyOtp`.
+   */
+  async consumeAutologinToken(token: string): Promise<LoggedUser> {
+    const [id, secret] = token.split('.');
+    const autologinToken = id
+      ? await this.autologinTokenModel.findByPk(id)
+      : null;
+
+    if (!autologinToken || !secret) {
+      throw new UnauthorizedException('AUTOLOGIN_TOKEN_INVALID');
+    }
+    if (autologinToken.consumedAt) {
+      throw new UnauthorizedException('AUTOLOGIN_TOKEN_ALREADY_USED');
+    }
+    if (new Date() > autologinToken.expiresAt) {
+      throw new UnauthorizedException('AUTOLOGIN_TOKEN_EXPIRED');
+    }
+    if (
+      !validatePassword(secret, autologinToken.tokenHash, autologinToken.salt)
+    ) {
+      throw new UnauthorizedException('AUTOLOGIN_TOKEN_INVALID');
+    }
+
+    const [affectedCount] = await this.autologinTokenModel.update(
+      { consumedAt: new Date() },
+      { where: { id: autologinToken.id, consumedAt: null } }
+    );
+    if (affectedCount === 0) {
+      throw new UnauthorizedException('AUTOLOGIN_TOKEN_ALREADY_USED');
+    }
+
+    return this.login(autologinToken.userId);
   }
 
   async getUsersStats(userId: string, userRole: UserRole) {

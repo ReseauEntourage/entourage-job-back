@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { AuthModule } from 'src/auth/auth.module';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { GamificationModule } from 'src/gamification/gamification.module';
 import { MailsModule } from 'src/mails/mails.module';
@@ -29,6 +30,7 @@ import {
     forwardRef(() => MailsModule),
     forwardRef(() => UsersModule),
     forwardRef(() => MediasModule),
+    forwardRef(() => AuthModule),
   ],
   controllers: [MessagingController],
   providers: [MessagingService],
