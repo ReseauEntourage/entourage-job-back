@@ -599,18 +599,28 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareAutoSetUnavailableUsers() {
-    const DAYS_WITHOUT_CONNECTION = 60;
-    const DAYS_WITH_UNREAD_MESSAGE = 30;
+    const CANDIDATE_DAYS_WITHOUT_CONNECTION = 30;
+    const CANDIDATE_DAYS_WITH_UNREAD_MESSAGE = 15;
+    const DEFAULT_DAYS_WITHOUT_CONNECTION = 60;
+    const DEFAULT_DAYS_WITH_UNREAD_MESSAGE = 30;
 
     this.logger.log(
-      `Setting inactive users as unavailable (no connection since ${DAYS_WITHOUT_CONNECTION} days, unread message since ${DAYS_WITH_UNREAD_MESSAGE} days)...`
+      `Setting inactive users as unavailable (candidates: no connection since ${CANDIDATE_DAYS_WITHOUT_CONNECTION} days, unread message since ${CANDIDATE_DAYS_WITH_UNREAD_MESSAGE} days; others: no connection since ${DEFAULT_DAYS_WITHOUT_CONNECTION} days, unread message since ${DEFAULT_DAYS_WITH_UNREAD_MESSAGE} days)...`
     );
 
-    const inactiveUsersRows =
-      await this.messagingService.getInactiveUsersWithUnreadConversations(
-        DAYS_WITHOUT_CONNECTION,
-        DAYS_WITH_UNREAD_MESSAGE
-      );
+    const [candidateRows, defaultRows] = await Promise.all([
+      this.messagingService.getInactiveUsersWithUnreadConversations(
+        CANDIDATE_DAYS_WITHOUT_CONNECTION,
+        CANDIDATE_DAYS_WITH_UNREAD_MESSAGE,
+        [UserRoles.CANDIDATE]
+      ),
+      this.messagingService.getInactiveUsersWithUnreadConversations(
+        DEFAULT_DAYS_WITHOUT_CONNECTION,
+        DEFAULT_DAYS_WITH_UNREAD_MESSAGE,
+        [UserRoles.COACH, UserRoles.REFERER]
+      ),
+    ]);
+    const inactiveUsersRows = [...candidateRows, ...defaultRows];
 
     this.logger.log(
       `Found ${inactiveUsersRows.length} inactive users to set as unavailable`
@@ -1257,11 +1267,20 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareUnavailableUsersMails() {
-    const DAYS_SINCE_LAST_CONVERSATION = 30;
+    const CANDIDATE_DAYS_SINCE_LAST_CONVERSATION = 15;
+    const DEFAULT_DAYS_SINCE_LAST_CONVERSATION = 30;
     this.logger.log('Preparing unavailable users mails...');
-    const rows = await this.usersService.getUserRowsForUnavailableUsers(
-      DAYS_SINCE_LAST_CONVERSATION
-    );
+    const [candidateRows, defaultRows] = await Promise.all([
+      this.usersService.getUserRowsForUnavailableUsers(
+        CANDIDATE_DAYS_SINCE_LAST_CONVERSATION,
+        [UserRoles.CANDIDATE]
+      ),
+      this.usersService.getUserRowsForUnavailableUsers(
+        DEFAULT_DAYS_SINCE_LAST_CONVERSATION,
+        [UserRoles.COACH, UserRoles.REFERER]
+      ),
+    ]);
+    const rows = [...candidateRows, ...defaultRows];
     this.logger.log(
       `Found ${rows.length} users eligible for unavailable reminder`
     );
@@ -1291,7 +1310,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📵 Unavailable users - J+${DAYS_SINCE_LAST_CONVERSATION}`,
+      `📵 Unavailable users - J+${CANDIDATE_DAYS_SINCE_LAST_CONVERSATION}/${DEFAULT_DAYS_SINCE_LAST_CONVERSATION}`,
       {
         total: rows.length,
         success: successIds.length,

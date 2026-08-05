@@ -1504,7 +1504,8 @@ export class UsersService {
   }
 
   async getUserRowsForUnavailableUsers(
-    daysSinceLastConversation: number
+    daysSinceLastConversation: number,
+    roles: UserRole[]
   ): Promise<{ id: string; unreadConversationsCount: number }[]> {
     return this.userModel.sequelize.query(
       `
@@ -1526,11 +1527,11 @@ export class UsersService {
           daysSinceLastConversation + 1
         } days'
         AND lm."lastMessageTime" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceLastConversation} days'
-        AND u.role != 'Admin'
+        AND u.role IN (:roles)
         AND u."deletedAt" IS NULL
       GROUP BY u.id
       `,
-      { type: QueryTypes.SELECT, raw: true }
+      { type: QueryTypes.SELECT, raw: true, replacements: { roles } }
     );
   }
 
