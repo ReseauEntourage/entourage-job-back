@@ -763,7 +763,7 @@ describe('MESSAGING', () => {
         describe('Contexte : 1 Candidate -> 1 Coach', () => {
           it('should return 200 and all conversations when logged as coach', async () => {
             const conversation = await conversationFactory.create();
-            messagingHelper.associationParticipantsToConversation(
+            await messagingHelper.associationParticipantsToConversation(
               conversation.id,
               [loggedInCandidate.user.id, loggedInCoach.user.id]
             );
@@ -782,7 +782,7 @@ describe('MESSAGING', () => {
         describe('Contexte : 1 Candidate -> 1 Referer', () => {
           it('should return 200 and all conversations when logged as referer', async () => {
             const conversation = await conversationFactory.create();
-            messagingHelper.associationParticipantsToConversation(
+            await messagingHelper.associationParticipantsToConversation(
               conversation.id,
               [loggedInCandidate.user.id, loggedInReferer.user.id]
             );
