@@ -245,6 +245,16 @@ export class AuthController {
     return this.authService.verifyOtp(email, code);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Public()
+  @Post('autologin')
+  async autologin(@Body('token') token: string): Promise<{ token: string }> {
+    if (!token) {
+      throw new BadRequestException();
+    }
+    return this.authService.consumeAutologinToken(token);
+  }
+
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Public()
   @Post('finalize-refered-user')

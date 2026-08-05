@@ -295,4 +295,79 @@ describe('Auth', () => {
       });
     });
   });
+  describe('/autologin - Autologin', () => {
+    let candidate: User;
+    beforeEach(async () => {
+      candidate = await userFactory.create({
+        role: UserRoles.CANDIDATE,
+      });
+    });
+
+    it('Should return 201 and token, if the autologin token is valid, non expired and never used', async () => {
+      const token = await authHelper.getAutologinToken(candidate.id);
+      const response: APIResponse<AuthController['autologin']> = await request(
+        server
+      )
+        .post(`${route}/autologin`)
+        .send({ token });
+      expect(response.status).toBe(201);
+      expect(response.body.token).toBeTruthy();
+    });
+    it('Should return 401, if the autologin token has already been used', async () => {
+      const token = await authHelper.getAutologinToken(candidate.id);
+      await request(server).post(`${route}/autologin`).send({ token });
+
+      const response: APIResponse<AuthController['autologin']> = await request(
+        server
+      )
+        .post(`${route}/autologin`)
+        .send({ token });
+      expect(response.status).toBe(401);
+    });
+    it('Should return 401, if the autologin token is expired', async () => {
+      const token = await authHelper.getExpiredAutologinToken(candidate.id);
+      const response: APIResponse<AuthController['autologin']> = await request(
+        server
+      )
+        .post(`${route}/autologin`)
+        .send({ token });
+      expect(response.status).toBe(401);
+    });
+    it('Should return 401, if the autologin token is invalid', async () => {
+      const response: APIResponse<AuthController['autologin']> = await request(
+        server
+      )
+        .post(`${route}/autologin`)
+        .send({ token: `${candidate.id}.not-a-real-secret` });
+      expect(response.status).toBe(401);
+    });
+    it('Should return 400, if no token provided', async () => {
+      const response: APIResponse<AuthController['autologin']> = await request(
+        server
+      )
+        .post(`${route}/autologin`)
+        .send({});
+      expect(response.status).toBe(400);
+    });
+    it('Should consume the token and return 201, even if the user is already authenticated', async () => {
+      const loggedInCandidat = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+        password: 'loggedInCandidat',
+      });
+      const token = await authHelper.getAutologinToken(
+        loggedInCandidat.user.id
+      );
+
+      const firstResponse: APIResponse<AuthController['autologin']> =
+        await request(server)
+          .post(`${route}/autologin`)
+          .set('authorization', `Bearer ${loggedInCandidat.token}`)
+          .send({ token });
+      expect(firstResponse.status).toBe(201);
+
+      const secondResponse: APIResponse<AuthController['autologin']> =
+        await request(server).post(`${route}/autologin`).send({ token });
+      expect(secondResponse.status).toBe(401);
+    });
+  });
 });

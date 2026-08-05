@@ -15,4 +15,12 @@ export class AuthHelper {
     const token = await this.authService.generateVerificationToken(user);
     return token;
   }
+
+  async getAutologinToken(userId: string) {
+    return this.authService.generateAutologinToken(userId);
+  }
+
+  async getExpiredAutologinToken(userId: string) {
+    return this.authService.generateAutologinToken(userId, -1000);
+  }
 }

@@ -1,6 +1,7 @@
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
+import { AuthService } from 'src/auth/auth.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -65,6 +66,8 @@ export class MessagingService {
     private usersService: UsersService,
     @Inject(forwardRef(() => GamificationService))
     private gamificationService: GamificationService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
     private mailsService: MailsService,
     private mediaService: MediasService,
     private queuesService: QueuesService
@@ -938,11 +941,23 @@ export class MessagingService {
       (p) => p.id
     );
 
-    const notifyOtherParticipants = () => {
+    const notifyOtherParticipants = async () => {
       const otherParticipants = message.conversation.participants.filter(
         (participant) => participant.id !== createMessageDto.authorId
       );
-      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+      const autologinTokensByAddresseeId = Object.fromEntries(
+        await Promise.all(
+          otherParticipants.map(async (participant) => [
+            participant.id,
+            await this.authService.generateAutologinToken(participant.id),
+          ])
+        )
+      );
+      this.mailsService.sendNewMessageNotifMail(
+        message,
+        otherParticipants,
+        autologinTokensByAddresseeId
+      );
     };
 
     const triggerAchievementChecks = () => {
@@ -960,11 +975,15 @@ export class MessagingService {
 
     if (transaction) {
       transaction.afterCommit(() => {
-        notifyOtherParticipants();
+        void notifyOtherParticipants().catch((err) =>
+          this.logger.error('Failed to notify other participants', err)
+        );
         triggerAchievementChecks();
       });
     } else {
-      notifyOtherParticipants();
+      void notifyOtherParticipants().catch((err) =>
+        this.logger.error('Failed to notify other participants', err)
+      );
       triggerAchievementChecks();
     }
 
