@@ -53,4 +53,12 @@ export class ExternalCvsHelper {
   async findMedia(mediaId: string): Promise<Media | null> {
     return this.mediaModel.findByPk(mediaId, { paranoid: false });
   }
+
+  /**
+   * Soft-deletes a media without soft-deleting the links pointing at it, to
+   * reproduce a broken cascade (the state the `required` include guards).
+   */
+  async deleteMedia(mediaId: string): Promise<number> {
+    return this.mediaModel.destroy({ where: { id: mediaId } });
+  }
 }

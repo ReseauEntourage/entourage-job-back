@@ -69,7 +69,7 @@ export class ProfileGeneratorProcessor extends WorkerHost {
     try {
       await job.updateProgress(10);
 
-      // Construire l'URL S3 — `s3Key` est la clé complète stockée en base
+      // Build the S3 URL — `s3Key` is the full key stored in database
       const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${s3Key}`;
 
       // Télécharger le PDF depuis S3 directement dans le worker

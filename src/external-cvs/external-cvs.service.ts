@@ -116,17 +116,27 @@ export class ExternalCvsService {
    * Finds the current external CV of a profile: the most recently created
    * link that has not been soft-deleted.
    *
+   * If that link's media is gone (its S3 object was deleted), the profile has
+   * no current CV: resolution deliberately does NOT fall back to an older
+   * version. Once a new CV is uploaded the previous ones are history only —
+   * the same rule that makes `deleteExternalCv` soft-delete every link rather
+   * than just the latest one.
+   *
+   * The caller therefore gets either a record with a usable `media`, or null.
+   *
    * @param userProfileId - The ID of the user profile
    * @returns {Promise<ExternalCv | null>} - The link, with its media loaded
    */
   async findCurrentExternalCv(
     userProfileId: string
   ): Promise<ExternalCv | null> {
-    return this.externalCvModel.findOne({
+    const externalCv = await this.externalCvModel.findOne({
       where: { userProfileId },
       order: [['createdAt', 'DESC']],
       include: [{ model: Media, as: 'media' }],
     });
+
+    return externalCv?.media ? externalCv : null;
   }
 
   /**

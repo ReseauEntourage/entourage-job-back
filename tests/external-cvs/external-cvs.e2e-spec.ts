@@ -186,6 +186,34 @@ describe('ExternalCvs', () => {
       );
     });
 
+    it('should report no current CV when the latest link lost its media, never falling back to an older version', async () => {
+      const [previous] = await externalCvsHelper.findExternalCvs(
+        candidateWithCvProfileId
+      );
+      const previousMedia = await externalCvsHelper.findMedia(previous.mediaId);
+
+      const latest = await externalCvsHelper.createExternalCv(
+        candidateWithCvProfileId,
+        loggedInCandidateWithCv.user.id,
+        { createdAt: new Date('2026-06-01T00:00:00Z') }
+      );
+      // Broken cascade: the file is gone but the link is still active
+      await externalCvsHelper.deleteMedia(latest.mediaId);
+
+      const response: APIResponse<ExternalCvsController['findExternalCv']> =
+        await request(server)
+          .get(`${route}/${loggedInCandidateWithCv.user.id}`)
+          .set('authorization', `Bearer ${loggedInCandidateWithCv.token}`);
+
+      expect(response.status).toBe(404);
+      // The still-live older version must not resurface
+      expect(S3Mocks.getSignedUrl).not.toHaveBeenCalledWith(
+        previousMedia.s3Key,
+        expect.anything(),
+        expect.anything()
+      );
+    });
+
     it('should serve the file back under its original name', async () => {
       await externalCvsHelper.createExternalCv(
         candidateWithCvProfileId,

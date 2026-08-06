@@ -43,7 +43,7 @@ async function migrateExternalCvs() {
 
     const userProfiles = await userProfileModel.findAll({
       where: { hasExternalCv: true },
-      attributes: ['id', 'userId', 'deletedAt'],
+      attributes: ['id', 'userId'],
     });
 
     let migrated = 0;
@@ -87,7 +87,6 @@ async function migrateExternalCvs() {
       await externalCvModel.create({
         userProfileId: userProfile.id,
         mediaId: media.id,
-        deletedAt: userProfile.deletedAt,
       });
 
       migrated += 1;
