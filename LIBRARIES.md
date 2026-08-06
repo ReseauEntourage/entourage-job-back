@@ -86,22 +86,6 @@ NestJS wrapper for `jsonwebtoken` — signs and verifies JWT tokens.
 
 ---
 
-### `@nestjs/mapped-types`
-
-|                  |                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Version**      | `*`                                                                             |
-| **Release date** | —                                                                               |
-| **Changelog**    | [CHANGELOG.md](https://github.com/nestjs/mapped-types/blob/master/CHANGELOG.md) |
-
-Utility types (`PartialType`, `PickType`, `OmitType`, `IntersectionType`) for NestJS DTOs.
-
-**Used in:** DTO classes throughout the codebase to derive partial/extended types.
-
-**Alternatives:** TypeScript utility types manually.
-
----
-
 ### `@nestjs/passport`
 
 |                  |                                                                             |
@@ -564,22 +548,6 @@ Official Mailjet API v3 client for sending transactional emails via templates.
 
 ---
 
-### `@mailchimp/mailchimp_marketing`
-
-|                  |                                                                 |
-| ---------------- | --------------------------------------------------------------- |
-| **Version**      | `^3.0.78`                                                       |
-| **Release date** | 2022                                                            |
-| **Changelog**    | [GitHub](https://github.com/mailchimp/mailchimp-marketing-node) |
-
-Official Mailchimp Marketing API client for managing contacts and lists.
-
-**Used in:** declared as a production dependency; handles newsletter subscription management (contacts/contacts opt-in flows).
-
-**Alternatives:** Brevo (Sendinblue), Klaviyo.
-
----
-
 ## SMS & Push Notifications
 
 ### `@vonage/server-sdk`
@@ -611,56 +579,6 @@ Pusher Channels server SDK for broadcasting real-time events to connected client
 **Used in:** `src/external-services/pusher/` and `src/queues/consumers/profile-generator.processor.ts` — pushes real-time notifications to the front-end when profile generation completes.
 
 **Alternatives:** Socket.io, Ably, AWS IoT.
-
----
-
-## PDF Generation
-
-### `pdf-lib`
-
-|                  |                                                                             |
-| ---------------- | --------------------------------------------------------------------------- |
-| **Version**      | `^1.17.1`                                                                   |
-| **Release date** | 2021                                                                        |
-| **Changelog**    | [CHANGELOG.md](https://github.com/Hopding/pdf-lib/blob/master/CHANGELOG.md) |
-
-Pure JavaScript PDF creation and modification library — no native dependencies.
-
-**Used in:** CV generation pipeline (public-cv / profile generation) for building PDF documents.
-
-**Alternatives:** `pdfkit`, `puppeteer` (headless Chrome rendering).
-
----
-
-### `pdf2pic`
-
-|                  |                                                     |
-| ---------------- | --------------------------------------------------- |
-| **Version**      | `^3.1.4`                                            |
-| **Release date** | 2023                                                |
-| **Changelog**    | [GitHub](https://github.com/yakovmeister/pdf2image) |
-
-Converts PDF pages to images (PNG/JPEG) using `pdftocairo` / GraphicsMagick.
-
-**Used in:** `src/external-services/openai/openai.service.ts` (comment references `ToBase64Response`) and `src/queues/consumers/profile-generator.processor.ts` for converting uploaded CV PDFs to images before passing them to the OpenAI vision API.
-
-**Alternatives:** `pdfjs-dist`, `pdf-poppler`, `pdf.js`.
-
----
-
-### `puppeteer-core`
-
-|                  |                                                                               |
-| ---------------- | ----------------------------------------------------------------------------- |
-| **Version**      | `^16.1.0`                                                                     |
-| **Release date** | September 2022                                                                |
-| **Changelog**    | [CHANGELOG.md](https://github.com/puppeteer/puppeteer/blob/main/CHANGELOG.md) |
-
-Headless Chromium automation library (without bundled Chrome) for HTML-to-PDF rendering.
-
-**Used in:** CV generation (`src/public-cv/` or profile-generation pipeline) for rendering CV templates to PDF via headless Chrome.
-
-**Alternatives:** `playwright`, `wkhtmltopdf`, `pdf-lib`.
 
 ---
 
@@ -745,38 +663,6 @@ Promise-based HTTP client for Node.js and browsers.
 **Used in:** `src/queues/consumers/profile-generator.processor.ts` (downloads PDF from S3), `src/profile-generation/profile-generation.controller.ts`.
 
 **Alternatives:** `node-fetch`, `undici`, native `fetch` (Node 18+).
-
----
-
-### `node-fetch`
-
-|                  |                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------- |
-| **Version**      | `^2.6.7`                                                                        |
-| **Release date** | 2021                                                                            |
-| **Changelog**    | [CHANGELOG.md](https://github.com/node-fetch/node-fetch/blob/main/CHANGELOG.md) |
-
-Lightweight Fetch API implementation for Node.js (v2 — CommonJS compatible).
-
-**Used in:** declared as a production dependency; used in lower-level HTTP calls or transitively by other packages.
-
-**Alternatives:** `axios`, native `fetch` (Node 18+).
-
----
-
-### `qs`
-
-|                  |                                        |
-| ---------------- | -------------------------------------- |
-| **Version**      | `^6.11.0`                              |
-| **Release date** | 2022                                   |
-| **Changelog**    | [GitHub](https://github.com/ljharb/qs) |
-
-Query string parser and stringifier with support for nested objects and arrays.
-
-**Used in:** serialising complex query parameters for HTTP requests (used transitively by `axios`/`jsforce` or directly in API calls).
-
-**Alternatives:** URLSearchParams (native), `querystring` (built-in, deprecated).
 
 ---
 
@@ -962,22 +848,6 @@ RFC 4122 UUID generation (`v4`) and validation.
 
 ---
 
-### `bitly`
-
-|                  |                                                   |
-| ---------------- | ------------------------------------------------- |
-| **Version**      | `^7.1.2`                                          |
-| **Release date** | 2021                                              |
-| **Changelog**    | [GitHub](https://github.com/tanepiper/node-bitly) |
-
-Bitly API client for shortening URLs.
-
-**Used in:** declared as a production dependency; shortens shareable URLs (e.g. public CV links).
-
-**Alternatives:** TinyURL API, custom short-link service.
-
----
-
 ### `deep-diff`
 
 |                  |                                           |
@@ -1007,22 +877,6 @@ Google's diff/match/patch algorithm for text strings.
 **Used in:** `src/revisions/revisions.utils.ts` alongside `deep-diff` to produce human-readable text diffs for the revision history.
 
 **Alternatives:** `diff` (npm), `jsdiff`.
-
----
-
-### `thenby`
-
-|                  |                                          |
-| ---------------- | ---------------------------------------- |
-| **Version**      | `^1.3.4`                                 |
-| **Release date** | 2019                                     |
-| **Changelog**    | [GitHub](https://github.com/Teun/thenby) |
-
-Chainable multi-column sort for arrays of objects (`firstBy(...).thenBy(...)`).
-
-**Used in:** declared as a production dependency; used for multi-key sorting of results (e.g. user lists, recommendations).
-
-**Alternatives:** `lodash.orderby`, custom comparators.
 
 ---
 
@@ -1238,19 +1092,19 @@ Disables ESLint rules that conflict with Prettier formatting.
 
 ---
 
-### `eslint-plugin-import`
+### `eslint-plugin-import-x`
 
-|                  |                                                             |
-| ---------------- | ----------------------------------------------------------- |
-| **Version**      | `^2.25.4`                                                   |
-| **Release date** | 2022                                                        |
-| **Changelog**    | [GitHub](https://github.com/import-js/eslint-plugin-import) |
+|                  |                                                          |
+| ---------------- | -------------------------------------------------------- |
+| **Version**      | `^4.17.1`                                                |
+| **Release date** | 2024                                                     |
+| **Changelog**    | [GitHub](https://github.com/un-ts/eslint-plugin-import-x) |
 
-Lints ES module import/export syntax, missing modules, and import order.
+Actively maintained fork of `eslint-plugin-import` — lints ES module import/export syntax, missing modules, and import order.
 
-**Used in:** `.eslintrc.js`.
+**Used in:** `eslint.config.mjs` via `importPlugin.flatConfigs.recommended` / `.typescript`, with custom `import-x/order` and `import-x/no-extraneous-dependencies` rules.
 
-**Alternatives:** `eslint-plugin-n`.
+**Alternatives:** `eslint-plugin-import` (original, slower releases), `eslint-plugin-n`.
 
 ---
 
@@ -1258,13 +1112,13 @@ Lints ES module import/export syntax, missing modules, and import order.
 
 |                  |                                                                          |
 | ---------------- | ------------------------------------------------------------------------ |
-| **Version**      | `^2.5.0`                                                                 |
-| **Release date** | 2022                                                                     |
+| **Version**      | `^3.0.0`                                                                 |
+| **Release date** | 2023                                                                     |
 | **Changelog**    | [GitHub](https://github.com/import-js/eslint-import-resolver-typescript) |
 
-Teaches `eslint-plugin-import` to resolve TypeScript path aliases and `.ts` files.
+Teaches `eslint-plugin-import-x` to resolve TypeScript path aliases and `.ts` files.
 
-**Used in:** `.eslintrc.js` alongside `eslint-plugin-import`.
+**Used in:** `eslint.config.mjs` via the `import-x/resolver.typescript` setting.
 
 **Alternatives:** —
 
@@ -1286,19 +1140,19 @@ Runs Prettier as an ESLint rule and reports formatting differences as lint error
 
 ---
 
-### `eslint-plugin-typescript-sort-keys`
+### `eslint-plugin-perfectionist`
 
-|                  |                                                                        |
-| ---------------- | ---------------------------------------------------------------------- |
-| **Version**      | `^2.1.0`                                                               |
-| **Release date** | 2022                                                                   |
-| **Changelog**    | [GitHub](https://github.com/infctr/eslint-plugin-typescript-sort-keys) |
+|                  |                                                                |
+| ---------------- | -------------------------------------------------------------- |
+| **Version**      | `^5.10.0`                                                      |
+| **Release date** | 2025                                                           |
+| **Changelog**    | [GitHub](https://github.com/azat-io/eslint-plugin-perfectionist) |
 
-Enforces alphabetical ordering of TypeScript interface/type keys.
+Enforces consistent sorting of interfaces, enums, objects, and other constructs via customizable natural-order rules.
 
-**Used in:** `.eslintrc.js` to keep interface/type definitions consistently sorted.
+**Used in:** `eslint.config.mjs` — `perfectionist/sort-interfaces` and `perfectionist/sort-enums` rules.
 
-**Alternatives:** —
+**Alternatives:** `eslint-plugin-typescript-sort-keys` (interface/type keys only, no longer used here).
 
 ---
 
@@ -1365,70 +1219,6 @@ Angular-style code generation schematics used by the NestJS CLI.
 **Used in:** `nest generate` commands (implicit dependency of `@nestjs/cli`).
 
 **Alternatives:** —
-
----
-
-### `ts-node`
-
-|                  |                                                                              |
-| ---------------- | ---------------------------------------------------------------------------- |
-| **Version**      | `^10.0.0`                                                                    |
-| **Release date** | 2021                                                                         |
-| **Changelog**    | [CHANGELOG.md](https://github.com/TypeStrong/ts-node/blob/main/CHANGELOG.md) |
-
-TypeScript execution engine for Node.js — runs `.ts` files directly without pre-compilation.
-
-**Used in:** Sequelize CLI configuration (`sequelize-cli` uses `ts-node` to process migration files), and `nest start --watch`.
-
-**Alternatives:** `tsx`, `esbuild-register`.
-
----
-
-### `ts-loader`
-
-|                  |                                                   |
-| ---------------- | ------------------------------------------------- |
-| **Version**      | `^9.2.3`                                          |
-| **Release date** | 2021                                              |
-| **Changelog**    | [GitHub](https://github.com/TypeStrong/ts-loader) |
-
-Webpack loader for TypeScript files (used by NestJS CLI's webpack build mode).
-
-**Used in:** NestJS CLI build pipeline.
-
-**Alternatives:** `babel-loader` with TypeScript preset, `esbuild-loader`.
-
----
-
-### `tsconfig-paths`
-
-|                  |                                                     |
-| ---------------- | --------------------------------------------------- |
-| **Version**      | `^3.10.1`                                           |
-| **Release date** | 2021                                                |
-| **Changelog**    | [GitHub](https://github.com/dividab/tsconfig-paths) |
-
-Resolves TypeScript path aliases (e.g. `src/...`) at runtime for `ts-node`.
-
-**Used in:** `ts-node` and Jest configurations to resolve `src/` imports.
-
-**Alternatives:** `module-alias`.
-
----
-
-### `source-map-support`
-
-|                  |                                                            |
-| ---------------- | ---------------------------------------------------------- |
-| **Version**      | `^0.5.20`                                                  |
-| **Release date** | 2020                                                       |
-| **Changelog**    | [GitHub](https://github.com/evanw/node-source-map-support) |
-
-Maps compiled JavaScript stack traces back to TypeScript source lines.
-
-**Used in:** production entrypoints and test bootstrap for readable stack traces.
-
-**Alternatives:** Node.js `--enable-source-maps` flag (Node 12.12+).
 
 ---
 

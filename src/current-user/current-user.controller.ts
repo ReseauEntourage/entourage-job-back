@@ -6,7 +6,7 @@ import { User } from 'src/users/models';
 import { CurrentUserService } from './current-user.service';
 
 @ApiTags('CurrentUser')
-@Throttle(60, 60)
+@Throttle({ default: { limit: 60, ttl: 60000 } })
 @ApiBearerAuth()
 @Controller('current')
 export class CurrentUserController {

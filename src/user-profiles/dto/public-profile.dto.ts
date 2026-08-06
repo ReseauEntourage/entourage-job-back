@@ -1,22 +1,23 @@
 import { UserProfile, UserProfileSectorOccupation } from '../models';
 import { UserProfileLanguage } from '../models/user-profile-language.model';
 import { UserProfileNudge } from '../models/user-profile-nudge.model';
-import { Contract } from 'src/common/contracts/models';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
-import { Interest } from 'src/common/interests/models';
-import { Department } from 'src/common/locations/locations.types';
-import { Nudge } from 'src/common/nudge/models';
 import { Review } from 'src/common/reviews/models';
-import { Skill } from 'src/common/skills/models';
 import { Company } from 'src/companies/models/company.model';
+import { Contract } from 'src/contracts/models';
+import { Experience } from 'src/experiences/models';
+import { Formation } from 'src/formations/models';
 import { UserAchievement } from 'src/gamification/models';
+import { Interest } from 'src/interests/models';
+import { Department } from 'src/locations/locations.types';
+import { Nudge } from 'src/nudge/models';
+import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';
 import { Gender, UserRole } from 'src/users/users.types';
 import { ZoneName } from 'src/utils/types/zones.types';
 
 export type PublicProfileDto = {
   achievements: UserAchievement[];
+  availableMirrorRoleParticipantsCount?: number | null;
   averageDelayResponse?: number | null;
   company: Partial<Company> | null;
   contracts: Contract[];
@@ -35,7 +36,6 @@ export type PublicProfileDto = {
   hasPicture: boolean;
   id: string;
   interests: Interest[];
-  isAvailable: boolean;
   lastName: string;
   linkedinUrl?: string;
   nudges: Nudge[];
@@ -44,6 +44,7 @@ export type PublicProfileDto = {
   sectorOccupations: UserProfileSectorOccupation[];
   skills: Skill[];
   totalConversationWithMirrorRoleCount?: number | null;
+  unavailableAt: Date | null;
   userProfileLanguages: UserProfileLanguage[];
   zone: ZoneName;
 };
@@ -55,6 +56,7 @@ export const generatePublicProfileDto = (
     averageDelayResponse: number | null;
     responseRate: number | null;
     totalConversationWithMirrorRoleCount: number | null;
+    availableMirrorRoleParticipantsCount: number | null;
   }
 ): PublicProfileDto => {
   const dto = {
@@ -67,7 +69,7 @@ export const generatePublicProfileDto = (
     elearningCompletedAt: user.elearningCompletedAt,
     department: userProfile.department,
     currentJob: userProfile.currentJob,
-    isAvailable: userProfile.isAvailable,
+    unavailableAt: userProfile.unavailableAt,
     nudges: userProfile.nudges,
     customNudges: userProfile.customNudges,
     description: userProfile.description,
@@ -96,6 +98,8 @@ export const generatePublicProfileDto = (
     dto.averageDelayResponse = usersStats.averageDelayResponse;
     dto.totalConversationWithMirrorRoleCount =
       usersStats.totalConversationWithMirrorRoleCount;
+    dto.availableMirrorRoleParticipantsCount =
+      usersStats.availableMirrorRoleParticipantsCount;
   }
   return dto;
 };

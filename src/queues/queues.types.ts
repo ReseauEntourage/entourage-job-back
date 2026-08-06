@@ -68,6 +68,8 @@ export const Jobs = {
   PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
   PREPARE_UNANSWERED_CONVERSATIONS_SMS: 'prepare_unanswered_conversations_sms',
   PREPARE_LINKEDIN_SHARE_PROFILE_MAILS: 'prepare_linkedin_share_profile_mails',
+  PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS:
+    'prepare_unavailable_sender_notification_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -119,6 +121,7 @@ type JobsData = {
   [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
   [Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS]: PrepareUnansweredConversationsSmsJob;
   [Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS]: PrepareLinkedInShareProfileMailsJob;
+  [Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS]: PrepareUnavailableSenderNotificationMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -257,6 +260,11 @@ export type PrepareWarnAccountDeletionMailsJob = Record<string, never>;
 export type PrepareUnansweredConversationsSmsJob = Record<string, never>;
 
 export type PrepareLinkedInShareProfileMailsJob = Record<string, never>;
+
+export type PrepareUnavailableSenderNotificationMailsJob = Record<
+  string,
+  never
+>;
 
 export interface UpdateUserProfileEmbeddingsJob {
   embeddingTypes: EmbeddingType[];

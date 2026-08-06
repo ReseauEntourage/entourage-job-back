@@ -1,8 +1,8 @@
 import path from 'path';
 import { Injectable } from '@nestjs/common';
+import { MatchingReason } from 'src/user-profile-recommendations/user-profile-recommendation.types';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfile } from 'src/user-profiles/models';
-import { MatchingReason } from 'src/user-profiles/recommendations/user-profile-recommendation.types';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 
@@ -42,7 +42,7 @@ export class UserProfilesHelper {
       description: userProfileData.description,
       currentJob: userProfileData.currentJob,
       department: userProfileData.department,
-      isAvailable: userProfileData.isAvailable,
+      unavailableAt: userProfileData.unavailableAt?.toISOString() ?? null,
       sectorOccupations: expect.arrayContaining(
         userProfileData.sectorOccupations.map((sectorOccupation) => ({
           id: sectorOccupation.id,
@@ -58,7 +58,7 @@ export class UserProfilesHelper {
         }))
       ),
       nudges: userProfileData.nudges,
-    } as Partial<UserProfile & User>;
+    } as unknown as Partial<UserProfile & User>;
     if (completeExpected) {
       config.experiences = expect.arrayContaining(
         userProfileData.experiences.map((experience) => ({

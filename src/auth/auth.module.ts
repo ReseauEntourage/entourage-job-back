@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { SequelizeModule } from '@nestjs/sequelize';
 import { MailsModule } from 'src/mails/mails.module';
 import { ProfileGenerationModule } from 'src/profile-generation/profile-generation.module';
 import { QueuesModule } from 'src/queues/producers/queues.module';
@@ -12,6 +13,7 @@ import { UsersStatsModule } from 'src/users-stats/users-stats.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy, LocalStrategy } from './guards';
+import { AutologinToken } from './models/autologin-token.model';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { JwtStrategy, LocalStrategy } from './guards';
       secret: `${process.env.JWT_SECRET}`,
       signOptions: { expiresIn: '30d' },
     }),
+    SequelizeModule.forFeature([AutologinToken]),
     MailsModule,
     forwardRef(() => UsersModule),
     forwardRef(() => UsersStatsModule),

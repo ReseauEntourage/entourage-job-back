@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import moment from 'moment';
 
 import 'moment/locale/fr';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
-import { Nudge } from 'src/common/nudge/models';
-import { Skill } from 'src/common/skills/models';
+import { Experience } from 'src/experiences/models';
+import { Formation } from 'src/formations/models';
+import { Nudge } from 'src/nudge/models';
+import { Skill } from 'src/skills/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { UserProfileLanguage } from 'src/user-profiles/models/user-profile-language.model';
 import { UserProfileNudge } from 'src/user-profiles/models/user-profile-nudge.model';

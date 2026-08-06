@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Experience } from 'src/common/experiences/models';
-import { Formation } from 'src/common/formations/models';
+import { Experience } from 'src/experiences/models';
 import { AnthropicModule } from 'src/external-services/anthropic/anthropic.module';
 import { LlmMetricsModule } from 'src/external-services/llm-metrics/llm-metrics.module';
+import { Formation } from 'src/formations/models';
 import { UserInConversation } from 'src/messaging/guards/user-in-conversation';
 import { MessagingModule } from 'src/messaging/messaging.module';
 import { UserProfile } from 'src/user-profiles/models';

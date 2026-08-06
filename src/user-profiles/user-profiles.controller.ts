@@ -21,6 +21,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { validate as uuidValidate } from 'uuid';
 import { UserPayload } from 'src/auth/guards';
+import { UserProfileAnalyticsService } from 'src/user-profile-analytics/user-profile-analytics.service';
+import { UserProfileMediaService } from 'src/user-profile-media/user-profile-media.service';
+import { UserProfileModerationService } from 'src/user-profile-moderation/user-profile-moderation.service';
+import { RecommendationsPageDto } from 'src/user-profile-recommendations/dto/recommendations.dto';
+import {
+  APPEND_BATCH_SIZE,
+  UserProfileRecommendationsService,
+} from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import {
   Self,
   SelfGuard,
@@ -34,6 +42,7 @@ import {
   UserRoles,
 } from 'src/users/users.types';
 import { isEntourageAdmin, isRoleIncluded } from 'src/users/users.utils';
+import { toArray } from 'src/utils/misc';
 import { UpdateCoachUserProfileDto } from './dto';
 import { generatePublicProfileDto } from './dto/public-profile.dto';
 import { ReportAbuseUserProfileDto } from './dto/report-abuse-user-profile.dto';
@@ -41,11 +50,6 @@ import { ReportAbuseUserProfilePipe } from './dto/report-abuse-user-profile.pipe
 import { UpdateCandidateUserProfileDto } from './dto/update-candidate-user-profile.dto';
 import { UpdateUserProfilePipe } from './dto/update-user-profile.pipe';
 import { generateUserProfileDto } from './dto/user-profile.dto';
-import { RecommendationsPageDto } from './recommendations/dto/recommendations.dto';
-import {
-  APPEND_BATCH_SIZE,
-  UserProfileRecommendationsService,
-} from './recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from './user-profiles.service';
 import { ContactTypeEnum } from './user-profiles.types';
 import { isProfileVisibilityEligible } from './user-profiles.utils';
@@ -61,7 +65,10 @@ export class UserProfilesController {
 
   constructor(
     private readonly userProfilesService: UserProfilesService,
-    private readonly userProfileRecommendationsService: UserProfileRecommendationsService
+    private readonly userProfileRecommendationsService: UserProfileRecommendationsService,
+    private readonly userProfileMediaService: UserProfileMediaService,
+    private readonly userProfileAnalyticsService: UserProfileAnalyticsService,
+    private readonly userProfileModerationService: UserProfileModerationService
   ) {}
 
   @ApiBearerAuth()
@@ -69,7 +76,9 @@ export class UserProfilesController {
   async getProfileCompletion(
     @UserPayload('id', new ParseUUIDPipe()) id: string
   ) {
-    return await this.userProfilesService.calculateProfileCompletion(id);
+    return await this.userProfileAnalyticsService.calculateProfileCompletion(
+      id
+    );
   }
 
   @Self('params.userId')
@@ -107,23 +116,10 @@ export class UserProfilesController {
     @Body(new ReportAbuseUserProfilePipe())
     reportAbuseDto: ReportAbuseUserProfileDto
   ): Promise<void> {
-    // Set the reportedUser and reporterUser
-    const userReported = await this.userProfilesService.findOneUser(userId);
-    const userReporter =
-      await this.userProfilesService.findOneUser(currentUserId);
-
-    // Check users exists
-    if (!userReported || !userReporter) {
-      this.logger.warn(
-        `User not found: reported=${userId}, reporter=${currentUserId}`
-      );
-      throw new NotFoundException();
-    }
-
-    return await this.userProfilesService.reportAbuse(
-      reportAbuseDto,
-      userReporter,
-      userReported
+    return this.userProfileModerationService.reportAbuse(
+      currentUserId,
+      userId,
+      reportAbuseDto
     );
   }
 
@@ -136,17 +132,17 @@ export class UserProfilesController {
     @Query('offset', new ParseIntPipe())
     offset: number,
     @Query('role')
-    role: UserRole[],
+    role: UserRole | UserRole[] | undefined,
     @Query('search')
     search: string,
     @Query('nudgeIds')
-    nudgeIds: string[],
+    nudgeIds: string | string[] | undefined,
     @Query('departments')
-    departments: string[],
+    departments: string | string[] | undefined,
     @Query('businessSectorIds')
-    businessSectorIds: string[],
+    businessSectorIds: string | string[] | undefined,
     @Query('contactTypes')
-    contactTypes: ContactTypeEnum[],
+    contactTypes: ContactTypeEnum | ContactTypeEnum[] | undefined,
     @Query('isAvailable')
     isAvailableQuery?: string,
     @Query('sort')
@@ -154,6 +150,12 @@ export class UserProfilesController {
     @Query('hasSuperCoachBadge')
     hasSuperCoachBadgeQuery?: string
   ) {
+    role = toArray(role);
+    nudgeIds = toArray(nudgeIds);
+    departments = toArray(departments);
+    businessSectorIds = toArray(businessSectorIds);
+    contactTypes = toArray(contactTypes);
+
     if (!role || role.length === 0) {
       throw new BadRequestException();
     }
@@ -248,7 +250,7 @@ export class UserProfilesController {
       throw new NotFoundException();
     }
 
-    const profileImage = await this.userProfilesService.uploadProfileImage(
+    const profileImage = await this.userProfileMediaService.uploadProfileImage(
       userId,
       file
     );

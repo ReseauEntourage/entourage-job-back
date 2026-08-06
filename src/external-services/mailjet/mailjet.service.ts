@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import Mailjet, { Client, SendEmailV3_1 } from 'node-mailjet';
-import { Departments } from 'src/common/locations/locations.types';
+import { Departments } from 'src/locations/locations.types';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { Genders, UserRoles } from 'src/users/users.types';

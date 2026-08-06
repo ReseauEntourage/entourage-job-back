@@ -7,14 +7,14 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
-import { BusinessSectorsService } from 'src/common/business-sectors/business-sectors.service';
-import { BusinessSector } from 'src/common/business-sectors/models/business-sector.model';
-import { Department } from 'src/common/departments/models/department.model';
+import { BusinessSectorsService } from 'src/business-sectors/business-sectors.service';
+import { BusinessSector } from 'src/business-sectors/models/business-sector.model';
 import { companiesAttributes } from 'src/companies/companies.attributes';
 import { CompanyUsersService } from 'src/companies/company-user.service';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { Company } from 'src/companies/models/company.model';
 import { CurrentUserIdentityAttributes } from 'src/current-user/dto/current-user-identity.dto';
+import { Department } from 'src/departments/models/department.model';
 import { userFeatureFlagInclude } from 'src/feature-flags/models/user-feature-flag.helper';
 import { userAchievementInclude } from 'src/gamification/models/user-achievement/user-achievement.helper';
 import { MailsService } from 'src/mails/mails.service';
@@ -25,14 +25,14 @@ import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { ReadDocument } from 'src/read-documents/models';
 import { SmsService } from 'src/sms/sms.service';
-import { UserProfile } from 'src/user-profiles/models';
-import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
-import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import {
   RecommendationDto,
   RecommendationsDto,
-} from 'src/user-profiles/recommendations/dto/recommendations.dto';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+} from 'src/user-profile-recommendations/dto/recommendations.dto';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
+import { UserProfile } from 'src/user-profiles/models';
+import { UserProfilesAttributes } from 'src/user-profiles/models/user-profile.attributes';
+import { getUserProfileOrder } from 'src/user-profiles/models/user-profile.include';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { FilterParams } from 'src/utils/types';
 import { UpdateUserDto } from './dto';
@@ -45,6 +45,7 @@ import {
 } from './models/user.include';
 import {
   MemberFilterKey,
+  NormalUserRole,
   OnboardingStatus,
   UserRole,
   UserRoles,
@@ -56,12 +57,21 @@ import {
 } from './users.utils';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const RECOMMENDATION_MAILS_INTERVAL_DAYS = 10;
 
 export type NoResponseToFirstMessageResultDto = {
   addressees: User[];
   id: string;
   recommendations: RecommendationDto[];
   user: User;
+};
+
+export type UnavailableSenderNotificationResultDto = {
+  // The author of the single, unanswered message — the actual recipient of
+  // this notification mail (reassured that they won't get a reply because
+  // the other person became unavailable).
+  messageAuthor: User;
+  unavailableUser: User;
 };
 
 @Injectable()
@@ -976,6 +986,84 @@ export class UsersService {
     );
   }
 
+  /**
+   * For each UserProfile that became unavailable within [startDate, endDate),
+   * finds every single-message conversation where that user is the recipient
+   * of the sole message — the message author is the one to notify (they sent
+   * a message and will never get a reply).
+   * Reuses the `GROUP BY conversationId HAVING COUNT(*) = 1` pattern from
+   * `getUsersWithNoResponseToFirstMessage`.
+   */
+  async getUnavailableSenderNotifications(
+    startDate: Date,
+    endDate: Date
+  ): Promise<UnavailableSenderNotificationResultDto[]> {
+    const rows: { authorId: string; unavailableUserId: string }[] =
+      await this.userModel.sequelize.query(
+        `
+      SELECT
+        m."authorId" as "authorId",
+        up."userId" as "unavailableUserId"
+      FROM "Messages" m
+      INNER JOIN (
+        SELECT "conversationId"
+        FROM "Messages"
+        GROUP BY "conversationId"
+        HAVING COUNT(*) = 1
+      ) AS single_message_conversations
+        ON single_message_conversations."conversationId" = m."conversationId"
+      INNER JOIN "ConversationParticipants" cp
+        ON cp."conversationId" = m."conversationId"
+        AND cp."userId" != m."authorId"
+      INNER JOIN "Users" u ON u.id = cp."userId"
+      INNER JOIN "UserProfiles" up ON up."userId" = u.id
+      INNER JOIN "Users" author ON author.id = m."authorId"
+      WHERE up."unavailableAt" >= :startDate
+        AND up."unavailableAt" < :endDate
+        AND u."deletedAt" IS NULL
+        AND author."deletedAt" IS NULL
+      `,
+        {
+          type: QueryTypes.SELECT,
+          raw: true,
+          replacements: { startDate, endDate },
+        }
+      );
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const uniqueUserIds = Array.from(
+      new Set(rows.flatMap((row) => [row.authorId, row.unavailableUserId]))
+    );
+    const users = await this.findByIdsWithRelations(uniqueUserIds);
+    const userById = new Map(users.map((user) => [user.id, user]));
+
+    return rows
+      .map((row) => {
+        const messageAuthor = userById.get(row.authorId);
+        const unavailableUser = userById.get(row.unavailableUserId);
+        if (!messageAuthor || !unavailableUser) {
+          return null;
+        }
+        return { messageAuthor, unavailableUser };
+      })
+      .filter(
+        (result): result is UnavailableSenderNotificationResultDto =>
+          result !== null
+      );
+  }
+
+  async sendUnavailableSenderNotificationMail(
+    dto: UnavailableSenderNotificationResultDto
+  ) {
+    return this.mailsService.sendUnavailableSenderNotificationMail(
+      dto.unavailableUser,
+      dto.messageAuthor
+    );
+  }
+
   async sendReminderToCompleteProfile(user: User) {
     return this.mailsService.sendReminderToCompleteProfile(user);
   }
@@ -1017,16 +1105,19 @@ export class UsersService {
     });
   }
 
-  async getUsersInactiveForRecommendationMails(
-    daysSinceLastConnection: number
-  ): Promise<Pick<User, 'id' | 'firstName' | 'email' | 'role' | 'zone'>[]> {
-    const startDate = new Date(
-      new Date().setHours(0, 0, 0, 0) - daysSinceLastConnection * DAY_IN_MS
-    );
-    const endDate = new Date(
-      new Date().setHours(0, 0, 0, 0) -
-        (daysSinceLastConnection - 1) * DAY_IN_MS
-    );
+  /**
+   * Users are eligible every `intervalDays` days after `onboardingCompletedAt`,
+   * regardless of connection activity. Day comparisons are truncated to the
+   * server's local date (the cron runs daily at noon, so this stays stable
+   * across a single day).
+   */
+  async getUsersEligibleForRecommendationMails(
+    intervalDays: number = RECOMMENDATION_MAILS_INTERVAL_DAYS
+  ): Promise<Pick<User, 'id'>[]> {
+    // Truncated to the cron server's local date (not the DB server's), so the
+    // modulo stays stable across a single day regardless of the exact time
+    // onboarding was completed.
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
 
     return this.userModel.sequelize.query(
       `
@@ -1035,10 +1126,12 @@ export class UsersService {
       FROM "Users" u
       JOIN "UserProfiles" up ON u.id = up."userId"
       WHERE
-        up."isAvailable" IS TRUE
-        AND u."lastConnection" >= :startDate
-        AND u."lastConnection" < :endDate
+        up."unavailableAt" IS NULL
+        AND up."optInRecommendations" IS TRUE
         AND u."onboardingStatus" = :onboardingStatus
+        AND u."onboardingCompletedAt" IS NOT NULL
+        AND (:today::timestamptz::date - u."onboardingCompletedAt"::date) > 0
+        AND (:today::timestamptz::date - u."onboardingCompletedAt"::date) % :intervalDays = 0
         AND u.role IN (:candidateRole, :coachRole)
         AND u."deletedAt" IS NULL
       `,
@@ -1046,8 +1139,8 @@ export class UsersService {
         type: QueryTypes.SELECT,
         raw: true,
         replacements: {
-          startDate,
-          endDate,
+          today,
+          intervalDays,
           onboardingStatus: OnboardingStatus.COMPLETED,
           candidateRole: UserRoles.CANDIDATE,
           coachRole: UserRoles.COACH,
@@ -1185,7 +1278,7 @@ export class UsersService {
       LEFT JOIN "Users" r ON r."refererId" = u.id
       LEFT JOIN "UserProfiles" up ON u."id" = up."userId"
       WHERE u.role = 'Prescripteur'
-        AND up."isAvailable" = TRUE
+        AND up."unavailableAt" IS NULL
         AND u."createdAt" >= :startDate
         AND u."createdAt" < :endDate
         AND u."deletedAt" IS NULL
@@ -1350,24 +1443,30 @@ export class UsersService {
     );
   }
 
-  async getCandidateRowsForUnansweredConversationSms(
+  async getUnansweredConversationSmsRows(
+    recipientRole: NormalUserRole,
     daysSinceFirstMessage: number
   ): Promise<
     {
-      candidateId: string;
-      candidatePhone: string;
-      coachFirstName: string;
-      coachId: string;
+      recipientId: string;
+      recipientPhone: string;
+      senderFirstName: string;
+      senderId: string;
       conversationId: string;
     }[]
   > {
+    const senderRole =
+      recipientRole === UserRoles.CANDIDATE
+        ? UserRoles.COACH
+        : UserRoles.CANDIDATE;
+
     return this.userModel.sequelize.query(
       `
       SELECT
-        candidate.id           AS "candidateId",
-        candidate.phone        AS "candidatePhone",
-        coach."firstName"      AS "coachFirstName",
-        coach.id               AS "coachId",
+        recipient.id           AS "recipientId",
+        recipient.phone        AS "recipientPhone",
+        sender."firstName"     AS "senderFirstName",
+        sender.id              AS "senderId",
         c.id                   AS "conversationId"
       FROM "Conversations" c
       JOIN (
@@ -1378,26 +1477,26 @@ export class UsersService {
         FROM "Messages"
         ORDER BY "conversationId", "createdAt" ASC
       ) first_msg ON first_msg."conversationId" = c.id
-      JOIN "Users" coach
-        ON coach.id = first_msg."senderId"
-        AND coach.role = 'Coach'
-        AND coach."deletedAt" IS NULL
-      JOIN "ConversationParticipants" cp_candidate
-        ON cp_candidate."conversationId" = c.id
-        AND cp_candidate."userId" != first_msg."senderId"
-      JOIN "Users" candidate
-        ON candidate.id = cp_candidate."userId"
-        AND candidate.role = 'Candidat'
-        AND candidate."deletedAt" IS NULL
-        AND candidate.phone IS NOT NULL
-        AND candidate.phone != ''
+      JOIN "Users" sender
+        ON sender.id = first_msg."senderId"
+        AND sender.role = '${senderRole}'
+        AND sender."deletedAt" IS NULL
+      JOIN "ConversationParticipants" cp_recipient
+        ON cp_recipient."conversationId" = c.id
+        AND cp_recipient."userId" != first_msg."senderId"
+      JOIN "Users" recipient
+        ON recipient.id = cp_recipient."userId"
+        AND recipient.role = '${recipientRole}'
+        AND recipient."deletedAt" IS NULL
+        AND recipient.phone IS NOT NULL
+        AND recipient.phone != ''
       WHERE
         c.type = '${ConversationType.DIRECT}'
         AND DATE(first_msg."firstMessageAt") = CURRENT_DATE - INTERVAL '${daysSinceFirstMessage} days'
         AND NOT EXISTS (
           SELECT 1 FROM "Messages" m
           WHERE m."conversationId" = c.id
-            AND m."authorId" = candidate.id
+            AND m."authorId" = recipient.id
         )
       `,
       { type: QueryTypes.SELECT, raw: true }
@@ -1405,7 +1504,8 @@ export class UsersService {
   }
 
   async getUserRowsForUnavailableUsers(
-    daysSinceLastConversation: number
+    daysSinceLastConversation: number,
+    roles: UserRole[]
   ): Promise<{ id: string; unreadConversationsCount: number }[]> {
     return this.userModel.sequelize.query(
       `
@@ -1422,16 +1522,22 @@ export class UsersService {
         GROUP BY "conversationId"
       ) lm ON lm."conversationId" = c.id
       WHERE (cp."seenAt" IS NULL OR lm."lastMessageTime" >= cp."seenAt")
-        AND up."isAvailable" IS TRUE
-        AND lm."lastMessageTime" >= CURRENT_TIMESTAMP - INTERVAL '${
-          daysSinceLastConversation + 1
-        } days'
-        AND lm."lastMessageTime" < CURRENT_TIMESTAMP - INTERVAL '${daysSinceLastConversation} days'
-        AND u.role != 'Admin'
+        AND up."unavailableAt" IS NULL
+        AND lm."lastMessageTime" >= CURRENT_TIMESTAMP - make_interval(days => :daysSinceLastConversationPlusOne)
+        AND lm."lastMessageTime" < CURRENT_TIMESTAMP - make_interval(days => :daysSinceLastConversation)
+        AND u.role IN (:roles)
         AND u."deletedAt" IS NULL
       GROUP BY u.id
       `,
-      { type: QueryTypes.SELECT, raw: true }
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: {
+          roles,
+          daysSinceLastConversation,
+          daysSinceLastConversationPlusOne: daysSinceLastConversation + 1,
+        },
+      }
     );
   }
 
@@ -1665,15 +1771,17 @@ export class UsersService {
     );
   }
 
-  async sendCandidateUnansweredConversationSms(
-    candidatePhone: string,
-    coachFirstName: string,
-    coachId: string
+  async sendUnansweredConversationSms(
+    recipientPhone: string,
+    recipientRole: NormalUserRole,
+    senderFirstName: string,
+    senderId: string
   ) {
-    return this.smsService.sendCandidateUnansweredConversationSms(
-      candidatePhone,
-      coachFirstName,
-      coachId
+    return this.smsService.sendUnansweredConversationSms(
+      recipientPhone,
+      recipientRole,
+      senderFirstName,
+      senderId
     );
   }
 

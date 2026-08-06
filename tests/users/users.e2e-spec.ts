@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { v4 as uuid } from 'uuid';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
@@ -233,7 +233,7 @@ describe('Users', () => {
               .set('authorization', `Bearer ${loggedInCandidate.token}`);
           expect(response.status).toBe(403);
         });
-        describe('/members?limit=&offset=&role[]= - Get paginated and alphabetically sorted users filtered by role', () => {
+        describe('/members?limit=&offset=&role= - Get paginated and alphabetically sorted users filtered by role', () => {
           let loggedInAdmin: LoggedInUser;
 
           beforeEach(async () => {
@@ -285,7 +285,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=2&offset=0&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/members?limit=2&offset=0&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -301,7 +301,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=3&offset=0&role[]=${UserRoles.COACH}`
+                  `${route}/members?limit=3&offset=0&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -319,7 +319,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=2&offset=2&role[]=${UserRoles.CANDIDATE}`
+                  `${route}/members?limit=2&offset=2&role=${UserRoles.CANDIDATE}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -335,7 +335,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=2&offset=2&role[]=${UserRoles.COACH}`
+                  `${route}/members?limit=2&offset=2&role=${UserRoles.COACH}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -380,7 +380,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&query=XXX`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&query=XXX`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -411,7 +411,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&query=XXX`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -421,7 +421,7 @@ describe('Users', () => {
             );
           });
         });
-        describe('/members?zone[]=&hidden[]=&businessSectors[]= - Read all members as admin with filters', () => {
+        describe('/members?zone=&hidden=&businessSectors= - Read all members as admin with filters', () => {
           let loggedInAdmin: LoggedInUser;
           beforeEach(async () => {
             loggedInAdmin = await usersHelper.createLoggedInUser({
@@ -463,7 +463,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&zone[]=${ZoneName.AURA}&zone[]=${ZoneName.IDF}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&zone=${ZoneName.AURA}&zone=${ZoneName.IDF}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -507,7 +507,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&zone[]=${ZoneName.AURA}&zone[]=${ZoneName.IDF}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&zone=${ZoneName.AURA}&zone=${ZoneName.IDF}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -542,7 +542,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&role[]=${UserRoles.CANDIDATE}&query=XXX&zone[]=${ZoneName.AURA}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&role=${UserRoles.CANDIDATE}&query=XXX&zone=${ZoneName.AURA}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -572,7 +572,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.COACH}&query=XXX&zone[]=${ZoneName.AURA}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.COACH}&query=XXX&zone=${ZoneName.AURA}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -601,7 +601,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.REFERER}&query=XXX&zone[]=${ZoneName.AURA}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.REFERER}&query=XXX&zone=${ZoneName.AURA}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);
@@ -661,7 +661,7 @@ describe('Users', () => {
             const response: APIResponse<UsersController['findMembers']> =
               await request(server)
                 .get(
-                  `${route}/members?limit=50&offset=0&role[]=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}`
+                  `${route}/members?limit=50&offset=0&role=${UserRoles.CANDIDATE}&businessSectorIds=${businessSector1.id}`
                 )
                 .set('authorization', `Bearer ${loggedInAdmin.token}`);
             expect(response.status).toBe(200);

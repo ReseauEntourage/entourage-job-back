@@ -2,7 +2,6 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
-import { RecruitementAlertsService } from 'src/common/recruitement-alerts/recruitement-alerts.service';
 import { GamificationService } from 'src/gamification/gamification.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
@@ -11,13 +10,17 @@ import {
   SettledFailure,
 } from 'src/queues/consumers/cron-tasks/cron-tasks.utils';
 import { Jobs, Queues } from 'src/queues/queues.types';
-import { UserProfileRecommendationsService } from 'src/user-profiles/recommendations/user-profile-recommendations-ai.service';
+import { RecruitementAlertsService } from 'src/recruitement-alerts/recruitement-alerts.service';
+import { tracer } from 'src/tracer';
+import { UserProfileRecommendationsService } from 'src/user-profile-recommendations/user-profile-recommendations-ai.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/users/users.types';
+import { NormalUserRole, UserRoles } from 'src/users/users.types';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 @Processor(Queues.CRON_TASKS)
 export class CronTasksProcessor extends WorkerHost {
@@ -92,6 +95,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareUnansweredConversationsSms();
       case Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS:
         return this.prepareLinkedInShareProfileMails();
+      case Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS:
+        return this.prepareUnavailableSenderNotificationMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -497,102 +502,96 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareRecommendationMails() {
-    const DAYS_TO_CONTACT = [10, 20, 30];
     const BATCH_SIZE = 3; // Process in small batches to limit concurrent calls
 
-    this.logger.log(
-      `Preparing recommendation mails for users inactive since ${DAYS_TO_CONTACT.join(
-        ', '
-      )} days...`
-    );
+    this.logger.log('Preparing recommendation mails...');
 
     let totalUsers = 0;
     let totalSuccess = 0;
     let totalNotEnoughReco = 0;
     let totalFailures = 0;
     const skippedUserIds: string[] = [];
+    const failures: SettledFailure[] = [];
 
-    for (const days of DAYS_TO_CONTACT) {
-      this.logger.log(
-        `Fetching users inactive for ${days} days for recommendation mail...`
+    const users =
+      await this.usersService.getUsersEligibleForRecommendationMails();
+
+    this.logger.log(
+      `Found ${users.length} users eligible for recommendation mail`
+    );
+
+    for (const batch of chunk(users, BATCH_SIZE)) {
+      const batchResults = await Promise.allSettled(
+        batch.map(async (user) => {
+          totalUsers++;
+
+          const userWithRelations =
+            await this.usersService.findOneWithRelations(user.id);
+
+          const userProfile = await this.userProfilesService.findOneByUserId(
+            user.id
+          );
+
+          if (!userWithRelations || !userProfile) {
+            totalNotEnoughReco++;
+            this.logger.log(
+              `Skipping user ${user.id}: missing data (${
+                !userWithRelations ? 'user with relations' : ''
+              }${!userWithRelations && !userProfile ? ' & ' : ''}${
+                !userProfile ? 'user profile' : ''
+              })`
+            );
+            return;
+          }
+
+          const userRecommendations =
+            await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
+              userWithRelations,
+              userProfile,
+              3
+            );
+
+          if (userRecommendations.length < 3) {
+            totalNotEnoughReco++;
+            skippedUserIds.push(user.id);
+            this.logger.log(
+              `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
+            );
+            return;
+          }
+
+          await this.usersService.sendRecommendationsMail(
+            userWithRelations,
+            userRecommendations
+          );
+          totalSuccess++;
+        })
       );
 
-      const users =
-        await this.usersService.getUsersInactiveForRecommendationMails(days);
-
-      this.logger.log(`Found ${users.length} users inactive for ${days} days`);
-
-      for (const batch of chunk(users, BATCH_SIZE)) {
-        const batchResults = await Promise.allSettled(
-          batch.map(async (user) => {
-            totalUsers++;
-
-            const userWithRelations =
-              await this.usersService.findOneWithRelations(user.id);
-
-            const userProfile = await this.userProfilesService.findOneByUserId(
-              user.id
-            );
-
-            if (!userWithRelations || !userProfile) {
-              totalNotEnoughReco++;
-              this.logger.log(
-                `Skipping user ${user.id}: missing data (${
-                  !userWithRelations ? 'user with relations' : ''
-                }${!userWithRelations && !userProfile ? ' & ' : ''}${
-                  !userProfile ? 'user profile' : ''
-                })`
-              );
-              return;
-            }
-
-            const userRecommendations =
-              await this.userProfileRecommendationsService.retrieveOrComputeRecommendationsForUserIdIA(
-                userWithRelations,
-                userProfile,
-                3
-              );
-
-            if (userRecommendations.length < 3) {
-              totalNotEnoughReco++;
-              skippedUserIds.push(user.id);
-              this.logger.log(
-                `Skipping user ${user.id}: only ${userRecommendations.length} recommendations found (need 3)`
-              );
-              return;
-            }
-
-            await this.usersService.sendRecommendationsMail(
-              userWithRelations,
-              userRecommendations
-            );
-            totalSuccess++;
-          })
-        );
-
-        batchResults.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            totalFailures++;
-            this.logger.error(
-              `Failed preparing recommendation mail for user ${batch[index]?.id}`,
-              result.reason
-            );
-          }
-        });
-      }
+      batchResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          totalFailures++;
+          const itemId = batch[index]?.id ?? `unknown-${index}`;
+          failures.push({ itemId, reason: result.reason });
+          this.logger.error(
+            `Failed preparing recommendation mail for user ${itemId}`,
+            result.reason
+          );
+        }
+      });
     }
 
     const succeeded = totalFailures === 0;
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `👬 Users recommendation emails - J+${DAYS_TO_CONTACT.join('/')}`,
+      '👬 Users recommendation emails',
       {
         total: totalUsers,
         success: totalSuccess,
         failure: totalFailures + totalNotEnoughReco,
       },
-      [],
+      failures,
       skippedUserIds
     );
 
@@ -600,18 +599,28 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareAutoSetUnavailableUsers() {
-    const DAYS_WITHOUT_CONNECTION = 60;
-    const DAYS_WITH_UNREAD_MESSAGE = 30;
+    const CANDIDATE_DAYS_WITHOUT_CONNECTION = 30;
+    const CANDIDATE_DAYS_WITH_UNREAD_MESSAGE = 15;
+    const DEFAULT_DAYS_WITHOUT_CONNECTION = 60;
+    const DEFAULT_DAYS_WITH_UNREAD_MESSAGE = 30;
 
     this.logger.log(
-      `Setting inactive users as unavailable (no connection since ${DAYS_WITHOUT_CONNECTION} days, unread message since ${DAYS_WITH_UNREAD_MESSAGE} days)...`
+      `Setting inactive users as unavailable (candidates: no connection since ${CANDIDATE_DAYS_WITHOUT_CONNECTION} days, unread message since ${CANDIDATE_DAYS_WITH_UNREAD_MESSAGE} days; others: no connection since ${DEFAULT_DAYS_WITHOUT_CONNECTION} days, unread message since ${DEFAULT_DAYS_WITH_UNREAD_MESSAGE} days)...`
     );
 
-    const inactiveUsersRows =
-      await this.messagingService.getInactiveUsersWithUnreadConversations(
-        DAYS_WITHOUT_CONNECTION,
-        DAYS_WITH_UNREAD_MESSAGE
-      );
+    const [candidateRows, defaultRows] = await Promise.all([
+      this.messagingService.getInactiveUsersWithUnreadConversations(
+        CANDIDATE_DAYS_WITHOUT_CONNECTION,
+        CANDIDATE_DAYS_WITH_UNREAD_MESSAGE,
+        [UserRoles.CANDIDATE]
+      ),
+      this.messagingService.getInactiveUsersWithUnreadConversations(
+        DEFAULT_DAYS_WITHOUT_CONNECTION,
+        DEFAULT_DAYS_WITH_UNREAD_MESSAGE,
+        [UserRoles.COACH, UserRoles.REFERER]
+      ),
+    ]);
+    const inactiveUsersRows = [...candidateRows, ...defaultRows];
 
     this.logger.log(
       `Found ${inactiveUsersRows.length} inactive users to set as unavailable`
@@ -1258,11 +1267,20 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareUnavailableUsersMails() {
-    const DAYS_SINCE_LAST_CONVERSATION = 30;
+    const CANDIDATE_DAYS_SINCE_LAST_CONVERSATION = 15;
+    const DEFAULT_DAYS_SINCE_LAST_CONVERSATION = 30;
     this.logger.log('Preparing unavailable users mails...');
-    const rows = await this.usersService.getUserRowsForUnavailableUsers(
-      DAYS_SINCE_LAST_CONVERSATION
-    );
+    const [candidateRows, defaultRows] = await Promise.all([
+      this.usersService.getUserRowsForUnavailableUsers(
+        CANDIDATE_DAYS_SINCE_LAST_CONVERSATION,
+        [UserRoles.CANDIDATE]
+      ),
+      this.usersService.getUserRowsForUnavailableUsers(
+        DEFAULT_DAYS_SINCE_LAST_CONVERSATION,
+        [UserRoles.COACH, UserRoles.REFERER]
+      ),
+    ]);
+    const rows = [...candidateRows, ...defaultRows];
     this.logger.log(
       `Found ${rows.length} users eligible for unavailable reminder`
     );
@@ -1292,7 +1310,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📵 Unavailable users - J+${DAYS_SINCE_LAST_CONVERSATION}`,
+      `📵 Unavailable users - J+${CANDIDATE_DAYS_SINCE_LAST_CONVERSATION}/${DEFAULT_DAYS_SINCE_LAST_CONVERSATION}`,
       {
         total: rows.length,
         success: successIds.length,
@@ -1308,6 +1326,66 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} unavailable user mails`;
+  }
+
+  async prepareUnavailableSenderNotificationMails() {
+    this.logger.log('Preparing unavailable sender notification mails...');
+
+    const yesterdayStart = new Date(
+      new Date().setHours(0, 0, 0, 0) - DAY_IN_MS
+    );
+    const todayStart = new Date(new Date().setHours(0, 0, 0, 0));
+
+    const notifications =
+      await this.usersService.getUnavailableSenderNotifications(
+        yesterdayStart,
+        todayStart
+      );
+
+    this.logger.log(
+      `Found ${notifications.length} unavailable sender notifications to send`
+    );
+
+    const results = await Promise.allSettled(
+      notifications.map(async (dto) => {
+        this.logger.log(
+          `Sending unavailable sender notification mail to ${dto.messageAuthor.email} about ${dto.unavailableUser.id}`
+        );
+        await this.usersService.sendUnavailableSenderNotificationMail(dto);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      notifications.map((dto, index) => ({
+        id: `${dto.unavailableUser.id}-${dto.messageAuthor.id}-${index}`,
+      })),
+      results,
+      (itemId, reason) => {
+        this.logger.error(
+          `Failed sending unavailable sender notification mail (${itemId})`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📭 Unavailable sender notifications',
+      {
+        total: notifications.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${notifications.length} unavailable sender notification mails`
+      );
+    }
+
+    return `Sent ${successIds.length} unavailable sender notification mails`;
   }
 
   async prepareChurnUsersFeedbackMails() {
@@ -1515,40 +1593,81 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareUnansweredConversationsSms() {
-    const DAYS_SINCE_LAST_CONNECTION = 3;
+    const DAYS_SINCE_FIRST_MESSAGE = 3;
+    const recipientRoles: NormalUserRole[] = [
+      UserRoles.CANDIDATE,
+      UserRoles.COACH,
+    ];
 
-    this.logger.log(
-      `Preparing unanswered conversations SMS for candidates (first message sent ${DAYS_SINCE_LAST_CONNECTION} days ago)...`
+    const summaries = await Promise.all(
+      recipientRoles.map((recipientRole) =>
+        this.sendUnansweredConversationsSmsForRole(
+          recipientRole,
+          DAYS_SINCE_FIRST_MESSAGE
+        )
+      )
     );
 
-    const rows =
-      await this.usersService.getCandidateRowsForUnansweredConversationSms(
-        DAYS_SINCE_LAST_CONNECTION
+    tracer.dogstatsd.flush();
+
+    const failedSummaries = summaries.filter((summary) => !summary.succeeded);
+
+    if (failedSummaries.length > 0) {
+      throw new Error(
+        failedSummaries
+          .map(
+            (summary) =>
+              `Failed sending ${summary.failureCount}/${summary.total} unanswered conversation SMS to ${summary.recipientRole}`
+          )
+          .join('; ')
       );
+    }
+
+    return summaries
+      .map(
+        (summary) =>
+          `Sent ${summary.successCount} unanswered conversation SMS to ${summary.recipientRole}`
+      )
+      .join(', ');
+  }
+
+  private async sendUnansweredConversationsSmsForRole(
+    recipientRole: NormalUserRole,
+    daysSinceFirstMessage: number
+  ) {
+    this.logger.log(
+      `Preparing unanswered conversations SMS for ${recipientRole} (first message sent ${daysSinceFirstMessage} days ago)...`
+    );
+
+    const rows = await this.usersService.getUnansweredConversationSmsRows(
+      recipientRole,
+      daysSinceFirstMessage
+    );
 
     this.logger.log(
-      `Found ${rows.length} candidates with unanswered conversations to notify via SMS`
+      `Found ${rows.length} ${recipientRole} with unanswered conversations to notify via SMS`
     );
 
     const results = await Promise.allSettled(
       rows.map(async (row) => {
         this.logger.log(
-          `Sending SMS to candidate ${row.candidateId} for conversation ${row.conversationId} with coach ${row.coachId}`
+          `Sending SMS to ${recipientRole} ${row.recipientId} for conversation ${row.conversationId} with ${row.senderId}`
         );
-        return this.usersService.sendCandidateUnansweredConversationSms(
-          row.candidatePhone,
-          row.coachFirstName,
-          row.coachId
+        return this.usersService.sendUnansweredConversationSms(
+          row.recipientPhone,
+          recipientRole,
+          row.senderFirstName,
+          row.senderId
         );
       })
     );
 
     const { succeeded, successIds, failures } = collectSettledResults(
-      rows.map((row) => ({ id: row.candidateId })),
+      rows.map((row) => ({ id: row.recipientId })),
       results,
-      (candidateId, reason) => {
+      (recipientId, reason) => {
         this.logger.error(
-          `Failed sending SMS to candidate ${candidateId}`,
+          `Failed sending SMS to ${recipientRole} ${recipientId}`,
           reason
         );
       }
@@ -1556,7 +1675,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📱 SMS conversations non répondues - J+${DAYS_SINCE_LAST_CONNECTION}`,
+      `📱 SMS conversations non répondues (${recipientRole}) - J+${daysSinceFirstMessage}`,
       {
         total: rows.length,
         success: successIds.length,
@@ -1565,13 +1684,13 @@ export class CronTasksProcessor extends WorkerHost {
       failures
     );
 
-    if (!succeeded) {
-      throw new Error(
-        `Failed sending ${failures.length}/${rows.length} unanswered conversation SMS`
-      );
-    }
-
-    return `Sent ${successIds.length} unanswered conversation SMS`;
+    return {
+      recipientRole,
+      total: rows.length,
+      successCount: successIds.length,
+      failureCount: failures.length,
+      succeeded,
+    };
   }
 
   private async prepareLinkedInShareProfileMails() {

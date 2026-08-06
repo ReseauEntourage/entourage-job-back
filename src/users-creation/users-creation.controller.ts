@@ -59,7 +59,7 @@ export class UsersCreationController {
     private readonly userProfilesService: UserProfilesService
   ) {}
 
-  @Throttle(60, 60)
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @Public()
   @Get('registration/compatible-profiles')
   async getPreRegistrationCompatibleProfiles(
@@ -122,7 +122,7 @@ export class UsersCreationController {
     return this.usersCreationService.findOneUser(createdUser.id);
   }
 
-  @Throttle(10, 60)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Public()
   @Post('registration')
   async createUserRegistration(
@@ -237,7 +237,7 @@ export class UsersCreationController {
           await this.usersCreationService.updateUserProfileByUserId(
             createdUserId,
             {
-              isAvailable: false,
+              unavailableAt: new Date(),
             }
           );
         }
@@ -322,7 +322,7 @@ export class UsersCreationController {
 
   @UserPermissions(Permissions.REFERER)
   @UseGuards(UserPermissionsGuard)
-  @Throttle(10, 60)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('refering')
   async createUserRefering(
     @Body(new CreateUserReferingPipe())

@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerStorage } from '@nestjs/throttler';
+import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Nudge } from 'src/common/nudge/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { Nudge } from 'src/nudge/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
 import { UsersCreationController } from 'src/users-creation/users-creation.controller';
@@ -27,7 +27,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
   let userFactory: UserFactory;
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
-  let throttlerStorage: ThrottlerStorage;
+  let throttlerStorage: ThrottlerStorageService;
 
   let businessSector1: BusinessSector;
   let businessSector2: BusinessSector;
@@ -56,7 +56,8 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       moduleFixture.get<BusinessSectorHelper>(BusinessSectorHelper);
     nudgesHelper = moduleFixture.get<NudgesHelper>(NudgesHelper);
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
-    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
+    throttlerStorage =
+      moduleFixture.get<ThrottlerStorageService>(ThrottlerStorage);
   });
 
   beforeAll(async () => {
@@ -109,9 +110,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
 
   beforeEach(async () => {
     // Reset rate limiting between tests so the throttle quota applies per test, not per file
-    Object.keys(throttlerStorage.storage).forEach((key) => {
-      delete throttlerStorage.storage[key];
-    });
+    throttlerStorage.storage.clear();
     try {
       await databaseHelper.resetTestDB();
     } catch (error) {
@@ -154,19 +153,19 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         3,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
       await databaseHelper.createEntities(
         userFactory,
         1,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: false } }
+        { userProfile: { unavailableAt: new Date() } }
       );
       await databaseHelper.createEntities(
         userFactory,
         2,
         { role: UserRoles.CANDIDATE },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(
@@ -189,13 +188,13 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         2,
         { role: UserRoles.CANDIDATE },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
       await databaseHelper.createEntities(
         userFactory,
         2,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(`role=${UserRoles.COACH}`);
@@ -214,7 +213,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         8,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(
@@ -231,7 +230,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         2,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: false } }
+        { userProfile: { unavailableAt: new Date() } }
       );
 
       const response = await getCompatibleProfiles(
@@ -251,7 +250,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
         userFactory,
         1,
         { role: UserRoles.COACH },
-        { userProfile: { isAvailable: true } }
+        { userProfile: { unavailableAt: null } }
       );
 
       const response = await getCompatibleProfiles(
@@ -282,7 +281,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}`
+        `role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}`
       );
 
       expect(response.status).toBe(200);
@@ -305,7 +304,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&nudgeIds[]=${nudgeNetwork.id}`
+        `role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&nudgeIds=${nudgeNetwork.id}`
       );
 
       expect(response.status).toBe(200);
@@ -340,7 +339,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}`
+        `role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}`
       );
 
       expect(response.status).toBe(200);
@@ -376,7 +375,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}`
+        `role=${UserRoles.CANDIDATE}&businessSectorIds=${businessSector1.id}`
       );
 
       expect(response.status).toBe(200);
@@ -402,7 +401,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&businessSectorIds[]=${businessSector1.id}&businessSectorIds[]=${businessSector2.id}`
+        `role=${UserRoles.CANDIDATE}&businessSectorIds=${businessSector1.id}&businessSectorIds=${businessSector2.id}`
       );
 
       expect(response.status).toBe(200);
@@ -451,7 +450,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&businessSectorIds[]=${businessSector1.id}`
+        `role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&businessSectorIds=${businessSector1.id}`
       );
 
       expect(response.status).toBe(200);
@@ -476,7 +475,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&businessSectorIds[]=${businessSector1.id}`
+        `role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&businessSectorIds=${businessSector1.id}`
       );
 
       expect(response.status).toBe(200);
@@ -501,7 +500,7 @@ describe('UsersCreation - GET /user/registration/compatible-profiles', () => {
       );
 
       const response = await getCompatibleProfiles(
-        `role=${UserRoles.CANDIDATE}&nudgeIds[]=${nudgeCv.id}&businessSectorIds[]=${businessSector1.id}`
+        `role=${UserRoles.CANDIDATE}&nudgeIds=${nudgeCv.id}&businessSectorIds=${businessSector1.id}`
       );
 
       expect(response.status).toBe(200);

@@ -1,18 +1,18 @@
 /* eslint-disable no-console */
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerStorage } from '@nestjs/throttler';
+import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
 import { QueueMocks, S3Mocks } from '../mocks.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
-import { Department } from 'src/common/locations/locations.types';
-import { Nudge } from 'src/common/nudge/models';
+import { BusinessSector } from 'src/business-sectors/models';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import {
   CandidateYesNoNSPP,
   CandidateYesNo,
 } from 'src/contacts/contacts.types';
 import { S3Service } from 'src/external-services/aws/s3.service';
+import { Department } from 'src/locations/locations.types';
+import { Nudge } from 'src/nudge/models';
 import { Organization } from 'src/organizations/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { OnboardingStatus, UserRoles } from 'src/users/users.types';
@@ -39,7 +39,7 @@ describe('UserCreation', () => {
   let organizationFactory: OrganizationFactory;
   let businessSectorsHelper: BusinessSectorHelper;
   let nudgesHelper: NudgesHelper;
-  let throttlerStorage: ThrottlerStorage;
+  let throttlerStorage: ThrottlerStorageService;
 
   let businessSector1: BusinessSector;
   let nudgeCv: Nudge;
@@ -71,7 +71,8 @@ describe('UserCreation', () => {
     userFactory = moduleFixture.get<UserFactory>(UserFactory);
     organizationFactory =
       moduleFixture.get<OrganizationFactory>(OrganizationFactory);
-    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
+    throttlerStorage =
+      moduleFixture.get<ThrottlerStorageService>(ThrottlerStorage);
   });
 
   beforeAll(async () => {
@@ -119,9 +120,7 @@ describe('UserCreation', () => {
 
   beforeEach(async () => {
     // Reset rate limiting between tests so the throttle quota applies per test, not per file
-    Object.keys(throttlerStorage.storage).forEach((key) => {
-      delete throttlerStorage.storage[key];
-    });
+    throttlerStorage.storage.clear();
     try {
       await databaseHelper.resetTestDB();
     } catch (error) {

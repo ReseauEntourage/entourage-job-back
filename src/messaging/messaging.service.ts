@@ -1,6 +1,7 @@
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
+import { AuthService } from 'src/auth/auth.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import {
   SlackBlockConfig,
@@ -12,6 +13,7 @@ import { MediasService } from 'src/medias/medias.service';
 import { Media } from 'src/medias/models';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
+import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
@@ -64,6 +66,8 @@ export class MessagingService {
     private usersService: UsersService,
     @Inject(forwardRef(() => GamificationService))
     private gamificationService: GamificationService,
+    @Inject(forwardRef(() => AuthService))
+    private authService: AuthService,
     private mailsService: MailsService,
     private mediaService: MediasService,
     private queuesService: QueuesService
@@ -763,20 +767,22 @@ export class MessagingService {
   }
 
   /**
-   * Returns the number of conversations within a given time window where:
+   * Returns the number of direct conversations within a given time window where:
    * - All participants have sent at least one message (mutual exchange)
    * - The conversation has mirror roles: at least one CANDIDATE and at least one COACH/REFERER
-   *   (group conversations with multiple candidates or coaches/referers are included)
    * - No ADMIN participant is involved
+   * - Group conversations are excluded
    *
    * @param userId - The ID of the user to count conversations for
    * @param delayMonths - How far back to look, in months (ignored if not provided, meaning all conversations are considered)
+   * @param onlyAvailableMirrorParticipant - When true, only count conversations whose mirror role participant is available
    * @returns The count of mirror role conversations with mutual exchange for the user within the specified time window
    */
   async getMirrorRoleConversationCount(
     userId: string,
     userRole: UserRole,
-    delayMonths?: number
+    delayMonths?: number,
+    onlyAvailableMirrorParticipant?: boolean
   ): Promise<number> {
     const mirrorRole = await this.usersService.getUserMirrorRole(userRole);
     const createdAtFilter =
@@ -797,6 +803,7 @@ export class MessagingService {
         {
           model: Conversation,
           as: 'conversation',
+          where: { type: ConversationType.DIRECT },
           include: [
             {
               model: Message,
@@ -808,6 +815,15 @@ export class MessagingService {
               as: 'participants',
               attributes: ['id', 'role'],
               paranoid: false,
+              include: onlyAvailableMirrorParticipant
+                ? [
+                    {
+                      model: UserProfile,
+                      as: 'userProfile',
+                      attributes: ['unavailableAt'],
+                    },
+                  ]
+                : [],
             },
           ],
         },
@@ -837,6 +853,14 @@ export class MessagingService {
         messages.some((m) => m.authorId === participantId)
       );
       if (!allParticipantsReplied) continue;
+
+      // Restrict to conversations whose mirror role participant is available
+      if (onlyAvailableMirrorParticipant) {
+        const mirrorParticipant = participants.find(
+          (p) => p.role === mirrorRole
+        );
+        if (mirrorParticipant?.userProfile?.unavailableAt) continue;
+      }
 
       count++;
     }
@@ -917,11 +941,23 @@ export class MessagingService {
       (p) => p.id
     );
 
-    const notifyOtherParticipants = () => {
+    const notifyOtherParticipants = async () => {
       const otherParticipants = message.conversation.participants.filter(
         (participant) => participant.id !== createMessageDto.authorId
       );
-      this.mailsService.sendNewMessageNotifMail(message, otherParticipants);
+      const autologinTokensByAddresseeId = Object.fromEntries(
+        await Promise.all(
+          otherParticipants.map(async (participant) => [
+            participant.id,
+            await this.authService.generateAutologinToken(participant.id),
+          ])
+        )
+      );
+      this.mailsService.sendNewMessageNotifMail(
+        message,
+        otherParticipants,
+        autologinTokensByAddresseeId
+      );
     };
 
     const triggerAchievementChecks = () => {
@@ -939,11 +975,15 @@ export class MessagingService {
 
     if (transaction) {
       transaction.afterCommit(() => {
-        notifyOtherParticipants();
+        void notifyOtherParticipants().catch((err) =>
+          this.logger.error('Failed to notify other participants', err)
+        );
         triggerAchievementChecks();
       });
     } else {
-      notifyOtherParticipants();
+      void notifyOtherParticipants().catch((err) =>
+        this.logger.error('Failed to notify other participants', err)
+      );
       triggerAchievementChecks();
     }
 
@@ -1238,11 +1278,16 @@ export class MessagingService {
    * `daysWithoutConnection` days AND have at least one unread conversation message
    * that is older than `daysWithUnreadMessage` days.
    *
+   * `roles` restricts the query to a specific role profile (e.g. Candidate-only
+   * with tightened thresholds, or Coach+Referer with the default ones) so
+   * that callers can apply different thresholds per role.
+   *
    * These users are eligible for automatic unavailability.
    */
   async getInactiveUsersWithUnreadConversations(
     daysWithoutConnection: number,
-    daysWithUnreadMessage: number
+    daysWithUnreadMessage: number,
+    roles: UserRole[]
   ): Promise<{ id: string }[]> {
     return this.conversationModel.sequelize.query(
       `
@@ -1250,9 +1295,9 @@ export class MessagingService {
       FROM "Users" u
       JOIN "UserProfiles" up ON up."userId" = u.id
       WHERE
-        up."isAvailable" IS TRUE
+        up."unavailableAt" IS NULL
         AND u."deletedAt" IS NULL
-        AND u.role NOT IN (:adminRole)
+        AND u.role IN (:roles)
         AND u."lastConnection" < NOW() - make_interval(days => :daysWithoutConnection)
         AND EXISTS (
           SELECT 1
@@ -1272,7 +1317,7 @@ export class MessagingService {
         replacements: {
           daysWithoutConnection,
           daysWithUnreadMessage,
-          adminRole: [UserRoles.ADMIN],
+          roles,
         },
       }
     );

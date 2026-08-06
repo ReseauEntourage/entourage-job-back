@@ -25,7 +25,7 @@ import { ContactsService } from './contacts.service';
 
 // TODO change to /contacts
 @ApiTags('Contacts')
-@Throttle(20, 60)
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 @Controller('contact')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}

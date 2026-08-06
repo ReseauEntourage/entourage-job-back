@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
-import { BusinessSectorFilters } from 'src/common/business-sectors/business-sectors.types';
-import { BusinessSector } from 'src/common/business-sectors/models';
+import { BusinessSectorFilters } from 'src/business-sectors/business-sectors.types';
+import { BusinessSector } from 'src/business-sectors/models';
 
 import { FilterConstant, Filters } from 'src/utils/types';
 import { ZoneName, ZoneNameFilters } from 'src/utils/types/zones.types';

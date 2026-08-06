@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Nudge } from 'src/common/nudge/models';
+import { Nudge } from 'src/nudge/models';
 import { NudgeFactory } from './nudge.factory';
 
 @Injectable()

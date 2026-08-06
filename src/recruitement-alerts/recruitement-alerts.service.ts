@@ -1,0 +1,454 @@
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import sequelize, { Op, Transaction } from 'sequelize';
+import { Sequelize } from 'sequelize-typescript';
+import { CompanyUser } from 'src/companies/models/company-user.model';
+import { Skill } from 'src/skills/models';
+import { SkillsService } from 'src/skills/skills.service';
+import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { FilterConstant } from 'src/utils/types/filters.types';
+import { CreateRecruitementAlertDto, UpdateRecruitementAlertDto } from './dto';
+import {
+  RecruitementAlert,
+  RecruitementAlertBusinessSector,
+  RecruitementAlertNotifiedCandidate,
+  RecruitementAlertSkill,
+} from './models';
+import { RecruitementAlertInclude } from './models/recruitement-alert.include';
+
+@Injectable()
+export class RecruitementAlertsService {
+  constructor(
+    @InjectModel(RecruitementAlert)
+    private recruitementAlertModel: typeof RecruitementAlert,
+    @InjectModel(RecruitementAlertBusinessSector)
+    private recruitementAlertBusinessSectorModel: typeof RecruitementAlertBusinessSector,
+    @InjectModel(RecruitementAlertSkill)
+    private recruitementAlertSkillModel: typeof RecruitementAlertSkill,
+    @InjectModel(CompanyUser)
+    private companyUserModel: typeof CompanyUser,
+    @InjectModel(RecruitementAlertNotifiedCandidate)
+    private recruitementAlertNotifiedCandidateModel: typeof RecruitementAlertNotifiedCandidate,
+    private sequelize: Sequelize,
+    private userProfilesService: UserProfilesService,
+    private skillsService: SkillsService
+  ) {}
+
+  async findAllByUserId(userId: string): Promise<RecruitementAlert[]> {
+    // Find company with userId
+    const companyUser = await this.companyUserModel.findOne({
+      where: { userId },
+      attributes: ['companyId'],
+    });
+
+    if (!companyUser) {
+      return [];
+    }
+
+    const companyId = companyUser.companyId;
+
+    // Fetch all recruitement alerts for the company
+    const recruitementAlerts = await this.recruitementAlertModel.findAll({
+      where: {
+        companyId,
+      },
+      include: RecruitementAlertInclude,
+    });
+
+    return recruitementAlerts;
+  }
+
+  async findAll(): Promise<RecruitementAlert[]> {
+    return this.recruitementAlertModel.findAll({
+      include: RecruitementAlertInclude,
+    });
+  }
+
+  // Resolves the companyId the requesting user belongs to. Throws if the
+  // user has no company, so callers can't operate on alerts without a
+  // company to scope the ownership check against.
+  private async getCompanyIdForUser(userId: string): Promise<string> {
+    const companyUser = await this.companyUserModel.findOne({
+      where: { userId },
+      attributes: ['companyId'],
+    });
+
+    if (!companyUser) {
+      throw new ForbiddenException('User is not associated with a company');
+    }
+
+    return companyUser.companyId;
+  }
+
+  // Verifies the alert belongs to the requesting user's company, throwing
+  // otherwise. This is the ownership check backing update/delete/matching.
+  private async verifyAlertBelongsToUser(
+    recruitementAlert: RecruitementAlert,
+    userId: string
+  ): Promise<void> {
+    const companyId = await this.getCompanyIdForUser(userId);
+
+    if (recruitementAlert.companyId !== companyId) {
+      throw new ForbiddenException(
+        'Recruitement alert does not belong to your company'
+      );
+    }
+  }
+
+  async create(
+    userId: string,
+    createRecruitementAlertDto: CreateRecruitementAlertDto
+  ) {
+    const { businessSectorIds, skills, companyId, ...recruitementAlertData } =
+      createRecruitementAlertDto;
+    // companyId is intentionally not taken from the DTO: it must always
+    // come from the requesting user's own company membership.
+    void companyId;
+    const ownCompanyId = await this.getCompanyIdForUser(userId);
+
+    const result = await this.sequelize.transaction(async (transaction) => {
+      // Create the recruitement alert
+      const recruitementAlert = await this.recruitementAlertModel.create(
+        { ...recruitementAlertData, companyId: ownCompanyId },
+        { transaction }
+      );
+      // update business sectors
+      if (businessSectorIds && businessSectorIds.length > 0) {
+        await this.updateBusinessSectors(
+          recruitementAlert.id,
+          businessSectorIds,
+          transaction
+        );
+      }
+      // update skills
+      if (skills && skills.length > 0) {
+        await this.updateSkills(recruitementAlert.id, skills, transaction);
+      }
+
+      return recruitementAlert;
+    });
+
+    return result;
+  }
+
+  async findOne(recruitementAlertId: string, transaction?: Transaction) {
+    return this.recruitementAlertModel.findOne({
+      where: { id: recruitementAlertId },
+      include: RecruitementAlertInclude,
+      transaction,
+    });
+  }
+
+  async update(
+    recruitementAlertId: string,
+    userId: string,
+    updateRecruitementAlertDto: UpdateRecruitementAlertDto
+  ) {
+    // companyId is stripped: an alert may never be reassigned to another
+    // company through an update.
+    const { businessSectorIds, skills, companyId, ...recruitementAlertData } =
+      updateRecruitementAlertDto;
+    void companyId;
+
+    return this.sequelize.transaction(async (transaction) => {
+      const recruitementAlert = await this.findOne(
+        recruitementAlertId,
+        transaction
+      );
+
+      if (!recruitementAlert) {
+        throw new NotFoundException(
+          `Recruitement alert with ID ${recruitementAlertId} not found`
+        );
+      }
+
+      await this.verifyAlertBelongsToUser(recruitementAlert, userId);
+
+      // Mettre à jour les données de base de l'alerte
+      if (Object.keys(recruitementAlertData).length > 0) {
+        await recruitementAlert.update(recruitementAlertData, { transaction });
+      }
+
+      if (businessSectorIds) {
+        await this.updateBusinessSectors(
+          recruitementAlertId,
+          businessSectorIds,
+          transaction
+        );
+      }
+
+      if (skills) {
+        await this.updateSkills(recruitementAlertId, skills, transaction);
+      }
+
+      return this.findOne(recruitementAlertId, transaction);
+    });
+  }
+
+  async updateBusinessSectors(
+    recruitementAlertId: string,
+    businessSectorIds: string[],
+    transaction?: Transaction
+  ) {
+    // Find the recruitement alert - use the transaction for this query!
+    const recruitementAlert = await this.findOne(
+      recruitementAlertId,
+      transaction
+    );
+
+    if (!recruitementAlert) {
+      console.error('Recruitement alert not found');
+      throw new NotFoundException(
+        `Recruitement alert with ID ${recruitementAlertId} not found`
+      );
+    }
+
+    // Use provided transaction or create a new one
+    const t = transaction || (await this.sequelize.transaction());
+
+    try {
+      // Get current business sectors
+      const currentBusinessSectors =
+        await this.recruitementAlertBusinessSectorModel.findAll({
+          where: { recruitementAlertId },
+          transaction: t,
+        });
+
+      // Get current business sector IDs
+      const currentBusinessSectorIds = currentBusinessSectors.map(
+        (bs) => bs.businessSectorId
+      );
+
+      // Identify business sectors to create
+      const businessSectorsToCreate = businessSectorIds
+        .filter((id) => !currentBusinessSectorIds.includes(id))
+        .map((businessSectorId) => ({
+          recruitementAlertId,
+          businessSectorId,
+        }));
+
+      // Identify business sectors to delete
+      const businessSectorIdsToDelete = currentBusinessSectors
+        .filter(
+          (currentBs) => !businessSectorIds.includes(currentBs.businessSectorId)
+        )
+        .map((bs) => bs.id);
+
+      // Delete business sectors that are no longer needed
+      if (businessSectorIdsToDelete.length > 0) {
+        await this.recruitementAlertBusinessSectorModel.destroy({
+          where: {
+            id: {
+              [Op.in]: businessSectorIdsToDelete,
+            },
+          },
+          transaction: t,
+        });
+      }
+
+      // Create new business sectors
+      if (businessSectorsToCreate.length > 0) {
+        await this.recruitementAlertBusinessSectorModel.bulkCreate(
+          businessSectorsToCreate,
+          { transaction: t }
+        );
+      }
+
+      // If we created our own transaction, commit it
+      if (!transaction) {
+        await t.commit();
+      }
+
+      return true;
+    } catch (error) {
+      console.error(error);
+      // If we created our own transaction, roll it back
+      if (!transaction) {
+        await t.rollback();
+      }
+      throw error;
+    }
+  }
+
+  async updateSkills(
+    recruitementAlertId: string,
+    skills: FilterConstant<string>[],
+    transaction?: sequelize.Transaction
+  ) {
+    // Find the recruitement alert
+    const recruitementAlert = await this.findOne(
+      recruitementAlertId,
+      transaction
+    );
+
+    if (!recruitementAlert) {
+      throw new NotFoundException(
+        `Recruitement alert with ID ${recruitementAlertId} not found`
+      );
+    }
+
+    // Use provided transaction or create a new one
+    const t = transaction || (await this.sequelize.transaction());
+
+    try {
+      // First, check if there are any new skills to create
+      const newSkills = skills.filter((skill) => skill.__isNew__ === true);
+      let createdSkills: Skill[] = [];
+
+      if (newSkills.length > 0) {
+        // Create the new skills in the database
+        const skillsToCreate = newSkills.map((skill) => ({
+          name: skill.label,
+        }));
+
+        createdSkills = await this.skillsService.bulkCreateSkills(
+          skillsToCreate,
+          t
+        );
+      }
+
+      // Get current skills
+      const currentSkills = await this.recruitementAlertSkillModel.findAll({
+        where: { recruitementAlertId },
+        transaction: t,
+      });
+
+      // Get current skill IDs
+      const currentSkillIds = currentSkills.map((s) => s.skillId);
+
+      // Prepare skills to create
+      const skillsToCreate = skills.map((skill) => {
+        // If this is a new skill, find its newly created ID
+        if (skill.__isNew__ === true) {
+          const createdSkill = createdSkills.find(
+            (cs) => cs.name === skill.label
+          );
+          if (createdSkill) {
+            return {
+              recruitementAlertId,
+              skillId: createdSkill.id,
+            };
+          }
+        }
+
+        return {
+          recruitementAlertId,
+          skillId: skill.value,
+        };
+      });
+
+      // First delete all existing skills
+      if (currentSkillIds.length > 0) {
+        await this.recruitementAlertSkillModel.destroy({
+          where: {
+            recruitementAlertId,
+          },
+          transaction: t,
+        });
+      }
+
+      // Then create all skills
+      if (skillsToCreate.length > 0) {
+        await this.recruitementAlertSkillModel.bulkCreate(skillsToCreate, {
+          transaction: t,
+        });
+      }
+
+      // If we created our own transaction, commit it
+      if (!transaction) {
+        await t.commit();
+      }
+
+      return true;
+    } catch (error) {
+      // If we created our own transaction, roll it back
+      if (!transaction) {
+        await t.rollback();
+      }
+      throw error;
+    }
+  }
+
+  // userId is optional here because this is also called internally by the
+  // recruitment-alerts cron job, which legitimately iterates over every
+  // company's alerts. Endpoint-facing callers must always pass userId.
+  async getRecruitementAlertMatching(
+    recruitementAlertId: string,
+    userId?: string
+  ) {
+    const recruitementAlert = await this.findOne(recruitementAlertId);
+
+    if (!recruitementAlert) {
+      throw new NotFoundException(
+        `Recruitement alert with ID ${recruitementAlertId} not found`
+      );
+    }
+
+    if (userId) {
+      await this.verifyAlertBelongsToUser(recruitementAlert, userId);
+    }
+
+    const matchingProfiles =
+      await this.userProfilesService.findMatchingProfilesForRecruitementAlert(
+        recruitementAlert
+      );
+
+    return matchingProfiles;
+  }
+
+  async delete(recruitementAlertId: string, userId: string): Promise<boolean> {
+    const recruitementAlert = await this.findOne(recruitementAlertId);
+
+    if (!recruitementAlert) {
+      throw new NotFoundException(
+        `Recruitement alert with ID ${recruitementAlertId} not found`
+      );
+    }
+
+    await this.verifyAlertBelongsToUser(recruitementAlert, userId);
+
+    return this.sequelize.transaction(async (transaction) => {
+      await this.recruitementAlertBusinessSectorModel.destroy({
+        where: { recruitementAlertId },
+        transaction,
+      });
+
+      await this.recruitementAlertSkillModel.destroy({
+        where: { recruitementAlertId },
+        transaction,
+      });
+
+      await recruitementAlert.destroy({ transaction });
+
+      return true;
+    });
+  }
+
+  // Finds all entries in the RecruitementAlertNotifiedCandidate table for a given alertId
+  async findRecruitementAlertNotifiedCandidate(
+    alertId: string
+  ): Promise<RecruitementAlertNotifiedCandidate[]> {
+    return this.recruitementAlertNotifiedCandidateModel.findAll({
+      where: { recruitementAlertId: alertId },
+    });
+  }
+
+  // Adds entries to the RecruitementAlertNotifiedCandidate table
+  async markUsersAsNotified(alertId: string, userIds: string[]): Promise<void> {
+    if (userIds.length === 0) {
+      return;
+    }
+    const entries = userIds.map((userId) => ({
+      recruitementAlertId: alertId,
+      userId,
+    }));
+
+    await this.recruitementAlertNotifiedCandidateModel.bulkCreate(entries, {
+      ignoreDuplicates: true,
+    });
+  }
+}

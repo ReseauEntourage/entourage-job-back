@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/auth/auth.module';
-import { BusinessSectorsModule } from 'src/common/business-sectors/business-sectors.module';
+import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
 import { UserProfilesModule } from 'src/user-profiles/user-profiles.module';
 import { UserSocialSituationsModule } from 'src/user-social-situations/user-social-situations.module';
 import { UsersModule } from 'src/users/users.module';

@@ -9,7 +9,7 @@ import {
   PrimaryKey,
   Table,
 } from 'sequelize-typescript';
-import { Contract } from 'src/common/contracts/models';
+import { Contract } from 'src/contracts/models';
 import { UserProfile } from './user-profile.model';
 
 @Table({ tableName: 'UserProfileContracts', timestamps: false })

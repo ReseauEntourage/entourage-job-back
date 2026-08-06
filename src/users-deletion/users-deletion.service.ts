@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
 import { S3Service } from 'src/external-services/aws/s3.service';
-import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
+import { UserProfileDeletionService } from 'src/user-profile-deletion/user-profile-deletion.service';
 import { UpdateUserDto } from 'src/users/dto';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
@@ -10,7 +10,7 @@ import { UsersService } from 'src/users/users.service';
 export class UsersDeletionService {
   constructor(
     private usersService: UsersService,
-    private userProfilesService: UserProfilesService,
+    private userProfileDeletionService: UserProfileDeletionService,
     private s3Service: S3Service
   ) {}
 
@@ -34,8 +34,8 @@ export class UsersDeletionService {
   }
 
   async removeUserProfile(id: string) {
-    await this.userProfilesService.clearProfileFieldsForDeletion(id);
-    return this.userProfilesService.removeByUserId(id);
+    await this.userProfileDeletionService.clearProfileFieldsForDeletion(id);
+    return this.userProfileDeletionService.removeByUserId(id);
   }
   async deleteCompleteUser(
     user: Pick<User, 'id' | 'firstName' | 'lastName'>

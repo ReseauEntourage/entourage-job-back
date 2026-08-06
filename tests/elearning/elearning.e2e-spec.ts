@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerStorage } from '@nestjs/throttler';
+import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import request from 'supertest';
 import * as uuid from 'uuid';
 import { MailsService } from 'src/mails/mails.service';
@@ -21,7 +21,7 @@ describe('Elearning', () => {
   let databaseHelper: DatabaseHelper;
   let usersHelper: UsersHelper;
   let elearningUnitFactory: ElearningUnitFactory;
-  let throttlerStorage: ThrottlerStorage;
+  let throttlerStorage: ThrottlerStorageService;
 
   const route = '/elearning';
 
@@ -43,7 +43,8 @@ describe('Elearning', () => {
     usersHelper = moduleFixture.get<UsersHelper>(UsersHelper);
     elearningUnitFactory =
       moduleFixture.get<ElearningUnitFactory>(ElearningUnitFactory);
-    throttlerStorage = moduleFixture.get<ThrottlerStorage>(ThrottlerStorage);
+    throttlerStorage =
+      moduleFixture.get<ThrottlerStorageService>(ThrottlerStorage);
   });
 
   afterAll(async () => {
@@ -57,9 +58,7 @@ describe('Elearning', () => {
 
   beforeEach(async () => {
     await databaseHelper.resetTestDB();
-    Object.keys(throttlerStorage.storage).forEach((key) => {
-      delete throttlerStorage.storage[key];
-    });
+    throttlerStorage.storage.clear();
   });
 
   describe('GET /units', () => {

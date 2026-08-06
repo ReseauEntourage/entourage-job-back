@@ -2,9 +2,9 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { UsersHelper, LoggedInUser } from '../users/users.helper';
-import { Department } from 'src/common/departments/models/department.model';
 import { CompanyUserRole } from 'src/companies/company-user.utils';
 import { Company } from 'src/companies/models/company.model';
+import { Department } from 'src/departments/models/department.model';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { UserRoles } from 'src/users/users.types';
@@ -232,7 +232,7 @@ describe('Companies', () => {
       });
 
       const response = await request(server).get(
-        `/companies?search=&departments[]=${department01.id}&limit=10&offset=0&onlyWithReferent=false`
+        `/companies?search=&departments=${department01.id}&limit=10&offset=0&onlyWithReferent=false`
       );
 
       expect(response.body).toBeDefined();

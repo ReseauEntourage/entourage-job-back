@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UserProfileAnalyticsService } from 'src/user-profile-analytics/user-profile-analytics.service';
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/users/users.types';
@@ -10,7 +11,8 @@ const MIN_PROFILE_COMPLETION_RATE = 70;
 export class PublicCVsService {
   constructor(
     private usersService: UsersService,
-    private userProfilesService: UserProfilesService
+    private userProfilesService: UserProfilesService,
+    private userProfileAnalyticsService: UserProfileAnalyticsService
   ) {}
 
   async getPublicCVs(query: { limit: number; offset: number; search: string }) {
@@ -48,7 +50,9 @@ export class PublicCVsService {
 
         // Calcul du taux de complétion
         const completionRate =
-          await this.userProfilesService.calculateProfileCompletion(user.id);
+          await this.userProfileAnalyticsService.calculateProfileCompletion(
+            user.id
+          );
 
         // Ne conserver que les profils avec au moins 70% de complétion
         if (completionRate >= MIN_PROFILE_COMPLETION_RATE) {

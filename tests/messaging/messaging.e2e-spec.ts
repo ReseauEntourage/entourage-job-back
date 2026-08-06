@@ -5,6 +5,7 @@ import { UsersHelper, LoggedInUser } from '../users/users.helper';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingController } from 'src/messaging/messaging.controller';
 import { MessagingService } from 'src/messaging/messaging.service';
+import { ConversationType } from 'src/messaging/models/conversation.model';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -762,7 +763,7 @@ describe('MESSAGING', () => {
         describe('Contexte : 1 Candidate -> 1 Coach', () => {
           it('should return 200 and all conversations when logged as coach', async () => {
             const conversation = await conversationFactory.create();
-            messagingHelper.associationParticipantsToConversation(
+            await messagingHelper.associationParticipantsToConversation(
               conversation.id,
               [loggedInCandidate.user.id, loggedInCoach.user.id]
             );
@@ -781,7 +782,7 @@ describe('MESSAGING', () => {
         describe('Contexte : 1 Candidate -> 1 Referer', () => {
           it('should return 200 and all conversations when logged as referer', async () => {
             const conversation = await conversationFactory.create();
-            messagingHelper.associationParticipantsToConversation(
+            await messagingHelper.associationParticipantsToConversation(
               conversation.id,
               [loggedInCandidate.user.id, loggedInReferer.user.id]
             );
@@ -1172,6 +1173,132 @@ describe('MESSAGING', () => {
           });
 
       expect(response.status).toBe(400);
+    });
+  });
+
+  describe('getMirrorRoleConversationCount', () => {
+    it('should not count a group conversation with mutual exchange and a mirror role participant', async () => {
+      const conversation = await conversationFactory.create({
+        type: ConversationType.GROUP,
+      });
+
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [
+          loggedInCandidate.user.id,
+          loggedInCoach.user.id,
+          loggedInOtherCandidate.user.id,
+        ]
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCoach.user.id
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInOtherCandidate.user.id
+      );
+
+      const count = await messagingService.getMirrorRoleConversationCount(
+        loggedInCandidate.user.id,
+        UserRoles.CANDIDATE
+      );
+
+      expect(count).toBe(0);
+    });
+
+    it('should count a direct conversation with mutual exchange and a mirror role participant', async () => {
+      const conversation = await conversationFactory.create({
+        type: ConversationType.DIRECT,
+      });
+
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCoach.user.id
+      );
+
+      const count = await messagingService.getMirrorRoleConversationCount(
+        loggedInCandidate.user.id,
+        UserRoles.CANDIDATE
+      );
+
+      expect(count).toBe(1);
+    });
+
+    it('should count an available mirror role participant when onlyAvailableMirrorParticipant is true', async () => {
+      const availableCoach = await usersHelper.createLoggedInUser(
+        { role: UserRoles.COACH },
+        { userProfile: { unavailableAt: null } }
+      );
+      const conversation = await conversationFactory.create({
+        type: ConversationType.DIRECT,
+      });
+
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, availableCoach.user.id]
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        availableCoach.user.id
+      );
+
+      const count = await messagingService.getMirrorRoleConversationCount(
+        loggedInCandidate.user.id,
+        UserRoles.CANDIDATE,
+        undefined,
+        true
+      );
+
+      expect(count).toBe(1);
+    });
+
+    it('should exclude an unavailable mirror role participant when onlyAvailableMirrorParticipant is true', async () => {
+      const unavailableCoach = await usersHelper.createLoggedInUser(
+        { role: UserRoles.COACH },
+        { userProfile: { unavailableAt: new Date() } }
+      );
+      const conversation = await conversationFactory.create({
+        type: ConversationType.DIRECT,
+      });
+
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, unavailableCoach.user.id]
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.createMessage(
+        conversation.id,
+        unavailableCoach.user.id
+      );
+
+      const count = await messagingService.getMirrorRoleConversationCount(
+        loggedInCandidate.user.id,
+        UserRoles.CANDIDATE,
+        undefined,
+        true
+      );
+
+      expect(count).toBe(0);
     });
   });
 });

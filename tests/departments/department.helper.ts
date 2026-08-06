@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { Department } from 'src/common/departments/models/department.model';
+import { Department } from 'src/departments/models/department.model';
 import { DepartmentCode } from 'src/utils/types/departments.types';
 import { DepartmentFactory } from './department.factory';
 
