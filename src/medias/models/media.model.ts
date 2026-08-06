@@ -8,6 +8,7 @@ import {
   CreatedAt,
   DataType,
   Default,
+  DeletedAt,
   ForeignKey,
   IsUUID,
   Model,
@@ -32,6 +33,14 @@ export class Media extends Model {
 
   @UpdatedAt
   updatedAt: Date;
+
+  /**
+   * Set if and only if the underlying S3 object has actually been deleted.
+   * It must never be set to merely "unlink" a media from the feature that
+   * references it (see `ExternalCv.deletedAt` for that meaning).
+   */
+  @DeletedAt
+  deletedAt: Date;
 
   @ApiProperty()
   @IsString()

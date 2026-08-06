@@ -1,5 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { ExternalCvsModule } from 'src/external-cvs/external-cvs.module';
 import { ExtractedCVData } from 'src/external-cvs/models/extracted-cv-data.model';
 import { LanguagesModule } from 'src/languages/languages.module';
 import { ProfileGenerationService } from 'src/profile-generation/profile-generation.service';
@@ -12,6 +13,7 @@ import { ProfileGenerationController } from './profile-generation.controller';
     SequelizeModule.forFeature([ExtractedCVData]),
     forwardRef(() => QueuesModule),
     forwardRef(() => UserProfilesModule),
+    forwardRef(() => ExternalCvsModule),
     LanguagesModule,
   ],
   controllers: [ProfileGenerationController],

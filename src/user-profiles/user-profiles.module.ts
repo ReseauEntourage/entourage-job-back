@@ -3,8 +3,10 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { CompanyUser } from 'src/companies/models/company-user.model';
 import { DepartmentsModule } from 'src/departments/departments.module';
+import { ExternalCv } from 'src/external-cvs/models/external-cv.model';
 import { SlackModule } from 'src/external-services/slack/slack.module';
 import { MailsModule } from 'src/mails/mails.module';
+import { Media } from 'src/medias/models';
 import { QueuesModule } from 'src/queues/producers';
 import { UserProfileAnalyticsModule } from 'src/user-profile-analytics/user-profile-analytics.module';
 import { UserProfileContractsModule } from 'src/user-profile-contracts/user-profile-contracts.module';
@@ -32,6 +34,11 @@ import { UserProfilesService } from './user-profiles.service';
       UserProfile,
       UserProfileSectorOccupation,
       CompanyUser,
+      // Registered here (and not only in ExternalCvsModule) so that the
+      // `UserProfile.externalCvs` association always resolves, including in
+      // contexts that load UserProfilesModule without ExternalCvsModule.
+      ExternalCv,
+      Media,
     ]),
     forwardRef(() => UsersModule),
     SlackModule,

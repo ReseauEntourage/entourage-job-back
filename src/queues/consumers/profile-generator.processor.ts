@@ -69,8 +69,8 @@ export class ProfileGeneratorProcessor extends WorkerHost {
     try {
       await job.updateProgress(10);
 
-      // Construire l'URL S3
-      const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${process.env.AWSS3_FILE_DIRECTORY}${s3Key}`;
+      // Construire l'URL S3 — `s3Key` est la clé complète stockée en base
+      const pdfUrl = `https://${process.env.AWSS3_BUCKET_NAME}.s3.eu-west-3.amazonaws.com/${s3Key}`;
 
       // Télécharger le PDF depuis S3 directement dans le worker
       const tempDir = process.platform === 'darwin' ? '/tmp' : os.tmpdir();

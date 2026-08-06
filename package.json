@@ -34,6 +34,7 @@
     "db:migrate:undo": "sequelize db:migrate:undo",
     "db:seed": "sequelize db:seed:all",
     "db:dump": "./dump-db-schema.sh",
+    "script:migrate-external-cvs": "node dist/scripts/migrate-external-cvs",
     "prepare": "husky install"
   },
   "dependencies": {

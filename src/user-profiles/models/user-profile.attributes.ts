@@ -9,7 +9,6 @@ export const UserProfilesAttributes = [
   'linkedinUrl',
   'optInNewsletter',
   'optInRecommendations',
-  'hasExternalCv',
   'hasPicture',
 ];
 

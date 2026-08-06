@@ -11,7 +11,9 @@ import { ElearningQuestion } from 'src/elearning/models/elearning-question.model
 import { ElearningUnitRole } from 'src/elearning/models/elearning-unit-role.model';
 import { ElearningUnit } from 'src/elearning/models/elearning-unit.model';
 import { Experience, ExperienceSkill } from 'src/experiences/models';
+import { ExternalCv } from 'src/external-cvs/models/external-cv.model';
 import { Formation, FormationSkill } from 'src/formations/models';
+import { Media } from 'src/medias/models';
 import {
   Conversation,
   ConversationParticipant,
@@ -89,7 +91,11 @@ export class DatabaseHelper {
     @InjectModel(ElearningUnitRole)
     private elearningUnitRoleModel: typeof ElearningUnitRole,
     @InjectModel(ElearningUnit)
-    private elearningUnitModel: typeof ElearningUnit
+    private elearningUnitModel: typeof ElearningUnit,
+    @InjectModel(ExternalCv)
+    private externalCvModel: typeof ExternalCv,
+    @InjectModel(Media)
+    private mediaModel: typeof Media
   ) {}
 
   async resetTestDB() {
@@ -121,6 +127,8 @@ export class DatabaseHelper {
       await this.organizationModel.truncate(destroyOptions);
       await this.organizationReferentModel.truncate(destroyOptions);
       await this.userSocialSituationModel.truncate(destroyOptions);
+      await this.externalCvModel.truncate(destroyOptions);
+      await this.mediaModel.truncate(destroyOptions);
       await this.userProfileModel.truncate(destroyOptions);
       await this.userModel.truncate(destroyOptions);
       await this.userProfileNudge.truncate(destroyOptions);

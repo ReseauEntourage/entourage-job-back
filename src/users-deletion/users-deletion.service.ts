@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
+import { ExternalCvsService } from 'src/external-cvs/external-cvs.service';
 import { S3Service } from 'src/external-services/aws/s3.service';
 import { UserProfileDeletionService } from 'src/user-profile-deletion/user-profile-deletion.service';
 import { UpdateUserDto } from 'src/users/dto';
@@ -11,7 +12,9 @@ export class UsersDeletionService {
   constructor(
     private usersService: UsersService,
     private userProfileDeletionService: UserProfileDeletionService,
-    private s3Service: S3Service
+    private s3Service: S3Service,
+    @Inject(forwardRef(() => ExternalCvsService))
+    private externalCvsService: ExternalCvsService
   ) {}
 
   async findOneUser(userId: string) {
@@ -42,6 +45,9 @@ export class UsersDeletionService {
   ): Promise<{ userDeleted: number }> {
     const { id, firstName, lastName } = user;
     await this.removeFiles(id, firstName, lastName);
+    // Must run before `removeUserProfile`: the profile row is needed to
+    // resolve the user's CV media.
+    await this.externalCvsService.deleteAllExternalCvsForUser(id);
     await this.updateUser(id, {
       firstName: 'Utilisateur',
       lastName: 'supprimé',
