@@ -72,10 +72,6 @@ jobs:
       OPENAI_API_KEY: ''
       SHORTIO_DOMAIN: test.short.io
       SHORTIO_API_KEY: test_api_key
-      # Fake S3 config: `Media`'s AfterFind hook presigns a URL for every media
-      # it loads, and presigning is pure local crypto — it needs a bucket name
-      # and credentials to be set, but never reaches AWS. Deliberately invalid
-      # so a test that would really call S3 fails instead of hitting a bucket.
       AWSS3_BUCKET_NAME: test-bucket
       AWSS3_IMAGE_DIRECTORY: images/
       AWSS3_FILE_DIRECTORY: files/
