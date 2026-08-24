@@ -54,15 +54,14 @@ describe('UNAVAILABLE USERS REMINDER MAIL - ELIGIBLE USER ROWS', () => {
   // The recipient never sees the message; `otherParticipant` authors it so
   // the recipient's `seenAt` (never set) trails the last message. The query
   // doesn't exclude the author's own participant row (unlike the auto-
-  // unavailability query), so the author's role must fall outside whichever
-  // role filter is under test, or it would also show up in `rows`.
+  // unavailability query), so the author must be Admin to stay excluded now
+  // that the query filter is role-agnostic for every other role.
   const createStillAvailableUserWithUnreadMessage = async (
     recipient: LoggedInUser,
-    lastMessageAge: number,
-    authorRole: (typeof UserRoles)[keyof typeof UserRoles]
+    lastMessageAge: number
   ) => {
     const otherParticipant = await usersHelper.createLoggedInUser({
-      role: authorRole,
+      role: UserRoles.ADMIN,
     });
     const conversation = await conversationFactory.create();
     await messagingHelper.associationParticipantsToConversation(
@@ -80,11 +79,7 @@ describe('UNAVAILABLE USERS REMINDER MAIL - ELIGIBLE USER ROWS', () => {
     const candidate = await usersHelper.createLoggedInUser({
       role: UserRoles.CANDIDATE,
     });
-    await createStillAvailableUserWithUnreadMessage(
-      candidate,
-      15,
-      UserRoles.COACH
-    );
+    await createStillAvailableUserWithUnreadMessage(candidate, 15);
 
     const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
@@ -95,11 +90,7 @@ describe('UNAVAILABLE USERS REMINDER MAIL - ELIGIBLE USER ROWS', () => {
     const coach = await usersHelper.createLoggedInUser({
       role: UserRoles.COACH,
     });
-    await createStillAvailableUserWithUnreadMessage(
-      coach,
-      15,
-      UserRoles.CANDIDATE
-    );
+    await createStillAvailableUserWithUnreadMessage(coach, 15);
 
     const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
@@ -110,11 +101,7 @@ describe('UNAVAILABLE USERS REMINDER MAIL - ELIGIBLE USER ROWS', () => {
     const referer = await usersHelper.createLoggedInUser({
       role: UserRoles.REFERER,
     });
-    await createStillAvailableUserWithUnreadMessage(
-      referer,
-      15,
-      UserRoles.CANDIDATE
-    );
+    await createStillAvailableUserWithUnreadMessage(referer, 15);
 
     const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
@@ -125,7 +112,7 @@ describe('UNAVAILABLE USERS REMINDER MAIL - ELIGIBLE USER ROWS', () => {
     const admin = await usersHelper.createLoggedInUser({
       role: UserRoles.ADMIN,
     });
-    await createStillAvailableUserWithUnreadMessage(admin, 15, UserRoles.COACH);
+    await createStillAvailableUserWithUnreadMessage(admin, 15);
 
     const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
