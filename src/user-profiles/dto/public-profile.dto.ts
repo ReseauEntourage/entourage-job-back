@@ -14,6 +14,7 @@ import { Skill } from 'src/skills/models';
 import { User } from 'src/users/models';
 import { Gender, UserRole } from 'src/users/users.types';
 import { ZoneName } from 'src/utils/types/zones.types';
+import { hasCurrentExternalCv } from './user-profile.dto';
 
 export type PublicProfileDto = {
   achievements: UserAchievement[];
@@ -82,7 +83,7 @@ export const generatePublicProfileDto = (
     reviews: userProfile.reviews,
     interests: userProfile.interests,
     linkedinUrl: userProfile.linkedinUrl,
-    hasExternalCv: userProfile.hasExternalCv,
+    hasExternalCv: hasCurrentExternalCv(userProfile),
     hasPicture: userProfile.hasPicture,
     company: null,
     zone: user.zone,

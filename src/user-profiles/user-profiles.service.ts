@@ -66,6 +66,7 @@ import {
   availabilityWhere,
   profileVisibilityEligibilityWhere,
   userProfileSearchQuery,
+  withHasExternalCv,
 } from './user-profiles.utils';
 
 const LINKEDIN_ENTOURAGE_PRO_ORG_ID = '42693016';
@@ -331,7 +332,9 @@ export class UserProfilesService {
             profile.user.id
           );
 
-        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        const { user, ...restProfile } = withHasExternalCv(
+          profile.toJSON<UserProfile>()
+        );
         return {
           ...user,
           ...restProfile,
@@ -540,7 +543,9 @@ export class UserProfilesService {
           await this.userProfileAnalyticsService.getAverageDelayResponse(
             profile.user.id
           );
-        const { user, ...restProfile }: UserProfile = profile.toJSON();
+        const { user, ...restProfile } = withHasExternalCv(
+          profile.toJSON<UserProfile>()
+        );
         return {
           ...user,
           ...restProfile,
@@ -737,7 +742,7 @@ export class UserProfilesService {
           await this.userProfileAnalyticsService.getAverageDelayResponse(
             profile.user.id
           );
-        const { user, ...restProfile } = profile.toJSON();
+        const { user, ...restProfile } = withHasExternalCv(profile.toJSON());
         return {
           ...user,
           ...restProfile,

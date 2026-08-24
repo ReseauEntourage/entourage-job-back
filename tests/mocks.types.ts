@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import { CloudFrontService } from 'src/external-services/aws/cloud-front.service';
-import { S3Service } from 'src/external-services/aws/s3.service';
+import { S3File, S3Service } from 'src/external-services/aws/s3.service';
 import { MailjetService } from 'src/external-services/mailjet/mailjet.service';
 import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
@@ -15,9 +15,18 @@ export const QueueMocks: Partial<ProviderMock<Queue>> & {
 } as const;
 
 export const S3Mocks: ProviderMock<S3Service> = {
-  upload: jest.fn(async () => {
-    return 'key';
-  }),
+  // Mirrors the real service: the returned key is the requested path prefixed
+  // by the S3 directory, so callers storing it (e.g. `Media.s3Key`) get a
+  // distinct key per upload.
+  upload: jest.fn(
+    async (
+      _data: unknown,
+      _contentType: string,
+      outputPath: string
+    ): Promise<S3File> => {
+      return { key: `files/${outputPath}`, publicUrl: null };
+    }
+  ),
   copyFile: jest.fn(async () => {
     return {};
   }),

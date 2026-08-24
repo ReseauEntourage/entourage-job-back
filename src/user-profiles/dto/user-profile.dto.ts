@@ -2,6 +2,16 @@ import { UserProfile, UserProfileWithPartialAssociations } from '../models';
 
 export type UserProfileDto = UserProfileWithPartialAssociations;
 
+/**
+ * `hasExternalCv` is not a stored column anymore: it is derived from the
+ * presence of at least one still-active `ExternalCv` link on the profile.
+ *
+ * Requires the `externalCvs` association to have been included in the query
+ * (see `getUserProfileInclude`).
+ */
+export const hasCurrentExternalCv = (userProfile: UserProfile): boolean =>
+  (userProfile?.externalCvs?.length ?? 0) > 0;
+
 export const generateUserProfileDto = (
   userProfile: UserProfile | null,
   complete = false
@@ -17,7 +27,7 @@ export const generateUserProfileDto = (
     nudges: userProfile.nudges,
     description: userProfile.description,
     linkedinUrl: userProfile.linkedinUrl,
-    hasExternalCv: userProfile.hasExternalCv,
+    hasExternalCv: hasCurrentExternalCv(userProfile),
     sectorOccupations: userProfile.sectorOccupations,
     hasPicture: userProfile.hasPicture,
     optInRecommendations: userProfile.optInRecommendations,

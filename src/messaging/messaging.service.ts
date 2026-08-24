@@ -287,6 +287,15 @@ export class MessagingService {
         ],
       });
 
+    // Medias come straight from the includes here, so they still need their
+    // signed URL before being serialized to the client
+    await this.mediaService.attachSignedUrls(
+      conversationParticipants.flatMap(
+        ({ conversation }) =>
+          conversation?.messages?.flatMap(({ medias }) => medias ?? []) ?? []
+      )
+    );
+
     return conversationParticipants
       .filter((cp) => cp.conversation)
       .map((cp) => {

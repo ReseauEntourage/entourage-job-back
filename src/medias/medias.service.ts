@@ -40,6 +40,29 @@ export class MediasService {
     return this.mediaModel.bulkCreate(uploadedFilesData);
   }
 
+  /**
+   * Fills the `signedUrl` virtual field of the given medias, in place.
+   *
+   * Must be called by every path that serves medias to the client — and only
+   * by those: signing is useless for internal reads, and doing it here rather
+   * than in a model hook keeps `S3Service` injected, hence stubbable in tests.
+   *
+   * @param medias The medias to sign
+   * @returns The same medias, with `signedUrl` set
+   */
+  async attachSignedUrls<T extends Media>(medias: T[]): Promise<T[]> {
+    await Promise.all(
+      medias.map(async (media) => {
+        media.signedUrl = await this.s3Service.getSignedUrl(
+          media.s3Key,
+          media.mimeType,
+          'inline' // Permit to display the file directly in the browser
+        );
+      })
+    );
+    return medias;
+  }
+
   async findMediasByConversationId(
     conversationId: string,
     transaction?: Transaction
@@ -48,7 +71,7 @@ export class MediasService {
     // So we need to find all messages linked to the conversation
     // And then find all medias linked to the messages but without the assiociations
     // This is because we only need the medias and not the messages
-    return this.mediaModel.findAll({
+    const medias = await this.mediaModel.findAll({
       attributes: mediaAttributes,
       include: [
         {
@@ -71,10 +94,12 @@ export class MediasService {
       ],
       transaction,
     });
+
+    return this.attachSignedUrls(medias);
   }
 
   async findMediaByMessageId(messageId: string, transaction?: Transaction) {
-    return this.mediaModel.findAll({
+    const medias = await this.mediaModel.findAll({
       attributes: mediaAttributes,
       include: [
         {
@@ -88,6 +113,8 @@ export class MediasService {
       ],
       transaction,
     });
+
+    return this.attachSignedUrls(medias);
   }
 
   //////////////////////

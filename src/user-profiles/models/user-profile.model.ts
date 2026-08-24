@@ -32,6 +32,7 @@ import { BusinessSector } from 'src/business-sectors/models';
 import { Review } from 'src/common/reviews/models';
 import { Contract } from 'src/contracts/models';
 import { Experience } from 'src/experiences/models';
+import { ExternalCv } from 'src/external-cvs/models/external-cv.model';
 import { Formation } from 'src/formations/models';
 import { Interest } from 'src/interests/models';
 import { Language } from 'src/languages/models';
@@ -315,6 +316,13 @@ export class UserProfile extends Model {
   @IsOptional()
   @HasMany(() => UserProfileEmbedding, 'userProfileId')
   embeddings: UserProfileEmbedding[];
+
+  // External CVs — `ExternalCv` is paranoid, so this only ever exposes the
+  // still-active links. Used to derive `hasExternalCv` in the DTOs.
+  @IsArray()
+  @IsOptional()
+  @HasMany(() => ExternalCv, 'userProfileId')
+  externalCvs: ExternalCv[];
 
   /**
    * Hooks
