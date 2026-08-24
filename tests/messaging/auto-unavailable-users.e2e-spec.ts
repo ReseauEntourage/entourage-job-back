@@ -81,30 +81,43 @@ describe('AUTO UNAVAILABILITY - INACTIVE USERS WITH UNREAD CONVERSATIONS', () =>
 
     const rows = await messagingService.getInactiveUsersWithUnreadConversations(
       30,
-      15,
-      [UserRoles.CANDIDATE]
+      15
     );
 
     expect(rows.map((r) => r.id)).toEqual([candidate.user.id]);
   });
 
-  it('matches a coach inactive for 60 days with a message unread for 30 days', async () => {
+  it('matches a coach inactive for 30 days with a message unread for 15 days', async () => {
     const coach = await usersHelper.createLoggedInUser({
       role: UserRoles.COACH,
-      lastConnection: daysAgo(60),
+      lastConnection: daysAgo(30),
     });
-    await createInactiveUserWithUnreadMessage(coach, 30);
+    await createInactiveUserWithUnreadMessage(coach, 15);
 
     const rows = await messagingService.getInactiveUsersWithUnreadConversations(
-      60,
       30,
-      [UserRoles.COACH, UserRoles.REFERER]
+      15
     );
 
     expect(rows.map((r) => r.id)).toEqual([coach.user.id]);
   });
 
-  it('does not match a candidate under the tightened thresholds (45 days without connection but message only 10 days old)', async () => {
+  it('matches a referer inactive for 30 days with a message unread for 15 days', async () => {
+    const referer = await usersHelper.createLoggedInUser({
+      role: UserRoles.REFERER,
+      lastConnection: daysAgo(30),
+    });
+    await createInactiveUserWithUnreadMessage(referer, 15);
+
+    const rows = await messagingService.getInactiveUsersWithUnreadConversations(
+      30,
+      15
+    );
+
+    expect(rows.map((r) => r.id)).toEqual([referer.user.id]);
+  });
+
+  it('does not match a user under the thresholds (45 days without connection but message only 10 days old)', async () => {
     const candidate = await usersHelper.createLoggedInUser({
       role: UserRoles.CANDIDATE,
       lastConnection: daysAgo(45),
@@ -113,31 +126,24 @@ describe('AUTO UNAVAILABILITY - INACTIVE USERS WITH UNREAD CONVERSATIONS', () =>
 
     const rows = await messagingService.getInactiveUsersWithUnreadConversations(
       30,
-      15,
-      [UserRoles.CANDIDATE]
+      15
     );
 
     expect(rows).toHaveLength(0);
   });
 
-  it('does not double-count a candidate when the default role profile is queried', async () => {
-    const candidate = await usersHelper.createLoggedInUser({
-      role: UserRoles.CANDIDATE,
-      lastConnection: daysAgo(60),
+  it('does not match an admin, even when inactive with an old unread message', async () => {
+    const admin = await usersHelper.createLoggedInUser({
+      role: UserRoles.ADMIN,
+      lastConnection: daysAgo(30),
     });
-    await createInactiveUserWithUnreadMessage(candidate, 30);
+    await createInactiveUserWithUnreadMessage(admin, 15);
 
-    const candidateRows =
-      await messagingService.getInactiveUsersWithUnreadConversations(30, 15, [
-        UserRoles.CANDIDATE,
-      ]);
-    const defaultRows =
-      await messagingService.getInactiveUsersWithUnreadConversations(60, 30, [
-        UserRoles.COACH,
-        UserRoles.REFERER,
-      ]);
+    const rows = await messagingService.getInactiveUsersWithUnreadConversations(
+      30,
+      15
+    );
 
-    expect(candidateRows.map((r) => r.id)).toEqual([candidate.user.id]);
-    expect(defaultRows).toHaveLength(0);
+    expect(rows).toHaveLength(0);
   });
 });

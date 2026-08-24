@@ -1287,16 +1287,11 @@ export class MessagingService {
    * `daysWithoutConnection` days AND have at least one unread conversation message
    * that is older than `daysWithUnreadMessage` days.
    *
-   * `roles` restricts the query to a specific role profile (e.g. Candidate-only
-   * with tightened thresholds, or Coach+Referer with the default ones) so
-   * that callers can apply different thresholds per role.
-   *
    * These users are eligible for automatic unavailability.
    */
   async getInactiveUsersWithUnreadConversations(
     daysWithoutConnection: number,
-    daysWithUnreadMessage: number,
-    roles: UserRole[]
+    daysWithUnreadMessage: number
   ): Promise<{ id: string }[]> {
     return this.conversationModel.sequelize.query(
       `
@@ -1306,7 +1301,7 @@ export class MessagingService {
       WHERE
         up."unavailableAt" IS NULL
         AND u."deletedAt" IS NULL
-        AND u.role IN (:roles)
+        AND u.role NOT IN (:adminRole)
         AND u."lastConnection" < NOW() - make_interval(days => :daysWithoutConnection)
         AND EXISTS (
           SELECT 1
@@ -1326,7 +1321,7 @@ export class MessagingService {
         replacements: {
           daysWithoutConnection,
           daysWithUnreadMessage,
-          roles,
+          adminRole: [UserRoles.ADMIN],
         },
       }
     );
