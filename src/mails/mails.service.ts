@@ -457,6 +457,25 @@ export class MailsService {
     );
   }
 
+  async sendElearningCompletionReminderMail(user: User, mirrorRole: UserRole) {
+    this.logger.log(
+      `Sending elearning completion reminder mail for user with id ${user.id}`
+    );
+    await this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
+      toEmail: user.email,
+      templateId: MailjetTemplates.ELEARNING_COMPLETION_REMINDER,
+      variables: {
+        staffContact: user.staffContact,
+        role: getRoleString(user),
+        firstName: user.firstName,
+        oppositeRole: getRoleStringFromRole(mirrorRole).toLowerCase(),
+      },
+    });
+    this.logger.log(
+      `Sent elearning completion reminder mail for user with id ${user.id}`
+    );
+  }
+
   async sendReminderToCompleteOnboarding(user: User) {
     this.logger.log(
       `Sending reminder to complete onboarding mail to user with email ${user.email}`
