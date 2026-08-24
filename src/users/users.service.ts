@@ -825,8 +825,6 @@ export class UsersService {
   async getUsersEligibleForElearningCompletionReminder(
     daysSinceOnboardingCompletion: number
   ): Promise<User[]> {
-    const today = new Date(new Date().setHours(0, 0, 0, 0));
-
     const users: { id: string }[] = await this.userModel.sequelize.query(
       `
       SELECT DISTINCT u."id"
@@ -835,7 +833,7 @@ export class UsersService {
       WHERE
         u.role IN (:candidateRole, :coachRole)
         AND cu."id" IS NULL
-        AND u."onboardingCompletedAt"::date = (:today::timestamptz::date - :daysSinceOnboardingCompletion * INTERVAL '1 day')
+        AND u."onboardingCompletedAt"::date = (CURRENT_DATE - :daysSinceOnboardingCompletion * INTERVAL '1 day')
         AND u."elearningCompletedAt" IS NULL
         AND u."deletedAt" IS NULL
       `,
@@ -843,7 +841,6 @@ export class UsersService {
         type: QueryTypes.SELECT,
         raw: true,
         replacements: {
-          today,
           daysSinceOnboardingCompletion,
           candidateRole: UserRoles.CANDIDATE,
           coachRole: UserRoles.COACH,
@@ -862,9 +859,14 @@ export class UsersService {
   }
 
   async sendElearningCompletionReminderMail(user: User) {
-    // Only candidates and coaches reach this reminder (see the eligibility
-    // query above), so getUserMirrorRole never returns null here.
-    const mirrorRole = this.getUserMirrorRole(user.role) as UserRole;
+    const mirrorRole = this.getUserMirrorRole(user.role);
+    if (!mirrorRole) {
+      // Only candidates and coaches reach this reminder (see the eligibility
+      // query above); any other role means the caller mis-scoped it.
+      throw new Error(
+        `Cannot resolve a mirror role for user ${user.id} with role ${user.role}`
+      );
+    }
     return this.mailsService.sendElearningCompletionReminderMail(
       user,
       mirrorRole
