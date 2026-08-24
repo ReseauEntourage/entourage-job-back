@@ -324,7 +324,7 @@ src/features/backoffice/messaging/MessagingAIPanel/
 ├── MessagingAIPanel.styles.ts        ← styled-components
 ├── MessagingAIAssistant.tsx          ← logique chat principale
 ├── MessagingAIAssistant.utils.ts     ← parser SSE + définition des actions rapides
-├── MessagingAIAssitant.types.ts      ← types TypeScript
+├── MessagingAIAssistant.types.ts     ← types TypeScript
 └── AssistantMessageBubble/
     └── AssistantMessageBubble.tsx    ← rendu Markdown + boutons suggestion
 ```
