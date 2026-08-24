@@ -86,62 +86,48 @@ describe('UNAVAILABLE USERS REMINDER MAIL - ELIGIBLE USER ROWS', () => {
       UserRoles.COACH
     );
 
-    const rows = await usersService.getUserRowsForUnavailableUsers(15, [
-      UserRoles.CANDIDATE,
-    ]);
+    const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
     expect(rows.map((r) => r.id)).toEqual([candidate.user.id]);
   });
 
-  it('does not return a candidate under the candidate window when queried with the default 30-day window', async () => {
-    const candidate = await usersHelper.createLoggedInUser({
-      role: UserRoles.CANDIDATE,
-    });
-    await createStillAvailableUserWithUnreadMessage(
-      candidate,
-      15,
-      UserRoles.COACH
-    );
-
-    const rows = await usersService.getUserRowsForUnavailableUsers(30, [
-      UserRoles.COACH,
-      UserRoles.REFERER,
-    ]);
-
-    expect(rows).toHaveLength(0);
-  });
-
-  it('returns a coach whose last message is 30 days old under the default window', async () => {
+  it('returns a coach whose last message is 15 days old', async () => {
     const coach = await usersHelper.createLoggedInUser({
       role: UserRoles.COACH,
     });
     await createStillAvailableUserWithUnreadMessage(
       coach,
-      30,
+      15,
       UserRoles.CANDIDATE
     );
 
-    const rows = await usersService.getUserRowsForUnavailableUsers(30, [
-      UserRoles.COACH,
-      UserRoles.REFERER,
-    ]);
+    const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
     expect(rows.map((r) => r.id)).toEqual([coach.user.id]);
   });
 
-  it('does not return a coach when queried with the candidate 15-day window', async () => {
-    const coach = await usersHelper.createLoggedInUser({
-      role: UserRoles.COACH,
+  it('returns a referer whose last message is 15 days old', async () => {
+    const referer = await usersHelper.createLoggedInUser({
+      role: UserRoles.REFERER,
     });
     await createStillAvailableUserWithUnreadMessage(
-      coach,
-      30,
+      referer,
+      15,
       UserRoles.CANDIDATE
     );
 
-    const rows = await usersService.getUserRowsForUnavailableUsers(15, [
-      UserRoles.CANDIDATE,
-    ]);
+    const rows = await usersService.getUserRowsForUnavailableUsers(15);
+
+    expect(rows.map((r) => r.id)).toEqual([referer.user.id]);
+  });
+
+  it('does not return an admin, even with a matching last message age', async () => {
+    const admin = await usersHelper.createLoggedInUser({
+      role: UserRoles.ADMIN,
+    });
+    await createStillAvailableUserWithUnreadMessage(admin, 15, UserRoles.COACH);
+
+    const rows = await usersService.getUserRowsForUnavailableUsers(15);
 
     expect(rows).toHaveLength(0);
   });
