@@ -60,7 +60,7 @@ export const messagingMessageIncludes: Includeable[] = [
   {
     model: Conversation,
     as: 'conversation',
-    attributes: ['id'],
+    attributes: ['id', 'type'],
     include: [
       {
         model: User,
