@@ -816,6 +816,63 @@ export class UsersService {
     return users;
   }
 
+  /**
+   * Candidates and coaches whose onboarding completed exactly `daysSinceOnboardingCompletion`
+   * days ago and who have not completed their elearning yet. Company admins are excluded:
+   * elearning does not apply to them (see users-creation.controller.ts, which sets
+   * elearningCompletedAt at account creation for that sub-role).
+   */
+  async getUsersEligibleForElearningCompletionReminder(
+    daysSinceOnboardingCompletion: number
+  ): Promise<User[]> {
+    const users: { id: string }[] = await this.userModel.sequelize.query(
+      `
+      SELECT DISTINCT u."id"
+      FROM "Users" u
+      LEFT JOIN "CompanyUsers" cu ON cu."userId" = u."id" AND cu."isAdmin" IS TRUE
+      WHERE
+        u.role IN (:candidateRole, :coachRole)
+        AND cu."id" IS NULL
+        AND u."onboardingCompletedAt"::date = (CURRENT_DATE - :daysSinceOnboardingCompletion * INTERVAL '1 day')
+        AND u."elearningCompletedAt" IS NULL
+        AND u."deletedAt" IS NULL
+      `,
+      {
+        type: QueryTypes.SELECT,
+        raw: true,
+        replacements: {
+          daysSinceOnboardingCompletion,
+          candidateRole: UserRoles.CANDIDATE,
+          coachRole: UserRoles.COACH,
+        },
+      }
+    );
+
+    if (!users.length) {
+      return [];
+    }
+
+    return this.userModel.findAll({
+      attributes: [...UserAttributes],
+      where: { id: { [Op.in]: users.map((user) => user.id) } },
+    });
+  }
+
+  async sendElearningCompletionReminderMail(user: User) {
+    const mirrorRole = this.getUserMirrorRole(user.role);
+    if (!mirrorRole) {
+      // Only candidates and coaches reach this reminder (see the eligibility
+      // query above); any other role means the caller mis-scoped it.
+      throw new Error(
+        `Cannot resolve a mirror role for user ${user.id} with role ${user.role}`
+      );
+    }
+    return this.mailsService.sendElearningCompletionReminderMail(
+      user,
+      mirrorRole
+    );
+  }
+
   async getUsersWithNotCompletedProfile(daysAfterOnboardingCompletion: number) {
     const endDate = new Date(
       new Date().setHours(0, 0, 0, 0) -

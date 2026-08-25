@@ -97,6 +97,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareLinkedInShareProfileMails();
       case Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS:
         return this.prepareUnavailableSenderNotificationMails();
+      case Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS:
+        return this.remindUsersElearningCompletion();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -337,6 +339,59 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Preparation of ${userProfileNotCompleted.length} mails for users that have not completed their profile started.`;
+  }
+
+  async remindUsersElearningCompletion() {
+    const DAYS_AFTER_ONBOARDING_COMPLETION = 2;
+
+    this.logger.log(
+      `Preparing elearning completion reminder mails for users that completed onboarding ${DAYS_AFTER_ONBOARDING_COMPLETION} days ago...`
+    );
+    const eligibleUsers =
+      await this.usersService.getUsersEligibleForElearningCompletionReminder(
+        DAYS_AFTER_ONBOARDING_COMPLETION
+      );
+    this.logger.log(
+      `Found ${eligibleUsers.length} users eligible for elearning completion reminder`
+    );
+    const results = await Promise.allSettled(
+      eligibleUsers.map(async (user) => {
+        this.logger.log(
+          `Preparing elearning completion reminder mail for user ${user.id}`
+        );
+        await this.usersService.sendElearningCompletionReminderMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      eligibleUsers,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed preparing elearning completion reminder mail for user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📚 Elearning completion reminder - J+${DAYS_AFTER_ONBOARDING_COMPLETION}`,
+      {
+        total: eligibleUsers.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing elearning completion reminder mail for ${failures.length}/${eligibleUsers.length} users`
+      );
+    }
+
+    return `Preparation of ${eligibleUsers.length} elearning completion reminder mails started.`;
   }
 
   async prepareUserWithoutResponseToFirstMessageMails() {

@@ -55,6 +55,31 @@ export class CronService {
     };
   }
 
+  /**
+   * This method is called every day at 9 AM.
+   * It will create a job to send a one-shot elearning completion reminder mail to
+   * candidates and coaches whose onboarding completed exactly 2 days ago and who
+   * have not completed their elearning yet.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  async sendElearningCompletionReminderMails() {
+    this.logger.log('Cron job started: sendElearningCompletionReminderMails');
+    // Create a job that will be processed by the CronTasksProcessor
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS,
+      {}
+    );
+
+    this.logger.log(
+      `Job SEND_ELEARNING_COMPLETION_REMINDER_MAILS created (Job ID: ${job.id})`
+    );
+
+    return {
+      jobId: job.id,
+      status: 'processing',
+    };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_10AM)
   async preparePostOnboardingCompletionMails() {
     this.logger.log('Cron job started: preparePostOnboardingCompletionMails');
