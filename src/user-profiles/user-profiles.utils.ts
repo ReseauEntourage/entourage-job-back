@@ -46,6 +46,19 @@ export function isProfileVisibilityEligible(
 }
 
 /**
+ * Normalizes a serialized profile whose `externalCvs` links were included only
+ * to derive CV presence: the links are dropped and replaced by the public
+ * `hasExternalCv` boolean, so the payload shape stays unchanged now that
+ * `hasExternalCv` is no longer a stored column.
+ */
+export function withHasExternalCv<T extends { externalCvs?: { id: string }[] }>(
+  profile: T
+): Omit<T, 'externalCvs'> & { hasExternalCv: boolean } {
+  const { externalCvs, ...rest } = profile;
+  return { ...rest, hasExternalCv: (externalCvs?.length ?? 0) > 0 };
+}
+
+/**
  * Translates the public "isAvailable" filter (still expressed as a boolean at
  * the API boundary) into a `WhereOptions` targeting `unavailableAt`, the
  * actual source of truth: `NULL` = available, a date = unavailable since then.

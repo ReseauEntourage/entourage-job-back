@@ -44,11 +44,13 @@ export class ExternalCvsController {
     }
 
     try {
-      const externalCvS3 = await this.externalCvsService.uploadExternalCV(
+      const externalCv = await this.externalCvsService.uploadExternalCV(
         userId,
         file
       );
-      const cvFile = await this.externalCvsService.findExternalCv(externalCvS3);
+      const cvFile = await this.externalCvsService.getExternalCvSignedUrl(
+        externalCv.media
+      );
       return { url: cvFile };
     } catch {
       throw new InternalServerErrorException();
@@ -68,11 +70,14 @@ export class ExternalCvsController {
     if (!userProfile) {
       throw new InternalServerErrorException();
     }
-    if (!userProfile.hasExternalCv) {
+    const externalCv = await this.externalCvsService.findCurrentExternalCv(
+      userProfile.id
+    );
+    if (!externalCv) {
       throw new NotFoundException();
     }
-    const cvFile = await this.externalCvsService.findExternalCv(
-      `files/external-cvs/${userId}.pdf`
+    const cvFile = await this.externalCvsService.getExternalCvSignedUrl(
+      externalCv.media
     );
     return { url: cvFile };
   }

@@ -21,6 +21,7 @@ import { validate as uuidValidate } from 'uuid';
 import validator from 'validator';
 import { encryptPassword, validatePassword } from 'src/auth/auth.utils';
 import { UserPayload } from 'src/auth/guards';
+import { withHasExternalCv } from 'src/user-profiles/user-profiles.utils';
 import {
   UpdateUserDto,
   UpdateUserRestrictedDto,
@@ -138,7 +139,11 @@ export class UsersController {
       throw new NotFoundException();
     }
 
-    return user.toJSON();
+    const { userProfile, ...restUser } = user.toJSON() as User;
+    return {
+      ...restUser,
+      ...(userProfile ? { userProfile: withHasExternalCv(userProfile) } : {}),
+    };
   }
 
   @Put('changePwd')

@@ -97,6 +97,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareLinkedInShareProfileMails();
       case Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS:
         return this.prepareUnavailableSenderNotificationMails();
+      case Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS:
+        return this.remindUsersElearningCompletion();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -337,6 +339,59 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Preparation of ${userProfileNotCompleted.length} mails for users that have not completed their profile started.`;
+  }
+
+  async remindUsersElearningCompletion() {
+    const DAYS_AFTER_ONBOARDING_COMPLETION = 2;
+
+    this.logger.log(
+      `Preparing elearning completion reminder mails for users that completed onboarding ${DAYS_AFTER_ONBOARDING_COMPLETION} days ago...`
+    );
+    const eligibleUsers =
+      await this.usersService.getUsersEligibleForElearningCompletionReminder(
+        DAYS_AFTER_ONBOARDING_COMPLETION
+      );
+    this.logger.log(
+      `Found ${eligibleUsers.length} users eligible for elearning completion reminder`
+    );
+    const results = await Promise.allSettled(
+      eligibleUsers.map(async (user) => {
+        this.logger.log(
+          `Preparing elearning completion reminder mail for user ${user.id}`
+        );
+        await this.usersService.sendElearningCompletionReminderMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      eligibleUsers,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed preparing elearning completion reminder mail for user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      `📚 Elearning completion reminder - J+${DAYS_AFTER_ONBOARDING_COMPLETION}`,
+      {
+        total: eligibleUsers.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      this.logger.error(
+        `Failed preparing elearning completion reminder mail for ${failures.length}/${eligibleUsers.length} users`
+      );
+    }
+
+    return `Preparation of ${eligibleUsers.length} elearning completion reminder mails started.`;
   }
 
   async prepareUserWithoutResponseToFirstMessageMails() {
@@ -599,28 +654,18 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareAutoSetUnavailableUsers() {
-    const CANDIDATE_DAYS_WITHOUT_CONNECTION = 30;
-    const CANDIDATE_DAYS_WITH_UNREAD_MESSAGE = 15;
-    const DEFAULT_DAYS_WITHOUT_CONNECTION = 60;
-    const DEFAULT_DAYS_WITH_UNREAD_MESSAGE = 30;
+    const DAYS_WITHOUT_CONNECTION = 30;
+    const DAYS_WITH_UNREAD_MESSAGE = 15;
 
     this.logger.log(
-      `Setting inactive users as unavailable (candidates: no connection since ${CANDIDATE_DAYS_WITHOUT_CONNECTION} days, unread message since ${CANDIDATE_DAYS_WITH_UNREAD_MESSAGE} days; others: no connection since ${DEFAULT_DAYS_WITHOUT_CONNECTION} days, unread message since ${DEFAULT_DAYS_WITH_UNREAD_MESSAGE} days)...`
+      `Setting inactive users as unavailable (no connection since ${DAYS_WITHOUT_CONNECTION} days, unread message since ${DAYS_WITH_UNREAD_MESSAGE} days)...`
     );
 
-    const [candidateRows, defaultRows] = await Promise.all([
-      this.messagingService.getInactiveUsersWithUnreadConversations(
-        CANDIDATE_DAYS_WITHOUT_CONNECTION,
-        CANDIDATE_DAYS_WITH_UNREAD_MESSAGE,
-        [UserRoles.CANDIDATE]
-      ),
-      this.messagingService.getInactiveUsersWithUnreadConversations(
-        DEFAULT_DAYS_WITHOUT_CONNECTION,
-        DEFAULT_DAYS_WITH_UNREAD_MESSAGE,
-        [UserRoles.COACH, UserRoles.REFERER]
-      ),
-    ]);
-    const inactiveUsersRows = [...candidateRows, ...defaultRows];
+    const inactiveUsersRows =
+      await this.messagingService.getInactiveUsersWithUnreadConversations(
+        DAYS_WITHOUT_CONNECTION,
+        DAYS_WITH_UNREAD_MESSAGE
+      );
 
     this.logger.log(
       `Found ${inactiveUsersRows.length} inactive users to set as unavailable`
@@ -1267,20 +1312,11 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async prepareUnavailableUsersMails() {
-    const CANDIDATE_DAYS_SINCE_LAST_CONVERSATION = 15;
-    const DEFAULT_DAYS_SINCE_LAST_CONVERSATION = 30;
+    const DAYS_SINCE_LAST_CONVERSATION = 15;
     this.logger.log('Preparing unavailable users mails...');
-    const [candidateRows, defaultRows] = await Promise.all([
-      this.usersService.getUserRowsForUnavailableUsers(
-        CANDIDATE_DAYS_SINCE_LAST_CONVERSATION,
-        [UserRoles.CANDIDATE]
-      ),
-      this.usersService.getUserRowsForUnavailableUsers(
-        DEFAULT_DAYS_SINCE_LAST_CONVERSATION,
-        [UserRoles.COACH, UserRoles.REFERER]
-      ),
-    ]);
-    const rows = [...candidateRows, ...defaultRows];
+    const rows = await this.usersService.getUserRowsForUnavailableUsers(
+      DAYS_SINCE_LAST_CONVERSATION
+    );
     this.logger.log(
       `Found ${rows.length} users eligible for unavailable reminder`
     );
@@ -1310,7 +1346,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      `📵 Unavailable users - J+${CANDIDATE_DAYS_SINCE_LAST_CONVERSATION}/${DEFAULT_DAYS_SINCE_LAST_CONVERSATION}`,
+      `📵 Unavailable users - J+${DAYS_SINCE_LAST_CONVERSATION}`,
       {
         total: rows.length,
         success: successIds.length,
