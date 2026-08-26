@@ -49,6 +49,23 @@ const buildMessagesCursorWhere = (
 export const messagingConversationIncludes = (
   options: MessagingConversationIncludesOptions = {}
 ): Includeable[] => {
+  // With a `limit`, order determines which messages the cutoff keeps.
+  // `before`/no-cursor: DESC correctly keeps the messages nearest the
+  // cursor (the most recent). `after` needs the opposite — ASC keeps the
+  // ones nearest the cursor (the oldest of the "new" ones); DESC would
+  // instead keep only the very latest messages, silently dropping a gap
+  // of older-but-still-new ones in between. The caller (`getConversationById`)
+  // reverses the result back to the conversation's DESC-everywhere-else
+  // convention when `after` was used.
+  const order: [string, 'ASC' | 'DESC'][] = options.after
+    ? [
+        ['createdAt', 'ASC'],
+        ['id', 'ASC'],
+      ]
+    : [
+        ['createdAt', 'DESC'],
+        ['id', 'DESC'],
+      ];
   return [
     {
       model: Message,
@@ -69,10 +86,7 @@ export const messagingConversationIncludes = (
       ],
       attributes: messageAttributes,
       where: buildMessagesCursorWhere(options),
-      order: [
-        ['createdAt', 'DESC'],
-        ['id', 'DESC'],
-      ],
+      order,
       limit: options.limit,
       separate: true,
     },

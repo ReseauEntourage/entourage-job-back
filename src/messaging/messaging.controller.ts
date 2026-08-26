@@ -73,6 +73,11 @@ export class MessagingController {
     @Query('before') before?: string,
     @Query('after') after?: string
   ) {
+    if (before && after) {
+      throw new BadRequestException(
+        'Les paramètres before et after sont mutuellement exclusifs.'
+      );
+    }
     try {
       return await this.messagingService.getConversationById(
         conversationId,

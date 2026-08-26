@@ -76,6 +76,7 @@ export class MessagingService {
 
   private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
   private readonly DEFAULT_MESSAGES_PAGE_SIZE = 30;
+  private readonly MAX_MESSAGES_PAGE_SIZE = 200;
 
   async createMessageWithConversation(
     createMessageDto: CreateMessageDto,
@@ -328,7 +329,7 @@ export class MessagingService {
    * @param conversationId - The ID of the conversation to fetch
    * @param userId - The ID of the user fetching the conversation
    * @param cursor - `before`: the 30 messages preceding it (older page, infinite scroll).
-   *                 `after`: every message following it, unbounded (polling delta).
+   *                 `after`: every message following it, up to 200 (polling delta).
    *                 Neither: the 30 most recent messages (initial load).
    * @returns The conversation if the user is a participant, otherwise null
    */
@@ -352,7 +353,7 @@ export class MessagingService {
                 before: cursor?.before,
                 after: cursor?.after,
                 limit: cursor?.after
-                  ? undefined
+                  ? this.MAX_MESSAGES_PAGE_SIZE
                   : this.DEFAULT_MESSAGES_PAGE_SIZE,
               }),
             ],
@@ -364,6 +365,13 @@ export class MessagingService {
 
     if (!cp) {
       return null;
+    }
+
+    if (cursor?.after) {
+      // Queried ASC (nearest-to-cursor-first) so the limit keeps the
+      // right messages — see messagingConversationIncludes. Reverse back
+      // to the newest-first order used everywhere else.
+      cp.conversation.messages.reverse();
     }
 
     const shouldGiveFeedback = determineIfShoudGiveFeedback(

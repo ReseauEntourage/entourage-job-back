@@ -994,10 +994,10 @@ describe('MESSAGING', () => {
               loggedInCandidate.user.id,
               35
             );
-            const mostRecentKnownMessage = messages[4];
+            const lastKnownMessage = messages[4];
             const cursor = encodeMessageCursor({
-              createdAt: new Date(mostRecentKnownMessage.createdAt),
-              id: mostRecentKnownMessage.id,
+              createdAt: new Date(lastKnownMessage.createdAt),
+              id: lastKnownMessage.id,
             });
 
             const response: APIResponse<
@@ -1028,6 +1028,66 @@ describe('MESSAGING', () => {
               .set('authorization', `Bearer ${loggedInCandidate.token}`);
 
             expect(response.status).toBe(400);
+          });
+
+          it('should return 400 when both before and after are provided', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const message = await messagingHelper.createMessage(
+              conversation.id,
+              loggedInCandidate.user.id
+            );
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(message.createdAt),
+              id: message.id,
+            });
+
+            const response = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?before=${cursor}&after=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(400);
+          });
+
+          it('should cap `after` results to the messages nearest the cursor, not the newest ones, once the cap is exceeded', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              210
+            );
+            const lastKnownMessage = messages[4];
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(lastKnownMessage.createdAt),
+              id: lastKnownMessage.id,
+            });
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?after=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(200);
+            // Newest-first: the 200 messages nearest the cursor are
+            // [5..204], not the 200 most recent ones ([10..209]) — a
+            // naive DESC-ordered query with a limit would instead return
+            // the latter, silently dropping everything right after the
+            // cursor.
+            expect(response.body.messages[0].id).toBe(messages[204].id);
+            expect(response.body.messages[199].id).toBe(messages[5].id);
           });
 
           it('should not mark the conversation as seen', async () => {
