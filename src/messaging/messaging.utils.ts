@@ -1,7 +1,52 @@
+import { isUUID } from 'class-validator';
 import { SlackBlockConfig } from 'src/external-services/slack/slack.types';
 import { User } from 'src/users/models';
-import { ErrorMessagingMailingListInvalid } from './messaging.errors';
+import {
+  ErrorMessagingInvalidCursor,
+  ErrorMessagingMailingListInvalid,
+} from './messaging.errors';
 import { Conversation, ConversationType } from './models';
+
+export interface MessageCursor {
+  createdAt: Date;
+  id: string;
+}
+
+const CURSOR_SEPARATOR = '_';
+
+/**
+ * Encodes a message's `(createdAt, id)` as a single opaque pagination
+ * cursor, so the client never has to synchronize two query params.
+ * `base64url` (not plain `base64`) so the result is safe to interpolate
+ * directly into a query string: plain base64's `+`/`/`/`=` would
+ * otherwise need percent-encoding, and a `+` left as-is is silently
+ * read back as a space by query-string parsers.
+ */
+export const encodeMessageCursor = (cursor: MessageCursor): string => {
+  return Buffer.from(
+    `${cursor.createdAt.toISOString()}${CURSOR_SEPARATOR}${cursor.id}`
+  ).toString('base64url');
+};
+
+export const decodeMessageCursor = (rawCursor: string): MessageCursor => {
+  let decoded: string;
+  try {
+    decoded = Buffer.from(rawCursor, 'base64url').toString('utf-8');
+  } catch {
+    throw new ErrorMessagingInvalidCursor();
+  }
+  const separatorIndex = decoded.lastIndexOf(CURSOR_SEPARATOR);
+  if (separatorIndex === -1) {
+    throw new ErrorMessagingInvalidCursor();
+  }
+  const createdAtIso = decoded.slice(0, separatorIndex);
+  const id = decoded.slice(separatorIndex + 1);
+  const createdAt = new Date(createdAtIso);
+  if (Number.isNaN(createdAt.getTime()) || !isUUID(id, 4)) {
+    throw new ErrorMessagingInvalidCursor();
+  }
+  return { createdAt, id };
+};
 
 export const generateSlackMsgConfigConversationReported = (
   conversation: Conversation,
