@@ -19,12 +19,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
-import {
-  CreateMessagePipe,
-  CreateMessageDto,
-  PostFeedbackPipe,
-  PostFeedbackDto,
-} from './dto';
+import { CreateMessagePipe, CreateMessageDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { CreateMailingListPipe } from './dto/create-mailing-list.pipe';
 import { ReportConversationDto } from './dto/report-conversation.dto';
@@ -132,18 +127,6 @@ export class MessagingController {
       reportConversationDto,
       userId
     );
-  }
-
-  @Post('conversations/feedback')
-  async postConversationFeedback(
-    @Body(new PostFeedbackPipe())
-    postFeedbackDto: PostFeedbackDto
-  ) {
-    try {
-      return this.messagingService.postFeedback(postFeedbackDto);
-    } catch (error) {
-      this.logger.error(error);
-    }
   }
 
   @UserPermissions(Permissions.ADMIN)

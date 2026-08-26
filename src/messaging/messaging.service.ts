@@ -18,7 +18,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isEntourageAdmin } from 'src/users/users.utils';
-import { CreateMessageDto, PostFeedbackDto } from './dto';
+import { CreateMessageDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import {
@@ -40,7 +40,6 @@ import {
 } from './messaging.includes';
 import {
   bindVariableInContent,
-  determineIfShoudGiveFeedback,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
 } from './messaging.utils';
@@ -299,12 +298,6 @@ export class MessagingService {
     return conversationParticipants
       .filter((cp) => cp.conversation)
       .map((cp) => {
-        const shouldGiveFeedback = determineIfShoudGiveFeedback(
-          cp.conversation,
-          cp.feedbackRating,
-          cp.feedbackDate
-        );
-
         cp.conversation.messages = cp.conversation.messages.sort((a, b) => {
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -313,7 +306,6 @@ export class MessagingService {
 
         return {
           ...cp.conversation.toJSON(),
-          shouldGiveFeedback,
           createdAt: cp.createdAt,
           updatedAt: cp.updatedAt,
           seenAt: cp.seenAt,
@@ -349,12 +341,6 @@ export class MessagingService {
       return null;
     }
 
-    const shouldGiveFeedback = determineIfShoudGiveFeedback(
-      cp.conversation,
-      cp.feedbackRating,
-      cp.feedbackDate
-    );
-
     const conversationMedias =
       await this.findMediasByConversationId(conversationId);
 
@@ -367,7 +353,6 @@ export class MessagingService {
 
     return {
       ...cp.conversation.toJSON(),
-      shouldGiveFeedback,
       createdAt: cp.createdAt,
       updatedAt: cp.updatedAt,
       seenAt: cp.seenAt,
@@ -586,29 +571,6 @@ export class MessagingService {
     // Link medias to the message
     message.setDataValue('medias', medias);
     return message;
-  }
-
-  /**
-   * Create a feedback for a conversation participant
-   * @param postFeedbackDto - The feedback to create
-   * @returns The updated conversation participant with the feedback
-   */
-  async postFeedback(postFeedbackDto: PostFeedbackDto) {
-    const conversationParticipant =
-      await this.conversationParticipantModel.findByPk(
-        postFeedbackDto.conversationParticipantId
-      );
-
-    if (!conversationParticipant) {
-      return;
-    }
-
-    const updatedParticipant = await conversationParticipant.update({
-      feedbackRating: postFeedbackDto.rating,
-      feedbackDate: new Date(),
-    });
-
-    return updatedParticipant;
   }
 
   /**

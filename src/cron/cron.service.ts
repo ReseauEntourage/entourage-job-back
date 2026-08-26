@@ -460,19 +460,6 @@ export class CronService {
     return { jobId: job.id, status: 'processing' };
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_7PM)
-  async prepareMessagingFeedbackMails() {
-    this.logger.log('Cron job started: prepareMessagingFeedbackMails');
-    const job = await this.queuesService.addToCronTasksQueue(
-      Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS,
-      {}
-    );
-    this.logger.log(
-      `Job PREPARE_MESSAGING_FEEDBACK_MAILS created (Job ID: ${job.id})`
-    );
-    return { jobId: job.id, status: 'processing' };
-  }
-
   @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
   async prepareWarnAccountDeletionMails() {
     this.logger.log('Cron job started: prepareWarnAccountDeletionMails');

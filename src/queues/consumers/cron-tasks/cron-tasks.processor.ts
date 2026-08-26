@@ -87,8 +87,6 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareChurnUsersFeedbackMails();
       case Jobs.PREPARE_INACTIVE_REFERERS_MAILS:
         return this.prepareInactiveReferersMails();
-      case Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS:
-        return this.prepareMessagingFeedbackMails();
       case Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS:
         return this.prepareWarnAccountDeletionMails();
       case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS:
@@ -1521,61 +1519,6 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} inactive referer mails`;
-  }
-
-  async prepareMessagingFeedbackMails() {
-    const MESSAGING_DAYS = 30;
-    this.logger.log('Preparing messaging feedback mails...');
-    const rows =
-      await this.usersService.getUserTriplesForMessagingFeedback(
-        MESSAGING_DAYS
-      );
-    this.logger.log(
-      `Found ${rows.length} user-conversation pairs for messaging feedback`
-    );
-
-    const results = await Promise.allSettled(
-      rows.map(async (row) => {
-        const user = await this.usersService.findOneWithRelations(row.userId);
-        if (!user) return;
-        this.logger.log(`Sending messaging feedback mail to ${user.email}`);
-        await this.usersService.sendMessagingFeedbackMail(
-          user,
-          row.interlocutorFirstName,
-          row.interlocutorId
-        );
-      })
-    );
-
-    const { succeeded, successIds, failures } = collectSettledResults(
-      rows.map((r) => ({ id: r.userId })),
-      results,
-      (userId, reason) => {
-        this.logger.error(
-          `Failed sending messaging feedback mail to user ${userId}`,
-          reason
-        );
-      }
-    );
-
-    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
-      succeeded,
-      `🚦 Messaging feedback - J+${MESSAGING_DAYS}`,
-      {
-        total: rows.length,
-        success: successIds.length,
-        failure: failures.length,
-      },
-      failures
-    );
-
-    if (!succeeded) {
-      throw new Error(
-        `Failed sending ${failures.length}/${rows.length} messaging feedback mails`
-      );
-    }
-
-    return `Sent ${successIds.length} messaging feedback mails`;
   }
 
   async prepareWarnAccountDeletionMails() {

@@ -64,7 +64,6 @@ export const Jobs = {
   PREPARE_UNAVAILABLE_USERS_MAILS: 'prepare_unavailable_users_mails',
   PREPARE_CHURN_USERS_FEEDBACK_MAILS: 'prepare_churn_users_feedback_mails',
   PREPARE_INACTIVE_REFERERS_MAILS: 'prepare_inactive_referers_mails',
-  PREPARE_MESSAGING_FEEDBACK_MAILS: 'prepare_messaging_feedback_mails',
   PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
   PREPARE_UNANSWERED_CONVERSATIONS_SMS: 'prepare_unanswered_conversations_sms',
   PREPARE_LINKEDIN_SHARE_PROFILE_MAILS: 'prepare_linkedin_share_profile_mails',
@@ -119,7 +118,6 @@ type JobsData = {
   [Jobs.PREPARE_UNAVAILABLE_USERS_MAILS]: PrepareUnavailableUsersMailsJob;
   [Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS]: PrepareChurnUsersFeedbackMailsJob;
   [Jobs.PREPARE_INACTIVE_REFERERS_MAILS]: PrepareInactiveReferersMailsJob;
-  [Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS]: PrepareMessagingFeedbackMailsJob;
   [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
   [Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS]: PrepareUnansweredConversationsSmsJob;
   [Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS]: PrepareLinkedInShareProfileMailsJob;
@@ -255,8 +253,6 @@ export type PrepareUnavailableUsersMailsJob = Record<string, never>;
 export type PrepareChurnUsersFeedbackMailsJob = Record<string, never>;
 
 export type PrepareInactiveReferersMailsJob = Record<string, never>;
-
-export type PrepareMessagingFeedbackMailsJob = Record<string, never>;
 
 export type PrepareWarnAccountDeletionMailsJob = Record<string, never>;
 

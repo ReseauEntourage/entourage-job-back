@@ -16,8 +16,6 @@ export const conversationParticipantAttributes = [
   'seenAt',
   'createdAt',
   'updatedAt',
-  'feedbackRating',
-  'feedbackDate',
 ];
 
 export const messageAttributes = ['id', 'content', 'createdAt', 'authorId'];

@@ -1009,29 +1009,6 @@ export class MailsService {
     });
   }
 
-  async sendMessagingFeedbackMail(
-    user: User,
-    interlocutorFirstName: string,
-    interlocutorId: string
-  ) {
-    this.logger.log(
-      `Sending messaging feedback mail to user with email ${user.email}`
-    );
-    return this.queuesService.addToWorkQueue(Jobs.SEND_MAIL, {
-      toEmail: user.email,
-      replyTo: user.staffContact.email,
-      templateId: MailjetTemplates.MAILER_MESSAGING_FEEDBACK,
-      variables: {
-        firstName: user.firstName || '',
-        interlocutorFirstName,
-        zone: user.zone || ZoneName.HZ,
-        staffContact: user.staffContact,
-        siteLink: process.env.FRONT_URL,
-        ctaUrl: `${process.env.FRONT_URL}/backoffice/messaging?userId=${interlocutorId}`,
-      },
-    });
-  }
-
   async sendCompanyNoAlertsReminderMail(adminUser: User) {
     this.logger.log(
       `Sending company no alerts reminder mail to user with email ${adminUser.email}`
