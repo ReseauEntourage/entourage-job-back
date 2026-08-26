@@ -1,4 +1,4 @@
-import { Includeable } from 'sequelize';
+import { Includeable, Op, WhereOptions } from 'sequelize';
 import { Media } from 'src/medias/models';
 import { UserProfile } from 'src/user-profiles/models';
 import { User } from 'src/users/models';
@@ -9,6 +9,7 @@ import {
   userAttributes,
   userProfileAttributes,
 } from './messaging.attributes';
+import { MessageCursor } from './messaging.utils';
 import { Conversation, Message } from './models';
 
 export const messagingParticipantsInclude: Includeable = {
@@ -16,8 +17,37 @@ export const messagingParticipantsInclude: Includeable = {
   attributes: [...userProfileAttributes],
 };
 
+export interface MessagingConversationIncludesOptions {
+  after?: MessageCursor;
+  before?: MessageCursor;
+  limit?: number;
+}
+
+const buildMessagesCursorWhere = (
+  options: MessagingConversationIncludesOptions
+): WhereOptions | undefined => {
+  const { before, after } = options;
+  if (before) {
+    return {
+      [Op.or]: [
+        { createdAt: { [Op.lt]: before.createdAt } },
+        { createdAt: before.createdAt, id: { [Op.lt]: before.id } },
+      ],
+    };
+  }
+  if (after) {
+    return {
+      [Op.or]: [
+        { createdAt: { [Op.gt]: after.createdAt } },
+        { createdAt: after.createdAt, id: { [Op.gt]: after.id } },
+      ],
+    };
+  }
+  return undefined;
+};
+
 export const messagingConversationIncludes = (
-  limit: number | undefined = undefined
+  options: MessagingConversationIncludesOptions = {}
 ): Includeable[] => {
   return [
     {
@@ -38,8 +68,12 @@ export const messagingConversationIncludes = (
         },
       ],
       attributes: messageAttributes,
-      order: [['createdAt', 'DESC']],
-      limit: limit,
+      where: buildMessagesCursorWhere(options),
+      order: [
+        ['createdAt', 'DESC'],
+        ['id', 'DESC'],
+      ],
+      limit: options.limit,
       separate: true,
     },
     {

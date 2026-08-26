@@ -5,6 +5,7 @@ import { UsersHelper, LoggedInUser } from '../users/users.helper';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingController } from 'src/messaging/messaging.controller';
 import { MessagingService } from 'src/messaging/messaging.service';
+import { encodeMessageCursor } from 'src/messaging/messaging.utils';
 import { ConversationType } from 'src/messaging/models/conversation.model';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
@@ -902,6 +903,234 @@ describe('MESSAGING', () => {
 
           const response = await request(server).get(
             `/messaging/conversations/${conversation.id}`
+          );
+
+          expect(response.status).toBe(401);
+        });
+
+        describe('Pagination', () => {
+          // Oldest first, spaced one minute apart, to control ordering deterministically.
+          const createSequentialMessages = async (
+            conversationId: string,
+            authorId: string,
+            count: number
+          ) => {
+            const messages = [];
+            for (let i = 0; i < count; i++) {
+              messages.push(
+                await messagingHelper.createMessage(conversationId, authorId, {
+                  createdAt: new Date(Date.now() - (count - i) * 60000),
+                  updatedAt: new Date(Date.now() - (count - i) * 60000),
+                })
+              );
+            }
+            return messages;
+          };
+
+          it('should return only the 30 most recent messages when no cursor is provided', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              35
+            );
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(`/messaging/conversations/${conversation.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(30);
+            // Messages are returned newest-first.
+            expect(response.body.messages[0].id).toBe(messages[34].id);
+            expect(response.body.messages[29].id).toBe(messages[5].id);
+          });
+
+          it('should return the 30 messages preceding the given `before` cursor', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              35
+            );
+            const oldestLoadedMessage = messages[5]; // 30th (index 5..34) message currently loaded
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(oldestLoadedMessage.createdAt),
+              id: oldestLoadedMessage.id,
+            });
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?before=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(5);
+            expect(response.body.messages[0].id).toBe(messages[4].id);
+            expect(response.body.messages[4].id).toBe(messages[0].id);
+          });
+
+          it('should return every message after the given `after` cursor, unbounded', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              35
+            );
+            const mostRecentKnownMessage = messages[4];
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(mostRecentKnownMessage.createdAt),
+              id: mostRecentKnownMessage.id,
+            });
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?after=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(30);
+            expect(response.body.messages[0].id).toBe(messages[34].id);
+            expect(response.body.messages[29].id).toBe(messages[5].id);
+          });
+
+          it('should return 400 for an invalid cursor', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+
+            const response = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?before=not-a-cursor`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(400);
+          });
+
+          it('should not mark the conversation as seen', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            await messagingHelper.createMessage(
+              conversation.id,
+              loggedInCoach.user.id
+            );
+
+            await request(server)
+              .get(`/messaging/conversations/${conversation.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            const participant =
+              await messagingHelper.findConversationParticipant(
+                conversation.id,
+                loggedInCandidate.user.id
+              );
+            expect(participant.seenAt).toBeNull();
+          });
+        });
+      });
+
+      describe('U - Mark conversation as seen - /messaging/conversations/:id/seen', () => {
+        it('should return 201 and set seenAt to now', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response = await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(201);
+          const participant = await messagingHelper.findConversationParticipant(
+            conversation.id,
+            loggedInCandidate.user.id
+          );
+          expect(participant.seenAt).not.toBeNull();
+        });
+
+        it('should return 201 and update seenAt again when called with no new message', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+          const firstSeenAt = (
+            await messagingHelper.findConversationParticipant(
+              conversation.id,
+              loggedInCandidate.user.id
+            )
+          ).seenAt;
+
+          const response = await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(201);
+          const secondSeenAt = (
+            await messagingHelper.findConversationParticipant(
+              conversation.id,
+              loggedInCandidate.user.id
+            )
+          ).seenAt;
+          expect(secondSeenAt.getTime()).toBeGreaterThanOrEqual(
+            firstSeenAt.getTime()
+          );
+        });
+
+        it('should return 401 if the user is not a participant of the conversation', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInOtherCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response = await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(401);
+        });
+
+        it('should return 401 if the user is not logged in', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response = await request(server).post(
+            `/messaging/conversations/${conversation.id}/seen`
           );
 
           expect(response.status).toBe(401);

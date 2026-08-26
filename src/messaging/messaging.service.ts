@@ -43,6 +43,7 @@ import {
   determineIfShoudGiveFeedback,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
+  MessageCursor,
 } from './messaging.utils';
 import { ConversationParticipant, MessageMedia } from './models';
 import { Conversation, ConversationType } from './models/conversation.model';
@@ -74,6 +75,7 @@ export class MessagingService {
   ) {}
 
   private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
+  private readonly DEFAULT_MESSAGES_PAGE_SIZE = 30;
 
   async createMessageWithConversation(
     createMessageDto: CreateMessageDto,
@@ -274,7 +276,7 @@ export class MessagingService {
           {
             model: Conversation,
             as: 'conversation',
-            include: [...messagingConversationIncludes(10)],
+            include: [...messagingConversationIncludes({ limit: 10 })],
           },
         ],
         order: [
@@ -322,12 +324,19 @@ export class MessagingService {
   }
 
   /**
-   * Get a conversation by its ID
+   * Get a conversation by its ID, with its messages paginated by cursor.
    * @param conversationId - The ID of the conversation to fetch
    * @param userId - The ID of the user fetching the conversation
+   * @param cursor - `before`: the 30 messages preceding it (older page, infinite scroll).
+   *                 `after`: every message following it, unbounded (polling delta).
+   *                 Neither: the 30 most recent messages (initial load).
    * @returns The conversation if the user is a participant, otherwise null
    */
-  async getConversationById(conversationId: string, userId: string) {
+  async getConversationById(
+    conversationId: string,
+    userId: string,
+    cursor?: { before?: MessageCursor; after?: MessageCursor }
+  ) {
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
         where: {
@@ -338,7 +347,15 @@ export class MessagingService {
           {
             model: Conversation,
             as: 'conversation',
-            include: [...messagingConversationIncludes()],
+            include: [
+              ...messagingConversationIncludes({
+                before: cursor?.before,
+                after: cursor?.after,
+                limit: cursor?.after
+                  ? undefined
+                  : this.DEFAULT_MESSAGES_PAGE_SIZE,
+              }),
+            ],
           },
         ],
       });
