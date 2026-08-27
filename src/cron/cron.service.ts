@@ -401,6 +401,24 @@ export class CronService {
     return { jobId: job.id, status: 'processing' };
   }
 
+  /**
+   * This method is called every day at 1 PM.
+   * It will switch back to `INACTIVE` every direct conversation currently `ACTIVE`
+   * whose last message is more than 30 days old.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async deactivateStaleConversations() {
+    this.logger.log('Cron job started: deactivateStaleConversations');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.DEACTIVATE_STALE_CONVERSATIONS,
+      {}
+    );
+    this.logger.log(
+      `Job DEACTIVATE_STALE_CONVERSATIONS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_2PM)
   async prepareUnavailableUsersMails() {
     this.logger.log('Cron job started: prepareUnavailableUsersMails');

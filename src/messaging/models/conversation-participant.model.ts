@@ -37,6 +37,13 @@ export class ConversationParticipant extends Model {
   @Column
   seenAt: Date;
 
+  // Set independently by each participant; has no effect on the other participant's
+  // visibility of the conversation, nor on the ability to send/receive messages.
+  @IsDate
+  @Default(null)
+  @Column
+  archivedAt: Date;
+
   @ApiProperty()
   @IsString()
   @IsUUID(4)

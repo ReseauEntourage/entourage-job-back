@@ -115,6 +115,32 @@ export class MessagingController {
   }
 
   @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/archive')
+  async archiveConversation(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+  ) {
+    return this.messagingService.setConversationArchived(
+      conversationId,
+      userId,
+      true
+    );
+  }
+
+  @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/unarchive')
+  async unarchiveConversation(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+  ) {
+    return this.messagingService.setConversationArchived(
+      conversationId,
+      userId,
+      false
+    );
+  }
+
+  @UseGuards(UserInConversation)
   @Post('conversations/:conversationId/report')
   async reportMessageAbuse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,

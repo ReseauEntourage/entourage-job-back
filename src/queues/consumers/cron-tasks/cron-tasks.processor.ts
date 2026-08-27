@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
 import { GamificationService } from 'src/gamification/gamification.service';
+import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import {
@@ -34,7 +35,8 @@ export class CronTasksProcessor extends WorkerHost {
     private cronTasksSlackReporterService: CronTasksSlackReporterService,
     private messagingService: MessagingService,
     private gamificationService: GamificationService,
-    private recruitementAlertsService: RecruitementAlertsService
+    private recruitementAlertsService: RecruitementAlertsService,
+    private conversationPipelineService: ConversationPipelineService
   ) {
     super();
   }
@@ -97,6 +99,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareUnavailableSenderNotificationMails();
       case Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS:
         return this.remindUsersElearningCompletion();
+      case Jobs.DEACTIVATE_STALE_CONVERSATIONS:
+        return this.deactivateStaleConversations();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1670,6 +1674,46 @@ export class CronTasksProcessor extends WorkerHost {
       failureCount: failures.length,
       succeeded,
     };
+  }
+
+  /**
+   * Switches back to `INACTIVE` every direct conversation currently `ACTIVE` whose last
+   * message is more than 30 days old. Called daily at 1 PM via the cron job.
+   */
+  async deactivateStaleConversations() {
+    this.logger.log('Deactivating stale conversations...');
+
+    let deactivatedConversationIds: string[];
+    try {
+      deactivatedConversationIds =
+        await this.conversationPipelineService.deactivateStaleConversations();
+    } catch (error) {
+      this.logger.error('Failed deactivating stale conversations', error);
+      await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+        false,
+        '💤 Deactivate stale conversations',
+        { total: 0, success: 0, failure: 1 },
+        [{ itemId: 'deactivateStaleConversations', reason: error }]
+      );
+      throw error;
+    }
+
+    this.logger.log(
+      `Deactivated ${deactivatedConversationIds.length} stale conversations`
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      true,
+      '💤 Deactivate stale conversations',
+      {
+        total: deactivatedConversationIds.length,
+        success: deactivatedConversationIds.length,
+        failure: 0,
+      },
+      []
+    );
+
+    return `Deactivated ${deactivatedConversationIds.length} stale conversations`;
   }
 
   private async prepareLinkedInShareProfileMails() {

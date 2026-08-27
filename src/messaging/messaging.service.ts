@@ -18,6 +18,7 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isEntourageAdmin } from 'src/users/users.utils';
+import { ConversationPipelineService } from './conversation-pipeline.service';
 import { CreateMessageDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
@@ -69,7 +70,8 @@ export class MessagingService {
     private authService: AuthService,
     private mailsService: MailsService,
     private mediaService: MediasService,
-    private queuesService: QueuesService
+    private queuesService: QueuesService,
+    private conversationPipelineService: ConversationPipelineService
   ) {}
 
   private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
@@ -309,6 +311,7 @@ export class MessagingService {
           createdAt: cp.createdAt,
           updatedAt: cp.updatedAt,
           seenAt: cp.seenAt,
+          archivedAt: cp.archivedAt,
         };
       });
   }
@@ -356,6 +359,7 @@ export class MessagingService {
       createdAt: cp.createdAt,
       updatedAt: cp.updatedAt,
       seenAt: cp.seenAt,
+      archivedAt: cp.archivedAt,
     };
   }
 
@@ -467,6 +471,31 @@ export class MessagingService {
       conversationParticipant.seenAt = new Date();
       await conversationParticipant.save({ transaction });
     }
+  }
+
+  /**
+   * Archives or unarchives a conversation for a single participant. This only affects
+   * that participant's own `ConversationParticipant.archivedAt` and has no effect on the
+   * other participant's view of the conversation, nor on the ability to send/receive
+   * messages in it.
+   */
+  async setConversationArchived(
+    conversationId: string,
+    userId: string,
+    archived: boolean
+  ) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findOne({
+        where: {
+          conversationId,
+          userId,
+        },
+      });
+    if (conversationParticipant) {
+      conversationParticipant.archivedAt = archived ? new Date() : null;
+      await conversationParticipant.save();
+    }
+    return conversationParticipant;
   }
 
   async findConversation(conversationId: string) {
@@ -944,18 +973,47 @@ export class MessagingService {
       }
     };
 
+    const recomputeConversationPipeline = () => {
+      void this.conversationPipelineService
+        .recomputeStage(createdMessage.conversationId)
+        .catch((err) =>
+          this.logger.error(
+            `[conversation-pipeline] recomputeStage failed for conversation ${createdMessage.conversationId}`,
+            err
+          )
+        );
+      void this.conversationPipelineService
+        .markActive(createdMessage.conversationId)
+        .catch((err) =>
+          this.logger.error(
+            `[conversation-pipeline] markActive failed for conversation ${createdMessage.conversationId}`,
+            err
+          )
+        );
+      void this.conversationPipelineService
+        .detectFirstMeeting(createdMessage.conversationId, createdMessage)
+        .catch((err) =>
+          this.logger.error(
+            `[conversation-pipeline] detectFirstMeeting failed for conversation ${createdMessage.conversationId}`,
+            err
+          )
+        );
+    };
+
     if (transaction) {
       transaction.afterCommit(() => {
         void notifyOtherParticipants().catch((err) =>
           this.logger.error('Failed to notify other participants', err)
         );
         triggerAchievementChecks();
+        recomputeConversationPipeline();
       });
     } else {
       void notifyOtherParticipants().catch((err) =>
         this.logger.error('Failed to notify other participants', err)
       );
       triggerAchievementChecks();
+      recomputeConversationPipeline();
     }
 
     return message;
