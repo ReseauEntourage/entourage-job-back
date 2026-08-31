@@ -73,6 +73,7 @@ export const Jobs = {
     'send_elearning_completion_reminder_mails',
   DEACTIVATE_STALE_CONVERSATIONS: 'deactivate_stale_conversations',
   PREPARE_CHECKIN_INVITATION_MAILS: 'prepare_checkin_invitation_mails',
+  PREPARE_CHECKIN_RELANCE_MAILS: 'prepare_checkin_relance_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -127,6 +128,7 @@ type JobsData = {
   [Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS]: SendElearningCompletionReminderMailsJob;
   [Jobs.DEACTIVATE_STALE_CONVERSATIONS]: DeactivateStaleConversationsJob;
   [Jobs.PREPARE_CHECKIN_INVITATION_MAILS]: PrepareCheckinInvitationMailsJob;
+  [Jobs.PREPARE_CHECKIN_RELANCE_MAILS]: PrepareCheckinRelanceMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -251,6 +253,7 @@ export type PrepareCompanyCollabFollowMailsJob = Record<string, never>;
 export type PrepareCommittedUsersFeedbackMailsJob = Record<string, never>;
 
 export type PrepareCheckinInvitationMailsJob = Record<string, never>;
+export type PrepareCheckinRelanceMailsJob = Record<string, never>;
 
 export type PrepareUnansweredConversationsMailsJob = Record<string, never>;
 

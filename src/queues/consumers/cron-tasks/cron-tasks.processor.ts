@@ -3,6 +3,10 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
 import { CheckinService } from 'src/checkin/checkin.service';
+import {
+  CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
+  CHECKIN_RELANCE_THRESHOLD_DAYS,
+} from 'src/checkin/checkin.types';
 import { GamificationService } from 'src/gamification/gamification.service';
 import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
@@ -105,6 +109,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.deactivateStaleConversations();
       case Jobs.PREPARE_CHECKIN_INVITATION_MAILS:
         return this.prepareCheckinInvitationMails();
+      case Jobs.PREPARE_CHECKIN_RELANCE_MAILS:
+        return this.prepareCheckinRelanceMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1255,22 +1261,24 @@ export class CronTasksProcessor extends WorkerHost {
 
   async prepareCheckinInvitationMails() {
     this.logger.log('Preparing checkin invitation mails...');
-    const conversationIds =
-      await this.checkinService.getConversationIdsEligibleForInvitation();
-    const items = conversationIds.map((id) => ({ id }));
+    const recipients = await this.checkinService.getEligibleCheckinParticipants(
+      CHECKIN_ELIGIBILITY_THRESHOLD_DAYS
+    );
+    const items = recipients.map((recipient) => ({
+      id: `${recipient.conversationId}:${recipient.userId}`,
+    }));
     this.logger.log(
-      `Found ${items.length} conversations eligible for checkin invitation`
+      `Found ${items.length} participants eligible for checkin invitation`
     );
 
-    const results =
-      await this.checkinService.sendInvitationMails(conversationIds);
+    const results = await this.checkinService.sendInvitationMails(recipients);
 
     const { succeeded, successIds, failures } = collectSettledResults(
       items,
       results,
-      (conversationId, reason) => {
+      (recipientId, reason) => {
         this.logger.error(
-          `Failed sending checkin invitation mails for conversation ${conversationId}`,
+          `Failed sending checkin invitation mail to ${recipientId}`,
           reason
         );
       }
@@ -1289,11 +1297,56 @@ export class CronTasksProcessor extends WorkerHost {
 
     if (!succeeded) {
       throw new Error(
-        `Failed sending checkin invitation mails for ${failures.length}/${items.length} conversations`
+        `Failed sending checkin invitation mails for ${failures.length}/${items.length} participants`
       );
     }
 
-    return `Sent checkin invitation mails for ${successIds.length} conversations`;
+    return `Sent checkin invitation mails for ${successIds.length} participants`;
+  }
+
+  async prepareCheckinRelanceMails() {
+    this.logger.log('Preparing checkin relance mails...');
+    const recipients = await this.checkinService.getEligibleCheckinParticipants(
+      CHECKIN_RELANCE_THRESHOLD_DAYS
+    );
+    const items = recipients.map((recipient) => ({
+      id: `${recipient.conversationId}:${recipient.userId}`,
+    }));
+    this.logger.log(
+      `Found ${items.length} participants eligible for checkin relance`
+    );
+
+    const results = await this.checkinService.sendRelanceMails(recipients);
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      items,
+      results,
+      (recipientId, reason) => {
+        this.logger.error(
+          `Failed sending checkin relance mail to ${recipientId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📝 Checkin relance mails',
+      {
+        total: items.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending checkin relance mails for ${failures.length}/${items.length} participants`
+      );
+    }
+
+    return `Sent checkin relance mails for ${successIds.length} participants`;
   }
 
   async prepareUnansweredConversationsMails() {

@@ -7,6 +7,7 @@ import { CheckinController } from 'src/checkin/checkin.controller';
 import { CheckinService } from 'src/checkin/checkin.service';
 import {
   CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
+  CHECKIN_RELANCE_THRESHOLD_DAYS,
   CheckinEmploymentType,
   CheckinExchangeFrequency,
   CheckinExchangeMode,
@@ -532,43 +533,68 @@ describe('CHECKIN', () => {
     });
   });
 
-  describe('CheckinService.getConversationIdsEligibleForInvitation (cron)', () => {
-    it('includes a direct conversation exactly at the eligibility threshold', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 0.5
-        ),
-      });
+  describe('CheckinService.getEligibleCheckinParticipants (cron)', () => {
+    it.each([
+      ['invitation', CHECKIN_ELIGIBILITY_THRESHOLD_DAYS],
+      ['relance', CHECKIN_RELANCE_THRESHOLD_DAYS],
+    ])(
+      'includes both participants of a direct conversation exactly at the %s threshold',
+      async (_label, daysThreshold) => {
+        const conversation = await createConversation({
+          engagementThresholdReachedAt: daysAgo(daysThreshold + 0.5),
+        });
 
-      const ids =
-        await checkinService.getConversationIdsEligibleForInvitation();
+        const recipients =
+          await checkinService.getEligibleCheckinParticipants(daysThreshold);
 
-      expect(ids).toContain(conversation.id);
-    });
+        expect(recipients).toContainEqual({
+          conversationId: conversation.id,
+          userId: loggedInCandidate.user.id,
+        });
+        expect(recipients).toContainEqual({
+          conversationId: conversation.id,
+          userId: loggedInCoach.user.id,
+        });
+      }
+    );
 
-    it('excludes a conversation whose threshold was reached too recently', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(10),
-      });
+    it.each([
+      ['invitation', CHECKIN_ELIGIBILITY_THRESHOLD_DAYS],
+      ['relance', CHECKIN_RELANCE_THRESHOLD_DAYS],
+    ])(
+      'excludes a conversation whose %s threshold was reached too recently',
+      async (_label, daysThreshold) => {
+        const conversation = await createConversation({
+          engagementThresholdReachedAt: daysAgo(10),
+        });
 
-      const ids =
-        await checkinService.getConversationIdsEligibleForInvitation();
+        const recipients =
+          await checkinService.getEligibleCheckinParticipants(daysThreshold);
 
-      expect(ids).not.toContain(conversation.id);
-    });
+        expect(recipients).not.toContainEqual(
+          expect.objectContaining({ conversationId: conversation.id })
+        );
+      }
+    );
 
-    it('excludes a conversation whose threshold was reached too long ago', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 5
-        ),
-      });
+    it.each([
+      ['invitation', CHECKIN_ELIGIBILITY_THRESHOLD_DAYS],
+      ['relance', CHECKIN_RELANCE_THRESHOLD_DAYS],
+    ])(
+      'excludes a conversation whose %s threshold was reached too long ago',
+      async (_label, daysThreshold) => {
+        const conversation = await createConversation({
+          engagementThresholdReachedAt: daysAgo(daysThreshold + 5),
+        });
 
-      const ids =
-        await checkinService.getConversationIdsEligibleForInvitation();
+        const recipients =
+          await checkinService.getEligibleCheckinParticipants(daysThreshold);
 
-      expect(ids).not.toContain(conversation.id);
-    });
+        expect(recipients).not.toContainEqual(
+          expect.objectContaining({ conversationId: conversation.id })
+        );
+      }
+    );
 
     it('excludes a group conversation even within the eligibility window', async () => {
       const conversation = await createConversation({
@@ -578,10 +604,13 @@ describe('CHECKIN', () => {
         ),
       });
 
-      const ids =
-        await checkinService.getConversationIdsEligibleForInvitation();
+      const recipients = await checkinService.getEligibleCheckinParticipants(
+        CHECKIN_ELIGIBILITY_THRESHOLD_DAYS
+      );
 
-      expect(ids).not.toContain(conversation.id);
+      expect(recipients).not.toContainEqual(
+        expect.objectContaining({ conversationId: conversation.id })
+      );
     });
 
     it('excludes a conversation with no engagementThresholdReachedAt', async () => {
@@ -589,18 +618,71 @@ describe('CHECKIN', () => {
         engagementThresholdReachedAt: null,
       });
 
-      const ids =
-        await checkinService.getConversationIdsEligibleForInvitation();
+      const recipients = await checkinService.getEligibleCheckinParticipants(
+        CHECKIN_ELIGIBILITY_THRESHOLD_DAYS
+      );
 
-      expect(ids).not.toContain(conversation.id);
+      expect(recipients).not.toContainEqual(
+        expect.objectContaining({ conversationId: conversation.id })
+      );
+    });
+
+    it('excludes a participant who already has a ConversationCheckin record, but keeps the other participant', async () => {
+      const conversation = await createConversation({
+        engagementThresholdReachedAt: daysAgo(
+          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 0.5
+        ),
+      });
+      await conversationCheckinModel.create({
+        conversationId: conversation.id,
+        userId: loggedInCandidate.user.id,
+      });
+
+      const recipients = await checkinService.getEligibleCheckinParticipants(
+        CHECKIN_ELIGIBILITY_THRESHOLD_DAYS
+      );
+
+      expect(recipients).not.toContainEqual({
+        conversationId: conversation.id,
+        userId: loggedInCandidate.user.id,
+      });
+      expect(recipients).toContainEqual({
+        conversationId: conversation.id,
+        userId: loggedInCoach.user.id,
+      });
+    });
+
+    it('excludes a participant with only a started (unfinished) checkin, not just a completed one', async () => {
+      const conversation = await createConversation({
+        engagementThresholdReachedAt: daysAgo(
+          CHECKIN_RELANCE_THRESHOLD_DAYS + 0.5
+        ),
+      });
+      await conversationCheckinModel.create({
+        conversationId: conversation.id,
+        userId: loggedInCandidate.user.id,
+        stillInTouch: CheckinStillInTouch.YES,
+      });
+
+      const recipients = await checkinService.getEligibleCheckinParticipants(
+        CHECKIN_RELANCE_THRESHOLD_DAYS
+      );
+
+      expect(recipients).not.toContainEqual({
+        conversationId: conversation.id,
+        userId: loggedInCandidate.user.id,
+      });
     });
   });
 
-  describe('CheckinService.sendInvitationMails (cron)', () => {
+  describe('CheckinService.sendInvitationMails / sendRelanceMails (cron)', () => {
     it('sends the invitation mail to both participants, each with their own autologin token', async () => {
       const conversation = await createEligibleConversation();
 
-      await checkinService.sendInvitationMails(conversation.id);
+      await checkinService.sendInvitationMails([
+        { conversationId: conversation.id, userId: loggedInCandidate.user.id },
+        { conversationId: conversation.id, userId: loggedInCoach.user.id },
+      ]);
 
       expect(addToWorkQueueSpy).toHaveBeenCalledTimes(2);
       expect(addToWorkQueueSpy).toHaveBeenCalledWith(
@@ -619,10 +701,44 @@ describe('CHECKIN', () => {
       );
     });
 
-    it('does nothing for an unknown conversation', async () => {
-      await checkinService.sendInvitationMails(
-        '00000000-0000-0000-0000-000000000000'
+    it('sends the relance mail with the relance template, only to the given recipient', async () => {
+      const conversation = await createEligibleConversation();
+
+      await checkinService.sendRelanceMails([
+        { conversationId: conversation.id, userId: loggedInCandidate.user.id },
+      ]);
+
+      expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+      expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+        Jobs.SEND_MAIL,
+        expect.objectContaining({
+          toEmail: loggedInCandidate.user.email,
+          templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_RELANCE,
+        })
       );
+    });
+
+    it('only sends to the recipients passed in, not unconditionally to every participant (no double-send to an already-checked-in participant)', async () => {
+      const conversation = await createEligibleConversation();
+
+      await checkinService.sendInvitationMails([
+        { conversationId: conversation.id, userId: loggedInCandidate.user.id },
+      ]);
+
+      expect(addToWorkQueueSpy).toHaveBeenCalledTimes(1);
+      expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+        Jobs.SEND_MAIL,
+        expect.objectContaining({ toEmail: loggedInCandidate.user.email })
+      );
+    });
+
+    it('does nothing for an unknown conversation', async () => {
+      await checkinService.sendInvitationMails([
+        {
+          conversationId: '00000000-0000-0000-0000-000000000000',
+          userId: loggedInCandidate.user.id,
+        },
+      ]);
 
       expect(addToWorkQueueSpy).not.toHaveBeenCalled();
     });

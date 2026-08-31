@@ -503,4 +503,17 @@ export class CronService {
     );
     return { jobId: job.id, status: 'processing' };
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_11AM)
+  async prepareCheckinRelanceMails() {
+    this.logger.log('Cron job started: prepareCheckinRelanceMails');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_CHECKIN_RELANCE_MAILS,
+      {}
+    );
+    this.logger.log(
+      `Job PREPARE_CHECKIN_RELANCE_MAILS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
 }

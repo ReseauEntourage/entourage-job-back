@@ -78,6 +78,9 @@ export enum CheckinPerceivedSupport {
 
 export const CHECKIN_ELIGIBILITY_THRESHOLD_DAYS = 30;
 
+// One relance, 7 days after the initial invitation — see messaging-lifecycle-mailers.
+export const CHECKIN_RELANCE_THRESHOLD_DAYS = 37;
+
 // Human-readable French labels, used to format the full checkin for staff-facing
 // surfaces (e.g. the Slack alert sent to a staffContact). Mirrors the labels shown to
 // the user in entourage-job-front's src/constants/checkin.ts.

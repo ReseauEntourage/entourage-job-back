@@ -36,6 +36,11 @@ export interface CheckinEligibility {
   otherParticipant: User | null;
 }
 
+export interface CheckinMailRecipient {
+  conversationId: string;
+  userId: string;
+}
+
 // Checkin invitation mails are a low-urgency reminder sent 30 days after a conversation's
 // engagement threshold by a daily cron, not an urgent new-message notification — so they
 // get a longer autologin token lifetime than AuthService's 12h default.
@@ -282,44 +287,62 @@ export class CheckinService {
   }
 
   /**
-   * Direct conversations whose `engagementThresholdReachedAt` is exactly
-   * `CHECKIN_ELIGIBILITY_THRESHOLD_DAYS` days old (1-day window), used by the daily
-   * checkin invitation job. Mirrors the `BETWEEN NOW()-N+1 AND NOW()-N` pattern used by
+   * Participants of direct conversations whose `engagementThresholdReachedAt` is
+   * exactly `daysThreshold` days old (1-day window) and who have no `ConversationCheckin`
+   * record yet for that conversation — shared by the daily invitation (J+30) and relance
+   * (J+37) jobs. Mirrors the `BETWEEN NOW()-N+1 AND NOW()-N` pattern used by
    * `MessagingService.getAllMutuallyRepliedConversations`.
    */
-  async getConversationIdsEligibleForInvitation(): Promise<string[]> {
-    const rows: { id: string }[] = await this.conversationModel.sequelize.query(
+  async getEligibleCheckinParticipants(
+    daysThreshold: number
+  ): Promise<CheckinMailRecipient[]> {
+    return this.conversationModel.sequelize.query(
       `
-        SELECT id FROM "Conversations"
-        WHERE type = :type
-          AND "engagementThresholdReachedAt" IS NOT NULL
-          AND "engagementThresholdReachedAt" BETWEEN
+        SELECT cp."conversationId" AS "conversationId", cp."userId" AS "userId"
+        FROM "Conversations" c
+        JOIN "ConversationParticipants" cp ON cp."conversationId" = c.id
+        WHERE c.type = :type
+          AND c."engagementThresholdReachedAt" IS NOT NULL
+          AND c."engagementThresholdReachedAt" BETWEEN
             (NOW() - make_interval(days => :daysPlusOne))
             AND (NOW() - make_interval(days => :days))
+          AND NOT EXISTS (
+            SELECT 1 FROM "ConversationCheckins" cc
+            WHERE cc."conversationId" = cp."conversationId"
+              AND cc."userId" = cp."userId"
+          )
       `,
       {
         type: QueryTypes.SELECT,
         replacements: {
           type: ConversationType.DIRECT,
-          days: CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
-          daysPlusOne: CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 1,
+          days: daysThreshold,
+          daysPlusOne: daysThreshold + 1,
         },
       }
     );
-    return rows.map((row) => row.id);
   }
 
   /**
-   * Sends the checkin invitation mail to both participants of each conversation, each
-   * with their own autologin token pointing directly to the checkin screen. Fetches all
-   * eligible conversations in a single batched query (instead of one findByPk per id) to
-   * avoid N+1 queries when called from the daily cron with many conversation ids.
-   * Returns one settled result per input conversationId, in the same order, so callers
-   * can report per-conversation success/failure.
+   * Sends a checkin mail (invitation or relance, depending on `sendMail`) to each
+   * recipient, with an autologin token pointing directly to the checkin screen. Fetches
+   * all involved conversations in a single batched query (instead of one findByPk per
+   * recipient) to avoid N+1 queries when called from the daily cron with many recipients.
+   * Returns one settled result per input recipient, in the same order, so callers can
+   * report per-recipient success/failure.
    */
-  async sendInvitationMails(
-    conversationIds: string[]
+  private async sendCheckinMailsToRecipients(
+    recipients: CheckinMailRecipient[],
+    sendMail: (
+      addressee: User,
+      otherParticipant: User,
+      conversationId: string,
+      autologinToken: string
+    ) => Promise<unknown>
   ): Promise<PromiseSettledResult<void>[]> {
+    const conversationIds = [
+      ...new Set(recipients.map((recipient) => recipient.conversationId)),
+    ];
     const conversations = await this.conversationModel.findAll({
       where: { id: conversationIds },
       include: [{ model: User, as: 'participants' }],
@@ -329,38 +352,58 @@ export class CheckinService {
     );
 
     return Promise.allSettled(
-      conversationIds.map((conversationId) => {
+      recipients.map(async ({ conversationId, userId }) => {
         const conversation = conversationsById.get(conversationId);
-        if (!conversation) {
-          return Promise.resolve();
-        }
-        return this.sendInvitationMailsForConversation(conversation);
-      })
-    );
-  }
-
-  private async sendInvitationMailsForConversation(
-    conversation: Conversation
-  ): Promise<void> {
-    await Promise.all(
-      conversation.participants.map(async (addressee) => {
-        const otherParticipant = conversation.participants.find(
-          (participant) => participant.id !== addressee.id
+        const addressee = conversation?.participants.find(
+          (participant) => participant.id === userId
         );
-        if (!otherParticipant) {
+        const otherParticipant = conversation?.participants.find(
+          (participant) => participant.id !== userId
+        );
+        if (!conversation || !addressee || !otherParticipant) {
           return;
         }
         const autologinToken = await this.authService.generateAutologinToken(
           addressee.id,
           CHECKIN_INVITATION_AUTOLOGIN_TOKEN_EXPIRATION_MS
         );
-        await this.mailsService.sendCheckinInvitationMail(
+        await sendMail(
           addressee,
           otherParticipant,
           conversation.id,
           autologinToken
         );
       })
+    );
+  }
+
+  async sendInvitationMails(
+    recipients: CheckinMailRecipient[]
+  ): Promise<PromiseSettledResult<void>[]> {
+    return this.sendCheckinMailsToRecipients(
+      recipients,
+      (addressee, otherParticipant, conversationId, autologinToken) =>
+        this.mailsService.sendCheckinInvitationMail(
+          addressee,
+          otherParticipant,
+          conversationId,
+          autologinToken
+        )
+    );
+  }
+
+  async sendRelanceMails(
+    recipients: CheckinMailRecipient[]
+  ): Promise<PromiseSettledResult<void>[]> {
+    return this.sendCheckinMailsToRecipients(
+      recipients,
+      (addressee, otherParticipant, conversationId, autologinToken) =>
+        this.mailsService.sendCheckinRelanceMail(
+          addressee,
+          otherParticipant,
+          conversationId,
+          autologinToken
+        )
     );
   }
 }
