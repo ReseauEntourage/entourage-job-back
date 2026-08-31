@@ -68,6 +68,12 @@ export class MessagingHelper {
     return this.conversationModel.count();
   }
 
+  async findConversationParticipant(conversationId: string, userId: string) {
+    return this.conversationParticipantModel.findOne({
+      where: { conversationId, userId },
+    });
+  }
+
   async findConversation(conversationId: string) {
     return this.conversationModel.findByPk(conversationId, {
       include: [

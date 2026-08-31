@@ -9,6 +9,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UnauthorizedException,
   UploadedFiles,
   UseGuards,
@@ -28,6 +29,7 @@ import { UserInConversation } from './guards/user-in-conversation';
 import {
   ErrorMessagingCantParticipate,
   ErrorMessagingElearningNotCompleted,
+  ErrorMessagingInvalidCursor,
   ErrorMessagingInvalidMessage,
   ErrorMessagingMailingListInvalid,
   ErrorMessagingNeedParticipantsOrConversationId,
@@ -35,6 +37,7 @@ import {
   ErrorMessagingRecipientNotEligible,
 } from './messaging.errors';
 import { MessagingService } from './messaging.service';
+import { decodeMessageCursor } from './messaging.utils';
 
 @ApiTags('Messaging')
 @ApiBearerAuth()
@@ -61,10 +64,39 @@ export class MessagingController {
   @Get('conversations/:conversationId')
   async getConversation(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
+    @Query('before') before?: string,
+    @Query('after') after?: string
+  ) {
+    if (before && after) {
+      throw new BadRequestException(
+        'Les paramètres before et after sont mutuellement exclusifs.'
+      );
+    }
+    try {
+      return await this.messagingService.getConversationById(
+        conversationId,
+        userId,
+        {
+          before: before ? decodeMessageCursor(before) : undefined,
+          after: after ? decodeMessageCursor(after) : undefined,
+        }
+      );
+    } catch (error) {
+      if (error instanceof ErrorMessagingInvalidCursor) {
+        throw new BadRequestException('Cursor de pagination invalide.');
+      }
+      throw error;
+    }
+  }
+
+  @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/seen')
+  async markConversationAsSeen(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string
   ) {
     await this.messagingService.setConversationHasSeen(conversationId, userId);
-    return this.messagingService.getConversationById(conversationId, userId);
   }
 
   @Post('messages')
