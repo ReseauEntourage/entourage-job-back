@@ -31,7 +31,8 @@ describe('CronTasksProcessor.deactivateStaleConversations', () => {
       {} as never, // messagingService, unused by this method
       {} as never, // gamificationService, unused by this method
       {} as never, // recruitementAlertsService, unused by this method
-      conversationPipelineService as never
+      conversationPipelineService as never,
+      {} as never // checkinService, unused by this method
     );
 
     return {

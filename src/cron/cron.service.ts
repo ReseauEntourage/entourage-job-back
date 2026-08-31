@@ -490,4 +490,17 @@ export class CronService {
     );
     return { jobId: job.id, status: 'processing' };
   }
+
+  @Cron(CronExpression.EVERY_DAY_AT_11AM)
+  async prepareCheckinInvitationMails() {
+    this.logger.log('Cron job started: prepareCheckinInvitationMails');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_CHECKIN_INVITATION_MAILS,
+      {}
+    );
+    this.logger.log(
+      `Job PREPARE_CHECKIN_INVITATION_MAILS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
 }

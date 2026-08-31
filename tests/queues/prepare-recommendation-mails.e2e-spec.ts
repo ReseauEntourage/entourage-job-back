@@ -38,7 +38,9 @@ describe('CronTasksProcessor.prepareRecommendationMails', () => {
       cronTasksSlackReporterService as never,
       {} as never, // messagingService, unused by this method
       {} as never, // gamificationService, unused by this method
-      {} as never // recruitementAlertsService, unused by this method
+      {} as never, // recruitementAlertsService, unused by this method
+      {} as never, // conversationPipelineService, unused by this method
+      {} as never // checkinService, unused by this method
     );
 
     return {

@@ -1,5 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { App, Block, KnownBlock } from '@slack/bolt';
+import {
+  CHECKIN_EMPLOYMENT_TYPE_LABELS,
+  CHECKIN_EXCHANGE_FREQUENCY_LABELS,
+  CHECKIN_EXCHANGE_MODE_LABELS,
+  CHECKIN_PERCEIVED_BENEFIT_LABELS,
+  CHECKIN_PERCEIVED_SUPPORT_LABELS,
+  CHECKIN_STILL_IN_TOUCH_LABELS,
+  CheckinPerceivedBenefit,
+} from 'src/checkin/checkin.types';
+import { ConversationCheckin } from 'src/checkin/models/conversation-checkin.model';
 import { User } from 'src/users/models';
 import {
   SlackBlockConfig,
@@ -300,6 +310,92 @@ export class SlackService {
     if (slackMessage && details) {
       await this.sendReplyMessage(channel, slackMessage.ts, [], details);
     }
+  }
+
+  /**
+   * Alerts a user's staffContact that they asked to be recontacted after rating a
+   * conversation checkin poorly (see messaging-conversation-checkin capability).
+   */
+  sendCheckinContactRequestAlert = async (
+    user: User,
+    checkin: ConversationCheckin,
+    otherParticipant: User | null
+  ): Promise<void> => {
+    const staffContactSlackEmail = user.staffContact?.slackEmail;
+    const slackStaffContactUserId = staffContactSlackEmail
+      ? await this.getUserIdByEmail(staffContactSlackEmail)
+      : null;
+    const otherParticipantDescription = otherParticipant
+      ? `${otherParticipant.firstName} ${otherParticipant.lastName} <mailto:${otherParticipant.email}|${otherParticipant.email}> (${otherParticipant.role})`
+      : 'interlocuteur inconnu';
+    const slackMessage = await this.sendMessage(
+      slackChannels.ENTOURAGE_PRO_MODERATION,
+      this.generateSlackBlockMsg({
+        title: '🙋 Une personne souhaite être recontactée après son bilan',
+        context: [
+          {
+            title: 'Référent de la personne',
+            content: slackStaffContactUserId
+              ? `<@${slackStaffContactUserId}>`
+              : 'Aucun référent assigné',
+          },
+        ],
+        msgParts: [
+          {
+            content: `${user.firstName} ${user.lastName} <mailto:${user.email}|${user.email}> a noté sa relation d'accompagnement avec ${otherParticipantDescription} à ${checkin.rating}/5 dans son bilan de conversation, et a demandé à être recontacté·e.`,
+          },
+        ],
+      }),
+      `${user.firstName} ${user.lastName} souhaite être recontacté·e après son bilan avec ${otherParticipant ? `${otherParticipant.firstName} ${otherParticipant.lastName}` : 'un interlocuteur inconnu'}`
+    );
+
+    if (slackMessage?.ts) {
+      await this.sendReplyMessage(
+        slackChannels.ENTOURAGE_PRO_MODERATION,
+        slackMessage.ts,
+        [],
+        this.formatCheckinDetails(checkin)
+      );
+    }
+  };
+
+  /**
+   * Formats every answered field of a checkin into a plain-text block, for the Slack
+   * thread reply attached to `sendCheckinContactRequestAlert`. Skips fields the user
+   * never got to (e.g. a checkin can reach the low-rating final screen without a free
+   * comment, or the employment-type sub-question when not applicable).
+   */
+  private formatCheckinDetails(checkin: ConversationCheckin): string {
+    const lines: string[] = [
+      `*Encore en lien ?* ${checkin.stillInTouch ? CHECKIN_STILL_IN_TOUCH_LABELS[checkin.stillInTouch] : '—'}`,
+      `*Modes d'échange :* ${checkin.exchangeModes?.length ? checkin.exchangeModes.map((mode) => CHECKIN_EXCHANGE_MODE_LABELS[mode]).join(', ') : '—'}`,
+      `*Fréquence des échanges :* ${checkin.exchangeFrequency ? CHECKIN_EXCHANGE_FREQUENCY_LABELS[checkin.exchangeFrequency] : '—'}`,
+      `*Ce que ces échanges leur ont permis de :* ${
+        checkin.perceivedBenefits?.length
+          ? checkin.perceivedBenefits
+              .map(
+                (benefit) =>
+                  CHECKIN_PERCEIVED_BENEFIT_LABELS[
+                    benefit as CheckinPerceivedBenefit
+                  ] ?? benefit
+              )
+              .join(', ')
+          : '—'
+      }`,
+    ];
+    if (checkin.employmentType) {
+      lines.push(
+        `*De quoi il s'agit :* ${CHECKIN_EMPLOYMENT_TYPE_LABELS[checkin.employmentType]}`
+      );
+    }
+    lines.push(
+      `*Soutien perçu :* ${checkin.perceivedSupport ? CHECKIN_PERCEIVED_SUPPORT_LABELS[checkin.perceivedSupport] : '—'}`,
+      `*Note de la relation :* ${checkin.rating ?? '—'}/5`
+    );
+    if (checkin.comment) {
+      lines.push(`*Commentaire libre :* ${checkin.comment}`);
+    }
+    return lines.join('\n');
   }
 
   /***************** */

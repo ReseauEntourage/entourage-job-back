@@ -58,6 +58,13 @@ export class Conversation extends Model {
   @Column
   firstMeetingDetectedAt: Date;
 
+  // Only maintained for `direct` conversations (see messaging-conversation-pipeline capability).
+  // Set once, at the first of `firstMeetingDetectedAt` being set or `stage` reaching
+  // `LONG_TERM_SUPPORT`, and never rewritten afterwards.
+  @Default(null)
+  @Column
+  engagementThresholdReachedAt: Date;
+
   @CreatedAt
   createdAt: Date;
 

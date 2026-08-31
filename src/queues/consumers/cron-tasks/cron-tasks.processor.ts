@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
+import { CheckinService } from 'src/checkin/checkin.service';
 import { GamificationService } from 'src/gamification/gamification.service';
 import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
@@ -36,7 +37,8 @@ export class CronTasksProcessor extends WorkerHost {
     private messagingService: MessagingService,
     private gamificationService: GamificationService,
     private recruitementAlertsService: RecruitementAlertsService,
-    private conversationPipelineService: ConversationPipelineService
+    private conversationPipelineService: ConversationPipelineService,
+    private checkinService: CheckinService
   ) {
     super();
   }
@@ -101,6 +103,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.remindUsersElearningCompletion();
       case Jobs.DEACTIVATE_STALE_CONVERSATIONS:
         return this.deactivateStaleConversations();
+      case Jobs.PREPARE_CHECKIN_INVITATION_MAILS:
+        return this.prepareCheckinInvitationMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1247,6 +1251,49 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent ${successIds.length} committed users feedback mails`;
+  }
+
+  async prepareCheckinInvitationMails() {
+    this.logger.log('Preparing checkin invitation mails...');
+    const conversationIds =
+      await this.checkinService.getConversationIdsEligibleForInvitation();
+    const items = conversationIds.map((id) => ({ id }));
+    this.logger.log(
+      `Found ${items.length} conversations eligible for checkin invitation`
+    );
+
+    const results =
+      await this.checkinService.sendInvitationMails(conversationIds);
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      items,
+      results,
+      (conversationId, reason) => {
+        this.logger.error(
+          `Failed sending checkin invitation mails for conversation ${conversationId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📝 Checkin invitation mails',
+      {
+        total: items.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending checkin invitation mails for ${failures.length}/${items.length} conversations`
+      );
+    }
+
+    return `Sent checkin invitation mails for ${successIds.length} conversations`;
   }
 
   async prepareUnansweredConversationsMails() {

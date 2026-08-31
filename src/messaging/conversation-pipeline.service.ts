@@ -7,7 +7,7 @@ import {
   ConversationStage,
   ConversationType,
 } from './models/conversation.model';
-import { Message } from './models/message.model';
+import { Message, MessageType } from './models/message.model';
 
 // Progression order used to enforce that `stage` never regresses.
 const STAGE_ORDER: ConversationStage[] = [
@@ -57,6 +57,12 @@ export class ConversationPipelineService {
 
     if (newIndex > currentIndex) {
       conversation.stage = newStage;
+      if (
+        newStage === ConversationStage.LONG_TERM_SUPPORT &&
+        !conversation.engagementThresholdReachedAt
+      ) {
+        conversation.engagementThresholdReachedAt = new Date();
+      }
       await conversation.save();
     }
   }
@@ -65,7 +71,7 @@ export class ConversationPipelineService {
     conversationId: string
   ): Promise<ConversationStage> {
     const rows = (await this.messageModel.findAll({
-      where: { conversationId },
+      where: { conversationId, type: MessageType.USER },
       attributes: [
         'authorId',
         [
@@ -179,7 +185,7 @@ export class ConversationPipelineService {
     );
 
     const messages = await this.messageModel.findAll({
-      where: { conversationId },
+      where: { conversationId, type: MessageType.USER },
       order: [['createdAt', 'ASC']],
     });
 
@@ -194,6 +200,9 @@ export class ConversationPipelineService {
 
     if (signalMessage) {
       conversation.firstMeetingDetectedAt = signalMessage.createdAt;
+      if (!conversation.engagementThresholdReachedAt) {
+        conversation.engagementThresholdReachedAt = signalMessage.createdAt;
+      }
       await conversation.save();
     }
   }

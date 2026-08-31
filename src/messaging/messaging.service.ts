@@ -46,7 +46,11 @@ import {
 } from './messaging.utils';
 import { ConversationParticipant, MessageMedia } from './models';
 import { Conversation, ConversationType } from './models/conversation.model';
-import { Message } from './models/message.model';
+import {
+  Message,
+  MessageType,
+  ServiceMessageKind,
+} from './models/message.model';
 
 @Injectable()
 export class MessagingService {
@@ -603,6 +607,39 @@ export class MessagingService {
   }
 
   /**
+   * Creates a `SERVICE` message (no human author) in a conversation, e.g. the note sent
+   * to the other participant after a well-rated conversation checkin (see
+   * messaging-conversation-checkin capability). Unlike `createMessage`, this does not
+   * notify participants by email, trigger achievement checks, or recompute the
+   * conversation pipeline, since it isn't a message from either participant.
+   *
+   * `content` is the flat-text fallback rendering of `metadata`, read as-is by consumers
+   * that don't distinguish `type` (e.g. the AI assistant prompt context). `serviceMessageKind`
+   * and `metadata` are only used by the frontend to render the message bubble in a
+   * structured way, without reparsing `content`.
+   */
+  async createServiceMessage(
+    conversationId: string,
+    content: string,
+    serviceMessageKind?: ServiceMessageKind,
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
+  ) {
+    const createdMessage = await this.messageModel.create(
+      {
+        conversationId,
+        content,
+        type: MessageType.SERVICE,
+        authorId: null,
+        serviceMessageKind: serviceMessageKind ?? null,
+        metadata: metadata ?? null,
+      },
+      { transaction }
+    );
+    return this.findOneMessage(createdMessage.id, transaction);
+  }
+
+  /**
    * Compute the average delay response for a user profile (in days)
    * Based on the 10 last messages of each conversation excluding the last message (can be a message that don't need a response)
    * and the messages sent by the user.
@@ -622,9 +659,10 @@ export class MessagingService {
     for (const participant of conversations) {
       const conversationId = participant.conversationId;
 
-      // Get the messages of the conversation
+      // Get the messages of the conversation (SERVICE messages, e.g. checkin thank-you
+      // notes, have no author and must not be counted as a reply)
       const messages = await this.messageModel.findAll({
-        where: { conversationId },
+        where: { conversationId, type: MessageType.USER },
         order: [['createdAt', 'ASC']],
       });
 
@@ -694,6 +732,11 @@ export class MessagingService {
             {
               model: Message,
               as: 'messages',
+              // SERVICE messages (e.g. checkin thank-you notes) have no author and must
+              // not be counted as a reply; required: false keeps conversations with no
+              // USER message included (LEFT JOIN) instead of being dropped.
+              where: { type: MessageType.USER },
+              required: false,
             },
             {
               model: User,

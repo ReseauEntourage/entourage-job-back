@@ -462,4 +462,153 @@ describe('ConversationPipelineService', () => {
       expect(secondDetection.firstMeetingDetectedAt).toEqual(firstDetectedAt);
     });
   });
+
+  describe('engagementThresholdReachedAt', () => {
+    const createMessageAndDetect = async (
+      conversationId: string,
+      authorId: string,
+      content: string
+    ) => {
+      const message = await messagingHelper.createMessage(
+        conversationId,
+        authorId,
+        { content }
+      );
+      await conversationPipelineService.detectFirstMeeting(
+        conversationId,
+        message
+      );
+    };
+
+    it('is set to the firstMeetingDetectedAt date when that signal arrives before LONG_TERM_SUPPORT', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await createMessageAndDetect(
+        conversation.id,
+        loggedInCandidate.user.id,
+        'On peut se voir sur https://meet.google.com/abc-defg-hij'
+      );
+      await createMessageAndDetect(
+        conversation.id,
+        loggedInCoach.user.id,
+        'Avec plaisir !'
+      );
+      await conversationPipelineService.recomputeStage(conversation.id);
+
+      const updated = await messagingHelper.findConversation(conversation.id);
+      expect(updated.stage).not.toBe(ConversationStage.LONG_TERM_SUPPORT);
+      expect(updated.engagementThresholdReachedAt).not.toBeNull();
+      expect(updated.engagementThresholdReachedAt).toEqual(
+        updated.firstMeetingDetectedAt
+      );
+    });
+
+    it('is set to the LONG_TERM_SUPPORT transition date when that signal arrives before firstMeetingDetectedAt', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+      await messagingHelper.addMessagesToConversation(
+        3,
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.addMessagesToConversation(
+        3,
+        conversation.id,
+        loggedInCoach.user.id
+      );
+
+      await conversationPipelineService.recomputeStage(conversation.id);
+
+      const updated = await messagingHelper.findConversation(conversation.id);
+      expect(updated.stage).toBe(ConversationStage.LONG_TERM_SUPPORT);
+      expect(updated.firstMeetingDetectedAt).toBeNull();
+      expect(updated.engagementThresholdReachedAt).not.toBeNull();
+    });
+
+    it('is never rewritten once set, even when the other signal arrives afterwards', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await createMessageAndDetect(
+        conversation.id,
+        loggedInCandidate.user.id,
+        'Mon numéro : 06 12 34 56 78'
+      );
+      await createMessageAndDetect(
+        conversation.id,
+        loggedInCoach.user.id,
+        "J'appelle demain"
+      );
+
+      const firstUpdate = await messagingHelper.findConversation(
+        conversation.id
+      );
+      const engagementThresholdReachedAt =
+        firstUpdate.engagementThresholdReachedAt;
+      expect(engagementThresholdReachedAt).not.toBeNull();
+
+      await messagingHelper.addMessagesToConversation(
+        2,
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.addMessagesToConversation(
+        2,
+        conversation.id,
+        loggedInCoach.user.id
+      );
+      await conversationPipelineService.recomputeStage(conversation.id);
+
+      const secondUpdate = await messagingHelper.findConversation(
+        conversation.id
+      );
+      expect(secondUpdate.stage).toBe(ConversationStage.LONG_TERM_SUPPORT);
+      expect(secondUpdate.engagementThresholdReachedAt).toEqual(
+        engagementThresholdReachedAt
+      );
+    });
+
+    it('does not compute engagementThresholdReachedAt for a group conversation', async () => {
+      const otherCandidate = await usersHelper.createLoggedInUser({
+        role: UserRoles.CANDIDATE,
+      });
+      const conversation = await conversationFactory.create({
+        type: ConversationType.GROUP,
+      });
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [
+          loggedInCandidate.user.id,
+          loggedInCoach.user.id,
+          otherCandidate.user.id,
+        ]
+      );
+      await messagingHelper.addMessagesToConversation(
+        3,
+        conversation.id,
+        loggedInCandidate.user.id
+      );
+      await messagingHelper.addMessagesToConversation(
+        3,
+        conversation.id,
+        loggedInCoach.user.id
+      );
+
+      await conversationPipelineService.recomputeStage(conversation.id);
+
+      const updated = await messagingHelper.findConversation(conversation.id);
+      expect(updated.stage).toBeNull();
+      expect(updated.engagementThresholdReachedAt).toBeNull();
+    });
+  });
 });

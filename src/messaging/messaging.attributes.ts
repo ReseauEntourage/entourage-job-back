@@ -18,6 +18,14 @@ export const conversationParticipantAttributes = [
   'updatedAt',
 ];
 
-export const messageAttributes = ['id', 'content', 'createdAt', 'authorId'];
+export const messageAttributes = [
+  'id',
+  'content',
+  'createdAt',
+  'authorId',
+  'type',
+  'serviceMessageKind',
+  'metadata',
+];
 export const userProfileAttributes = ['id', 'unavailableAt', 'hasPicture'];
 export const mediaAttributes = ['id', 'mimeType', 'name', 'size', 's3Key'];
