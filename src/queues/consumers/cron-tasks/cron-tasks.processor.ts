@@ -1778,7 +1778,7 @@ export class CronTasksProcessor extends WorkerHost {
 
   /**
    * Switches back to `INACTIVE` every direct conversation currently `ACTIVE` whose last
-   * message is more than 30 days old. Called daily at 1 PM via the cron job.
+   * message is more than 30 days old. Called daily by the cron job.
    */
   async deactivateStaleConversations() {
     this.logger.log('Deactivating stale conversations...');
