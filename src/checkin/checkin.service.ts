@@ -179,9 +179,12 @@ export class CheckinService {
 
     let checkin = await this.getCheckin(conversationId, userId);
     if (!checkin) {
-      if (dto.stillInTouch === undefined) {
+      const hasAnyAnswer = ANSWER_FIELDS.some(
+        (field) => dto[field] !== undefined
+      );
+      if (!hasAnyAnswer) {
         throw new BadRequestException(
-          "Le bilan doit être initié en répondant d'abord à la question 'stillInTouch'"
+          'Le bilan doit être initié en répondant à au moins une question'
         );
       }
 
