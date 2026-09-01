@@ -274,15 +274,26 @@ export class CheckinService {
       return checkin;
     }
 
-    await this.messagingService.createServiceMessage(
-      conversationId,
-      `💬 ${user.firstName} vous a laissé un mot suite à son bilan de conversation :\n\n« ${content} »`,
-      ServiceMessageKind.CHECKIN_NOTE,
-      { authorFirstName: user.firstName, quotedText: content }
+    // Atomic conditional update instead of check-then-set: only the call that
+    // actually flips noteSentAt from null to non-null wins the right to create
+    // the service message, so two concurrent requests can't both send it.
+    const [affectedCount] = await this.conversationCheckinModel.update(
+      { noteSentAt: new Date() },
+      { where: { id: checkin.id, noteSentAt: null } }
     );
 
-    checkin.noteSentAt = new Date();
-    await checkin.save();
+    if (affectedCount === 1) {
+      await this.messagingService.createServiceMessage(
+        conversationId,
+        `💬 ${user.firstName} vous a laissé un mot suite à son bilan de conversation :\n\n« ${content} »`,
+        ServiceMessageKind.CHECKIN_NOTE,
+        { authorFirstName: user.firstName, quotedText: content }
+      );
+    }
+
+    // Reload so the returned checkin reflects noteSentAt as actually
+    // persisted, whether this call won the update or a concurrent one did.
+    await checkin.reload();
     return checkin;
   }
 
