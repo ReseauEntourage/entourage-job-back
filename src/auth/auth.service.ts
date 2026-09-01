@@ -272,11 +272,15 @@ export class AuthService {
   }
 
   /**
-   * Generates a one-time autologin token for a given user, scoped to the
-   * new message notification email link. The plain token embeds the
-   * created row's id (used for lookup) and a random secret (validated
-   * against `tokenHash`/`salt`), following the same never-store-in-clear
-   * principle as `hashReset`/`saltReset`.
+   * Generates a one-time autologin token for a given user, usable by any transactional
+   * email scoped to a single recipient (new message notification, checkin invitation, ...).
+   * The token itself carries no destination: the caller fixes the destination at
+   * generation time by embedding the token in whichever URL it builds (e.g.
+   * `mails.service.ts`), and `consumeAutologinToken` never accepts a destination
+   * parameter — so there is no way to redirect a token towards a destination other than
+   * the one the issuing email already links to. The plain token embeds the created row's
+   * id (used for lookup) and a random secret (validated against `tokenHash`/`salt`),
+   * following the same never-store-in-clear principle as `hashReset`/`saltReset`.
    */
   async generateAutologinToken(
     userId: string,

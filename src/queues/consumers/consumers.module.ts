@@ -1,5 +1,6 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
+import { CheckinModule } from 'src/checkin/checkin.module';
 import { CompaniesModule } from 'src/companies/companies.module';
 import { EmbeddingsModule } from 'src/embeddings/embeddings.module';
 import { MailjetModule } from 'src/external-services/mailjet/mailjet.module';
@@ -50,6 +51,7 @@ import { WorkQueueProcessor } from './work-queue.processor';
     EmbeddingsModule,
     GamificationModule,
     RecruitementAlertsModule,
+    CheckinModule,
   ],
   providers: [
     WorkQueueProcessor,

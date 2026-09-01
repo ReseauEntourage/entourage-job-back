@@ -6,7 +6,11 @@ import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingController } from 'src/messaging/messaging.controller';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { encodeMessageCursor } from 'src/messaging/messaging.utils';
-import { ConversationType } from 'src/messaging/models/conversation.model';
+import {
+  ConversationActivityStatus,
+  ConversationStage,
+  ConversationType,
+} from 'src/messaging/models/conversation.model';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -1588,6 +1592,224 @@ describe('MESSAGING', () => {
       );
 
       expect(count).toBe(0);
+    });
+  });
+
+  describe('Conversation pipeline recompute on new message', () => {
+    // The pipeline recompute is triggered fire-and-forget from
+    // transaction.afterCommit() (see MessagingService.createMessage), so it
+    // may still be in flight when the HTTP response comes back. Poll for it.
+    const waitForStage = async (
+      conversationId: string,
+      expectedStage: ConversationStage
+    ) => {
+      const maxAttempts = 20;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const conversation =
+          await messagingHelper.findConversation(conversationId);
+        if (conversation.stage === expectedStage) {
+          return conversation;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      throw new Error(
+        `Conversation ${conversationId} never reached stage ${expectedStage}`
+      );
+    };
+
+    it('should update stage and activityStatus of the conversation after a new message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Bonjour',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const firstUpdate = await waitForStage(
+        conversation.id,
+        ConversationStage.FIRST_CONTACT_INITIATED
+      );
+      expect(firstUpdate.activityStatus).toBe(
+        ConversationActivityStatus.ACTIVE
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Bonjour à vous',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      await waitForStage(
+        conversation.id,
+        ConversationStage.CONTACT_ESTABLISHED
+      );
+    });
+  });
+
+  describe('Archivage - /messaging/conversations/:conversationId/archive|unarchive', () => {
+    it('should archive the conversation for the requesting participant only', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const response = await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(201);
+
+      const conversationsForCandidate =
+        await messagingService.getConversationsForUser(
+          loggedInCandidate.user.id
+        );
+      const conversationsForCoach =
+        await messagingService.getConversationsForUser(loggedInCoach.user.id);
+
+      expect(
+        conversationsForCandidate.find((c) => c.id === conversation.id)
+          ?.archivedAt
+      ).not.toBeNull();
+      expect(
+        conversationsForCoach.find((c) => c.id === conversation.id)?.archivedAt
+      ).toBeNull();
+    });
+
+    it('should unarchive a conversation previously archived by the requesting participant', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const response = await request(server)
+        .post(`/messaging/conversations/${conversation.id}/unarchive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(201);
+
+      const conversationsForCandidate =
+        await messagingService.getConversationsForUser(
+          loggedInCandidate.user.id
+        );
+      expect(
+        conversationsForCandidate.find((c) => c.id === conversation.id)
+          ?.archivedAt
+      ).toBeNull();
+    });
+
+    it('should return 401 when the requesting user is not a participant of the conversation', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInOtherCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const response = await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should still allow both participants to send and receive messages in an archived conversation', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const candidateMessageResponse = await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Toujours là malgré l’archivage',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+      expect(candidateMessageResponse.status).toBe(201);
+
+      const coachMessageResponse = await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Bien reçu !',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+      expect(coachMessageResponse.status).toBe(201);
+
+      const updatedConversation = await messagingHelper.findConversation(
+        conversation.id
+      );
+      expect(updatedConversation.messages.length).toBe(2);
+    });
+
+    it('should count an archived conversation as unseen once it receives a new message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      // Sending this message also marks the conversation as seen for the
+      // candidate (see setConversationHasSeen in createMessage), giving a
+      // clean "seen" baseline before archiving.
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Premier message',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const countBefore = await messagingService.getUnseenConversationsCount(
+        loggedInCandidate.user.id
+      );
+      expect(countBefore).toBe(0);
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Nouveau message dans une conversation archivée',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      const countAfter = await messagingService.getUnseenConversationsCount(
+        loggedInCandidate.user.id
+      );
+      expect(countAfter).toBe(1);
+
+      // Still archived: unaffected by the new message.
+      const conversationsForCandidate =
+        await messagingService.getConversationsForUser(
+          loggedInCandidate.user.id
+        );
+      expect(
+        conversationsForCandidate.find((c) => c.id === conversation.id)
+          ?.archivedAt
+      ).not.toBeNull();
     });
   });
 });

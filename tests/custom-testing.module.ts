@@ -8,6 +8,7 @@ import { getSequelizeOptions } from 'src/app.module';
 import { AuthModule } from 'src/auth/auth.module';
 import { JwtAuthGuard } from 'src/auth/guards';
 import { BusinessSectorsModule } from 'src/business-sectors/business-sectors.module';
+import { CheckinModule } from 'src/checkin/checkin.module';
 import { TimeoutInterceptor } from 'src/common/interceptors';
 import { ReviewsModule } from 'src/common/reviews/reviews.module';
 import { CompaniesModule } from 'src/companies/companies.module';
@@ -86,6 +87,7 @@ import { UsersTestingModule } from './users/users-testing.module';
     ContactsModule,
     OrganizationsModule,
     MessagingModule,
+    CheckinModule,
     ReadDocumentsModule,
     UsersCreationModule,
     UsersDeletionModule,

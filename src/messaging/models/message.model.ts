@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -19,6 +19,16 @@ import { Media } from 'src/medias/models';
 import { User } from 'src/users/models';
 import { Conversation } from './conversation.model';
 import { MessageMedia } from './message-media.model';
+
+export enum MessageType {
+  SERVICE = 'SERVICE',
+  USER = 'USER',
+}
+
+// Discriminant for `type: SERVICE` messages, so consumers know how to interpret `metadata`.
+export enum ServiceMessageKind {
+  CHECKIN_NOTE = 'CHECKIN_NOTE',
+}
 
 @Table({ tableName: 'Messages' })
 export class Message extends Model {
@@ -41,11 +51,13 @@ export class Message extends Model {
   @Column
   content: string;
 
+  // Null only for `type: SERVICE` messages (see messaging-core-conversations capability).
   @ApiProperty()
+  @IsOptional()
   @IsString()
   @IsUUID(4)
   @ForeignKey(() => User)
-  @AllowNull(false)
+  @AllowNull(true)
   @Column
   authorId: string;
 
@@ -56,6 +68,27 @@ export class Message extends Model {
   @AllowNull(false)
   @Column
   conversationId: string;
+
+  @ApiProperty()
+  @IsString()
+  @Default(MessageType.USER)
+  @Column(DataType.STRING)
+  type: MessageType;
+
+  // Only set for `type: SERVICE` messages.
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @AllowNull(true)
+  @Column(DataType.STRING)
+  serviceMessageKind: ServiceMessageKind;
+
+  // Only set for `type: SERVICE` messages, payload specific to `serviceMessageKind`.
+  @ApiProperty()
+  @IsOptional()
+  @AllowNull(true)
+  @Column(DataType.JSONB)
+  metadata: Record<string, unknown>;
 
   @BelongsTo(() => User, 'authorId')
   author: User;

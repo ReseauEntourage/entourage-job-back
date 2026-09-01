@@ -1596,53 +1596,6 @@ export class UsersService {
     );
   }
 
-  async getUserTriplesForMessagingFeedback(days: number): Promise<
-    {
-      interlocutorFirstName: string;
-      interlocutorId: string;
-      userId: string;
-    }[]
-  > {
-    return this.userModel.sequelize.query(
-      `
-      SELECT
-        u."id" as "userId",
-        u_other."firstName" as "interlocutorFirstName",
-        u_other."id" as "interlocutorId"
-      FROM "ConversationParticipants" cp
-      JOIN "Conversations" c ON cp."conversationId" = c."id"
-      JOIN "Messages" m ON c."id" = m."conversationId"
-      JOIN "Users" u ON cp."userId" = u."id"
-      JOIN "ConversationParticipants" cp_other
-        ON cp."conversationId" = cp_other."conversationId"
-        AND cp."userId" != cp_other."userId"
-      JOIN "Users" u_other ON cp_other."userId" = u_other."id"
-      WHERE c.type = '${ConversationType.DIRECT}'
-        AND cp."feedbackDate" IS NULL
-        AND cp."feedbackRating" IS NULL
-        AND m."createdAt" = (
-          SELECT MAX(m2."createdAt")
-          FROM "Messages" m2
-          WHERE m2."conversationId" = c."id"
-        )
-        AND m."createdAt" >= CURRENT_TIMESTAMP - INTERVAL '${days + 1} days'
-        AND m."createdAt" < CURRENT_TIMESTAMP - INTERVAL '${days} days'
-        AND NOT EXISTS (
-          SELECT 1
-          FROM "ConversationParticipants" cp2
-          LEFT JOIN "Messages" m3
-            ON cp2."userId" = m3."authorId"
-            AND cp2."conversationId" = m3."conversationId"
-          WHERE cp2."conversationId" = c."id"
-          GROUP BY cp2."userId"
-          HAVING COUNT(m3."id") = 0
-        )
-      GROUP BY u."id", u_other."firstName", u_other."id"
-      `,
-      { type: QueryTypes.SELECT, raw: true }
-    );
-  }
-
   async getCompanyAdminIdsForNoAlertsReminder(): Promise<
     { adminId: string }[]
   > {
@@ -1844,18 +1797,6 @@ export class UsersService {
     return this.mailsService.sendUnavailableUserMail(
       user,
       unreadConversationsCount
-    );
-  }
-
-  async sendMessagingFeedbackMail(
-    user: User,
-    interlocutorFirstName: string,
-    interlocutorId: string
-  ) {
-    return this.mailsService.sendMessagingFeedbackMail(
-      user,
-      interlocutorFirstName,
-      interlocutorId
     );
   }
 

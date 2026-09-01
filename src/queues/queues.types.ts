@@ -64,7 +64,6 @@ export const Jobs = {
   PREPARE_UNAVAILABLE_USERS_MAILS: 'prepare_unavailable_users_mails',
   PREPARE_CHURN_USERS_FEEDBACK_MAILS: 'prepare_churn_users_feedback_mails',
   PREPARE_INACTIVE_REFERERS_MAILS: 'prepare_inactive_referers_mails',
-  PREPARE_MESSAGING_FEEDBACK_MAILS: 'prepare_messaging_feedback_mails',
   PREPARE_WARN_ACCOUNT_DELETION_MAILS: 'prepare_warn_account_deletion_mails',
   PREPARE_UNANSWERED_CONVERSATIONS_SMS: 'prepare_unanswered_conversations_sms',
   PREPARE_LINKEDIN_SHARE_PROFILE_MAILS: 'prepare_linkedin_share_profile_mails',
@@ -72,6 +71,9 @@ export const Jobs = {
     'prepare_unavailable_sender_notification_mails',
   SEND_ELEARNING_COMPLETION_REMINDER_MAILS:
     'send_elearning_completion_reminder_mails',
+  DEACTIVATE_STALE_CONVERSATIONS: 'deactivate_stale_conversations',
+  PREPARE_CHECKIN_INVITATION_MAILS: 'prepare_checkin_invitation_mails',
+  PREPARE_CHECKIN_RELANCE_MAILS: 'prepare_checkin_relance_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -119,12 +121,14 @@ type JobsData = {
   [Jobs.PREPARE_UNAVAILABLE_USERS_MAILS]: PrepareUnavailableUsersMailsJob;
   [Jobs.PREPARE_CHURN_USERS_FEEDBACK_MAILS]: PrepareChurnUsersFeedbackMailsJob;
   [Jobs.PREPARE_INACTIVE_REFERERS_MAILS]: PrepareInactiveReferersMailsJob;
-  [Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS]: PrepareMessagingFeedbackMailsJob;
   [Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS]: PrepareWarnAccountDeletionMailsJob;
   [Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS]: PrepareUnansweredConversationsSmsJob;
   [Jobs.PREPARE_LINKEDIN_SHARE_PROFILE_MAILS]: PrepareLinkedInShareProfileMailsJob;
   [Jobs.PREPARE_UNAVAILABLE_SENDER_NOTIFICATION_MAILS]: PrepareUnavailableSenderNotificationMailsJob;
   [Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS]: SendElearningCompletionReminderMailsJob;
+  [Jobs.DEACTIVATE_STALE_CONVERSATIONS]: DeactivateStaleConversationsJob;
+  [Jobs.PREPARE_CHECKIN_INVITATION_MAILS]: PrepareCheckinInvitationMailsJob;
+  [Jobs.PREPARE_CHECKIN_RELANCE_MAILS]: PrepareCheckinRelanceMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -248,6 +252,9 @@ export type PrepareCompanyCollabFollowMailsJob = Record<string, never>;
 
 export type PrepareCommittedUsersFeedbackMailsJob = Record<string, never>;
 
+export type PrepareCheckinInvitationMailsJob = Record<string, never>;
+export type PrepareCheckinRelanceMailsJob = Record<string, never>;
+
 export type PrepareUnansweredConversationsMailsJob = Record<string, never>;
 
 export type PrepareUnavailableUsersMailsJob = Record<string, never>;
@@ -255,8 +262,6 @@ export type PrepareUnavailableUsersMailsJob = Record<string, never>;
 export type PrepareChurnUsersFeedbackMailsJob = Record<string, never>;
 
 export type PrepareInactiveReferersMailsJob = Record<string, never>;
-
-export type PrepareMessagingFeedbackMailsJob = Record<string, never>;
 
 export type PrepareWarnAccountDeletionMailsJob = Record<string, never>;
 
@@ -270,6 +275,8 @@ export type PrepareUnavailableSenderNotificationMailsJob = Record<
 >;
 
 export type SendElearningCompletionReminderMailsJob = Record<string, never>;
+
+export type DeactivateStaleConversationsJob = Record<string, never>;
 
 export interface UpdateUserProfileEmbeddingsJob {
   embeddingTypes: EmbeddingType[];

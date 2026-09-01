@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsNumber, IsString } from 'class-validator';
+import { IsString } from 'class-validator';
 import {
   AllowNull,
   BelongsTo,
@@ -37,6 +37,13 @@ export class ConversationParticipant extends Model {
   @Column
   seenAt: Date;
 
+  // Set independently by each participant; has no effect on the other participant's
+  // visibility of the conversation, nor on the ability to send/receive messages.
+  @IsDate
+  @Default(null)
+  @Column
+  archivedAt: Date;
+
   @ApiProperty()
   @IsString()
   @IsUUID(4)
@@ -52,16 +59,6 @@ export class ConversationParticipant extends Model {
   @AllowNull(false)
   @Column
   conversationId: string;
-
-  @ApiProperty()
-  @IsNumber()
-  @AllowNull(true)
-  @Column
-  feedbackRating: number | null;
-
-  @Column
-  @IsDateString()
-  feedbackDate: Date;
 
   @BelongsTo(() => User, 'userId')
   user: User;
