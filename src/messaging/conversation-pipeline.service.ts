@@ -135,6 +135,7 @@ export class ConversationPipelineService {
             SELECT MAX(m."createdAt")
             FROM "Messages" m
             WHERE m."conversationId" = c.id
+              AND m."type" = :messageType
           ) < :threshold
       `,
         {
@@ -142,6 +143,7 @@ export class ConversationPipelineService {
           replacements: {
             type: ConversationType.DIRECT,
             active: ConversationActivityStatus.ACTIVE,
+            messageType: MessageType.USER,
             threshold,
           },
         }
