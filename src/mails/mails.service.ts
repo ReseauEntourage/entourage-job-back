@@ -376,7 +376,6 @@ export class MailsService {
   async sendCheckinNoteMail(
     addressee: User,
     otherParticipant: User,
-    conversationId: string,
     message: string,
     autologinToken: string
   ) {

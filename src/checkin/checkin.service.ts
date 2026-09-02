@@ -318,7 +318,6 @@ export class CheckinService {
         await this.mailsService.sendCheckinNoteMail(
           addressee,
           user,
-          conversationId,
           content,
           autologinToken
         );
