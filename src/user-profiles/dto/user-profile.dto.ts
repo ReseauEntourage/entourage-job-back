@@ -1,6 +1,8 @@
 import { UserProfile, UserProfileWithPartialAssociations } from '../models';
 
-export type UserProfileDto = UserProfileWithPartialAssociations;
+export type UserProfileDto = UserProfileWithPartialAssociations & {
+  hasExternalCv: boolean;
+};
 
 /**
  * `hasExternalCv` is not a stored column anymore: it is derived from the
