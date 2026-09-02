@@ -18,6 +18,7 @@ import {
 import { ConversationCheckin } from 'src/checkin/models';
 import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import { SlackService } from 'src/external-services/slack/slack.service';
+import { MessagingService } from 'src/messaging/messaging.service';
 import { ConversationType } from 'src/messaging/models';
 import {
   Message,
@@ -48,6 +49,7 @@ describe('CHECKIN', () => {
   let conversationFactory: ConversationFactory;
   let messagingHelper: MessagingHelper;
   let checkinService: CheckinService;
+  let messagingService: MessagingService;
   let conversationCheckinModel: typeof ConversationCheckin;
   let messageModel: typeof Message;
   let addToWorkQueueSpy: jest.SpyInstance;
@@ -74,6 +76,7 @@ describe('CHECKIN', () => {
       moduleFixture.get<ConversationFactory>(ConversationFactory);
     messagingHelper = moduleFixture.get<MessagingHelper>(MessagingHelper);
     checkinService = moduleFixture.get<CheckinService>(CheckinService);
+    messagingService = moduleFixture.get<MessagingService>(MessagingService);
     conversationCheckinModel = moduleFixture.get<typeof ConversationCheckin>(
       getModelToken(ConversationCheckin)
     );
@@ -530,6 +533,82 @@ describe('CHECKIN', () => {
         where: { conversationId: conversation.id, type: MessageType.SERVICE },
       });
       expect(serviceMessagesCount).toBe(1);
+    });
+
+    it('sends a checkin note notification mail to the other participant', async () => {
+      const conversation = await createEligibleConversation();
+      await request(server)
+        .put(`/checkin/${conversation.id}`)
+        .send({ rating: 5 })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      await request(server)
+        .post(`/checkin/${conversation.id}/note`)
+        .send({ content: 'Merci pour tout !' })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(addToWorkQueueSpy).toHaveBeenCalledWith(
+        Jobs.SEND_MAIL,
+        expect.objectContaining({
+          toEmail: loggedInCoach.user.email,
+          templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_NOTE,
+          variables: expect.objectContaining({
+            firstName: loggedInCoach.user.firstName,
+            message: 'Merci pour tout !',
+            otherParticipantFirstName: loggedInCandidate.user.firstName,
+          }),
+        })
+      );
+    });
+
+    it('does not send a checkin note notification mail on a repeated call', async () => {
+      const conversation = await createEligibleConversation();
+      await request(server)
+        .put(`/checkin/${conversation.id}`)
+        .send({ rating: 4 })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      await request(server)
+        .post(`/checkin/${conversation.id}/note`)
+        .send({ content: 'Premier mot' })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+      addToWorkQueueSpy.mockClear();
+      await request(server)
+        .post(`/checkin/${conversation.id}/note`)
+        .send({ content: 'Second mot' })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not send a checkin note notification mail when service message creation fails', async () => {
+      const conversation = await createEligibleConversation();
+      await request(server)
+        .put(`/checkin/${conversation.id}`)
+        .send({ rating: 5 })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const createServiceMessageSpy = jest
+        .spyOn(messagingService, 'createServiceMessage')
+        .mockRejectedValueOnce(new Error('boom'));
+
+      await request(server)
+        .post(`/checkin/${conversation.id}/note`)
+        .send({ content: 'Merci pour tout !' })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(addToWorkQueueSpy).not.toHaveBeenCalled();
+      createServiceMessageSpy.mockRestore();
+    });
+
+    it('does not send a checkin note notification mail when "Passer" is clicked (no note sent)', async () => {
+      const conversation = await createEligibleConversation();
+      await request(server)
+        .put(`/checkin/${conversation.id}`)
+        .send({ rating: 5 })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(addToWorkQueueSpy).not.toHaveBeenCalled();
     });
   });
 

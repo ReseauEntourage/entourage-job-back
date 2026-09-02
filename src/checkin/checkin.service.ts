@@ -301,6 +301,28 @@ export class CheckinService {
         ServiceMessageKind.CHECKIN_NOTE,
         { authorFirstName: user.firstName, quotedText: content }
       );
+
+      const conversation = await this.getConversationForParticipant(
+        conversationId,
+        userId
+      );
+      const otherParticipantId = conversation.participants.find(
+        (participant) => participant.id !== userId
+      )?.id;
+      if (otherParticipantId) {
+        const addressee =
+          await this.usersService.findOneWithRelations(otherParticipantId);
+        const autologinToken = await this.authService.generateAutologinToken(
+          addressee.id
+        );
+        await this.mailsService.sendCheckinNoteMail(
+          addressee,
+          user,
+          conversationId,
+          content,
+          autologinToken
+        );
+      }
     }
 
     // Reload so the returned checkin reflects noteSentAt as actually
