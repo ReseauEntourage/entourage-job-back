@@ -874,6 +874,36 @@ describe('CHECKIN', () => {
       expect(SlackMocks.sendCheckinContactRequestAlert).not.toHaveBeenCalled();
     });
 
+    it('completedAt reste null tant que rating n’a pas été soumis, puis est posé au même appel', async () => {
+      const conversation = await createEligibleConversation();
+      const token = loggedInCandidate.token;
+      const put = (body: Record<string, unknown>) =>
+        request(server)
+          .put(`/checkin/${conversation.id}`)
+          .send(body)
+          .set('authorization', `Bearer ${token}`);
+
+      const afterStillInTouch = await put({
+        stillInTouch: CheckinStillInTouch.YES,
+      });
+      expect(afterStillInTouch.body.completedAt).toBeNull();
+      const afterPerceivedSupport = await put({
+        perceivedSupport: CheckinPerceivedSupport.YES_A_BIT,
+      });
+      expect(afterPerceivedSupport.body.completedAt).toBeNull();
+
+      const afterRating = await put({ rating: 4 });
+
+      expect(afterRating.body.completedAt).not.toBeNull();
+      const checkin = await conversationCheckinModel.findOne({
+        where: {
+          conversationId: conversation.id,
+          userId: loggedInCandidate.user.id,
+        },
+      });
+      expect(checkin?.completedAt).not.toBeNull();
+    });
+
     it('un checkin déjà commencé ne peut pas être recommencé ni écrasé', async () => {
       const conversation = await createEligibleConversation();
       await request(server)

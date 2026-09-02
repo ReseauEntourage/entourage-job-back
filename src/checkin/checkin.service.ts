@@ -158,6 +158,9 @@ export class CheckinService {
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (checkin as any)[field] = dto[field];
+      if (field === 'rating') {
+        checkin.completedAt = new Date();
+      }
     }
   }
 

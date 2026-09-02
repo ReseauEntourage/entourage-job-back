@@ -98,6 +98,13 @@ export class ConversationCheckin extends Model {
   @Column
   noteSentAt: Date;
 
+  // Set when the answer to `rating` (last mandatory question) is submitted — marks the
+  // checkin as finalized. A checkin without completedAt is "started" and remains
+  // resumable; see messaging-conversation-checkin capability.
+  @AllowNull(true)
+  @Column(DataType.DATE)
+  completedAt: Date;
+
   @CreatedAt
   createdAt: Date;
 
