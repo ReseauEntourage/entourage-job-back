@@ -110,12 +110,6 @@ export class UserProfile extends Model {
   @IsBoolean()
   @Default(false)
   @Column
-  hasExternalCv: boolean;
-
-  @ApiProperty()
-  @IsBoolean()
-  @Default(false)
-  @Column
   hasPicture: boolean;
 
   @ApiProperty()
