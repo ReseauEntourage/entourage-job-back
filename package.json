@@ -99,7 +99,7 @@
     "voyageai": "^0.2.1"
   },
   "devDependencies": {
-    "@faker-js/faker": "^7.0.0",
+    "@faker-js/faker": "^10.5.0",
     "@nestjs/cli": "^11.0.12",
     "@nestjs/schematics": "^11.1.0",
     "@nestjs/testing": "^11.1.28",
