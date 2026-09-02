@@ -16,6 +16,7 @@ import { AuthService } from 'src/auth/auth.service';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MailsService } from 'src/mails/mails.service';
 import { userAttributes } from 'src/messaging/messaging.attributes';
+import { messagingParticipantsInclude } from 'src/messaging/messaging.includes';
 import { MessagingService } from 'src/messaging/messaging.service';
 import {
   Conversation,
@@ -81,7 +82,12 @@ export class CheckinService {
   ): Promise<Conversation> {
     const conversation = await this.conversationModel.findByPk(conversationId, {
       include: [
-        { model: User, as: 'participants', attributes: userAttributes },
+        {
+          model: User,
+          as: 'participants',
+          attributes: userAttributes,
+          include: [messagingParticipantsInclude],
+        },
       ],
     });
     if (!conversation) {
