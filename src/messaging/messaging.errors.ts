@@ -46,3 +46,10 @@ export class ErrorMessagingRecipientNotEligible extends Error {
     this.name = 'ErrorMessagingRecipientNotEligible';
   }
 }
+
+export class ErrorMessagingInvalidCursor extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = 'ErrorMessagingInvalidCursor';
+  }
+}

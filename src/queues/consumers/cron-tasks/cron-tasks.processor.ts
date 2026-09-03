@@ -2,7 +2,13 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import chunk from 'lodash/chunk';
+import { CheckinService } from 'src/checkin/checkin.service';
+import {
+  CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
+  CHECKIN_RELANCE_THRESHOLD_DAYS,
+} from 'src/checkin/checkin.types';
 import { GamificationService } from 'src/gamification/gamification.service';
+import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
 import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import {
@@ -34,7 +40,9 @@ export class CronTasksProcessor extends WorkerHost {
     private cronTasksSlackReporterService: CronTasksSlackReporterService,
     private messagingService: MessagingService,
     private gamificationService: GamificationService,
-    private recruitementAlertsService: RecruitementAlertsService
+    private recruitementAlertsService: RecruitementAlertsService,
+    private conversationPipelineService: ConversationPipelineService,
+    private checkinService: CheckinService
   ) {
     super();
   }
@@ -87,8 +95,6 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareChurnUsersFeedbackMails();
       case Jobs.PREPARE_INACTIVE_REFERERS_MAILS:
         return this.prepareInactiveReferersMails();
-      case Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS:
-        return this.prepareMessagingFeedbackMails();
       case Jobs.PREPARE_WARN_ACCOUNT_DELETION_MAILS:
         return this.prepareWarnAccountDeletionMails();
       case Jobs.PREPARE_UNANSWERED_CONVERSATIONS_SMS:
@@ -99,6 +105,12 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareUnavailableSenderNotificationMails();
       case Jobs.SEND_ELEARNING_COMPLETION_REMINDER_MAILS:
         return this.remindUsersElearningCompletion();
+      case Jobs.DEACTIVATE_STALE_CONVERSATIONS:
+        return this.deactivateStaleConversations();
+      case Jobs.PREPARE_CHECKIN_INVITATION_MAILS:
+        return this.prepareCheckinInvitationMails();
+      case Jobs.PREPARE_CHECKIN_RELANCE_MAILS:
+        return this.prepareCheckinRelanceMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1247,6 +1259,96 @@ export class CronTasksProcessor extends WorkerHost {
     return `Sent ${successIds.length} committed users feedback mails`;
   }
 
+  async prepareCheckinInvitationMails() {
+    this.logger.log('Preparing checkin invitation mails...');
+    const recipients = await this.checkinService.getEligibleCheckinParticipants(
+      CHECKIN_ELIGIBILITY_THRESHOLD_DAYS
+    );
+    const items = recipients.map((recipient) => ({
+      id: `${recipient.conversationId}:${recipient.userId}`,
+    }));
+    this.logger.log(
+      `Found ${items.length} participants eligible for checkin invitation`
+    );
+
+    const results = await this.checkinService.sendInvitationMails(recipients);
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      items,
+      results,
+      (recipientId, reason) => {
+        this.logger.error(
+          `Failed sending checkin invitation mail to ${recipientId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📝 Checkin invitation mails',
+      {
+        total: items.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending checkin invitation mails for ${failures.length}/${items.length} participants`
+      );
+    }
+
+    return `Sent checkin invitation mails for ${successIds.length} participants`;
+  }
+
+  async prepareCheckinRelanceMails() {
+    this.logger.log('Preparing checkin relance mails...');
+    const recipients = await this.checkinService.getEligibleCheckinParticipants(
+      CHECKIN_RELANCE_THRESHOLD_DAYS
+    );
+    const items = recipients.map((recipient) => ({
+      id: `${recipient.conversationId}:${recipient.userId}`,
+    }));
+    this.logger.log(
+      `Found ${items.length} participants eligible for checkin relance`
+    );
+
+    const results = await this.checkinService.sendRelanceMails(recipients);
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      items,
+      results,
+      (recipientId, reason) => {
+        this.logger.error(
+          `Failed sending checkin relance mail to ${recipientId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📝 Checkin relance mails',
+      {
+        total: items.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending checkin relance mails for ${failures.length}/${items.length} participants`
+      );
+    }
+
+    return `Sent checkin relance mails for ${successIds.length} participants`;
+  }
+
   async prepareUnansweredConversationsMails() {
     const DAYS_TO_CONTACT = [2, 10, 20];
     this.logger.log(
@@ -1523,61 +1625,6 @@ export class CronTasksProcessor extends WorkerHost {
     return `Sent ${successIds.length} inactive referer mails`;
   }
 
-  async prepareMessagingFeedbackMails() {
-    const MESSAGING_DAYS = 30;
-    this.logger.log('Preparing messaging feedback mails...');
-    const rows =
-      await this.usersService.getUserTriplesForMessagingFeedback(
-        MESSAGING_DAYS
-      );
-    this.logger.log(
-      `Found ${rows.length} user-conversation pairs for messaging feedback`
-    );
-
-    const results = await Promise.allSettled(
-      rows.map(async (row) => {
-        const user = await this.usersService.findOneWithRelations(row.userId);
-        if (!user) return;
-        this.logger.log(`Sending messaging feedback mail to ${user.email}`);
-        await this.usersService.sendMessagingFeedbackMail(
-          user,
-          row.interlocutorFirstName,
-          row.interlocutorId
-        );
-      })
-    );
-
-    const { succeeded, successIds, failures } = collectSettledResults(
-      rows.map((r) => ({ id: r.userId })),
-      results,
-      (userId, reason) => {
-        this.logger.error(
-          `Failed sending messaging feedback mail to user ${userId}`,
-          reason
-        );
-      }
-    );
-
-    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
-      succeeded,
-      `🚦 Messaging feedback - J+${MESSAGING_DAYS}`,
-      {
-        total: rows.length,
-        success: successIds.length,
-        failure: failures.length,
-      },
-      failures
-    );
-
-    if (!succeeded) {
-      throw new Error(
-        `Failed sending ${failures.length}/${rows.length} messaging feedback mails`
-      );
-    }
-
-    return `Sent ${successIds.length} messaging feedback mails`;
-  }
-
   async prepareWarnAccountDeletionMails() {
     const MONTHS_SINCE_LAST_CONNECTION = 23;
     this.logger.log('Preparing warn account deletion mails...');
@@ -1727,6 +1774,46 @@ export class CronTasksProcessor extends WorkerHost {
       failureCount: failures.length,
       succeeded,
     };
+  }
+
+  /**
+   * Switches back to `INACTIVE` every direct conversation currently `ACTIVE` whose last
+   * message is more than 30 days old. Called daily by the cron job.
+   */
+  async deactivateStaleConversations() {
+    this.logger.log('Deactivating stale conversations...');
+
+    let deactivatedConversationIds: string[];
+    try {
+      deactivatedConversationIds =
+        await this.conversationPipelineService.deactivateStaleConversations();
+    } catch (error) {
+      this.logger.error('Failed deactivating stale conversations', error);
+      await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+        false,
+        '💤 Deactivate stale conversations',
+        { total: 0, success: 0, failure: 1 },
+        [{ itemId: 'deactivateStaleConversations', reason: error }]
+      );
+      throw error;
+    }
+
+    this.logger.log(
+      `Deactivated ${deactivatedConversationIds.length} stale conversations`
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      true,
+      '💤 Deactivate stale conversations',
+      {
+        total: deactivatedConversationIds.length,
+        success: deactivatedConversationIds.length,
+        failure: 0,
+      },
+      []
+    );
+
+    return `Deactivated ${deactivatedConversationIds.length} stale conversations`;
   }
 
   private async prepareLinkedInShareProfileMails() {

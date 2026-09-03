@@ -14,6 +14,7 @@ import { SkillsModule } from 'src/skills/skills.module';
 import { AiAssistantModule } from './ai-assistant/ai-assistant.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards';
+import { CheckinModule } from './checkin/checkin.module';
 import { TimeoutInterceptor } from './common/interceptors';
 import { ReviewsModule } from './common/reviews/reviews.module';
 import { CompaniesModule } from './companies/companies.module';
@@ -157,6 +158,7 @@ export function getSequelizeOptions(
     ElearningModule,
     FeatureFlagsModule,
     GamificationModule,
+    CheckinModule,
   ],
   providers: [
     {

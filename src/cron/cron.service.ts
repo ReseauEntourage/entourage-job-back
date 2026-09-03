@@ -401,6 +401,24 @@ export class CronService {
     return { jobId: job.id, status: 'processing' };
   }
 
+  /**
+   * This method is called every day at 1 PM.
+   * It will switch back to `INACTIVE` every direct conversation currently `ACTIVE`
+   * whose last message is more than 30 days old.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async deactivateStaleConversations() {
+    this.logger.log('Cron job started: deactivateStaleConversations');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.DEACTIVATE_STALE_CONVERSATIONS,
+      {}
+    );
+    this.logger.log(
+      `Job DEACTIVATE_STALE_CONVERSATIONS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_2PM)
   async prepareUnavailableUsersMails() {
     this.logger.log('Cron job started: prepareUnavailableUsersMails');
@@ -460,19 +478,6 @@ export class CronService {
     return { jobId: job.id, status: 'processing' };
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_7PM)
-  async prepareMessagingFeedbackMails() {
-    this.logger.log('Cron job started: prepareMessagingFeedbackMails');
-    const job = await this.queuesService.addToCronTasksQueue(
-      Jobs.PREPARE_MESSAGING_FEEDBACK_MAILS,
-      {}
-    );
-    this.logger.log(
-      `Job PREPARE_MESSAGING_FEEDBACK_MAILS created (Job ID: ${job.id})`
-    );
-    return { jobId: job.id, status: 'processing' };
-  }
-
   @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
   async prepareWarnAccountDeletionMails() {
     this.logger.log('Cron job started: prepareWarnAccountDeletionMails');
@@ -482,6 +487,32 @@ export class CronService {
     );
     this.logger.log(
       `Job PREPARE_WARN_ACCOUNT_DELETION_MAILS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_11AM)
+  async prepareCheckinInvitationMails() {
+    this.logger.log('Cron job started: prepareCheckinInvitationMails');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_CHECKIN_INVITATION_MAILS,
+      {}
+    );
+    this.logger.log(
+      `Job PREPARE_CHECKIN_INVITATION_MAILS created (Job ID: ${job.id})`
+    );
+    return { jobId: job.id, status: 'processing' };
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_11AM)
+  async prepareCheckinRelanceMails() {
+    this.logger.log('Cron job started: prepareCheckinRelanceMails');
+    const job = await this.queuesService.addToCronTasksQueue(
+      Jobs.PREPARE_CHECKIN_RELANCE_MAILS,
+      {}
+    );
+    this.logger.log(
+      `Job PREPARE_CHECKIN_RELANCE_MAILS created (Job ID: ${job.id})`
     );
     return { jobId: job.id, status: 'processing' };
   }

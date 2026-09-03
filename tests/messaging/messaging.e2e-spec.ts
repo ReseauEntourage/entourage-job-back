@@ -5,7 +5,12 @@ import { UsersHelper, LoggedInUser } from '../users/users.helper';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingController } from 'src/messaging/messaging.controller';
 import { MessagingService } from 'src/messaging/messaging.service';
-import { ConversationType } from 'src/messaging/models/conversation.model';
+import { encodeMessageCursor } from 'src/messaging/messaging.utils';
+import {
+  ConversationActivityStatus,
+  ConversationStage,
+  ConversationType,
+} from 'src/messaging/models/conversation.model';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { User } from 'src/users/models';
 import { UserRoles } from 'src/users/users.types';
@@ -906,6 +911,294 @@ describe('MESSAGING', () => {
 
           expect(response.status).toBe(401);
         });
+
+        describe('Pagination', () => {
+          // Oldest first, spaced one minute apart, to control ordering deterministically.
+          const createSequentialMessages = async (
+            conversationId: string,
+            authorId: string,
+            count: number
+          ) => {
+            const messages = [];
+            for (let i = 0; i < count; i++) {
+              messages.push(
+                await messagingHelper.createMessage(conversationId, authorId, {
+                  createdAt: new Date(Date.now() - (count - i) * 60000),
+                  updatedAt: new Date(Date.now() - (count - i) * 60000),
+                })
+              );
+            }
+            return messages;
+          };
+
+          it('should return only the 30 most recent messages when no cursor is provided', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              35
+            );
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(`/messaging/conversations/${conversation.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(30);
+            // Messages are returned newest-first.
+            expect(response.body.messages[0].id).toBe(messages[34].id);
+            expect(response.body.messages[29].id).toBe(messages[5].id);
+          });
+
+          it('should return the 30 messages preceding the given `before` cursor', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              35
+            );
+            const oldestLoadedMessage = messages[5]; // 30th (index 5..34) message currently loaded
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(oldestLoadedMessage.createdAt),
+              id: oldestLoadedMessage.id,
+            });
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?before=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(5);
+            expect(response.body.messages[0].id).toBe(messages[4].id);
+            expect(response.body.messages[4].id).toBe(messages[0].id);
+          });
+
+          it('should return every message after the given `after` cursor, unbounded', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              35
+            );
+            const lastKnownMessage = messages[4];
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(lastKnownMessage.createdAt),
+              id: lastKnownMessage.id,
+            });
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?after=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(30);
+            expect(response.body.messages[0].id).toBe(messages[34].id);
+            expect(response.body.messages[29].id).toBe(messages[5].id);
+          });
+
+          it('should return 400 for an invalid cursor', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+
+            const response = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?before=not-a-cursor`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(400);
+          });
+
+          it('should return 400 when both before and after are provided', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const message = await messagingHelper.createMessage(
+              conversation.id,
+              loggedInCandidate.user.id
+            );
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(message.createdAt),
+              id: message.id,
+            });
+
+            const response = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?before=${cursor}&after=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(400);
+          });
+
+          it('should cap `after` results to the messages nearest the cursor, not the newest ones, once the cap is exceeded', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            const messages = await createSequentialMessages(
+              conversation.id,
+              loggedInCandidate.user.id,
+              210
+            );
+            const lastKnownMessage = messages[4];
+            const cursor = encodeMessageCursor({
+              createdAt: new Date(lastKnownMessage.createdAt),
+              id: lastKnownMessage.id,
+            });
+
+            const response: APIResponse<
+              MessagingController['getConversation']
+            > = await request(server)
+              .get(
+                `/messaging/conversations/${conversation.id}?after=${cursor}`
+              )
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            expect(response.status).toBe(200);
+            expect(response.body.messages.length).toBe(200);
+            // Newest-first: the 200 messages nearest the cursor are
+            // [5..204], not the 200 most recent ones ([10..209]) — a
+            // naive DESC-ordered query with a limit would instead return
+            // the latter, silently dropping everything right after the
+            // cursor.
+            expect(response.body.messages[0].id).toBe(messages[204].id);
+            expect(response.body.messages[199].id).toBe(messages[5].id);
+          });
+
+          it('should not mark the conversation as seen', async () => {
+            const conversation = await conversationFactory.create();
+            await messagingHelper.associationParticipantsToConversation(
+              conversation.id,
+              [loggedInCandidate.user.id, loggedInCoach.user.id]
+            );
+            await messagingHelper.createMessage(
+              conversation.id,
+              loggedInCoach.user.id
+            );
+
+            await request(server)
+              .get(`/messaging/conversations/${conversation.id}`)
+              .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+            const participant =
+              await messagingHelper.findConversationParticipant(
+                conversation.id,
+                loggedInCandidate.user.id
+              );
+            expect(participant.seenAt).toBeNull();
+          });
+        });
+      });
+
+      describe('U - Mark conversation as seen - /messaging/conversations/:id/seen', () => {
+        it('should return 201 and set seenAt to now', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response = await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(201);
+          const participant = await messagingHelper.findConversationParticipant(
+            conversation.id,
+            loggedInCandidate.user.id
+          );
+          expect(participant.seenAt).not.toBeNull();
+        });
+
+        it('should return 201 and update seenAt again when called with no new message', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+          const firstSeenAt = (
+            await messagingHelper.findConversationParticipant(
+              conversation.id,
+              loggedInCandidate.user.id
+            )
+          ).seenAt;
+
+          const response = await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(201);
+          const secondSeenAt = (
+            await messagingHelper.findConversationParticipant(
+              conversation.id,
+              loggedInCandidate.user.id
+            )
+          ).seenAt;
+          expect(secondSeenAt.getTime()).toBeGreaterThanOrEqual(
+            firstSeenAt.getTime()
+          );
+        });
+
+        it('should return 401 if the user is not a participant of the conversation', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInOtherCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response = await request(server)
+            .post(`/messaging/conversations/${conversation.id}/seen`)
+            .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+          expect(response.status).toBe(401);
+        });
+
+        it('should return 401 if the user is not logged in', async () => {
+          const conversation = await conversationFactory.create();
+          await messagingHelper.associationParticipantsToConversation(
+            conversation.id,
+            [loggedInCandidate.user.id, loggedInCoach.user.id]
+          );
+
+          const response = await request(server).post(
+            `/messaging/conversations/${conversation.id}/seen`
+          );
+
+          expect(response.status).toBe(401);
+        });
       });
     });
   });
@@ -1299,6 +1592,224 @@ describe('MESSAGING', () => {
       );
 
       expect(count).toBe(0);
+    });
+  });
+
+  describe('Conversation pipeline recompute on new message', () => {
+    // The pipeline recompute is triggered fire-and-forget from
+    // transaction.afterCommit() (see MessagingService.createMessage), so it
+    // may still be in flight when the HTTP response comes back. Poll for it.
+    const waitForStage = async (
+      conversationId: string,
+      expectedStage: ConversationStage
+    ) => {
+      const maxAttempts = 20;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const conversation =
+          await messagingHelper.findConversation(conversationId);
+        if (conversation.stage === expectedStage) {
+          return conversation;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      throw new Error(
+        `Conversation ${conversationId} never reached stage ${expectedStage}`
+      );
+    };
+
+    it('should update stage and activityStatus of the conversation after a new message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Bonjour',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const firstUpdate = await waitForStage(
+        conversation.id,
+        ConversationStage.FIRST_CONTACT_INITIATED
+      );
+      expect(firstUpdate.activityStatus).toBe(
+        ConversationActivityStatus.ACTIVE
+      );
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Bonjour à vous',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      await waitForStage(
+        conversation.id,
+        ConversationStage.CONTACT_ESTABLISHED
+      );
+    });
+  });
+
+  describe('Archivage - /messaging/conversations/:conversationId/archive|unarchive', () => {
+    it('should archive the conversation for the requesting participant only', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const response = await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(201);
+
+      const conversationsForCandidate =
+        await messagingService.getConversationsForUser(
+          loggedInCandidate.user.id
+        );
+      const conversationsForCoach =
+        await messagingService.getConversationsForUser(loggedInCoach.user.id);
+
+      expect(
+        conversationsForCandidate.find((c) => c.id === conversation.id)
+          ?.archivedAt
+      ).not.toBeNull();
+      expect(
+        conversationsForCoach.find((c) => c.id === conversation.id)?.archivedAt
+      ).toBeNull();
+    });
+
+    it('should unarchive a conversation previously archived by the requesting participant', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const response = await request(server)
+        .post(`/messaging/conversations/${conversation.id}/unarchive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(201);
+
+      const conversationsForCandidate =
+        await messagingService.getConversationsForUser(
+          loggedInCandidate.user.id
+        );
+      expect(
+        conversationsForCandidate.find((c) => c.id === conversation.id)
+          ?.archivedAt
+      ).toBeNull();
+    });
+
+    it('should return 401 when the requesting user is not a participant of the conversation', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInOtherCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      const response = await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should still allow both participants to send and receive messages in an archived conversation', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const candidateMessageResponse = await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Toujours là malgré l’archivage',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+      expect(candidateMessageResponse.status).toBe(201);
+
+      const coachMessageResponse = await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Bien reçu !',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+      expect(coachMessageResponse.status).toBe(201);
+
+      const updatedConversation = await messagingHelper.findConversation(
+        conversation.id
+      );
+      expect(updatedConversation.messages.length).toBe(2);
+    });
+
+    it('should count an archived conversation as unseen once it receives a new message', async () => {
+      const conversation = await conversationFactory.create();
+      await messagingHelper.associationParticipantsToConversation(
+        conversation.id,
+        [loggedInCandidate.user.id, loggedInCoach.user.id]
+      );
+
+      // Sending this message also marks the conversation as seen for the
+      // candidate (see setConversationHasSeen in createMessage), giving a
+      // clean "seen" baseline before archiving.
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Premier message',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      await request(server)
+        .post(`/messaging/conversations/${conversation.id}/archive`)
+        .set('authorization', `Bearer ${loggedInCandidate.token}`);
+
+      const countBefore = await messagingService.getUnseenConversationsCount(
+        loggedInCandidate.user.id
+      );
+      expect(countBefore).toBe(0);
+
+      await request(server)
+        .post(`/messaging/messages`)
+        .send({
+          content: 'Nouveau message dans une conversation archivée',
+          conversationId: conversation.id,
+        })
+        .set('authorization', `Bearer ${loggedInCoach.token}`);
+
+      const countAfter = await messagingService.getUnseenConversationsCount(
+        loggedInCandidate.user.id
+      );
+      expect(countAfter).toBe(1);
+
+      // Still archived: unaffected by the new message.
+      const conversationsForCandidate =
+        await messagingService.getConversationsForUser(
+          loggedInCandidate.user.id
+        );
+      expect(
+        conversationsForCandidate.find((c) => c.id === conversation.id)
+          ?.archivedAt
+      ).not.toBeNull();
     });
   });
 });

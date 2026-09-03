@@ -18,7 +18,8 @@ import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import { UserRole, UserRoles } from 'src/users/users.types';
 import { isEntourageAdmin } from 'src/users/users.utils';
-import { CreateMessageDto, PostFeedbackDto } from './dto';
+import { ConversationPipelineService } from './conversation-pipeline.service';
+import { CreateMessageDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { ReportConversationDto } from './dto/report-conversation.dto';
 import {
@@ -40,13 +41,17 @@ import {
 } from './messaging.includes';
 import {
   bindVariableInContent,
-  determineIfShoudGiveFeedback,
   generateSlackMsgConfigConversationReported,
   generateSlackMsgConfigUserSuspiciousUser,
+  MessageCursor,
 } from './messaging.utils';
 import { ConversationParticipant, MessageMedia } from './models';
 import { Conversation, ConversationType } from './models/conversation.model';
-import { Message } from './models/message.model';
+import {
+  Message,
+  MessageType,
+  ServiceMessageKind,
+} from './models/message.model';
 
 @Injectable()
 export class MessagingService {
@@ -70,10 +75,13 @@ export class MessagingService {
     private authService: AuthService,
     private mailsService: MailsService,
     private mediaService: MediasService,
-    private queuesService: QueuesService
+    private queuesService: QueuesService,
+    private conversationPipelineService: ConversationPipelineService
   ) {}
 
   private readonly DAILY_CONVERSATION_LIMIT_THRESHOLD = 8;
+  private readonly DEFAULT_MESSAGES_PAGE_SIZE = 30;
+  private readonly MAX_MESSAGES_PAGE_SIZE = 200;
 
   async createMessageWithConversation(
     createMessageDto: CreateMessageDto,
@@ -274,7 +282,7 @@ export class MessagingService {
           {
             model: Conversation,
             as: 'conversation',
-            include: [...messagingConversationIncludes(10)],
+            include: [...messagingConversationIncludes({ limit: 10 })],
           },
         ],
         order: [
@@ -299,12 +307,6 @@ export class MessagingService {
     return conversationParticipants
       .filter((cp) => cp.conversation)
       .map((cp) => {
-        const shouldGiveFeedback = determineIfShoudGiveFeedback(
-          cp.conversation,
-          cp.feedbackRating,
-          cp.feedbackDate
-        );
-
         cp.conversation.messages = cp.conversation.messages.sort((a, b) => {
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -313,21 +315,28 @@ export class MessagingService {
 
         return {
           ...cp.conversation.toJSON(),
-          shouldGiveFeedback,
           createdAt: cp.createdAt,
           updatedAt: cp.updatedAt,
           seenAt: cp.seenAt,
+          archivedAt: cp.archivedAt,
         };
       });
   }
 
   /**
-   * Get a conversation by its ID
+   * Get a conversation by its ID, with its messages paginated by cursor.
    * @param conversationId - The ID of the conversation to fetch
    * @param userId - The ID of the user fetching the conversation
+   * @param cursor - `before`: the 30 messages preceding it (older page, infinite scroll).
+   *                 `after`: every message following it, up to 200 (polling delta).
+   *                 Neither: the 30 most recent messages (initial load).
    * @returns The conversation if the user is a participant, otherwise null
    */
-  async getConversationById(conversationId: string, userId: string) {
+  async getConversationById(
+    conversationId: string,
+    userId: string,
+    cursor?: { before?: MessageCursor; after?: MessageCursor }
+  ) {
     const conversationParticipants =
       await this.conversationParticipantModel.findAll({
         where: {
@@ -338,7 +347,15 @@ export class MessagingService {
           {
             model: Conversation,
             as: 'conversation',
-            include: [...messagingConversationIncludes()],
+            include: [
+              ...messagingConversationIncludes({
+                before: cursor?.before,
+                after: cursor?.after,
+                limit: cursor?.after
+                  ? this.MAX_MESSAGES_PAGE_SIZE
+                  : this.DEFAULT_MESSAGES_PAGE_SIZE,
+              }),
+            ],
           },
         ],
       });
@@ -349,11 +366,12 @@ export class MessagingService {
       return null;
     }
 
-    const shouldGiveFeedback = determineIfShoudGiveFeedback(
-      cp.conversation,
-      cp.feedbackRating,
-      cp.feedbackDate
-    );
+    if (cursor?.after) {
+      // Queried ASC (nearest-to-cursor-first) so the limit keeps the
+      // right messages — see messagingConversationIncludes. Reverse back
+      // to the newest-first order used everywhere else.
+      cp.conversation.messages.reverse();
+    }
 
     const conversationMedias =
       await this.findMediasByConversationId(conversationId);
@@ -367,10 +385,10 @@ export class MessagingService {
 
     return {
       ...cp.conversation.toJSON(),
-      shouldGiveFeedback,
       createdAt: cp.createdAt,
       updatedAt: cp.updatedAt,
       seenAt: cp.seenAt,
+      archivedAt: cp.archivedAt,
     };
   }
 
@@ -484,6 +502,31 @@ export class MessagingService {
     }
   }
 
+  /**
+   * Archives or unarchives a conversation for a single participant. This only affects
+   * that participant's own `ConversationParticipant.archivedAt` and has no effect on the
+   * other participant's view of the conversation, nor on the ability to send/receive
+   * messages in it.
+   */
+  async setConversationArchived(
+    conversationId: string,
+    userId: string,
+    archived: boolean
+  ) {
+    const conversationParticipant =
+      await this.conversationParticipantModel.findOne({
+        where: {
+          conversationId,
+          userId,
+        },
+      });
+    if (conversationParticipant) {
+      conversationParticipant.archivedAt = archived ? new Date() : null;
+      await conversationParticipant.save();
+    }
+    return conversationParticipant;
+  }
+
   async findConversation(conversationId: string) {
     return this.conversationModel.findByPk(conversationId, {
       include: [
@@ -589,26 +632,36 @@ export class MessagingService {
   }
 
   /**
-   * Create a feedback for a conversation participant
-   * @param postFeedbackDto - The feedback to create
-   * @returns The updated conversation participant with the feedback
+   * Creates a `SERVICE` message (no human author) in a conversation, e.g. the note sent
+   * to the other participant after a well-rated conversation checkin (see
+   * messaging-conversation-checkin capability). Unlike `createMessage`, this does not
+   * notify participants by email, trigger achievement checks, or recompute the
+   * conversation pipeline, since it isn't a message from either participant.
+   *
+   * `content` is the flat-text fallback rendering of `metadata`, read as-is by consumers
+   * that don't distinguish `type` (e.g. the AI assistant prompt context). `serviceMessageKind`
+   * and `metadata` are only used by the frontend to render the message bubble in a
+   * structured way, without reparsing `content`.
    */
-  async postFeedback(postFeedbackDto: PostFeedbackDto) {
-    const conversationParticipant =
-      await this.conversationParticipantModel.findByPk(
-        postFeedbackDto.conversationParticipantId
-      );
-
-    if (!conversationParticipant) {
-      return;
-    }
-
-    const updatedParticipant = await conversationParticipant.update({
-      feedbackRating: postFeedbackDto.rating,
-      feedbackDate: new Date(),
-    });
-
-    return updatedParticipant;
+  async createServiceMessage(
+    conversationId: string,
+    content: string,
+    serviceMessageKind?: ServiceMessageKind,
+    metadata?: Record<string, unknown>,
+    transaction?: Transaction
+  ) {
+    const createdMessage = await this.messageModel.create(
+      {
+        conversationId,
+        content,
+        type: MessageType.SERVICE,
+        authorId: null,
+        serviceMessageKind: serviceMessageKind ?? null,
+        metadata: metadata ?? null,
+      },
+      { transaction }
+    );
+    return this.findOneMessage(createdMessage.id, transaction);
   }
 
   /**
@@ -631,9 +684,10 @@ export class MessagingService {
     for (const participant of conversations) {
       const conversationId = participant.conversationId;
 
-      // Get the messages of the conversation
+      // Get the messages of the conversation (SERVICE messages, e.g. checkin thank-you
+      // notes, have no author and must not be counted as a reply)
       const messages = await this.messageModel.findAll({
-        where: { conversationId },
+        where: { conversationId, type: MessageType.USER },
         order: [['createdAt', 'ASC']],
       });
 
@@ -703,6 +757,11 @@ export class MessagingService {
             {
               model: Message,
               as: 'messages',
+              // SERVICE messages (e.g. checkin thank-you notes) have no author and must
+              // not be counted as a reply; required: false keeps conversations with no
+              // USER message included (LEFT JOIN) instead of being dropped.
+              where: { type: MessageType.USER },
+              required: false,
             },
             {
               model: User,
@@ -982,18 +1041,47 @@ export class MessagingService {
       }
     };
 
+    const recomputeConversationPipeline = () => {
+      void this.conversationPipelineService
+        .recomputeStage(createdMessage.conversationId)
+        .catch((err) =>
+          this.logger.error(
+            `[conversation-pipeline] recomputeStage failed for conversation ${createdMessage.conversationId}`,
+            err
+          )
+        );
+      void this.conversationPipelineService
+        .markActive(createdMessage.conversationId)
+        .catch((err) =>
+          this.logger.error(
+            `[conversation-pipeline] markActive failed for conversation ${createdMessage.conversationId}`,
+            err
+          )
+        );
+      void this.conversationPipelineService
+        .detectFirstMeeting(createdMessage.conversationId, createdMessage)
+        .catch((err) =>
+          this.logger.error(
+            `[conversation-pipeline] detectFirstMeeting failed for conversation ${createdMessage.conversationId}`,
+            err
+          )
+        );
+    };
+
     if (transaction) {
       transaction.afterCommit(() => {
         void notifyOtherParticipants().catch((err) =>
           this.logger.error('Failed to notify other participants', err)
         );
         triggerAchievementChecks();
+        recomputeConversationPipeline();
       });
     } else {
       void notifyOtherParticipants().catch((err) =>
         this.logger.error('Failed to notify other participants', err)
       );
       triggerAchievementChecks();
+      recomputeConversationPipeline();
     }
 
     return message;

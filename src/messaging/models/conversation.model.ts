@@ -20,6 +20,17 @@ export enum ConversationType {
   GROUP = 'group',
 }
 
+export enum ConversationStage {
+  CONTACT_ESTABLISHED = 'CONTACT_ESTABLISHED',
+  FIRST_CONTACT_INITIATED = 'FIRST_CONTACT_INITIATED',
+  LONG_TERM_SUPPORT = 'LONG_TERM_SUPPORT',
+}
+
+export enum ConversationActivityStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
 @Table({ tableName: 'Conversations' })
 export class Conversation extends Model {
   @IsUUID(4)
@@ -31,6 +42,28 @@ export class Conversation extends Model {
   @Default(ConversationType.DIRECT)
   @Column(DataType.STRING)
   type: ConversationType;
+
+  // Only maintained for `direct` conversations (see messaging-conversation-pipeline capability).
+  @Default(null)
+  @Column(DataType.STRING)
+  stage: ConversationStage;
+
+  // Only maintained for `direct` conversations (see messaging-conversation-pipeline capability).
+  @Default(null)
+  @Column(DataType.STRING)
+  activityStatus: ConversationActivityStatus;
+
+  // Only maintained for `direct` conversations (see messaging-conversation-pipeline capability).
+  @Default(null)
+  @Column
+  firstMeetingDetectedAt: Date;
+
+  // Only maintained for `direct` conversations (see messaging-conversation-pipeline capability).
+  // Set once, at the first of `firstMeetingDetectedAt` being set or `stage` reaching
+  // `LONG_TERM_SUPPORT`, and never rewritten afterwards.
+  @Default(null)
+  @Column
+  engagementThresholdReachedAt: Date;
 
   @CreatedAt
   createdAt: Date;

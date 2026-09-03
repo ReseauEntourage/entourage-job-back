@@ -9,6 +9,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UnauthorizedException,
   UploadedFiles,
   UseGuards,
@@ -19,12 +20,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserPayload } from 'src/auth/guards';
 import { UserPermissions, UserPermissionsGuard } from 'src/users/guards';
 import { Permissions } from 'src/users/users.types';
-import {
-  CreateMessagePipe,
-  CreateMessageDto,
-  PostFeedbackPipe,
-  PostFeedbackDto,
-} from './dto';
+import { CreateMessagePipe, CreateMessageDto } from './dto';
 import { CreateMailingListDto } from './dto/create-mailing-list.dto';
 import { CreateMailingListPipe } from './dto/create-mailing-list.pipe';
 import { ReportConversationDto } from './dto/report-conversation.dto';
@@ -33,6 +29,7 @@ import { UserInConversation } from './guards/user-in-conversation';
 import {
   ErrorMessagingCantParticipate,
   ErrorMessagingElearningNotCompleted,
+  ErrorMessagingInvalidCursor,
   ErrorMessagingInvalidMessage,
   ErrorMessagingMailingListInvalid,
   ErrorMessagingNeedParticipantsOrConversationId,
@@ -40,6 +37,7 @@ import {
   ErrorMessagingRecipientNotEligible,
 } from './messaging.errors';
 import { MessagingService } from './messaging.service';
+import { decodeMessageCursor } from './messaging.utils';
 
 @ApiTags('Messaging')
 @ApiBearerAuth()
@@ -66,10 +64,39 @@ export class MessagingController {
   @Get('conversations/:conversationId')
   async getConversation(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
+    @Query('before') before?: string,
+    @Query('after') after?: string
+  ) {
+    if (before && after) {
+      throw new BadRequestException(
+        'Les paramètres before et after sont mutuellement exclusifs.'
+      );
+    }
+    try {
+      return await this.messagingService.getConversationById(
+        conversationId,
+        userId,
+        {
+          before: before ? decodeMessageCursor(before) : undefined,
+          after: after ? decodeMessageCursor(after) : undefined,
+        }
+      );
+    } catch (error) {
+      if (error instanceof ErrorMessagingInvalidCursor) {
+        throw new BadRequestException('Cursor de pagination invalide.');
+      }
+      throw error;
+    }
+  }
+
+  @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/seen')
+  async markConversationAsSeen(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
     @Param('conversationId', new ParseUUIDPipe()) conversationId: string
   ) {
     await this.messagingService.setConversationHasSeen(conversationId, userId);
-    return this.messagingService.getConversationById(conversationId, userId);
   }
 
   @Post('messages')
@@ -120,6 +147,32 @@ export class MessagingController {
   }
 
   @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/archive')
+  async archiveConversation(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+  ) {
+    return this.messagingService.setConversationArchived(
+      conversationId,
+      userId,
+      true
+    );
+  }
+
+  @UseGuards(UserInConversation)
+  @Post('conversations/:conversationId/unarchive')
+  async unarchiveConversation(
+    @UserPayload('id', new ParseUUIDPipe()) userId: string,
+    @Param('conversationId', new ParseUUIDPipe()) conversationId: string
+  ) {
+    return this.messagingService.setConversationArchived(
+      conversationId,
+      userId,
+      false
+    );
+  }
+
+  @UseGuards(UserInConversation)
   @Post('conversations/:conversationId/report')
   async reportMessageAbuse(
     @UserPayload('id', new ParseUUIDPipe()) userId: string,
@@ -132,18 +185,6 @@ export class MessagingController {
       reportConversationDto,
       userId
     );
-  }
-
-  @Post('conversations/feedback')
-  async postConversationFeedback(
-    @Body(new PostFeedbackPipe())
-    postFeedbackDto: PostFeedbackDto
-  ) {
-    try {
-      return this.messagingService.postFeedback(postFeedbackDto);
-    } catch (error) {
-      this.logger.error(error);
-    }
   }
 
   @UserPermissions(Permissions.ADMIN)
