@@ -81,6 +81,12 @@ export const CHECKIN_ELIGIBILITY_THRESHOLD_DAYS = 30;
 // One relance, 7 days after the initial invitation — see messaging-lifecycle-mailers.
 export const CHECKIN_RELANCE_THRESHOLD_DAYS = 37;
 
+// Lower bound for the one-shot catchup script's eligibility window: conversations whose
+// engagementThresholdReachedAt predates this are excluded, to avoid a checkin invitation
+// about an engagement that is already very old at the time of the initial feature
+// deployment. See messaging-lifecycle-mailers (add-checkin-catchup-mail).
+export const CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE = '2026-07-01';
+
 // Human-readable French labels, used to format the full checkin for staff-facing
 // surfaces (e.g. the Slack alert sent to a staffContact). Mirrors the labels shown to
 // the user in entourage-job-front's src/constants/checkin.ts.
