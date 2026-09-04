@@ -8,6 +8,7 @@ export enum EventType {
   APERO_COACH = 'APERO_COACH',
   APERO_ENTOURAGE = 'APERO_ENTOURAGE',
   COFFEE_SESSION = 'COFFEE_SESSION',
+  FRIENDLINESS = 'FRIENDLINESS',
   NETWORKING = 'NETWORKING',
   PAPOTAGES_PRO = 'PAPOTAGES_PRO',
   PHOTO_SHOOTING = 'PHOTO_SHOOTING',
@@ -30,6 +31,7 @@ export enum SalesforceEventTypes {
   APERO_COACH = 'Apéro coach',
   APERO_ENTOURAGE = 'Apéro Entourage',
   COFFEE_SESSION = 'Info co candidat',
+  FRIENDLINESS = 'Evenement de convivialité',
   NETWORKING = 'Atelier Réseau',
   PAPOTAGES_PRO = 'Papotages Pro',
   PHOTO_SHOOTING = 'Séance photo',
@@ -47,14 +49,14 @@ export enum EventMode {
 }
 
 export interface Event {
-  audience: string;
+  audience?: string;
   description: string;
   duration: number | null;
   endDate: string;
   eventType: EventType;
-  format: string;
+  format?: string;
   fullAddress: string | null;
-  goal: string;
+  goal?: string;
   image?: string;
   isParticipating: boolean;
   meetingLink: string | null;
