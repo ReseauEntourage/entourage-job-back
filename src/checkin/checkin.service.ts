@@ -26,7 +26,6 @@ import { ServiceMessageKind } from 'src/messaging/models/message.model';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
 import {
-  CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE,
   CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
   CheckinPerceivedBenefit,
 } from './checkin.types';
@@ -363,46 +362,6 @@ export class CheckinService {
           type: ConversationType.DIRECT,
           days: daysThreshold,
           daysPlusOne: daysThreshold + 1,
-        },
-      }
-    );
-  }
-
-  /**
-   * Participants of direct conversations eligible for the one-shot deployment catchup
-   * (see messaging-lifecycle-mailers, add-checkin-catchup-mail): `engagementThresholdReachedAt`
-   * is set, no older than `CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE`, and strictly older
-   * than `CHECKIN_ELIGIBILITY_THRESHOLD_DAYS` days — the upper bound is exclusive so a
-   * conversation reached exactly on the daily threshold today is left to the recurring cron
-   * instead of being sent twice. Unlike `getEligibleCheckinParticipants`, this is meant to run
-   * once, manually, not on a recurring schedule.
-   */
-  async getCatchupEligibleCheckinParticipants(): Promise<
-    CheckinMailRecipient[]
-  > {
-    return this.conversationModel.sequelize.query(
-      `
-        SELECT cp."conversationId" AS "conversationId", cp."userId" AS "userId"
-        FROM "Conversations" c
-        JOIN "ConversationParticipants" cp ON cp."conversationId" = c.id
-        WHERE c.type = :type
-          AND c."engagementThresholdReachedAt" IS NOT NULL
-          AND c."engagementThresholdReachedAt" >= :minEngagementThresholdDate
-          AND c."engagementThresholdReachedAt" <
-            (NOW() - make_interval(days => :eligibilityThresholdDays))
-          AND NOT EXISTS (
-            SELECT 1 FROM "ConversationCheckins" cc
-            WHERE cc."conversationId" = cp."conversationId"
-              AND cc."userId" = cp."userId"
-          )
-      `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          type: ConversationType.DIRECT,
-          minEngagementThresholdDate:
-            CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE,
-          eligibilityThresholdDays: CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
         },
       }
     );

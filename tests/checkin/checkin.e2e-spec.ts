@@ -6,7 +6,6 @@ import { LoggedInUser, UsersHelper } from '../users/users.helper';
 import { CheckinController } from 'src/checkin/checkin.controller';
 import { CheckinService } from 'src/checkin/checkin.service';
 import {
-  CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE,
   CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
   CHECKIN_RELANCE_THRESHOLD_DAYS,
   CheckinEmploymentType,
@@ -17,7 +16,6 @@ import {
   CheckinStillInTouch,
 } from 'src/checkin/checkin.types';
 import { ConversationCheckin } from 'src/checkin/models';
-import { runCheckinCatchupScript } from 'src/checkin/scripts/send-checkin-catchup-mails.script';
 import { MailjetTemplates } from 'src/external-services/mailjet/mailjet.types';
 import { SlackService } from 'src/external-services/slack/slack.service';
 import { MessagingService } from 'src/messaging/messaging.service';
@@ -27,7 +25,6 @@ import {
   MessageType,
   ServiceMessageKind,
 } from 'src/messaging/models/message.model';
-import { CronTasksSlackReporterService } from 'src/queues/consumers/cron-tasks/cron-tasks-slack-reporter.service';
 import { QueuesService } from 'src/queues/producers/queues.service';
 import { Jobs } from 'src/queues/queues.types';
 import { UserRoles } from 'src/users/users.types';
@@ -53,7 +50,6 @@ describe('CHECKIN', () => {
   let messagingHelper: MessagingHelper;
   let checkinService: CheckinService;
   let messagingService: MessagingService;
-  let slackService: SlackService;
   let conversationCheckinModel: typeof ConversationCheckin;
   let messageModel: typeof Message;
   let addToWorkQueueSpy: jest.SpyInstance;
@@ -81,7 +77,6 @@ describe('CHECKIN', () => {
     messagingHelper = moduleFixture.get<MessagingHelper>(MessagingHelper);
     checkinService = moduleFixture.get<CheckinService>(CheckinService);
     messagingService = moduleFixture.get<MessagingService>(MessagingService);
-    slackService = moduleFixture.get<SlackService>(SlackService);
     conversationCheckinModel = moduleFixture.get<typeof ConversationCheckin>(
       getModelToken(ConversationCheckin)
     );
@@ -756,189 +751,6 @@ describe('CHECKIN', () => {
         conversationId: conversation.id,
         userId: loggedInCandidate.user.id,
       });
-    });
-  });
-
-  describe('CheckinService.getCatchupEligibleCheckinParticipants (one-shot deployment catchup)', () => {
-    const catchupMinDate = new Date(
-      CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE
-    );
-
-    it('includes both participants of a direct conversation whose threshold is well past 30 days but after the min date', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 10
-        ),
-      });
-
-      const recipients =
-        await checkinService.getCatchupEligibleCheckinParticipants();
-
-      expect(recipients).toContainEqual({
-        conversationId: conversation.id,
-        userId: loggedInCandidate.user.id,
-      });
-      expect(recipients).toContainEqual({
-        conversationId: conversation.id,
-        userId: loggedInCoach.user.id,
-      });
-    });
-
-    it('excludes a conversation whose engagementThresholdReachedAt is before the min catchup date', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: new Date(
-          catchupMinDate.getTime() - DAY_IN_MS
-        ),
-      });
-
-      const recipients =
-        await checkinService.getCatchupEligibleCheckinParticipants();
-
-      expect(recipients).not.toContainEqual(
-        expect.objectContaining({ conversationId: conversation.id })
-      );
-    });
-
-    it('excludes a conversation whose threshold was reached exactly 30 days ago (left to the daily cron)', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS - 0.5
-        ),
-      });
-
-      const recipients =
-        await checkinService.getCatchupEligibleCheckinParticipants();
-
-      expect(recipients).not.toContainEqual(
-        expect.objectContaining({ conversationId: conversation.id })
-      );
-    });
-
-    it('excludes a participant who already has a ConversationCheckin record, but keeps the other participant', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 10
-        ),
-      });
-      await conversationCheckinModel.create({
-        conversationId: conversation.id,
-        userId: loggedInCandidate.user.id,
-      });
-
-      const recipients =
-        await checkinService.getCatchupEligibleCheckinParticipants();
-
-      expect(recipients).not.toContainEqual({
-        conversationId: conversation.id,
-        userId: loggedInCandidate.user.id,
-      });
-      expect(recipients).toContainEqual({
-        conversationId: conversation.id,
-        userId: loggedInCoach.user.id,
-      });
-    });
-
-    it('excludes a group conversation even within the eligibility window', async () => {
-      const conversation = await createConversation({
-        type: ConversationType.GROUP,
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 10
-        ),
-      });
-
-      const recipients =
-        await checkinService.getCatchupEligibleCheckinParticipants();
-
-      expect(recipients).not.toContainEqual(
-        expect.objectContaining({ conversationId: conversation.id })
-      );
-    });
-  });
-
-  describe('runCheckinCatchupScript (one-shot deployment catchup script)', () => {
-    const runScript = () =>
-      runCheckinCatchupScript(
-        checkinService,
-        new CronTasksSlackReporterService(slackService)
-      );
-
-    it('sends the invitation mail to catchup-eligible participants', async () => {
-      await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 10
-        ),
-      });
-
-      await runScript();
-
-      expect(addToWorkQueueSpy).toHaveBeenCalledWith(
-        Jobs.SEND_MAIL,
-        expect.objectContaining({
-          toEmail: loggedInCandidate.user.email,
-          templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_INVITATION,
-        })
-      );
-      expect(addToWorkQueueSpy).toHaveBeenCalledWith(
-        Jobs.SEND_MAIL,
-        expect.objectContaining({
-          toEmail: loggedInCoach.user.email,
-          templateId: MailjetTemplates.MAILER_CONVERSATION_CHECKIN_INVITATION,
-        })
-      );
-      expect(slackService.sendTechnicalMonitoringMessage).toHaveBeenCalledWith(
-        true,
-        expect.stringContaining('Checkin catchup mails'),
-        expect.anything(),
-        expect.anything()
-      );
-    });
-
-    it('does not send anything to a participant who already has a ConversationCheckin', async () => {
-      const conversation = await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS + 10
-        ),
-      });
-      await conversationCheckinModel.create({
-        conversationId: conversation.id,
-        userId: loggedInCandidate.user.id,
-      });
-
-      await runScript();
-
-      expect(addToWorkQueueSpy).not.toHaveBeenCalledWith(
-        Jobs.SEND_MAIL,
-        expect.objectContaining({ toEmail: loggedInCandidate.user.email })
-      );
-      expect(addToWorkQueueSpy).toHaveBeenCalledWith(
-        Jobs.SEND_MAIL,
-        expect.objectContaining({ toEmail: loggedInCoach.user.email })
-      );
-    });
-
-    it('does not send anything for a conversation at exactly the 30-day threshold (left to the daily cron)', async () => {
-      await createConversation({
-        engagementThresholdReachedAt: daysAgo(
-          CHECKIN_ELIGIBILITY_THRESHOLD_DAYS - 0.5
-        ),
-      });
-
-      await runScript();
-
-      expect(addToWorkQueueSpy).not.toHaveBeenCalled();
-    });
-
-    it('does not send anything for a conversation whose threshold predates the catchup min date', async () => {
-      await createConversation({
-        engagementThresholdReachedAt: new Date(
-          new Date(CHECKIN_CATCHUP_MIN_ENGAGEMENT_THRESHOLD_DATE).getTime() -
-            DAY_IN_MS
-        ),
-      });
-
-      await runScript();
-
-      expect(addToWorkQueueSpy).not.toHaveBeenCalled();
     });
   });
 

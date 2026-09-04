@@ -18,7 +18,6 @@
     "api:dev:docker": "docker compose up",
     "api:dev:docker:build": "docker compose up --build",
     "worker:start": "node dist/worker",
-    "checkin:catchup": "node dist/checkin/scripts/send-checkin-catchup-mails.script",
     "worker:dev:docker": "docker compose -f docker-compose.yml -f docker-compose.worker.yml up",
     "worker:dev": "nest start --config nest-cli.worker.json --watch",
     "worker:dev:debug": "nest start --config nest-cli.worker.json --debug --watch",
