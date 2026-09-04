@@ -828,7 +828,7 @@ export class UsersService {
       this.authService.generateAutologinToken(user.id),
     ]);
 
-    const ctaUrl = `${process.env.FRONT_URL}/verification-email?token=${verificationToken}&autologinToken=${encodeURIComponent(autologinToken)}`;
+    const ctaUrl = `${process.env.FRONT_URL}/verification-email?token=${encodeURIComponent(verificationToken)}&autologinToken=${encodeURIComponent(autologinToken)}`;
 
     const { businessSectorIds, nudgeIds } =
       await this.userProfilesService.getPreRegistrationCriteriaForUser(user.id);
