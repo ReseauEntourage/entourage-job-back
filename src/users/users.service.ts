@@ -778,6 +778,74 @@ export class UsersService {
     return users;
   }
 
+  /**
+   * Get candidates and coaches created exactly 1 calendar day ago whose email
+   * is still not verified, for the unverified account relaunch email.
+   */
+  async getUsersWithUnverifiedEmailOneDayAfterCreation() {
+    const daysSinceCreation = 1;
+
+    const users = await this.userModel.findAll({
+      attributes: [
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'createdAt',
+        'zone',
+        'role',
+      ],
+      where: {
+        role: {
+          [Op.in]: [UserRoles.CANDIDATE, UserRoles.COACH],
+        },
+        isEmailVerified: false,
+        createdAt: {
+          [Op.gte]: new Date(
+            new Date().setHours(0, 0, 0, 0) - daysSinceCreation * DAY_IN_MS
+          ),
+          [Op.lt]: new Date(
+            new Date().setHours(0, 0, 0, 0) -
+              (daysSinceCreation - 1) * DAY_IN_MS
+          ),
+        },
+      },
+    });
+
+    return users;
+  }
+
+  /**
+   * Sends the unverified account relaunch mail (J+1) to a single user: builds
+   * a `ctaUrl` combining a fresh email verification token and a fresh
+   * autologin token, recomputes `nbRecommendation` from the criteria already
+   * persisted on the user's profile, then enqueues the mail.
+   */
+  async sendUnverifiedAccountRelaunchMail(user: User) {
+    const [verificationToken, autologinToken] = await Promise.all([
+      this.authService.generateVerificationToken(user),
+      this.authService.generateAutologinToken(user.id),
+    ]);
+
+    const ctaUrl = `${process.env.FRONT_URL}/verification-email?token=${encodeURIComponent(verificationToken)}&autologinToken=${encodeURIComponent(autologinToken)}`;
+
+    const { businessSectorIds, nudgeIds } =
+      await this.userProfilesService.getPreRegistrationCriteriaForUser(user.id);
+
+    const { count: nbRecommendation } =
+      await this.userProfilesService.findPreRegistrationCompatibleProfiles(
+        user.role as UserRole,
+        nudgeIds,
+        businessSectorIds
+      );
+
+    return this.mailsService.sendUnverifiedAccountRelaunchMail(
+      user,
+      ctaUrl,
+      nbRecommendation
+    );
+  }
+
   async sendReminderToCompleteOnboarding(user: User) {
     return this.mailsService.sendReminderToCompleteOnboarding(user);
   }

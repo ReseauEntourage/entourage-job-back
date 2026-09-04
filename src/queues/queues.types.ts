@@ -74,6 +74,8 @@ export const Jobs = {
   DEACTIVATE_STALE_CONVERSATIONS: 'deactivate_stale_conversations',
   PREPARE_CHECKIN_INVITATION_MAILS: 'prepare_checkin_invitation_mails',
   PREPARE_CHECKIN_RELANCE_MAILS: 'prepare_checkin_relance_mails',
+  SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS:
+    'send_unverified_account_relaunch_mails',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -129,6 +131,7 @@ type JobsData = {
   [Jobs.DEACTIVATE_STALE_CONVERSATIONS]: DeactivateStaleConversationsJob;
   [Jobs.PREPARE_CHECKIN_INVITATION_MAILS]: PrepareCheckinInvitationMailsJob;
   [Jobs.PREPARE_CHECKIN_RELANCE_MAILS]: PrepareCheckinRelanceMailsJob;
+  [Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS]: SendUnverifiedAccountRelaunchMailsJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -254,6 +257,7 @@ export type PrepareCommittedUsersFeedbackMailsJob = Record<string, never>;
 
 export type PrepareCheckinInvitationMailsJob = Record<string, never>;
 export type PrepareCheckinRelanceMailsJob = Record<string, never>;
+export type SendUnverifiedAccountRelaunchMailsJob = Record<string, never>;
 
 export type PrepareUnansweredConversationsMailsJob = Record<string, never>;
 
