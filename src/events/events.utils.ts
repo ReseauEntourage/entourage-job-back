@@ -35,6 +35,7 @@ export const salesforceEventAttributes = [
 export const salesforceEventTypeToEventType: { [key: string]: EventType } = {
   [SalesforceEventTypes.WELCOME_SESSION]: EventType.WELCOME_SESSION,
   [SalesforceEventTypes.COFFEE_SESSION]: EventType.COFFEE_SESSION,
+  [SalesforceEventTypes.FRIENDLINESS]: EventType.FRIENDLINESS,
   [SalesforceEventTypes.NETWORKING]: EventType.NETWORKING,
   [SalesforceEventTypes.SPEED_MEETING]: EventType.SPEED_MEETING,
   [SalesforceEventTypes.PAPOTAGES_PRO]: EventType.PAPOTAGES_PRO,
@@ -47,6 +48,7 @@ export const salesforceEventTypeToEventType: { [key: string]: EventType } = {
 export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
   [EventType.WELCOME_SESSION]: SalesforceEventTypes.WELCOME_SESSION,
   [EventType.COFFEE_SESSION]: SalesforceEventTypes.COFFEE_SESSION,
+  [EventType.FRIENDLINESS]: SalesforceEventTypes.FRIENDLINESS,
   [EventType.NETWORKING]: SalesforceEventTypes.NETWORKING,
   [EventType.SPEED_MEETING]: SalesforceEventTypes.SPEED_MEETING,
   [EventType.PAPOTAGES_PRO]: SalesforceEventTypes.PAPOTAGES_PRO,
@@ -61,10 +63,7 @@ export const eventTypeToSalesforceEventType: { [key in EventType]: string } = {
  * Additional attributes for specific Event Types
  */
 export const additionalEventAttributesByEventType: {
-  [key: string]: Omit<
-    Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>,
-    'format'
-  > & { format?: string };
+  [key: string]: Pick<Event, 'format' | 'goal' | 'audience' | 'sequences'>;
 } = {
   // Webinaire tout savoir sur Entourage Pro
   [EventType.WELCOME_SESSION]: {
@@ -172,6 +171,11 @@ export const additionalEventAttributesByEventType: {
   [EventType.WORKSHOP]: {
     goal: 'Un atelier animé par un coach de la communauté ou une association partenaire pour travailler sur un thème de l’insertion professionnelle.',
     audience: 'Candidats et coachs de la communauté',
+    sequences: [],
+  },
+
+  // Evenement de convivialité
+  [EventType.FRIENDLINESS]: {
     sequences: [],
   },
 };
