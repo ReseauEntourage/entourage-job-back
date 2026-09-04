@@ -174,7 +174,7 @@ export const additionalEventAttributesByEventType: {
     sequences: [],
   },
 
-  // Evenement de convivialité
+  // Friendliness event
   [EventType.FRIENDLINESS]: {
     sequences: [],
   },
