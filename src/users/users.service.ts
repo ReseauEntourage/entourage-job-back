@@ -802,12 +802,11 @@ export class UsersService {
         isEmailVerified: false,
         createdAt: {
           [Op.gte]: new Date(
-            new Date().setHours(0, 0, 0, 0) -
-              daysSinceCreation * 24 * 60 * 60 * 1000
+            new Date().setHours(0, 0, 0, 0) - daysSinceCreation * DAY_IN_MS
           ),
           [Op.lt]: new Date(
             new Date().setHours(0, 0, 0, 0) -
-              (daysSinceCreation - 1) * 24 * 60 * 60 * 1000
+              (daysSinceCreation - 1) * DAY_IN_MS
           ),
         },
       },
@@ -828,7 +827,7 @@ export class UsersService {
       this.authService.generateAutologinToken(user.id),
     ]);
 
-    const ctaUrl = `${process.env.FRONT_URL}/verification-email?token=${verificationToken}&autologinToken=${encodeURIComponent(autologinToken)}`;
+    const ctaUrl = `${process.env.FRONT_URL}/verification-email?token=${encodeURIComponent(verificationToken)}&autologinToken=${encodeURIComponent(autologinToken)}`;
 
     const { businessSectorIds, nudgeIds } =
       await this.userProfilesService.getPreRegistrationCriteriaForUser(user.id);

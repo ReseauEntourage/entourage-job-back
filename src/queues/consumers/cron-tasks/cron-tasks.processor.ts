@@ -1357,6 +1357,8 @@ export class CronTasksProcessor extends WorkerHost {
    * verified. Called daily at 9 AM via the cron job.
    */
   async sendUnverifiedAccountRelaunchMails() {
+    const BATCH_SIZE = 50;
+
     this.logger.log('Sending unverified account relaunch mails...');
     const users =
       await this.usersService.getUsersWithUnverifiedEmailOneDayAfterCreation();
@@ -1364,14 +1366,20 @@ export class CronTasksProcessor extends WorkerHost {
       `Found ${users.length} users eligible for the unverified account relaunch mail`
     );
 
-    const results = await Promise.allSettled(
-      users.map(async (user) => {
-        this.logger.log(
-          `Sending unverified account relaunch mail to user ${user.id}`
-        );
-        await this.usersService.sendUnverifiedAccountRelaunchMail(user);
-      })
-    );
+    const results: PromiseSettledResult<void>[] = [];
+
+    for (const userChunk of chunk(users, BATCH_SIZE)) {
+      const batchResults = await Promise.allSettled(
+        userChunk.map(async (user) => {
+          this.logger.log(
+            `Sending unverified account relaunch mail to user ${user.id}`
+          );
+          await this.usersService.sendUnverifiedAccountRelaunchMail(user);
+        })
+      );
+
+      results.push(...batchResults);
+    }
 
     const { succeeded, successIds, failures } = collectSettledResults(
       users,

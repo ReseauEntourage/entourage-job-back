@@ -565,10 +565,12 @@ export class UserProfilesService {
   ): Promise<{ businessSectorIds: string[]; nudgeIds: string[] }> {
     const userProfile = await this.findOneByUserId(userId);
 
+    const businessSectorIds = (userProfile?.sectorOccupations ?? [])
+      .map((sectorOccupation) => sectorOccupation.businessSectorId)
+      .filter((id): id is string => Boolean(id));
+
     return {
-      businessSectorIds: (userProfile?.sectorOccupations ?? [])
-        .map((sectorOccupation) => sectorOccupation.businessSectorId)
-        .filter((id): id is string => Boolean(id)),
+      businessSectorIds: Array.from(new Set(businessSectorIds)),
       nudgeIds: (userProfile?.nudges ?? []).map((nudge) => nudge.id),
     };
   }
