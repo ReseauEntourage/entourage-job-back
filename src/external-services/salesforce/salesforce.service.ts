@@ -529,7 +529,7 @@ export class SalesforceService {
     )}${selectUserParticipation}
            FROM ${ObjectNames.CAMPAIGN}
            WHERE
-            Type = 'Event' AND R_seaux__c = 'LinkedOut'
+            Type = 'Event' AND R_seaux__c INCLUDES ('LinkedOut')
             ${searchCondition}
             ${modeFilters}
             ${eventTypesFilters}
@@ -566,7 +566,7 @@ export class SalesforceService {
           FROM ${ObjectNames.CAMPAIGN}
           WHERE Id = '${escapeQuery(
             eventId
-          )}' AND Type = 'Event' AND R_seaux__c = 'LinkedOut'
+          )}' AND Type = 'Event' AND R_seaux__c INCLUDES ('LinkedOut')
           LIMIT 1
         `
       );
@@ -621,7 +621,7 @@ export class SalesforceService {
          WHERE ContactId IN (${escapedIds})
            AND Status = 'Inscrit'
            AND Campaign.Type = 'Event'
-           AND Campaign.R_seaux__c = 'LinkedOut'
+           AND Campaign.R_seaux__c INCLUDES ('LinkedOut')
          GROUP BY ContactId`
       );
     return records.reduce<Record<string, number>>((acc, r) => {
