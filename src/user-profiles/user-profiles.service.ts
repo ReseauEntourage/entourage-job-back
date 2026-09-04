@@ -566,7 +566,7 @@ export class UserProfilesService {
     const userProfile = await this.findOneByUserId(userId);
 
     const businessSectorIds = (userProfile?.sectorOccupations ?? [])
-      .map((sectorOccupation) => sectorOccupation.businessSectorId)
+      .map((sectorOccupation) => sectorOccupation.businessSector?.id)
       .filter((id): id is string => Boolean(id));
 
     return {
