@@ -556,6 +556,23 @@ export class UserProfilesService {
     );
   }
 
+  /**
+   * Reads the business sectors and nudges persisted on a user's profile, for
+   * reuse as criteria against `findPreRegistrationCompatibleProfiles`.
+   */
+  async getPreRegistrationCriteriaForUser(
+    userId: string
+  ): Promise<{ businessSectorIds: string[]; nudgeIds: string[] }> {
+    const userProfile = await this.findOneByUserId(userId);
+
+    return {
+      businessSectorIds: (userProfile?.sectorOccupations ?? [])
+        .map((sectorOccupation) => sectorOccupation.businessSectorId)
+        .filter((id): id is string => Boolean(id)),
+      nudgeIds: (userProfile?.nudges ?? []).map((nudge) => nudge.id),
+    };
+  }
+
   async findPreRegistrationCompatibleProfiles(
     role: UserRole,
     nudgeIds: string[] = [],

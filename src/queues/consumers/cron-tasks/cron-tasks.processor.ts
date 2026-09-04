@@ -111,6 +111,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareCheckinInvitationMails();
       case Jobs.PREPARE_CHECKIN_RELANCE_MAILS:
         return this.prepareCheckinRelanceMails();
+      case Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS:
+        return this.sendUnverifiedAccountRelaunchMails();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -1347,6 +1349,59 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Sent checkin relance mails for ${successIds.length} participants`;
+  }
+
+  /**
+   * Sends the unverified account relaunch mail to candidates and coaches
+   * whose account was created exactly 1 day ago and whose email is still not
+   * verified. Called daily at 9 AM via the cron job.
+   */
+  async sendUnverifiedAccountRelaunchMails() {
+    this.logger.log('Sending unverified account relaunch mails...');
+    const users =
+      await this.usersService.getUsersWithUnverifiedEmailOneDayAfterCreation();
+    this.logger.log(
+      `Found ${users.length} users eligible for the unverified account relaunch mail`
+    );
+
+    const results = await Promise.allSettled(
+      users.map(async (user) => {
+        this.logger.log(
+          `Sending unverified account relaunch mail to user ${user.id}`
+        );
+        await this.usersService.sendUnverifiedAccountRelaunchMail(user);
+      })
+    );
+
+    const { succeeded, successIds, failures } = collectSettledResults(
+      users,
+      results,
+      (userId, reason) => {
+        this.logger.error(
+          `Failed sending unverified account relaunch mail to user ${userId}`,
+          reason
+        );
+      }
+    );
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      succeeded,
+      '📮 Unverified account relaunch mails - J+1',
+      {
+        total: users.length,
+        success: successIds.length,
+        failure: failures.length,
+      },
+      failures
+    );
+
+    if (!succeeded) {
+      throw new Error(
+        `Failed sending ${failures.length}/${users.length} unverified account relaunch mails`
+      );
+    }
+
+    return `Sent ${successIds.length} unverified account relaunch mails`;
   }
 
   async prepareUnansweredConversationsMails() {
