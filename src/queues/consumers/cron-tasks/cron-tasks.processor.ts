@@ -122,8 +122,11 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async deleteInactiveUsers() {
+    const MONTHS_SINCE_LAST_CONNECTION = 24;
     this.logger.log('Deleting inactive users...');
-    const inactiveUsers = await this.usersService.getInactiveUsersForDeletion();
+    const inactiveUsers = await this.usersService.getInactiveUsersForDeletion(
+      MONTHS_SINCE_LAST_CONNECTION
+    );
     this.logger.log(`Found ${inactiveUsers.length} inactive users to delete`);
     const results = await Promise.allSettled(
       inactiveUsers.map(async (user) => {
@@ -142,7 +145,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      '🗑️ Delete inactive users',
+      `🗑️ Delete inactive users - M+${MONTHS_SINCE_LAST_CONNECTION}`,
       {
         total: inactiveUsers.length,
         success: successIds.length,

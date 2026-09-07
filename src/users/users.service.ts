@@ -660,8 +660,11 @@ export class UsersService {
     });
   }
 
-  // Get all users -except admins- that have connected once but not in the last 25 months and not deleted
-  async getInactiveUsersForDeletion() {
+  // Get all users -except admins- that have connected once but not in the last `monthsSinceLastConnection` months and not deleted
+  async getInactiveUsersForDeletion(monthsSinceLastConnection: number) {
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - monthsSinceLastConnection);
+
     const inactiveUsers: {
       candidatUrl: string | null;
       firstName: string;
@@ -682,12 +685,12 @@ export class UsersService {
                 ( -- has already signed in --
                     "Users"."lastConnection" IS NOT NULL
                     -- isInactiveSince --
-                    AND "Users"."lastConnection" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+                    AND "Users"."lastConnection" < :cutoffDate
                 )
                 OR ( -- has never signed in --
                     "Users"."lastConnection" IS NULL
                     -- createdAt is old enough --
-                    AND "Users"."createdAt" < CURRENT_TIMESTAMP - INTERVAL '25 MONTH'
+                    AND "Users"."createdAt" < :cutoffDate
                 )
             )
             -- is not deleted --
@@ -701,6 +704,7 @@ export class UsersService {
       {
         type: QueryTypes.SELECT,
         raw: true,
+        replacements: { cutoffDate },
       }
     );
     const users = inactiveUsers.map((user) => {
