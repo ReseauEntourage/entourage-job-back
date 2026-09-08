@@ -2122,16 +2122,18 @@ export class CronTasksProcessor extends WorkerHost {
               );
               break;
           }
-
-          // Throttle unitary Salesforce API calls (no confirmed External ID for bulk upsert)
-          await new Promise((resolve) =>
-            setTimeout(resolve, THROTTLE_DELAY_MS)
-          );
         } catch (error) {
           unexpectedFailures.push({ itemId: user.id, reason: error });
           this.logger.error(
             `Unexpected error backfilling Salesforce app id for user ${user.id}`,
             error
+          );
+        } finally {
+          // Throttle unitary Salesforce API calls (no confirmed External ID for bulk upsert) -
+          // applied even on failure, since that's exactly when we'd otherwise hammer Salesforce
+          // during a rate limit/outage.
+          await new Promise((resolve) =>
+            setTimeout(resolve, THROTTLE_DELAY_MS)
           );
         }
       }

@@ -503,6 +503,7 @@ export class SalesforceService {
       [
         { title: 'Utilisateur courant', content: appId },
         { title: 'Email en cause', content: sfEmail },
+        { title: 'Contact Salesforce', content: record.Id },
         {
           title: 'Contact déjà lié à',
           content: existingAppId,
