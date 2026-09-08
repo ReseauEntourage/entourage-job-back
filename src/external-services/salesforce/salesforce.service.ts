@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as jsforce from 'jsforce';
 import { Connection, ErrorResult, SuccessResult } from 'jsforce';
 import moment from 'moment-timezone';
@@ -23,6 +23,7 @@ import {
   eventTypeToSalesforceEventType,
   salesforceEventAttributes,
 } from 'src/events/events.utils';
+import { SlackService } from 'src/external-services/slack/slack.service';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { SfLocalBranchName } from 'src/utils/types/local-branches.types';
@@ -53,6 +54,7 @@ import {
 } from './salesforce.types';
 
 import {
+  addToSalesforceMultiPicklist,
   determineContactRecordType,
   escapeQuery,
   executeBulkAction,
@@ -65,6 +67,7 @@ import {
   mapSalesforceContactSocialSituationFields,
   mapSalesforceLeadFields,
   parseAddress,
+  parseSalesforceMultiPicklist,
   prependDuplicateIfCondition,
 } from './salesforce.utils';
 
@@ -72,6 +75,23 @@ const RETRY_DELAY = 60 * 10;
 const RETRY_NUMBER = 5;
 
 const REGEX_ESCAPE = /[?&|!{}[\]()^~*:\\"'+-]/gi;
+
+type SalesforceContactLookup = {
+  Casquettes_r_les__c: string;
+  Id: string;
+  Reseaux__c?: string;
+};
+
+/**
+ * Shape of a Contact candidate as read by the `salesforce-contact-id-backfill` job (see
+ * findContactsByEmailForBackfill / completeContactNetworkAndCasquette).
+ */
+export type SalesforceBackfillCandidate = {
+  Casquettes_r_les__c?: string;
+  ID_App_Entourage_Pro__c?: string;
+  Id: string;
+  Reseaux__c?: string;
+};
 
 const asyncTimeout = (delay: number) =>
   new Promise<void>((res) => {
@@ -82,10 +102,14 @@ const asyncTimeout = (delay: number) =>
 
 @Injectable()
 export class SalesforceService {
+  private readonly logger = new Logger(SalesforceService.name);
   private salesforce: Connection;
   private isWorker = true;
 
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+    private slackService: SlackService
+  ) {}
 
   setIsWorker(isWorker: boolean) {
     this.isWorker = isWorker;
@@ -340,34 +364,226 @@ export class SalesforceService {
     return searchRecords[0]?.Id;
   }
 
+  /**
+   * Finds the Salesforce Contact of a Pro user.
+   *
+   * Resolution order:
+   * 1. If `appId` is provided, lookup by `ID_App_Entourage_Pro__c` (stable application id,
+   *    resilient to the email being changed by a third-party Salesforce workflow).
+   * 2. Fallback to a lookup by `Email`. If that fallback finds a contact and `appId` is
+   *    provided, `ID_App_Entourage_Pro__c` is repaired when empty, or left untouched (with a
+   *    Datadog warning + Slack alert) when it already points to a *different* app id - the
+   *    contact of another Pro user must never be silently reattributed.
+   */
   async findContact(
     email: string,
-    recordType?: ContactRecordType
-  ): Promise<{ Casquettes_r_les__c: Casquette[]; Id: string } | null> {
+    recordType?: ContactRecordType,
+    appId?: string
+  ): Promise<{
+    Casquettes_r_les__c: Casquette[];
+    Id: string;
+    Reseaux__c: string[];
+  } | null> {
     await this.checkIfConnected();
+
+    if (appId) {
+      const { records: appIdRecords }: { records: SalesforceContactLookup[] } =
+        await this.salesforce.query(
+          `SELECT Id, Casquettes_r_les__c, Reseaux__c, AccountId
+           FROM ${ObjectNames.CONTACT}
+           WHERE ID_App_Entourage_Pro__c = '${escapeQuery(appId)}' ${
+             recordType ? `AND RecordTypeId = '${recordType}'` : ''
+           } LIMIT 1`
+        );
+      if (appIdRecords[0]) {
+        await this.syncUserSfContactId(appId, appIdRecords[0].Id);
+        return this.mapFindContactRecord(appIdRecords[0]);
+      }
+    }
+
     const sfEmail = email.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const {
       records,
-    }: { records: { Casquettes_r_les__c: string; Id: string }[] } =
-      await this.salesforce.query(
-        `SELECT Id, Casquettes_r_les__c, AccountId
-         FROM ${ObjectNames.CONTACT}
-         WHERE Email = '${sfEmail}' ${
-           recordType ? `AND RecordTypeId = '${recordType}'` : ''
-         } LIMIT 1`
-      );
-    if (!records[0]) {
+    }: {
+      records: (SalesforceContactLookup & {
+        ID_App_Entourage_Pro__c?: string;
+      })[];
+    } = await this.salesforce.query(
+      `SELECT Id, Casquettes_r_les__c, Reseaux__c, AccountId, ID_App_Entourage_Pro__c
+       FROM ${ObjectNames.CONTACT}
+       WHERE Email = '${escapeQuery(sfEmail)}' ${
+         recordType ? `AND RecordTypeId = '${recordType}'` : ''
+       } LIMIT 1`
+    );
+    const record = records[0];
+    if (!record) {
       return null;
     }
-    const casquettesRaw = records[0]?.Casquettes_r_les__c;
-    const casquettes =
-      casquettesRaw && casquettesRaw.length > 0
-        ? (casquettesRaw.split(';') as Casquette[])
-        : [];
+
+    if (appId) {
+      const linkedToCurrentUser = await this.repairOrGuardAppId(
+        record,
+        appId,
+        sfEmail
+      );
+      if (linkedToCurrentUser) {
+        await this.syncUserSfContactId(appId, record.Id);
+      }
+    }
+
+    return this.mapFindContactRecord(record);
+  }
+
+  /**
+   * Mirrors the linked Salesforce Contact Id on the User row (see
+   * salesforce-contact-identity-resolution capability), so it's readable from Entourage Pro
+   * without a round-trip to Salesforce. Non-fatal: a Postgres write failure here must not break
+   * the Salesforce contact resolution it's piggy-backing on.
+   */
+  private async syncUserSfContactId(
+    userId: string,
+    contactId: string
+  ): Promise<void> {
+    try {
+      await this.usersService.updateSfContactId(userId, contactId);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to mirror sfContactId (${contactId}) on user ${userId}`,
+        error
+      );
+    }
+  }
+
+  private mapFindContactRecord(record: {
+    Casquettes_r_les__c: string;
+    Id: string;
+    Reseaux__c?: string;
+  }): { Casquettes_r_les__c: Casquette[]; Id: string; Reseaux__c: string[] } {
     return {
-      Id: records[0]?.Id,
-      Casquettes_r_les__c: casquettes,
+      Id: record.Id,
+      Casquettes_r_les__c: parseSalesforceMultiPicklist(
+        record.Casquettes_r_les__c
+      ) as Casquette[],
+      Reseaux__c: parseSalesforceMultiPicklist(record.Reseaux__c),
     };
+  }
+
+  /**
+   * Applies the repair/guard-rail logic (see design.md § Decision 2) once a contact has been
+   * found via the email fallback and an appId is known for the current user.
+   *
+   * @returns whether this contact is (now) safely linked to the current user - false for the
+   * guard-rail case, where it belongs to someone else and must not be treated as linked.
+   */
+  private async repairOrGuardAppId(
+    record: { Id: string; ID_App_Entourage_Pro__c?: string },
+    appId: string,
+    sfEmail: string
+  ): Promise<boolean> {
+    const existingAppId = record.ID_App_Entourage_Pro__c;
+
+    if (!existingAppId) {
+      await this.updateRecord(ObjectNames.CONTACT, {
+        Id: record.Id,
+        ID_App_Entourage_Pro__c: appId,
+      });
+      return true;
+    }
+
+    if (existingAppId === appId) {
+      return true;
+    }
+
+    this.logger.warn(
+      `Salesforce contact ${record.Id} found by email '${sfEmail}' is already linked to a different app id (${existingAppId}) than the current user (${appId}) - not overwriting`
+    );
+    await this.slackService.sendTechnicalMonitoringMessage(
+      false,
+      '⚠️ Contact Salesforce partagé entre deux utilisateurs Pro',
+      [
+        { title: 'Utilisateur courant', content: appId },
+        { title: 'Email en cause', content: sfEmail },
+        {
+          title: 'Contact déjà lié à',
+          content: existingAppId,
+        },
+      ]
+    );
+    return false;
+  }
+
+  /**
+   * Lookup used by the `salesforce-contact-id-backfill` job only: returns every Contact
+   * candidate matching an email (not just the first one), without repairing or alerting -
+   * the backfill classifies candidates itself and reports them in aggregate at the end of its
+   * run rather than firing one Slack alert per ambiguous case (see design.md § Decision 3).
+   */
+  async findContactsByEmailForBackfill(
+    email: string
+  ): Promise<SalesforceBackfillCandidate[]> {
+    await this.checkIfConnected();
+    const sfEmail = email.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const { records }: { records: SalesforceBackfillCandidate[] } =
+      await this.salesforce.query(
+        `SELECT Id, ID_App_Entourage_Pro__c, Reseaux__c, Casquettes_r_les__c
+         FROM ${ObjectNames.CONTACT}
+         WHERE Email = '${escapeQuery(sfEmail)}'`
+      );
+    return records;
+  }
+
+  /**
+   * Writes `ID_App_Entourage_Pro__c` on a single Contact already resolved as a safe,
+   * unambiguous correction by the backfill job. Never creates a Contact.
+   */
+  async repairContactAppId(contactId: string, appId: string): Promise<void> {
+    await this.updateRecord(ObjectNames.CONTACT, {
+      Id: contactId,
+      ID_App_Entourage_Pro__c: appId,
+    });
+    await this.syncUserSfContactId(appId, contactId);
+  }
+
+  /**
+   * Adds the `LinkedOut` network and/or the role's casquette to a Contact already identified
+   * without ambiguity by the backfill job (safe_correction or already_linked), without ever
+   * removing an existing value from either multi-picklist field. Used only by the
+   * `salesforce-contact-id-backfill` job - the runtime registration flow has its own additive
+   * write combined with the app id repair (see `updateContactCasquetteAndAppId`).
+   */
+  async completeContactNetworkAndCasquette(
+    contact: SalesforceBackfillCandidate,
+    casquette: Casquette | null
+  ): Promise<{ networkAdded: boolean; casquetteAdded: Casquette | null }> {
+    const currentReseaux = parseSalesforceMultiPicklist(contact.Reseaux__c);
+    const currentCasquettes = parseSalesforceMultiPicklist(
+      contact.Casquettes_r_les__c
+    ) as Casquette[];
+
+    const updatedReseaux = addToSalesforceMultiPicklist(
+      currentReseaux,
+      'LinkedOut'
+    );
+    const updatedCasquettes = casquette
+      ? addToSalesforceMultiPicklist(currentCasquettes, casquette)
+      : currentCasquettes;
+
+    const networkAdded = updatedReseaux.length !== currentReseaux.length;
+    const casquetteAdded =
+      updatedCasquettes.length !== currentCasquettes.length ? casquette : null;
+
+    if (!networkAdded && !casquetteAdded) {
+      return { networkAdded: false, casquetteAdded: null };
+    }
+
+    await this.updateRecord(ObjectNames.CONTACT, {
+      Id: contact.Id,
+      ...(networkAdded ? { Reseaux__c: updatedReseaux.join(';') } : {}),
+      ...(casquetteAdded
+        ? { Casquettes_r_les__c: updatedCasquettes.join(';') }
+        : {}),
+    });
+    return { networkAdded, casquetteAdded };
   }
 
   async findLead<T extends LeadRecordType>(email: string, recordType?: T) {
@@ -427,7 +643,8 @@ export class SalesforceService {
     modes?: EventMode[],
     eventTypes?: EventType[],
     localBranches?: SfLocalBranchName[],
-    publicSensibilise?: EventPublicAudience[]
+    publicSensibilise?: EventPublicAudience[],
+    userId?: string
   ) {
     await this.checkIfConnected();
 
@@ -436,7 +653,7 @@ export class SalesforceService {
     // Retrieve contactId if userEmail is provided
     let contactId: string | null = null;
     if (userEmail) {
-      const contact = await this.findContact(userEmail);
+      const contact = await this.findContact(userEmail, undefined, userId);
       contactId = contact?.Id || null;
     }
 
@@ -545,12 +762,16 @@ export class SalesforceService {
     return records;
   }
 
-  async findEventCampaignById(userEmail: string, eventId: string) {
+  async findEventCampaignById(
+    userEmail: string,
+    eventId: string,
+    userId?: string
+  ) {
     await this.checkIfConnected();
     // Retrieve contactId if userEmail is provided
     let contactId: string | null = null;
     if (userEmail) {
-      const contact = await this.findContact(userEmail);
+      const contact = await this.findContact(userEmail, undefined, userId);
       contactId = contact?.Id || null;
     }
     const selectUserParticipation = contactId
@@ -803,12 +1024,13 @@ export class SalesforceService {
 
   async updateContactCasquetteAndAppId(
     contactSfId: string,
-    contactProps: Pick<ContactProps, 'casquettes' | 'id'>
+    contactProps: Pick<ContactProps, 'casquettes' | 'id' | 'reseaux'>
   ) {
     return this.updateRecord(ObjectNames.CONTACT, {
       Id: contactSfId,
       ID_App_Entourage_Pro__c: contactProps.id,
       Casquettes_r_les__c: contactProps.casquettes.join(';'),
+      Reseaux__c: contactProps.reseaux.join(';'),
     });
   }
 
@@ -985,17 +1207,20 @@ export class SalesforceService {
     jobSearchDuration,
     gender,
     structure,
-    refererEmail,
+    refererId,
     isCompanyAdmin = false,
     position,
   }: UserProps) {
-    const contactSf = await this.findContact(email);
+    const contactSf = await this.findContact(email, undefined, id);
     let contactSfId = contactSf?.Id;
 
     const casquette: Casquette = getCasquette(role);
 
-    const refererId = refererEmail
-      ? (await this.findContact(refererEmail))?.Id
+    // refererId here is the referrer's own Postgres User.id - resolve their Salesforce Contact
+    // id from the local sfContactId mirror first (no Salesforce round-trip), falling back to a
+    // live lookup by ID_App_Entourage_Pro__c (which also repairs/mirrors it for next time).
+    const refererContactSfId = refererId
+      ? await this.findRefererContactSfId(refererId)
       : undefined;
 
     // Contact doesnt exist in SF -> Create
@@ -1033,7 +1258,9 @@ export class SalesforceService {
         workingExperience,
         jobSearchDuration,
         gender,
-        refererId,
+        // ContactProps.refererId expects the referrer's Salesforce Contact id, not their
+        // Postgres user id (see refererContactSfId resolution above).
+        refererId: refererContactSfId,
         position,
       } as ContactProps;
 
@@ -1044,6 +1271,7 @@ export class SalesforceService {
         },
         determineContactRecordType(role, isCompanyAdmin)
       )) as string;
+      await this.syncUserSfContactId(id, contactSfId);
 
       if (leadSfId) {
         // Hack to have a contact with the same mail and phone as the prospect if it exists
@@ -1052,15 +1280,21 @@ export class SalesforceService {
     } else {
       // Contact exist in SF -> Update
 
-      // Update the casquette field
-      const uniqueCasquettes = contactSf.Casquettes_r_les__c;
-      if (!uniqueCasquettes.includes(casquette)) {
-        uniqueCasquettes.push(casquette);
-      }
+      // Add the casquette and the LinkedOut network to whatever this contact already has
+      // (e.g. a casquette or a network from Entourage Local) - never replace existing values.
+      const uniqueCasquettes = addToSalesforceMultiPicklist(
+        contactSf.Casquettes_r_les__c,
+        casquette
+      );
+      const uniqueReseaux = addToSalesforceMultiPicklist(
+        contactSf.Reseaux__c,
+        'LinkedOut'
+      );
 
       await this.updateContactCasquetteAndAppId(contactSfId, {
         id,
         casquettes: uniqueCasquettes,
+        reseaux: uniqueReseaux,
       });
 
       // Update the socialSituation fields
@@ -1076,6 +1310,30 @@ export class SalesforceService {
     }
 
     return contactSfId;
+  }
+
+  /**
+   * Resolves the Salesforce Contact id of a referrer (a Pro user, typically a REFERER/
+   * prescripteur) from their Postgres User.id, for `ContactProps.refererId` /
+   * `TS_prescripteur__c`. Reads the `sfContactId` mirror first - no Salesforce round-trip -
+   * falling back to a live lookup by `ID_App_Entourage_Pro__c` (which also repairs/mirrors
+   * `sfContactId` for next time) when the mirror isn't populated yet.
+   */
+  private async findRefererContactSfId(
+    refererId: string
+  ): Promise<string | undefined> {
+    const referer = await this.usersService.findOneWithAttributes(refererId, [
+      'id',
+      'email',
+      'sfContactId',
+    ]);
+    if (!referer) {
+      return undefined;
+    }
+    if (referer.sfContactId) {
+      return referer.sfContactId;
+    }
+    return (await this.findContact(referer.email, undefined, referer.id))?.Id;
   }
 
   async createOrUpdateCampaignMember(
@@ -1148,7 +1406,7 @@ export class SalesforceService {
       jobSearchDuration?: JobSearchDuration;
       nationality?: Nationality;
       position?: string;
-      refererEmail?: string;
+      refererId?: string;
       resources?: CandidateResource;
       structure?: string;
       studiesLevel?: StudiesLevel;
@@ -1173,7 +1431,7 @@ export class SalesforceService {
       workingExperience: otherInfo.workingExperience,
       jobSearchDuration: otherInfo.jobSearchDuration,
       gender: otherInfo.gender,
-      refererEmail: otherInfo.refererEmail,
+      refererId: otherInfo.refererId,
       structure: otherInfo.structure,
       isCompanyAdmin: otherInfo.isCompanyAdmin,
       position: otherInfo.position,
@@ -1230,9 +1488,21 @@ export class SalesforceService {
 
     const userToUpdate = await this.findContactFromUserId(userId);
 
-    const contactSf = await this.findContact(userToUpdate.email);
+    const contactSf = await this.findContact(
+      userToUpdate.email,
+      undefined,
+      userId
+    );
 
     if (!contactSf || !contactSf.Id) {
+      await this.slackService.sendTechnicalMonitoringMessage(
+        false,
+        '⚠️ Contact Salesforce introuvable pour un utilisateur existant',
+        [
+          { title: 'Utilisateur', content: userId },
+          { title: 'Email recherché', content: userToUpdate.email },
+        ]
+      );
       throw new Error(`Contact not found in Salesforce for user ${userId}`);
     }
 
@@ -1270,6 +1540,13 @@ export class SalesforceService {
       {
         accountSfId,
         companyName,
+        // Preserve any network already on the contact (e.g. Entourage Local) - mapSalesforceContactFields
+        // only defaults Reseaux__c to 'LinkedOut' when `reseaux` is omitted, which would otherwise
+        // overwrite it on every company update.
+        reseaux: addToSalesforceMultiPicklist(
+          contactSf.Reseaux__c,
+          'LinkedOut'
+        ),
       },
       determineContactRecordType(userToUpdate.role, isCompanyAdmin)
     );

@@ -371,7 +371,7 @@ export class UsersCreationController {
         birthDate: createUserReferingDto.birthDate,
         workingRight: createUserReferingDto.workingRight,
         gender: createUserReferingDto.gender,
-        refererEmail: referer.email,
+        refererId: referer.id,
       });
 
       await this.usersCreationService.updateUserSocialSituationByUserId(

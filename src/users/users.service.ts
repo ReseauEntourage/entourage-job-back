@@ -820,6 +820,29 @@ export class UsersService {
   }
 
   /**
+   * Active Pro users eligible for the Salesforce `ID_App_Entourage_Pro__c` backfill (see
+   * salesforce-contact-id-backfill capability). `User` is a paranoid model (`@DeletedAt`), so
+   * this `findAll` implicitly excludes soft-deleted rows (`deletedAt IS NULL`) - no explicit
+   * filter needed. `UsersDeletionService.deleteCompleteUser` always soft-deletes right after
+   * anonymizing the email, so there's no user left with an anonymized email and no `deletedAt`.
+   */
+  async getActiveUsersForSalesforceAppIdBackfill() {
+    return this.userModel.findAll({
+      attributes: ['id', 'email', 'role'],
+    });
+  }
+
+  /**
+   * Mirrors the linked Salesforce Contact Id on the User row (see
+   * salesforce-contact-identity-resolution capability). Deliberately lightweight - a plain
+   * column write, not the full `update()` (which triggers hooks, an onboarding transition
+   * check and a relations reload) - called from hot paths like every Salesforce contact lookup.
+   */
+  async updateSfContactId(userId: string, sfContactId: string): Promise<void> {
+    await this.userModel.update({ sfContactId }, { where: { id: userId } });
+  }
+
+  /**
    * Sends the unverified account relaunch mail (J+1) to a single user: builds
    * a `ctaUrl` combining a fresh email verification token and a fresh
    * autologin token, recomputes `nbRecommendation` from the criteria already

@@ -484,6 +484,7 @@ export const mapSalesforceContactFields = (
     gender,
     refererId,
     companyName,
+    reseaux,
   }: ContactProps,
   recordType: ContactRecordType
 ): SalesforceContact => {
@@ -518,7 +519,10 @@ export const mapSalesforceContactFields = (
     Casquettes_r_les__c: casquettes
       ? casquettes.join(';') || undefined
       : undefined,
-    Reseaux__c: 'LinkedOut',
+    // Additive: preserve any network already on the contact (e.g. from Entourage Local) when
+    // `reseaux` is passed by the caller. Defaults to 'LinkedOut' only on creation, where there
+    // is nothing to preserve yet.
+    Reseaux__c: reseaux ? reseaux.join(';') : 'LinkedOut',
     RecordTypeId: recordType || undefined,
     Antenne__c: department ? formatDepartment(department) : undefined,
     MailingPostalCode: department
@@ -576,4 +580,66 @@ export function getCasquette(role: RegistrableUserRole): Casquette {
     case UserRoles.REFERER:
       return Casquette.PRESCRIPTEUR;
   }
+}
+
+/** Parses a Salesforce semicolon-joined multi-picklist field value into an array. */
+export function parseSalesforceMultiPicklist(value?: string): string[] {
+  return value ? value.split(';') : [];
+}
+
+/** Adds a value to a multi-picklist array if it isn't already present, without duplicating it. */
+export function addToSalesforceMultiPicklist<T extends string>(
+  currentValues: T[],
+  valueToAdd: T
+): T[] {
+  return currentValues.includes(valueToAdd)
+    ? currentValues
+    : [...currentValues, valueToAdd];
+}
+
+export type SalesforceAppIdBackfillCategory =
+  'safe_correction' | 'already_linked' | 'ambiguous' | 'not_found';
+
+export type SalesforceAppIdBackfillClassification =
+  | { category: 'safe_correction'; contactIdToRepair: string }
+  | { category: 'already_linked' | 'ambiguous' | 'not_found' };
+
+/**
+ * Classifies the Salesforce Contact candidates found by email for a single user during the
+ * `salesforce-contact-id-backfill` job (see spec.md § Périmètre du backfill limité aux cas
+ * résolubles sans ambiguïté). Never triggers a write itself - the caller applies the repair
+ * only for 'safe_correction'. Errs toward 'ambiguous' (manual review) whenever the situation
+ * isn't unambiguously safe, per the job's non-goal of never guessing a reattribution.
+ */
+export function classifySalesforceAppIdBackfillCandidates(
+  candidates: { Id: string; ID_App_Entourage_Pro__c?: string }[],
+  appId: string
+): SalesforceAppIdBackfillClassification {
+  if (candidates.length === 0) {
+    return { category: 'not_found' };
+  }
+
+  const linkedToAnotherUser = candidates.some(
+    (candidate) =>
+      candidate.ID_App_Entourage_Pro__c &&
+      candidate.ID_App_Entourage_Pro__c !== appId
+  );
+  if (linkedToAnotherUser) {
+    return { category: 'ambiguous' };
+  }
+
+  const allLinkedToThisUser = candidates.every(
+    (candidate) => candidate.ID_App_Entourage_Pro__c === appId
+  );
+  if (allLinkedToThisUser) {
+    return { category: 'already_linked' };
+  }
+
+  if (candidates.length === 1 && !candidates[0].ID_App_Entourage_Pro__c) {
+    return { category: 'safe_correction', contactIdToRepair: candidates[0].Id };
+  }
+
+  // Multiple candidates with an empty ID_App_Entourage_Pro__c and none linked to anyone:
+  // no deterministic way to pick the right one - leave for manual review.
+  return { category: 'ambiguous' };
 }

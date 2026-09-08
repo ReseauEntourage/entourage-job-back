@@ -76,6 +76,7 @@ export const Jobs = {
   PREPARE_CHECKIN_RELANCE_MAILS: 'prepare_checkin_relance_mails',
   SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS:
     'send_unverified_account_relaunch_mails',
+  BACKFILL_SALESFORCE_APP_ID: 'backfill_salesforce_app_id',
 
   // Jobs related to embedding queue
   UPDATE_USER_PROFILE_EMBEDDINGS: 'update_user_profile_embeddings',
@@ -132,6 +133,7 @@ type JobsData = {
   [Jobs.PREPARE_CHECKIN_INVITATION_MAILS]: PrepareCheckinInvitationMailsJob;
   [Jobs.PREPARE_CHECKIN_RELANCE_MAILS]: PrepareCheckinRelanceMailsJob;
   [Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS]: SendUnverifiedAccountRelaunchMailsJob;
+  [Jobs.BACKFILL_SALESFORCE_APP_ID]: BackfillSalesforceAppIdJob;
 
   // Embedding queue jobs
   [Jobs.UPDATE_USER_PROFILE_EMBEDDINGS]: UpdateUserProfileEmbeddingsJob;
@@ -171,7 +173,8 @@ export interface CreateOrUpdateSalesforceUserJob {
   isCompanyAdmin?: boolean;
   jobSearchDuration?: JobSearchDuration;
   nationality?: Nationality;
-  refererEmail?: string;
+  /** Postgres User.id of the referrer (e.g. a REFERER/prescripteur), not their email. */
+  refererId?: string;
   resources?: CandidateResource;
   structure?: string;
   studiesLevel?: StudiesLevel;
@@ -258,6 +261,7 @@ export type PrepareCommittedUsersFeedbackMailsJob = Record<string, never>;
 export type PrepareCheckinInvitationMailsJob = Record<string, never>;
 export type PrepareCheckinRelanceMailsJob = Record<string, never>;
 export type SendUnverifiedAccountRelaunchMailsJob = Record<string, never>;
+export type BackfillSalesforceAppIdJob = Record<string, never>;
 
 export type PrepareUnansweredConversationsMailsJob = Record<string, never>;
 

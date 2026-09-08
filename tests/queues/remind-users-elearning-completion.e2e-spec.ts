@@ -1,10 +1,5 @@
-import { CronTasksProcessor } from 'src/queues/consumers/cron-tasks/cron-tasks.processor';
+import { buildCronTasksProcessor } from 'tests/queues/build-cron-tasks-processor.helper';
 
-// CronTasksProcessor only lives in the worker app (ConsumersModule, wired to
-// a real Redis-backed BullMQ queue), which the API test harness
-// (CustomTestingModule) deliberately doesn't boot — see tests/custom-testing.module.ts.
-// This exercises the processor directly with mocked collaborators instead of
-// going through Nest's DI/module system.
 describe('CronTasksProcessor.remindUsersElearningCompletion', () => {
   const buildProcessor = (users: { id: string }[]) => {
     const usersService = {
@@ -19,18 +14,10 @@ describe('CronTasksProcessor.remindUsersElearningCompletion', () => {
       sendCronTaskResultToSlack: jest.fn().mockResolvedValue(undefined),
     };
 
-    const processor = new CronTasksProcessor(
-      usersService as never,
-      {} as never, // userProfilesService, unused by this method
-      {} as never, // userProfileRecommendationsService, unused by this method
-      {} as never, // usersDeletionService, unused by this method
-      cronTasksSlackReporterService as never,
-      {} as never, // messagingService, unused by this method
-      {} as never, // gamificationService, unused by this method
-      {} as never, // recruitementAlertsService, unused by this method
-      {} as never, // conversationPipelineService, unused by this method
-      {} as never // checkinService, unused by this method
-    );
+    const processor = buildCronTasksProcessor({
+      usersService: usersService as never,
+      cronTasksSlackReporterService: cronTasksSlackReporterService as never,
+    });
 
     return { processor, usersService, cronTasksSlackReporterService };
   };
