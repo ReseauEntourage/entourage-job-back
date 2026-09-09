@@ -497,19 +497,23 @@ export class SalesforceService {
     this.logger.warn(
       `Salesforce contact ${record.Id} found by email '${sfEmail}' is already linked to a different app id (${existingAppId}) than the current user (${appId}) - not overwriting`
     );
-    await this.slackService.sendTechnicalMonitoringMessage(
-      false,
-      '⚠️ Contact Salesforce partagé entre deux utilisateurs Pro',
-      [
-        { title: 'Utilisateur courant', content: appId },
-        { title: 'Email en cause', content: sfEmail },
-        { title: 'Contact Salesforce', content: record.Id },
-        {
-          title: 'Contact déjà lié à',
-          content: existingAppId,
-        },
-      ]
-    );
+    try {
+      await this.slackService.sendTechnicalMonitoringMessage(
+        false,
+        '⚠️ Contact Salesforce partagé entre deux utilisateurs Pro',
+        [
+          { title: 'Utilisateur courant', content: appId },
+          { title: 'Email en cause', content: sfEmail },
+          { title: 'Contact Salesforce', content: record.Id },
+          { title: 'Contact déjà lié à', content: existingAppId },
+        ]
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to send Slack alert for shared Salesforce contact ${record.Id}`,
+        error
+      );
+    }
     return false;
   }
 
