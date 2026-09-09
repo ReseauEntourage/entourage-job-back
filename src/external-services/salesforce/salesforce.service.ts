@@ -24,6 +24,7 @@ import {
   salesforceEventAttributes,
 } from 'src/events/events.utils';
 import { SlackService } from 'src/external-services/slack/slack.service';
+import { SlackMsgContext } from 'src/external-services/slack/slack.types';
 import { UsersService } from 'src/users/users.service';
 import { RegistrableUserRole, UserRoles } from 'src/users/users.types';
 import { SfLocalBranchName } from 'src/utils/types/local-branches.types';
@@ -426,9 +427,14 @@ export class SalesforceService {
         appId,
         sfEmail
       );
-      if (linkedToCurrentUser) {
-        await this.syncUserSfContactId(appId, record.Id);
+      if (!linkedToCurrentUser) {
+        // Guard-rail case: this contact belongs to a different user. Treat it as not found for
+        // the current user rather than handing back a Contact the caller might act on as if it
+        // were theirs (e.g. registering event participation, linking a company) - the very
+        // cross-user reattribution this guard-rail exists to prevent.
+        return null;
       }
+      await this.syncUserSfContactId(appId, record.Id);
     }
 
     return this.mapFindContactRecord(record);
@@ -451,6 +457,26 @@ export class SalesforceService {
         `Failed to mirror sfContactId (${contactId}) on user ${userId}`,
         error
       );
+    }
+  }
+
+  /**
+   * Sends a technical monitoring Slack alert on a best-effort basis: a Slack outage/timeout
+   * must never break the primary Salesforce flow it's piggy-backing on (contact resolution,
+   * company update, etc.) - it's a side channel for human visibility, not a hard dependency.
+   */
+  private async sendBestEffortSlackAlert(
+    title: string,
+    context: SlackMsgContext[]
+  ): Promise<void> {
+    try {
+      await this.slackService.sendTechnicalMonitoringMessage(
+        false,
+        title,
+        context
+      );
+    } catch (error) {
+      this.logger.warn(`Failed to send Slack alert '${title}'`, error);
     }
   }
 
@@ -497,8 +523,7 @@ export class SalesforceService {
     this.logger.warn(
       `Salesforce contact ${record.Id} found by email '${sfEmail}' is already linked to a different app id (${existingAppId}) than the current user (${appId}) - not overwriting`
     );
-    await this.slackService.sendTechnicalMonitoringMessage(
-      false,
+    await this.sendBestEffortSlackAlert(
       '⚠️ Contact Salesforce partagé entre deux utilisateurs Pro',
       [
         { title: 'Utilisateur courant', content: appId },
@@ -1496,8 +1521,7 @@ export class SalesforceService {
     );
 
     if (!contactSf || !contactSf.Id) {
-      await this.slackService.sendTechnicalMonitoringMessage(
-        false,
+      await this.sendBestEffortSlackAlert(
         '⚠️ Contact Salesforce introuvable pour un utilisateur existant',
         [
           { title: 'Utilisateur', content: userId },

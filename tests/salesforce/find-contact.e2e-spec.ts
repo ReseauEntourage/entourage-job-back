@@ -137,14 +137,38 @@ describe('SalesforceService.findContact', () => {
       'user-1'
     );
 
-    expect(result).toEqual({
-      Id: 'contact-4',
-      Casquettes_r_les__c: [],
-      Reseaux__c: [],
-    });
+    expect(result).toBeNull();
     expect(updateRecordSpy).not.toHaveBeenCalled();
     expect(slackService.sendTechnicalMonitoringMessage).toHaveBeenCalled();
     expect(usersService.updateSfContactId).not.toHaveBeenCalled();
+  });
+
+  it('still returns null on the guard-rail case even when the Slack alert itself fails', async () => {
+    const { service, query, slackService } = buildService();
+    slackService.sendTechnicalMonitoringMessage.mockRejectedValue(
+      new Error('Slack is down')
+    );
+    query
+      .mockResolvedValueOnce({ records: [] }) // appId lookup
+      .mockResolvedValueOnce({
+        records: [
+          {
+            Id: 'contact-4',
+            Casquettes_r_les__c: '',
+            ID_App_Entourage_Pro__c: 'other-user',
+          },
+        ],
+      });
+
+    // Must not throw: a Slack outage is a monitoring side channel, not a reason to break
+    // Salesforce contact resolution for the end user.
+    const result = await service.findContact(
+      'user@example.com',
+      undefined,
+      'user-1'
+    );
+
+    expect(result).toBeNull();
   });
 
   it('parses an existing multi-value Reseaux__c into an array', async () => {

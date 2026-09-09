@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import moment from 'moment-timezone';
 import { Op, QueryTypes, Sequelize } from 'sequelize';
 import { AuthService } from 'src/auth/auth.service';
 import { BusinessSectorsService } from 'src/business-sectors/business-sectors.service';
@@ -662,8 +663,9 @@ export class UsersService {
 
   // Get all users -except admins- that have connected once but not in the last `monthsSinceLastConnection` months and not deleted
   async getInactiveUsersForDeletion(monthsSinceLastConnection: number) {
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - monthsSinceLastConnection);
+    const cutoffDate = moment()
+      .subtract(monthsSinceLastConnection, 'months')
+      .toDate();
 
     const inactiveUsers: {
       candidatUrl: string | null;

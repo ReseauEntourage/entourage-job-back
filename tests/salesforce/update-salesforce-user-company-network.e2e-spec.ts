@@ -66,4 +66,29 @@ describe('SalesforceService.updateSalesforceUserCompany - network preservation',
       expect.anything()
     );
   });
+
+  it('still throws "Contact not found" (not a Slack error) when the alert itself fails', async () => {
+    const service = new SalesforceService(
+      {} as never, // usersService, unused - findContactFromUserId is stubbed directly below
+      {
+        sendTechnicalMonitoringMessage: jest
+          .fn()
+          .mockRejectedValue(new Error('Slack is down')),
+      } as never
+    );
+    jest.spyOn(service, 'findContactFromUserId').mockResolvedValue({
+      id: 'user-1',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane@example.com',
+      phone: '0600000000',
+      department: 'Paris (75)' as never,
+      role: UserRoles.COACH,
+    });
+    jest.spyOn(service, 'findContact').mockResolvedValue(null);
+
+    await expect(
+      service.updateSalesforceUserCompany('user-1', null)
+    ).rejects.toThrow('Contact not found in Salesforce for user user-1');
+  });
 });
