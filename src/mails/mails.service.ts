@@ -864,7 +864,7 @@ export class MailsService {
           ? `${imageBasePath}${publicProfile.id}.profile.jpg`
           : `${imageBasePath}profile-placeholder.png`,
         firstName: publicProfile?.firstName || '',
-        zone: publicProfile?.zone || '',
+        zone: getZoneDisplayLabel(publicProfile?.zone),
         department: publicProfile?.department || '',
         workTitle:
           publicProfile.role === UserRoles.CANDIDATE
