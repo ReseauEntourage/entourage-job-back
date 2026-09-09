@@ -91,6 +91,39 @@ Before running any command that can mutate or reset a database (test runs, migra
 seeders), verify which container/host is actually targeted — don't assume an env var
 override changes the DB connection.
 
+### In Claude Code Web / remote sandboxed sessions — Docker is unavailable
+
+`pnpm test:e2e:docker` requires a working Docker daemon. In this remote sandbox, the
+daemon cannot start at all (`service docker start` fails with
+`ulimit: error setting limit (Operation not permitted)`), so this command will always
+fail here — that's an environment limitation, not something to "fix" by retrying.
+
+The safety invariant above still applies (never point at a real dev database), but the
+disposable `db-test` container can be replaced with a locally-installed Postgres
+instance, as long as it stays a throwaway test database:
+
+1. `apt-get install -y postgresql-16-pgvector` — the `vector` extension isn't in the
+   base `postgresql-16` package; migrations fail with `extension "vector" is not
+   available` without it.
+2. `service postgresql start`
+3. `sudo -u postgres psql -c "CREATE USER entourage_pro WITH PASSWORD 'entourage_pro' SUPERUSER;"`
+   and `sudo -u postgres psql -c "CREATE DATABASE entourage_pro_test OWNER entourage_pro;"`
+4. Create a local `.env.test` (gitignored, never commit it) from `.env.dist`, with
+   `DATABASE_URL=postgres://entourage_pro:entourage_pro@localhost:5432/entourage_pro_test`
+   (`localhost`, not `db-test` — there's no docker-compose network here) and dummy
+   values for the other secrets, mirroring what `.github/workflows/ci.yml`'s `e2e` job
+   passes via GitHub secrets.
+5. `NODE_ENV=dev-test pnpm db:migrate`
+6. Run Jest directly, bypassing `docker-entrypoint.test.sh` entirely:
+   `NODE_ENV=dev-test pnpm jest --config ./tests/jest-e2e.json --runInBand --forceExit [-t "<name>" | --testPathPattern=<dir>]`
+
+The full e2e suite takes several minutes — run it in the background (long timeout)
+rather than blocking on a short foreground command.
+
+This workaround is specific to Docker-less remote sessions. When Docker *is* available
+(local dev, or a future remote environment with a working daemon), keep using
+`pnpm test:e2e:docker` as documented above instead.
+
 ## Cross-repo workflow
 
 When a change touches an API endpoint, update both repos in the same session:
