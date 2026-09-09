@@ -13,6 +13,7 @@ import { MatchingReason } from 'src/user-profile-recommendations/user-profile-re
 import { ReportAbuseUserProfileDto } from 'src/user-profiles/dto/report-abuse-user-profile.dto';
 import { User } from 'src/users/models';
 import { UserRole, UserRoles } from 'src/users/users.types';
+import { getZoneDisplayLabel } from 'src/utils/constants/zones';
 import { findConstantFromValue } from 'src/utils/misc/findConstantFromValue';
 import { InternalStaffContact, ZoneName } from 'src/utils/types/zones.types';
 
@@ -30,7 +31,7 @@ export class MailsService {
         id: user.id,
         firstName: user.firstName,
         role: getRoleString(user),
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
         token,
       },
@@ -51,7 +52,7 @@ export class MailsService {
         id: user.id,
         firstName: user.firstName,
         role: getRoleString(user),
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
         token,
       },
@@ -74,7 +75,7 @@ export class MailsService {
           siteLinkInvit: `${process.env.FRONT_URL}/backoffice/companies/${user.company.id}/collaborators`,
           companyGoal: user.company.goal || '',
           companyName: user.company.name,
-          zone: user.zone || ZoneName.HZ,
+          zone: getZoneDisplayLabel(user.zone),
           staffContact: user.staffContact,
         },
       });
@@ -93,7 +94,7 @@ export class MailsService {
           id: user.id,
           firstName: user.firstName,
           role: user.role,
-          zone: user.zone || ZoneName.HZ,
+          zone: getZoneDisplayLabel(user.zone),
           staffContact: user.staffContact,
         },
       });
@@ -113,7 +114,7 @@ export class MailsService {
           id: user.id,
           firstName: user.firstName,
           role: user.role,
-          zone: user.zone || ZoneName.HZ,
+          zone: getZoneDisplayLabel(user.zone),
           staffContact: user.staffContact,
         },
       });
@@ -132,7 +133,7 @@ export class MailsService {
         firstName: user.firstName,
         toEmail: user.email,
         token,
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
         otpCode,
       },
@@ -149,7 +150,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName,
         role: getRoleString(user),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
       },
     });
@@ -170,7 +171,7 @@ export class MailsService {
             : '10 façons de devenir un super coach 💡',
         firstName: user.firstName,
         role: roleString,
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         toolboxUrl:
           roleString === 'Candidat'
             ? process.env.TOOLBOX_CANDIDATE_URL
@@ -295,7 +296,7 @@ export class MailsService {
             conversationUrl,
 
             // General
-            zone: addressee.zone,
+            zone: getZoneDisplayLabel(addressee.zone),
             role: addressee.role,
             staffContact: addressee.staffContact,
           },
@@ -328,7 +329,7 @@ export class MailsService {
         otherParticipantFirstName: otherParticipant.firstName,
         otherParticipantRole: otherParticipant.role,
         checkinUrl,
-        zone: addressee.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(addressee.zone),
         role: getRoleString(addressee),
         staffContact: addressee.staffContact,
       },
@@ -359,7 +360,7 @@ export class MailsService {
         otherParticipantFirstName: otherParticipant.firstName,
         otherParticipantRole: otherParticipant.role,
         checkinUrl,
-        zone: addressee.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(addressee.zone),
         role: getRoleString(addressee),
         staffContact: addressee.staffContact,
       },
@@ -443,7 +444,7 @@ export class MailsService {
         refererLastName: referer.lastName,
         organizationName: referer.organization.name,
         finalizeAccountUrl: `${process.env.FRONT_URL}/finaliser-compte-oriente?token=${token}`,
-        zone: candidate.zone,
+        zone: getZoneDisplayLabel(candidate.zone),
         staffContact: candidate.staffContact,
       },
     });
@@ -469,7 +470,7 @@ export class MailsService {
         candidateFirstName: candidate.firstName,
         candidateLastName: candidate.lastName,
         refererFirstName: candidate.referer.firstName,
-        zone: candidate.zone,
+        zone: getZoneDisplayLabel(candidate.zone),
         staffContact: candidate.referer.staffContact,
         loginUrl: `${process.env.FRONT_URL}/login`,
       },
@@ -527,7 +528,7 @@ export class MailsService {
         }/inscription?companyName=${encodeURIComponent(
           invitationWithCompany.company.name
         )}&flow=coach&invitationId=${invitationWithCompany.id}`,
-        zone: sender.zone, // We don't have zone of the collaborators, so we use the sender's zone by default
+        zone: getZoneDisplayLabel(sender.zone), // We don't have zone of the collaborators, so we use the sender's zone by default
         staffContact: sender.staffContact,
       },
     });
@@ -551,7 +552,7 @@ export class MailsService {
           createdUserLastName: createdUser.lastName,
           adminFirstName: admin.firstName,
           loginUrl: `${process.env.FRONT_URL}/login`,
-          zone: admin.zone,
+          zone: getZoneDisplayLabel(admin.zone),
           staffContact: admin.staffContact,
         },
       });
@@ -569,7 +570,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName,
         role: getRoleString(user),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
       },
     });
@@ -608,7 +609,7 @@ export class MailsService {
         firstName: user.firstName,
         ctaUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
         role: getRoleString(user),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
       },
     });
@@ -632,7 +633,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName,
         role: getRoleString(user),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
         reco1: formattedRecommendedProfiles[0] || null,
         reco2: formattedRecommendedProfiles[1] || null,
@@ -652,7 +653,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName,
         role: getRoleString(user),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
       },
     });
@@ -679,7 +680,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName,
         role: getRoleStringFromRole(user.role),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
         reco1: formattedRecommendedProfiles[0] || null,
         reco2: formattedRecommendedProfiles[1] || null,
@@ -713,7 +714,7 @@ export class MailsService {
       templateId: MailjetTemplates.MAILER_USER_RECOMMENDATIONS,
       variables: {
         role: user.role,
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         reco1: formattedRecommendedProfiles[0] || null,
@@ -735,7 +736,7 @@ export class MailsService {
         firstName: user.firstName,
         ctaUrl: `${process.env.FRONT_URL}/backoffice/parametres?reactivate=true`,
         role: getRoleString(user),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
       },
     });
@@ -768,7 +769,7 @@ export class MailsService {
         addresseeRole: getRoleString(unavailableUser),
 
         // General
-        zone: messageAuthor.zone,
+        zone: getZoneDisplayLabel(messageAuthor.zone),
         role: messageAuthor.role,
         staffContact: messageAuthor.staffContact,
         siteLink: process.env.FRONT_URL,
@@ -812,7 +813,7 @@ export class MailsService {
           .map((p) => p.firstName)
           .join(', '),
         role: getRoleStringFromRole(user.role),
-        zone: user.zone,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
       },
     });
@@ -912,7 +913,7 @@ export class MailsService {
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT,
       variables: {
         FirstName: user.firstName,
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
         nextEvaluationDate: nextEvaluationDate.toLocaleDateString('fr-FR'),
         conversationCount: stats.conversationCount,
@@ -945,7 +946,7 @@ export class MailsService {
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT_REMINDER,
       variables: {
         FirstName: user.firstName,
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
         expireAt: expireAt.toLocaleDateString('fr-FR'),
         conversationCount: stats.conversationCount,
@@ -972,7 +973,7 @@ export class MailsService {
       templateId: MailjetTemplates.SUPER_ENGAGED_ACHIEVEMENT_EXPIRED,
       variables: {
         FirstName: user.firstName,
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
         conversationCount: stats.conversationCount,
         responseRate: stats.responseRate,
@@ -990,7 +991,7 @@ export class MailsService {
       templateId: MailjetTemplates.MAILER_CHURN_USERS_FEEDBACK,
       variables: {
         firstName: user.firstName || '',
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         role: getRoleString(user),
         staffContact: user.staffContact,
         siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
@@ -1023,7 +1024,7 @@ export class MailsService {
       templateId: MailjetTemplates.MAILER_INACTIVE_REFERERS,
       variables: {
         firstName: user.firstName || '',
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         staffContact: user.staffContact,
         siteLink: process.env.FRONT_URL,
       },
@@ -1053,7 +1054,7 @@ export class MailsService {
         refererLastName: refererUser.lastName,
         refererEmail: refererUser.email,
         role: 'Prescripteur',
-        zone: refererUser.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(refererUser.zone),
         staffContact: refererUser.staffContact,
         siteLink: process.env.FRONT_URL,
       },
@@ -1072,7 +1073,7 @@ export class MailsService {
         userId: user.id,
         email: user.email,
         firstName: user.firstName || '',
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         role: getRoleString(user),
         staffContact: user.staffContact,
         siteLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
@@ -1100,7 +1101,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName || '',
         role: getRoleString(user),
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         days,
         roleDay: getRoleString(user) + days.toString(),
         count: unansweredConversationsCount,
@@ -1122,7 +1123,7 @@ export class MailsService {
       variables: {
         firstName: user.firstName || '',
         role: getRoleString(user),
-        zone: user.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(user.zone),
         profileUrl: `${process.env.FRONT_URL}/backoffice/dashboard`,
         count: unreadConversationsCount,
         staffContact: user.staffContact,
@@ -1141,7 +1142,7 @@ export class MailsService {
       variables: {
         firstName: adminUser.firstName || '',
         dashboardLink: `${process.env.FRONT_URL}/backoffice/dashboard`,
-        zone: adminUser.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(adminUser.zone),
         staffContact: adminUser.staffContact,
         siteLink: process.env.FRONT_URL,
       },
@@ -1158,7 +1159,7 @@ export class MailsService {
       templateId: MailjetTemplates.MAILER_REMIND_COMPANY_INVITATION,
       variables: {
         firstName: adminUser.firstName || '',
-        zone: adminUser.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(adminUser.zone),
         staffContact: adminUser.staffContact,
         linkUrl: `${process.env.FRONT_URL}/backoffice/companies/parametres`,
       },
@@ -1181,7 +1182,7 @@ export class MailsService {
         invitationEmail,
         companyAdminFirstName: adminUser.firstName || '',
         companyId,
-        zone: adminUser.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(adminUser.zone),
         staffContact: adminUser.staffContact,
         siteLink: process.env.FRONT_URL,
       },
@@ -1199,7 +1200,7 @@ export class MailsService {
       variables: {
         companyName: companyName || '',
         adminFirstName: adminUser.firstName || '',
-        zone: adminUser.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(adminUser.zone),
         staffContact: adminUser.staffContact,
         siteLink: `${process.env.FRONT_URL}/backoffice/companies/settings`,
       },
@@ -1221,7 +1222,7 @@ export class MailsService {
       variables: {
         email: adminUser.email,
         firstName: adminUser.firstName || '',
-        zone: adminUser.zone || ZoneName.HZ,
+        zone: getZoneDisplayLabel(adminUser.zone),
         staffContact: adminUser.staffContact,
         siteLink: process.env.FRONT_URL,
         companyId,
@@ -1251,7 +1252,7 @@ export class MailsService {
         newCandidatesCount: alert.newCandidatesCount,
         alertName: alert.alertName,
         alertLink: `${process.env.FRONT_URL}/backoffice/alerte-candidats/${alert.alertId}`,
-        zone: alert.zone,
+        zone: getZoneDisplayLabel(alert.zone),
         staffContact: alert.staffContact,
         siteLink: process.env.FRONT_URL,
       },
