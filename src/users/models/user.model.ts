@@ -218,6 +218,15 @@ export class User extends HistorizedModel {
   @Column
   linkedinTokenExpiresAt: Date;
 
+  /**
+   * Local mirror of the linked Salesforce Contact Id (see salesforce-contact-identity-resolution
+   * capability) - kept in sync at runtime and by the salesforce-contact-id-backfill job, so the
+   * association can be read directly without a round-trip to Salesforce.
+   */
+  @AllowNull(true)
+  @Column
+  sfContactId: string;
+
   @CreatedAt
   createdAt: Date;
 

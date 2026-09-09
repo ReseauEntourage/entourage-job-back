@@ -7,6 +7,12 @@ import {
   CHECKIN_ELIGIBILITY_THRESHOLD_DAYS,
   CHECKIN_RELANCE_THRESHOLD_DAYS,
 } from 'src/checkin/checkin.types';
+import { SalesforceService } from 'src/external-services/salesforce/salesforce.service';
+import {
+  classifySalesforceAppIdBackfillCandidates,
+  getCasquette,
+} from 'src/external-services/salesforce/salesforce.utils';
+import { SlackService } from 'src/external-services/slack/slack.service';
 import { GamificationService } from 'src/gamification/gamification.service';
 import { ConversationPipelineService } from 'src/messaging/conversation-pipeline.service';
 import { MessagingService } from 'src/messaging/messaging.service';
@@ -22,7 +28,12 @@ import { UserProfileRecommendationsService } from 'src/user-profile-recommendati
 import { UserProfilesService } from 'src/user-profiles/user-profiles.service';
 import { User } from 'src/users/models';
 import { UsersService } from 'src/users/users.service';
-import { NormalUserRole, UserRoles } from 'src/users/users.types';
+import {
+  NormalUserRole,
+  RegistrableUserRole,
+  RegistrableUserRoles,
+  UserRoles,
+} from 'src/users/users.types';
 import { UsersDeletionService } from 'src/users-deletion/users-deletion.service';
 import { getZoneNameFromDepartment } from 'src/utils/misc';
 
@@ -42,7 +53,9 @@ export class CronTasksProcessor extends WorkerHost {
     private gamificationService: GamificationService,
     private recruitementAlertsService: RecruitementAlertsService,
     private conversationPipelineService: ConversationPipelineService,
-    private checkinService: CheckinService
+    private checkinService: CheckinService,
+    private salesforceService: SalesforceService,
+    private slackService: SlackService
   ) {
     super();
   }
@@ -113,6 +126,8 @@ export class CronTasksProcessor extends WorkerHost {
         return this.prepareCheckinRelanceMails();
       case Jobs.SEND_UNVERIFIED_ACCOUNT_RELAUNCH_MAILS:
         return this.sendUnverifiedAccountRelaunchMails();
+      case Jobs.BACKFILL_SALESFORCE_APP_ID:
+        return this.backfillSalesforceAppId();
       default:
         this.logger.error(
           `No process method for job ${job.id} with name ${job.name}`
@@ -122,8 +137,11 @@ export class CronTasksProcessor extends WorkerHost {
   }
 
   async deleteInactiveUsers() {
+    const MONTHS_SINCE_LAST_CONNECTION = 24;
     this.logger.log('Deleting inactive users...');
-    const inactiveUsers = await this.usersService.getInactiveUsersForDeletion();
+    const inactiveUsers = await this.usersService.getInactiveUsersForDeletion(
+      MONTHS_SINCE_LAST_CONNECTION
+    );
     this.logger.log(`Found ${inactiveUsers.length} inactive users to delete`);
     const results = await Promise.allSettled(
       inactiveUsers.map(async (user) => {
@@ -142,7 +160,7 @@ export class CronTasksProcessor extends WorkerHost {
 
     await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
       succeeded,
-      '🗑️ Delete inactive users',
+      `🗑️ Delete inactive users - M+${MONTHS_SINCE_LAST_CONNECTION}`,
       {
         total: inactiveUsers.length,
         success: successIds.length,
@@ -468,7 +486,8 @@ export class CronTasksProcessor extends WorkerHost {
         failure: failures.length,
       },
       failures,
-      skippedDtos.map((dto) => dto.user.id)
+      skippedDtos.map((dto) => dto.user.id),
+      'Skipped (not enough recommendations)'
     );
 
     if (!succeeded) {
@@ -661,7 +680,8 @@ export class CronTasksProcessor extends WorkerHost {
         failure: totalFailures + totalNotEnoughReco,
       },
       failures,
-      skippedUserIds
+      skippedUserIds,
+      'Skipped (not enough recommendations)'
     );
 
     return `Recommendation mails sent: ${totalSuccess} success, ${totalNotEnoughReco} skipped (not enough recos), ${totalFailures} errors.`;
@@ -1964,5 +1984,204 @@ export class CronTasksProcessor extends WorkerHost {
     }
 
     return `Preparation of LinkedIn share profile mails for ${hydratedJobs.length} coaches started.`;
+  }
+
+  /**
+   * Backfills `ID_App_Entourage_Pro__c` on Salesforce Contacts already retrievable without
+   * ambiguity by email, for active Pro users whose app id isn't set yet. Never creates a
+   * Contact, never resolves an ambiguous case (shared email, no contact found) automatically -
+   * those are reported for manual review (see salesforce-contact-id-backfill capability).
+   * Triggered manually on demand for now, no `@Cron` (design.md § Migration Plan) - no admin
+   * endpoint dispatches it yet, run it via `queuesService.addToCronTasksQueue(Jobs.BACKFILL_SALESFORCE_APP_ID, {})`.
+   * Uses unitary Salesforce updates with a throttling delay rather than a bulk `extIdField`
+   * upsert, since `ID_App_Entourage_Pro__c` isn't confirmed as an External ID yet (task 1.1).
+   */
+  async backfillSalesforceAppId(): Promise<string> {
+    const BATCH_SIZE = 25;
+    const THROTTLE_DELAY_MS = 300;
+
+    this.logger.log('Starting Salesforce ID_App_Entourage_Pro__c backfill...');
+
+    const users =
+      await this.usersService.getActiveUsersForSalesforceAppIdBackfill();
+
+    let safeCorrections = 0;
+    let alreadyLinked = 0;
+    let alreadyUpToDate = 0;
+    let networkOrCasquetteCompletions = 0;
+    const modifiedContactDetails: string[] = [];
+    const manualReviewCases: string[] = [];
+    const unexpectedFailures: SettledFailure[] = [];
+
+    for (const userBatch of chunk(users, BATCH_SIZE)) {
+      const failuresBeforeBatch = unexpectedFailures.length;
+
+      for (const user of userBatch) {
+        try {
+          const candidates =
+            await this.salesforceService.findContactsByEmailForBackfill(
+              user.email
+            );
+          const classification = classifySalesforceAppIdBackfillCandidates(
+            candidates,
+            user.id
+          );
+          // Admins have no casquette to add - only the LinkedOut network completion applies to them.
+          const casquette = RegistrableUserRoles.includes(
+            user.role as RegistrableUserRole
+          )
+            ? getCasquette(user.role as RegistrableUserRole)
+            : null;
+
+          switch (classification.category) {
+            case 'safe_correction': {
+              await this.salesforceService.repairContactAppId(
+                classification.contactIdToRepair,
+                user.id
+              );
+              safeCorrections += 1;
+              const changes = [
+                `ID_App_Entourage_Pro__c renseigné (${user.id})`,
+              ];
+
+              const repairedContact = candidates.find(
+                (candidate) => candidate.Id === classification.contactIdToRepair
+              );
+              if (repairedContact) {
+                const completion =
+                  await this.salesforceService.completeContactNetworkAndCasquette(
+                    repairedContact,
+                    casquette
+                  );
+                if (completion.networkAdded || completion.casquetteAdded) {
+                  networkOrCasquetteCompletions += 1;
+                }
+                if (completion.networkAdded) {
+                  changes.push('réseau LinkedOut ajouté');
+                }
+                if (completion.casquetteAdded) {
+                  changes.push(`casquette ${user.role} ajoutée`);
+                }
+              }
+
+              modifiedContactDetails.push(
+                `${user.id} (${user.email}) → contact ${classification.contactIdToRepair}: ${changes.join(', ')}`
+              );
+              break;
+            }
+            case 'already_linked': {
+              alreadyLinked += 1;
+              // Mirror the link on Postgres even when nothing needs fixing on the Salesforce
+              // side - this is the whole point of the sfContactId column (see
+              // salesforce-contact-identity-resolution capability): it may still be empty here
+              // for users linked before this backfill/column existed.
+              await this.usersService.updateSfContactId(
+                user.id,
+                candidates[0].Id
+              );
+              let anyCompletionForThisUser = false;
+
+              for (const candidate of candidates) {
+                const completion =
+                  await this.salesforceService.completeContactNetworkAndCasquette(
+                    candidate,
+                    casquette
+                  );
+                if (!completion.networkAdded && !completion.casquetteAdded) {
+                  continue;
+                }
+
+                anyCompletionForThisUser = true;
+                networkOrCasquetteCompletions += 1;
+                const changes = [
+                  completion.networkAdded
+                    ? 'réseau LinkedOut ajouté'
+                    : undefined,
+                  completion.casquetteAdded
+                    ? `casquette ${user.role} ajoutée`
+                    : undefined,
+                ].filter(Boolean);
+                modifiedContactDetails.push(
+                  `${user.id} (${user.email}) → contact ${candidate.Id}: ${changes.join(', ')}`
+                );
+              }
+
+              if (!anyCompletionForThisUser) {
+                alreadyUpToDate += 1;
+              }
+              break;
+            }
+            case 'ambiguous':
+              manualReviewCases.push(
+                `${user.id} (${user.email}) - email partagé avec un autre utilisateur`
+              );
+              break;
+            case 'not_found':
+              manualReviewCases.push(
+                `${user.id} (${user.email}) - aucun contact trouvé`
+              );
+              break;
+          }
+        } catch (error) {
+          unexpectedFailures.push({ itemId: user.id, reason: error });
+          this.logger.error(
+            `Unexpected error backfilling Salesforce app id for user ${user.id}`,
+            error
+          );
+        } finally {
+          // Throttle unitary Salesforce API calls (no confirmed External ID for bulk upsert) -
+          // applied even on failure, since that's exactly when we'd otherwise hammer Salesforce
+          // during a rate limit/outage.
+          await new Promise((resolve) =>
+            setTimeout(resolve, THROTTLE_DELAY_MS)
+          );
+        }
+      }
+
+      if (unexpectedFailures.length > failuresBeforeBatch) {
+        await this.slackService.sendTechnicalMonitoringMessage(
+          false,
+          '🚨 Erreur inattendue pendant le backfill Salesforce ID_App_Entourage_Pro__c',
+          [
+            {
+              title: 'Utilisateurs en échec (ce batch)',
+              content: `${unexpectedFailures.length - failuresBeforeBatch}`,
+            },
+          ]
+        );
+      }
+    }
+
+    await this.cronTasksSlackReporterService.sendCronTaskResultToSlack(
+      unexpectedFailures.length === 0,
+      '🔗 Backfill Salesforce ID_App_Entourage_Pro__c',
+      {
+        total: users.length,
+        success: safeCorrections + alreadyLinked,
+        failure: unexpectedFailures.length,
+      },
+      unexpectedFailures,
+      undefined,
+      undefined,
+      [
+        {
+          label: 'Contacts Salesforce modifiés',
+          items: modifiedContactDetails,
+        },
+        {
+          label: 'Cas remontés pour revue manuelle',
+          items: manualReviewCases,
+        },
+      ],
+      [{ label: 'Already up to date', value: alreadyUpToDate }]
+    );
+
+    return (
+      `Salesforce app id backfill: ${safeCorrections} corrected, ` +
+      `${alreadyLinked} already linked (${alreadyUpToDate} already up to date), ` +
+      `${networkOrCasquetteCompletions} contacts ` +
+      `completed with a missing network/casquette, ${manualReviewCases.length} for manual review, ` +
+      `${unexpectedFailures.length} unexpected failures (${users.length} users processed)`
+    );
   }
 }

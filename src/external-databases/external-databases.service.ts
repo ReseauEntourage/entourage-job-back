@@ -14,13 +14,13 @@ export class ExternalDatabasesService {
     userId: string,
     otherInfo: Pick<
       CreateUserRegistrationDto,
-      | 'campaign'
-      | 'birthDate'
-      | 'workingRight'
-      | 'gender'
-      | 'refererEmail'
-      | 'companyRole'
-    > & { companyId?: string; isCompanyAdmin?: boolean }
+      'campaign' | 'birthDate' | 'workingRight' | 'gender' | 'companyRole'
+    > & {
+      companyId?: string;
+      isCompanyAdmin?: boolean;
+      /** Postgres User.id of the referrer (e.g. a REFERER/prescripteur), not their email. */
+      refererId?: string;
+    }
   ) {
     let convertedGenderType: CandidateGender;
     switch (otherInfo.gender) {

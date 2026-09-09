@@ -175,7 +175,7 @@ export class WorkQueueProcessor extends WorkerHost {
         jobSearchDuration: data.jobSearchDuration,
         workingRight: data.workingRight,
         gender: data.gender,
-        refererEmail: data.refererEmail,
+        refererId: data.refererId,
         structure: data.structure,
         isCompanyAdmin: data.isCompanyAdmin,
         // The "Position" field in Salesforce corresponds to the user's role in the company
