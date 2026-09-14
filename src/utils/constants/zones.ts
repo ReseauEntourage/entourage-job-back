@@ -1,9 +1,11 @@
 import { SfLocalBranchName } from '../types/local-branches.types';
 import { Zone, ZoneName, ZoneSuffix } from '../types/zones.types';
 
-const awsS3Url = process.env.AWSS3_URL || '';
-const awsS3ImageDir = process.env.AWSS3_IMAGE_DIRECTORY || '';
-const imageBasePath = `${awsS3Url}${awsS3ImageDir}`;
+// Read lazily (not at module top-level): AppModule's ConfigModule.forRoot()
+// loads the .env file, but zones.ts is transitively imported (via feature
+// modules) before that call runs, so process.env would still be empty here.
+const getImageBasePath = () =>
+  `${process.env.AWSS3_URL || ''}${process.env.AWSS3_IMAGE_DIRECTORY || ''}`;
 
 export const Zones: { [key in ZoneName]: Zone } = {
   [ZoneName.IDF]: {
@@ -13,7 +15,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Clothilde',
-        img: `${imageBasePath}staff-pictures/clothilde.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/clothilde.jpg`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_PARIS,
         entourageProEmail:
@@ -21,7 +25,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Adèle',
-        img: `${imageBasePath}staff-pictures/adele.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/adele.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_PARIS,
         entourageProEmail:
@@ -29,7 +35,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_PARIS,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_PARIS,
         entourageProEmail:
@@ -44,7 +52,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Alice',
-        img: `${imageBasePath}staff-pictures/alice.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/alice.jpg`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_LYON,
         entourageProEmail:
@@ -52,7 +62,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Gabriella',
-        img: `${imageBasePath}staff-pictures/gabriella.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/gabriella.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_LYON,
         entourageProEmail:
@@ -60,7 +72,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LYON,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LYON,
         entourageProEmail:
@@ -75,7 +89,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Julien',
-        img: `${imageBasePath}staff-pictures/julien.png`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/julien.png`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_LILLE,
         entourageProEmail:
@@ -83,7 +99,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Julien',
-        img: `${imageBasePath}staff-pictures/julien.png`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/julien.png`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_LILLE,
         entourageProEmail:
@@ -91,7 +109,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_LILLE,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_LILLE,
         entourageProEmail:
@@ -106,7 +126,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_RENNES,
         entourageProEmail:
@@ -114,7 +136,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_RENNES,
         entourageProEmail:
@@ -122,7 +146,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
         entourageProEmail:
@@ -141,7 +167,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_RENNES,
         entourageProEmail:
@@ -149,7 +177,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Mathilde',
-        img: `${imageBasePath}staff-pictures/mathilde.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/mathilde.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_RENNES,
         entourageProEmail:
@@ -157,7 +187,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_RENNES,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_RENNES,
         entourageProEmail:
@@ -172,7 +204,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Auguste',
-        img: `${imageBasePath}staff-pictures/auguste.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/auguste.jpg`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_SUDOUEST,
         entourageProEmail:
@@ -180,7 +214,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Auguste',
-        img: `${imageBasePath}staff-pictures/auguste.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/auguste.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_SUDOUEST,
         entourageProEmail:
@@ -188,7 +224,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_SUDOUEST,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_SUDOUEST,
         entourageProEmail:
@@ -203,7 +241,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
     staffContact: {
       candidate: {
         name: 'Marine',
-        img: `${imageBasePath}staff-pictures/marine.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/marine.jpg`;
+        },
         email: process.env.STAFF_CONTACT_CANDIDATE_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_CANDIDATE_SLACK_EMAIL_HZ,
         entourageProEmail:
@@ -211,7 +251,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       coach: {
         name: 'Laure',
-        img: `${imageBasePath}staff-pictures/laure.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/laure.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COACH_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_COACH_SLACK_EMAIL_HZ,
         entourageProEmail:
@@ -219,7 +261,9 @@ export const Zones: { [key in ZoneName]: Zone } = {
       },
       company: {
         name: 'Pauline',
-        img: `${imageBasePath}staff-pictures/pauline.jpg`,
+        get img() {
+          return `${getImageBasePath()}staff-pictures/pauline.jpg`;
+        },
         email: process.env.STAFF_CONTACT_COMPANIES_EMAIL_HZ,
         slackEmail: process.env.STAFF_CONTACT_COMPANIES_SLACK_EMAIL_HZ,
         entourageProEmail:
